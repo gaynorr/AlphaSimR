@@ -17,8 +17,8 @@ cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
 }
 
-#' @title Retrieve Genotype Data
-#' @description Makes crosses between diploid individuals.
+#' @title Get genotype data
+#' @description Retrieves allele dossages for requested loci.
 #' @param geno raw genotype data
 #' @param nInd number of individuals in population
 #' @param nChr number of chromosomes
@@ -32,5 +32,10 @@ cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
 #' @examples
 getGeno <- function(geno, nInd, nChr, ploidy, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, nInd, nChr, ploidy, lociPerChr, lociLoc)
+}
+
+#' @internal
+readAF <- function(nHap, segSites, keep) {
+    .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nHap, segSites, keep)
 }
 

@@ -37,3 +37,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// readAF
+arma::Mat<unsigned char> readAF(int nHap, int segSites, arma::ivec keep);
+RcppExport SEXP AlphaSimR_readAF(SEXP nHapSEXP, SEXP segSitesSEXP, SEXP keepSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nHap(nHapSEXP);
+    Rcpp::traits::input_parameter< int >::type segSites(segSitesSEXP);
+    Rcpp::traits::input_parameter< arma::ivec >::type keep(keepSEXP);
+    rcpp_result_gen = Rcpp::wrap(readAF(nHap, segSites, keep));
+    return rcpp_result_gen;
+END_RCPP
+}

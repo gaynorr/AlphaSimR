@@ -5,7 +5,7 @@
 \alias{PedPop-class}
 \title{Pedigreed Population}
 \description{
-Extends \code{\link{PhenoPop-class}}
+Extends \code{\link{TraitPop-class}}
 }
 \section{Slots}{
 

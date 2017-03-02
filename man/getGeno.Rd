@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{getGeno}
 \alias{getGeno}
-\title{Retrieve Genotype Data}
+\title{Get genotype data}
 \usage{
 getGeno(geno, nInd, nChr, ploidy, lociPerChr, lociLoc)
 }
@@ -20,6 +20,6 @@ getGeno(geno, nInd, nChr, ploidy, lociPerChr, lociLoc)
 \item{lociLoc}{physical position of loci}
 }
 \description{
-Makes crosses between diploid individuals.
+Retrieves allele dossages for requested loci.
 }
 

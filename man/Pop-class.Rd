@@ -4,11 +4,14 @@
 \name{Pop-class}
 \alias{Pop-class}
 \title{Population}
+\description{
+Population class
+}
 \section{Slots}{
 
 \describe{
 \item{\code{nInd}}{number of individuals}
 
-\item{\code{geno}}{list of chromosome genotypes}
+\item{\code{geno}}{list containing chromosome genotypes}
 }}
 

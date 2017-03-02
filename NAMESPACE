@@ -2,9 +2,9 @@
 
 export(cross2)
 export(getGeno)
+export(runMacs)
 exportClasses(LociMap)
 exportClasses(PedPop)
-exportClasses(PhenoPop)
 exportClasses(Pop)
 exportClasses(SimParams)
 exportClasses(TraitA)

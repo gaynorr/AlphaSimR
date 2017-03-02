@@ -1,8 +1,8 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
-//' @title Retrieve Genotype Data
-//' @description Makes crosses between diploid individuals.
+//' @title Get genotype data
+//' @description Retrieves allele dossages for requested loci.
 //' @param geno raw genotype data
 //' @param nInd number of individuals in population
 //' @param nChr number of chromosomes

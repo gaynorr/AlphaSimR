@@ -1,28 +1,28 @@
 #Pop----
 #' @title Population
-#'
+#' 
+#' @description Population class
+#' 
 #' @slot nInd number of individuals
-#' @slot geno list of chromosome genotypes
-#'
-#' @return
+#' @slot geno list containing chromosome genotypes
+#' 
 #' @export
-#'
-#' @examples
 setClass("Pop",
          slots=c(nInd="integer",
                  geno="list"))
 
 #TraitPop----
 #' @title Traited Population
+#' 
 #' @description Extends \code{\link{Pop-class}}
+#' 
 #' @slot gv matrix of genetic values
+#' @slot pheno matrix of phenotypic values
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("TraitPop",
-         slots=c(gv="matrix"),
+         slots=c(gv="matrix",
+                 pheno="matrix"),
          contains="Pop")
 
 setValidity("TraitPop",function(object){
@@ -30,28 +30,6 @@ setValidity("TraitPop",function(object){
   if(object@nInd!=nrow(object@gv)){
     errors = c(errors,"nInd!=nrow(gv)")
   }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-#PhenoPop----
-#' @title Phenotyped Population
-#' @description Extends \code{\link{TraitPop-class}}
-#' @slot pheno matrix of phenotypes
-#'
-#' @return
-#' @export
-#'
-#' @examples
-setClass("PhenoPop",
-         slots=c(pheno="matrix"),
-         contains="TraitPop")
-
-setValidity("PhenoPop",function(object){
-  errors = character()
   if(object@nInd!=nrow(object@pheno)){
     errors = c(errors,"nInd!=nrow(pheno)")
   }
@@ -67,15 +45,14 @@ setValidity("PhenoPop",function(object){
 
 #PedPop----
 #' @title Pedigreed Population
-#' @description Extends \code{\link{PhenoPop-class}}
+#' 
+#' @description Extends \code{\link{TraitPop-class}}
+#' 
 #' @slot id individual's identifier
 #' @slot par1 individual's female parent
 #' @slot par2 individual's male parent
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("PedPop",
          slots=c(id="character",
                  par1="character",
