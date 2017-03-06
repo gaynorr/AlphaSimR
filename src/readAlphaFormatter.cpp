@@ -3,7 +3,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
-//' @internal
+// Reads haplotypes from AlphaFormatter and returns it as a matrix
 // [[Rcpp::export]]
 arma::Mat<unsigned char> readAF(int nHap, int segSites, arma::ivec keep){
   keep -= 1; //R to C++

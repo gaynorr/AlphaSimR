@@ -3,7 +3,7 @@
 \docType{class}
 \name{SimParams-class}
 \alias{SimParams-class}
-\title{Simulation Parameters}
+\title{Simulation parameters}
 \description{
 Container for global simulation parameters
 }

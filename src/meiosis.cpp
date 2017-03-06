@@ -1,6 +1,9 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
+// Simulates crossing over during meiosis
+// May be extended later to include higher ploidy levels
+
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval
 // Returns -1 if value is smaller than the values of x
@@ -100,18 +103,12 @@ arma::Row<unsigned char> simGamHal2(const arma::Row<unsigned char>& chr1,
   return gamete;
 }
 
-//' @title Diploid cross
-//' @description Makes crosses between diploid individuals.
-//' @param fGeno female genotypes
-//' @param fPar female parents
-//' @param mGeno male genotypes
-//' @param mPar male parents
-//' @param genMaps chromosome genetic maps
-//'
-//' @return
-//' @export
-//'
-//' @examples
+// Makes crosses between diploid individuals.
+// fGeno: female genotypes
+// fPar: female parents
+// mGeno: male genotypes
+// mPar: male parents
+// genMaps: chromosome genetic maps
 // [[Rcpp::export]]
 Rcpp::List cross2(const Rcpp::List& fGeno, arma::uvec fPar,
                   const Rcpp::List& mGeno, arma::uvec mPar,

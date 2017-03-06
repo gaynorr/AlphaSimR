@@ -1,3 +1,7 @@
+# The Pop superclass contains genotypes
+# and summary data for multiple individuals
+
+
 #Pop----
 #' @title Population
 #' 
@@ -12,7 +16,7 @@ setClass("Pop",
                  geno="list"))
 
 #TraitPop----
-#' @title Traited Population
+#' @title Population with traits
 #' 
 #' @description Extends \code{\link{Pop-class}}
 #' 
@@ -44,7 +48,7 @@ setValidity("TraitPop",function(object){
 })
 
 #PedPop----
-#' @title Pedigreed Population
+#' @title Population with pedigree
 #' 
 #' @description Extends \code{\link{TraitPop-class}}
 #' 

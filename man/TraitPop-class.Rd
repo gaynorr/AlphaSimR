@@ -3,7 +3,7 @@
 \docType{class}
 \name{TraitPop-class}
 \alias{TraitPop-class}
-\title{Traited Population}
+\title{Population with traits}
 \description{
 Extends \code{\link{Pop-class}}
 }

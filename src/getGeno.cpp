@@ -1,19 +1,15 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
-//' @title Get genotype data
-//' @description Retrieves allele dossages for requested loci.
-//' @param geno raw genotype data
-//' @param nInd number of individuals in population
-//' @param nChr number of chromosomes
-//' @param ploidy ploidy of species
-//' @param lociPerChr number of loci per chromosome
-//' @param lociLoc physical position of loci
-//'
-//' @return
-//' @export
-//'
-//' @examples
+/*
+ * Retrieves allele dossages from requested loci
+ * geno: raw genotype data
+ * nInd: number of individuals in population
+ * nChr: number of chromosomes
+ * ploidy: ploidy of species
+ * lociPerChr: number of loci per chromosome
+ * lociLoc: physical position of loci
+ */
 // [[Rcpp::export]]
 arma::Mat<unsigned char> getGeno(Rcpp::List& geno, int nInd, int nChr, int ploidy,
                                  arma::ivec& lociPerChr, arma::uvec& lociLoc){

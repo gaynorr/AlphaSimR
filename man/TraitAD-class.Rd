@@ -5,7 +5,8 @@
 \alias{TraitAD-class}
 \title{Additive and dominance trait}
 \description{
-Extends \code{\link{TraitA-class}} to add dominance
+Extends \code{\link{TraitA-class}} 
+to add dominance
 }
 \section{Slots}{
 

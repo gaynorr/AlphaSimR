@@ -5,7 +5,8 @@
 \alias{TraitA-class}
 \title{Additive trait}
 \description{
-Extends \code{\link{LociMap-class}} to model additive traits
+Extends \code{\link{LociMap-class}} 
+to model additive traits
 }
 \section{Slots}{
 

@@ -1,8 +1,10 @@
 #' @useDynLib AlphaSimR
 #' @import Rcpp RcppArmadillo
 
-#' @title Simulation Parameters
+#' @title Simulation parameters
+#' 
 #' @description Container for global simulation parameters
+#' 
 #' @slot ploidy ploidy level of species
 #' @slot nChr number of chromosomes
 #' @slot nTraits number of traits
@@ -12,10 +14,7 @@
 #' @slot traits list of trait
 #' @slot snpChips list of SNP chips
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("SimParams",
          slots=c(ploidy="integer",
                  nChr="integer",

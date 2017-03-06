@@ -3,7 +3,7 @@
 \docType{class}
 \name{PedPop-class}
 \alias{PedPop-class}
-\title{Pedigreed Population}
+\title{Population with pedigree}
 \description{
 Extends \code{\link{TraitPop-class}}
 }

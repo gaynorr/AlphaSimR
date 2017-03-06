@@ -1,14 +1,16 @@
+# The LociMap superclass contains SNP/QTL locations
+# Trait classes add QTL effects
+
 #LociMap----
 #' @title Loci metadata
+#' 
 #' @description used for both SNPs and QTLs
+#' 
 #' @slot nLoci total number of loci
 #' @slot lociPerChr number of loci per chromosome
 #' @slot lociLoc physical position of loci
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("LociMap",
          slots=c(nLoci="integer",
                  lociPerChr="integer",
@@ -31,13 +33,13 @@ setValidity("LociMap",function(object){
 
 #TraitA----
 #' @title Additive trait
-#' @description Extends \code{\link{LociMap-class}} to model additive traits
+#' 
+#' @description Extends \code{\link{LociMap-class}} 
+#' to model additive traits
+#' 
 #' @slot addEff additive effects
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("TraitA",
          slots=c(addEff="numeric"),
          contains="LociMap")
@@ -56,13 +58,13 @@ setValidity("TraitA",function(object){
 
 #TraitAD----
 #' @title Additive and dominance trait
-#' @description Extends \code{\link{TraitA-class}} to add dominance
+#' 
+#' @description Extends \code{\link{TraitA-class}} 
+#' to add dominance
+#' 
 #' @slot domEff dominance effects
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("TraitAD",
          slots=c(domEff="numeric"),
          contains="TraitA")
@@ -81,13 +83,13 @@ setValidity("TraitAD",function(object){
 
 #TraitAG----
 #' @title Additive and GxE trait
-#' @description Extends \code{\link{TraitA-class}} to add GxE effects
+#' 
+#' @description Extends \code{\link{TraitA-class}} 
+#' to add GxE effects
+#' 
 #' @slot gxeEff GxE effects
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("TraitAG",
          slots=c(gxeEff="numeric"),
          contains="TraitA")
@@ -106,13 +108,13 @@ setValidity("TraitAG",function(object){
 
 #TraitADG----
 #' @title Additive, dominance and GxE trait
-#' @description Extends \code{\link{TraitAD-class}} to add GxE effects
+#' 
+#' @description Extends \code{\link{TraitAD-class}} 
+#' to add GxE effects
+#' 
 #' @slot gxeEff GxE effects
 #'
-#' @return
 #' @export
-#'
-#' @examples
 setClass("TraitADG",
          slots=c(gxeEff="numeric"),
          contains="TraitAD")

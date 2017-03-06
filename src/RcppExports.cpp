@@ -6,21 +6,6 @@
 
 using namespace Rcpp;
 
-// cross2
-Rcpp::List cross2(const Rcpp::List& fGeno, arma::uvec fPar, const Rcpp::List& mGeno, arma::uvec mPar, const Rcpp::List& genMaps);
-RcppExport SEXP AlphaSimR_cross2(SEXP fGenoSEXP, SEXP fParSEXP, SEXP mGenoSEXP, SEXP mParSEXP, SEXP genMapsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type fGeno(fGenoSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type fPar(fParSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type mGeno(mGenoSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type mPar(mParSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type genMaps(genMapsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross2(fGeno, fPar, mGeno, mPar, genMaps));
-    return rcpp_result_gen;
-END_RCPP
-}
 // getGeno
 arma::Mat<unsigned char> getGeno(Rcpp::List& geno, int nInd, int nChr, int ploidy, arma::ivec& lociPerChr, arma::uvec& lociLoc);
 RcppExport SEXP AlphaSimR_getGeno(SEXP genoSEXP, SEXP nIndSEXP, SEXP nChrSEXP, SEXP ploidySEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
@@ -34,6 +19,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::ivec& >::type lociPerChr(lociPerChrSEXP);
     Rcpp::traits::input_parameter< arma::uvec& >::type lociLoc(lociLocSEXP);
     rcpp_result_gen = Rcpp::wrap(getGeno(geno, nInd, nChr, ploidy, lociPerChr, lociLoc));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cross2
+Rcpp::List cross2(const Rcpp::List& fGeno, arma::uvec fPar, const Rcpp::List& mGeno, arma::uvec mPar, const Rcpp::List& genMaps);
+RcppExport SEXP AlphaSimR_cross2(SEXP fGenoSEXP, SEXP fParSEXP, SEXP mGenoSEXP, SEXP mParSEXP, SEXP genMapsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type fGeno(fGenoSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type fPar(fParSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type mGeno(mGenoSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mPar(mParSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type genMaps(genMapsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cross2(fGeno, fPar, mGeno, mPar, genMaps));
     return rcpp_result_gen;
 END_RCPP
 }
