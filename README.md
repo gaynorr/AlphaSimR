@@ -1,4 +1,4 @@
 # README #
 
-Use the following command to install this package using devtools:
-install_bitbucket("gaynorr/AlphaSimR",auth_user="YouUserName",password="YourPassword")
+Use the following command in the devtools library to install the package:
+install_bitbucket("gaynorr/AlphaSimR", auth_user="YouUserName", password="YourPassword")
