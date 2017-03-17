@@ -5,15 +5,14 @@
 #' @description Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
 #' 
 #' @param macs path to MaCS
-#' @param alphaFormatter path to AlphaFormatter
 #' @param species species history to simulate
 #' @param nChr number of chromosomes to simulate
 #' @param segSites number of segregating sites to keep
-#' @param popSize number of individuals to simulate
+#' @param popSize number of haplotypes to simulate. Provide a value for each sub-population if using the split option.
 #' @param split optional historic population splits. Values in terms of generations ago.
 #'
 #' @export
-runMacs = function(macs,alphaFormatter,species,nChr,segSites,popSize,split=NULL){
+runMacs = function(macs,species,nChr,segSites,popSize,split=NULL){
   species = toupper(species)
   if(species=="WHEAT"){
     Ne = 50
@@ -55,7 +54,12 @@ runMacs = function(macs,alphaFormatter,species,nChr,segSites,popSize,split=NULL)
     cat("  Running MaCS...\n")
     system(command)
     cat("  Running AlphaFormatter...\n")
-    system(alphaFormatter)
+    errorInt = AlphaFormatter()
+    if(errorInt!=0){
+      setwd(currentDir)
+      cat("Error in AlphaFormatter","\n")
+      stop(paste("Output in directory",tmpDir))
+    }
     cat("  Reading output...\n")
     intSegSites = tryCatch(scan("SegSites.txt",what=integer(),quiet=TRUE),
                            error=errorHandler)
@@ -79,6 +83,8 @@ runMacs = function(macs,alphaFormatter,species,nChr,segSites,popSize,split=NULL)
     output[[chr]] = tmp
   }
   setwd(currentDir)
+  output = new("InitialHaplo",nChr=as.integer(nChr),
+               nHaplo=as.integer(popSize),chrData=output)
   cat("Done\n")
   return(output)
 }

@@ -6,6 +6,16 @@
 
 using namespace Rcpp;
 
+// AlphaFormatter
+int AlphaFormatter();
+RcppExport SEXP AlphaSimR_AlphaFormatter() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(AlphaFormatter());
+    return rcpp_result_gen;
+END_RCPP
+}
 // getGeno
 arma::Mat<unsigned char> getGeno(Rcpp::List& geno, int nInd, int nChr, int ploidy, arma::ivec& lociPerChr, arma::uvec& lociLoc);
 RcppExport SEXP AlphaSimR_getGeno(SEXP genoSEXP, SEXP nIndSEXP, SEXP nChrSEXP, SEXP ploidySEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
@@ -47,6 +57,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type segSites(segSitesSEXP);
     Rcpp::traits::input_parameter< arma::ivec >::type keep(keepSEXP);
     rcpp_result_gen = Rcpp::wrap(readAF(nHap, segSites, keep));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tuneTraitA
+Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno, arma::vec& addEff, double varG);
+RcppExport SEXP AlphaSimR_tuneTraitA(SEXP genoSEXP, SEXP addEffSEXP, SEXP varGSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::Mat<unsigned char>& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type addEff(addEffSEXP);
+    Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
+    rcpp_result_gen = Rcpp::wrap(tuneTraitA(geno, addEff, varG));
     return rcpp_result_gen;
 END_RCPP
 }

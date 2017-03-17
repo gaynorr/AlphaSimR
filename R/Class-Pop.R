@@ -8,12 +8,25 @@
 #' @description Population class
 #' 
 #' @slot nInd number of individuals
+#' @slot gender gender of individuals
 #' @slot geno list containing chromosome genotypes
 #' 
 #' @export
 setClass("Pop",
          slots=c(nInd="integer",
+                 gender="character",
                  geno="list"))
+setValidity("Pop",function(object){
+  errors = character()
+  if(object@nInd!=length(object@gender)){
+    errors = c(errors,"nInd!=length(gender)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
 
 #TraitPop----
 #' @title Population with traits

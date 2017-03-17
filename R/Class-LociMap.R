@@ -38,10 +38,12 @@ setValidity("LociMap",function(object){
 #' to model additive traits
 #' 
 #' @slot addEff additive effects
+#' @slot intercept adjustment factor for gc
 #'
 #' @export
 setClass("TraitA",
-         slots=c(addEff="numeric"),
+         slots=c(addEff="numeric",
+                 intercept="numeric"),
          contains="LociMap")
 
 setValidity("TraitA",function(object){

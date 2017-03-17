@@ -4,12 +4,10 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(macs, alphaFormatter, species, nChr, segSites, popSize, split = NULL)
+runMacs(macs, species, nChr, segSites, popSize, split = NULL)
 }
 \arguments{
 \item{macs}{path to MaCS}
-
-\item{alphaFormatter}{path to AlphaFormatter}
 
 \item{species}{species history to simulate}
 
@@ -17,7 +15,7 @@ runMacs(macs, alphaFormatter, species, nChr, segSites, popSize, split = NULL)
 
 \item{segSites}{number of segregating sites to keep}
 
-\item{popSize}{number of individuals to simulate}
+\item{popSize}{number of haplotypes to simulate. Provide a value for each sub-population if using the split option.}
 
 \item{split}{optional historic population splits. Values in terms of generations ago.}
 }
