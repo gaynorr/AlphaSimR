@@ -4,15 +4,11 @@
 \alias{createSimulation}
 \title{Create new simulation}
 \usage{
-createSimulation(InitialHaplo, inbred = T, ploidy = 2, maxSnp, maxQtl,
-  snpQtlOverlap = F)
+createSimulation(InitialHaplo, maxSnp, maxQtl, snpQtlOverlap = F,
+  inbred = T, ploidy = 2)
 }
 \arguments{
 \item{InitialHaplo}{an object of class InitialHaplo}
-
-\item{inbred}{should founders be inbred}
-
-\item{ploidy}{level of ploidy in species. Currently only 2 supported.}
 
 \item{maxSnp}{the maximum number of segSites for SNPs. Can be a single value or values for each chromosome.}
 
@@ -20,7 +16,9 @@ createSimulation(InitialHaplo, inbred = T, ploidy = 2, maxSnp, maxQtl,
 
 \item{snpQtlOverlap}{should SNPs and QTLs be allowed to overlap}
 
-\item{assignGender}{should individuals have gender}
+\item{inbred}{should founders be inbred}
+
+\item{ploidy}{level of ploidy in species. Currently only 2 supported.}
 }
 \description{
 Starts the process of building a new simulation

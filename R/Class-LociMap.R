@@ -90,10 +90,12 @@ setValidity("TraitAD",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
+#' @slot varW variance of environmental covariate
 #'
 #' @export
 setClass("TraitAG",
-         slots=c(gxeEff="numeric"),
+         slots=c(gxeEff="numeric",
+                 varW="numeric"),
          contains="TraitA")
 
 setValidity("TraitAG",function(object){
@@ -115,10 +117,12 @@ setValidity("TraitAG",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
+#' @slot varW variance of environmental covariate
 #'
 #' @export
 setClass("TraitADG",
-         slots=c(gxeEff="numeric"),
+         slots=c(gxeEff="numeric",
+                 varW="numeric"),
          contains="TraitAD")
 
 setValidity("TraitADG",function(object){
@@ -132,3 +136,25 @@ setValidity("TraitADG",function(object){
     return(errors)
   }
 })
+
+#getGv----
+setGeneric("getGv",function(object,...){
+  standardGeneric("getGv")
+})
+setMethod("getGv",signature("TraitA"),
+          function(object,pop,...){
+            getGvA(object,pop)
+          })
+setMethod("getGv",signature("TraitAD"),
+          function(object,pop,...){
+            getGvAD(object,pop)
+          })
+setMethod("getGv",signature("TraitAG"),
+          function(object,pop,w){
+            getGvAG(object,pop,w)
+          })
+setMethod("getGv",signature("TraitADG"),
+          function(object,pop,w){
+            getGvA(object,pop,w)
+          })
+

@@ -8,18 +8,28 @@
 #' @description Population class
 #' 
 #' @slot nInd number of individuals
+#' @slot nChr number of chromosomes
+#' @slot ploidy level of ploidy
 #' @slot gender gender of individuals
 #' @slot geno list containing chromosome genotypes
 #' 
 #' @export
 setClass("Pop",
          slots=c(nInd="integer",
+                 nChr="integer",
+                 ploidy="integer",
                  gender="character",
                  geno="list"))
 setValidity("Pop",function(object){
   errors = character()
   if(object@nInd!=length(object@gender)){
     errors = c(errors,"nInd!=length(gender)")
+  }
+  if(object@nChr!=length(object@geno)){
+    errors = c(errors,"nChr!=length(geno)")
+  }
+  if(object@ploidy!=length(object@geno[[1]])){
+    errors = c(errors,"ploidy!=length(geno[[1]])")
   }
   if(length(errors)==0){
     return(TRUE)

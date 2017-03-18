@@ -12,6 +12,10 @@ Population class
 \describe{
 \item{\code{nInd}}{number of individuals}
 
+\item{\code{nChr}}{number of chromosomes}
+
+\item{\code{ploidy}}{level of ploidy}
+
 \item{\code{gender}}{gender of individuals}
 
 \item{\code{geno}}{list containing chromosome genotypes}

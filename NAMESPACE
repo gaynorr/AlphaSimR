@@ -2,8 +2,11 @@
 
 export(addSnpChip)
 export(addTraitA)
+export(addTraitAD)
 export(assignGender)
 export(createSimulation)
+export(getFounders)
+export(getSimParam)
 export(runMacs)
 exportClasses(InitialHaplo)
 exportClasses(LociMap)

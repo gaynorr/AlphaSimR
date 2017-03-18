@@ -7,21 +7,20 @@
 #' @description Starts the process of building a new simulation
 #' 
 #' @param InitialHaplo an object of class InitialHaplo
-#' @param inbred should founders be inbred
-#' @param assignGender should individuals have gender
-#' @param ploidy level of ploidy in species. Currently only 2 supported.
 #' @param maxSnp the maximum number of segSites for SNPs. Can be a single value or values for each chromosome.
 #' @param maxQtl the maximum number of segSites for QTLs. Can be a single value or values for each chromosome.
 #' @param snpQtlOverlap should SNPs and QTLs be allowed to overlap
+#' @param inbred should founders be inbred
+#' @param ploidy level of ploidy in species. Currently only 2 supported.
 #' 
 #' @export
-createSimulation = function(InitialHaplo,inbred=T,ploidy=2,
-                            maxSnp,maxQtl,snpQtlOverlap=F){
+createSimulation = function(InitialHaplo,maxSnp,maxQtl,snpQtlOverlap=F,
+                            inbred=T,ploidy=2){
   #Prevent ploidy level other than 2
   stopifnot(ploidy==2)
   
   output = list(SimParam=NULL,FounderPop=NULL,
-                snpLoc=NULL,qtlLoc=NULL)
+                snpLoc=NULL,qtlLoc=NULL,inbred=inbred)
   
   nChr = InitialHaplo@nChr
   if(length(maxSnp)==1){
@@ -68,6 +67,8 @@ createSimulation = function(InitialHaplo,inbred=T,ploidy=2,
   }
   output$FounderPop = new("Pop",
                           nInd=as.integer(nInd),
+                          nChr=as.integer(nChr),
+                          ploidy=as.integer(ploidy),
                           gender=rep("H",nInd),
                           geno=geno)
   output$SimParam = new("SimParam",
@@ -146,23 +147,20 @@ pickQtlLoci = function(simInfo, nQtlPerChr){
   return(qtlLoci)
 }
 
-#' @title Add additive trait
+#' @title Add an additive trait
 #' 
 #' @description Randomly assigns eligble QTLs for an additive trait. 
 #' 
 #' @param simInfo an object of class 'SimTempList'
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param meanG the mean genetic value for the trait
-#' @param varG the genetic variance for the trait
+#' @param varG the total genetic variance for the trait
 #' 
 #' @export
 addTraitA = function(simInfo,nQtlPerChr,meanG,varG){
   qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
   addEff = rnorm(qtlLoci@nLoci)
-  geno = getGeno(geno = simInfo$FounderPop@geno,
-                 nInd = simInfo$FounderPop@nInd,
-                 nChr = simInfo$SimParam@nChr,
-                 ploidy = simInfo$SimParam@ploidy,
+  geno = getGeno(pop = simInfo$FounderPop,
                  lociPerChr = qtlLoci@lociPerChr,
                  lociLoc = qtlLoci@lociLoc)
   tmp = tuneTraitA(geno,addEff,varG)
@@ -179,9 +177,47 @@ addTraitA = function(simInfo,nQtlPerChr,meanG,varG){
   return(simInfo)
 }
 
-addTraitAD = function(simInfo,nQtlPerChr,meanG,varG,meanDD,minMaxDD){
+#' @title Add a trait with dominance
+#' 
+#' @description Randomly assigns eligble QTLs for a trait with dominance. 
+#' 
+#' @param simInfo an object of class 'SimTempList'
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param meanG the mean genetic value for the trait
+#' @param varG the total genetic variance for the trait
+#' @param domDegree the dominance degree of individual loci. Can be a single value or nLoci values.
+#' 
+#' @export
+addTraitAD = function(simInfo,nQtlPerChr,meanG,varG,domDegree){
   qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
-  
+  if(length(domDegree)==1){
+    domDegree = rep(domDegree,qtlLoci@nLoci)
+  }else{
+   stopifnot(length(domDegree)==qtlLoci@nLoci) 
+  }
+  addEff = rnorm(qtlLoci@nLoci)
+  domEff = abs(addEff)*domDegree
+  geno = getGeno(pop = simInfo$FounderPop,
+                 lociPerChr = qtlLoci@lociPerChr,
+                 lociLoc = qtlLoci@lociLoc)
+  if(simInfo$inbred){
+    tmp = tuneTraitA(geno,addEff,varG)
+  }else{
+    tmp = tuneTraitD(geno,addEff,domEff,varG)
+  }
+  intercept = tmp$output$intercept
+  addEff = addEff*tmp$parameter
+  domEff = domEff*tmp$parameter
+  trait = new("TraitAD",
+              nLoci=qtlLoci@nLoci,
+              lociPerChr=qtlLoci@lociPerChr,
+              lociLoc=qtlLoci@lociLoc,
+              addEff=addEff,
+              domEff=domEff,
+              intercept=meanG-intercept)
+  simInfo$SimParam@nTraits = simInfo$SimParam@nTraits + 1L
+  simInfo$SimParam@traits[[simInfo$SimParam@nTraits]] = trait
+  return(simInfo)
 }
 
 addTraitAG = function(simInfo,nQtlPerChr,meanG,varG,varGE){
@@ -189,13 +225,39 @@ addTraitAG = function(simInfo,nQtlPerChr,meanG,varG,varGE){
   
 }
 
-addTraitADG = function(simInfo,nQtlPerChr,meanG,varG,meanDD,minMaxDD,varGE){
+addTraitADG = function(simInfo,nQtlPerChr,meanG,varG,domDegree,varGE){
   qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
   
 }
 
+#' @title Get founder individuals
+#' 
+#' @description Returns an object of class 'Pop' or 'TraitPop' from a 'SimTempList' class.
+#' 
+#' @param simInfo an object of class 'SimTempList'
+#' 
+#' @export
 getFounders = function(simInfo){
-  
+  pop = simInfo$FounderPop
+  if(simInfo$SimParam@nTraits==0){
+    return(pop)
+  }
+  gv = lapply(simInfo$SimParam@traits,getGv,
+              pop=pop,w=0)
+  gv = do.call("cbind",gv)
+  pop = new("TraitPop",pop,gv=gv,pheno=gv)
+  return(pop)
 }
 
-
+#' @title Get SimParam object
+#' 
+#' @description Returns an object of 'SimParam' class from a 'SimTempList' class.
+#' 
+#' @param simInfo an object of class 'SimTempList'
+#' 
+#' @export
+getSimParam = function(simInfo){
+  output = simInfo$SimParam
+  validObject(output)
+  return(output)
+}

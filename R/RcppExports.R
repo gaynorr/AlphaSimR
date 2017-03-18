@@ -5,8 +5,20 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-getGeno <- function(geno, nInd, nChr, ploidy, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, nInd, nChr, ploidy, lociPerChr, lociLoc)
+getGeno <- function(pop, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociPerChr, lociLoc)
+}
+
+getDomGeno <- function(geno) {
+    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+}
+
+getGvA <- function(trait, pop) {
+    .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvAD <- function(trait, pop) {
+    .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
 cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
@@ -19,5 +31,9 @@ readAF <- function(nHap, segSites, keep) {
 
 tuneTraitA <- function(geno, addEff, varG) {
     .Call('AlphaSimR_tuneTraitA', PACKAGE = 'AlphaSimR', geno, addEff, varG)
+}
+
+tuneTraitD <- function(geno, addEff, domEff, varG) {
+    .Call('AlphaSimR_tuneTraitD', PACKAGE = 'AlphaSimR', geno, addEff, domEff, varG)
 }
 

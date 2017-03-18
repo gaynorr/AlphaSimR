@@ -12,5 +12,7 @@ to add GxE effects
 
 \describe{
 \item{\code{gxeEff}}{GxE effects}
+
+\item{\code{varW}}{variance of environmental covariate}
 }}
 
