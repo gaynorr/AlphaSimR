@@ -5,6 +5,9 @@ install_bitbucket("hickeyjohnteam/AlphaSimR", auth_user="YouUserName", password=
 
 
 The following are required to use this program:
+
 1. macs.exe
+
 2. 'Rcpp' library
+
 3. 'RcppArmadillo' library
