@@ -13,12 +13,24 @@ getDomGeno <- function(geno) {
     .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
 }
 
+calcGvA <- function(geno, a, intercept) {
+    .Call('AlphaSimR_calcGvA', PACKAGE = 'AlphaSimR', geno, a, intercept)
+}
+
 getGvA <- function(trait, pop) {
     .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
+calcGvAD <- function(geno, a, d, intercept) {
+    .Call('AlphaSimR_calcGvAD', PACKAGE = 'AlphaSimR', geno, a, d, intercept)
+}
+
 getGvAD <- function(trait, pop) {
     .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+calcGenParam <- function(trait, pop, a, d) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop, a, d)
 }
 
 cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
@@ -33,7 +45,7 @@ tuneTraitA <- function(geno, addEff, varG) {
     .Call('AlphaSimR_tuneTraitA', PACKAGE = 'AlphaSimR', geno, addEff, varG)
 }
 
-tuneTraitD <- function(geno, addEff, domEff, varG) {
-    .Call('AlphaSimR_tuneTraitD', PACKAGE = 'AlphaSimR', geno, addEff, domEff, varG)
+tuneTraitAD <- function(geno, addEff, domEff, varG) {
+    .Call('AlphaSimR_tuneTraitAD', PACKAGE = 'AlphaSimR', geno, addEff, domEff, varG)
 }
 

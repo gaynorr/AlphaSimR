@@ -8,6 +8,7 @@ Description: Classes and methods for simulating breeding programs
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
+Depends: MASS
 Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 5.0.1

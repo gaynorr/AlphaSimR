@@ -177,7 +177,7 @@ addTraitA = function(simInfo,nQtlPerChr,meanG,varG){
   return(simInfo)
 }
 
-#' @title Add a trait with dominance
+#' @title Add an additive and dominance
 #' 
 #' @description Randomly assigns eligble QTLs for a trait with dominance. 
 #' 
@@ -203,7 +203,7 @@ addTraitAD = function(simInfo,nQtlPerChr,meanG,varG,domDegree){
   if(simInfo$inbred){
     tmp = tuneTraitA(geno,addEff,varG)
   }else{
-    tmp = tuneTraitD(geno,addEff,domEff,varG)
+    tmp = tuneTraitAD(geno,addEff,domEff,varG)
   }
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
@@ -242,10 +242,7 @@ getFounders = function(simInfo){
   if(simInfo$SimParam@nTraits==0){
     return(pop)
   }
-  gv = lapply(simInfo$SimParam@traits,getGv,
-              pop=pop,w=0)
-  gv = do.call("cbind",gv)
-  pop = new("TraitPop",pop,gv=gv,pheno=gv)
+  pop = addGv(pop,simInfo$SimParam)
   return(pop)
 }
 

@@ -19,7 +19,7 @@ Rcpp::List traitAObj(double tuneValue, Rcpp::List args){
 }
 
 //Objective function for tuning TraitD
-Rcpp::List traitDObj(double tuneValue, Rcpp::List args){
+Rcpp::List traitADObj(double tuneValue, Rcpp::List args){
   arma::Mat<unsigned char> geno = args["geno"];
   arma::imat domGeno = args["domGeno"];
   arma::vec addEff = args["addEff"];
@@ -47,13 +47,13 @@ Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno,
                                      1e3);
 }
 
-//Tunes TraitD for desired varG, tuneTraitA used for inbreds
+//Tunes TraitAD for desired varG, tuneTraitA used for inbreds
 // [[Rcpp::export]]
-Rcpp::List tuneTraitD(arma::Mat<unsigned char>& geno,
+Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
                       arma::vec& addEff,
                       arma::vec& domEff,
                       double varG){
-  return optimize(*traitDObj,
+  return optimize(*traitADObj,
                   Rcpp::List::create(Rcpp::Named("geno")=geno,
                                      Rcpp::Named("domGeno")=getDomGeno(geno),
                                      Rcpp::Named("addEff")=addEff,

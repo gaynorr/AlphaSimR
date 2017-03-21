@@ -13,5 +13,7 @@ Extends \code{\link{Pop-class}}
 \item{\code{gv}}{matrix of genetic values}
 
 \item{\code{pheno}}{matrix of phenotypic values}
+
+\item{\code{nTraits}}{number of traits}
 }}
 

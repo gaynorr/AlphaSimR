@@ -157,4 +157,3 @@ setMethod("getGv",signature("TraitADG"),
           function(object,pop,w){
             getGvA(object,pop,w)
           })
-

@@ -40,6 +40,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcGvA
+arma::vec calcGvA(arma::Mat<unsigned char>& geno, arma::vec& a, double intercept);
+RcppExport SEXP AlphaSimR_calcGvA(SEXP genoSEXP, SEXP aSEXP, SEXP interceptSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::Mat<unsigned char>& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type intercept(interceptSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGvA(geno, a, intercept));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getGvA
 arma::vec getGvA(Rcpp::S4& trait, Rcpp::S4& pop);
 RcppExport SEXP AlphaSimR_getGvA(SEXP traitSEXP, SEXP popSEXP) {
@@ -52,6 +65,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcGvAD
+arma::vec calcGvAD(arma::Mat<unsigned char>& geno, arma::vec& a, arma::vec& d, double intercept);
+RcppExport SEXP AlphaSimR_calcGvAD(SEXP genoSEXP, SEXP aSEXP, SEXP dSEXP, SEXP interceptSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::Mat<unsigned char>& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< double >::type intercept(interceptSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGvAD(geno, a, d, intercept));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getGvAD
 arma::vec getGvAD(Rcpp::S4& trait, Rcpp::S4& pop);
 RcppExport SEXP AlphaSimR_getGvAD(SEXP traitSEXP, SEXP popSEXP) {
@@ -61,6 +88,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::S4& >::type trait(traitSEXP);
     Rcpp::traits::input_parameter< Rcpp::S4& >::type pop(popSEXP);
     rcpp_result_gen = Rcpp::wrap(getGvAD(trait, pop));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcGenParam
+Rcpp::List calcGenParam(Rcpp::S4& trait, Rcpp::S4& pop, arma::vec a, arma::vec d);
+RcppExport SEXP AlphaSimR_calcGenParam(SEXP traitSEXP, SEXP popSEXP, SEXP aSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type trait(traitSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type pop(popSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type a(aSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type d(dSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGenParam(trait, pop, a, d));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -105,9 +146,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// tuneTraitD
-Rcpp::List tuneTraitD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG);
-RcppExport SEXP AlphaSimR_tuneTraitD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP) {
+// tuneTraitAD
+Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG);
+RcppExport SEXP AlphaSimR_tuneTraitAD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -115,7 +156,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type addEff(addEffSEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type domEff(domEffSEXP);
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
-    rcpp_result_gen = Rcpp::wrap(tuneTraitD(geno, addEff, domEff, varG));
+    rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG));
     return rcpp_result_gen;
 END_RCPP
 }

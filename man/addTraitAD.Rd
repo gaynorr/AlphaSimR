@@ -2,7 +2,7 @@
 % Please edit documentation in R/createSimulation.R
 \name{addTraitAD}
 \alias{addTraitAD}
-\title{Add a trait with dominance}
+\title{Add an additive and dominance}
 \usage{
 addTraitAD(simInfo, nQtlPerChr, meanG, varG, domDegree)
 }

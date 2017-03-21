@@ -4,7 +4,8 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(macs, species, nChr, segSites, popSize, split = NULL)
+runMacs(macs, species = "TEST", nChr, segSites, popSize, split = NULL,
+  manualCommand = NULL)
 }
 \arguments{
 \item{macs}{path to MaCS}
@@ -15,9 +16,11 @@ runMacs(macs, species, nChr, segSites, popSize, split = NULL)
 
 \item{segSites}{number of segregating sites to keep}
 
-\item{popSize}{number of haplotypes to simulate. Provide a value for each sub-population if using the split option.}
+\item{popSize}{number of haplotypes to simulate.}
 
-\item{split}{optional historic population splits. Values in terms of generations ago.}
+\item{split}{optional historic population split in terms of generations ago.}
+
+\item{manualCommand}{user provided MaCS options. For advanced users only.}
 }
 \description{
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
