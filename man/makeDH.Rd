@@ -4,12 +4,14 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH, simParam = SIMPARAM)
+makeDH(pop, nDH, id = NULL, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
 
 \item{nDH}{total number of DH lines per individual}
+
+\item{id}{optional id to assign to DH lines}
 
 \item{simParam}{an object of 'SimParam' class}
 }

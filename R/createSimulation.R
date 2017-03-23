@@ -10,12 +10,13 @@
 #' @param maxSnp the maximum number of segSites for SNPs. Can be a single value or values for each chromosome.
 #' @param maxQtl the maximum number of segSites for QTLs. Can be a single value or values for each chromosome.
 #' @param snpQtlOverlap should SNPs and QTLs be allowed to overlap
+#' @param minSnpFreq minimum allowable frequency for SNPs
 #' @param inbred should founders be inbred
 #' @param ploidy level of ploidy in species. Currently only 2 supported.
 #' 
 #' @export
 createSimulation = function(InitialHaplo,maxSnp,maxQtl,snpQtlOverlap=F,
-                            inbred=T,ploidy=2){
+                            minSnpFreq=NULL,inbred=T,ploidy=2){
   #Prevent ploidy level other than 2
   stopifnot(ploidy==2)
   
@@ -56,13 +57,25 @@ createSimulation = function(InitialHaplo,maxSnp,maxQtl,snpQtlOverlap=F,
     geno[[chr]] = tmpGeno
     if(snpQtlOverlap){
       stopifnot(segSites[chr]>=maxSnp[chr],segSites[chr]>=maxQtl[chr])
-      snpLoc[[chr]] = sort(sample.int(segSites[chr],maxSnp[chr]))
+      if(is.null(minSnpFreq)){
+        snpLoc[[chr]] = sort(sample.int(segSites[chr],maxSnp[chr]))
+      }else{
+        q = calcQ2(geno[[chr]])
+        snpLoc[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
+      }
       qtlLoc[[chr]] = sort(sample.int(segSites[chr],maxQtl[chr]))
     }else{
       stopifnot(segSites[chr]>=sum(maxSnp[chr],maxQtl[chr]))
-      tmp = sample.int(segSites[chr],sum(maxSnp[chr],maxQtl[chr]))
-      snpLoc[[chr]] = sort(tmp[1:maxSnp[chr]])
-      qtlLoc[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
+      if(is.null(minSnpFreq)){
+        tmp = sample.int(segSites[chr],sum(maxSnp[chr],maxQtl[chr]))
+        snpLoc[[chr]] = sort(tmp[1:maxSnp[chr]])
+        qtlLoc[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
+      }else{
+        q = calcQ2(geno[[chr]])
+        snpLoc[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
+        qtlLoc[[chr]] = sort(sample(which(!((1:segSites[chr])%in%snpLoc[[chr]])),
+                                    maxQtl[chr]))
+      }
     }
   }
   output$FounderPop = new("Pop",
@@ -161,8 +174,7 @@ addTraitA = function(simInfo,nQtlPerChr,meanG,varG){
   qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
   addEff = rnorm(qtlLoci@nLoci)
   geno = getGeno(pop = simInfo$FounderPop,
-                 lociPerChr = qtlLoci@lociPerChr,
-                 lociLoc = qtlLoci@lociLoc)
+                 lociMap = qtlLoci)
   tmp = tuneTraitA(geno,addEff,varG)
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
@@ -198,8 +210,7 @@ addTraitAD = function(simInfo,nQtlPerChr,meanG,varG,domDegree){
   addEff = rnorm(qtlLoci@nLoci)
   domEff = abs(addEff)*domDegree
   geno = getGeno(pop = simInfo$FounderPop,
-                 lociPerChr = qtlLoci@lociPerChr,
-                 lociLoc = qtlLoci@lociLoc)
+                 lociMap = qtlLoci)
   if(simInfo$inbred){
     tmp = tuneTraitA(geno,addEff,varG)
   }else{

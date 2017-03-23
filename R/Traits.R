@@ -3,28 +3,35 @@
 #' @description Calculates phenotypes for all traits by adding random error from a multivariate normal distribution.
 #' 
 #' @param pop an object of superclass 'pop'
-#' @param eVar error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.
+#' @param varE error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.
 #' @param simParam an object of class 'SimParam'
 #' 
 #' @export
-setPheno = function(pop,eVar,simParam=SIMPARAM){
-  if(is.matrix(eVar)){
-    stopifnot(nrow(eVar)==simParam@nTraits,
-              ncol(eVar)==simParam@nTraits)
+setPheno = function(pop,varE,w=0,simParam=SIMPARAM){
+  if(is.matrix(varE)){
+    stopifnot(nrow(varE)==simParam@nTraits,
+              ncol(varE)==simParam@nTraits)
   }else{
-    stopifnot(length(eVar)==simParam@nTraits)
-    if(length(eVar)==1){
-      eVar = matrix(eVar)
+    stopifnot(length(varE)==simParam@nTraits)
+    if(length(varE)==1){
+      eVar = matrix(varE)
     }else{
-      eVar = diag(eVar)
+      eVar = diag(varE)
     }
   }
   if(class(pop)=="Pop"){
     pop = addGv(pop,simParam=simParam)
   }
-  pop@pheno = pop@gv + MASS::mvrnorm(pop@nInd,
-                                     mu=rep(0,simParam@nTraits),
-                                     Sigma=eVar)
+  gv = pop@gv
+  for(i in 1:simParam@nTraits){
+    traitClass = class(simParam@traits[[i]])
+    if(traitClass=="TraitAG" | traitClass=="TraitADG"){
+      gv[,i] = getGv(simParam@traits[[i]],pop=pop,w=w)
+    }
+  }
+  pop@pheno = gv + MASS::mvrnorm(pop@nInd,
+                                 mu=rep(0,simParam@nTraits),
+                                 Sigma=varE)
   return(pop)
 }
 
@@ -93,11 +100,57 @@ popSummary = function(pop,simParam=SIMPARAM,w=0){
   }
   output$meanG = colMeans(pop@gv)
   output$meanP = colMeans(pop@pheno)
-  output$varA = var(output$bv)
-  output$varD = var(output$dd)
-  output$varG = var(pop@gv)
-  output$varP = var(pop@pheno)
+  output$varA = popVar(output$bv)
+  output$varD = popVar(output$dd)
+  output$varG = popVar(pop@gv)
+  output$varP = popVar(pop@pheno)
   return(output)
 }
 
+#' @title Mean genetic values
+#' 
+#' @description Returns the mean genetic values for all traits
+#' 
+#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' 
+#' @export
+meanG = function(pop){
+  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
+  colMeans(pop@gv)
+}
 
+#' @title Mean phenotypic values
+#' 
+#' @description Returns the mean phenotypic values for all traits
+#' 
+#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' 
+#' @export
+meanP = function(pop){
+  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
+  colMeans(pop@pheno)
+}
+
+#' @title Total genetic variance
+#' 
+#' @description Returns total genetic variance for all traits
+#' 
+#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' 
+#' @export
+varG = function(pop){
+  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
+  popVar(pop@gv)
+}
+
+#' @title Phenotypic variance
+#' 
+#' @description Returns phenotypic variance for all traits
+#' 
+#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' 
+#' @export
+varP = function(pop){
+  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
+  popVar(pop@pheno)
+}

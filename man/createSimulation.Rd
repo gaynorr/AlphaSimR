@@ -5,7 +5,7 @@
 \title{Create new simulation}
 \usage{
 createSimulation(InitialHaplo, maxSnp, maxQtl, snpQtlOverlap = F,
-  inbred = T, ploidy = 2)
+  minSnpFreq = NULL, inbred = T, ploidy = 2)
 }
 \arguments{
 \item{InitialHaplo}{an object of class InitialHaplo}
@@ -15,6 +15,8 @@ createSimulation(InitialHaplo, maxSnp, maxQtl, snpQtlOverlap = F,
 \item{maxQtl}{the maximum number of segSites for QTLs. Can be a single value or values for each chromosome.}
 
 \item{snpQtlOverlap}{should SNPs and QTLs be allowed to overlap}
+
+\item{minSnpFreq}{minimum allowable frequency for SNPs}
 
 \item{inbred}{should founders be inbred}
 

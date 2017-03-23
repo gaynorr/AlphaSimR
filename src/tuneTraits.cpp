@@ -11,7 +11,7 @@ Rcpp::List traitAObj(double tuneValue, Rcpp::List args){
   double varG = args["varG"];
   arma::vec gv = geno*(addEff*tuneValue);
   double intercept = arma::mean(gv);
-  double obsVar = arma::var(gv);
+  double obsVar = arma::var(gv,1); //Population variance
   Rcpp::List output;
   output = Rcpp::List::create(Rcpp::Named("intercept")=intercept);
   return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVar),
@@ -27,7 +27,7 @@ Rcpp::List traitADObj(double tuneValue, Rcpp::List args){
   double varG = args["varG"];
   arma::vec gv = geno*(addEff*tuneValue)+domGeno*(domEff*tuneValue);
   double intercept = arma::mean(gv);
-  double obsVar = arma::var(gv);
+  double obsVar = arma::var(gv,1); //Population variance
   Rcpp::List output;
   output = Rcpp::List::create(Rcpp::Named("intercept")=intercept);
   return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVar),
