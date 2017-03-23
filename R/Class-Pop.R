@@ -143,6 +143,9 @@ setValidity("PedPop",function(object){
 setMethod("[",
           signature(x = "PedPop"),
           function(x, i, j=NULL, ..., drop = TRUE){
+            if(is.character(i)){
+              i = x@id%in%i
+            }
             x@id = x@id[i]
             x@par1 = x@par1[i]
             x@par2 = x@par2[i]

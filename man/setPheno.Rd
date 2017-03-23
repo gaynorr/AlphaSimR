@@ -4,12 +4,12 @@
 \alias{setPheno}
 \title{Set phenotype}
 \usage{
-setPheno(pop, eVar, simParam = SIMPARAM)
+setPheno(pop, varE, w = 0, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of superclass 'pop'}
 
-\item{eVar}{error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.}
+\item{varE}{error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.}
 
 \item{simParam}{an object of class 'SimParam'}
 }

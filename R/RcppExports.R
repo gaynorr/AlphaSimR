@@ -5,12 +5,42 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-getGeno <- function(pop, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociPerChr, lociLoc)
+getGeno <- function(pop, lociMap) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociMap)
+}
+
+#' @title Get SNP chip genotype data
+#' 
+#' @description Retrieves gentoype information from a population for a SNP chip.
+#' 
+#' @param pop an object of superclass 'Pop'
+#' @param chip which chip
+#' @param simParam an object of class 'SimParam'
+#' 
+#' @export
+pullSnpGeno <- function(pop, chip, simParam) {
+    .Call('AlphaSimR_pullSnpGeno', PACKAGE = 'AlphaSimR', pop, chip, simParam)
+}
+
+#' @title Get QTL genotype data
+#' 
+#' @description Retrieves gentoype information from a population for a SNP chip.
+#' 
+#' @param pop an object of superclass 'Pop'
+#' @param trait which trait
+#' @param simParam an object of class 'SimParam'
+#' 
+#' @export
+pullQtlGeno <- function(pop, trait, simParam) {
+    .Call('AlphaSimR_pullQtlGeno', PACKAGE = 'AlphaSimR', pop, trait, simParam)
 }
 
 getDomGeno <- function(geno) {
     .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+}
+
+calcQ2 <- function(geno) {
+    .Call('AlphaSimR_calcQ2', PACKAGE = 'AlphaSimR', geno)
 }
 
 calcGvA <- function(geno, a, intercept) {
@@ -35,6 +65,10 @@ calcGenParam <- function(trait, pop, a, d) {
 
 cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
+}
+
+popVar <- function(X) {
+    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
 }
 
 readAF <- function(nHap, segSites, keep) {

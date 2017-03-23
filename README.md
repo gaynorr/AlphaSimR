@@ -1,8 +1,9 @@
 # README #
 
-Use the following command in the devtools library to install the package:
-install_bitbucket("hickeyjohnteam/AlphaSimR", auth_user="YourUserName", password="YourPassword")
+This package is currently under development and is not yet ready for release.
 
+Use the following command from the 'devtools' library to install this package:
+install_bitbucket("hickeyjohnteam/AlphaSimR")
 
 The following are required to use this program:
 

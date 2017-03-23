@@ -4,7 +4,7 @@
 \alias{randCross}
 \title{Make random crosses}
 \usage{
-randCross(pop, nCrosses, nProgeny = 1, simParam = SIMPARAM)
+randCross(pop, nCrosses, nProgeny = 1, id = NULL, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
@@ -12,6 +12,8 @@ randCross(pop, nCrosses, nProgeny = 1, simParam = SIMPARAM)
 \item{nCrosses}{total number of crosses to make}
 
 \item{nProgeny}{number of progeny per cross}
+
+\item{id}{optional id to assign to F1s}
 
 \item{simParam}{an object of 'SimParam' class}
 }

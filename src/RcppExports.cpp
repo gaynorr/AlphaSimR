@@ -17,15 +17,40 @@ BEGIN_RCPP
 END_RCPP
 }
 // getGeno
-arma::Mat<unsigned char> getGeno(const Rcpp::S4& pop, const arma::ivec& lociPerChr, const arma::uvec& lociLoc);
-RcppExport SEXP AlphaSimR_getGeno(SEXP popSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
+arma::Mat<unsigned char> getGeno(const Rcpp::S4& pop, const Rcpp::S4& lociMap);
+RcppExport SEXP AlphaSimR_getGeno(SEXP popSEXP, SEXP lociMapSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< const arma::ivec& >::type lociPerChr(lociPerChrSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type lociLoc(lociLocSEXP);
-    rcpp_result_gen = Rcpp::wrap(getGeno(pop, lociPerChr, lociLoc));
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type lociMap(lociMapSEXP);
+    rcpp_result_gen = Rcpp::wrap(getGeno(pop, lociMap));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pullSnpGeno
+arma::imat pullSnpGeno(const Rcpp::S4& pop, int chip, const Rcpp::S4& simParam);
+RcppExport SEXP AlphaSimR_pullSnpGeno(SEXP popSEXP, SEXP chipSEXP, SEXP simParamSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    Rcpp::traits::input_parameter< int >::type chip(chipSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type simParam(simParamSEXP);
+    rcpp_result_gen = Rcpp::wrap(pullSnpGeno(pop, chip, simParam));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pullQtlGeno
+arma::imat pullQtlGeno(const Rcpp::S4& pop, int trait, const Rcpp::S4& simParam);
+RcppExport SEXP AlphaSimR_pullQtlGeno(SEXP popSEXP, SEXP traitSEXP, SEXP simParamSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    Rcpp::traits::input_parameter< int >::type trait(traitSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type simParam(simParamSEXP);
+    rcpp_result_gen = Rcpp::wrap(pullQtlGeno(pop, trait, simParam));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -37,6 +62,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type geno(genoSEXP);
     rcpp_result_gen = Rcpp::wrap(getDomGeno(geno));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcQ2
+arma::rowvec calcQ2(Rcpp::List& geno);
+RcppExport SEXP AlphaSimR_calcQ2(SEXP genoSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List& >::type geno(genoSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcQ2(geno));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -117,6 +153,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type mPar(mParSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type genMaps(genMapsSEXP);
     rcpp_result_gen = Rcpp::wrap(cross2(fGeno, fPar, mGeno, mPar, genMaps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// popVar
+arma::mat popVar(arma::mat& X);
+RcppExport SEXP AlphaSimR_popVar(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(popVar(X));
     return rcpp_result_gen;
 END_RCPP
 }
