@@ -1,22 +1,22 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
-/*
- * Retrieves allele dossages from requested loci
- * geno: raw genotype data
- * nInd: number of individuals in population
- * nChr: number of chromosomes
- * ploidy: ploidy of species
- * lociPerChr: number of loci per chromosome
- * lociLoc: physical position of loci
- */
+//' @title Get genotype
+//' 
+//' @description Retrieves gentoype information from a population for a trait or SNP chip.
+//' 
+//' @param pop an object of superclass 'Pop'
+//' @param lociMap an object of superclass 'LociMap'
+//' 
+//' @export
 // [[Rcpp::export]]
-arma::Mat<unsigned char> getGeno(const Rcpp::S4& pop, const arma::ivec& lociPerChr, 
-                                 const arma::uvec& lociLoc){
+arma::Mat<unsigned char> getGeno(const Rcpp::S4& pop, const Rcpp::S4& lociMap){
   int nInd = pop.slot("nInd");
   int nChr = pop.slot("nChr");
   int ploidy = pop.slot("ploidy");
   Rcpp::List geno = pop.slot("geno");
+  arma::ivec lociPerChr = lociMap.slot("lociPerChr");
+  arma::uvec lociLoc = lociMap.slot("lociLoc");
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr), arma::fill::zeros);
   int loc1;
   int loc2 = -1;

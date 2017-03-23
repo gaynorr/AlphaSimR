@@ -15,8 +15,7 @@ arma::vec getGvA(Rcpp::S4& trait, Rcpp::S4& pop){
   arma::vec a = trait.slot("addEff");
   double intercept = trait.slot("intercept");
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
+  geno = getGeno(pop, trait);
   return calcGvA(geno, a, intercept);
 }
 
@@ -35,8 +34,7 @@ arma::vec getGvAD(Rcpp::S4& trait, Rcpp::S4& pop){
   arma::vec d = trait.slot("domEff");
   double intercept = trait.slot("intercept");
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
+  geno = getGeno(pop, trait);
   return calcGvAD(geno,a,d,intercept);
 }
 
@@ -47,8 +45,7 @@ Rcpp::List calcGenParam(Rcpp::S4& trait, Rcpp::S4& pop,
   arma::vec bv(nInd);
   arma::vec dd(nInd);
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
+  geno = getGeno(pop, trait);
   arma::mat X = arma::conv_to<arma::mat>::from(geno);
   arma::rowvec p = arma::mean(X,0)/2.0;
   arma::vec pt = p.t();

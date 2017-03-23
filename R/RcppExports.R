@@ -5,8 +5,16 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-getGeno <- function(pop, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociPerChr, lociLoc)
+#' @title Get genotype
+#' 
+#' @description Retrieves gentoype information from a population for a trait or SNP chip.
+#' 
+#' @param pop an object of superclass 'Pop'
+#' @param lociMap an object of superclass 'LociMap'
+#' 
+#' @export
+getGeno <- function(pop, lociMap) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociMap)
 }
 
 getDomGeno <- function(geno) {
