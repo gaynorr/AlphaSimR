@@ -7,7 +7,7 @@
 selectPop(pop, nInd, trait = 1, useGv = FALSE, selectTop = TRUE)
 }
 \arguments{
-\item{pop}{and object of superclass 'Pop'}
+\item{pop}{and object of superclass 'Pop' or 'HybridPop'}
 
 \item{nInd}{the number of individuals to select}
 

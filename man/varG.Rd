@@ -7,7 +7,7 @@
 varG(pop)
 }
 \arguments{
-\item{pop}{an object of class 'TraitPop' or 'PedPop'}
+\item{pop}{an object of class 'TraitPop', 'PedPop' or 'HybridPop'}
 }
 \description{
 Returns total genetic variance for all traits

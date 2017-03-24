@@ -63,6 +63,14 @@ calcGenParam <- function(trait, pop, a, d) {
     .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop, a, d)
 }
 
+getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
 cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
 }

@@ -12,6 +12,8 @@ Population class
 \describe{
 \item{\code{nInd}}{number of individuals}
 
+\item{\code{nTraits}}{number of traits}
+
 \item{\code{gv}}{matrix of genotypic values}
 
 \item{\code{pheno}}{matrix of phenotypic values}
