@@ -155,5 +155,26 @@ setMethod("getGv",signature("TraitAG"),
           })
 setMethod("getGv",signature("TraitADG"),
           function(object,pop,w){
-            getGvA(object,pop,w)
+            getGvADG(object,pop,w)
           })
+#getHybridGv----
+setGeneric("getHybridGv",function(object,...){
+  standardGeneric("getHybridGv")
+})
+setMethod("getHybridGv",signature("TraitA"),
+          function(object,fPop,fPar,mPop,mPar,...){
+            getHybridGvA(object,fPop,fPar,mPop,mPar)
+          })
+setMethod("getHybridGv",signature("TraitAD"),
+          function(object,fPop,fPar,mPop,mPar,...){
+            getHybridGvAD(object,fPop,fPar,mPop,mPar)
+          })
+setMethod("getHybridGv",signature("TraitAG"),
+          function(object,fPop,fPar,mPop,mPar,w){
+            getHybridGvAG(object,fPop,fPar,mPop,mPar,w)
+          })
+setMethod("getHybridGv",signature("TraitADG"),
+          function(object,fPop,fPar,mPop,mPar,w){
+            getHybridGvADG(object,fPop,fPar,mPop,mPar,w)
+          })
+

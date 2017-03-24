@@ -7,7 +7,7 @@
 meanG(pop)
 }
 \arguments{
-\item{pop}{an object of class 'TraitPop' or 'PedPop'}
+\item{pop}{an object of class 'TraitPop', 'PedPop', or 'HybridPop'}
 }
 \description{
 Returns the mean genetic values for all traits

@@ -4,12 +4,14 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny, simParam = SIMPARAM)
+self(pop, nProgeny, id = NULL, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
 
 \item{nProgeny}{total number of selfed progeny per individual}
+
+\item{id}{optional id to give lines is pop is class 'PedPop'}
 
 \item{simParam}{an object of 'SimParam' class}
 }

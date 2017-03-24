@@ -3,8 +3,8 @@
 #include "getGeno.h"
 
 // [[Rcpp::export]]
-arma::vec calcGvA(arma::Mat<unsigned char>& geno,
-                   arma::vec& a, double intercept){
+arma::vec calcGvA(const arma::Mat<unsigned char>& geno,
+                  const arma::vec& a, double intercept){
   arma::vec output = geno*a;
   return output+intercept;
 }
@@ -20,8 +20,8 @@ arma::vec getGvA(Rcpp::S4& trait, Rcpp::S4& pop){
 }
 
 // [[Rcpp::export]]
-arma::vec calcGvAD(arma::Mat<unsigned char>& geno,
-                   arma::vec& a, arma::vec& d,
+arma::vec calcGvAD(const arma::Mat<unsigned char>& geno,
+                   const arma::vec& a, const arma::vec& d,
                    double intercept){
   arma::vec output = geno*a+getDomGeno(geno)*d;
   return output+intercept;

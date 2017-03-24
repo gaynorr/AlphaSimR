@@ -7,7 +7,7 @@
 setPheno(pop, varE, w = 0, simParam = SIMPARAM)
 }
 \arguments{
-\item{pop}{an object of superclass 'pop'}
+\item{pop}{an object of superclass 'Pop' or 'HybridPop'}
 
 \item{varE}{error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.}
 

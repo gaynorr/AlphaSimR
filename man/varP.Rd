@@ -7,7 +7,7 @@
 varP(pop)
 }
 \arguments{
-\item{pop}{an object of class 'TraitPop' or 'PedPop'}
+\item{pop}{an object of class 'TraitPop', 'PedPop', or 'HybridPop'}
 }
 \description{
 Returns phenotypic variance for all traits

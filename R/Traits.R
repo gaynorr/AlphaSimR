@@ -1,24 +1,33 @@
+addError = function(gv,varE){
+  nTraits = ncol(gv)
+  nInd = nrow(gv)
+  if(is.matrix(varE)){
+    stopifnot(nrow(varE)==nTraits,
+              ncol(varE)==nTraits)
+  }else{
+    stopifnot(length(varE)==nTraits)
+    if(length(varE)==1){
+      varE = matrix(varE)
+    }else{
+      varE = diag(varE)
+    }
+  }
+  pheno = gv + MASS::mvrnorm(nInd,
+                             mu=rep(0,nTraits),
+                             Sigma=varE)
+  return(pheno)
+}
+
 #' @title Set phenotype
 #' 
 #' @description Calculates phenotypes for all traits by adding random error from a multivariate normal distribution.
 #' 
-#' @param pop an object of superclass 'pop'
+#' @param pop an object of superclass 'Pop' or 'HybridPop'
 #' @param varE error variances for phenotype. A vector of length nTraits for independent error or a square matrix of dimensions nTraits for correlated errors.
 #' @param simParam an object of class 'SimParam'
 #' 
 #' @export
 setPheno = function(pop,varE,w=0,simParam=SIMPARAM){
-  if(is.matrix(varE)){
-    stopifnot(nrow(varE)==simParam@nTraits,
-              ncol(varE)==simParam@nTraits)
-  }else{
-    stopifnot(length(varE)==simParam@nTraits)
-    if(length(varE)==1){
-      eVar = matrix(varE)
-    }else{
-      eVar = diag(varE)
-    }
-  }
   if(class(pop)=="Pop"){
     pop = addGv(pop,simParam=simParam)
   }
@@ -26,12 +35,11 @@ setPheno = function(pop,varE,w=0,simParam=SIMPARAM){
   for(i in 1:simParam@nTraits){
     traitClass = class(simParam@traits[[i]])
     if(traitClass=="TraitAG" | traitClass=="TraitADG"){
+      if(class(pop)=="HybridPop") stop("HybridPop class can't reevaluate traits AG or ADG")
       gv[,i] = getGv(simParam@traits[[i]],pop=pop,w=w)
     }
   }
-  pop@pheno = gv + MASS::mvrnorm(pop@nInd,
-                                 mu=rep(0,simParam@nTraits),
-                                 Sigma=varE)
+  pop@pheno = addError(gv,varE)
   return(pop)
 }
 
@@ -39,7 +47,7 @@ setPheno = function(pop,varE,w=0,simParam=SIMPARAM){
 #' 
 #' @description Selects a subset of nInd individuals from a 'Pop' superclass using various types of traits.
 #' 
-#' @param pop and object of superclass 'Pop'
+#' @param pop and object of superclass 'Pop' or 'HybridPop'
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number for one of the traits or an object of superclass 'SelIndex'
 #' @param useGv should genetic value be used instead of phenotypes
@@ -111,11 +119,10 @@ popSummary = function(pop,simParam=SIMPARAM,w=0){
 #' 
 #' @description Returns the mean genetic values for all traits
 #' 
-#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' @param pop an object of class 'TraitPop', 'PedPop', or 'HybridPop'
 #' 
 #' @export
 meanG = function(pop){
-  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
   colMeans(pop@gv)
 }
 
@@ -123,11 +130,10 @@ meanG = function(pop){
 #' 
 #' @description Returns the mean phenotypic values for all traits
 #' 
-#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' @param pop an object of class 'TraitPop', 'PedPop', or 'HybridPop'
 #' 
 #' @export
 meanP = function(pop){
-  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
   colMeans(pop@pheno)
 }
 
@@ -135,11 +141,10 @@ meanP = function(pop){
 #' 
 #' @description Returns total genetic variance for all traits
 #' 
-#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' @param pop an object of class 'TraitPop', 'PedPop' or 'HybridPop'
 #' 
 #' @export
 varG = function(pop){
-  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
   popVar(pop@gv)
 }
 
@@ -147,10 +152,9 @@ varG = function(pop){
 #' 
 #' @description Returns phenotypic variance for all traits
 #' 
-#' @param pop an object of class 'TraitPop' or 'PedPop'
+#' @param pop an object of class 'TraitPop', 'PedPop', or 'HybridPop'
 #' 
 #' @export
 varP = function(pop){
-  stopifnot(class(pop)=="TraitPop" | class(pop)=="PedPop")
   popVar(pop@pheno)
 }

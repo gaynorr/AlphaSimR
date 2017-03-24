@@ -7,7 +7,7 @@
 calcGCA(pop, useGv = FALSE)
 }
 \arguments{
-\item{pop}{an object of class 'PedPop' created by \code{\link{testCross}}}
+\item{pop}{an object of class 'HybridPop' or 'PedPop'}
 }
 \description{
 Calculate general combining ability of test crosses
