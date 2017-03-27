@@ -48,12 +48,11 @@ Rcpp::List calcGenParam(Rcpp::S4& trait, Rcpp::S4& pop,
   geno = getGeno(pop, trait);
   arma::mat X = arma::conv_to<arma::mat>::from(geno);
   arma::rowvec p = arma::mean(X,0)/2.0;
-  arma::vec pt = p.t();
   arma::vec alpha = a+d%(1-2*p.t()); //allele subsitution effect
-  arma::vec x(X.n_cols);
-  for(int i=0; i<nInd; ++i){
-    x = X.row(i).t();
-    dd[i] = arma::sum(-d%x%(x-2*pt-1)-2*d%(pt%pt));
+  double pT;
+  for(int i=0; i<X.n_cols; ++i){ //Matrix is column-major
+    pT = p[i];
+    dd += -d[i]*X.col(i)%(X.col(i)-2*pT-1)-2*d[i]*pT*pT;
   }
   X.each_row() -= 2*p;
   bv = geno*alpha;
