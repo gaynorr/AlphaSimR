@@ -6,29 +6,23 @@
 #'
 #' @description Starts the process of building a new simulation
 #' 
-#' @param InitialHaplo an object of class InitialHaplo
-#' @param maxSnp the maximum number of segSites for SNPs. Can be a single value or values for each chromosome.
-#' @param maxQtl the maximum number of segSites for QTLs. Can be a single value or values for each chromosome.
+#' @param maxQtl the maximum number of segSites for QTLs. 
+#' Can be a single value or values for each chromosome.
+#' @param maxSnp the maximum number of segSites for SNPs. 
+#' Can be a single value or values for each chromosome.
 #' @param snpQtlOverlap should SNPs and QTLs be allowed to overlap
 #' @param minSnpFreq minimum allowable frequency for SNPs
-#' @param inbred should founders be inbred
-#' @param ploidy level of ploidy in species. Currently only 2 supported.
+#' @param founderPop an object of class 'MapPop"
 #' 
 #' @export
-createSimulation = function(InitialHaplo,maxSnp,maxQtl,snpQtlOverlap=F,
-                            minSnpFreq=NULL,inbred=T,ploidy=2){
-  #Prevent ploidy level other than 2
-  stopifnot(ploidy==2)
-  
-  output = list(SimParam=NULL,FounderPop=NULL,
-                snpLoc=NULL,qtlLoc=NULL,inbred=inbred)
-  
-  nChr = InitialHaplo@nChr
+createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
+                            minSnpFreq=NULL,founderPop = FOUNDERPOP){
+  stopifnot(class(founderPop)=="MapPop")
   if(length(maxSnp)==1){
-    maxSnp = rep(maxSnp,nChr)
+    maxSnp = rep(maxSnp,founderPop@nChr)
   }
   if(length(maxQtl)==1){
-    maxQtl = rep(maxQtl,nChr)
+    maxQtl = rep(maxQtl,founderPop@nChr)
   }
   stopifnot(length(maxSnp)==nChr,length(maxQtl)==nChr)
   

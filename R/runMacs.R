@@ -5,16 +5,23 @@
 #' @description Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
 #' 
 #' @param macs path to MaCS
-#' @param species species history to simulate
+#' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
-#' @param segSites number of segregating sites to keep
-#' @param popSize number of haplotypes to simulate.
-#' @param split optional historic population split in terms of generations ago.
+#' @param segSites number of segregating sites to keep per chromosome
+#' @param inbred should founder individuals be inbred
+#' @param species species history to simulate
+#' @param split an optional historic population split in terms of generations ago.
 #' @param manualCommand user provided MaCS options. For advanced users only.
 #'
 #' @export
-runMacs = function(macs,species="TEST",nChr,segSites,popSize,
+runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
                    split=NULL,manualCommand=NULL){
+  ploidy = 2 #The only ploidy level currently supported
+  if(inbred){
+    popSize = nInd
+  }else{
+    popSize = ploidy*nInd
+  }
   if(!is.null(manualCommand)){
     command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1)," 1>output.txt 2>/dev/null")
   }else{
@@ -47,48 +54,52 @@ runMacs = function(macs,species="TEST",nChr,segSites,popSize,
   currentDir = getwd()
   tmpDir = tempdir()
   setwd(tmpDir)
-  output = list()
   errorHandler = function(e){
     setwd(currentDir)
     print(e)
     stop(paste("Output in directory",tmpDir))
   }
+  genMaps = list()
+  geno = list()
   for(chr in 1:nChr){
     cat("Making chomosome",chr,"of",nChr,"\n")
     cat("  Running MaCS...\n")
     system(command)
     cat("  Running AlphaFormatter...\n")
-    errorInt = AlphaFormatter()
+    errorInt = AlphaSimR:::AlphaFormatter()
     if(errorInt!=0){
       setwd(currentDir)
       cat("Error in AlphaFormatter","\n")
       stop(paste("Output in directory",tmpDir))
     }
     cat("  Reading output...\n")
-    intSegSites = tryCatch(scan("SegSites.txt",what=integer(),quiet=TRUE),
-                           error=errorHandler)
-    if(length(intSegSites)!=1){
+    initSegSites = tryCatch(scan("SegSites.txt",what=integer(),quiet=TRUE),
+                            error=errorHandler)
+    if(length(initSegSites)!=1){
       setwd(currentDir)
-      cat("length(intSegSites) =",length(intSegSites),"\n")
+      cat("length(intSegSites) =",length(initSegSites),"\n")
       stop(paste("Output in directory",tmpDir))
     }
-    if(segSites>intSegSites){
+    if(segSites>initSegSites){
       setwd(currentDir)
-      stop(paste("Requested",segSites,"segSites but only created",intSegSites))
+      stop(paste("Requested",segSites,"segSites but only created",initSegSites))
     }
-    keep = sort(sample.int(intSegSites,segSites))
+    keep = sort(sample.int(initSegSites,segSites))
     map = tryCatch(scan("PhysicalMapInput.txt",what=numeric(),quiet=TRUE),
                    error=errorHandler)
     map = map[keep]
     map = map - map[1]
-    geno = tryCatch(readAF(sum(popSize),intSegSites,keep),
-                    error=errorHandler)
-    tmp = list(map=map,geno=geno)
-    output[[chr]] = tmp
+    tmpGeno = tryCatch(AlphaSimR:::readAF(nInd,initSegSites,ploidy,
+                                          keep-1, #R to C++ index
+                                          inbred),
+                       error=errorHandler)
+    genMaps[[chr]] = map
+    geno[[chr]] = tmpGeno
   }
   setwd(currentDir)
-  output = new("InitialHaplo",nChr=as.integer(nChr),
-               nHaplo=as.integer(popSize),chrData=output)
+  output = new("MapPop",nInd=as.integer(nInd),nChr=as.integer(nChr),
+               ploidy=as.integer(ploidy),nLoci=as.integer(rep(segSites,nChr)),
+               gender=rep("H",nInd),geno=geno,genMaps=genMaps)
   cat("Done\n")
   return(output)
 }

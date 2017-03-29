@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "alphasimr.h"
 
 // Simulates crossing over during meiosis
 // May be extended later to include higher ploidy levels

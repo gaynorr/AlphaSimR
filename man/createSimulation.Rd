@@ -4,23 +4,21 @@
 \alias{createSimulation}
 \title{Create new simulation}
 \usage{
-createSimulation(InitialHaplo, maxSnp, maxQtl, snpQtlOverlap = F,
-  minSnpFreq = NULL, inbred = T, ploidy = 2)
+createSimulation(maxQtl, maxSnp, snpQtlOverlap = FALSE, minSnpFreq = NULL,
+  founderPop = FOUNDERPOP)
 }
 \arguments{
-\item{InitialHaplo}{an object of class InitialHaplo}
+\item{maxQtl}{the maximum number of segSites for QTLs. 
+Can be a single value or values for each chromosome.}
 
-\item{maxSnp}{the maximum number of segSites for SNPs. Can be a single value or values for each chromosome.}
-
-\item{maxQtl}{the maximum number of segSites for QTLs. Can be a single value or values for each chromosome.}
+\item{maxSnp}{the maximum number of segSites for SNPs. 
+Can be a single value or values for each chromosome.}
 
 \item{snpQtlOverlap}{should SNPs and QTLs be allowed to overlap}
 
 \item{minSnpFreq}{minimum allowable frequency for SNPs}
 
-\item{inbred}{should founders be inbred}
-
-\item{ploidy}{level of ploidy in species. Currently only 2 supported.}
+\item{founderPop}{an object of class 'MapPop"}
 }
 \description{
 Starts the process of building a new simulation

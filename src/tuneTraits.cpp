@@ -1,8 +1,6 @@
 // Functions for adjusting traits to desired initial variance
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-#include "optimize.h"
-#include "getGeno.h"
+#include "alphasimr.h"
 
 //Objective function for tuning TraitA
 Rcpp::List traitAObj(double tuneValue, Rcpp::List args){

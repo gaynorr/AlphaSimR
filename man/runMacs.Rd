@@ -4,21 +4,23 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(macs, species = "TEST", nChr, segSites, popSize, split = NULL,
-  manualCommand = NULL)
+runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
+  split = NULL, manualCommand = NULL)
 }
 \arguments{
 \item{macs}{path to MaCS}
 
-\item{species}{species history to simulate}
+\item{nInd}{number of individuals to simulate}
 
 \item{nChr}{number of chromosomes to simulate}
 
-\item{segSites}{number of segregating sites to keep}
+\item{segSites}{number of segregating sites to keep per chromosome}
 
-\item{popSize}{number of haplotypes to simulate.}
+\item{inbred}{should founder individuals be inbred}
 
-\item{split}{optional historic population split in terms of generations ago.}
+\item{species}{species history to simulate}
+
+\item{split}{an optional historic population split in terms of generations ago.}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 }

@@ -1,48 +1,53 @@
 #HybridPop----
-#' @title Population
+#' @title Hybrid population
 #' 
-#' @description Population class
+#' @description
+#' A lightweight version of \code{\link{Pop-class}} for hybrid lines.
+#' Memory is saved by not storing genotypic data. This prevents recaclulation 
+#' of phenotypes for GxE traits as well as direct retrieval of genotype data.
 #' 
 #' @slot nInd number of individuals
+#' @slot id an individual's identifier
+#' @slot mother the identifier of the individual's mother
+#' @slot father the identifier of the individual's father
 #' @slot nTraits number of traits
-#' @slot gv matrix of genotypic values
-#' @slot pheno matrix of phenotypic values
-#' @slot id hybrid's id
-#' @slot par1 hybrid's first parent/mother
-#' @slot par2 hybrid's second parent/father
+#' @slot gv matrix of genetic values. When using GxE traits,
+#' gv reflects gv when w=0. Dimensions are nInd by nTraits.
+#' @slot pheno matrix of phenotypic values. Dimensions are
+#' nInd by nTraits.
 #' 
 #' @export
 setClass("HybridPop",
          slots=c(nInd="integer",
+                 id="character",
+                 mother="character",
+                 father="character",
                  nTraits="integer",
                  gv="matrix",
-                 pheno="matrix",
-                 id="character",
-                 par1="character",
-                 par2="character"))
+                 pheno="matrix"))
 
 setValidity("HybridPop",function(object){
   errors = character()
+  if(object@nInd!=length(object@id)){
+    errors = c(errors,"nInd!=length(id)")
+  }
+  if(object@nInd!=length(object@mother)){
+    errors = c(errors,"nInd!=length(mother)")
+  }
+  if(object@nInd!=length(object@father)){
+    errors = c(errors,"nInd!=length(father)")
+  }
   if(object@nInd!=nrow(object@gv)){
     errors = c(errors,"nInd!=nrow(gv)")
   }
   if(object@nInd!=nrow(object@pheno)){
     errors = c(errors,"nInd!=nrow(pheno)")
   }
-  if(ncol(object@gv)!=object@nTraits){
-    errors = c(errors,"ncol(gv)!=nTraits")
+  if(object@nTraits!=ncol(object@gv)){
+    errors = c(errors,"nTraits!=ncol(gv)")
   }
-  if(ncol(object@pheno)!=object@nTraits){
-    errors = c(errors,"ncol(pheno)!=nTraits")
-  }
-  if(object@nInd!=length(object@id)){
-    errors = c(errors,"nInd!=length(id)")
-  }
-  if(object@nInd!=length(object@par1)){
-    errors = c(errors,"nInd!=length(par1)")
-  }
-  if(object@nInd!=length(object@par2)){
-    errors = c(errors,"nInd!=length(par2)")
+  if(object@nTraits!=ncol(object@pheno)){
+    errors = c(errors,"nTraits!=ncol(pheno)")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -54,12 +59,32 @@ setValidity("HybridPop",function(object){
 setMethod("[",
           signature(x = "HybridPop"),
           function(x, i, j=NULL, ..., drop = TRUE){
+            if(is.character(i)){
+              i = x@id%in%i
+            }
             x@id = x@id[i]
-            x@par1 = x@par1[i]
-            x@par2 = x@par2[i]
-            x@gv = matrix(x@gv[i,],ncol=x@nTraits)
-            x@pheno = matrix(x@pheno[i,],ncol=x@nTraits)
+            x@mother = x@mother[i]
+            x@father = x@father[i]
+            x@gv = x@gv[i,,drop=FALSE]
+            x@pheno = x@pheno[i,,drop=FALSE]
             x@nInd = length(x@id)
+            validObject(x)
+            return(x)
+          }
+)
+
+setMethod("c",
+          signature(x = "HybridPop"),
+          function (x, ..., recursive = FALSE){
+            for(y in list(...)){
+              stopifnot(class(y)=="HybridPop")
+              x@nInd = x@nInd+y@nInd
+              x@id = c(x@id,y@id)
+              x@mother = c(x@mother,y@mother)
+              x@father = c(x@father,y@father)
+              x@gv = rbind(x@gv,y@gv)
+              x@pheno = rbind(x@pheno,y@pheno)
+            }
             validObject(x)
             return(x)
           }

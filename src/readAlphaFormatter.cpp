@@ -1,32 +1,55 @@
 // A stop-gap solution until MaCS is integrated
 
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "alphasimr.h"
 
-// Reads haplotypes from AlphaFormatter and returns it as a matrix
+// Reads haplotypes from AlphaFormatter as a cube of unsigned char
 // [[Rcpp::export]]
-arma::Mat<unsigned char> readAF(int nHap, int segSites, arma::ivec keep){
-  keep -= 1; //R to C++
-  arma::Mat<unsigned char> output(nHap, keep.n_elem);
+arma::Cube<unsigned char> readAF(int nInd, int segSites, int ploidy,
+                                 arma::uvec keep, bool inbred){
+  int nLoci = keep.n_elem;
+  // Calculated expected number of haplotypes
+  int nHap;
+  if(inbred){
+    nHap = nInd;
+  }else{
+    nHap = nInd*ploidy;
+  }
+  arma::Cube<unsigned char> output(nLoci,ploidy,nInd);
+  arma::Col<unsigned char> tmp(nLoci);
+  // Read output from AlphaFormatter
   char sep = ' ';
   std::string iFileName = "MacsHaplotypes.txt";
   std::ifstream iFile(iFileName.c_str());
   std::string line;
-  //Read rows
+  // Read rows
+  int chr=0;
   for(int i=0; i<nHap; ++i){
     std::getline(iFile,line);
     std::stringstream lineStream(line);
     std::string cell;
-    //Skip blank column
+    // Skip blank column
     std::getline(lineStream,cell,sep);
-    //Read columns
+    // Read columns, saving data in uvec keep to tmp
     int k=0;
-    for(int j=0; j<segSites; ++j){
+    int j=0;
+    while(k<nLoci){
       std::getline(lineStream,cell,sep);
-      if(j==keep[k]){
-        output(i,k) = std::atof(cell.c_str());
+      if(j==keep(k)){
+        tmp(k) = std::atof(cell.c_str());
         ++k;
       }
+      ++j;
+    }
+    // Transfer tmp to output
+    if(inbred){
+      for(chr=0; chr<ploidy; ++chr){
+        output.slice(i).col(chr) = tmp;
+      }
+    }else{
+     output.slice(i/ploidy).col(chr) = tmp;
+     ++chr;
+      chr = chr%ploidy; 
     }
   }
   iFile.close();

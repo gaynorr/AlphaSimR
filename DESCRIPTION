@@ -1,10 +1,10 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulation Tools
-Version: 0.1.0
+Version: 0.1
 Author: Chris Gaynor
 Maintainer: Chris Gaynor <gaynor.robert@hotmail.com>
-Description: Classes and methods for simulating breeding programs
+Description: Classes and functions for simulating breeding programs
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true

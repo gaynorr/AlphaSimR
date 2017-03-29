@@ -75,12 +75,8 @@ cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
 }
 
-popVar <- function(X) {
-    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
-}
-
-readAF <- function(nHap, segSites, keep) {
-    .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nHap, segSites, keep)
+readAF <- function(nInd, segSites, ploidy, keep, inbred) {
+    .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nInd, segSites, ploidy, keep, inbred)
 }
 
 tuneTraitA <- function(geno, addEff, varG) {
@@ -89,5 +85,21 @@ tuneTraitA <- function(geno, addEff, varG) {
 
 tuneTraitAD <- function(geno, addEff, domEff, varG) {
     .Call('AlphaSimR_tuneTraitAD', PACKAGE = 'AlphaSimR', geno, addEff, domEff, varG)
+}
+
+popVar <- function(X) {
+    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
+}
+
+mergeGeno <- function(x, y) {
+    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
+}
+
+assignMat <- function(oldValue, newValue) {
+    invisible(.Call('AlphaSimR_assignMat', PACKAGE = 'AlphaSimR', oldValue, newValue))
+}
+
+assignInt <- function(oldValue, newValue) {
+    invisible(.Call('AlphaSimR_assignInt', PACKAGE = 'AlphaSimR', oldValue, newValue))
 }
 

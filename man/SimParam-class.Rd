@@ -5,7 +5,8 @@
 \alias{SimParam-class}
 \title{Simulation parameters}
 \description{
-Container for global simulation parameters
+Container for global simulation parameters. Saving this object 
+as SIMPARAM will allow it to be accessed by function defaults.
 }
 \section{Slots}{
 
@@ -27,5 +28,11 @@ Container for global simulation parameters
 \item{\code{traits}}{list of trait}
 
 \item{\code{snpChips}}{list of SNP chips}
+
+\item{\code{potQtl}}{list of potential QTL segregating sites}
+
+\item{\code{potSnp}}{list of potential SNP segregating sites}
+
+\item{\code{lastId}}{the last assigned id}
 }}
 

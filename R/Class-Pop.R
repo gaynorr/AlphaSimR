@@ -1,23 +1,32 @@
-#Pop----
-#' @title Population
+
+# RawPop ------------------------------------------------------------------
+
+#' @title Raw Population
 #' 
-#' @description Population class
+#' @description 
+#' The raw population class contains only genotype and gender data. 
+#' It is intended as a temporary population whose genentic values aren't needed.
 #' 
 #' @slot nInd number of individuals
 #' @slot nChr number of chromosomes
 #' @slot ploidy level of ploidy
+#' @slot nLoci number of loci per chromosome
 #' @slot gender gender of individuals
-#' @slot geno list containing chromosome genotypes
+#' @slot geno list containing chromosome genotypes. The
+#' list is nChr in length and each element is a three dimensional
+#' array of raw values. The dimensions are
+#' 
 #' 
 #' @export
-setClass("Pop",
+setClass("RawPop",
          slots=c(nInd="integer",
                  nChr="integer",
                  ploidy="integer",
+                 nLoci="integer",
                  gender="character",
                  geno="list"))
 
-setValidity("Pop",function(object){
+setValidity("RawPop",function(object){
   errors = character()
   if(object@nInd!=length(object@gender)){
     errors = c(errors,"nInd!=length(gender)")
@@ -25,8 +34,148 @@ setValidity("Pop",function(object){
   if(object@nChr!=length(object@geno)){
     errors = c(errors,"nChr!=length(geno)")
   }
-  if(object@ploidy!=length(object@geno[[1]])){
-    errors = c(errors,"ploidy!=length(geno[[1]])")
+  if(object@nChr!=length(object@nLoci)){
+    errors = c(errors,"nChr!=length(nLoci)")
+  }
+  for(i in 1:object@nChr){
+    if(object@nLoci[i]!=dim(object@geno[[i]])[1]){
+      errors = c(errors,
+                 paste0("nLoci[",i,
+                        "]!=dim(geno[[",i,
+                        "]][1]"))
+    }
+    if(object@ploidy!=dim(object@geno[[i]])[2]){
+      errors = c(errors,
+                 paste0("ploidy!=dim(geno[[",i,
+                        "]][2]"))
+    }
+    if(object@nInd!=dim(object@geno[[i]])[3]){
+      errors = c(errors,
+                 paste0("nInd!=dim(geno[[",i,
+                        "]][3]"))
+    }
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+setMethod("[",
+          signature(x = "RawPop"),
+          function(x, i, j=NULL, ..., drop = TRUE){
+            x@gender = x@gender[i]
+            x@nInd = length(x@gender)
+            for(chr in 1:x@nChr){
+              x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
+            }
+            validObject(x)
+            return(x)
+          }
+)
+
+setMethod("c",
+          signature(x = "RawPop"),
+          function (x, ..., recursive = FALSE){
+            for(y in list(...)){
+              stopifnot(class(y)=="RawPop",
+                        x@nChr==y@nChr,
+                        x@ploidy==y@ploidy,
+                        x@nLoci==y@nLoci)
+              x@nInd = x@nInd+y@nInd
+              x@gender = c(x@gender,y@gender)
+              x@geno = AlphaSimR:::mergeGeno(x@geno,y@geno)
+            }
+            validObject(x)
+            return(x)
+          }
+)
+
+# MapPop ------------------------------------------------------------------
+
+#' @title Raw population with genetic map
+#' 
+#' @description 
+#' Extends \code{\link{RawPop-class}} to add a genetic map. 
+#' This is the first object created in a simulation. It is used
+#' for creating initial populations and setting traits in the 
+#' \code{\link{SimParam-class}}.
+#' 
+#' @slot genMaps list of chromsome genetic maps
+#' 
+#' @export
+setClass("MapPop",
+         slots=c(genMaps="list"),
+         contains="RawPop")
+
+setValidity("MapPop",function(object){
+  errors = character()
+  if(object@nChr!=length(object@genMaps)){
+    errors = c(errors,"nInd!=length(id)")
+  }
+  for(i in 1:object@nChr){
+    if(object@nLoci[i]!=length(object@genMaps[[i]])){
+      errors = c(errors,
+                 paste0("nLoci[",i,"]!=length(genMaps[[",i,"]]"))
+    }
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+# Pop ---------------------------------------------------------------------
+
+#' @title Population
+#' 
+#' @description 
+#' Extends \code{\link{RawPop-class}} to add genetic values, 
+#' phenotypes, and pedigrees.
+#' 
+#' @slot id an individual's identifier
+#' @slot mother the identifier of the individual's mother
+#' @slot father the identifier of the individual's father
+#' @slot nTraits number of traits
+#' @slot gv matrix of genetic values. When using GxE traits,
+#' gv reflects gv when w=0. Dimensions are nInd by nTraits.
+#' @slot pheno matrix of phenotypic values. Dimensions are
+#' nInd by nTraits.
+#' 
+#' @export
+setClass("Pop",
+         slots=c(id="character",
+                 mother="character",
+                 father="character",
+                 nTraits="integer",
+                 gv="matrix",
+                 pheno="matrix"),
+         contains="RawPop")
+
+setValidity("Pop",function(object){
+  errors = character()
+  if(object@nInd!=length(object@id)){
+    errors = c(errors,"nInd!=length(id)")
+  }
+  if(object@nInd!=length(object@mother)){
+    errors = c(errors,"nInd!=length(mother)")
+  }
+  if(object@nInd!=length(object@father)){
+    errors = c(errors,"nInd!=length(father)")
+  }
+  if(object@nInd!=nrow(object@gv)){
+    errors = c(errors,"nInd!=nrow(gv)")
+  }
+  if(object@nInd!=nrow(object@pheno)){
+    errors = c(errors,"nInd!=nrow(pheno)")
+  }
+  if(object@nTraits!=ncol(object@gv)){
+    errors = c(errors,"nTraits!=ncol(gv)")
+  }
+  if(object@nTraits!=ncol(object@pheno)){
+    errors = c(errors,"nTraits!=ncol(pheno)")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -38,167 +187,42 @@ setValidity("Pop",function(object){
 setMethod("[",
           signature(x = "Pop"),
           function(x, i, j=NULL, ..., drop = TRUE){
-            x@gender = x@gender[i]
-            x@nInd = length(x@gender)
-            for(chr in 1:x@nChr){
-              for(chrI in 1:x@ploidy){
-                x@geno[[chr]][[chrI]] = 
-                  matrix(x@geno[[chr]][[chrI]][i,],nrow=x@nInd)
-              }
-            }
-            validObject(x)
-            return(x)
-          }
-)
-
-#TraitPop----
-#' @title Population with traits
-#' 
-#' @description Extends \code{\link{Pop-class}}
-#' 
-#' @slot gv matrix of genetic values
-#' @slot pheno matrix of phenotypic values
-#' @slot nTraits number of traits
-#'
-#' @export
-setClass("TraitPop",
-         slots=c(gv="matrix",
-                 pheno="matrix",
-                 nTraits="integer"),
-         contains="Pop")
-
-setValidity("TraitPop",function(object){
-  errors = character()
-  if(object@nInd!=nrow(object@gv)){
-    errors = c(errors,"nInd!=nrow(gv)")
-  }
-  if(object@nInd!=nrow(object@pheno)){
-    errors = c(errors,"nInd!=nrow(pheno)")
-  }
-  if(ncol(object@gv)!=object@nTraits){
-    errors = c(errors,"ncol(gv)!=nTraits")
-  }
-  if(ncol(object@pheno)!=object@nTraits){
-    errors = c(errors,"ncol(pheno)!=nTraits")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-setMethod("[",
-          signature(x = "TraitPop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
-            x@gv = matrix(x@gv[i,],ncol=x@nTraits)
-            x@pheno = matrix(x@pheno[i,],ncol=x@nTraits)
-            x@gender = x@gender[i]
-            x@nInd = length(x@gender)
-            for(chr in 1:x@nChr){
-              for(chrI in 1:x@ploidy){
-                x@geno[[chr]][[chrI]] = 
-                  matrix(x@geno[[chr]][[chrI]][i,],nrow=x@nInd)
-              }
-            }
-            validObject(x)
-            return(x)
-          }
-)
-
-#PedPop----
-#' @title Population with pedigree
-#' 
-#' @description Extends \code{\link{TraitPop-class}}
-#' 
-#' @slot id individual's identifier
-#' @slot par1 individual's female parent
-#' @slot par2 individual's male parent
-#'
-#' @export
-setClass("PedPop",
-         slots=c(id="character",
-                 par1="character",
-                 par2="character"),
-         contains="TraitPop")
-
-setValidity("PedPop",function(object){
-  errors = character()
-  if(object@nInd!=length(object@id)){
-    errors = c(errors,"nInd!=length(id)")
-  }
-  if(object@nInd!=length(object@par1)){
-    errors = c(errors,"nInd!=length(par1)")
-  }
-  if(object@nInd!=length(object@par2)){
-    errors = c(errors,"nInd!=length(par2)")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-setMethod("[",
-          signature(x = "PedPop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
             if(is.character(i)){
               i = x@id%in%i
             }
             x@id = x@id[i]
-            x@par1 = x@par1[i]
-            x@par2 = x@par2[i]
-            x@gv = matrix(x@gv[i,],ncol=x@nTraits)
-            x@pheno = matrix(x@pheno[i,],ncol=x@nTraits)
+            x@mother = x@mother[i]
+            x@father = x@father[i]
+            x@gv = x@gv[i,,drop=FALSE]
+            x@pheno = x@pheno[i,,drop=FALSE]
             x@gender = x@gender[i]
             x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
-              for(chrI in 1:x@ploidy){
-                x@geno[[chr]][[chrI]] = 
-                  matrix(x@geno[[chr]][[chrI]][i,],nrow=x@nInd)
-              }
+              x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             validObject(x)
             return(x)
           }
 )
 
-#' @title Add genetic values
-#' 
-#' @description Promotes class 'Pop' to class 'TraitPop'
-#' 
-#' @param pop an object of class 'Pop'
-#' @param simParam an object of class 'SimParam'
-#' 
-#' @export
-addGv = function(pop, simParam=SIMPARAM){
-  stopifnot(class(pop)=="Pop")
-  gv = lapply(simParam@traits,getGv,pop=pop,w=0)
-  gv = do.call("cbind",gv)
-  pheno = matrix(NA_real_,nrow=nrow(gv),ncol=ncol(gv))
-  pop = new("TraitPop",pop,gv=gv,pheno=pheno,
-            nTraits=simParam@nTraits)
-  return(pop)
-}
-
-#' @title Add pedigree
-#' 
-#' @description Promotes class 'Pop' or 'TraitPop' to 'PedPop'
-#' 
-#' @param pop an object of class 'Pop' or 'TraitPop'
-#' @param id a unique name for each individual
-#' @param par1 the first/female parent for each individual
-#' @param par2 the second/male parent for each individual
-#' @param simParam an object of class 'SimParam'
-#' 
-#' @export
-addPed = function(pop, id, par1, par2, simParam=SIMPARAM){
-  if(class(pop)=="Pop"){
-    pop = addGv(pop,simParam=simParam)
-  }
-  stopifnot(class(pop)=="TraitPop")
-  pop = new("PedPop",pop,id=as.character(id),
-            par1=as.character(par1),par2=as.character(par2))
-  return(pop)
-}
+setMethod("c",
+          signature(x = "Pop"),
+          function (x, ..., recursive = FALSE){
+            for(y in list(...)){
+              stopifnot(class(y)=="Pop",
+                        x@nChr==y@nChr,
+                        x@ploidy==y@ploidy,
+                        x@nLoci==y@nLoci)
+              x@nInd = x@nInd+y@nInd
+              x@id = c(x@id,y@id)
+              x@mother = c(x@mother,y@mother)
+              x@father = c(x@father,y@father)
+              x@gv = rbind(x@gv,y@gv)
+              x@pheno = rbind(x@pheno,y@pheno)
+              x@gender = c(x@gender,y@gender)
+              x@geno = AlphaSimR:::mergeGeno(x@geno,y@geno)
+            }
+            validObject(x)
+            return(x)
+          }
+)

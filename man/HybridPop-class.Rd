@@ -3,25 +3,29 @@
 \docType{class}
 \name{HybridPop-class}
 \alias{HybridPop-class}
-\title{Population}
+\title{Hybrid population}
 \description{
-Population class
+A lightweight version of \code{\link{Pop-class}} for hybrid lines.
+Memory is saved by not storing genotypic data. This prevents recaclulation 
+of phenotypes for GxE traits as well as direct retrieval of genotype data.
 }
 \section{Slots}{
 
 \describe{
 \item{\code{nInd}}{number of individuals}
 
+\item{\code{id}}{an individual's identifier}
+
+\item{\code{mother}}{the identifier of the individual's mother}
+
+\item{\code{father}}{the identifier of the individual's father}
+
 \item{\code{nTraits}}{number of traits}
 
-\item{\code{gv}}{matrix of genotypic values}
+\item{\code{gv}}{matrix of genetic values. When using GxE traits,
+gv reflects gv when w=0. Dimensions are nInd by nTraits.}
 
-\item{\code{pheno}}{matrix of phenotypic values}
-
-\item{\code{id}}{hybrid's id}
-
-\item{\code{par1}}{hybrid's first parent/mother}
-
-\item{\code{par2}}{hybrid's second parent/father}
+\item{\code{pheno}}{matrix of phenotypic values. Dimensions are
+nInd by nTraits.}
 }}
 

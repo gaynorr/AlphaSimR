@@ -1,7 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-#include "getGeno.h"
-#include "getGv.h"
+#include "alphasimr.h"
 
 // Retrieves hybrid geno under the assumption lines are completely inbred
 arma::Mat<unsigned char> getHybridGeno(const Rcpp::S4& trait, 

@@ -1,6 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-#include "getGeno.h"
+#include "alphasimr.h"
 
 // [[Rcpp::export]]
 arma::vec calcGvA(const arma::Mat<unsigned char>& geno,

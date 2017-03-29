@@ -167,7 +167,7 @@ setMethod("getHybridGv",signature("TraitA"),
           })
 setMethod("getHybridGv",signature("TraitAD"),
           function(object,fPop,fPar,mPop,mPar,...){
-            getHybridGvAD(object,fPop,fPar,mPop,mPar)
+            AlphaSimR:::getHybridGvAD(object,fPop,fPar,mPop,mPar)
           })
 setMethod("getHybridGv",signature("TraitAG"),
           function(object,fPop,fPar,mPop,mPar,w){

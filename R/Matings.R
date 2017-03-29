@@ -6,7 +6,7 @@
 #' @param id optional ids to give to progeny if pop is class 'PedPop'
 #' @param simParam an object of class 'SimParam'
 #'
-#' @examples
+#' @export
 makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
   if(pop@ploidy!=2){
     stop("Only works with diploids")
