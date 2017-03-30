@@ -4,11 +4,10 @@
 \alias{addTraitAD}
 \title{Add an additive and dominance}
 \usage{
-addTraitAD(simInfo, nQtlPerChr, meanG, varG, domDegree)
+addTraitAD(nQtlPerChr, meanG, varG, domDegree, simParam = SIMPARAM,
+  founderPop = FOUNDERPOP)
 }
 \arguments{
-\item{simInfo}{an object of class 'SimTempList'}
-
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
 \item{meanG}{the mean genetic value for the trait}
@@ -16,6 +15,13 @@ addTraitAD(simInfo, nQtlPerChr, meanG, varG, domDegree)
 \item{varG}{the total genetic variance for the trait}
 
 \item{domDegree}{the dominance degree of individual loci. Can be a single value or nLoci values.}
+
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
+\item{simParm}{an object of \code{\link{SimParam-class}}}
+}
+\value{
+Returns an object of \code{\link{SimParam-class}}
 }
 \description{
 Randomly assigns eligble QTLs for a trait with dominance.

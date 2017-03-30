@@ -4,16 +4,22 @@
 \alias{addTraitA}
 \title{Add an additive trait}
 \usage{
-addTraitA(simInfo, nQtlPerChr, meanG, varG)
+addTraitA(nQtlPerChr, meanG, varG, simParam = SIMPARAM,
+  founderPop = FOUNDERPOP)
 }
 \arguments{
-\item{simInfo}{an object of class 'SimTempList'}
-
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
 \item{meanG}{the mean genetic value for the trait}
 
 \item{varG}{the total genetic variance for the trait}
+
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
+\item{simParm}{an object of \code{\link{SimParam-class}}}
+}
+\value{
+Returns an object of \code{\link{SimParam-class}}
 }
 \description{
 Randomly assigns eligble QTLs for an additive trait.

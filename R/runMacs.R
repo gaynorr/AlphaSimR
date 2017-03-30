@@ -99,7 +99,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
   setwd(currentDir)
   output = new("MapPop",nInd=as.integer(nInd),nChr=as.integer(nChr),
                ploidy=as.integer(ploidy),nLoci=as.integer(rep(segSites,nChr)),
-               gender=rep("H",nInd),geno=geno,genMaps=genMaps)
+               gender=rep("H",nInd),geno=as.matrix(geno),genMaps=genMaps)
   cat("Done\n")
   return(output)
 }

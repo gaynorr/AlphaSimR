@@ -9,8 +9,12 @@ arma::Mat<unsigned char> getHybridGeno(const Rcpp::S4& trait,
   fPar = fPar-1;
   mPar = mPar-1;
   arma::Mat<unsigned char> geno;
-  geno = (getGeno(fPop, trait)).rows(fPar);
-  geno += (getGeno(mPop,trait)).rows(mPar);
+  geno = (getGeno(fPop.slot("geno"), 
+                  trait.slot("lociPerLoc"),
+                  trait.slot("lociLoc"))).rows(fPar);
+  geno += (getGeno(mPop.slot("geno"), 
+                   trait.slot("lociPerLoc"),
+                   trait.slot("lociLoc"))).rows(mPar);
   geno = geno/2;
   return geno;
 }

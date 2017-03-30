@@ -12,9 +12,9 @@
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
 #' @slot gender gender of individuals
-#' @slot geno list containing chromosome genotypes. The
-#' list is nChr in length and each element is a three dimensional
-#' array of raw values. The dimensions are
+#' @slot geno a "matrix" containing chromosome genotypes. The
+#' "matrix" has dimensions nChr by 1 and each element is a three dimensional
+#' array of raw values. The array dimensions are nLoci by ploidy by nInd.
 #' 
 #' 
 #' @export
@@ -24,7 +24,7 @@ setClass("RawPop",
                  ploidy="integer",
                  nLoci="integer",
                  gender="character",
-                 geno="list"))
+                 geno="matrix"))
 
 setValidity("RawPop",function(object){
   errors = character()
@@ -126,6 +126,20 @@ setValidity("MapPop",function(object){
     return(errors)
   }
 })
+
+setMethod("[",
+          signature(x = "MapPop"),
+          function(x, i, j=NULL, ..., drop = TRUE){
+            x@gender = x@gender[i]
+            x@nInd = length(x@gender)
+            for(chr in 1:x@nChr){
+              x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
+            }
+            class(x) = "RawPop"
+            validObject(x)
+            return(x)
+          }
+)
 
 # Pop ---------------------------------------------------------------------
 

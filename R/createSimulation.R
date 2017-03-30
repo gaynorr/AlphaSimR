@@ -1,6 +1,5 @@
 # Functions for starting a new simulation
-# Requires InitialHaplo
-# Returns a list containing SimParam, FounderPop, snpLoc, and qtlLoc
+# These functions cover running MaCS to setting founder populations
 
 #' @title Create new simulation
 #'
@@ -12,11 +11,15 @@
 #' Can be a single value or values for each chromosome.
 #' @param snpQtlOverlap should SNPs and QTLs be allowed to overlap
 #' @param minSnpFreq minimum allowable frequency for SNPs
-#' @param founderPop an object of class 'MapPop"
+#' @param useGender should gender be considered in the simulation
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
 #' 
 #' @export
 createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
-                            minSnpFreq=NULL,founderPop = FOUNDERPOP){
+                            minSnpFreq=NULL,useGender=FALSE,
+                            founderPop=FOUNDERPOP){
   stopifnot(class(founderPop)=="MapPop")
   if(length(maxSnp)==1){
     maxSnp = rep(maxSnp,founderPop@nChr)
@@ -24,127 +27,96 @@ createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
   if(length(maxQtl)==1){
     maxQtl = rep(maxQtl,founderPop@nChr)
   }
-  stopifnot(length(maxSnp)==nChr,length(maxQtl)==nChr)
-  
-  if(inbred){
-    nInd = sum(InitialHaplo@nHaplo)
-  }else{
-    nInd = sum(InitialHaplo@nHaplo%/%ploidy)
-  }
-  genMaps = list()
-  segSites = NULL
-  geno = list()
-  snpLoc = list()
-  qtlLoc = list()
-  for(chr in 1:nChr){
-    genMaps[[chr]] = InitialHaplo@chrData[[chr]]$map
-    segSites = c(segSites,length(genMaps[[chr]]))
-    tmpGeno = list()
-    for(i in 1:ploidy){
-      if(inbred){
-        tmpGeno[[i]] = InitialHaplo@chrData[[chr]]$geno
-      }else{
-        take = seq(from=i,to=nInd*ploidy,by=ploidy)
-        tmpGeno[[i]] = InitialHaplo@chrData[[chr]]$geno[take,]
-      }
-    }
-    geno[[chr]] = tmpGeno
+  stopifnot(length(maxSnp)==founderPop@nChr,
+            length(maxQtl)==founderPop@nChr)
+  potSnp = list()
+  potQtl = list()
+  for(chr in 1:founderPop@nChr){
     if(snpQtlOverlap){
-      stopifnot(segSites[chr]>=maxSnp[chr],segSites[chr]>=maxQtl[chr])
+      stopifnot(founderPop@nLoci[chr]>=maxSnp[chr],
+                founderPop@nLoci[chr]>=maxQtl[chr])
       if(is.null(minSnpFreq)){
-        snpLoc[[chr]] = sort(sample.int(segSites[chr],maxSnp[chr]))
+        potSnp[[chr]] = sort(sample.int(founderPop@nLoci[chr],
+                                        maxSnp[chr]))
       }else{
-        q = calcQ2(geno[[chr]])
-        snpLoc[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
+        q = AlphaSimR:::calcChrMinorFreq(founderPop@geno[[chr]],
+                                         founderPop@ploidy)
+        potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
       }
-      qtlLoc[[chr]] = sort(sample.int(segSites[chr],maxQtl[chr]))
+      potQtl[[chr]] = sort(sample.int(founderPop@nLoci[chr],
+                                      maxQtl[chr]))
     }else{
-      stopifnot(segSites[chr]>=sum(maxSnp[chr],maxQtl[chr]))
+      stopifnot(founderPop@nLoci[chr]>=sum(maxSnp[chr],maxQtl[chr]))
       if(is.null(minSnpFreq)){
-        tmp = sample.int(segSites[chr],sum(maxSnp[chr],maxQtl[chr]))
-        snpLoc[[chr]] = sort(tmp[1:maxSnp[chr]])
-        qtlLoc[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
+        tmp = sample.int(founderPop@nLoci[chr],sum(maxSnp[chr],maxQtl[chr]))
+        potSnp[[chr]] = sort(tmp[1:maxSnp[chr]])
+        potQtl[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
       }else{
-        q = calcQ2(geno[[chr]])
-        snpLoc[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
-        qtlLoc[[chr]] = sort(sample(which(!((1:segSites[chr])%in%snpLoc[[chr]])),
+        q = AlphaSimR:::calcChrMinorFreq(founderPop@geno[[chr]],
+                                         founderPop@ploidy)
+        potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
+        potQtl[[chr]] = sort(sample(which(!((1:founderPop@nLoci[chr])%in%potSnp[[chr]])),
                                     maxQtl[chr]))
       }
     }
   }
-  output$FounderPop = new("Pop",
-                          nInd=as.integer(nInd),
-                          nChr=as.integer(nChr),
-                          ploidy=as.integer(ploidy),
-                          gender=rep("H",nInd),
-                          geno=geno)
-  output$SimParam = new("SimParam",
-                        ploidy=as.integer(ploidy),
-                        nChr=as.integer(nChr),
-                        nTraits=0L,
-                        nSnpChips=0L,
-                        segSites=as.integer(segSites),
-                        useGender=F,
-                        genMaps=genMaps,
-                        traits=list(),
-                        snpChips=list())
-  output$snpLoc = snpLoc
-  output$qtlLoc = qtlLoc
-  class(output) = "SimTempList"
+  output = new("SimParam",
+               ploidy=founderPop@ploidy,
+               nChr=founderPop@nChr,
+               nTraits=0L,
+               nSnpChips=0L,
+               segSites=founderPop@nLoci,
+               useGender=useGender,
+               genMaps=founderPop@genMaps,
+               traits=list(),
+               snpChips=list(),
+               potQtl=potQtl,
+               potSnp=potSnp,
+               lastId=0L)
   return(output)
-}
-
-#' @title Assign gender
-#' 
-#' @description Sets gender of founder individuals
-#' 
-#' @param simInfo an object of class 'SimTempList'
-#' @param gender the gender to assign to each individual. Either 'H', 'M', or 'F'.
-#' 
-#' @export
-assignGender = function(simInfo,gender){
-  nInd = simInfo$FounderPop@nInd
-  stopifnot(length(gender)==nInd)
-  simInfo$FounderPop@gender = gender
-  return(simInfo)
 }
 
 #' @title Add SNP chip
 #' 
-#' @description Randomly assigns eligble SNPs to a SNP chip
+#' @description 
+#' Randomly assigns eligble SNPs to a SNP chip
 #' 
-#' @param simInfo an object of class 'SimTempList'
-#' @param nSnpPerChr number of SNPs per chromosome. Can be a single value or nChr values.
+#' @param nSnpPerChr number of SNPs per chromosome. 
+#' Can be a single value or nChr values.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object \code{\link{SimParam-class}}
 #' 
 #' @export
-addSnpChip = function(simInfo,nSnpPerChr){
+addSnpChip = function(nSnpPerChr,simParam=SIMPARAM){
   if(length(nSnpPerChr)==1){
-    nSnpPerChr = rep(nSnpPerChr,simInfo$SimParam@nChr)
+    nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
   }
-  stopifnot(length(nSnpPerChr)==simInfo$SimParam@nChr)
-  stopifnot(sapply(simInfo$snpLoc,length)>=nSnpPerChr)
-  lociLoc = lapply(1:simInfo$SimParam@nChr,function(x){
-    sort(sample(simInfo$snpLoc[[x]],nSnpPerChr[x]))
+  stopifnot(length(nSnpPerChr)==simParam@nChr)
+  stopifnot(sapply(simParam@potSnp,length)>=nSnpPerChr)
+  lociLoc = lapply(1:simParam@nChr,function(x){
+    sort(sample(simParam@potSnp[[x]],nSnpPerChr[x]))
   })
   lociLoc = do.call("c",lociLoc)
   snpChip = new("LociMap",
                 nLoci=as.integer(sum(nSnpPerChr)),
                 lociPerChr=as.integer(nSnpPerChr),
                 lociLoc=as.integer(lociLoc))
-  simInfo$SimParam@nSnpChips = simInfo$SimParam@nSnpChips + 1L
-  simInfo$SimParam@snpChips[[simInfo$SimParam@nSnpChips]] = snpChip
-  return(simInfo)
+  simParam@nSnpChips = simParam@nSnpChips + 1L
+  simParam@snpChips[[simParam@nSnpChips]] = snpChip
+  validObject(simParam)
+  return(simParam)
 }
 
 #Function for selecting QTL loci called by all addTrait functions
-pickQtlLoci = function(simInfo, nQtlPerChr){
+pickQtlLoci = function(nQtlPerChr, simParam){
   if(length(nQtlPerChr)==1){
-    nQtlPerChr = rep(nQtlPerChr,simInfo$SimParam@nChr)
+    nQtlPerChr = rep(nQtlPerChr,simParam@nChr)
   }
-  stopifnot(length(nQtlPerChr)==simInfo$SimParam@nChr)
-  stopifnot(sapply(simInfo$qtlLoc,length)>=nQtlPerChr)
-  lociLoc = lapply(1:simInfo$SimParam@nChr,function(x){
-    sort(sample(simInfo$qtlLoc[[x]],nQtlPerChr[x]))
+  stopifnot(length(nQtlPerChr)==simParam@nChr)
+  stopifnot(sapply(simParam@potQtl,length)>=nQtlPerChr)
+  lociLoc = lapply(1:simParam@nChr,function(x){
+    sort(sample(simParam@potQtl[[x]],nQtlPerChr[x]))
   })
   lociLoc = do.call("c",lociLoc)
   qtlLoci = new("LociMap",
@@ -156,110 +128,143 @@ pickQtlLoci = function(simInfo, nQtlPerChr){
 
 #' @title Add an additive trait
 #' 
-#' @description Randomly assigns eligble QTLs for an additive trait. 
+#' @description 
+#' Randomly assigns eligble QTLs for an additive trait. 
 #' 
-#' @param simInfo an object of class 'SimTempList'
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param meanG the mean genetic value for the trait
 #' @param varG the total genetic variance for the trait
+#' @param simParm an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
 #' 
 #' @export
-addTraitA = function(simInfo,nQtlPerChr,meanG,varG){
-  qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
+addTraitA = function(nQtlPerChr,meanG,varG,simParam=SIMPARAM,
+                     founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = rnorm(qtlLoci@nLoci)
-  geno = getGeno(pop = simInfo$FounderPop,
-                 lociMap = qtlLoci)
-  tmp = tuneTraitA(geno,addEff,varG)
+  geno = AlphaSimR:::getGeno(founderPop@geno,
+                             qtlLoci@lociPerChr,
+                             qtlLoci@lociLoc)
+  tmp = AlphaSimR:::tuneTraitA(geno,addEff,varG)
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
   trait = new("TraitA",
-              nLoci=qtlLoci@nLoci,
-              lociPerChr=qtlLoci@lociPerChr,
-              lociLoc=qtlLoci@lociLoc,
+              qtlLoci,
               addEff=addEff,
               intercept=meanG-intercept)
-  simInfo$SimParam@nTraits = simInfo$SimParam@nTraits + 1L
-  simInfo$SimParam@traits[[simInfo$SimParam@nTraits]] = trait
-  return(simInfo)
+  simParam@nTraits = simParam@nTraits + 1L
+  simParam@traits[[simParam@nTraits]] = trait
+  validObject(simParam)
+  return(simParam)
 }
 
 #' @title Add an additive and dominance
 #' 
-#' @description Randomly assigns eligble QTLs for a trait with dominance. 
+#' @description 
+#' Randomly assigns eligble QTLs for a trait with dominance. 
 #' 
-#' @param simInfo an object of class 'SimTempList'
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param meanG the mean genetic value for the trait
 #' @param varG the total genetic variance for the trait
 #' @param domDegree the dominance degree of individual loci. Can be a single value or nLoci values.
+#' @param simParm an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
+#' @return Returns an object of \code{\link{SimParam-class}}
+#'  
 #' @export
-addTraitAD = function(simInfo,nQtlPerChr,meanG,varG,domDegree){
-  qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
+addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,simParam=SIMPARAM,
+                      founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  addEff = rnorm(qtlLoci@nLoci)
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
-   stopifnot(length(domDegree)==qtlLoci@nLoci) 
+    stopifnot(length(domDegree)==qtlLoci@nLoci) 
   }
   addEff = rnorm(qtlLoci@nLoci)
   domEff = abs(addEff)*domDegree
-  geno = getGeno(pop = simInfo$FounderPop,
-                 lociMap = qtlLoci)
-  if(simInfo$inbred){
-    tmp = tuneTraitA(geno,addEff,varG)
-  }else{
-    tmp = tuneTraitAD(geno,addEff,domEff,varG)
-  }
+  geno = AlphaSimR:::getGeno(founderPop@geno,
+                             qtlLoci@lociPerChr,
+                             qtlLoci@lociLoc)
+  tmp = AlphaSimR:::tuneTraitAD(geno,addEff,domEff,varG)
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
   domEff = domEff*tmp$parameter
   trait = new("TraitAD",
-              nLoci=qtlLoci@nLoci,
-              lociPerChr=qtlLoci@lociPerChr,
-              lociLoc=qtlLoci@lociLoc,
+              qtlLoci,
               addEff=addEff,
               domEff=domEff,
               intercept=meanG-intercept)
-  simInfo$SimParam@nTraits = simInfo$SimParam@nTraits + 1L
-  simInfo$SimParam@traits[[simInfo$SimParam@nTraits]] = trait
-  return(simInfo)
+  simParam@nTraits = simParam@nTraits + 1L
+  simParam@traits[[simParam@nTraits]] = trait
+  validObject(simParam)
+  return(simParam)
 }
 
-addTraitAG = function(simInfo,nQtlPerChr,meanG,varG,varGE){
-  qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
-  
-}
-
-addTraitADG = function(simInfo,nQtlPerChr,meanG,varG,domDegree,varGE){
-  qtlLoci = pickQtlLoci(simInfo,nQtlPerChr)
-  
-}
-
-#' @title Get founder individuals
+#' @title Create new Population
 #' 
-#' @description Returns an object of class 'Pop' or 'TraitPop' from a 'SimTempList' class.
-#' 
-#' @param simInfo an object of class 'SimTempList'
-#' 
+#' @description
+#' Creates a new \code{\link{Pop-class}} from an object of 
+#' \code{\link{MapPop-class}} or \code{\link{RawPop-class}}. 
+#' The function is intended for creating initial populations from 
+#' 'FOUNDERPOP' created by \code{\link{runMacs}}.
+#'
+#' @param rawPop an object of \code{\link{MapPop-class}} or 
+#' \code{\link{RawPop-class}}
+#' @param id optional ids to assign individuals
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @return Returns an object of \code{\link{Pop-class}}
 #' @export
-getFounders = function(simInfo){
-  pop = simInfo$FounderPop
-  if(simInfo$SimParam@nTraits==0){
-    return(pop)
+newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
+  stopifnot(class(rawPop)=="RawPop" | class(rawPop)=="MapPop")
+  if(is.null(id)){
+    id = (1:rawPop@nInd) + simParam@lastId
+    lastId = max(id)
+    updateId = TRUE
+  }else{
+    updateId = FALSE
   }
-  pop = addGv(pop,simInfo$SimParam)
-  return(pop)
-}
-
-#' @title Get SimParam object
-#' 
-#' @description Returns an object of 'SimParam' class from a 'SimTempList' class.
-#' 
-#' @param simInfo an object of class 'SimTempList'
-#' 
-#' @export
-getSimParam = function(simInfo){
-  output = simInfo$SimParam
+  #Loop through all traits
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = do.call("cbind",gv)
+  output = new("Pop",
+               nInd=rawPop@nInd,
+               nChr=rawPop@nChr,
+               ploidy=rawPop@ploidy,
+               nLoci=rawPop@nLoci,
+               gender=rawPop@gender,
+               geno=rawPop@geno,
+               id=as.character(id),
+               mother=rep("0",rawPop@nInd),
+               father=rep("0",rawPop@nInd),
+               nTraits=simParam@nTraits,
+               gv=gv,
+               pheno=matrix(NA_real_,
+                            nrow=rawPop@nInd,
+                            ncol=simParam@nTraits))
   validObject(output)
+  if(updateId){
+    #Update simParam@lastId
+    AlphaSimR:::assignInt(simParam@lastId,lastId)
+  }
   return(output)
 }
+
+
+#ToDo----
+addTraitAG = function(nQtlPerChr,meanG,varG,varGE,simParam=SIMPARAM,
+                      founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  
+}
+
+addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,
+                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  
+}
+

@@ -17,40 +17,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // getGeno
-arma::Mat<unsigned char> getGeno(const Rcpp::S4& pop, const Rcpp::S4& lociMap);
-RcppExport SEXP AlphaSimR_getGeno(SEXP popSEXP, SEXP lociMapSEXP) {
+arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc);
+RcppExport SEXP AlphaSimR_getGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type lociMap(lociMapSEXP);
-    rcpp_result_gen = Rcpp::wrap(getGeno(pop, lociMap));
-    return rcpp_result_gen;
-END_RCPP
-}
-// pullSnpGeno
-arma::imat pullSnpGeno(const Rcpp::S4& pop, int chip, const Rcpp::S4& simParam);
-RcppExport SEXP AlphaSimR_pullSnpGeno(SEXP popSEXP, SEXP chipSEXP, SEXP simParamSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type chip(chipSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type simParam(simParamSEXP);
-    rcpp_result_gen = Rcpp::wrap(pullSnpGeno(pop, chip, simParam));
-    return rcpp_result_gen;
-END_RCPP
-}
-// pullQtlGeno
-arma::imat pullQtlGeno(const Rcpp::S4& pop, int trait, const Rcpp::S4& simParam);
-RcppExport SEXP AlphaSimR_pullQtlGeno(SEXP popSEXP, SEXP traitSEXP, SEXP simParamSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type trait(traitSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type simParam(simParamSEXP);
-    rcpp_result_gen = Rcpp::wrap(pullQtlGeno(pop, trait, simParam));
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    rcpp_result_gen = Rcpp::wrap(getGeno(geno, lociPerChr, lociLoc));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -65,14 +40,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calcQ2
-arma::rowvec calcQ2(Rcpp::List& geno);
-RcppExport SEXP AlphaSimR_calcQ2(SEXP genoSEXP) {
+// getHaplo
+arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc);
+RcppExport SEXP AlphaSimR_getHaplo(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List& >::type geno(genoSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcQ2(geno));
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    rcpp_result_gen = Rcpp::wrap(getHaplo(geno, lociPerChr, lociLoc));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -186,6 +163,74 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// popVar
+arma::mat popVar(const arma::mat& X);
+RcppExport SEXP AlphaSimR_popVar(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(popVar(X));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mergeGeno
+arma::field<arma::Cube<unsigned char> > mergeGeno(const arma::field<arma::Cube<unsigned char> >& x, const arma::field<arma::Cube<unsigned char> >& y);
+RcppExport SEXP AlphaSimR_mergeGeno(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(mergeGeno(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcChrMinorFreq
+arma::vec calcChrMinorFreq(const arma::Cube<unsigned char>& geno, int ploidy);
+RcppExport SEXP AlphaSimR_calcChrMinorFreq(SEXP genoSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcChrMinorFreq(geno, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// convToImat
+arma::imat convToImat(const arma::Mat<unsigned char>& X);
+RcppExport SEXP AlphaSimR_convToImat(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(convToImat(X));
+    return rcpp_result_gen;
+END_RCPP
+}
+// assignMat
+void assignMat(arma::mat& oldValue, arma::mat& newValue);
+RcppExport SEXP AlphaSimR_assignMat(SEXP oldValueSEXP, SEXP newValueSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type oldValue(oldValueSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type newValue(newValueSEXP);
+    assignMat(oldValue, newValue);
+    return R_NilValue;
+END_RCPP
+}
+// assignInt
+void assignInt(arma::ivec& oldValue, arma::ivec& newValue);
+RcppExport SEXP AlphaSimR_assignInt(SEXP oldValueSEXP, SEXP newValueSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::ivec& >::type oldValue(oldValueSEXP);
+    Rcpp::traits::input_parameter< arma::ivec& >::type newValue(newValueSEXP);
+    assignInt(oldValue, newValue);
+    return R_NilValue;
+END_RCPP
+}
 // readAF
 arma::Cube<unsigned char> readAF(int nInd, int segSites, int ploidy, arma::uvec keep, bool inbred);
 RcppExport SEXP AlphaSimR_readAF(SEXP nIndSEXP, SEXP segSitesSEXP, SEXP ploidySEXP, SEXP keepSEXP, SEXP inbredSEXP) {
@@ -226,50 +271,5 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
     rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG));
     return rcpp_result_gen;
-END_RCPP
-}
-// popVar
-arma::mat popVar(const arma::mat& X);
-RcppExport SEXP AlphaSimR_popVar(SEXP XSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(popVar(X));
-    return rcpp_result_gen;
-END_RCPP
-}
-// mergeGeno
-arma::field<arma::Cube<unsigned char> > mergeGeno(const arma::field<arma::Cube<unsigned char> >& x, const arma::field<arma::Cube<unsigned char> >& y);
-RcppExport SEXP AlphaSimR_mergeGeno(SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(mergeGeno(x, y));
-    return rcpp_result_gen;
-END_RCPP
-}
-// assignMat
-void assignMat(arma::mat& oldValue, arma::mat& newValue);
-RcppExport SEXP AlphaSimR_assignMat(SEXP oldValueSEXP, SEXP newValueSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type oldValue(oldValueSEXP);
-    Rcpp::traits::input_parameter< arma::mat& >::type newValue(newValueSEXP);
-    assignMat(oldValue, newValue);
-    return R_NilValue;
-END_RCPP
-}
-// assignInt
-void assignInt(int& oldValue, int& newValue);
-RcppExport SEXP AlphaSimR_assignInt(SEXP oldValueSEXP, SEXP newValueSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int& >::type oldValue(oldValueSEXP);
-    Rcpp::traits::input_parameter< int& >::type newValue(newValueSEXP);
-    assignInt(oldValue, newValue);
-    return R_NilValue;
 END_RCPP
 }

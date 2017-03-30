@@ -21,8 +21,8 @@ It is intended as a temporary population whose genentic values aren't needed.
 
 \item{\code{gender}}{gender of individuals}
 
-\item{\code{geno}}{list containing chromosome genotypes. The
-list is nChr in length and each element is a three dimensional
-array of raw values. The dimensions are}
+\item{\code{geno}}{a "matrix" containing chromosome genotypes. The
+"matrix" has dimensions nChr by 1 and each element is a three dimensional
+array of raw values. The array dimensions are nLoci by ploidy by nInd.}
 }}
 

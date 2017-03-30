@@ -5,7 +5,7 @@
 \title{Create new simulation}
 \usage{
 createSimulation(maxQtl, maxSnp, snpQtlOverlap = FALSE, minSnpFreq = NULL,
-  founderPop = FOUNDERPOP)
+  useGender = FALSE, founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{maxQtl}{the maximum number of segSites for QTLs. 
@@ -18,7 +18,12 @@ Can be a single value or values for each chromosome.}
 
 \item{minSnpFreq}{minimum allowable frequency for SNPs}
 
-\item{founderPop}{an object of class 'MapPop"}
+\item{useGender}{should gender be considered in the simulation}
+
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+}
+\value{
+Returns an object of \code{\link{SimParam-class}}
 }
 \description{
 Starts the process of building a new simulation

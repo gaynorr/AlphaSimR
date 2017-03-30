@@ -1,3 +1,4 @@
+// These function are called by R, but are not listed in the package namespace
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
@@ -20,24 +21,19 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
   return z;
 }
 
-/*
- * The functions below are for modifying R objects in place.
- * 
- * The data type of oldValue must match exactly the data type in R or else
- * modifying in place will not occur.
- * 
- * For example, if assignMat is called on an integer matrix the function will
- * not modify in place. This is due to the function casting oldValue from 
- * integer matrix to a numeric matrix prior to assigning newValue.
- */
+// Calculates minor allele frequency on a single chromsome
+// Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]
-void assignMat(arma::mat& oldValue, arma::mat& newValue){
-  oldValue = newValue;
-  return;
+arma::vec calcChrMinorFreq(const arma::Cube<unsigned char>& geno,
+                           int ploidy){
+  arma::Mat<unsigned char> tmp = arma::sum(geno,1);
+  arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
+                                1)/ploidy;
+  return 0.5-arma::abs(output-0.5);
 }
 
 // [[Rcpp::export]]
-void assignInt(int& oldValue, int& newValue){
-  oldValue = newValue;
-  return;
+arma::imat convToImat(const arma::Mat<unsigned char>& X){
+  return arma::conv_to<arma::imat>::from(X);
 }
+

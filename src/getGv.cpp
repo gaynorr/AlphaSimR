@@ -14,7 +14,9 @@ arma::vec getGvA(Rcpp::S4& trait, Rcpp::S4& pop){
   arma::vec a = trait.slot("addEff");
   double intercept = trait.slot("intercept");
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait);
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
   return calcGvA(geno, a, intercept);
 }
 
@@ -33,7 +35,9 @@ arma::vec getGvAD(Rcpp::S4& trait, Rcpp::S4& pop){
   arma::vec d = trait.slot("domEff");
   double intercept = trait.slot("intercept");
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait);
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
   return calcGvAD(geno,a,d,intercept);
 }
 
@@ -44,7 +48,9 @@ Rcpp::List calcGenParam(Rcpp::S4& trait, Rcpp::S4& pop,
   arma::vec bv(nInd);
   arma::vec dd(nInd);
   arma::Mat<unsigned char> geno;
-  geno = getGeno(pop, trait);
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
   arma::mat X = arma::conv_to<arma::mat>::from(geno);
   arma::rowvec p = arma::mean(X,0)/2.0;
   arma::vec alpha = a+d%(1-2*p.t()); //allele subsitution effect

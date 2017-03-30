@@ -4,12 +4,16 @@
 \alias{addSnpChip}
 \title{Add SNP chip}
 \usage{
-addSnpChip(simInfo, nSnpPerChr)
+addSnpChip(nSnpPerChr, simParam = SIMPARAM)
 }
 \arguments{
-\item{simInfo}{an object of class 'SimTempList'}
+\item{nSnpPerChr}{number of SNPs per chromosome. 
+Can be a single value or nChr values.}
 
-\item{nSnpPerChr}{number of SNPs per chromosome. Can be a single value or nChr values.}
+\item{simParam}{an object of \code{\link{SimParam-class}}}
+}
+\value{
+Returns an object \code{\link{SimParam-class}}
 }
 \description{
 Randomly assigns eligble SNPs to a SNP chip
