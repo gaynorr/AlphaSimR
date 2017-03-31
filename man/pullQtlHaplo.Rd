@@ -17,4 +17,7 @@ QTL haplotypes to retrieve.}
 \value{
 Returns a matrix of QTL haplotypes.
 }
+\description{
+Retrieves QTL haplotype data
+}
 

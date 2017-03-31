@@ -4,11 +4,13 @@ Title: Breeding Program Simulation Tools
 Version: 0.1
 Author: Chris Gaynor
 Maintainer: Chris Gaynor <gaynor.robert@hotmail.com>
-Description: Classes and functions for simulating breeding programs
+Description: The package contains classes and functions for simulating breeding programs.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 Depends: MASS
-Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
+Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0), methods
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 5.0.1
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr

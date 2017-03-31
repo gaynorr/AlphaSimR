@@ -1,5 +1,8 @@
 #' @useDynLib AlphaSimR
 #' @import Rcpp RcppArmadillo
+#' @importFrom methods new validObject
+#' @importFrom stats aggregate rnorm
+#' @importFrom utils combn
 
 #' @title AlphaSimR: A package for simulating breeding programs.
 #' 

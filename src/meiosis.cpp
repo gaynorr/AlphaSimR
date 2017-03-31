@@ -47,12 +47,12 @@ int intervalSearch(arma::vec x, double value, int left=0){
 }
 
 //Simulates a gamete using Haldane's model for crossovers, ploidy=2
-arma::Row<unsigned char> simGamHal2(const arma::Row<unsigned char>& chr1,
-                                    const arma::Row<unsigned char>& chr2,
-                                    const arma::vec& genMap){
+arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
+                                  const arma::Col<unsigned char>& chr2,
+                                  const arma::vec& genMap){
   int nSites = chr1.n_elem;
-  double genLen = genMap[nSites-1];
-  arma::Row<unsigned char> gamete(nSites);
+  double genLen = genMap(nSites-1);
+  arma::Col<unsigned char> gamete(nSites);
   int nCO = Rcpp::rpois(1, genLen)[0];
   if(nCO==0){
     // No CO, randomly pick a chromosome
@@ -110,41 +110,37 @@ arma::Row<unsigned char> simGamHal2(const arma::Row<unsigned char>& chr1,
 // mPar: male parents
 // genMaps: chromosome genetic maps
 // [[Rcpp::export]]
-Rcpp::List cross2(const Rcpp::List& fGeno, arma::uvec fPar,
-                  const Rcpp::List& mGeno, arma::uvec mPar,
-                  const Rcpp::List& genMaps){
-  // R to C++
-  fPar = fPar-1;
-  mPar = mPar-1;
-  int nChr = fGeno.length();
+arma::field<arma::Cube<unsigned char> > cross2(
+    const arma::field<arma::Cube<unsigned char> >& fGeno, 
+    arma::uvec fPar,
+    const arma::field<arma::Cube<unsigned char> >& mGeno, 
+    arma::uvec mPar,
+    const arma::field<arma::vec>& genMaps){
+  fPar -= 1; // R to C++
+  mPar -= 1; // R to C++
+  int nChr = fGeno.n_elem;
   int nInd = fPar.n_elem;
-  Rcpp::List geno(nChr);
-  for(int i=0; i<nChr; ++i){
-    arma::vec genMap = Rcpp::as<arma::vec>(genMaps[i]);
-    Rcpp::List tmpOut(2);
-    Rcpp::List tmpIn;
-    arma::Mat<unsigned char> chr1;
-    arma::Mat<unsigned char> chr2;
-    //Make female gametes
-    tmpIn = fGeno[i];
-    chr1 = Rcpp::as<arma::Mat<unsigned char> >(tmpIn[0]);
-    chr2 = Rcpp::as<arma::Mat<unsigned char> >(tmpIn[1]);
-    int segSites = chr1.n_cols;
-    arma::Mat<unsigned char> fGam(nInd,segSites);
-    for(int j=0; j<nInd; ++j)
-      fGam.row(j) = simGamHal2(chr1.row(fPar[j]),chr2.row(fPar[j]),genMap);
-    tmpOut[0] = fGam;
-    //Make male gametes
-    tmpIn = mGeno[i];
-    chr1 = Rcpp::as<arma::Mat<unsigned char> >(tmpIn[0]);
-    chr2 = Rcpp::as<arma::Mat<unsigned char> >(tmpIn[1]);
-    arma::Mat<unsigned char> mGam(nInd,segSites);
-    for(int j=0; j<nInd; ++j)
-      mGam.row(j) = simGamHal2(chr1.row(mPar[j]),chr2.row(mPar[j]),genMap);
-    tmpOut[1] = mGam;
-    //Return chromosomes
-    geno[i] = tmpOut;
-  }
+  //Output data
+  arma::field<arma::Cube<unsigned char> > geno(nChr);
+  //Loop through chromosomes
+  for(int chr=0; chr<nChr; ++chr){
+    int segSites = fGeno(chr).n_rows;
+    arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
+    //Loop through individuals
+    for(int ind=0; ind<nInd; ++ind){
+      //Female gamete
+      tmpGeno.slice(ind).col(0) = 
+        bivalent(fGeno(chr).slice(fPar(ind)).col(0),
+                 fGeno(chr).slice(fPar(ind)).col(1),
+                 genMaps(chr));
+      //Male gamete
+      tmpGeno.slice(ind).col(1) = 
+        bivalent(mGeno(chr).slice(mPar(ind)).col(0),
+                 mGeno(chr).slice(mPar(ind)).col(1),
+                 genMaps(chr));
+    } //End individual loop
+    geno(chr) = tmpGeno;
+  } //End chromosome loop
   return geno;
 }
 

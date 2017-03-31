@@ -17,24 +17,16 @@ getHaplo <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
 
-calcGvA <- function(geno, a, intercept) {
-    .Call('AlphaSimR_calcGvA', PACKAGE = 'AlphaSimR', geno, a, intercept)
-}
-
 getGvA <- function(trait, pop) {
     .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-calcGvAD <- function(geno, a, d, intercept) {
-    .Call('AlphaSimR_calcGvAD', PACKAGE = 'AlphaSimR', geno, a, d, intercept)
 }
 
 getGvAD <- function(trait, pop) {
     .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
-calcGenParam <- function(trait, pop, a, d) {
-    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop, a, d)
+calcGenParam <- function(trait, pop) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
 getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
@@ -63,14 +55,6 @@ calcChrMinorFreq <- function(geno, ploidy) {
 
 convToImat <- function(X) {
     .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
-}
-
-assignMat <- function(oldValue, newValue) {
-    invisible(.Call('AlphaSimR_assignMat', PACKAGE = 'AlphaSimR', oldValue, newValue))
-}
-
-assignInt <- function(oldValue, newValue) {
-    invisible(.Call('AlphaSimR_assignInt', PACKAGE = 'AlphaSimR', oldValue, newValue))
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {

@@ -12,8 +12,8 @@
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
 #' @slot gender gender of individuals
-#' @slot geno a "matrix" containing chromosome genotypes. The
-#' "matrix" has dimensions nChr by 1 and each element is a three dimensional
+#' @slot geno "matrix" containing chromosome genotypes. The "matrix" 
+#' has dimensions nChr by 1 and each element is a three dimensional
 #' array of raw values. The array dimensions are nLoci by ploidy by nInd.
 #' 
 #' 
@@ -62,9 +62,10 @@ setValidity("RawPop",function(object){
   }
 })
 
+#' @describeIn RawPop Extract RawPop by index
 setMethod("[",
           signature(x = "RawPop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
+          function(x, i){
             x@gender = x@gender[i]
             x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
@@ -75,9 +76,10 @@ setMethod("[",
           }
 )
 
+#' @describeIn RawPop Combine multiple RawPops
 setMethod("c",
           signature(x = "RawPop"),
-          function (x, ..., recursive = FALSE){
+          function (x, ...){
             for(y in list(...)){
               stopifnot(class(y)=="RawPop",
                         x@nChr==y@nChr,
@@ -85,7 +87,7 @@ setMethod("c",
                         x@nLoci==y@nLoci)
               x@nInd = x@nInd+y@nInd
               x@gender = c(x@gender,y@gender)
-              x@geno = AlphaSimR:::mergeGeno(x@geno,y@geno)
+              x@geno = mergeGeno(x@geno,y@geno)
             }
             validObject(x)
             return(x)
@@ -102,11 +104,11 @@ setMethod("c",
 #' for creating initial populations and setting traits in the 
 #' \code{\link{SimParam-class}}.
 #' 
-#' @slot genMaps list of chromsome genetic maps
+#' @slot genMaps "matrix" of chromsome genetic maps
 #' 
 #' @export
 setClass("MapPop",
-         slots=c(genMaps="list"),
+         slots=c(genMaps="matrix"),
          contains="RawPop")
 
 setValidity("MapPop",function(object){
@@ -127,9 +129,10 @@ setValidity("MapPop",function(object){
   }
 })
 
+#' @describeIn MapPop Extract \code{\link{RawPop-class}} by index
 setMethod("[",
           signature(x = "MapPop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
+          function(x, i){
             x@gender = x@gender[i]
             x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
@@ -198,9 +201,10 @@ setValidity("Pop",function(object){
   }
 })
 
+#' @describeIn Pop Extract Pop by index or id
 setMethod("[",
           signature(x = "Pop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
+          function(x, i){
             if(is.character(i)){
               i = x@id%in%i
             }
@@ -219,6 +223,7 @@ setMethod("[",
           }
 )
 
+#' @describeIn Pop Combine multiple Pops
 setMethod("c",
           signature(x = "Pop"),
           function (x, ..., recursive = FALSE){
@@ -234,7 +239,7 @@ setMethod("c",
               x@gv = rbind(x@gv,y@gv)
               x@pheno = rbind(x@pheno,y@pheno)
               x@gender = c(x@gender,y@gender)
-              x@geno = AlphaSimR:::mergeGeno(x@geno,y@geno)
+              x@geno = mergeGeno(x@geno,y@geno)
             }
             validObject(x)
             return(x)

@@ -3,11 +3,24 @@
 \docType{class}
 \name{RawPop-class}
 \alias{RawPop-class}
+\alias{[,RawPop-method}
+\alias{c,RawPop-method}
 \title{Raw Population}
+\usage{
+\S4method{[}{RawPop}(x, i)
+
+\S4method{c}{RawPop}(x, ..., recursive = FALSE)
+}
 \description{
 The raw population class contains only genotype and gender data. 
 It is intended as a temporary population whose genentic values aren't needed.
 }
+\section{Methods (by generic)}{
+\itemize{
+\item \code{[}: Extract RawPop by index
+
+\item \code{c}: Combine multiple RawPops
+}}
 \section{Slots}{
 
 \describe{
@@ -21,8 +34,8 @@ It is intended as a temporary population whose genentic values aren't needed.
 
 \item{\code{gender}}{gender of individuals}
 
-\item{\code{geno}}{a "matrix" containing chromosome genotypes. The
-"matrix" has dimensions nChr by 1 and each element is a three dimensional
+\item{\code{geno}}{"matrix" containing chromosome genotypes. The "matrix" 
+has dimensions nChr by 1 and each element is a three dimensional
 array of raw values. The array dimensions are nLoci by ploidy by nInd.}
 }}
 

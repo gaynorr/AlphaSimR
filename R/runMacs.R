@@ -66,7 +66,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
     cat("  Running MaCS...\n")
     system(command)
     cat("  Running AlphaFormatter...\n")
-    errorInt = AlphaSimR:::AlphaFormatter()
+    errorInt = AlphaFormatter()
     if(errorInt!=0){
       setwd(currentDir)
       cat("Error in AlphaFormatter","\n")
@@ -89,9 +89,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
                    error=errorHandler)
     map = map[keep]
     map = map - map[1]
-    tmpGeno = tryCatch(AlphaSimR:::readAF(nInd,initSegSites,ploidy,
-                                          keep-1, #R to C++ index
-                                          inbred),
+    tmpGeno = tryCatch(readAF(nInd,initSegSites,ploidy,keep,inbred),
                        error=errorHandler)
     genMaps[[chr]] = map
     geno[[chr]] = tmpGeno
@@ -99,7 +97,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
   setwd(currentDir)
   output = new("MapPop",nInd=as.integer(nInd),nChr=as.integer(nChr),
                ploidy=as.integer(ploidy),nLoci=as.integer(rep(segSites,nChr)),
-               gender=rep("H",nInd),geno=as.matrix(geno),genMaps=genMaps)
+               gender=rep("H",nInd),geno=as.matrix(geno),genMaps=as.matrix(genMaps))
   cat("Done\n")
   return(output)
 }

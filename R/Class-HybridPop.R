@@ -56,9 +56,10 @@ setValidity("HybridPop",function(object){
   }
 })
 
+#' @describeIn HybridPop Extract HybridPop using index or id
 setMethod("[",
           signature(x = "HybridPop"),
-          function(x, i, j=NULL, ..., drop = TRUE){
+          function(x, i){
             if(is.character(i)){
               i = x@id%in%i
             }
@@ -73,9 +74,10 @@ setMethod("[",
           }
 )
 
+#' @describeIn HybridPop Combine multiple HybridPops
 setMethod("c",
           signature(x = "HybridPop"),
-          function (x, ..., recursive = FALSE){
+          function (x, ...){
             for(y in list(...)){
               stopifnot(class(y)=="HybridPop")
               x@nInd = x@nInd+y@nInd

@@ -1,4 +1,6 @@
 #' @title Pull SNP genotype
+#' 
+#' @description Retrieves SNP genotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param snpChip an integer. Indicates which SNP 
@@ -8,16 +10,18 @@
 #' @return Returns a matrix of SNP genotypes.
 #' @export
 pullSnpGeno = function(pop, snpChip=1, simParam=SIMPARAM){
-  output = AlphaSimR:::getGeno(pop@geno,
-                               simParam@snpChips[[snpChip]]@lociPerChr,
-                               simParam@snpChips[[snpChip]]@lociLoc)
-  output = AlphaSimR:::convToImat(output)
+  output = getGeno(pop@geno,
+                   simParam@snpChips[[snpChip]]@lociPerChr,
+                   simParam@snpChips[[snpChip]]@lociLoc)
+  output = convToImat(output)
   rownames(output) = pop@id
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
   return(output)
 }
 
 #' @title Pull QTL genotype
+#' 
+#' @description Retrieves QTL genotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param trait an integer. Indicates which trait's
@@ -27,16 +31,18 @@ pullSnpGeno = function(pop, snpChip=1, simParam=SIMPARAM){
 #' @return Returns a matrix of QTL genotypes.
 #' @export
 pullQtlGeno = function(pop, trait=1, simParam=SIMPARAM){
-  output = AlphaSimR:::getGeno(pop@geno,
-                               simParam@traits[[trait]]@lociPerChr,
-                               simParam@traits[[trait]]@lociLoc)
-  output = AlphaSimR:::convToImat(output)
+  output = getGeno(pop@geno,
+                   simParam@traits[[trait]]@lociPerChr,
+                   simParam@traits[[trait]]@lociLoc)
+  output = convToImat(output)
   rownames(output) = pop@id
   colnames(output) = paste("QTL",1:ncol(output),sep="_")
   return(output)
 }
 
 #' @title Pull SNP haplotypes
+#' 
+#' @description Retrieves SNP haplotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param snpChip an integer. Indicates which SNP 
@@ -46,10 +52,10 @@ pullQtlGeno = function(pop, trait=1, simParam=SIMPARAM){
 #' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullSnpHaplo = function(pop, snpChip=1, simParam=SIMPARAM){
-  output = AlphaSimR:::getHaplo(pop@geno,
-                                simParam@snpChips[[snpChip]]@lociPerChr,
-                                simParam@snpChips[[snpChip]]@lociLoc)
-  output = AlphaSimR:::convToImat(output)
+  output = getHaplo(pop@geno,
+                    simParam@snpChips[[snpChip]]@lociPerChr,
+                    simParam@snpChips[[snpChip]]@lociLoc)
+  output = convToImat(output)
   rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                            rep(1:pop@ploidy,pop@nInd),sep="_")
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
@@ -57,6 +63,8 @@ pullSnpHaplo = function(pop, snpChip=1, simParam=SIMPARAM){
 }
 
 #' @title Pull QTL haplotypes
+#' 
+#' @description Retrieves QTL haplotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param trait an integer. Indicates which trait's
@@ -66,10 +74,10 @@ pullSnpHaplo = function(pop, snpChip=1, simParam=SIMPARAM){
 #' @return Returns a matrix of QTL haplotypes.
 #' @export
 pullQtlHaplo = function(pop, trait=1, simParam=SIMPARAM){
-  output = AlphaSimR:::getHaplo(pop@geno,
-                                simParam@traits[[trait]]@lociPerChr,
-                                simParam@traits[[trait]]@lociLoc)
-  output = AlphaSimR:::convToImat(output)
+  output = getHaplo(pop@geno,
+                    simParam@traits[[trait]]@lociPerChr,
+                    simParam@traits[[trait]]@lociLoc)
+  output = convToImat(output)
   rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                            rep(1:pop@ploidy,pop@nInd),sep="_")
   colnames(output) = paste("QTL",1:ncol(output),sep="_")

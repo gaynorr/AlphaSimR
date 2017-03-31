@@ -39,8 +39,8 @@ createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
         potSnp[[chr]] = sort(sample.int(founderPop@nLoci[chr],
                                         maxSnp[chr]))
       }else{
-        q = AlphaSimR:::calcChrMinorFreq(founderPop@geno[[chr]],
-                                         founderPop@ploidy)
+        q = calcChrMinorFreq(founderPop@geno[[chr]],
+                             founderPop@ploidy)
         potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
       }
       potQtl[[chr]] = sort(sample.int(founderPop@nLoci[chr],
@@ -52,8 +52,8 @@ createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
         potSnp[[chr]] = sort(tmp[1:maxSnp[chr]])
         potQtl[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
       }else{
-        q = AlphaSimR:::calcChrMinorFreq(founderPop@geno[[chr]],
-                                         founderPop@ploidy)
+        q = calcChrMinorFreq(founderPop@geno[[chr]],
+                             founderPop@ploidy)
         potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
         potQtl[[chr]] = sort(sample(which(!((1:founderPop@nLoci[chr])%in%potSnp[[chr]])),
                                     maxQtl[chr]))
@@ -71,8 +71,8 @@ createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
                traits=list(),
                snpChips=list(),
                potQtl=potQtl,
-               potSnp=potSnp,
-               lastId=0L)
+               potSnp=potSnp)
+  assign("LASTID",0L,envir=.GlobalEnv)
   return(output)
 }
 
@@ -134,7 +134,7 @@ pickQtlLoci = function(nQtlPerChr, simParam){
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param meanG the mean genetic value for the trait
 #' @param varG the total genetic variance for the trait
-#' @param simParm an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
@@ -144,10 +144,10 @@ addTraitA = function(nQtlPerChr,meanG,varG,simParam=SIMPARAM,
                      founderPop=FOUNDERPOP){
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = rnorm(qtlLoci@nLoci)
-  geno = AlphaSimR:::getGeno(founderPop@geno,
-                             qtlLoci@lociPerChr,
-                             qtlLoci@lociLoc)
-  tmp = AlphaSimR:::tuneTraitA(geno,addEff,varG)
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  tmp = tuneTraitA(geno,addEff,varG)
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
   trait = new("TraitA",
@@ -169,7 +169,7 @@ addTraitA = function(nQtlPerChr,meanG,varG,simParam=SIMPARAM,
 #' @param meanG the mean genetic value for the trait
 #' @param varG the total genetic variance for the trait
 #' @param domDegree the dominance degree of individual loci. Can be a single value or nLoci values.
-#' @param simParm an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
@@ -186,10 +186,10 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,simParam=SIMPARAM,
   }
   addEff = rnorm(qtlLoci@nLoci)
   domEff = abs(addEff)*domDegree
-  geno = AlphaSimR:::getGeno(founderPop@geno,
-                             qtlLoci@lociPerChr,
-                             qtlLoci@lociLoc)
-  tmp = AlphaSimR:::tuneTraitAD(geno,addEff,domEff,varG)
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  tmp = tuneTraitAD(geno,addEff,domEff,varG)
   intercept = tmp$output$intercept
   addEff = addEff*tmp$parameter
   domEff = domEff*tmp$parameter
@@ -218,17 +218,18 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,simParam=SIMPARAM,
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
 #' @export
 newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
   stopifnot(class(rawPop)=="RawPop" | class(rawPop)=="MapPop")
   if(is.null(id)){
-    id = (1:rawPop@nInd) + simParam@lastId
+    lastId = get("LASTID",envir=.GlobalEnv)
+    id = (1:rawPop@nInd) + lastId
     lastId = max(id)
     updateId = TRUE
   }else{
     updateId = FALSE
   }
-  #Loop through all traits
   gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
   gv = do.call("cbind",gv)
   output = new("Pop",
@@ -246,10 +247,8 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
                             ncol=simParam@nTraits))
-  validObject(output)
   if(updateId){
-    #Update simParam@lastId
-    AlphaSimR:::assignInt(simParam@lastId,lastId)
+    assign("LASTID",lastId,envir=.GlobalEnv)
   }
   return(output)
 }

@@ -3,16 +3,24 @@
 \docType{class}
 \name{MapPop-class}
 \alias{MapPop-class}
+\alias{[,MapPop-method}
 \title{Raw population with genetic map}
+\usage{
+\S4method{[}{MapPop}(x, i)
+}
 \description{
 Extends \code{\link{RawPop-class}} to add a genetic map. 
 This is the first object created in a simulation. It is used
 for creating initial populations and setting traits in the 
 \code{\link{SimParam-class}}.
 }
+\section{Methods (by generic)}{
+\itemize{
+\item \code{[}: Extract \code{\link{RawPop-class}} by index
+}}
 \section{Slots}{
 
 \describe{
-\item{\code{genMaps}}{list of chromsome genetic maps}
+\item{\code{genMaps}}{"matrix" of chromsome genetic maps}
 }}
 

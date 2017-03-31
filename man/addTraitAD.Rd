@@ -16,9 +16,9 @@ addTraitAD(nQtlPerChr, meanG, varG, domDegree, simParam = SIMPARAM,
 
 \item{domDegree}{the dominance degree of individual loci. Can be a single value or nLoci values.}
 
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 
-\item{simParm}{an object of \code{\link{SimParam-class}}}
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

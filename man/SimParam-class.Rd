@@ -23,7 +23,7 @@ as SIMPARAM will allow it to be accessed by function defaults.
 
 \item{\code{useGender}}{is gender used for mating}
 
-\item{\code{genMaps}}{list of chromsome genetic maps}
+\item{\code{genMaps}}{"matrix" of chromsome genetic maps}
 
 \item{\code{traits}}{list of trait}
 
@@ -32,7 +32,5 @@ as SIMPARAM will allow it to be accessed by function defaults.
 \item{\code{potQtl}}{list of potential QTL segregating sites}
 
 \item{\code{potSnp}}{list of potential SNP segregating sites}
-
-\item{\code{lastId}}{the last assigned id}
 }}
 

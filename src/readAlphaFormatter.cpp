@@ -7,6 +7,7 @@
 // [[Rcpp::export]]
 arma::Cube<unsigned char> readAF(int nInd, int segSites, int ploidy,
                                  arma::uvec keep, bool inbred){
+  keep -= 1; //R to C++
   int nLoci = keep.n_elem;
   // Calculated expected number of haplotypes
   int nHap;

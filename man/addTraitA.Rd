@@ -14,9 +14,9 @@ addTraitA(nQtlPerChr, meanG, varG, simParam = SIMPARAM,
 
 \item{varG}{the total genetic variance for the trait}
 
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 
-\item{simParm}{an object of \code{\link{SimParam-class}}}
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

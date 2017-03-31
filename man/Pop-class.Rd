@@ -3,11 +3,24 @@
 \docType{class}
 \name{Pop-class}
 \alias{Pop-class}
+\alias{[,Pop-method}
+\alias{c,Pop-method}
 \title{Population}
+\usage{
+\S4method{[}{Pop}(x, i)
+
+\S4method{c}{Pop}(x, ..., recursive = FALSE)
+}
 \description{
 Extends \code{\link{RawPop-class}} to add genetic values, 
 phenotypes, and pedigrees.
 }
+\section{Methods (by generic)}{
+\itemize{
+\item \code{[}: Extract Pop by index or id
+
+\item \code{c}: Combine multiple Pops
+}}
 \section{Slots}{
 
 \describe{

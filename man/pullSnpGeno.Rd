@@ -17,4 +17,7 @@ chip's genotypes to retrieve.}
 \value{
 Returns a matrix of SNP genotypes.
 }
+\description{
+Retrieves SNP genotype data
+}
 

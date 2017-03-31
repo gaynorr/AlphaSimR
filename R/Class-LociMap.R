@@ -143,19 +143,19 @@ setGeneric("getGv",function(object,...){
 })
 setMethod("getGv",signature("TraitA"),
           function(object,pop,...){
-            AlphaSimR:::getGvA(object,pop)
+            getGvA(object,pop)
           })
 setMethod("getGv",signature("TraitAD"),
           function(object,pop,...){
-            AlphaSimR:::getGvAD(object,pop)
+            getGvAD(object,pop)
           })
 setMethod("getGv",signature("TraitAG"),
           function(object,pop,w){
-            AlphaSimR:::getGvAG(object,pop,w)
+            getGvAG(object,pop,w)
           })
 setMethod("getGv",signature("TraitADG"),
           function(object,pop,w){
-            AlphaSimR:::getGvADG(object,pop,w)
+            getGvADG(object,pop,w)
           })
 #getHybridGv----
 setGeneric("getHybridGv",function(object,...){
@@ -163,18 +163,18 @@ setGeneric("getHybridGv",function(object,...){
 })
 setMethod("getHybridGv",signature("TraitA"),
           function(object,fPop,fPar,mPop,mPar,...){
-            AlphaSimR:::getHybridGvA(object,fPop,fPar,mPop,mPar)
+            getHybridGvA(object,fPop,fPar,mPop,mPar)
           })
 setMethod("getHybridGv",signature("TraitAD"),
           function(object,fPop,fPar,mPop,mPar,...){
-            AlphaSimR:::getHybridGvAD(object,fPop,fPar,mPop,mPar)
+            getHybridGvAD(object,fPop,fPar,mPop,mPar)
           })
 setMethod("getHybridGv",signature("TraitAG"),
           function(object,fPop,fPar,mPop,mPar,w){
-            AlphaSimR:::getHybridGvAG(object,fPop,fPar,mPop,mPar,w)
+            getHybridGvAG(object,fPop,fPar,mPop,mPar,w)
           })
 setMethod("getHybridGv",signature("TraitADG"),
           function(object,fPop,fPar,mPop,mPar,w){
-            AlphaSimR:::getHybridGvADG(object,fPop,fPar,mPop,mPar,w)
+            getHybridGvADG(object,fPop,fPar,mPop,mPar,w)
           })
 

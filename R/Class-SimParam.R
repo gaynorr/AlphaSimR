@@ -10,12 +10,11 @@
 #' @slot nSnpChips number of SNP chips
 #' @slot segSites segregating sites per chromosome
 #' @slot useGender is gender used for mating
-#' @slot genMaps list of chromsome genetic maps
+#' @slot genMaps "matrix" of chromsome genetic maps
 #' @slot traits list of trait
 #' @slot snpChips list of SNP chips
 #' @slot potQtl list of potential QTL segregating sites
 #' @slot potSnp list of potential SNP segregating sites
-#' @slot lastId the last assigned id
 #'
 #' @export
 setClass("SimParam",
@@ -25,12 +24,11 @@ setClass("SimParam",
                  nSnpChips="integer",
                  segSites="integer",
                  useGender="logical",
-                 genMaps="list",
+                 genMaps="matrix",
                  traits="list",
                  snpChips="list",
                  potQtl="list",
-                 potSnp="list",
-                 lastId="integer"))
+                 potSnp="list"))
 
 
 setValidity("SimParam",function(object){
