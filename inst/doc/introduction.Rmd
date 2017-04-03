@@ -17,6 +17,20 @@ This document
 
 ### Starting a simulation
 
+### Creating a population
+
+### Adding phenotypes
+
+### Making selections
+
+### Making crosses
+
+#### Within populations
+
+#### Between populations
+
+### Viewing genotype data
+
 `code`
 
 - bullet
