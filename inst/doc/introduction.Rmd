@@ -1,0 +1,22 @@
+---
+title: "Introduction to AlphaSimR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The AlphaSimR package was built to provide a framework for simulating complex plant and animal breeding programs in R. It was based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/articles/0/0/plantgenome2016.02.0013) simulation program which has been used in several publications. 
+
+This document
+
+### Obtaining MaCS
+
+[MaCS](https://github.com/gchen98/macs)
+
+### Starting a simulation
+
+`code`
+
+- bullet
