@@ -1,19 +1,20 @@
-#' @useDynLib AlphaSimR
-#' @import Rcpp RcppArmadillo
-
 #' @title Simulation parameters
 #' 
-#' @description Container for global simulation parameters
+#' @description 
+#' Container for global simulation parameters. Saving this object 
+#' as SIMPARAM will allow it to be accessed by function defaults.
 #' 
 #' @slot ploidy ploidy level of species
 #' @slot nChr number of chromosomes
 #' @slot nTraits number of traits
 #' @slot nSnpChips number of SNP chips
 #' @slot segSites segregating sites per chromosome
-#' @slot useGender is gender used for mating
-#' @slot genMaps list of chromsome genetic maps
+#' @slot gender is gender used for mating
+#' @slot genMaps "matrix" of chromsome genetic maps
 #' @slot traits list of trait
 #' @slot snpChips list of SNP chips
+#' @slot potQtl list of potential QTL segregating sites
+#' @slot potSnp list of potential SNP segregating sites
 #'
 #' @export
 setClass("SimParam",
@@ -22,10 +23,12 @@ setClass("SimParam",
                  nTraits="integer",
                  nSnpChips="integer",
                  segSites="integer",
-                 useGender="logical",
-                 genMaps="list",
+                 gender="character",
+                 genMaps="matrix",
                  traits="list",
-                 snpChips="list"))
+                 snpChips="list",
+                 potQtl="list",
+                 potSnp="list"))
 
 
 setValidity("SimParam",function(object){
@@ -41,6 +44,12 @@ setValidity("SimParam",function(object){
   }
   if(object@nSnpChips!=length(object@snpChips)){
     errors = c(errors,"nSnpChips!=length(snpChips)")
+  }
+  if(object@nChr!=length(object@potQtl)){
+    errors = c(errors,"nChr!=length(potQtl)")
+  }
+  if(object@nChr!=length(object@potSnp)){
+    errors = c(errors,"nChr!=length(potSnp)")
   }
   if(length(errors)==0){
     return(TRUE)

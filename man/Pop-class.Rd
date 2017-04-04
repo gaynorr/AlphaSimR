@@ -3,21 +3,39 @@
 \docType{class}
 \name{Pop-class}
 \alias{Pop-class}
+\alias{[,Pop-method}
+\alias{c,Pop-method}
 \title{Population}
-\description{
-Population class
+\usage{
+\S4method{[}{Pop}(x, i)
+
+\S4method{c}{Pop}(x, ..., recursive = FALSE)
 }
+\description{
+Extends \code{\link{RawPop-class}} to add genetic values, 
+phenotypes, and pedigrees.
+}
+\section{Methods (by generic)}{
+\itemize{
+\item \code{[}: Extract Pop by index or id
+
+\item \code{c}: Combine multiple Pops
+}}
 \section{Slots}{
 
 \describe{
-\item{\code{nInd}}{number of individuals}
+\item{\code{id}}{an individual's identifier}
 
-\item{\code{nChr}}{number of chromosomes}
+\item{\code{mother}}{the identifier of the individual's mother}
 
-\item{\code{ploidy}}{level of ploidy}
+\item{\code{father}}{the identifier of the individual's father}
 
-\item{\code{gender}}{gender of individuals}
+\item{\code{nTraits}}{number of traits}
 
-\item{\code{geno}}{list containing chromosome genotypes}
+\item{\code{gv}}{matrix of genetic values. When using GxE traits,
+gv reflects gv when w=0. Dimensions are nInd by nTraits.}
+
+\item{\code{pheno}}{matrix of phenotypic values. Dimensions are
+nInd by nTraits.}
 }}
 

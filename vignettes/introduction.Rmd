@@ -1,0 +1,34 @@
+---
+title: "Introduction to AlphaSimR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignettes is not complete.
+
+The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/articles/0/0/plantgenome2016.02.0013) program. This document will introduce the basic steps for running a simulation with the AlphaSimR package.
+
+### Creating founder haplotypes
+
+The first step to a simulation in AlphaSimR is to create a set of founder haplotypes. This is done using the `runMacs` function which uses the [MaCS](https://github.com/gchen98/macs) program. The MaCS program is not part of the AlphaSimR package and must be downloaded and compiled by the users. Pre-compiled versions of MaCS can be obtained by downloading the AlphaSim program which is available on the [AlphaGenes](http://www.alphagenes.roslin.ed.ac.uk/alphasuite-softwares/alphasim/) website.
+
+### Setting simulation parameters
+
+### Adding traits
+
+### Adding SNP chips
+
+### Creating a population
+
+### Viewing genotype and haplotype data
+
+### Setting phenotypes
+
+### Making selections
+
+### Making crosses
+
+### Working with hybrids

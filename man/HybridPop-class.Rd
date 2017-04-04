@@ -3,25 +3,42 @@
 \docType{class}
 \name{HybridPop-class}
 \alias{HybridPop-class}
-\title{Population}
-\description{
-Population class
+\alias{[,HybridPop-method}
+\alias{c,HybridPop-method}
+\title{Hybrid population}
+\usage{
+\S4method{[}{HybridPop}(x, i)
+
+\S4method{c}{HybridPop}(x, ..., recursive = FALSE)
 }
+\description{
+A lightweight version of \code{\link{Pop-class}} for hybrid lines.
+Memory is saved by not storing genotypic data. This prevents recaclulation 
+of phenotypes for GxE traits as well as direct retrieval of genotype data.
+}
+\section{Methods (by generic)}{
+\itemize{
+\item \code{[}: Extract HybridPop using index or id
+
+\item \code{c}: Combine multiple HybridPops
+}}
 \section{Slots}{
 
 \describe{
 \item{\code{nInd}}{number of individuals}
 
+\item{\code{id}}{an individual's identifier}
+
+\item{\code{mother}}{the identifier of the individual's mother}
+
+\item{\code{father}}{the identifier of the individual's father}
+
 \item{\code{nTraits}}{number of traits}
 
-\item{\code{gv}}{matrix of genotypic values}
+\item{\code{gv}}{matrix of genetic values. When using GxE traits,
+gv reflects gv when w=0. Dimensions are nInd by nTraits.}
 
-\item{\code{pheno}}{matrix of phenotypic values}
-
-\item{\code{id}}{hybrid's id}
-
-\item{\code{par1}}{hybrid's first parent/mother}
-
-\item{\code{par2}}{hybrid's second parent/father}
+\item{\code{pheno}}{matrix of phenotypic values. Dimensions are
+nInd by nTraits.}
 }}
 

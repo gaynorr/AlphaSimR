@@ -5,7 +5,8 @@
 \alias{SimParam-class}
 \title{Simulation parameters}
 \description{
-Container for global simulation parameters
+Container for global simulation parameters. Saving this object 
+as SIMPARAM will allow it to be accessed by function defaults.
 }
 \section{Slots}{
 
@@ -20,12 +21,16 @@ Container for global simulation parameters
 
 \item{\code{segSites}}{segregating sites per chromosome}
 
-\item{\code{useGender}}{is gender used for mating}
+\item{\code{gender}}{is gender used for mating}
 
-\item{\code{genMaps}}{list of chromsome genetic maps}
+\item{\code{genMaps}}{"matrix" of chromsome genetic maps}
 
 \item{\code{traits}}{list of trait}
 
 \item{\code{snpChips}}{list of SNP chips}
+
+\item{\code{potQtl}}{list of potential QTL segregating sites}
+
+\item{\code{potSnp}}{list of potential SNP segregating sites}
 }}
 

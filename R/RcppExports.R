@@ -5,62 +5,28 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-getGeno <- function(pop, lociMap) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', pop, lociMap)
-}
-
-#' @title Get SNP chip genotype data
-#' 
-#' @description Retrieves gentoype information from a population for a SNP chip.
-#' 
-#' @param pop an object of superclass 'Pop'
-#' @param chip which chip
-#' @param simParam an object of class 'SimParam'
-#' 
-#' @export
-pullSnpGeno <- function(pop, chip, simParam) {
-    .Call('AlphaSimR_pullSnpGeno', PACKAGE = 'AlphaSimR', pop, chip, simParam)
-}
-
-#' @title Get QTL genotype data
-#' 
-#' @description Retrieves gentoype information from a population for a SNP chip.
-#' 
-#' @param pop an object of superclass 'Pop'
-#' @param trait which trait
-#' @param simParam an object of class 'SimParam'
-#' 
-#' @export
-pullQtlGeno <- function(pop, trait, simParam) {
-    .Call('AlphaSimR_pullQtlGeno', PACKAGE = 'AlphaSimR', pop, trait, simParam)
+getGeno <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
 
 getDomGeno <- function(geno) {
     .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
 }
 
-calcQ2 <- function(geno) {
-    .Call('AlphaSimR_calcQ2', PACKAGE = 'AlphaSimR', geno)
-}
-
-calcGvA <- function(geno, a, intercept) {
-    .Call('AlphaSimR_calcGvA', PACKAGE = 'AlphaSimR', geno, a, intercept)
+getHaplo <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
 
 getGvA <- function(trait, pop) {
     .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
-calcGvAD <- function(geno, a, d, intercept) {
-    .Call('AlphaSimR_calcGvAD', PACKAGE = 'AlphaSimR', geno, a, d, intercept)
-}
-
 getGvAD <- function(trait, pop) {
     .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
-calcGenParam <- function(trait, pop, a, d) {
-    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop, a, d)
+calcGenParam <- function(trait, pop) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
 getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
@@ -75,12 +41,28 @@ cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
 }
 
+createDH2 <- function(geno, nDH, genMaps) {
+    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
+}
+
 popVar <- function(X) {
     .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
 }
 
-readAF <- function(nHap, segSites, keep) {
-    .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nHap, segSites, keep)
+mergeGeno <- function(x, y) {
+    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
+}
+
+calcChrMinorFreq <- function(geno, ploidy) {
+    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
+}
+
+convToImat <- function(X) {
+    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
+}
+
+readAF <- function(nInd, segSites, ploidy, keep, inbred) {
+    .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nInd, segSites, ploidy, keep, inbred)
 }
 
 tuneTraitA <- function(geno, addEff, varG) {

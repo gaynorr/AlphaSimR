@@ -1,1 +1,0 @@
-#To include multiple trait indices and info for calculating GEBVs
