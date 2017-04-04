@@ -41,6 +41,10 @@ cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
     .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
 }
 
+createDH2 <- function(geno, nDH, genMaps) {
+    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
+}
+
 popVar <- function(X) {
     .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
 }

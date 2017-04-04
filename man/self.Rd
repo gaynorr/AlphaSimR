@@ -20,6 +20,6 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Creates selfed progeny from each individual in a 
-population.
+population. Only works when gender is "no".
 }
 

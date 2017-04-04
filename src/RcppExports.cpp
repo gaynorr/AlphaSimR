@@ -134,6 +134,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// createDH2
+arma::field<arma::Cube<unsigned char> > createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMaps);
+RcppExport SEXP AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< int >::type nDH(nDHSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMaps));
+    return rcpp_result_gen;
+END_RCPP
+}
 // popVar
 arma::mat popVar(const arma::mat& X);
 RcppExport SEXP AlphaSimR_popVar(SEXP XSEXP) {

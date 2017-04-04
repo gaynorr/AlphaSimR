@@ -21,7 +21,7 @@ as SIMPARAM will allow it to be accessed by function defaults.
 
 \item{\code{segSites}}{segregating sites per chromosome}
 
-\item{\code{useGender}}{is gender used for mating}
+\item{\code{gender}}{is gender used for mating}
 
 \item{\code{genMaps}}{"matrix" of chromsome genetic maps}
 

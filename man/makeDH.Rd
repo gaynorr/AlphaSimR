@@ -16,6 +16,7 @@ makeDH(pop, nDH, id = NULL, simParam = SIMPARAM)
 \item{simParam}{an object of 'SimParam' class}
 }
 \description{
-Creates DH lines from each individual in a population.
+Creates DH lines from each individual in a population. 
+Only works when gender is "no".
 }
 

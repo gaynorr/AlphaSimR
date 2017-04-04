@@ -18,7 +18,7 @@ runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
 
 \item{inbred}{should founder individuals be inbred}
 
-\item{species}{species history to simulate}
+\item{species}{species history to simulate. See details.}
 
 \item{split}{an optional historic population split in terms of generations ago.}
 
@@ -26,5 +26,9 @@ runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
 }
 \description{
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
+}
+\details{
+The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
+PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
 }
 

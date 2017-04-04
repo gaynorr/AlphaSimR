@@ -11,14 +11,26 @@
 #' Can be a single value or values for each chromosome.
 #' @param snpQtlOverlap should SNPs and QTLs be allowed to overlap
 #' @param minSnpFreq minimum allowable frequency for SNPs
-#' @param useGender should gender be considered in the simulation
+#' @param gender should gender be considered in the simulation. 
+#' Options are: no, yes_rand, or yes_sys. See details.
 #' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @details
+#' There are three options for gender. Option "no" means gender is not 
+#' used. All individuals will have "H" for gender, which represents 
+#' hermaphrodite. Option "yes_rand" means that all new individuals are 
+#' randomly assigned either an "M" or "F" for gender, which represents 
+#' male and female, respectively. Option "yes_sys" means gender assigned 
+#' systematically when new individuals are created. Odd individuals recieve 
+#' an "M" and even individuals recieve an "F". If gender is used, it will 
+#' prevent crossing between same gender individuals using the \code{\link{randCross}} 
+#' or \code{\link{randCross2}} functions.
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
 #' 
 #' @export
 createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
-                            minSnpFreq=NULL,useGender=FALSE,
+                            minSnpFreq=NULL,gender="no",
                             founderPop=FOUNDERPOP){
   stopifnot(class(founderPop)=="MapPop")
   if(length(maxSnp)==1){
@@ -66,7 +78,7 @@ createSimulation = function(maxQtl,maxSnp,snpQtlOverlap=FALSE,
                nTraits=0L,
                nSnpChips=0L,
                segSites=founderPop@nLoci,
-               useGender=useGender,
+               gender=gender,
                genMaps=founderPop@genMaps,
                traits=list(),
                snpChips=list(),
@@ -230,6 +242,15 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
+  if(simParam@gender=="no"){
+    gender = rep("H",rawPop@nInd)
+  }else if(simParam@gender=="yes_rand"){
+    gender = sample(c("M","F"),rawPop@nInd,replace=TRUE)
+  }else if(simParam@gender=="yes_sys"){
+    gender = rep_len(c("M","F"),rawPop@nInd)
+  }else{
+    stop(paste("no rules for gender type",simParam@gender))
+  }
   gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
   gv = do.call("cbind",gv)
   output = new("Pop",
@@ -237,7 +258,7 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
                nChr=rawPop@nChr,
                ploidy=rawPop@ploidy,
                nLoci=rawPop@nLoci,
-               gender=rawPop@gender,
+               gender=gender,
                geno=rawPop@geno,
                id=as.character(id),
                mother=rep("0",rawPop@nInd),

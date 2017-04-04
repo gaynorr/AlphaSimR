@@ -144,6 +144,32 @@ arma::field<arma::Cube<unsigned char> > cross2(
   return geno;
 }
 
-
+// Creates DH lines from diploid individuals
+// [[Rcpp::export]]
+arma::field<arma::Cube<unsigned char> > createDH2(
+    const arma::field<arma::Cube<unsigned char> >& geno, 
+    int nDH, const arma::field<arma::vec>& genMaps){
+  int nChr = geno.n_elem;
+  int nInd = geno(0).n_slices;
+  //Output data
+  arma::field<arma::Cube<unsigned char> > output(nChr);
+  for(int chr=0; chr<nChr; ++chr){ //Chromosome loop
+    int segSites = geno(chr).n_rows;
+    arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
+    for(int ind=0; ind<nInd; ++ind){ //Individual loop
+      for(int i=0; i<nDH; ++i){ //nDH loop
+        arma::Col<unsigned char> gamete = 
+          bivalent(geno(chr).slice(ind).col(0),
+                   geno(chr).slice(ind).col(1),
+                   genMaps(chr));
+        for(int j=0; j<2; ++j){ //ploidy loop
+          tmp.slice(i+ind*nDH).col(j) = gamete;
+        } //End ploidy loop
+      } //End nDH loop
+    } //End individual loop
+    output(chr) = tmp;
+  } //End chromosome loop
+  return output;
+}
 
 

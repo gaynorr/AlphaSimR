@@ -5,7 +5,7 @@
 \title{Create new simulation}
 \usage{
 createSimulation(maxQtl, maxSnp, snpQtlOverlap = FALSE, minSnpFreq = NULL,
-  useGender = FALSE, founderPop = FOUNDERPOP)
+  gender = "no", founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{maxQtl}{the maximum number of segSites for QTLs. 
@@ -18,7 +18,8 @@ Can be a single value or values for each chromosome.}
 
 \item{minSnpFreq}{minimum allowable frequency for SNPs}
 
-\item{useGender}{should gender be considered in the simulation}
+\item{gender}{should gender be considered in the simulation. 
+Options are: no, yes_rand, or yes_sys. See details.}
 
 \item{founderPop}{an object of \code{\link{MapPop-class}}}
 }
@@ -27,5 +28,16 @@ Returns an object of \code{\link{SimParam-class}}
 }
 \description{
 Starts the process of building a new simulation
+}
+\details{
+There are three options for gender. Option "no" means gender is not 
+used. All individuals will have "H" for gender, which represents 
+hermaphrodite. Option "yes_rand" means that all new individuals are 
+randomly assigned either an "M" or "F" for gender, which represents 
+male and female, respectively. Option "yes_sys" means gender assigned 
+systematically when new individuals are created. Odd individuals recieve 
+an "M" and even individuals recieve an "F". If gender is used, it will 
+prevent crossing between same gender individuals using the \code{\link{randCross}} 
+or \code{\link{randCross2}} functions.
 }
 

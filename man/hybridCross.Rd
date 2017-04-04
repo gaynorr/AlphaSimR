@@ -2,27 +2,39 @@
 % Please edit documentation in R/hybrids.R
 \name{hybridCross}
 \alias{hybridCross}
-\title{Test cross}
+\title{Hybrid crossing}
 \usage{
-hybridCross(fPop, mPop, crossPlan = "test", varE = NULL, w = 0,
-  returnHybridPop = TRUE, simParam = SIMPARAM)
+hybridCross(fPop, mPop, crossPlan = "testcross", varE = NULL, w = 0,
+  reps = 1, returnHybridPop = FALSE, simParam = SIMPARAM)
 }
 \arguments{
-\item{fPop}{female population, an object of 'Pop' superclass}
+\item{fPop}{female population, an object of \code{\link{Pop-class}}}
 
-\item{mPop}{male population, an object of 'Pop' superclass}
+\item{mPop}{male population, an object of \code{\link{Pop-class}}}
 
-\item{crossPlan}{either "test" for a testcross or matrix with two columns for designed crosses}
+\item{crossPlan}{either "testcross" for all possible combinantions 
+or a matrix with two columns for designed crosses}
 
-\item{varE}{error variance for phenotypes, if NULL phenotypes aren't calculated}
+\item{varE}{error variance for phenotypes. If NULL, phenotypes 
+aren't calculated.}
 
-\item{w}{environmental covariate for phenotype}
+\item{w}{environmental covariate for phenotypes}
 
-\item{returnHybridPop}{should result be returned as a class 'HybridPop'}
+\item{reps}{number of replications for phenotype. See 
+\code{\link{setPheno}} for details.}
 
-\item{simParam}{an object of 'SimParam' class}
+\item{returnHybridPop}{should results be returned as 
+\code{\link{HybridPop-class}}. If false returns results as 
+\code{\link{Pop-class}}}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \description{
-Creates test crosses of all possible combinations
+A convience function for hybrid plant breeding simulations. Allows for 
+easy specification of a test cross scheme and/or creation of an object 
+of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}} 
+should only be used if the parents were created using the \code{\link{makeDH}} 
+function or \code{\link{newPop}} using inbred founders. The id for 
+new individuals is [mother_id]_[father_id]
 }
 

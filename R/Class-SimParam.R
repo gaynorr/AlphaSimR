@@ -9,7 +9,7 @@
 #' @slot nTraits number of traits
 #' @slot nSnpChips number of SNP chips
 #' @slot segSites segregating sites per chromosome
-#' @slot useGender is gender used for mating
+#' @slot gender is gender used for mating
 #' @slot genMaps "matrix" of chromsome genetic maps
 #' @slot traits list of trait
 #' @slot snpChips list of SNP chips
@@ -23,7 +23,7 @@ setClass("SimParam",
                  nTraits="integer",
                  nSnpChips="integer",
                  segSites="integer",
-                 useGender="logical",
+                 gender="character",
                  genMaps="matrix",
                  traits="list",
                  snpChips="list",
