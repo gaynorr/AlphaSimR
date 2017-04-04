@@ -7,28 +7,61 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignettes is not complete.
+NOTE: This vignette is only a rough draft.
 
 The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/articles/0/0/plantgenome2016.02.0013) program. This document will introduce the basic steps for running a simulation with the AlphaSimR package.
+
+The basic steps of an AlphaSimR simulation are:
+
+1. Create founder haplotypes using `runMacs`
+
+2. Set simulation parameters using `createSimulation`
+
+3. Add traits using `addTraitA` or `addTraitAD`
+
+4. Add SNP chips using `addSnpChip`
+
+5. Create one or more initial populations using `newPop`
+
+6. Use the newly created populations for crossing and selection to simulate a breeding program
 
 ### Creating founder haplotypes
 
 The first step to a simulation in AlphaSimR is to create a set of founder haplotypes. This is done using the `runMacs` function which uses the [MaCS](https://github.com/gchen98/macs) program. The MaCS program is not part of the AlphaSimR package and must be downloaded and compiled by the users. Pre-compiled versions of MaCS can be obtained by downloading the AlphaSim program which is available on the [AlphaGenes](http://www.alphagenes.roslin.ed.ac.uk/alphasuite-softwares/alphasim/) website.
 
+Note that results from `runMacs` should be saved as `FOUNDERPOP` (i.e., `FOUNDERPOP = runMacs(...)`). This is done for convience and is not strictly necessary. It is convient because subsequent functions requiring `runMacs` output use `FOUNDERPOP` as a default argument. The output of `runMacs` is an object of `MapPop-class`.
+
 ### Setting simulation parameters
+
+Parameters for a simulation are stored in an object of `SimParam-class`. This object is created by calling the function `createSimulation`. The output from `createSimulation` should be saved as `SIMPARAM` for convience. Many functions in the AlphaSimR package use `SIMPARAM` as a default argument.
+
+The `createSimulation` function will create a variable called `LASTID` in the global environment. This variable is used to assign newly created individuals unique ids. Changing this variable manually is not recommended and deleting it may cause subsequent functions to fail. These subsequent functions will update `LASTID` when it is used to assign new ids.
 
 ### Adding traits
 
+Traits are added to the simulation using the `addTraitA` and `addTraitAD` functions. These functions can be called multiple times to run simulations with multiple traits.
+
 ### Adding SNP chips
+
+SNP chips are added to the simulation using the `addSnpChip` function. As with traits, this function can be called multiple times to assign multiple SNP chips. SNP chips are not necessary for a simulation, so this step can be skipped.
 
 ### Creating a population
 
-### Viewing genotype and haplotype data
+The main objects in an AlphaSimR simulation are `Pop-class` objects. These objects represent a population which contains one or more individuals. Most AlphaSimR functions for use a `Pop-class` object as an argument and return a `Pop-class` object as a result.
 
-### Setting phenotypes
+To create your first `Pop-class` object use the function `newPop`. This function should only be called after you have finished all of the above steps. The `newPop` function will use `FOUNDERPOP` and `SIMPARAM` as arguments. The function creates a `Pop-class` object out of the haplotypes in `FOUNDERPOP`.
 
-### Making selections
+### Working with populations
 
-### Making crosses
+Below are some key functions for operations carried out on populations.
 
-### Working with hybrids
+* Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`
+
+* Viewing summary data: `meanG`, `meanP`, `varG`, `varP`
+
+* Setting phenotypes: `setPheno`, `calcPheno`
+
+* Making selection: `selectInd`, `selectFam`, `selectWithinFam`, `selectMale`, `selectFemale`
+
+* Crossing: `makeCross`, `randCross`, `makeCross2`, `randCross2`,
+`self`, `makeDH`
