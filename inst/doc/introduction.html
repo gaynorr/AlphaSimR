@@ -32,38 +32,50 @@
 
 
 
-<p>This vignettes is not complete.</p>
+<p>NOTE: This vignette is only a rough draft.</p>
 <p>The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the <a href="https://dl.sciencesocieties.org/publications/tpg/articles/0/0/plantgenome2016.02.0013">AlphaSim</a> program. This document will introduce the basic steps for running a simulation with the AlphaSimR package.</p>
+<p>The basic steps of an AlphaSimR simulation are:</p>
+<ol style="list-style-type: decimal">
+<li><p>Create founder haplotypes using <code>runMacs</code></p></li>
+<li><p>Set simulation parameters using <code>createSimulation</code></p></li>
+<li><p>Add traits using <code>addTraitA</code> or <code>addTraitAD</code></p></li>
+<li><p>Add SNP chips using <code>addSnpChip</code></p></li>
+<li><p>Create one or more initial populations using <code>newPop</code></p></li>
+<li><p>Use the newly created populations for crossing and selection to simulate a breeding program</p></li>
+</ol>
 <div id="creating-founder-haplotypes" class="section level3">
 <h3>Creating founder haplotypes</h3>
 <p>The first step to a simulation in AlphaSimR is to create a set of founder haplotypes. This is done using the <code>runMacs</code> function which uses the <a href="https://github.com/gchen98/macs">MaCS</a> program. The MaCS program is not part of the AlphaSimR package and must be downloaded and compiled by the users. Pre-compiled versions of MaCS can be obtained by downloading the AlphaSim program which is available on the <a href="http://www.alphagenes.roslin.ed.ac.uk/alphasuite-softwares/alphasim/">AlphaGenes</a> website.</p>
+<p>Note that results from <code>runMacs</code> should be saved as <code>FOUNDERPOP</code> (i.e., <code>FOUNDERPOP = runMacs(...)</code>). This is done for convience and is not strictly necessary. It is convient because subsequent functions requiring <code>runMacs</code> output use <code>FOUNDERPOP</code> as a default argument. The output of <code>runMacs</code> is an object of <code>MapPop-class</code>.</p>
 </div>
 <div id="setting-simulation-parameters" class="section level3">
 <h3>Setting simulation parameters</h3>
+<p>Parameters for a simulation are stored in an object of <code>SimParam-class</code>. This object is created by calling the function <code>createSimulation</code>. The output from <code>createSimulation</code> should be saved as <code>SIMPARAM</code> for convience. Many functions in the AlphaSimR package use <code>SIMPARAM</code> as a default argument.</p>
+<p>The <code>createSimulation</code> function will create a variable called <code>LASTID</code> in the global environment. This variable is used to assign newly created individuals unique ids. Changing this variable manually is not recommended and deleting it may cause subsequent functions to fail. These subsequent functions will update <code>LASTID</code> when it is used to assign new ids.</p>
 </div>
 <div id="adding-traits" class="section level3">
 <h3>Adding traits</h3>
+<p>Traits are added to the simulation using the <code>addTraitA</code> and <code>addTraitAD</code> functions. These functions can be called multiple times to run simulations with multiple traits.</p>
 </div>
 <div id="adding-snp-chips" class="section level3">
 <h3>Adding SNP chips</h3>
+<p>SNP chips are added to the simulation using the <code>addSnpChip</code> function. As with traits, this function can be called multiple times to assign multiple SNP chips. SNP chips are not necessary for a simulation, so this step can be skipped.</p>
 </div>
 <div id="creating-a-population" class="section level3">
 <h3>Creating a population</h3>
+<p>The main objects in an AlphaSimR simulation are <code>Pop-class</code> objects. These objects represent a population which contains one or more individuals. Most AlphaSimR functions for use a <code>Pop-class</code> object as an argument and return a <code>Pop-class</code> object as a result.</p>
+<p>To create your first <code>Pop-class</code> object use the function <code>newPop</code>. This function should only be called after you have finished all of the above steps. The <code>newPop</code> function will use <code>FOUNDERPOP</code> and <code>SIMPARAM</code> as arguments. The function creates a <code>Pop-class</code> object out of the haplotypes in <code>FOUNDERPOP</code>.</p>
 </div>
-<div id="viewing-genotype-and-haplotype-data" class="section level3">
-<h3>Viewing genotype and haplotype data</h3>
-</div>
-<div id="setting-phenotypes" class="section level3">
-<h3>Setting phenotypes</h3>
-</div>
-<div id="making-selections" class="section level3">
-<h3>Making selections</h3>
-</div>
-<div id="making-crosses" class="section level3">
-<h3>Making crosses</h3>
-</div>
-<div id="working-with-hybrids" class="section level3">
-<h3>Working with hybrids</h3>
+<div id="working-with-populations" class="section level3">
+<h3>Working with populations</h3>
+<p>Below are some key functions for operations carried out on populations.</p>
+<ul>
+<li><p>Viewing genotypes: <code>pullSnpGeno</code>, <code>pullSnpHaplo</code>, <code>pullQtlGeno</code>, <code>pullQtlHaplo</code></p></li>
+<li><p>Viewing summary data: <code>meanG</code>, <code>meanP</code>, <code>varG</code>, <code>varP</code></p></li>
+<li><p>Setting phenotypes: <code>setPheno</code>, <code>calcPheno</code></p></li>
+<li><p>Making selection: <code>selectInd</code>, <code>selectFam</code>, <code>selectWithinFam</code>, <code>selectMale</code>, <code>selectFemale</code></p></li>
+<li><p>Crossing: <code>makeCross</code>, <code>randCross</code>, <code>makeCross2</code>, <code>randCross2</code>, <code>self</code>, <code>makeDH</code></p></li>
+</ul>
 </div>
 
 
