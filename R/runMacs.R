@@ -27,7 +27,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
     popSize = ploidy*nInd
   }
   if(!is.null(manualCommand)){
-    command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1)," 1>output.txt 2>/dev/null")
+    command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1))
   }else{
     species = toupper(species)
     if(species=="WHEAT"){ #WHEAT----
@@ -81,12 +81,12 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
       splitI = paste(" -I 2",popSize%/%2,popSize%/%2)
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
-    if(.Platform$OS.type=="windows"){
-      directOutput = " 1>output.txt 2>NUL"
-    }else{
-      directOutput = " 1>output.txt 2>/dev/null"
-    }
-    command = paste0(macs," ",popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1),directOutput)
+    command = paste0(macs," ",popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
+  }
+  if(.Platform$OS.type=="windows"){
+    command = paste0("powershell \"(",command,") 1>output.txt 2>$null\"")
+  }else{
+    command = paste(command,"1>output.txt 2>/dev/null")
   }
   currentDir = getwd()
   tmpDir = tempdir()
