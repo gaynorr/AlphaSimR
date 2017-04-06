@@ -84,7 +84,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
     command = paste0(macs," ",popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
   }
   if(.Platform$OS.type=="windows"){
-    command = paste0("powershell \"(",command,") 1>output.txt 2>$null\"")
+    command = paste0("powershell \"(",command,") 2>$null | out-file -filePath output.txt -encoding ASCII\"")
   }else{
     command = paste(command,"1>output.txt 2>/dev/null")
   }
