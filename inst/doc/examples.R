@@ -1,5 +1,5 @@
 # AlphaSimR Examples
-# Works with version 0.1
+# Works with version 0.1.X
 
 # *Requires MaCS
 # Which can be taken from AlphaSim on the AlphaGenes website
