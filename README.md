@@ -2,13 +2,9 @@
 
 This package is currently under development and is not yet ready for release.
 
-Use the following command from the 'devtools' library to install this package:
-install_bitbucket("hickeyjohnteam/AlphaSimR")
+This package can be installed in R using the 'devtools' library with the following command:
+devtools::install_bitbucket("hickeyjohnteam/AlphaSimR")
 
-The following are required to use this program:
+The 'Rcpp' and 'RcppArmadillo' libraries are required for installing this package.
 
-1. macs.exe
-
-2. 'Rcpp' library
-
-3. 'RcppArmadillo' library
+The MaCS program is required for simulating initial haplotypes. See the vignette for instructions for obtaining MaCS.
