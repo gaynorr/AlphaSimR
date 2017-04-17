@@ -5,7 +5,8 @@
 \title{Hybrid crossing}
 \usage{
 hybridCross(fPop, mPop, crossPlan = "testcross", varE = NULL, w = 0,
-  reps = 1, returnHybridPop = FALSE, simParam = SIMPARAM)
+  reps = 1, returnHybridPop = FALSE, chunkSize = 1000,
+  simParam = SIMPARAM)
 }
 \arguments{
 \item{fPop}{female population, an object of \code{\link{Pop-class}}}
@@ -26,6 +27,11 @@ aren't calculated.}
 \item{returnHybridPop}{should results be returned as 
 \code{\link{HybridPop-class}}. If false returns results as 
 \code{\link{Pop-class}}}
+
+\item{chunkSize}{when using returnHybridPop=TRUE, this 
+parameter determines the maximum number of hybrids created 
+at one time. Smaller values reduce RAM usage, but may take 
+more time.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

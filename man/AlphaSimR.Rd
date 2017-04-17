@@ -4,7 +4,7 @@
 \name{AlphaSimR}
 \alias{AlphaSimR}
 \alias{AlphaSimR-package}
-\title{AlphaSimR: A package for simulating breeding programs.}
+\title{AlphaSimR: Breeding Program Simulations}
 \description{
 This package is currently under development and is not yet ready for release.
 }

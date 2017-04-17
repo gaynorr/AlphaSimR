@@ -1,3 +1,24 @@
+#A wrapper for calling getHybridGv
+#This function uses chunking to reduce RAM usage
+#A wrapper for calling getHybridGv
+#This function uses chunking to reduce RAM usage
+getHybridGvByChunk = function(trait,fPop,fPar,
+                              mPop,mPar,w,chunkSize){
+  nOut = length(fPar)
+  if(nOut<=chunkSize){
+    output = getHybridGv(trait,fPop,fPar,mPop,mPar,w)
+  }else{
+    Chunks = split(1:nOut,ceiling(seq_along(1:nOut)/chunkSize))
+    output = matrix(NA_real_,nrow=nOut,ncol=1)
+    for(chunk in Chunks){
+      output[chunk,] = getHybridGv(trait,fPop,fPar[chunk],
+                                   mPop,mPar[chunk],w)
+    }
+  }
+  return(output)
+}
+
+
 #' @title Hybrid crossing
 #' 
 #' @description 
@@ -20,11 +41,16 @@
 #' @param returnHybridPop should results be returned as 
 #' \code{\link{HybridPop-class}}. If false returns results as 
 #' \code{\link{Pop-class}}
+#' @param chunkSize when using returnHybridPop=TRUE, this 
+#' parameter determines the maximum number of hybrids created 
+#' at one time. Smaller values reduce RAM usage, but may take 
+#' more time.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @export
 hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
                        w=0,reps=1,returnHybridPop=FALSE,
+                       chunkSize=1000,
                        simParam=SIMPARAM){
   stopifnot(simParam@gender=="no")
   if(simParam@ploidy!=2){
@@ -57,8 +83,9 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
   gv = NULL
   pheno = NULL
   for(trait in simParam@traits){
-    tmp = getHybridGv(trait,fPop,crossPlan[,1],
-                      mPop,crossPlan[,2],w=0)
+    tmp = getHybridGvByChunk(trait,fPop,crossPlan[,1],
+                             mPop,crossPlan[,2],w=0,
+                             chunkSize=chunkSize)
     gv = cbind(gv, tmp)
     #Will a phenotype be calculated
     if(is.null(varE)){
@@ -66,7 +93,10 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
     }else{
       #Does GxE matter
       if(class(trait)=="TraitAG" | class(trait)=="TraitADG"){
-        pheno = cbind(pheno, getHybridGv(trait,fPop,fPar,mPop,mPar,w=w))
+        pheno = cbind(pheno, 
+                      getHybridGvByChunk(trait,fPop,fPar,
+                                         mPop,mPar,w=w,
+                                         chunkSize=chunkSize))
       }else{
         pheno = cbind(pheno,tmp)
       }

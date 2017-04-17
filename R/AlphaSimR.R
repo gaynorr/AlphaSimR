@@ -4,7 +4,7 @@
 #' @importFrom stats aggregate rnorm
 #' @importFrom utils combn
 
-#' @title AlphaSimR: A package for simulating breeding programs.
+#' @title AlphaSimR: Breeding Program Simulations
 #' 
 #' @description
 #' This package is currently under development and is not yet ready for release.
