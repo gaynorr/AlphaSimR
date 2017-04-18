@@ -4,18 +4,23 @@
 \alias{writeRecords}
 \title{Write data records}
 \usage{
-writeRecords(pop, dir, snpChip, useQtl = FALSE, simParam = SIMPARAM)
+writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1,
+  simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{dir}{directory for saving output}
+\item{dir}{path to a directory for saving output}
 
 \item{snpChip}{which SNP chip genotype to save. If useQtl=TRUE, this 
 value will indicate which trait's QTL genotype to save.}
 
 \item{useQtl}{should QTL genotype be written instead of SNP chip 
 genotypes.}
+
+\item{reps}{number of reps for phenotypes. This values is used for modelling 
+heterogenous error variance in genomic selection models. Leave value as 1 
+unless using reps for phenotypes.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

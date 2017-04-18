@@ -5,6 +5,26 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
+.callGK_AS <- function(y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred = TRUE) {
+    .Call('AlphaSimR_callGK_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred)
+}
+
+.callPredGK_AS <- function(genoPred) {
+    .Call('AlphaSimR_callPredGK_AS', PACKAGE = 'AlphaSimR', genoPred)
+}
+
+.callRRBLUP_AS <- function(y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+}
+
+.callRRBLUP_AS_MV <- function(Y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_AS_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
+}
+
+.callQUICK_AS <- function(y, x, reps, genoTrain, nMarker, varA, varE) {
+    .Call('AlphaSimR_callQUICK_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, varA, varE)
+}
+
 getGeno <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }

@@ -16,6 +16,82 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// callGK_AS
+Rcpp::List callGK_AS(arma::mat y, arma::vec x, arma::vec reps, std::string genoTrain, int nMarker, double maxTheta, int maxIter, bool writeForPred);
+RcppExport SEXP AlphaSimR_callGK_AS(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP maxThetaSEXP, SEXP maxIterSEXP, SEXP writeForPredSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< double >::type maxTheta(maxThetaSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< bool >::type writeForPred(writeForPredSEXP);
+    rcpp_result_gen = Rcpp::wrap(callGK_AS(y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callPredGK_AS
+arma::mat callPredGK_AS(const Rcpp::DataFrame& genoPred);
+RcppExport SEXP AlphaSimR_callPredGK_AS(SEXP genoPredSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type genoPred(genoPredSEXP);
+    rcpp_result_gen = Rcpp::wrap(callPredGK_AS(genoPred));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_AS
+Rcpp::List callRRBLUP_AS(arma::mat y, arma::vec x, arma::vec reps, std::string genoTrain, int nMarker);
+RcppExport SEXP AlphaSimR_callRRBLUP_AS(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_AS(y, x, reps, genoTrain, nMarker));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_AS_MV
+Rcpp::List callRRBLUP_AS_MV(arma::mat Y, arma::vec x, arma::vec reps, std::string genoTrain, int nMarker);
+RcppExport SEXP AlphaSimR_callRRBLUP_AS_MV(SEXP YSEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_AS_MV(Y, x, reps, genoTrain, nMarker));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callQUICK_AS
+Rcpp::List callQUICK_AS(arma::mat y, arma::vec x, arma::vec reps, std::string genoTrain, int nMarker, double varA, double varE);
+RcppExport SEXP AlphaSimR_callQUICK_AS(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP varASEXP, SEXP varESEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< double >::type varA(varASEXP);
+    Rcpp::traits::input_parameter< double >::type varE(varESEXP);
+    rcpp_result_gen = Rcpp::wrap(callQUICK_AS(y, x, reps, genoTrain, nMarker, varA, varE));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getGeno
 arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc);
 RcppExport SEXP AlphaSimR_getGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
