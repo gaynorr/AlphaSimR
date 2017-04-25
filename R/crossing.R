@@ -195,7 +195,7 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
 randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
                      id=NULL,simParam=SIMPARAM){
   if(simParam@gender=="no"){
-    crossPland = expand.grid(1:fPop@nInd,1:mPop@nInd)
+    crossPlan = expand.grid(1:fPop@nInd,1:mPop@nInd)
   }else{
     female = which(fPop@gender=="F")
     if(length(female)==0){
