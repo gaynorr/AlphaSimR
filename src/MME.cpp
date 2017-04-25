@@ -54,7 +54,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X){ // Must pass eigv
 }
 
 /*
- * Reads a text file into an mat
+ * Reads a text file into an arma::mat
  * Must be supplied with the correct number of rows and columns for the matrix
  * A header can be skipped by setting skipRows to 1
  * Row names can be skipped by setting skipCols to 1

@@ -8,9 +8,9 @@ Description: This package contains classes and functions for simulating plant an
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: MASS
-Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0), methods
+Depends: MASS, methods
+Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr

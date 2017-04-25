@@ -20,4 +20,3 @@ Returns a matrix of QTL haplotypes.
 \description{
 Retrieves QTL haplotype data
 }
-

@@ -27,4 +27,3 @@ unless using reps for phenotypes.}
 \description{
 Saves a population's phenotypic and marker data to a directory.
 }
-

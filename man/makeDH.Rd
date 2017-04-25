@@ -19,4 +19,3 @@ makeDH(pop, nDH, id = NULL, simParam = SIMPARAM)
 Creates DH lines from each individual in a population. 
 Only works when gender is "no".
 }
-

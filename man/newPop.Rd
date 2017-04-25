@@ -23,4 +23,3 @@ Creates a new \code{\link{Pop-class}} from an object of
 The function is intended for creating initial populations from 
 'FOUNDERPOP' created by \code{\link{runMacs}}.
 }
-

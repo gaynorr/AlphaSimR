@@ -45,8 +45,8 @@ varP = function(pop){
 #' @title Additive and dominance variances
 #' 
 #' @description 
-#' Calculates additive and dominance variances for an object of 
-#' \code{\link{Pop-class}}
+#' Calculates genetic and genic additive and dominance variances 
+#' for an object of \code{\link{Pop-class}}
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param retGenParam should genetic values for breeding values, 
@@ -55,11 +55,14 @@ varP = function(pop){
 #' 
 #' @return
 #' \describe{
-#' \item{varA}{a vector of additive genetic variances}
-#' \item{varD}{a vector of dominance genetic variances}
-#' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
-#' \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
-#' \item{alpha}{a list of allele subsitution effects for each trait}
+#' \item{varA}{an nTrait by nTrait matrix of additive genetic variances}
+#' \item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
+#' \item{genicVarA}{an nTrait vector of additive genic variances}
+#' \item{genicVarD}{an nTrait vector of dominance genic variances}
+#' \item{genicVarG}{an nTrait vector of total genic variances}
+#' \item{bv}{an nInd by nTrait matrix of breeding values with dimensions nInd by nTraits}
+#' \item{dd}{an nInd by nTrait matrix of dominance deviations with dimensions nInd by nTraits}
+#' \item{alpha}{an nTrait list of allele subsitution effects}
 #' }
 #' 
 #' @export
@@ -67,30 +70,24 @@ varAD = function(pop,retGenParam=FALSE,simParam=SIMPARAM){
   stopifnot(class(pop)=="Pop")
   bv=NULL
   dd=NULL
+  genicVarA=NULL
+  genicVarD=NULL
   alpha=list()
   #Loop through bv and dd calculations
   for(i in 1:simParam@nTraits){
     trait = simParam@traits[[i]]
-    if(class(trait)=="TraitA"){
-      tmp = list()
-      tmp$bv = scale(pop@gv[,i],scale=F)
-      tmp$dd = rep(0,pop@nInd)
-      tmp$alpha = trait@addEff
-    }else if(class(trait)=="TraitAD"){
-      tmp = calcGenParam(trait,pop)
-    }else if(class(trait)=="TraitAG"){
-      
-    }else if(class(trait)=="TraitADG"){
-      
-    }else{
-      stop("No method for trait class",class(simParam@traits[[i]]))
-    }
+    tmp = calcGenParam(trait,pop)
+    genicVarA = c(genicVarA,tmp$genicVarA)
+    genicVarD = c(genicVarD,tmp$genicVarD)
     bv = cbind(bv,tmp$bv)
     dd = cbind(dd,tmp$dd)
     alpha[[i]] = tmp$alpha
   }
   output = list(varA=popVar(bv),
-                varD=popVar(dd))
+                varD=popVar(dd),
+                genicVarA=genicVarA,
+                genicVarD=genicVarD,
+                genicVarG=genicVarA+genicVarD)
   if(retGenParam){
     output$bv = bv
     output$dd = dd
@@ -98,3 +95,4 @@ varAD = function(pop,retGenParam=FALSE,simParam=SIMPARAM){
   }
   return(output)
 }
+

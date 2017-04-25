@@ -5,7 +5,7 @@
 // Calculates population variance
 // [[Rcpp::export]]
 arma::mat popVar(const arma::mat& X) {
-  return arma::var(X,1);
+  return arma::cov(X,1);
 }
 
 // Merges geno objects, i.e. fields containing cubes of unsigned char

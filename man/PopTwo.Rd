@@ -16,4 +16,3 @@ individuals are fully inbred and have 1001 segregating sites on
 second individual has all '0' alleles.
 }
 \keyword{datasets}
-

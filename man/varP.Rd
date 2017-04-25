@@ -12,4 +12,3 @@ varP(pop)
 \description{
 Returns phenotypic variance for all traits
 }
-

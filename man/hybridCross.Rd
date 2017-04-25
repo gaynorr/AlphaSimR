@@ -43,4 +43,3 @@ should only be used if the parents were created using the \code{\link{makeDH}}
 function or \code{\link{newPop}} using inbred founders. The id for 
 new individuals is [mother_id]_[father_id]
 }
-

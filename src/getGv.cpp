@@ -49,7 +49,12 @@ arma::vec getGvAD(const Rcpp::S4& trait, const Rcpp::S4& pop){
 // [[Rcpp::export]]
 Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop){
   arma::vec a = trait.slot("addEff");
-  arma::vec d = trait.slot("domEff");
+  arma::vec d(a.n_elem);
+  if(trait.hasSlot("domEff")){
+    d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+  }else{
+    d.zeros();
+  }
   int nInd = pop.slot("nInd");
   arma::vec bv(nInd);
   arma::vec dd(nInd,arma::fill::zeros);
@@ -67,8 +72,13 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop){
   }
   X.each_row() -= 2*p;
   bv = X*alpha;
+  arma::vec q = 1-p.t();
+  double genicVarA = 2.0*arma::sum(p.t()%q%arma::square(alpha));
+  double genicVarD = 4.0*arma::sum(arma::square(p.t())%arma::square(q)%arma::square(d));
   return Rcpp::List::create(Rcpp::Named("bv")=bv,
                             Rcpp::Named("dd")=dd,
-                            Rcpp::Named("alpha")=alpha);
+                            Rcpp::Named("alpha")=alpha,
+                            Rcpp::Named("genicVarA")=genicVarA,
+                            Rcpp::Named("genicVarD")=genicVarD);
 }
 

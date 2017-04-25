@@ -9,7 +9,7 @@
 \usage{
 \S4method{[}{HybridPop}(x, i)
 
-\S4method{c}{HybridPop}(x, ..., recursive = FALSE)
+\S4method{c}{HybridPop}(x, ...)
 }
 \description{
 A lightweight version of \code{\link{Pop-class}} for hybrid lines.
@@ -22,6 +22,7 @@ of phenotypes for GxE traits as well as direct retrieval of genotype data.
 
 \item \code{c}: Combine multiple HybridPops
 }}
+
 \section{Slots}{
 
 \describe{

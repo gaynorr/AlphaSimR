@@ -40,4 +40,3 @@ an "M" and even individuals recieve an "F". If gender is used, it will
 prevent crossing between same gender individuals using the \code{\link{randCross}} 
 or \code{\link{randCross2}} functions.
 }
-

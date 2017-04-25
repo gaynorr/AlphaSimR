@@ -31,4 +31,3 @@ Uses an external programs MaCS and AlphaFormatter to produce initial founder gen
 The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
 PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
 }
-

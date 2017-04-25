@@ -25,4 +25,3 @@ Returns an object of \code{\link{Pop-class}}
 Makes crosses between two populations using a user supplied 
 crossing plan.
 }
-

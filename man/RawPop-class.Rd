@@ -9,7 +9,7 @@
 \usage{
 \S4method{[}{RawPop}(x, i)
 
-\S4method{c}{RawPop}(x, ..., recursive = FALSE)
+\S4method{c}{RawPop}(x, ...)
 }
 \description{
 The raw population class contains only genotype and gender data. 
@@ -21,6 +21,7 @@ It is intended as a temporary population whose genentic values aren't needed.
 
 \item \code{c}: Combine multiple RawPops
 }}
+
 \section{Slots}{
 
 \describe{

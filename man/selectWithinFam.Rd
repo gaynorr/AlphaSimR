@@ -28,4 +28,3 @@ Returns an object of \code{\link{Pop-class}} or
 Selects a subset of nInd individuals from each  
 full-sib family within a population.
 }
-

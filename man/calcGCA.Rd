@@ -17,4 +17,3 @@ Calculate general combining ability of test crosses. Intended for
 output from hybridCross using the "testcross" option, but will work 
 for any population.
 }
-

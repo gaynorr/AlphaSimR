@@ -28,4 +28,3 @@ Returns an object of \code{\link{Pop-class}} or
 Selects a subset of nInd males from a 
 population.
 }
-

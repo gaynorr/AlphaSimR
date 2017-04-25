@@ -37,4 +37,3 @@ breeding programs. In this case, varE is set to the plot error and
 reps is set to the number plots per entry. The resulting phenotype 
 would reflect the mean of all replications.
 }
-

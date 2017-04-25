@@ -23,4 +23,3 @@ Returns an object of \code{\link{Pop-class}}
 Makes crosses within a population using a user supplied 
 crossing plan.
 }
-

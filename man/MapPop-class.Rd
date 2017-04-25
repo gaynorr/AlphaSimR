@@ -18,6 +18,7 @@ for creating initial populations and setting traits in the
 \itemize{
 \item \code{[}: Extract \code{\link{RawPop-class}} by index
 }}
+
 \section{Slots}{
 
 \describe{

@@ -26,4 +26,3 @@ Returns an object of \code{\link{SimParam-class}}
 \description{
 Randomly assigns eligble QTLs for a trait with dominance.
 }
-

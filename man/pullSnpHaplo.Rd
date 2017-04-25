@@ -20,4 +20,3 @@ Returns a matrix of SNP haplotypes.
 \description{
 Retrieves SNP haplotype data
 }
-

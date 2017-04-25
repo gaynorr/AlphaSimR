@@ -21,6 +21,7 @@ phenotypes, and pedigrees.
 
 \item \code{c}: Combine multiple Pops
 }}
+
 \section{Slots}{
 
 \describe{
