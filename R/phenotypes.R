@@ -20,11 +20,11 @@ addError = function(gv,varE,reps=1){
   return(pheno)
 }
 
-calcPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
+calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
   validObject(pop)
   gv = pop@gv
   if(class(pop)=="HybridPop"){
-    stopifnot(w==0)
+    stopifnot(w==0.5)
   }else{
     stopifnot(class(pop)=="Pop")
     for(i in 1:simParam@nTraits){
@@ -52,7 +52,7 @@ calcPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits. If pop 
 #' is \code{\link{HybridPop-class}} an error will be returned for any 
-#' value other than 0.
+#' value other than 0.5.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
@@ -66,7 +66,7 @@ calcPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-setPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
+setPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
   pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,w=w,
                         simParam=simParam)
   validObject(pop)

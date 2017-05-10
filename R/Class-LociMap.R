@@ -90,12 +90,12 @@ setValidity("TraitAD",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
-#' @slot varW variance of environmental covariate
+#' @slot varGxeLoci GxE variance for loci
 #'
 #' @export
 setClass("TraitAG",
          slots=c(gxeEff="numeric",
-                 varW="numeric"),
+                 varGxeLoci="numeric"),
          contains="TraitA")
 
 setValidity("TraitAG",function(object){
@@ -117,12 +117,12 @@ setValidity("TraitAG",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
-#' @slot varW variance of environmental covariate
+#' @slot varGxeLoci GxE variance for loci
 #'
 #' @export
 setClass("TraitADG",
          slots=c(gxeEff="numeric",
-                 varW="numeric"),
+                 varGxeLoci="numeric"),
          contains="TraitAD")
 
 setValidity("TraitADG",function(object){
@@ -151,11 +151,13 @@ setMethod("getGv",signature("TraitAD"),
           })
 setMethod("getGv",signature("TraitAG"),
           function(object,pop,w){
-            getGvAG(object,pop,w)
+            z = qnorm(w,sqrt(object@varGxeLoci))
+            getGvAG(object,pop,z)
           })
 setMethod("getGv",signature("TraitADG"),
           function(object,pop,w){
-            getGvADG(object,pop,w)
+            z = qnorm(w,sqrt(object@varGxeLoci))
+            getGvADG(object,pop,z)
           })
 #getHybridGv----
 setGeneric("getHybridGv",function(object,...){
@@ -171,10 +173,12 @@ setMethod("getHybridGv",signature("TraitAD"),
           })
 setMethod("getHybridGv",signature("TraitAG"),
           function(object,fPop,fPar,mPop,mPar,w){
-            getHybridGvAG(object,fPop,fPar,mPop,mPar,w)
+            z = qnorm(w,sqrt(object@varGxeLoci))
+            getHybridGvAG(object,fPop,fPar,mPop,mPar,z)
           })
 setMethod("getHybridGv",signature("TraitADG"),
           function(object,fPop,fPar,mPop,mPar,w){
-            getHybridGvADG(object,fPop,fPar,mPop,mPar,w)
+            z = qnorm(w,sqrt(object@varGxeLoci))
+            getHybridGvADG(object,fPop,fPar,mPop,mPar,z)
           })
 

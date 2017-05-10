@@ -4,7 +4,7 @@
 \alias{hybridCross}
 \title{Hybrid crossing}
 \usage{
-hybridCross(fPop, mPop, crossPlan = "testcross", varE = NULL, w = 0,
+hybridCross(fPop, mPop, crossPlan = "testcross", varE = NULL, w = 0.5,
   reps = 1, returnHybridPop = FALSE, chunkSize = 1000,
   simParam = SIMPARAM)
 }

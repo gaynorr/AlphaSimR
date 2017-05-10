@@ -4,7 +4,7 @@
 \alias{setPhenoGCA}
 \title{Set GCA as phenotype}
 \usage{
-setPhenoGCA(pop, testers, useGv = FALSE, varE = NULL, reps = 1, w = 0,
+setPhenoGCA(pop, testers, useGv = FALSE, varE = NULL, reps = 1, w = 0.5,
   inbred = FALSE, simParam = SIMPARAM)
 }
 \arguments{

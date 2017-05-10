@@ -5,24 +5,69 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-.callGK_AS <- function(y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred = TRUE) {
-    .Call('AlphaSimR_callGK_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred)
+#' @title Solve Univariate Model
+#' 
+#' @description
+#' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#'
+#' @export
+solveUVM <- function(y, X, Z, K) {
+    .Call('AlphaSimR_solveUVM', PACKAGE = 'AlphaSimR', y, X, Z, K)
 }
 
-.callPredGK_AS <- function(genoPred) {
-    .Call('AlphaSimR_callPredGK_AS', PACKAGE = 'AlphaSimR', genoPred)
+#' @title Solve Multivariate Model
+#' 
+#' @description
+#' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+#'
+#' @param Y a matrix with n rows and q columns
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#'
+#' @export
+solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
+    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
 }
 
-.callRRBLUP_AS <- function(y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+objWeights <- function(x, ptrData) {
+    .Call('AlphaSimR_objWeights', PACKAGE = 'AlphaSimR', x, ptrData)
 }
 
-.callRRBLUP_AS_MV <- function(Y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_AS_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
+#' @title Solve Multikernel Model
+#' 
+#' @description
+#' Solves a univariate mixed model with multiple random effects.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Zlist a list of Z matrices
+#' @param Klist a list of K matrices
+#'
+#' @export
+solveMKM <- function(y, X, Zlist, Klist) {
+    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
 }
 
-.callQUICK_AS <- function(y, x, reps, genoTrain, nMarker, varA, varE) {
-    .Call('AlphaSimR_callQUICK_AS', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, varA, varE)
+callGK <- function(y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred = TRUE) {
+    .Call('AlphaSimR_callGK', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred)
+}
+
+callPredGK <- function(genoPred) {
+    .Call('AlphaSimR_callPredGK', PACKAGE = 'AlphaSimR', genoPred)
+}
+
+callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+}
+
+callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
 }
 
 getGeno <- function(geno, lociPerChr, lociLoc) {
@@ -41,8 +86,16 @@ getGvA <- function(trait, pop) {
     .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
 }
 
+getGvAG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvAG', PACKAGE = 'AlphaSimR', trait, pop, z)
+}
+
 getGvAD <- function(trait, pop) {
     .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvADG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvADG', PACKAGE = 'AlphaSimR', trait, pop, z)
 }
 
 calcGenParam <- function(trait, pop) {
@@ -53,8 +106,16 @@ getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
     .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
 }
 
+getHybridGvAG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvAG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
+}
+
 getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
     .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvADG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvADG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
 }
 
 cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {

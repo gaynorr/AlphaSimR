@@ -1,7 +1,12 @@
 /*
- * Mixed model code from:
+ * Initial code from:
  * "A two-part strategy for using genomic selection to develop inbred lines"
  * (Gaynor et al., 2017)
+ * 
+ * Some of functions are not used
+ * 
+ * Based on code in R/EMMREML and R/rrBLUP
+ * 
  */
 #include "alphasimr.h"
 #include <iostream>
@@ -52,6 +57,130 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X){ // Must pass eigv
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
   return INFO; // Return error code
 }
+
+// Objective function for REML using the EMMA algorithm
+Rcpp::List objREML(double param, Rcpp::List args){
+  double df = args["df"];
+  arma::vec eta = args["eta"];
+  arma::vec lambda = args["lambda"];
+  double value = df * log(sum(eta%eta/(lambda+param)));
+  value += sum(log(lambda+param));
+  return Rcpp::List::create(Rcpp::Named("objective") = value,
+                            Rcpp::Named("output") = 0);
+}
+
+// A class used by solveMKM
+// This class is used to avoid copying data to R when calling optim
+class DataMKM{
+public:
+  arma::mat y;
+  arma::mat X;
+  arma::field<arma::mat> Zlist;
+  arma::field<arma::mat> Klist;
+  int n;
+  int q;
+  int nre; //Number of random effects
+  double df;
+  double offset;
+  arma::mat ZK;
+  arma::mat S;
+  arma::mat ZKZ;
+  arma::mat SZKZ;
+  arma::vec weights;
+  arma::vec eigval;
+  arma::mat eigvec;
+  arma::vec eta;
+  double delta;
+  double ll;
+  arma::mat u;
+  arma::mat beta;
+  double Vu;
+  double Ve;
+  
+  // Constructor
+  DataMKM(arma::mat& y_, arma::mat& X_, 
+          arma::field<arma::mat>& Zlist_,
+          arma::field<arma::mat>& Klist_) :
+    y(y_), X(X_), Zlist(Zlist_), Klist(Klist_) {
+    n = y_.n_rows;
+    q = X_.n_cols;
+    nre = Zlist_.n_elem;
+    df = double(n)-double(q);
+    offset = log(double(n));
+    S.set_size(n,n);
+    S = arma::eye(n,n) - X*arma::inv_sympd(X.t()*X)*X.t();
+    ZKZ.set_size(n,n);
+    SZKZ.set_size(n,n);
+    eta.set_size(n);
+  }
+  
+  // Sets ZKZ matrix
+  void setZKZ(Rcpp::NumericVector x){
+    weights = Rcpp::as<arma::vec>(x);
+    weights = weights/sum(weights);
+    ZKZ = weights(0)*Zlist(0)*Klist(0)*Zlist(0).t();
+    for(int i=1; i<nre; ++i){
+      ZKZ += weights(i)*Zlist(i)*Klist(i)*Zlist(i).t();
+    }
+    SZKZ = S*(ZKZ+offset*arma::eye(n,n))*S;
+  }
+  
+  // Decomposes SZKZ matrix
+  Rcpp::NumericVector decompSZKZ(){
+    eigval.set_size(n);
+    eigvec.set_size(n,n);
+    eigen2(eigval, eigvec, SZKZ);
+    // Drop eigenvalues
+    eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
+    eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
+                    arma::span(q,eigvec.n_cols-1));
+    eta = eigvec.t()*y;
+    // Calculate variance
+    Rcpp::List optRes = optimize(*objREML,
+                                 Rcpp::List::create(
+                                   Rcpp::Named("df")=df,
+                                   Rcpp::Named("eta")=eta,
+                                   Rcpp::Named("lambda")=eigval), 
+                                   1.0e-10, 1.0e10);
+    delta = optRes["parameter"];
+    ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+    Rcpp::NumericVector output = optRes["objective"];
+    return output;
+  }
+  
+  void setZK(){
+    int nColZ=0;
+    int nRowK=0;
+    int nColK=0;
+    for(int i=0; i<nre; ++i){
+      nColZ += Zlist(i).n_cols;
+      nRowK += Klist(i).n_rows;
+      nColK += Klist(i).n_cols;
+    }
+    arma::mat Z(n,nColZ);
+    arma::mat K(nRowK,nColK,arma::fill::zeros);
+    nColZ = 0;
+    nRowK = 0;
+    nColK = 0;
+    for(int i=0; i<nre; ++i){
+      Z(arma::span(0,n-1),arma::span(nColK,Zlist(i).n_cols-1+nColK)) = Zlist(i);
+      nColZ += Zlist(i).n_cols;
+      K(arma::span(nRowK,Klist(i).n_rows-1+nRowK),arma::span(nColK,Klist(i).n_cols-1+nColK)) = weights(i)*Klist(i);
+      nColK += Klist(i).n_cols;
+      nRowK += Klist(i).n_rows;
+    }
+    ZK = Z*K;
+  }
+  
+  void solveMME(){
+    arma::mat Hinv = arma::inv_sympd(ZKZ+delta*arma::eye(n,n));
+    arma::mat XHinv = X.t()*Hinv;
+    beta = solve(XHinv*X,XHinv*y);
+    u = ZK.t()*(Hinv*(y-X*beta));
+    Vu = sum(eta%eta/(eigval+delta))/df;
+    Ve = delta*Vu;
+  }
+};
 
 /*
  * Reads a text file into an arma::mat
@@ -136,7 +265,6 @@ arma::mat sweepReps(arma::mat X, const arma::vec& reps){
   return output;
 }
 
-
 // Calculates a distance matrix from a marker matrix
 // Uses binomial theorem trick
 // Inspired by code from:
@@ -204,6 +332,17 @@ arma::mat df2mat1(const Rcpp::DataFrame& DF1){
   return X;
 }
 
+// Calculates VanRaden's G matrix, method 1
+// uses 2,1,0 coding of markers
+// modifies X and p
+arma::mat calcG(arma::mat& X, arma::rowvec& p){
+  p = mean(X,0)/2.0;
+  X.each_row() -= 2*p;
+  arma::mat G = X*X.t();
+  G = G/(2.0*sum(p%(1-p)));
+  return G;
+}
+
 // Gaussian kernel function
 // D is an Euclidean distance matrix
 // theta is the tuning parameter
@@ -211,18 +350,18 @@ arma::mat calcGK(arma::mat& D, double theta){
   return exp(-1.0*square(D/theta));
 }
 
-// Objective function for REML using the EMMA algorithm
-Rcpp::List objREML(double param, Rcpp::List args){
-  double df = args["df"];
-  arma::vec eta = args["eta"];
-  arma::vec lambda = args["lambda"];
-  double value = df * log(sum(eta%eta/(lambda+param)));
-  value += sum(log(lambda+param));
-  return Rcpp::List::create(Rcpp::Named("objective") = value,
-                            Rcpp::Named("output") = 0);
-}
-
-// Solve univariate mixed model
+//' @title Solve Univariate Model
+//' 
+//' @description
+//' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Z a matrix with n rows and m columns
+//' @param K a matrix with m rows and m columns
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X, 
                     const arma::mat& Z, const arma::mat& K){
   int n = y.n_rows;
@@ -269,7 +408,18 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("LL")=ll);
 }
 
-// Solve multivariate mixed model
+//' @title Solve Multivariate Model
+//' 
+//' @description
+//' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+//'
+//' @param Y a matrix with n rows and q columns
+//' @param X a matrix with n rows and x columns
+//' @param Z a matrix with n rows and m columns
+//' @param K a matrix with m rows and m columns
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X, 
                     const arma::mat& Z, const arma::mat& K,
                     double tol=1e-6){
@@ -328,6 +478,55 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("LL")=double(ll(0,0)));
 }
 
+// Objective function for calculating variance component weights
+// Used by the R function optim
+// [[Rcpp::export]]
+Rcpp::NumericVector objWeights(Rcpp::NumericVector x, 
+                               SEXP ptrData){
+  Rcpp::XPtr<DataMKM> ptr = Rcpp::as<Rcpp::XPtr<DataMKM> >(ptrData);
+  ptr->setZKZ(x);
+  Rcpp::NumericVector output = ptr->decompSZKZ();
+  return output;
+}
+
+//' @title Solve Multikernel Model
+//' 
+//' @description
+//' Solves a univariate mixed model with multiple random effects.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Zlist a list of Z matrices
+//' @param Klist a list of K matrices
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveMKM(arma::mat& y, arma::mat& X, 
+                    arma::field<arma::mat>& Zlist, 
+                    arma::field<arma::mat>& Klist){
+  Rcpp::XPtr<DataMKM> ptrData(new DataMKM(y, X, Zlist,Klist), 
+                              true);
+  //Calculate weights
+  Rcpp::Function optim("optim");
+  Rcpp::Environment E("package:AlphaSimR");
+  Rcpp::Function objWeightsR = E["objWeightsR"];
+  Rcpp::NumericVector init(ptrData->nre,1.0/double(ptrData->nre)); // Starting weights
+  Rcpp::NumericVector zeros(ptrData->nre); // Lower bounds
+  Rcpp::NumericVector ones(ptrData->nre,1.0); // Upper bounds
+  optim(Rcpp::_["par"]=init, Rcpp::_["fn"]=objWeightsR, 
+        Rcpp::_["ptrData"]=ptrData, Rcpp::_["method"]="L-BFGS-B", 
+                Rcpp::_["lower"]=zeros, Rcpp::_["upper"]=ones);
+  //Find solution
+  ptrData->setZK();
+  ptrData->solveMME();
+  return Rcpp::List::create(Rcpp::Named("Vu")=ptrData->Vu,
+                            Rcpp::Named("Ve")=ptrData->Ve,
+                            Rcpp::Named("beta")=ptrData->beta,
+                            Rcpp::Named("u")=ptrData->u,
+                            Rcpp::Named("LL")=ptrData->ll,
+                            Rcpp::Named("weights")=ptrData->weights);
+}
+
 // Objective function for Gaussian kernel method
 Rcpp::List gaussObj(double theta, Rcpp::List args){
   Rcpp::List output;
@@ -337,9 +536,18 @@ Rcpp::List gaussObj(double theta, Rcpp::List args){
                             Rcpp::Named("output")=output);
 }
 
-// Called by GK_AS R function
-// [[Rcpp::export(.callGK_AS)]]
-Rcpp::List callGK_AS(arma::mat y, arma::vec x, arma::vec reps,
+// Objective function for multivariate Gaussian kernel method
+Rcpp::List gaussObjMV(double theta, Rcpp::List args){
+  Rcpp::List output;
+  arma::mat D = args["D"];
+  output = solveMVM(args["Y"],args["X"],args["Z"],calcGK(D,theta));
+  return Rcpp::List::create(Rcpp::Named("objective")=output["LL"],
+                            Rcpp::Named("output")=output);
+}
+
+// Called by GK R function
+// [[Rcpp::export]]
+Rcpp::List callGK(arma::mat y, arma::vec x, arma::vec reps,
                      std::string genoTrain, int nMarker, double maxTheta, 
                      int maxIter, bool writeForPred=true){
   Rcpp::List output;
@@ -349,7 +557,7 @@ Rcpp::List callGK_AS(arma::mat y, arma::vec x, arma::vec reps,
   y = sweepReps(y,reps);
   X = sweepReps(X,reps);
   Z = sweepReps(Z,reps);
-  arma::mat M = readMat(genoTrain,y.n_elem,nMarker,',',0,1);
+  arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ');
   arma::mat D = fastDist(M);
   output = optimize(*gaussObj,Rcpp::List::create(Rcpp::Named("y")=y,
                                                  Rcpp::Named("X")=X,
@@ -380,10 +588,10 @@ Rcpp::List callGK_AS(arma::mat y, arma::vec x, arma::vec reps,
   return output;
 }
 
-// Predicts BLUP from callGK_AS output
-// Called from PredGK_AS R function
-// [[Rcpp::export(.callPredGK_AS)]]
-arma::mat callPredGK_AS(const Rcpp::DataFrame& genoPred){
+// Predicts BLUP from callGK output
+// Called from PredGK R function
+// [[Rcpp::export]]
+arma::mat callPredGK(const Rcpp::DataFrame& genoPred){
   arma::mat X;
   X = df2mat1(genoPred);
   arma::mat M;
@@ -401,12 +609,12 @@ arma::mat callPredGK_AS(const Rcpp::DataFrame& genoPred){
   return Cut*W+intercept;
 }
 
-// Called from RRBLUP_AS R function
-// [[Rcpp::export(.callRRBLUP_AS)]]
-Rcpp::List callRRBLUP_AS(arma::mat y, arma::vec x, arma::vec reps, 
+// Called by RRBLUP function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP(arma::mat y, arma::vec x, arma::vec reps, 
                          std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
-  arma::mat Z = readMat(genoTrain,y.n_elem,nMarker,',',0,1);
+  arma::mat Z = readMat(genoTrain,y.n_elem,nMarker,' ');
   y = sweepReps(y,reps);
   X = sweepReps(X,reps);
   Z = sweepReps(Z,reps);
@@ -414,12 +622,12 @@ Rcpp::List callRRBLUP_AS(arma::mat y, arma::vec x, arma::vec reps,
   return solveUVM(y, X, Z, K);
 }
 
-// Called from RRBLUP_AS_MV R function
-// [[Rcpp::export(.callRRBLUP_AS_MV)]]
-Rcpp::List callRRBLUP_AS_MV(arma::mat Y, arma::vec x, arma::vec reps, 
+// Called by RRBLUP function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_MV(arma::mat Y, arma::vec x, arma::vec reps, 
                             std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
-  arma::mat Z = readMat(genoTrain,Y.n_rows,nMarker,',',0,1);
+  arma::mat Z = readMat(genoTrain,Y.n_rows,nMarker,' ');
   Y = sweepReps(Y,reps);
   X = sweepReps(X,reps);
   Z = sweepReps(Z,reps);
@@ -427,24 +635,3 @@ Rcpp::List callRRBLUP_AS_MV(arma::mat Y, arma::vec x, arma::vec reps,
   return solveMVM(Y, X, Z, K);
 }
 
-// Called from QUICK_AS R function
-// [[Rcpp::export(.callQUICK_AS)]]
-Rcpp::List callQUICK_AS(arma::mat y, arma::vec x, arma::vec reps, 
-                        std::string genoTrain, int nMarker, double varA,
-                        double varE){
-  int n=y.n_rows;
-  double delta=varE/(varA/double(nMarker));
-  arma::mat X = makeX(x);
-  arma::mat Z = readMat(genoTrain,y.n_elem,nMarker,',',0,1);
-  y = sweepReps(y,reps);
-  X = sweepReps(X,reps);
-  Z = sweepReps(Z,reps);
-  arma::mat K = arma::eye(nMarker,nMarker);
-  arma::mat ZK = Z*K;
-  arma::mat Hinv = inv(ZK*Z.t()+delta*arma::eye(n,n));
-  arma::mat XHinv = X.t()*Hinv;
-  arma::mat beta = solve(XHinv*X,XHinv*y);
-  arma::mat u = ZK.t()*(Hinv*(y-X*beta));
-  return Rcpp::List::create(Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u);
-}

@@ -29,12 +29,44 @@ arma::vec getGvA(const Rcpp::S4& trait, const Rcpp::S4& pop){
   return calcGvA(geno, a, intercept);
 }
 
+// Retrieves genetic values for TraitAG
+// A wrapper for accessing calcGvA
+// [[Rcpp::export]]
+arma::vec getGvAG(const Rcpp::S4& trait, const Rcpp::S4& pop, double z){
+  arma::vec a = trait.slot("addEff");
+  arma::vec x = trait.slot("gxeEff");
+  a = a+x*z;
+  double intercept = trait.slot("intercept");
+  arma::Mat<unsigned char> geno;
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
+  return calcGvA(geno, a, intercept);
+}
+
 // Retrieves genetic value for TraitAD
 // A wrapper for accessing calcGvAD
 // [[Rcpp::export]]
 arma::vec getGvAD(const Rcpp::S4& trait, const Rcpp::S4& pop){
   arma::vec a = trait.slot("addEff");
   arma::vec d = trait.slot("domEff");
+  double intercept = trait.slot("intercept");
+  arma::Mat<unsigned char> geno;
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
+  return calcGvAD(geno, a, d, intercept);
+}
+
+// Retrieves genetic value for TraitADG
+// A wrapper for accessing calcGvAD
+// [[Rcpp::export]]
+arma::vec getGvADG(const Rcpp::S4& trait, const Rcpp::S4& pop, double z){
+  arma::vec aOld = trait.slot("addEff");
+  arma::vec d = trait.slot("domEff");
+  arma::vec x = trait.slot("gxeEff");
+  arma::vec a = aOld+x*z;
+  d = d%(a/aOld);
   double intercept = trait.slot("intercept");
   arma::Mat<unsigned char> geno;
   geno = getGeno(pop.slot("geno"), 

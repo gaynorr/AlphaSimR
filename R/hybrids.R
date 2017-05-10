@@ -49,7 +49,7 @@ getHybridGvByChunk = function(trait,fPop,fPar,
 #' 
 #' @export
 hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
-                       w=0,reps=1,returnHybridPop=FALSE,
+                       w=0.5,reps=1,returnHybridPop=FALSE,
                        chunkSize=1000,
                        simParam=SIMPARAM){
   stopifnot(simParam@gender=="no")
@@ -84,7 +84,7 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
   pheno = NULL
   for(trait in simParam@traits){
     tmp = getHybridGvByChunk(trait,fPop,crossPlan[,1],
-                             mPop,crossPlan[,2],w=0,
+                             mPop,crossPlan[,2],w=0.5,
                              chunkSize=chunkSize)
     gv = cbind(gv, tmp)
     #Will a phenotype be calculated
@@ -183,7 +183,7 @@ calcGCA = function(pop,useGv=FALSE){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,useGv=FALSE,varE=NULL,reps=1,
-                       w=0,inbred=FALSE,simParam=SIMPARAM){
+                       w=0.5,inbred=FALSE,simParam=SIMPARAM){
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   if(!useGv){
     if(is.null(varE)){

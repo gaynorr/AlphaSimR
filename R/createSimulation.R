@@ -172,7 +172,7 @@ addTraitA = function(nQtlPerChr,meanG,varG,simParam=SIMPARAM,
   return(simParam)
 }
 
-#' @title Add an additive and dominance
+#' @title Add an additive and dominance trait
 #' 
 #' @description 
 #' Randomly assigns eligble QTLs for a trait with dominance. 
@@ -214,6 +214,100 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,simParam=SIMPARAM,
   simParam@traits[[simParam@nTraits]] = trait
   validObject(simParam)
   return(simParam)
+}
+
+#' @title Add an additive GxE trait
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for an additive GxE trait. 
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param meanG the mean genetic value for the trait
+#' @param varG the total genetic variance for the trait
+#' @param varGE the total genotype-by-environment variance for the 
+#' trait
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
+#' 
+#' @export
+addTraitAG = function(nQtlPerChr,meanG,varG,varGE,simParam=SIMPARAM,
+                      founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  addEff = rnorm(qtlLoci@nLoci)
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  tmp = tuneTraitA(geno,addEff,varG)
+  intercept = tmp$output$intercept
+  addEff = addEff*tmp$parameter
+  varGxeLoci = var(addEff)*varGE/varG
+  gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoci))
+  trait = new("TraitAG",
+              qtlLoci,
+              addEff=addEff,
+              intercept=meanG-intercept,
+              gxeEff = gxeEff,
+              varGxeLoci = varGxeLoci)
+  simParam@nTraits = simParam@nTraits + 1L
+  simParam@traits[[simParam@nTraits]] = trait
+  validObject(simParam)
+  return(simParam)
+  
+}
+
+#' @title Add an additive and dominance GxE trait
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
+#' value or nChr values.
+#' @param meanG the mean genetic value for the trait
+#' @param varG the total genetic variance for the trait
+#' @param domDegree the dominance degree of individual loci. 
+#' Can be a single value or nLoci values.
+#' @param varGE the total genotype-by-environment variance for the 
+#' trait
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
+#'  
+#' @export
+addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,
+                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  addEff = rnorm(qtlLoci@nLoci)
+  if(length(domDegree)==1){
+    domDegree = rep(domDegree,qtlLoci@nLoci)
+  }else{
+    stopifnot(length(domDegree)==qtlLoci@nLoci) 
+  }
+  addEff = rnorm(qtlLoci@nLoci)
+  domEff = abs(addEff)*domDegree
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  tmp = tuneTraitAD(geno,addEff,domEff,varG)
+  intercept = tmp$output$intercept
+  addEff = addEff*tmp$parameter
+  domEff = domEff*tmp$parameter
+  varGxeLoci = var(addEff)*varGE/varG
+  gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoci))
+  trait = new("TraitADG",
+              qtlLoci,
+              addEff=addEff,
+              domEff=domEff,
+              intercept=meanG-intercept,
+              gxeEff = gxeEff,
+              varGxeLoci = varGxeLoci)
+  simParam@nTraits = simParam@nTraits + 1L
+  simParam@traits[[simParam@nTraits]] = trait
+  validObject(simParam)
+  return(simParam)
+  
 }
 
 #' @title Create new Population
@@ -274,17 +368,4 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
   return(output)
 }
 
-
-#ToDo----
-addTraitAG = function(nQtlPerChr,meanG,varG,varGE,simParam=SIMPARAM,
-                      founderPop=FOUNDERPOP){
-  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  
-}
-
-addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,
-                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
-  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  
-}
 

@@ -12,10 +12,13 @@
 #' @param reps number of reps for phenotypes. This values is used for modelling 
 #' heterogenous error variance in genomic selection models. Leave value as 1 
 #' unless using reps for phenotypes.
+#' @param fixEff an integer indicating levels of fixed effect. Leave 
+#' value as 1 if not using different levels of fixed effects.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,simParam=SIMPARAM){
+writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
+                        simParam=SIMPARAM){
   stopifnot(dir.exists(dir))
   if(useQtl){
     nMarkers = simParam@traits[[snpChip]]@nLoci
@@ -41,7 +44,8 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,simParam=SIMPARAM){
   }
   #Write info.txt
   info = data.frame(id=pop@id,mother=pop@mother,father=pop@father,
-                    reps=rep(reps,pop@nInd),stringsAsFactors=FALSE)
+                    reps=rep(reps,pop@nInd),fixEff=rep(fixEff,pop@nInd),
+                    stringsAsFactors=FALSE)
   filePath = file.path(dir,"info.txt")
   if(file.exists(filePath)){
     write.table(info,filePath,append=TRUE,col.names=FALSE,
@@ -65,4 +69,62 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,simParam=SIMPARAM){
                 file.path(dir,"markers.txt"),append=TRUE,
                 col.names=FALSE,row.names=FALSE)
   }
+}
+
+#' @title Fit RR-BLUP Model
+#' 
+#' @description
+#' Saves a population's phenotypic and marker data to a directory.
+#'
+#' @param dir path to a directory with output from /code{/link{writeRecords}}
+#' @param traits an integer indicating the trait or traits to model, or a 
+#' function of the traits returning a single value.
+#' @param useGv should genetic values be used instead of phenotypes
+#'
+#' @export
+RRBLUP = function(dir,traits=1,useGv=FALSE){
+  #Read and calculate basic information
+  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
+                          comment.char="",stringsAsFactors=FALSE)
+  nInd = nrow(markerInfo)
+  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
+  markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  #Set trait/traits for genomic selection
+  if(useGv){
+    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
+  }else{
+    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }
+  y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
+  if(is.function(traits)){
+    y = apply(y,1,triats)
+    y = as.matrix(y)
+  }else{
+    y = y[,traits,drop=FALSE]
+  }
+  #Fit model
+  if(ncol(y)>1){
+    output = callRRBLUP_MV(y,markerInfo$fixEff,markerInfo$reps,
+                           file.path(dir,"markers.txt"),nMarkers)
+  }else{
+    output = callRRBLUP(y,markerInfo$fixEff,markerInfo$reps,
+                        file.path(dir,"markers.txt"),nMarkers)
+  }
+  output["markerType"] = markerType
+  class(output) = "RR-BLUP Solution"
+  return(output)
+}
+
+#' @title SolveMKM Objective
+#' 
+#' @description
+#' Used internally by SolveMKM and not for to be used directly.
+#' 
+#' @param x a numeric vector
+#' @param ptrData a pointer
+#' 
+#' @export
+objWeightsR = function(x, ptrData){
+  tmp = objWeights(x,ptrData)
+  return(tmp)
 }

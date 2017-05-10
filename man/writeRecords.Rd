@@ -4,7 +4,7 @@
 \alias{writeRecords}
 \title{Write data records}
 \usage{
-writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1,
+writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1, fixEff = 1,
   simParam = SIMPARAM)
 }
 \arguments{
@@ -21,6 +21,9 @@ genotypes.}
 \item{reps}{number of reps for phenotypes. This values is used for modelling 
 heterogenous error variance in genomic selection models. Leave value as 1 
 unless using reps for phenotypes.}
+
+\item{fixEff}{an integer indicating levels of fixed effect. Leave 
+value as 1 if not using different levels of fixed effects.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
