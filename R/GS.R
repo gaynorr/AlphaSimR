@@ -97,7 +97,7 @@ RRBLUP = function(dir,traits=1,useGv=FALSE){
   }
   y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
   if(is.function(traits)){
-    y = apply(y,1,triats)
+    y = apply(y,1,traits)
     y = as.matrix(y)
   }else{
     y = y[,traits,drop=FALSE]

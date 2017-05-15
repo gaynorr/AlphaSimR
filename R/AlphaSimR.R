@@ -1,8 +1,9 @@
 #' @useDynLib AlphaSimR
 #' @import Rcpp RcppArmadillo
 #' @importFrom methods new validObject
-#' @importFrom stats aggregate rnorm
-#' @importFrom utils combn
+#' @importFrom stats aggregate rnorm qnorm var
+#' @importFrom utils combn read.table write.table
+#' @importFrom MASS mvrnorm
 
 #' @title AlphaSimR: Breeding Program Simulations
 #' 

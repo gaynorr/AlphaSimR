@@ -14,6 +14,8 @@ solveMVM(Y, X, Z, K, tol = 1e-06)
 \item{Z}{a matrix with n rows and m columns}
 
 \item{K}{a matrix with m rows and m columns}
+
+\item{tol}{tolerance for convergence}
 }
 \description{
 Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.

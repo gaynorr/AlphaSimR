@@ -417,6 +417,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param Z a matrix with n rows and m columns
 //' @param K a matrix with m rows and m columns
+//' @param tol tolerance for convergence
 //'
 //' @export
 // [[Rcpp::export]]

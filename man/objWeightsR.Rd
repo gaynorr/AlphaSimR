@@ -2,7 +2,7 @@
 % Please edit documentation in R/GS.R
 \name{objWeightsR}
 \alias{objWeightsR}
-\title{Objective Function}
+\title{SolveMKM Objective}
 \usage{
 objWeightsR(x, ptrData)
 }
@@ -12,5 +12,5 @@ objWeightsR(x, ptrData)
 \item{ptrData}{a pointer}
 }
 \description{
-Used internally by SolveMKM
+Used internally by SolveMKM and not for to be used directly.
 }
