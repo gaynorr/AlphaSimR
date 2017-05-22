@@ -2,9 +2,9 @@
 % Please edit documentation in R/GS.R
 \name{RRBLUP}
 \alias{RRBLUP}
-\title{Fit RR-BLUP Model}
+\title{RR-BLUP Model}
 \usage{
-RRBLUP(dir, traits = 1, useGv = FALSE)
+RRBLUP(dir, traits = 1, useGv = FALSE, simParam = SIMPARAM)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}
@@ -13,7 +13,9 @@ RRBLUP(dir, traits = 1, useGv = FALSE)
 function of the traits returning a single value.}
 
 \item{useGv}{should genetic values be used instead of phenotypes}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \description{
-Saves a population's phenotypic and marker data to a directory.
+Fits an RR-BLUP model for subsequent prediction.
 }

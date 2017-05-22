@@ -45,7 +45,7 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -55,7 +55,10 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -96,7 +99,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
   if(maxCrosses>=nCrosses){
     take = sample.int(maxCrosses,nCrosses)
   }else{
-    warning("making duplicate crosses, because requested crosses exceeds unique combinations")
+    #Commented out warning to prevent confusion
+    #warning("making duplicate crosses, because requested crosses exceeds unique combinations")
     take = rep_len(sample.int(maxCrosses,maxCrosses),nCrosses)
     take = take[sample.int(length(take),length(take))]
   }
@@ -158,7 +162,7 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -168,7 +172,10 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -211,7 +218,8 @@ randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
   if(maxCrosses>=nCrosses){
     take = sample.int(maxCrosses,nCrosses)
   }else{
-    warning("making duplicate crosses, because requested crosses exceeds unique combinations")
+    #Commented out warning to prevent confusion
+    #warning("making duplicate crosses, because requested crosses exceeds unique combinations")
     take = rep_len(sample.int(maxCrosses,maxCrosses),nCrosses)
     take = take[sample.int(length(take),length(take))]
   }
@@ -265,7 +273,7 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -275,7 +283,10 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -316,7 +327,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -326,7 +337,10 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }

@@ -13,7 +13,8 @@ writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1, fixEff = 1,
 \item{dir}{path to a directory for saving output}
 
 \item{snpChip}{which SNP chip genotype to save. If useQtl=TRUE, this 
-value will indicate which trait's QTL genotype to save.}
+value will indicate which trait's QTL genotype to save. A value of 
+0 will skip writing a snpChip.}
 
 \item{useQtl}{should QTL genotype be written instead of SNP chip 
 genotypes.}

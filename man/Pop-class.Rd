@@ -38,5 +38,8 @@ gv reflects gv when w=0. Dimensions are nInd by nTraits.}
 
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are
 nInd by nTraits.}
+
+\item{\code{ebv}}{matrix of estimated breeding values. Dimensions 
+are nInd rows and one or more columns.}
 }}
 

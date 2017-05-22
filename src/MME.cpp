@@ -188,8 +188,8 @@ public:
  * A header can be skipped by setting skipRows to 1
  * Row names can be skipped by setting skipCols to 1
  */
-arma::mat readMat(std::string fileName, int rows, int cols, char sep=' ',
-                  int skipRows=0, int skipCols=0){
+arma::mat readMat(std::string fileName, int rows, int cols, 
+                  char sep=' ', int skipRows=0, int skipCols=0){
   arma::mat output(rows,cols);
   std::ifstream file(fileName.c_str());
   std::string line;
@@ -218,7 +218,7 @@ arma::mat readMat(std::string fileName, int rows, int cols, char sep=' ',
 }
 
 // Produces a sum to zero design matrix with an intercept
-arma::mat makeX(arma::vec& x){
+arma::mat makeX(arma::uvec& x){
   int nTrain = x.n_elem;
   double nLevels = x.max();
   arma::mat X(nTrain,nLevels);
@@ -227,15 +227,11 @@ arma::mat makeX(arma::vec& x){
   }else{
     X.zeros();
     X.col(0).ones();
-    Rcpp::IntegerVector tmp = Rcpp::Range(1,nLevels-1);
-    arma::uvec colNeg = Rcpp::as<arma::uvec>(tmp);
     for(int i=0; i<nTrain; ++i){
       if(x(i)==nLevels){
-        arma::uvec tmp(1);
-        tmp(0) = i;
-        X(tmp,colNeg).fill(-1.0);
+        X(i,arma::span(1,nLevels-1)).fill(-1.0);
       }else{
-        X(i,int(x(i)))=1;
+        X(i,x(i))=1;
       }
     }
   }
@@ -243,26 +239,23 @@ arma::mat makeX(arma::vec& x){
 }
 
 // Produces a genotype design matrix
-arma::mat makeZ(arma::vec& z, int nPred){
+// z is an indicator vector matching y to individuals in G
+// nGeno is the number of genotypes in the G matrix
+arma::mat makeZ(arma::uvec& z, int nGeno){
   int nTrain = z.n_elem;
-  int nLevels = z.max();
-  arma::mat Z(nTrain,nLevels+nPred);
-  Z.zeros();
+  arma::mat Z(nTrain,nGeno,arma::fill::zeros);
   for(int i=0; i<nTrain; ++i){
-    Z(i,int(z(i)-1)) = 1;
+    Z(i,z(i)) = 1;
   }
   return Z;
 }
 
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
-arma::mat sweepReps(arma::mat X, const arma::vec& reps){
-  arma::mat output(X.n_rows,X.n_cols);
-  arma::vec repsT = sqrt(1/reps);
+void sweepReps(arma::mat& X, arma::vec& reps){
   for(int i=0; i<X.n_cols; ++i){
-    output.col(i) = X.col(i)/repsT;
+    X.col(i) = X.col(i)/reps;
   }
-  return output;
 }
 
 // Calculates a distance matrix from a marker matrix
@@ -279,7 +272,8 @@ arma::mat fastDist(arma::mat& X){
   D = sqrt(D);
   D.diag().zeros(); //Removes NaN values
   if(D.has_nan()){
-    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+    //Assuming there won't be any Inf values
+    D.elem(find_nonfinite(D)).fill(0.0); 
   }
   return D; 
 }
@@ -292,47 +286,13 @@ arma::mat fastPairDist(arma::mat& X, arma::mat& Y){
   D.each_row() += Yn.t();
   D = sqrt(D);
   if(D.has_nan()){
-    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+    //Assuming there won't be any Inf values
+    D.elem(find_nonfinite(D)).fill(0.0); 
   }
   return D; 
 }
 
-// Converts two R data.frames into a single mat
-arma::mat df2mat(const Rcpp::DataFrame& DF1, 
-                 const Rcpp::DataFrame& DF2){
-  int nRows1 = DF1.nrows();
-  int nRows2 = DF2.nrows();
-  arma::mat X((nRows1+nRows2),DF1.size());
-  Rcpp::NumericVector tmp1;
-  Rcpp::NumericVector tmp2;
-  for(int i=0; i<DF1.size(); ++i){
-    tmp1 = DF1[i];
-    for(int j=0; j<nRows1; ++j){
-      X(j,i) = tmp1[j];
-    }
-    tmp2 = DF2[i];
-    for(int k=0; k<nRows2; ++k){
-      X(k+nRows1,i) = tmp2[k];
-    }
-  }
-  return X;
-}
-
-// Converts one R data.frame into an mat
-arma::mat df2mat1(const Rcpp::DataFrame& DF1){
-  int nRows1 = DF1.nrows();
-  arma::mat X((nRows1),DF1.size());
-  Rcpp::NumericVector tmp1;
-  for(int i=0; i<DF1.size(); ++i){
-    tmp1 = DF1[i];
-    for(int j=0; j<nRows1; ++j){
-      X(j,i) = tmp1[j];
-    }
-  }
-  return X;
-}
-
-// Calculates VanRaden's G matrix, method 1
+// Calculates VanRaden's G matrix
 // uses 2,1,0 coding of markers
 // modifies X and p
 arma::mat calcG(arma::mat& X, arma::rowvec& p){
@@ -340,6 +300,15 @@ arma::mat calcG(arma::mat& X, arma::rowvec& p){
   X.each_row() -= 2*p;
   arma::mat G = X*X.t();
   G = G/(2.0*sum(p%(1-p)));
+  return G;
+}
+
+// Creates G matrix from markers using readMat for markers
+arma::mat makeG(std::string fileName, int rows, int cols, char sep=' ',
+                int skipRows=0, int skipCols=0){
+  arma::mat X = readMat(fileName,rows,cols,sep,skipRows,skipCols);
+  arma::rowvec p(X.n_cols);
+  arma::mat G = calcG(X,p);
   return G;
 }
 
@@ -443,14 +412,17 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     arma::mat VeNew = arma::zeros<arma::mat>(m,m);
     arma::mat VuNew = arma::zeros<arma::mat>(m,m);
     for(int i=0; i<n; ++i){
-      Gt.col(i) = eigval(i)*Vu*arma::inv_sympd(eigval(i)*Vu+Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
+      Gt.col(i) = eigval(i)*Vu*arma::inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
     }
     arma::mat BNew = (Yt - Gt)*W;
     arma::mat sigma(m,m);
     for(int i=0; i<n; ++i){
-      sigma = eigval(i)*Vu-(eigval(i)*Vu)*arma::inv_sympd(eigval(i)*Vu+Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
+      sigma = eigval(i)*Vu-(eigval(i)*Vu)*arma::inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
       VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
-      VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*(Yt.col(i)-BNew*Xt.col(i)-Gt.col(i)).t()+sigma);
+      VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*
+        (Yt.col(i)-BNew*Xt.col(i)-Gt.col(i)).t()+sigma);
     }
     double denom = fabs(sum(Ve.diag()));
     if(denom>0.0){
@@ -461,9 +433,11 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Vu = VuNew;
     B = BNew;
   }
-  arma::mat HI = inv_sympd(kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+tol*arma::eye(n*m,n*m));
+  arma::mat HI = inv_sympd(kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
+    tol*arma::eye(n*m,n*m));
   arma::mat E = Y.t() - B*X.t();
-  arma::mat U = kron(K, Vu)*kron(Z.t(), arma::eye(m,m))*(HI*arma::vectorise(E)); //BLUPs
+  arma::mat U = kron(K, Vu)*kron(Z.t(), 
+                     arma::eye(m,m))*(HI*arma::vectorise(E)); //BLUPs
   U.reshape(m,U.n_elem/m);
   //Log Likelihood calculation
   arma::mat ll = -0.5*arma::vectorise(E).t()*HI*arma::vectorise(E);
@@ -511,12 +485,13 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   Rcpp::Function optim("optim");
   Rcpp::Environment E("package:AlphaSimR");
   Rcpp::Function objWeightsR = E["objWeightsR"];
-  Rcpp::NumericVector init(ptrData->nre,1.0/double(ptrData->nre)); // Starting weights
+  Rcpp::NumericVector init(ptrData->nre,1.0/double(ptrData->nre));
   Rcpp::NumericVector zeros(ptrData->nre); // Lower bounds
   Rcpp::NumericVector ones(ptrData->nre,1.0); // Upper bounds
   optim(Rcpp::_["par"]=init, Rcpp::_["fn"]=objWeightsR, 
         Rcpp::_["ptrData"]=ptrData, Rcpp::_["method"]="L-BFGS-B", 
-                Rcpp::_["lower"]=zeros, Rcpp::_["upper"]=ones);
+        Rcpp::_["lower"]=zeros, Rcpp::_["upper"]=ones);
+  
   //Find solution
   ptrData->setZK();
   ptrData->solveMME();
@@ -548,26 +523,29 @@ Rcpp::List gaussObjMV(double theta, Rcpp::List args){
 
 // Called by GK R function
 // [[Rcpp::export]]
-Rcpp::List callGK(arma::mat y, arma::vec x, arma::vec reps,
-                     std::string genoTrain, int nMarker, double maxTheta, 
-                     int maxIter, bool writeForPred=true){
+Rcpp::List callGK(arma::mat y, arma::uvec x, arma::vec reps,
+                     std::string genoTrain, int nMarker, 
+                     double maxTheta, int maxIter, 
+                     bool writeForPred=true){
   Rcpp::List output;
   arma::mat X = makeX(x);
   arma::mat Z;
   Z.eye(y.n_elem,y.n_elem);
-  y = sweepReps(y,reps);
-  X = sweepReps(X,reps);
-  Z = sweepReps(Z,reps);
+  reps = sqrt(1.0/reps);
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Z,reps);
   arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ');
   arma::mat D = fastDist(M);
-  output = optimize(*gaussObj,Rcpp::List::create(Rcpp::Named("y")=y,
-                                                 Rcpp::Named("X")=X,
-                                                 Rcpp::Named("Z")=Z,
-                                                 Rcpp::Named("D")=D),
-                                                 1e-10,
-                                                 maxTheta*D.max(),
-                                                 maxIter,
-                                                 true);
+  output = optimize(*gaussObj,
+                    Rcpp::List::create(Rcpp::Named("y")=y,
+                                       Rcpp::Named("X")=X,
+                                       Rcpp::Named("Z")=Z,
+                                       Rcpp::Named("D")=D),
+                                       1e-10,
+                                       maxTheta*D.max(),
+                                       maxIter,
+                                       true);
   if(writeForPred){
     M.save("M.bin");
     arma::mat theta(1,1);
@@ -582,7 +560,8 @@ Rcpp::List callGK(arma::mat y, arma::vec x, arma::vec reps,
     intercept = beta(0,0);
     intercept.save("intercept.bin");
     arma::mat Yt = y - X*beta;
-    arma::mat W = inv(calcGK(D, double(theta(0,0)))+Ve/Vu*arma::eye(D.n_rows,D.n_cols));
+    arma::mat W = inv(calcGK(D, double(theta(0,0)))+
+      Ve/Vu*arma::eye(D.n_rows,D.n_cols));
     W = W*Yt;
     W.save("W.bin");
   }
@@ -594,7 +573,7 @@ Rcpp::List callGK(arma::mat y, arma::vec x, arma::vec reps,
 // [[Rcpp::export]]
 arma::mat callPredGK(const Rcpp::DataFrame& genoPred){
   arma::mat X;
-  X = df2mat1(genoPred);
+  //X = df2mat1(genoPred);
   arma::mat M;
   M.load("M.bin");
   arma::mat W;
@@ -612,27 +591,54 @@ arma::mat callPredGK(const Rcpp::DataFrame& genoPred){
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP(arma::mat y, arma::vec x, arma::vec reps, 
+Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, 
                          std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
   arma::mat Z = readMat(genoTrain,y.n_elem,nMarker,' ');
-  y = sweepReps(y,reps);
-  X = sweepReps(X,reps);
-  Z = sweepReps(Z,reps);
+  reps = sqrt(1.0/reps);
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Z,reps);
   arma::mat K = arma::eye(nMarker,nMarker);
   return solveUVM(y, X, Z, K);
 }
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_MV(arma::mat Y, arma::vec x, arma::vec reps, 
+Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, 
                             std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
   arma::mat Z = readMat(genoTrain,Y.n_rows,nMarker,' ');
-  Y = sweepReps(Y,reps);
-  X = sweepReps(X,reps);
-  Z = sweepReps(Z,reps);
+  reps = sqrt(1.0/reps);
+  sweepReps(Y,reps);
+  sweepReps(X,reps);
+  sweepReps(Z,reps);
   arma::mat K = arma::eye(nMarker,nMarker);
   return solveMVM(Y, X, Z, K);
+}
+
+Rcpp::List callSC_GBLUP(arma::mat y, arma::uvec x, arma::vec reps,
+                        std::string genoFemale, int nFemale, 
+                        arma::uvec fPar, std::string genoMale, 
+                        int nMale, arma::uvec mPar, int nMarker){
+  int n = y.n_rows;
+  arma::mat X = makeX(x);
+  arma::field<arma::mat> Zlist(3);
+  Zlist(0) = makeZ(fPar, nFemale);
+  Zlist(1) = makeZ(mPar, nMale);
+  Zlist(2) = arma::eye(n,n);
+  arma::field<arma::mat> Klist(3);
+  Klist(0) = makeG(genoFemale,nFemale,nMarker);
+  Klist(1) = makeG(genoMale,nMale,nMarker);
+  // K3 = Z1*K1*Z1' % Z2*K2*Z2'
+  Klist(2) = (Zlist(0)*Klist(0)*Zlist(0).t())%
+  (Zlist(1)*Klist(1)*Zlist(1).t());
+  reps = sqrt(1.0/reps);
+  sweepReps(y, reps);
+  sweepReps(X, reps);
+  sweepReps(Zlist(0), reps);
+  sweepReps(Zlist(1), reps);
+  sweepReps(Zlist(2), reps);
+  return solveMKM(y,X,Zlist,Klist);
 }
 

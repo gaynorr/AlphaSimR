@@ -345,7 +345,7 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
   }else{
     stop(paste("no rules for gender type",simParam@gender))
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop",
                nInd=rawPop@nInd,
@@ -361,7 +361,10 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
