@@ -2,20 +2,21 @@
 % Please edit documentation in R/createSimulation.R
 \name{addTraitAG}
 \alias{addTraitAG}
-\title{Add an additive GxE trait}
+\title{Add additive GxE traits}
 \usage{
-addTraitAG(nQtlPerChr, meanG, varG, varGE, simParam = SIMPARAM,
-  founderPop = FOUNDERPOP)
+addTraitAG(nQtlPerChr, meanG, varG, varGE, corr = matrix(1),
+  simParam = SIMPARAM, founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{the mean genetic value for the trait}
+\item{meanG}{a vector of mean genetic values for one or more traits}
 
-\item{varG}{the total genetic variance for the trait}
+\item{varG}{a vector of total genetic variances for one or more traits}
 
-\item{varGE}{the total genotype-by-environment variance for the 
-trait}
+\item{varGE}{a vector of total genotype-by-environment variances for the traits}
+
+\item{corr}{a matrix of correlations between traits}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 
@@ -25,5 +26,7 @@ trait}
 Returns an object of \code{\link{SimParam-class}}
 }
 \description{
-Randomly assigns eligble QTLs for an additive GxE trait.
+Randomly assigns eligble QTLs for one ore more additive GxE traits. 
+If simulating more than one trait, all traits will be pleiotrophic 
+with correlated effects.
 }

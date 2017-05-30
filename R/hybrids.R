@@ -132,6 +132,9 @@ calcGCA = function(pop,useGv=FALSE){
     y=pop@gv
   }else{
     y=pop@pheno
+    if(any(is.na(y))){
+      stop("Missing values in pop@pheno")
+    }
   }
   colnames(y) = paste0("Trait",1:pop@nTraits)
   output = list()

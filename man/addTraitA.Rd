@@ -2,17 +2,19 @@
 % Please edit documentation in R/createSimulation.R
 \name{addTraitA}
 \alias{addTraitA}
-\title{Add an additive trait}
+\title{Add additive traits}
 \usage{
-addTraitA(nQtlPerChr, meanG, varG, simParam = SIMPARAM,
+addTraitA(nQtlPerChr, meanG, varG, corr = matrix(1), simParam = SIMPARAM,
   founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{the mean genetic value for the trait}
+\item{meanG}{a vector of mean genetic values for one or more traits}
 
-\item{varG}{the total genetic variance for the trait}
+\item{varG}{a vector of total genetic variances for one or more traits}
+
+\item{corr}{a matrix of correlations between traits}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 
@@ -22,5 +24,7 @@ addTraitA(nQtlPerChr, meanG, varG, simParam = SIMPARAM,
 Returns an object of \code{\link{SimParam-class}}
 }
 \description{
-Randomly assigns eligble QTLs for an additive trait.
+Randomly assigns eligble QTLs for one ore more additive traits. 
+If simulating more than one trait, all traits will be pleiotrophic 
+with correlated additive effects.
 }

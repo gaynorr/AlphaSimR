@@ -5,6 +5,84 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
+gebvRR <- function(RRsol, pop) {
+    .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
+}
+
+gebvGCA <- function(GCAsol, pop, female) {
+    .Call('AlphaSimR_gebvGCA', PACKAGE = 'AlphaSimR', GCAsol, pop, female)
+}
+
+gebvSCA <- function(SCAsol, pop) {
+    .Call('AlphaSimR_gebvSCA', PACKAGE = 'AlphaSimR', SCAsol, pop)
+}
+
+#' @title Solve Univariate Model
+#' 
+#' @description
+#' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#'
+#' @export
+solveUVM <- function(y, X, Z, K) {
+    .Call('AlphaSimR_solveUVM', PACKAGE = 'AlphaSimR', y, X, Z, K)
+}
+
+#' @title Solve Multivariate Model
+#' 
+#' @description
+#' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+#'
+#' @param Y a matrix with n rows and q columns
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#' @param tol tolerance for convergence
+#'
+#' @export
+solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
+    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
+}
+
+objWeights <- function(x, ptrData) {
+    .Call('AlphaSimR_objWeights', PACKAGE = 'AlphaSimR', x, ptrData)
+}
+
+#' @title Solve Multikernel Model
+#' 
+#' @description
+#' Solves a univariate mixed model with multiple random effects.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Zlist a list of Z matrices
+#' @param Klist a list of K matrices
+#'
+#' @export
+solveMKM <- function(y, X, Zlist, Klist) {
+    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
+}
+
+callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+}
+
+callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
+}
+
+callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
+callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
 getGeno <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
@@ -15,6 +93,10 @@ getDomGeno <- function(geno) {
 
 getHaplo <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
+    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
 }
 
 getGvA <- function(trait, pop) {
@@ -75,72 +157,6 @@ calcChrMinorFreq <- function(geno, ploidy) {
 
 convToImat <- function(X) {
     .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
-}
-
-#' @title Solve Univariate Model
-#' 
-#' @description
-#' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#'
-#' @export
-solveUVM <- function(y, X, Z, K) {
-    .Call('AlphaSimR_solveUVM', PACKAGE = 'AlphaSimR', y, X, Z, K)
-}
-
-#' @title Solve Multivariate Model
-#' 
-#' @description
-#' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#' @param tol tolerance for convergence
-#'
-#' @export
-solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
-    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
-}
-
-objWeights <- function(x, ptrData) {
-    .Call('AlphaSimR_objWeights', PACKAGE = 'AlphaSimR', x, ptrData)
-}
-
-#' @title Solve Multikernel Model
-#' 
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Zlist a list of Z matrices
-#' @param Klist a list of K matrices
-#'
-#' @export
-solveMKM <- function(y, X, Zlist, Klist) {
-    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
-}
-
-callGK <- function(y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred = TRUE) {
-    .Call('AlphaSimR_callGK', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, maxTheta, maxIter, writeForPred)
-}
-
-callPredGK <- function(genoPred) {
-    .Call('AlphaSimR_callPredGK', PACKAGE = 'AlphaSimR', genoPred)
-}
-
-callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
-}
-
-callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {

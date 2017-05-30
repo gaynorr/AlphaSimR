@@ -4,13 +4,17 @@
 \alias{pullSnpHaplo}
 \title{Pull SNP haplotypes}
 \usage{
-pullSnpHaplo(pop, snpChip = 1, simParam = SIMPARAM)
+pullSnpHaplo(pop, snpChip = 1, haplo = "all", simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{snpChip}{an integer. Indicates which SNP 
 chip's haplotypes to retrieve.}
+
+\item{haplo}{either "all" for all haplotypes or an integer 
+for a single set of haplotypes. Use a value of 1 for female 
+haplotyes and a value of 2 for male haplotypes.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

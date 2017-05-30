@@ -2,19 +2,22 @@
 % Please edit documentation in R/createSimulation.R
 \name{addTraitAD}
 \alias{addTraitAD}
-\title{Add an additive and dominance trait}
+\title{Add additive and dominance traits}
 \usage{
-addTraitAD(nQtlPerChr, meanG, varG, domDegree, simParam = SIMPARAM,
-  founderPop = FOUNDERPOP)
+addTraitAD(nQtlPerChr, meanG, varG, domDegree, corr = matrix(1),
+  simParam = SIMPARAM, founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{the mean genetic value for the trait}
+\item{meanG}{a vector of mean genetic values for one or more traits}
 
-\item{varG}{the total genetic variance for the trait}
+\item{varG}{a vector of total genetic variances for one or more traits}
 
-\item{domDegree}{the dominance degree of individual loci. Can be a single value or nLoci values.}
+\item{domDegree}{the dominance degree of individual loci. 
+Can be a single value or nLoci values.}
+
+\item{corr}{a matrix of correlations between traits}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 
@@ -24,5 +27,7 @@ addTraitAD(nQtlPerChr, meanG, varG, domDegree, simParam = SIMPARAM,
 Returns an object of \code{\link{SimParam-class}}
 }
 \description{
-Randomly assigns eligble QTLs for a trait with dominance.
+Randomly assigns eligble QTLs for one or more traits with dominance. 
+If simulating more than one trait, all traits will be pleiotrophic 
+with correlated additive effects.
 }

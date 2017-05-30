@@ -4,13 +4,17 @@
 \alias{pullQtlHaplo}
 \title{Pull QTL haplotypes}
 \usage{
-pullQtlHaplo(pop, trait = 1, simParam = SIMPARAM)
+pullQtlHaplo(pop, trait = 1, haplo = "all", simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{trait}{an integer. Indicates which trait's
 QTL haplotypes to retrieve.}
+
+\item{haplo}{either "all" for all haplotypes or an integer 
+for a single set of haplotypes. Use a value of 1 for female 
+haplotyes and a value of 2 for male haplotypes.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

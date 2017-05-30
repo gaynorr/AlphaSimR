@@ -137,6 +137,108 @@ setValidity("TraitADG",function(object){
   }
 })
 
+#RRsol----
+#' @title RR-BLUP Solution
+#' 
+#' @description Extends \code{\link{LociMap-class}} 
+#' to contain estimated effects from \code{\link{RRBLUP}}
+#' 
+#' @slot markerEff GEBVs for markers
+#' @slot fixEff Estimates for fixed effects
+#'
+#' @export
+setClass("RRsol",
+         slots=c(markerEff="matrix",
+                 fixEff="matrix"),
+         contains="LociMap")
+
+setValidity("RRsol",function(object){
+  errors = character()
+  if(!is.numeric(object@markerEff)){
+    errors = c(errors,"!is.numeric(markerEff)")
+  }
+  if(!is.numeric(object@fixEff)){
+    errors = c(errors,"!is.numeric(fixEff)")
+  }
+  if(object@nLoci!=nrow(object@markerEff)){
+    errors = c(errors,"nLoci!=nrow(markerEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#GCAsol----
+#' @title RR-BLUP GCA Solution
+#' 
+#' @description Extends \code{\link{LociMap-class}} 
+#' to contain estimated effects from \code{\link{RRBLUP_GCA}}
+#' 
+#' @slot femaleEff marker GCA for "female" pool
+#' @slot maleEff marker GCA for "male" pool
+#' @slot fixEff Estimates for fixed effects
+#'
+#' @export
+setClass("GCAsol",
+         slots=c(femaleEff="matrix",
+                 maleEff="matrix",
+                 fixEff="matrix"),
+         contains="LociMap")
+
+setValidity("GCAsol",function(object){
+  errors = character()
+  if(!is.numeric(object@femaleEff)){
+    errors = c(errors,"!is.numeric(femaleEff)")
+  }
+  if(!is.numeric(object@maleEff)){
+    errors = c(errors,"!is.numeric(maleEff)")
+  }
+  if(!is.numeric(object@fixEff)){
+    errors = c(errors,"!is.numeric(fixEff)")
+  }
+  if(object@nLoci!=nrow(object@femaleEff)){
+    errors = c(errors,"nLoci!=nrow(femaleEff)")
+  }
+  if(object@nLoci!=nrow(object@maleEff)){
+    errors = c(errors,"nLoci!=nrow(maleEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#SCAsol----
+#' @title RR-BLUP SCA Solution
+#' 
+#' @description Extends \code{\link{GCAsol-class}} 
+#' to contain estimated effects from \code{\link{RRBLUP_SCA}}
+#' 
+#' @slot scaEff marker SCA effects
+#'
+#' @export
+setClass("SCAsol",
+         slots=c(scaEff="matrix"),
+         contains="GCAsol")
+
+setValidity("SCAsol",function(object){
+  errors = character()
+  if(!is.numeric(object@scaEff)){
+    errors = c(errors,"!is.numeric(scaEff)")
+  }
+  if(object@nLoci!=nrow(object@scaEff)){
+    errors = c(errors,"nLoci!=nrow(scaEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
 #getGv----
 setGeneric("getGv",function(object,...){
   standardGeneric("getGv")
@@ -181,4 +283,3 @@ setMethod("getHybridGv",signature("TraitADG"),
             z = qnorm(w,sqrt(object@varGxeLoci))
             getHybridGvADG(object,fPop,fPar,mPop,mPar,z)
           })
-

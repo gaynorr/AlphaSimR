@@ -5,7 +5,7 @@
 \title{Write data records}
 \usage{
 writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1, fixEff = 1,
-  simParam = SIMPARAM)
+  includeHaplo = FALSE, append = TRUE, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -25,6 +25,13 @@ unless using reps for phenotypes.}
 
 \item{fixEff}{an integer indicating levels of fixed effect. Leave 
 value as 1 if not using different levels of fixed effects.}
+
+\item{includeHaplo}{should markers be seperated by female and male 
+haplotypes.}
+
+\item{append}{if true, new records are added to any existing records. 
+If false, any existing records are deleted before writing new records. 
+Note that this will delete all files in the 'dir' directory.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

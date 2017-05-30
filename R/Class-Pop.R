@@ -144,6 +144,24 @@ setMethod("[",
           }
 )
 
+#' @describeIn MapPop Combine MapPop chromosomes
+setMethod("c",
+          signature(x = "MapPop"),
+          function (x, ..., recursive = FALSE){
+            for(y in list(...)){
+              stopifnot(class(y)=="MapPop",
+                        x@nInd==y@nInd,
+                        x@ploidy==y@ploidy)
+              x@nChr = x@nChr+y@nChr
+              x@geno = rbind(x@geno,y@geno)
+              x@genMaps = rbind(x@genMaps,y@genMaps)
+              x@nLoci = c(x@nLoci,y@nLoci)
+            }
+            validObject(x)
+            return(x)
+          }
+)
+
 # Pop ---------------------------------------------------------------------
 
 #' @title Population
@@ -176,6 +194,15 @@ setClass("Pop",
 
 setValidity("Pop",function(object){
   errors = character()
+  if(any(grepl(" ",object@id,fixed=TRUE))){
+    errors = c(errors,"id can not contain spaces")
+  }
+  if(any(grepl(" ",object@mother,fixed=TRUE))){
+    errors = c(errors,"mother can not contain spaces")
+  }
+  if(any(grepl(" ",object@father,fixed=TRUE))){
+    errors = c(errors,"father can not contain spaces")
+  }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
   }
@@ -193,6 +220,15 @@ setValidity("Pop",function(object){
   }
   if(object@nInd!=nrow(object@ebv)){
     errors = c(errors,"nInd!=nrow(ebv)")
+  }
+  if(!is.numeric(object@gv)){
+    errors = c(errors,"!is.numeric(gv)")
+  }
+  if(!is.numeric(object@pheno)){
+    errors = c(errors,"!is.numeric(pheno)")
+  }
+  if(!is.numeric(object@ebv)){
+    errors = c(errors,"!is.numeric(ebv)")
   }
   if(object@nTraits!=ncol(object@gv)){
     errors = c(errors,"nTraits!=ncol(gv)")

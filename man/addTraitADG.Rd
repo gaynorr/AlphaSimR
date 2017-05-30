@@ -4,22 +4,23 @@
 \alias{addTraitADG}
 \title{Add an additive and dominance GxE trait}
 \usage{
-addTraitADG(nQtlPerChr, meanG, varG, domDegree, varGE, simParam = SIMPARAM,
-  founderPop = FOUNDERPOP)
+addTraitADG(nQtlPerChr, meanG, varG, domDegree, varGE, corr = matrix(1),
+  simParam = SIMPARAM, founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single 
 value or nChr values.}
 
-\item{meanG}{the mean genetic value for the trait}
+\item{meanG}{a vector of mean genetic values for one or more traits}
 
-\item{varG}{the total genetic variance for the trait}
+\item{varG}{a vector of total genetic variances for one or more traits}
 
 \item{domDegree}{the dominance degree of individual loci. 
 Can be a single value or nLoci values.}
 
-\item{varGE}{the total genotype-by-environment variance for the 
-trait}
+\item{varGE}{a vector of total genotype-by-environment variances for the traits}
+
+\item{corr}{a matrix of correlations between traits}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 
