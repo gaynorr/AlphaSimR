@@ -6,7 +6,8 @@
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param crossPlan a matrix with two column representing 
-#' female and male parents
+#' female and male parents. Either integers for the position in 
+#' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
@@ -18,6 +19,13 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
     stop("Only works with diploids")
   }
   stopifnot(class(pop)=="Pop")
+  if(is.character(crossPlan)){ #Match by ID
+    crossPlan = cbind(match(crossPlan[,1],pop$id),
+                      match(crossPlan[,2],pop$id))
+    if(any(is.na(crossPlan))){
+      stop("Failed to matched supplied IDs")
+    }
+  }
   geno = cross2(pop@geno,crossPlan[,1],
                 pop@geno,crossPlan[,2],
                 simParam@genMaps)
@@ -123,7 +131,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @param fPop an object of \code{\link{Pop-class}} for female parents.
 #' @param mPop an object of \code{\link{Pop-class}} for male parents.
 #' @param crossPlan a matrix with two column representing 
-#' female and male parents
+#' female and male parents. Either integers for the position in 
+#' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
@@ -135,6 +144,13 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
     stop("Only works with diploids")
   }
   stopifnot(class(mPop)=="Pop",class(fPop)=="Pop")
+  if(is.character(crossPlan)){ #Match by ID
+    crossPlan = cbind(match(crossPlan[,1],fPop$id),
+                      match(crossPlan[,2],mPop$id))
+    if(any(is.na(crossPlan))){
+      stop("Failed to matched supplied IDs")
+    }
+  }
   geno = cross2(fPop@geno,crossPlan[,1],
                 mPop@geno,crossPlan[,2],
                 simParam@genMaps)
