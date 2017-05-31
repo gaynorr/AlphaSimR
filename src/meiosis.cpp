@@ -1,5 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
+#include <random>
 
 // Simulates crossing over during meiosis
 // May be extended later to include higher ploidy levels
@@ -172,4 +173,87 @@ arma::field<arma::Cube<unsigned char> > createDH2(
   return output;
 }
 
+// Makes crosses between diploid individuals.
+// fGeno: female genotypes
+// fPar: female parents
+// mGeno: male genotypes
+// mPar: male parents
+// genMaps: chromosome genetic maps
+// [[Rcpp::export]]
+arma::field<arma::Cube<unsigned char> > crossPedigree(
+    const arma::field<arma::Cube<unsigned char> >& founders, 
+    arma::uvec fPar,
+    arma::uvec mPar,
+    const arma::field<arma::vec>& genMaps){
+  fPar -= 1; // R to C++
+  mPar -= 1; // R to C++
+  int nChr = founders.n_elem;
+  int nInd = fPar.n_elem;
+  
+  typedef std::minstd_rand G;
+  G g;
+  typedef std::uniform_int_distribution<> D;
+  D d(0,founders(0).n_slices);
+  
+  //Output data
+  arma::field<arma::Cube<unsigned char> > geno(nChr);
+  //Loop through chromosomes
+  for(int chr=0; chr<nChr; ++chr){
+    int segSites = founders(chr).n_rows;
+    arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
+    
+    bool done[nInd];
+    for (int i = 0; i<nInd; i++)
+    {
+      done[i] = false;
+    }
 
+    bool alldone;
+    do
+    {
+      alldone = true;
+      //Loop through individuals
+      for(int ind=0; ind<nInd; ++ind){
+        if (!done[ind])
+        {
+          if (fPar(ind) == -1){
+            //Female gamete
+            tmpGeno.slice(ind).col(0) = 
+              bivalent(founders(chr).slice(d(g)).col(0),
+                       founders(chr).slice(d(g)).col(1),
+                       genMaps(chr));
+            //Male gamete
+            tmpGeno.slice(ind).col(1) = 
+              bivalent(founders(chr).slice(d(g)).col(0),
+                       founders(chr).slice(d(g)).col(1),
+                       genMaps(chr));
+            done[ind] = true;
+          }
+          else
+          {
+            if (done[fPar(ind)] && done[mPar(ind)])
+            {
+              //Female gamete
+              tmpGeno.slice(ind).col(0) = 
+                bivalent(tmpGeno.slice(fPar(ind)).col(0),
+                         tmpGeno.slice(fPar(ind)).col(1),
+                         genMaps(chr));
+              //Male gamete
+              tmpGeno.slice(ind).col(1) = 
+                bivalent(tmpGeno.slice(mPar(ind)).col(0),
+                         tmpGeno.slice(mPar(ind)).col(1),
+                         genMaps(chr));
+              done[ind] = true;
+            }
+            else
+            {
+              alldone = false;
+            }
+          }
+        }
+      } //End individual loop
+    } while (!alldone);
+    geno(chr) = tmpGeno;
+  } //End chromosome loop
+  return geno;
+}

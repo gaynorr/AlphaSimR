@@ -362,3 +362,60 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   }
   return(output)
 }
+
+#' @title Make crosses based on a pedigree
+#' 
+#' @description 
+#' 
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
+  geno = crossPedigree(founders@geno,pedigree[,1],
+                pedigree[,2],
+                simParam@genMaps)
+  if(simParam@gender=="no"){
+    gender = rep("H",nrow(pedigree))
+  }else if(simParam@gender=="yes_rand"){
+    gender = sample(c("M","F"),nrow(pedigree),replace=TRUE)
+  }else if(simParam@gender=="yes_sys"){
+    gender = rep_len(c("M","F"),nrow(pedigree))
+  }else{
+    stop(paste("no rules for gender type",simParam@gender))
+  }
+  rawPop = new("RawPop",
+               nInd=nrow(pedigree),
+               nChr=founders@nChr,
+               ploidy=founders@ploidy,
+               nLoci=founders@nLoci,
+               gender=gender,
+               geno=geno)
+  if(is.null(id)){
+    lastId = get("LASTID",envir=.GlobalEnv)
+    id = (1:rawPop@nInd) + lastId
+    lastId = max(id)
+    updateId = TRUE
+  }else{
+    updateId = FALSE
+  }
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+  gv = do.call("cbind",gv)
+  output = new("Pop", rawPop,
+               id=as.character(id),
+               mother=as.character(pedigree[,2]),
+               father=as.character(pedigree[,1]),
+               nTraits=simParam@nTraits,
+               gv=gv,
+               pheno=matrix(NA_real_,
+                            nrow=rawPop@nInd,
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
+  if(updateId){
+    assign("LASTID",lastId,envir=.GlobalEnv)
+  }
+  return(output)
+}
