@@ -120,6 +120,19 @@ addSnpChip = function(nSnpPerChr,simParam=SIMPARAM){
   return(simParam)
 }
 
+addStructuredSnpChips = function(nSnpPerChr,structure,simParam=SIMPARAM){
+  if(length(nSnpPerChr)==1){
+    nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
+  }
+  stopifnot(length(nSnpPerChr)==simParam@nChr)
+  stopifnot(sapply(simParam@potSnp,length)>=nSnpPerChr)
+  stopifnot(dim(structure)[2]==sum(nSnpPerChr))
+  lociLoc =   lociLoc = lapply(1:simParam@nChr,function(x){
+    sort(sample(simParam@potSnp[[x]],nSnpPerChr[x]))
+  })
+  return(simParam)
+}
+
 #Function for selecting QTL loci called by all addTrait functions
 pickQtlLoci = function(nQtlPerChr, simParam){
   if(length(nQtlPerChr)==1){
