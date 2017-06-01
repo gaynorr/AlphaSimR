@@ -124,11 +124,11 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
-#' @param useGv should genetic values be used instead of phenotypes
+#' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
 #' 
 #' @export
-calcGCA = function(pop,useGv=FALSE){
-  if(useGv){
+calcGCA = function(pop,use="pheno"){
+  if(use == "gv"){
     y=pop@gv
   }else{
     y=pop@pheno
@@ -164,8 +164,8 @@ calcGCA = function(pop,useGv=FALSE){
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param testers an object of \code{\link{Pop-class}}
-#' @param useGv should genetic values be used instead of phenotypes
-#' @param varE error variances for phenotype if useGv=FALSE. A vector 
+#' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
+#' @param varE error variances for phenotype if \code{use="pheno"}. A vector
 #' of length nTraits for independent error or a square matrix of 
 #' dimensions nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
@@ -185,18 +185,18 @@ calcGCA = function(pop,useGv=FALSE){
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-setPhenoGCA = function(pop,testers,useGv=FALSE,varE=NULL,reps=1,
+setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                        w=0.5,inbred=FALSE,simParam=SIMPARAM){
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
-  if(!useGv){
+  if(!(use == "gv")){
     if(is.null(varE)){
-      stop("varE must be specified if useGv=FALSE")
+      stop("varE must be specified if use=\"pheno\"")
     }
   }
   tmp = hybridCross(fPop=pop,mPop=testers,crossPlan="testcross",
                     varE=varE,w=w,reps=reps,returnHybridPop=inbred,
                     simParam=simParam)
-  tmp = calcGCA(pop=tmp,useGv=useGv)
+  tmp = calcGCA(pop=tmp,use=use)
   pop@pheno = as.matrix(tmp$females[,-1])
   return(pop)
 }

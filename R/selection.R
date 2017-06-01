@@ -8,7 +8,8 @@
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param useGv should genetic value be used instead of phenotypes
+#' @param use select on true genetic value (\code{gv}), estimated
+#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' 
@@ -16,18 +17,22 @@
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectInd = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
+selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
   stopifnot(nInd<=pop@nInd)
   if(class(trait)=="function"){
-    if(useGv){
+    if(use == "gv"){
       response = apply(pop@gv,1,trait)
+    }else if(use == "ebv"){
+      response = apply(pop@ebv,1,trait)
     }else{
       response = apply(pop@pheno,1,trait)
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(useGv){
+    if(use == "gv"){
       response = pop@gv[,trait]
+    }else if(use == "ebv"){
+      response = pop@ebv[,trait]
     }else{
       response = pop@pheno[,trait]
     }
@@ -49,7 +54,8 @@ selectInd = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param useGv should genetic value be used instead of phenotypes
+#' @param use select on true genetic value (\code{gv}), estimated
+#' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' 
@@ -57,12 +63,12 @@ selectInd = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectMale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
+selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
   pop = pop[which(pop@gender=="M")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"males"))
   }
-  pop = selectInd(pop=pop,nInd=nInd,trait=trait,useGv=useGv,
+  pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
                   selectTop=selectTop)
   return(pop)
 }
@@ -77,7 +83,8 @@ selectMale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param useGv should genetic value be used instead of phenotypes
+#' @param use select on true genetic value (\code{gv}), estimated
+#' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' 
@@ -85,12 +92,12 @@ selectMale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectFemale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
+selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
   pop = pop[which(pop@gender=="F")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"females"))
   }
-  pop = selectInd(pop=pop,nInd=nInd,trait=trait,useGv=useGv,
+  pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
                   selectTop=selectTop)
   return(pop)
 }
@@ -105,7 +112,8 @@ selectFemale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param useGv should genetic value be used instead of phenotypes
+#' @param use select on true genetic value (\code{gv}), estimated
+#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' 
@@ -113,7 +121,7 @@ selectFemale = function(pop,nInd,trait=1,useGv=FALSE,selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectFam = function(pop,nFam,trait=1,useGv=FALSE,selectTop=TRUE){
+selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
   families = paste(pop@mother,pop@father,sep="_")
   availFam = length(unique(families))
   if(nFam>availFam){
@@ -121,15 +129,19 @@ selectFam = function(pop,nFam,trait=1,useGv=FALSE,selectTop=TRUE){
                "families are available"))
   }
   if(class(trait)=="function"){
-    if(useGv){
+    if(use == "gv"){
       response = apply(pop@gv,1,trait)
+    }else if(use == "ebv"){
+      response = apply(pop@ebv,1,trait)
     }else{
       response = apply(pop@pheno,1,trait)
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(useGv){
+    if(use == "gv"){
       response = pop@gv[,trait]
+    }else if(use == "ebv"){
+      response = pop@ebv[,trait]
     }else{
       response = pop@pheno[,trait]
     }
@@ -156,7 +168,8 @@ selectFam = function(pop,nFam,trait=1,useGv=FALSE,selectTop=TRUE){
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param useGv should genetic value be used instead of phenotypes
+#' @param use select on true genetic value (\code{gv}), estimated
+#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' 
@@ -164,22 +177,26 @@ selectFam = function(pop,nFam,trait=1,useGv=FALSE,selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectWithinFam = function(pop,nInd,trait=1,useGv=FALSE,
+selectWithinFam = function(pop,nInd,trait=1,use="pheno",
                            selectTop=TRUE){
   families = paste(pop@mother,pop@father,sep="_")
   if(any(table(families)<nInd)){
     stop("some families have less than nInd individuals")
   }
   if(class(trait)=="function"){
-    if(useGv){
+    if(use == "gv"){
       response = apply(pop@gv,1,trait)
+    }else if(use == "ebv"){
+      response = apply(pop@ebv,1,trait)
     }else{
       response = apply(pop@pheno,1,trait)
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(useGv){
+    if(use == "gv"){
       response = pop@gv[,trait]
+    }else if(use == "ebv"){
+      response = pop@ebv[,trait]
     }else{
       response = pop@pheno[,trait]
     }
