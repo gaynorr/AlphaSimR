@@ -373,20 +373,25 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
 #' 
 #' @export
 pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
-  geno = crossPedigree(founders@geno,pedigree[,1],
-                pedigree[,2],
+  stopifnot(class(pedigree)=="Pedigree")
+  stopifnot(class(founders)=="MapPop")
+  
+  sortedped = sortPed(pedigree)
+  
+  geno = crossPedigree(founders@geno,sortedped@father,
+                sortedped@mother,
                 simParam@genMaps)
   if(simParam@gender=="no"){
-    gender = rep("H",nrow(pedigree))
+    gender = rep("H",sortedped@nInd)
   }else if(simParam@gender=="yes_rand"){
-    gender = sample(c("M","F"),nrow(pedigree),replace=TRUE)
+    gender = sample(c("M","F"),sortedped@nInd,replace=TRUE)
   }else if(simParam@gender=="yes_sys"){
-    gender = rep_len(c("M","F"),nrow(pedigree))
+    gender = rep_len(c("M","F"),sortedped@nInd)
   }else{
     stop(paste("no rules for gender type",simParam@gender))
   }
   rawPop = new("RawPop",
-               nInd=nrow(pedigree),
+               nInd=sortedped@nInd,
                nChr=founders@nChr,
                ploidy=founders@ploidy,
                nLoci=founders@nLoci,
@@ -404,8 +409,8 @@ pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
-               mother=as.character(pedigree[,2]),
-               father=as.character(pedigree[,1]),
+               mother=as.character(sortedped@mother),
+               father=as.character(sortedped@father),
                nTraits=simParam@nTraits,
                gv=gv,
                pheno=matrix(NA_real_,

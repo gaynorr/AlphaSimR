@@ -9,7 +9,7 @@
 \usage{
 \S4method{[}{HybridPop}(x, i)
 
-\S4method{c}{HybridPop}(x, ...)
+\S4method{c}{HybridPop}(x, ..., recursive = FALSE)
 }
 \description{
 A lightweight version of \code{\link{Pop-class}} for hybrid lines.

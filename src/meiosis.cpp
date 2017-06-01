@@ -202,57 +202,38 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
     int segSites = founders(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     
-    bool done[nInd];
-    for (int i = 0; i<nInd; i++)
-    {
-      done[i] = false;
-    }
-
-    bool alldone;
-    do
-    {
-      alldone = true;
-      //Loop through individuals
-      for(int ind=0; ind<nInd; ++ind){
-        if (!done[ind])
-        {
-          if (fPar(ind) == -1){
-            //Female gamete
-            tmpGeno.slice(ind).col(0) = 
-              bivalent(founders(chr).slice(d(g)).col(0),
-                       founders(chr).slice(d(g)).col(1),
-                       genMaps(chr));
-            //Male gamete
-            tmpGeno.slice(ind).col(1) = 
-              bivalent(founders(chr).slice(d(g)).col(0),
-                       founders(chr).slice(d(g)).col(1),
-                       genMaps(chr));
-            done[ind] = true;
-          }
-          else
-          {
-            if (done[fPar(ind)] && done[mPar(ind)])
-            {
-              //Female gamete
-              tmpGeno.slice(ind).col(0) = 
-                bivalent(tmpGeno.slice(fPar(ind)).col(0),
-                         tmpGeno.slice(fPar(ind)).col(1),
-                         genMaps(chr));
-              //Male gamete
-              tmpGeno.slice(ind).col(1) = 
-                bivalent(tmpGeno.slice(mPar(ind)).col(0),
-                         tmpGeno.slice(mPar(ind)).col(1),
-                         genMaps(chr));
-              done[ind] = true;
-            }
-            else
-            {
-              alldone = false;
-            }
-          }
-        }
-      } //End individual loop
-    } while (!alldone);
+    //Loop through individuals
+    for(int ind=0; ind<nInd; ++ind){
+      if (fPar(ind) == -1){
+        //Female gamete
+        tmpGeno.slice(ind).col(0) = 
+          bivalent(founders(chr).slice(d(g)).col(0),
+                   founders(chr).slice(d(g)).col(1),
+                   genMaps(chr));
+      }
+      else {
+        //Female gamete
+        tmpGeno.slice(ind).col(0) = 
+          bivalent(tmpGeno.slice(fPar(ind)).col(0),
+                   tmpGeno.slice(fPar(ind)).col(1),
+                   genMaps(chr));           
+      }
+      if (mPar(ind) == -1) {
+        //Male gamete
+        tmpGeno.slice(ind).col(1) = 
+          bivalent(founders(chr).slice(d(g)).col(0),
+                   founders(chr).slice(d(g)).col(1),
+                   genMaps(chr));
+      }
+      else
+      {
+        //Male gamete
+        tmpGeno.slice(ind).col(1) = 
+          bivalent(tmpGeno.slice(mPar(ind)).col(0),
+                   tmpGeno.slice(mPar(ind)).col(1),
+                   genMaps(chr));
+      }
+    } //End individual loop
     geno(chr) = tmpGeno;
   } //End chromosome loop
   return geno;

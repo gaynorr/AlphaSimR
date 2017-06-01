@@ -9,7 +9,7 @@
 \usage{
 \S4method{[}{RawPop}(x, i)
 
-\S4method{c}{RawPop}(x, ...)
+\S4method{c}{RawPop}(x, ..., recursive = FALSE)
 }
 \description{
 The raw population class contains only genotype and gender data. 
