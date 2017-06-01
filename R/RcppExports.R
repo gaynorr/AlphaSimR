@@ -159,6 +159,14 @@ convToImat <- function(X) {
     .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
 }
 
+sampAllComb <- function(nLevel1, nLevel2, n) {
+    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
+}
+
+sampHalfDialComb <- function(nLevel, n) {
+    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
+}
+
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {
     .Call('AlphaSimR_readAF', PACKAGE = 'AlphaSimR', nInd, segSites, ploidy, keep, inbred)
 }

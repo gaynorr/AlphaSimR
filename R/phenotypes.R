@@ -57,10 +57,10 @@ calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
-#' It was intended for representation of replicated yield trials in plant 
+#' It is intended to represent replicated yield trials in plant 
 #' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number plots per entry. The resulting phenotype 
-#' would reflect the mean of all replications.
+#' reps is set to the number of plots per entry. The resulting phenotype 
+#' represents entry means.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}

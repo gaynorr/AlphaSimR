@@ -32,8 +32,8 @@ from a multivariate normal distribution.
 }
 \details{
 The reps parameter is for convient representation of replicated data. 
-It was intended for representation of replicated yield trials in plant 
+It is intended to represent replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number plots per entry. The resulting phenotype 
-would reflect the mean of all replications.
+reps is set to the number of plots per entry. The resulting phenotype 
+represents entry means.
 }

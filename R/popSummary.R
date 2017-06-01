@@ -57,6 +57,7 @@ varP = function(pop){
 #' \describe{
 #' \item{varA}{an nTrait by nTrait matrix of additive genetic variances}
 #' \item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
+#' \item{varG}{an nTrait by nTrait matrix of total genetic variances}
 #' \item{genicVarA}{an nTrait vector of additive genic variances}
 #' \item{genicVarD}{an nTrait vector of dominance genic variances}
 #' \item{genicVarG}{an nTrait vector of total genic variances}
@@ -85,6 +86,7 @@ varAD = function(pop,retGenParam=FALSE,simParam=SIMPARAM){
   }
   output = list(varA=popVar(bv),
                 varD=popVar(dd),
+                varG=varG(pop),
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
                 genicVarG=genicVarA+genicVarD)

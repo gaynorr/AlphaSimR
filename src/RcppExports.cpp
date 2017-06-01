@@ -419,6 +419,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sampAllComb
+arma::imat sampAllComb(long long int nLevel1, long long int nLevel2, long long int n);
+RcppExport SEXP AlphaSimR_sampAllComb(SEXP nLevel1SEXP, SEXP nLevel2SEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< long long int >::type nLevel1(nLevel1SEXP);
+    Rcpp::traits::input_parameter< long long int >::type nLevel2(nLevel2SEXP);
+    Rcpp::traits::input_parameter< long long int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampAllComb(nLevel1, nLevel2, n));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sampHalfDialComb
+arma::imat sampHalfDialComb(long long int nLevel, long long int n);
+RcppExport SEXP AlphaSimR_sampHalfDialComb(SEXP nLevelSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< long long int >::type nLevel(nLevelSEXP);
+    Rcpp::traits::input_parameter< long long int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampHalfDialComb(nLevel, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // readAF
 arma::Cube<unsigned char> readAF(int nInd, int segSites, int ploidy, arma::uvec keep, bool inbred);
 RcppExport SEXP AlphaSimR_readAF(SEXP nIndSEXP, SEXP segSitesSEXP, SEXP ploidySEXP, SEXP keepSEXP, SEXP inbredSEXP) {

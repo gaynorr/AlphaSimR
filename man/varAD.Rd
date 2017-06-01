@@ -18,6 +18,7 @@ dominance deviations and allele effects be returned}
 \describe{
 \item{varA}{an nTrait by nTrait matrix of additive genetic variances}
 \item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
+\item{varG}{an nTrait by nTrait matrix of total genetic variances}
 \item{genicVarA}{an nTrait vector of additive genic variances}
 \item{genicVarD}{an nTrait vector of dominance genic variances}
 \item{genicVarG}{an nTrait vector of total genic variances}
