@@ -69,7 +69,7 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
     write.table(info,filePath,append=TRUE,col.names=FALSE,
                 row.names=FALSE,quote=FALSE)
   }else{
-    write.table(info,filePath,row.names=FALSE)
+    write.table(info,filePath,row.names=FALSE,quote=FALSE)
   }
   #Write gv.txt
   write.table(pop@gv,file.path(dir,"gv.txt"),append=TRUE,
