@@ -193,7 +193,7 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
   typedef std::minstd_rand G;
   G g;
   typedef std::uniform_int_distribution<> D;
-  D d(0,founders(0).n_slices);
+  D d(0,founders(0).n_slices-1);
   
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
