@@ -120,6 +120,20 @@ addSnpChip = function(nSnpPerChr,simParam=SIMPARAM){
   return(simParam)
 }
 
+#' @title Add SNP chips
+#' 
+#' @description 
+#' Randomly selects the number of snps in structure and then
+#' assigns them to chips based on structure
+#' 
+#' @param nSnpPerChr number of SNPs per chromosome. 
+#' Can be a single value or nChr values.
+#' @param structure a matrix.  Rows are snp chips, columns are chips.
+#' If value is true then that snp is on that chip.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object \code{\link{SimParam-class}}
+#' 
 #' @export
 addStructuredSnpChips = function(nSnpPerChr,structure,simParam=SIMPARAM){
   if(length(nSnpPerChr)==1){

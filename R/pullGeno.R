@@ -19,9 +19,20 @@ pullSnpGeno = function(pop, snpChip=1, simParam=SIMPARAM){
   return(output)
 }
 
+#' @title Pull SNP genotype for multiple snp chips
+#' 
+#' @description Retrieves SNP genotype data for multiple snp chips
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param chips a vector. For each animal indicates what snp
+#' chip to use
+#' @param missing What value to use for missing
+#' @param simParam an object of \code{\link{SimParam-class}}#'
+#' @return Returns a matrix of SNP genotypes.
 #' @export
-pullMultipleSnpGeno = function(pop, chips, haplo="all", 
+pullMultipleSnpGeno = function(pop, chips,
                               missing = 9, simParam=SIMPARAM) {
+  stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
   # enough R! (dmoney)
   missing = as.integer(missing)
@@ -111,11 +122,26 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   return(output)
 }
 
+#' @title Pull SNP haplotypes for multiple chips
+#' 
+#' @description Retrieves SNP haplotype data for multiple snp
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param chips a vector. For each animal indicates what snp
+#' chip to use
+#' @param haplo either "all" for all haplotypes or an integer 
+#' for a single set of haplotypes. Use a value of 1 for female 
+#' haplotyes and a value of 2 for male haplotypes.
+#' @param missing What value to use for missing
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullMultipleSnpHaplo = function(pop, chips, haplo="all", 
                                 missing = 9, simParam=SIMPARAM) {
   # I feel like the next line shouldn't be needed but I don't know
   # enough R! (dmoney)
+  stopifnot(length(chips) == pop@nInd)
   missing = as.integer(missing)
   allSnps = numeric(0)
   uniqueChips = unique(chips)
