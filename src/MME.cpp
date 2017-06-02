@@ -1,4 +1,5 @@
-// Functions based on code in R/EMMREML
+// solveUVM and solveMVM are based on R/EMMREML functions
+// solveMKM is based on the mmer function in R/sommer 
 #include "alphasimr.h"
 #include <iostream>
 #include <string>
@@ -433,6 +434,42 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                             Rcpp::Named("u")=ptrData->u,
                             Rcpp::Named("LL")=ptrData->ll,
                             Rcpp::Named("weights")=ptrData->weights);
+}
+
+//' @title Solve Multikernel Model
+//' 
+//' @description
+//' Solves a univariate mixed model with multiple random effects.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Zlist a list of Z matrices
+//' @param Klist a list of K matrices
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveMKM2(arma::mat& y, arma::mat& X, 
+                     arma::field<arma::mat>& Zlist, 
+                     arma::field<arma::mat>& Klist){
+  int maxcyc = 20;
+  double tol = 1e-4;
+  int k = Klist.n_elem;
+  int n = y.n_elem;
+  int df = n - X.n_cols;
+  arma::field<arma::mat> V(k+1);
+  for(int i=0; i<k; ++i){
+    V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
+  }
+  k += 1;
+  V(k) = arma::eye(n,n);
+  arma::mat A(k,k,arma::fill::zeros);
+  arma::mat Sigma(n,n);
+  
+  return Rcpp::List::create(Rcpp::Named("Vu"),
+                            Rcpp::Named("Ve"),
+                            Rcpp::Named("beta"),
+                            Rcpp::Named("u"),
+                            Rcpp::Named("LL"));
 }
 
 // Called by RRBLUP function

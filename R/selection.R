@@ -8,7 +8,7 @@
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param use select on true genetic value (\code{gv}), estimated
+#' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -19,13 +19,16 @@
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
   stopifnot(nInd<=pop@nInd)
+  use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
       response = apply(pop@gv,1,trait)
     }else if(use == "ebv"){
       response = apply(pop@ebv,1,trait)
-    }else{
+    }else if(use == "pheno"){
       response = apply(pop@pheno,1,trait)
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
@@ -33,8 +36,10 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
       response = pop@gv[,trait]
     }else if(use == "ebv"){
       response = pop@ebv[,trait]
-    }else{
+    }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }
   if(any(is.na(response))){
@@ -54,7 +59,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param use select on true genetic value (\code{gv}), estimated
+#' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -83,7 +88,7 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param use select on true genetic value (\code{gv}), estimated
+#' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -112,7 +117,7 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param use select on true genetic value (\code{gv}), estimated
+#' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -128,13 +133,16 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
     stop(paste(nFam,"families requested but only",availFam,
                "families are available"))
   }
+  use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
       response = apply(pop@gv,1,trait)
     }else if(use == "ebv"){
       response = apply(pop@ebv,1,trait)
-    }else{
+    }else if(use == "pheno"){
       response = apply(pop@pheno,1,trait)
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
@@ -142,8 +150,10 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
       response = pop@gv[,trait]
     }else if(use == "ebv"){
       response = pop@ebv[,trait]
-    }else{
+    }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }
   if(any(is.na(response))){
@@ -168,7 +178,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a single value.
-#' @param use select on true genetic value (\code{gv}), estimated
+#' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -183,13 +193,16 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
   if(any(table(families)<nInd)){
     stop("some families have less than nInd individuals")
   }
+  use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
       response = apply(pop@gv,1,trait)
     }else if(use == "ebv"){
       response = apply(pop@ebv,1,trait)
-    }else{
+    }else if(use == "pheno"){
       response = apply(pop@pheno,1,trait)
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }else{
     stopifnot(length(trait)==1,trait<=pop@nTraits)
@@ -197,8 +210,10 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
       response = pop@gv[,trait]
     }else if(use == "ebv"){
       response = pop@ebv[,trait]
-    }else{
+    }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else{
+      stop(paste0("Use=",use," is not an option"))
     }
   }
   if(any(is.na(response))){

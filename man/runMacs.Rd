@@ -5,7 +5,7 @@
 \title{Create founder genotypes using MaCS}
 \usage{
 runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
-  split = NULL, manualCommand = NULL)
+  split = NULL, manualCommand = NULL, manualGenLen = NULL)
 }
 \arguments{
 \item{macs}{path to MaCS}
@@ -23,6 +23,8 @@ runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
 \item{split}{an optional historic population split in terms of generations ago.}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
+
+\item{manualGenLen}{user provided genLen option for use with manual command.  For advanced users only.}
 }
 \description{
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.

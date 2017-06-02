@@ -4,7 +4,7 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, useGv = FALSE, simParam = SIMPARAM)
+RRBLUP_SCA(dir, traits = 1, use = "pheno", simParam = SIMPARAM)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}
@@ -12,7 +12,8 @@ RRBLUP_SCA(dir, traits = 1, useGv = FALSE, simParam = SIMPARAM)
 \item{traits}{an integer indicating the trait or traits to model, or a 
 function of the traits returning a single value.}
 
-\item{useGv}{should genetic values be used instead of phenotypes}
+\item{use}{train model using genetic value (\code{gv}) 
+or phenotypes (\code{pheno}, default)}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

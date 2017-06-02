@@ -4,7 +4,7 @@
 \alias{setPhenoGCA}
 \title{Set GCA as phenotype}
 \usage{
-setPhenoGCA(pop, testers, useGv = FALSE, varE = NULL, reps = 1, w = 0.5,
+setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, w = 0.5,
   inbred = FALSE, simParam = SIMPARAM)
 }
 \arguments{
@@ -12,9 +12,9 @@ setPhenoGCA(pop, testers, useGv = FALSE, varE = NULL, reps = 1, w = 0.5,
 
 \item{testers}{an object of \code{\link{Pop-class}}}
 
-\item{useGv}{should genetic values be used instead of phenotypes}
+\item{use}{true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)}
 
-\item{varE}{error variances for phenotype if useGv=FALSE. A vector 
+\item{varE}{error variances for phenotype if \code{use="pheno"}. A vector
 of length nTraits for independent error or a square matrix of 
 dimensions nTraits for correlated errors.}
 

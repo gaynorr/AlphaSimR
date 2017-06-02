@@ -128,13 +128,16 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
 #' 
 #' @export
 calcGCA = function(pop,use="pheno"){
+  use = tolower(use)
   if(use == "gv"){
     y=pop@gv
-  }else{
+  }else if(use == "pheno"){
     y=pop@pheno
     if(any(is.na(y))){
       stop("Missing values in pop@pheno")
     }
+  }else{
+    stop(paste0("Use=",use," is not an option"))
   }
   colnames(y) = paste0("Trait",1:pop@nTraits)
   output = list()
@@ -188,7 +191,8 @@ calcGCA = function(pop,use="pheno"){
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                        w=0.5,inbred=FALSE,simParam=SIMPARAM){
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
-  if(!(use == "gv")){
+  use = tolower(use)
+  if(use == "pheno"){
     if(is.null(varE)){
       stop("varE must be specified if use=\"pheno\"")
     }

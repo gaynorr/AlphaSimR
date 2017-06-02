@@ -115,11 +115,12 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a 
 #' function of the traits returning a single value.
-#' @param useGv should genetic values be used instead of phenotypes
+#' @param use train model using genetic value (\code{gv}) 
+#' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
+RRBLUP = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -128,10 +129,13 @@ RRBLUP = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
-  if(useGv){
+  use = tolower(use)
+  if(use == "gv"){
     y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else{
+  }else if(use == "pheno"){
     y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }else{
+    stop(paste0("Use=",use," is not an option"))
   }
   y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
   if(is.function(traits)){
@@ -174,11 +178,12 @@ RRBLUP = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a 
 #' function of the traits returning a single value.
-#' @param useGv should genetic values be used instead of phenotypes
+#' @param use train model using genetic value (\code{gv}) 
+#' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_GCA = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
+RRBLUP_GCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -187,10 +192,13 @@ RRBLUP_GCA = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
-  if(useGv){
+  use = tolower(use)
+  if(use == "gv"){
     y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else{
+  }else if(use == "pheno"){
     y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }else{
+    stop(paste0("Use=",use," is not an option"))
   }
   y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
   if(is.function(traits)){
@@ -232,11 +240,12 @@ RRBLUP_GCA = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a 
 #' function of the traits returning a single value.
-#' @param useGv should genetic values be used instead of phenotypes
+#' @param use train model using genetic value (\code{gv}) 
+#' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_SCA = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
+RRBLUP_SCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -245,10 +254,13 @@ RRBLUP_SCA = function(dir, traits=1, useGv=FALSE, simParam=SIMPARAM){
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
-  if(useGv){
+  use = tolower(use)
+  if(use == "gv"){
     y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else{
+  }else if(use == "pheno"){
     y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }else{
+    stop(paste0("Use=",use," is not an option"))
   }
   y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
   if(is.function(traits)){
