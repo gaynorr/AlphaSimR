@@ -11,5 +11,11 @@ A pedigree
 
 \describe{
 \item{\code{nInd}}{number of individuals}
+
+\item{\code{ids}}{ID of each individual}
+
+\item{\code{mother}}{position of mother in pedigree (0 for not in pedigree)}
+
+\item{\code{father}}{postiion of father in pedigree (0 for nor in pedigree)}
 }}
 

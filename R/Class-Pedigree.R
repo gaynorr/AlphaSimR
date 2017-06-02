@@ -7,8 +7,9 @@
 #' A pedigree
 #' 
 #' @slot nInd number of individuals
-
-#' 
+#' @slot ids ID of each individual
+#' @slot mother position of mother in pedigree (0 for not in pedigree)
+#' @slot father postiion of father in pedigree (0 for nor in pedigree) 
 #' 
 #' @export
 setClass("Pedigree",
@@ -35,6 +36,16 @@ setValidity("Pedigree",function(object){
   }
 })
 
+#' @title Sorts a pedigree
+#' 
+#' @description
+#' Sorts a pedigree so parents appear before children
+#'
+#' @param pedigree an object of code{\link{Pedigree-class}}
+#' @param maxGen how many times should it loop when trying to sort
+#'
+#' @return Returns an object of \code{\link{Pedigree-class}}
+#' 
 #' @export
 sortPed = function(x, maxGen=100){
   alldone = FALSE

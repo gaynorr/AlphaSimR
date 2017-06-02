@@ -7,6 +7,10 @@
 pedigreeCross(pedigree, founders, id = NULL, simParam = SIMPARAM)
 }
 \arguments{
+\item{pedigree}{an object of \code{\link{Pedigree-class}}}
+
+\item{founders}{an object of \code{\link{Pop-class}}}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{

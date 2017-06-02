@@ -367,6 +367,8 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
 #' 
 #' @description 
 #' 
+#' @param pedigree an object of \code{\link{Pedigree-class}}
+#' @param founders an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
