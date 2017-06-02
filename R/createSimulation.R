@@ -120,6 +120,7 @@ addSnpChip = function(nSnpPerChr,simParam=SIMPARAM){
   return(simParam)
 }
 
+#' @export
 addStructuredSnpChips = function(nSnpPerChr,structure,simParam=SIMPARAM){
   if(length(nSnpPerChr)==1){
     nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
@@ -127,9 +128,29 @@ addStructuredSnpChips = function(nSnpPerChr,structure,simParam=SIMPARAM){
   stopifnot(length(nSnpPerChr)==simParam@nChr)
   stopifnot(sapply(simParam@potSnp,length)>=nSnpPerChr)
   stopifnot(dim(structure)[2]==sum(nSnpPerChr))
-  lociLoc =   lociLoc = lapply(1:simParam@nChr,function(x){
+  lociLoc = lapply(1:simParam@nChr,function(x){
     sort(sample(simParam@potSnp[[x]],nSnpPerChr[x]))
   })
+  lociLoc = do.call("c",lociLoc)
+  
+  for (i in 1:nrow(structure)){
+    snps = lociLoc[structure[i,]]
+    start = 1
+    numChr = numeric(length(nSnpPerChr))
+    for (j in 1:length(nSnpPerChr)){
+      end = start + nSnpPerChr[j] - 1
+      numChr[j] = sum(structure[i,start:end])
+      start = end + 1
+    }
+    snpChip = new("LociMap",
+                  nLoci = length(snps),
+                  lociPerChr = as.integer(numChr),
+                  lociLoc = as.integer(snps))
+    simParam@nSnpChips = simParam@nSnpChips + 1L
+    simParam@snpChips[[simParam@nSnpChips]] = snpChip
+  }
+  
+  validObject(simParam)
   return(simParam)
 }
 
