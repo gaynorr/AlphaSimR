@@ -117,7 +117,7 @@ arma::imat sampAllComb(long long int nLevel1, long long int nLevel2,
   return output;
 }
 
-// Samples random pairs without replacement from all half-diallele combinations
+// Samples random pairs without replacement from all half-diallel combinations
 // nLevel = number of levels (number of individuals)
 // n = number of combinations to sample
 // Returns an integer matrix with the sampled levels for each combination

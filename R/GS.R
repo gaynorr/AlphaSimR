@@ -224,8 +224,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               femaleEff=ans$u[1:nMarkers,,drop=FALSE],
-               maleEff=ans$u[(nMarkers+1):(2*nMarkers),,drop=FALSE],
+               femaleEff=ans$u[[1]],
+               maleEff=ans$u[[2]],
                fixEff=ans$beta)
   return(output)
 }
@@ -286,9 +286,9 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               femaleEff=ans$u[1:nMarkers,,drop=FALSE],
-               maleEff=ans$u[(nMarkers+1):(2*nMarkers),,drop=FALSE],
-               scaEff=ans$u[(2*nMarkers+1):(3*nMarkers),,drop=FALSE],
+               femaleEff=ans$u[[1]],
+               maleEff=ans$u[[2]],
+               scaEff=ans$u[[3]],
                fixEff=ans$beta)
   return(output)
 }
@@ -337,18 +337,4 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
 
 predictHybrid = function(){
   
-}
-
-#' @title SolveMKM Objective
-#' 
-#' @description
-#' Used internally by SolveMKM and not for to be used directly.
-#' 
-#' @param x a numeric vector
-#' @param ptrData a pointer
-#' 
-#' @export
-objWeightsR = function(x, ptrData){
-  tmp = objWeights(x,ptrData)
-  return(tmp)
 }

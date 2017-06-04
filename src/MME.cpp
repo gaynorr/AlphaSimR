@@ -12,8 +12,16 @@ extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, int* N, double* A, 
 
 // Replacement for Armadillo's eig_sym
 // Fixes an errors with decompisition of large matrices on Eddie
-int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X){ // Must pass eigval and eigvec by reference or modifications occur on local copy
-  char JOBZ = 'V';
+// If calcVec = false, eigvec is not used
+// It would be better to template this function
+int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X, 
+           bool calcVec = true){
+  char JOBZ;
+  if(calcVec){
+    JOBZ = 'V';
+  }else{
+    JOBZ = 'N';
+  }
   char RANGE = 'A';
   char UPLO = 'L';
   int N = X.n_rows;
@@ -60,119 +68,6 @@ Rcpp::List objREML(double param, Rcpp::List args){
   return Rcpp::List::create(Rcpp::Named("objective") = value,
                             Rcpp::Named("output") = 0);
 }
-
-// A class used by solveMKM
-// This class is used to avoid copying data to R when calling optim
-class DataMKM{
-public:
-  arma::mat y;
-  arma::mat X;
-  arma::field<arma::mat> Zlist;
-  arma::field<arma::mat> Klist;
-  int n;
-  int q;
-  int nre; //Number of random effects
-  double df;
-  double offset;
-  arma::mat ZK;
-  arma::mat S;
-  arma::mat ZKZ;
-  arma::mat SZKZ;
-  arma::vec weights;
-  arma::vec eigval;
-  arma::mat eigvec;
-  arma::vec eta;
-  double delta;
-  double ll;
-  arma::mat u;
-  arma::mat beta;
-  double Vu;
-  double Ve;
-  
-  // Constructor
-  DataMKM(arma::mat& y_, arma::mat& X_, 
-          arma::field<arma::mat>& Zlist_,
-          arma::field<arma::mat>& Klist_) :
-    y(y_), X(X_), Zlist(Zlist_), Klist(Klist_) {
-    n = y_.n_rows;
-    q = X_.n_cols;
-    nre = Zlist_.n_elem;
-    df = double(n)-double(q);
-    offset = log(double(n));
-    S.set_size(n,n);
-    S = arma::eye(n,n) - X*arma::inv_sympd(X.t()*X)*X.t();
-    ZKZ.set_size(n,n);
-    SZKZ.set_size(n,n);
-    eta.set_size(n);
-  }
-  
-  // Sets ZKZ matrix
-  void setZKZ(Rcpp::NumericVector x){
-    weights = Rcpp::as<arma::vec>(x);
-    weights = weights/sum(weights);
-    ZKZ = weights(0)*Zlist(0)*Klist(0)*Zlist(0).t();
-    for(int i=1; i<nre; ++i){
-      ZKZ += weights(i)*Zlist(i)*Klist(i)*Zlist(i).t();
-    }
-    SZKZ = S*(ZKZ+offset*arma::eye(n,n))*S;
-  }
-  
-  // Decomposes SZKZ matrix
-  Rcpp::NumericVector decompSZKZ(){
-    eigval.set_size(n);
-    eigvec.set_size(n,n);
-    eigen2(eigval, eigvec, SZKZ);
-    // Drop eigenvalues
-    eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
-    eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
-                    arma::span(q,eigvec.n_cols-1));
-    eta = eigvec.t()*y;
-    // Calculate variance
-    Rcpp::List optRes = optimize(*objREML,
-                                 Rcpp::List::create(
-                                   Rcpp::Named("df")=df,
-                                   Rcpp::Named("eta")=eta,
-                                   Rcpp::Named("lambda")=eigval), 
-                                   1.0e-10, 1.0e10);
-    delta = optRes["parameter"];
-    ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
-    Rcpp::NumericVector output = optRes["objective"];
-    return output;
-  }
-  
-  void setZK(){
-    int nColZ=0;
-    int nRowK=0;
-    int nColK=0;
-    for(int i=0; i<nre; ++i){
-      nColZ += Zlist(i).n_cols;
-      nRowK += Klist(i).n_rows;
-      nColK += Klist(i).n_cols;
-    }
-    arma::mat Z(n,nColZ);
-    arma::mat K(nRowK,nColK,arma::fill::zeros);
-    nColZ = 0;
-    nRowK = 0;
-    nColK = 0;
-    for(int i=0; i<nre; ++i){
-      Z(arma::span(0,n-1),arma::span(nColK,Zlist(i).n_cols-1+nColK)) = Zlist(i);
-      nColZ += Zlist(i).n_cols;
-      K(arma::span(nRowK,Klist(i).n_rows-1+nRowK),arma::span(nColK,Klist(i).n_cols-1+nColK)) = weights(i)*Klist(i);
-      nColK += Klist(i).n_cols;
-      nRowK += Klist(i).n_rows;
-    }
-    ZK = Z*K;
-  }
-  
-  void solveMME(){
-    arma::mat Hinv = arma::inv_sympd(ZKZ+delta*arma::eye(n,n));
-    arma::mat XHinv = X.t()*Hinv;
-    beta = solve(XHinv*X,XHinv*y);
-    u = ZK.t()*(Hinv*(y-X*beta));
-    Vu = sum(eta%eta/(eigval+delta))/df;
-    Ve = delta*Vu;
-  }
-};
 
 /*
  * Reads a text file into an arma::mat
@@ -338,16 +233,21 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
   arma::mat Gt(m,n);
+  arma::mat sigma(m,m);
+  arma::mat BNew;
+  arma::mat VeNew(m,m);
+  arma::mat VuNew(m,m);
+  double denom;
+  double numer;
   bool converging=true;
   while(converging){
-    arma::mat VeNew = arma::zeros<arma::mat>(m,m);
-    arma::mat VuNew = arma::zeros<arma::mat>(m,m);
+    VeNew.fill(0.0);
+    VuNew.fill(0.0);
     for(int i=0; i<n; ++i){
       Gt.col(i) = eigval(i)*Vu*arma::inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
     }
-    arma::mat BNew = (Yt - Gt)*W;
-    arma::mat sigma(m,m);
+    BNew = (Yt - Gt)*W;
     for(int i=0; i<n; ++i){
       sigma = eigval(i)*Vu-(eigval(i)*Vu)*arma::inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
@@ -355,9 +255,9 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
       VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*
         (Yt.col(i)-BNew*Xt.col(i)-Gt.col(i)).t()+sigma);
     }
-    double denom = fabs(sum(Ve.diag()));
+    denom = fabs(sum(Ve.diag()));
     if(denom>0.0){
-      double numer = fabs(sum(VeNew.diag()-Ve.diag()));
+      numer = fabs(sum(VeNew.diag()-Ve.diag()));
       if((numer/denom)<tol) converging=false;
     }
     Ve = VeNew;
@@ -384,19 +284,6 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("LL")=double(ll(0,0)));
 }
 
-// Objective function for calculating variance component weights
-// Used by the R function optim
-// [[Rcpp::export]]
-Rcpp::NumericVector objWeights(Rcpp::NumericVector x, 
-                               SEXP ptrData){
-  Rcpp::XPtr<DataMKM> ptr = Rcpp::as<Rcpp::XPtr<DataMKM> >(ptrData);
-  ptr->setZKZ(x);
-  Rcpp::NumericVector output = ptr->decompSZKZ();
-  return output;
-}
-
-// Note that this function is slower than the R/EMMREML version on 
-// small datasets and faster on large datasets
 //' @title Solve Multikernel Model
 //' 
 //' @description
@@ -410,66 +297,110 @@ Rcpp::NumericVector objWeights(Rcpp::NumericVector x,
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMKM(arma::mat& y, arma::mat& X, 
-                    arma::field<arma::mat>& Zlist, 
-                    arma::field<arma::mat>& Klist){
-  Rcpp::XPtr<DataMKM> ptrData(new DataMKM(y, X, Zlist,Klist), 
-                              true);
-  //Calculate weights
-  Rcpp::Function optim("optim");
-  Rcpp::Environment E("package:AlphaSimR");
-  Rcpp::Function objWeightsR = E["objWeightsR"];
-  Rcpp::NumericVector init(ptrData->nre,1.0/double(ptrData->nre));
-  Rcpp::NumericVector zeros(ptrData->nre); // Lower bounds
-  Rcpp::NumericVector ones(ptrData->nre,1.0); // Upper bounds
-  optim(Rcpp::_["par"]=init, Rcpp::_["fn"]=objWeightsR, 
-        Rcpp::_["ptrData"]=ptrData, Rcpp::_["method"]="L-BFGS-B", 
-        Rcpp::_["lower"]=zeros, Rcpp::_["upper"]=ones);
-  
-  //Find solution
-  ptrData->setZK();
-  ptrData->solveMME();
-  return Rcpp::List::create(Rcpp::Named("Vu")=ptrData->Vu,
-                            Rcpp::Named("Ve")=ptrData->Ve,
-                            Rcpp::Named("beta")=ptrData->beta,
-                            Rcpp::Named("u")=ptrData->u,
-                            Rcpp::Named("LL")=ptrData->ll,
-                            Rcpp::Named("weights")=ptrData->weights);
-}
-
-//' @title Solve Multikernel Model
-//' 
-//' @description
-//' Solves a univariate mixed model with multiple random effects.
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param Zlist a list of Z matrices
-//' @param Klist a list of K matrices
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveMKM2(arma::mat& y, arma::mat& X, 
                      arma::field<arma::mat>& Zlist, 
                      arma::field<arma::mat>& Klist){
   int maxcyc = 20;
   double tol = 1e-4;
   int k = Klist.n_elem;
-  int n = y.n_elem;
-  int df = n - X.n_cols;
+  int n = y.n_rows;
+  int q = X.n_cols;
+  double df = double(n)-double(q);
   arma::field<arma::mat> V(k+1);
   for(int i=0; i<k; ++i){
     V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
   }
-  k += 1;
   V(k) = arma::eye(n,n);
-  arma::mat A(k,k,arma::fill::zeros);
-  arma::mat Sigma(n,n);
-  
-  return Rcpp::List::create(Rcpp::Named("Vu"),
-                            Rcpp::Named("Ve"),
-                            Rcpp::Named("beta"),
-                            Rcpp::Named("u"),
-                            Rcpp::Named("LL"));
+  k += 1;
+  arma::mat A(k,k);
+  arma::vec qvec(k);
+  arma::vec sigma(k);
+  arma::mat W(n,n);
+  arma::mat WX(n,q);
+  arma::mat WQX(n,n);
+  arma::mat rss(1,1);
+  arma::vec eigval;
+  arma::mat tmpMat(1,1);
+  double ldet;
+  double llik;
+  double llik0;
+  double deltaLlik;
+  double taper;
+  arma::field<arma::mat> T(k);
+  sigma.fill(var(y.col(0)));
+  for(int cycle=0; cycle<maxcyc; ++cycle){
+    W = V(0)*sigma(0);
+    for(int i=1; i<k; ++i){
+      W += V(i)*sigma(i);
+    }
+    W = arma::inv_sympd(W);
+    WX = W*X;
+    WQX = W - WX*arma::solve(X.t()*WX, WX.t());
+    rss = y.t()*WQX*y;
+    for(int i=0; i<k; ++i){
+      sigma(i) = sigma(i)*(rss(0,0)/df);
+    }
+    WQX = WQX*(df/rss(0,0));
+    // Compute eigendecomposition
+    eigval.set_size(n);
+    eigen2(eigval, tmpMat, WQX, false);
+    eigval = eigval(arma::span(q,n-1));
+    if(eigval(0)<0.0){
+      WQX += (tol-eigval(0))*arma::eye(n,n);
+      eigval += (tol-eigval(0));
+    }
+    ldet = accu(log(eigval));
+    llik = ldet/2 - df/2;
+    if(cycle == 1) 
+      llik0 = llik;
+    deltaLlik = llik - llik0;
+    llik0 = llik;
+    for(int i=0; i<k; ++i){
+      T(i) = WQX*V(i);
+    }
+    for(int i=0; i<k; ++i){
+      tmpMat = y.t()*T(i)*WQX*y - sum(T(i).diag());
+      qvec(i) = tmpMat(0,0);
+      for(int j=0; j<k; ++j){
+        A(i,j) = accu(T(i)%T(j).t());
+      }
+    }
+    A = pinv(A);
+    qvec = A*qvec;
+    if(cycle == 1){
+      taper = 0.5;
+    }else if(cycle == 2){
+      taper = 0.7;
+    }else{
+      taper = 0.9;
+    }
+    sigma += taper*qvec;
+    while(sigma.min() < -(1e-6)){
+      sigma(sigma.index_min()) = -(1e-6);
+    }
+    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+      break;
+    }
+    if(max(abs(qvec)) < tol){
+      break;
+    }
+  }
+  arma::mat beta(q,1);
+  arma::field<arma::mat> u(k-1);
+  arma::mat ee(n,1);
+  beta = solve(X.t()*W*X,X.t()*W*y);
+  ee = y - X*beta;
+  for(int i=0; i<(k-1); ++i){
+    u(i) = (Klist(i)*sigma(i))*Zlist(i).t()*W*ee;
+  }
+  arma::vec Vu(k-1);
+  Vu = sigma(arma::span(0,k-2));
+  arma::vec Ve(1);
+  Ve = sigma(k-1);
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=llik);
 }
 
 // Called by RRBLUP function
