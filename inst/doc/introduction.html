@@ -4,7 +4,7 @@
 
 <head>
 
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 
@@ -38,7 +38,7 @@
 <ol style="list-style-type: decimal">
 <li><p>Create founder haplotypes using <code>runMacs</code></p></li>
 <li><p>Set simulation parameters using <code>createSimulation</code></p></li>
-<li><p>Add traits using <code>addTraitA</code> or <code>addTraitAD</code></p></li>
+<li><p>Add traits using <code>addTraitA</code> or any other addTrait function</p></li>
 <li><p>Add SNP chips using <code>addSnpChip</code></p></li>
 <li><p>Create one or more initial populations using <code>newPop</code></p></li>
 <li><p>Use the newly created populations for crossing and selection to simulate a breeding program</p></li>
@@ -55,7 +55,7 @@
 </div>
 <div id="adding-traits" class="section level3">
 <h3>Adding traits</h3>
-<p>Traits are added to the simulation using the <code>addTraitA</code> and <code>addTraitAD</code> functions. These functions can be called multiple times to run simulations with multiple traits.</p>
+<p>Traits are added to the simulation using the one of the fullowing functions: <code>addTraitA</code>, <code>addTraitAD</code>, <code>addTraitAG</code>, or <code>addTraitADG</code>. These functions can be called multiple times to run simulations with multiple traits. These functions can also be used to simulate correlated pleiotropic traits.</p>
 </div>
 <div id="adding-snp-chips" class="section level3">
 <h3>Adding SNP chips</h3>
@@ -71,10 +71,11 @@
 <p>Below are some key functions for operations carried out on populations.</p>
 <ul>
 <li><p>Viewing genotypes: <code>pullSnpGeno</code>, <code>pullSnpHaplo</code>, <code>pullQtlGeno</code>, <code>pullQtlHaplo</code></p></li>
-<li><p>Viewing summary data: <code>meanG</code>, <code>meanP</code>, <code>varG</code>, <code>varP</code></p></li>
+<li><p>Viewing summary data: <code>meanG</code>, <code>meanP</code>, <code>varG</code>, <code>varP</code>, <code>varAD</code></p></li>
 <li><p>Setting phenotypes: <code>setPheno</code>, <code>calcPheno</code></p></li>
 <li><p>Making selection: <code>selectInd</code>, <code>selectFam</code>, <code>selectWithinFam</code>, <code>selectMale</code>, <code>selectFemale</code></p></li>
 <li><p>Crossing: <code>makeCross</code>, <code>randCross</code>, <code>makeCross2</code>, <code>randCross2</code>, <code>self</code>, <code>makeDH</code></p></li>
+<li><p>Genomic selection: <code>writeRecords</code>, <code>setEBV</code></p></li>
 </ul>
 </div>
 
@@ -85,7 +86,7 @@
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
     document.getElementsByTagName("head")[0].appendChild(script);
   })();
 </script>

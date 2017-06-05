@@ -1,7 +1,5 @@
 #A wrapper for calling getHybridGv
 #This function uses chunking to reduce RAM usage
-#A wrapper for calling getHybridGv
-#This function uses chunking to reduce RAM usage
 getHybridGvByChunk = function(trait,fPop,fPar,
                               mPop,mPar,w,chunkSize){
   nOut = length(fPar)
@@ -83,8 +81,8 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
   gv = NULL
   pheno = NULL
   for(trait in simParam@traits){
-    tmp = getHybridGvByChunk(trait,fPop,crossPlan[,1],
-                             mPop,crossPlan[,2],w=0.5,
+    tmp = getHybridGvByChunk(trait=trait,fPop=fPop,fPar=crossPlan[,1],
+                             mPop=mPop,mPar=crossPlan[,2],w=0.5,
                              chunkSize=chunkSize)
     gv = cbind(gv, tmp)
     #Will a phenotype be calculated
@@ -94,8 +92,8 @@ hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
       #Does GxE matter
       if(class(trait)=="TraitAG" | class(trait)=="TraitADG"){
         pheno = cbind(pheno, 
-                      getHybridGvByChunk(trait,fPop,fPar,
-                                         mPop,mPar,w=w,
+                      getHybridGvByChunk(trait=trait,fPop=fPop,fPar=crossPlan[,1],
+                                         mPop=mPop,mPar=crossPlan[,2],w=w,
                                          chunkSize=chunkSize))
       }else{
         pheno = cbind(pheno,tmp)
