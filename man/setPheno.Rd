@@ -4,7 +4,7 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE, reps = 1, w = 0, simParam = SIMPARAM)
+setPheno(pop, varE, reps = 1, w = 0.5, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -18,7 +18,7 @@ nTraits for correlated errors.}
 
 \item{w}{the environmental covariate used by GxE traits. If pop 
 is \code{\link{HybridPop-class}} an error will be returned for any 
-value other than 0.}
+value other than 0.5.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
@@ -32,9 +32,8 @@ from a multivariate normal distribution.
 }
 \details{
 The reps parameter is for convient representation of replicated data. 
-It was intended for representation of replicated yield trials in plant 
+It is intended to represent replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number plots per entry. The resulting phenotype 
-would reflect the mean of all replications.
+reps is set to the number of plots per entry. The resulting phenotype 
+represents entry means.
 }
-

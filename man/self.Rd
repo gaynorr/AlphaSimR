@@ -22,4 +22,3 @@ Returns an object of \code{\link{Pop-class}}
 Creates selfed progeny from each individual in a 
 population. Only works when gender is "no".
 }
-

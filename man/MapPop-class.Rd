@@ -4,9 +4,12 @@
 \name{MapPop-class}
 \alias{MapPop-class}
 \alias{[,MapPop-method}
+\alias{c,MapPop-method}
 \title{Raw population with genetic map}
 \usage{
 \S4method{[}{MapPop}(x, i)
+
+\S4method{c}{MapPop}(x, ..., recursive = FALSE)
 }
 \description{
 Extends \code{\link{RawPop-class}} to add a genetic map. 
@@ -17,7 +20,10 @@ for creating initial populations and setting traits in the
 \section{Methods (by generic)}{
 \itemize{
 \item \code{[}: Extract \code{\link{RawPop-class}} by index
+
+\item \code{c}: Combine MapPop chromosomes
 }}
+
 \section{Slots}{
 
 \describe{

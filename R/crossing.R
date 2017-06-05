@@ -6,7 +6,8 @@
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param crossPlan a matrix with two column representing 
-#' female and male parents
+#' female and male parents. Either integers for the position in 
+#' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
@@ -18,6 +19,13 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
     stop("Only works with diploids")
   }
   stopifnot(class(pop)=="Pop")
+  if(is.character(crossPlan)){ #Match by ID
+    crossPlan = cbind(match(crossPlan[,1],pop$id),
+                      match(crossPlan[,2],pop$id))
+    if(any(is.na(crossPlan))){
+      stop("Failed to matched supplied IDs")
+    }
+  }
   geno = cross2(pop@geno,crossPlan[,1],
                 pop@geno,crossPlan[,2],
                 simParam@genMaps)
@@ -45,7 +53,7 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -55,7 +63,10 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -79,8 +90,20 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
                      id=NULL,simParam=SIMPARAM){
+  crossPlan = NULL
   if(simParam@gender=="no"){
-    crossPlan = t(combn(pop@nInd,2))
+    maxCrosses = pop@nInd*(pop@nInd-1)/2
+    while(nCrosses>maxCrosses){
+      crossPlan = rbind(crossPlan,
+                        t(combn(pop@nInd,2)))
+      nCrosses = nCrosses - maxCrosses
+    }
+    if(nCrosses>0){
+      crossPlan = rbind(crossPlan,
+                        sampHalfDialComb(pop@nInd,
+                                         nCrosses)
+                        )
+    }
   }else{
     female = which(pop@gender=="F")
     if(length(female)==0){
@@ -90,17 +113,23 @@ randCross = function(pop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    crossPlan = expand.grid(female,male)
+    maxCrosses = length(female)*length(male)
+    while(nCrosses>maxCrosses){
+      crossPlan = rbind(crossPlan,
+                        expand.grid(1:length(female),
+                                    1:length(male)))
+      nCrosses = nCrosses - maxCrosses
+    }
+    if(nCrosses>0){
+      crossPlan = rbind(crossPlan,
+                        sampAllComb(length(female),
+                                    length(male),
+                                    nCrosses)
+                        )
+    }
+    crossPlan[,1] = female[crossPlan[,1]]
+    crossPlan[,2] = male[crossPlan[,2]]
   }
-  maxCrosses = nrow(crossPlan)
-  if(maxCrosses>=nCrosses){
-    take = sample.int(maxCrosses,nCrosses)
-  }else{
-    warning("making duplicate crosses, because requested crosses exceeds unique combinations")
-    take = rep_len(sample.int(maxCrosses,maxCrosses),nCrosses)
-    take = take[sample.int(length(take),length(take))]
-  }
-  crossPlan = crossPlan[take,,drop=FALSE]
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
                       rep(crossPlan[,2],each=nProgeny))
@@ -119,7 +148,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @param fPop an object of \code{\link{Pop-class}} for female parents.
 #' @param mPop an object of \code{\link{Pop-class}} for male parents.
 #' @param crossPlan a matrix with two column representing 
-#' female and male parents
+#' female and male parents. Either integers for the position in 
+#' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
@@ -131,6 +161,13 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
     stop("Only works with diploids")
   }
   stopifnot(class(mPop)=="Pop",class(fPop)=="Pop")
+  if(is.character(crossPlan)){ #Match by ID
+    crossPlan = cbind(match(crossPlan[,1],fPop$id),
+                      match(crossPlan[,2],mPop$id))
+    if(any(is.na(crossPlan))){
+      stop("Failed to matched supplied IDs")
+    }
+  }
   geno = cross2(fPop@geno,crossPlan[,1],
                 mPop@geno,crossPlan[,2],
                 simParam@genMaps)
@@ -158,7 +195,7 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -168,7 +205,10 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -194,28 +234,49 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @export
 randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
                      id=NULL,simParam=SIMPARAM){
+  crossPlan = NULL
   if(simParam@gender=="no"){
-    crossPland = expand.grid(1:fPop@nInd,1:mPop@nInd)
+    maxCrosses = fPop@nInd*mPop@nInd
+    while(nCrosses>maxCrosses){
+      crossPlan = rbind(crossPlan,
+                        expand.grid(1:fPop@nInd,
+                                    1:mPop@nInd)
+                        )
+      nCrosses = nCrosses - maxCrosses
+    }
+    if(nCrosses>0){
+      crossPlan = rbind(crossPlan,
+                        sampAllComb(fPop@nInd,
+                                    mPop@nInd,
+                                    nCrosses)
+                        )
+    }
   }else{
     female = which(fPop@gender=="F")
     if(length(female)==0){
-      stop("fPop doesn't contain any females")
+      stop("population doesn't contain any females")
     }
     male = which(mPop@gender=="M")
     if(length(male)==0){
-      stop("mPop doesn't contain any males")
+      stop("population doesn't contain any males")
     }
-    crossPlan = expand.grid(female,male)
+    maxCrosses = length(female)*length(male)
+    while(nCrosses>maxCrosses){
+      crossPlan = rbind(crossPlan,
+                        expand.grid(1:length(female),
+                                    1:length(male)))
+      nCrosses = nCrosses - maxCrosses
+    }
+    if(nCrosses>0){
+      crossPlan = rbind(crossPlan,
+                        sampAllComb(length(female),
+                                    length(male),
+                                    nCrosses)
+      )
+    }
+    crossPlan[,1] = female[crossPlan[,1]]
+    crossPlan[,2] = male[crossPlan[,2]]
   }
-  maxCrosses = nrow(crossPlan)
-  if(maxCrosses>=nCrosses){
-    take = sample.int(maxCrosses,nCrosses)
-  }else{
-    warning("making duplicate crosses, because requested crosses exceeds unique combinations")
-    take = rep_len(sample.int(maxCrosses,maxCrosses),nCrosses)
-    take = take[sample.int(length(take),length(take))]
-  }
-  crossPlan = crossPlan[take,,drop=FALSE]
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
                       rep(crossPlan[,2],each=nProgeny))
@@ -265,7 +326,7 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -275,7 +336,10 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -316,7 +380,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop", rawPop,
                id=as.character(id),
@@ -326,7 +390,10 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }

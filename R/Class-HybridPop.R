@@ -28,6 +28,15 @@ setClass("HybridPop",
 
 setValidity("HybridPop",function(object){
   errors = character()
+  if(any(grepl(" ",object@id,fixed=TRUE))){
+    errors = c(errors,"id can not contain spaces")
+  }
+  if(any(grepl(" ",object@mother,fixed=TRUE))){
+    errors = c(errors,"mother can not contain spaces")
+  }
+  if(any(grepl(" ",object@father,fixed=TRUE))){
+    errors = c(errors,"father can not contain spaces")
+  }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
   }

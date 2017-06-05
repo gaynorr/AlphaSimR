@@ -28,4 +28,3 @@ A wrapper for \code{\link{makeCross2}} that randomly
 selects parental combinations for all possible combinantions between 
 two populations.
 }
-

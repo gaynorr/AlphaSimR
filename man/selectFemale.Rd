@@ -4,7 +4,7 @@
 \alias{selectFemale}
 \title{Select females}
 \usage{
-selectFemale(pop, nInd, trait = 1, useGv = FALSE, selectTop = TRUE)
+selectFemale(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -15,7 +15,8 @@ selectFemale(pop, nInd, trait = 1, useGv = FALSE, selectTop = TRUE)
 \item{trait}{the trait for selection. Either a number indicating 
 a single trait or a function returning a single value.}
 
-\item{useGv}{should genetic value be used instead of phenotypes}
+\item{use}{select on genetic value (\code{gv}), estimated
+genetic values (\code{ebv}) or phenotypes (\code{pheno})}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
@@ -28,4 +29,3 @@ Returns an object of \code{\link{Pop-class}} or
 Selects a subset of nInd females from a 
 population.
 }
-

@@ -1,5 +1,5 @@
 # AlphaSimR Examples
-# Works with version 0.1.X
+# Works with version 0.2.X
 
 # *Requires MaCS
 # Which can be taken from AlphaSim on the AlphaGenes website
@@ -11,10 +11,6 @@
 # 3. Rcpp (requires C++ compiler)
 # 4. RcppArmadillo
 
-# Install package ---------------------------------------------------------
-
-library(devtools)
-install_bitbucket("hickeyjohnteam/AlphaSimR")
 library(AlphaSimR)
 
 # Set-up a simulation -----------------------------------------------------
@@ -73,7 +69,7 @@ varG(femaleParents) #Total genetic variance for each trait
 # Examine test crosses
 hybrids = hybridCross(femaleParents,maleParents,
                       returnHybridPop=T) #Uses a test cross scheme by default
-gca = calcGCA(hybrids,useGv=TRUE)
+gca = calcGCA(hybrids,use="gv")
 plot(femaleParents@gv,gca$females[,2],
      xlab="GV (per se)", ylab="GCA",
      main="Female Parents")
@@ -133,19 +129,19 @@ hist(maleDH@gv,main="Male DH",xlab="GV (per se)")
 # Evaluate hybrids----
 
 # Create testers
-femaleTesters = selectInd(maleParents,3,useGv=TRUE) #Picks three testers from other heterotic pool
-maleTesters = selectInd(femaleParents,3,useGv=TRUE)
+femaleTesters = selectInd(maleParents,3,use="gv") #Picks three testers from other heterotic pool
+maleTesters = selectInd(femaleParents,3,use="gv")
 
 # Create test crosses
 femaleTC = hybridCross(femaleDH,femaleTesters,returnHybridPop=TRUE)
 maleTC = hybridCross(maleDH,maleTesters,returnHybridPop=TRUE)
 
 # Calculate true combining ability
-femaleGCA = calcGCA(femaleTC,useGv=TRUE)
+femaleGCA = calcGCA(femaleTC,use="gv")
 plot(femaleDH@gv,femaleGCA$females[,2],
      xlab="GV (per se)", ylab="GCA",
      main="Female DH")
-maleGCA = calcGCA(maleTC,useGv=TRUE)
+maleGCA = calcGCA(maleTC,use="gv")
 plot(maleDH@gv,maleGCA$females[,2], #Select females for GCA because testers were used as males
      xlab="GV (per se)", ylab="GCA",
      main="Male DH")

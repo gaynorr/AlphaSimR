@@ -4,17 +4,16 @@
 \alias{calcGCA}
 \title{Calculate GCA}
 \usage{
-calcGCA(pop, useGv = FALSE)
+calcGCA(pop, use = "pheno")
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
 \code{\link{HybridPop-class}}}
 
-\item{useGv}{should genetic values be used instead of phenotypes}
+\item{use}{true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)}
 }
 \description{
 Calculate general combining ability of test crosses. Intended for 
 output from hybridCross using the "testcross" option, but will work 
 for any population.
 }
-

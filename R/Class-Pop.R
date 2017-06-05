@@ -144,6 +144,24 @@ setMethod("[",
           }
 )
 
+#' @describeIn MapPop Combine MapPop chromosomes
+setMethod("c",
+          signature(x = "MapPop"),
+          function (x, ..., recursive = FALSE){
+            for(y in list(...)){
+              stopifnot(class(y)=="MapPop",
+                        x@nInd==y@nInd,
+                        x@ploidy==y@ploidy)
+              x@nChr = x@nChr+y@nChr
+              x@geno = rbind(x@geno,y@geno)
+              x@genMaps = rbind(x@genMaps,y@genMaps)
+              x@nLoci = c(x@nLoci,y@nLoci)
+            }
+            validObject(x)
+            return(x)
+          }
+)
+
 # Pop ---------------------------------------------------------------------
 
 #' @title Population
@@ -160,6 +178,8 @@ setMethod("[",
 #' gv reflects gv when w=0. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
+#' @slot ebv matrix of estimated breeding values. Dimensions 
+#' are nInd rows and one or more columns.
 #' 
 #' @export
 setClass("Pop",
@@ -168,11 +188,21 @@ setClass("Pop",
                  father="character",
                  nTraits="integer",
                  gv="matrix",
-                 pheno="matrix"),
+                 pheno="matrix",
+                 ebv="matrix"),
          contains="RawPop")
 
 setValidity("Pop",function(object){
   errors = character()
+  if(any(grepl(" ",object@id,fixed=TRUE))){
+    errors = c(errors,"id can not contain spaces")
+  }
+  if(any(grepl(" ",object@mother,fixed=TRUE))){
+    errors = c(errors,"mother can not contain spaces")
+  }
+  if(any(grepl(" ",object@father,fixed=TRUE))){
+    errors = c(errors,"father can not contain spaces")
+  }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
   }
@@ -187,6 +217,18 @@ setValidity("Pop",function(object){
   }
   if(object@nInd!=nrow(object@pheno)){
     errors = c(errors,"nInd!=nrow(pheno)")
+  }
+  if(object@nInd!=nrow(object@ebv)){
+    errors = c(errors,"nInd!=nrow(ebv)")
+  }
+  if(!is.numeric(object@gv)){
+    errors = c(errors,"!is.numeric(gv)")
+  }
+  if(!is.numeric(object@pheno)){
+    errors = c(errors,"!is.numeric(pheno)")
+  }
+  if(!is.numeric(object@ebv)){
+    errors = c(errors,"!is.numeric(ebv)")
   }
   if(object@nTraits!=ncol(object@gv)){
     errors = c(errors,"nTraits!=ncol(gv)")
@@ -205,6 +247,7 @@ setValidity("Pop",function(object){
 setMethod("[",
           signature(x = "Pop"),
           function(x, i){
+            n = x@nInd
             if(is.character(i)){
               i = x@id%in%i
             }
@@ -213,6 +256,7 @@ setMethod("[",
             x@father = x@father[i]
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
+            x@ebv = x@ebv[i,,drop=FALSE]
             x@gender = x@gender[i]
             x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
@@ -240,6 +284,13 @@ setMethod("c",
               x@pheno = rbind(x@pheno,y@pheno)
               x@gender = c(x@gender,y@gender)
               x@geno = mergeGeno(x@geno,y@geno)
+              #Account for variable number of ebv columns
+              tmp = try({
+                x@ebv = rbind(x@ebv,y@ebv)
+                },silent=TRUE)
+              if(class(tmp)=="try-error"){
+                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=1)
+              }
             }
             validObject(x)
             return(x)

@@ -12,4 +12,3 @@ meanG(pop)
 \description{
 Returns the mean genetic values for all traits
 }
-

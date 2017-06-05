@@ -12,4 +12,3 @@ varG(pop)
 \description{
 Returns total genetic variance for all traits
 }
-

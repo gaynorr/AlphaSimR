@@ -12,6 +12,7 @@
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
 #' @param manualCommand user provided MaCS options. For advanced users only.
+#' @param manualGenLen user provided genLen option for use with manual command.  For advanced users only.
 #' 
 #' @details
 #' The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
@@ -19,7 +20,7 @@
 #'
 #' @export
 runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
-                   split=NULL,manualCommand=NULL){
+                   split=NULL,manualCommand=NULL,manualGenLen=NULL){
   ploidy = 2 #The only ploidy level currently supported
   if(inbred){
     popSize = nInd
@@ -28,6 +29,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
   }
   if(!is.null(manualCommand)){
     command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1))
+    genLen = manualGenLen
   }else{
     species = toupper(species)
     if(species=="WHEAT"){ #WHEAT----

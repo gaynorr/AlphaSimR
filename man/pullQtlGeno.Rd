@@ -20,4 +20,3 @@ Returns a matrix of QTL genotypes.
 \description{
 Retrieves QTL genotype data
 }
-

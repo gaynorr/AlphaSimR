@@ -12,4 +12,3 @@ meanP(pop)
 \description{
 Returns the mean phenotypic values for all traits
 }
-

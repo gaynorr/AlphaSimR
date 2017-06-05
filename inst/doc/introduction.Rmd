@@ -17,7 +17,7 @@ The basic steps of an AlphaSimR simulation are:
 
 2. Set simulation parameters using `createSimulation`
 
-3. Add traits using `addTraitA` or `addTraitAD`
+3. Add traits using `addTraitA` or any other addTrait function
 
 4. Add SNP chips using `addSnpChip`
 
@@ -39,7 +39,7 @@ The `createSimulation` function will create a variable called `LASTID` in the gl
 
 ### Adding traits
 
-Traits are added to the simulation using the `addTraitA` and `addTraitAD` functions. These functions can be called multiple times to run simulations with multiple traits.
+Traits are added to the simulation using the one of the fullowing functions: `addTraitA`, `addTraitAD`, `addTraitAG`, or `addTraitADG`. These functions can be called multiple times to run simulations with multiple traits. These functions can also be used to simulate correlated pleiotropic traits.
 
 ### Adding SNP chips
 
@@ -57,7 +57,7 @@ Below are some key functions for operations carried out on populations.
 
 * Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`
 
-* Viewing summary data: `meanG`, `meanP`, `varG`, `varP`
+* Viewing summary data: `meanG`, `meanP`, `varG`, `varP`, `varAD`
 
 * Setting phenotypes: `setPheno`, `calcPheno`
 
@@ -65,3 +65,5 @@ Below are some key functions for operations carried out on populations.
 
 * Crossing: `makeCross`, `randCross`, `makeCross2`, `randCross2`,
 `self`, `makeDH`
+
+* Genomic selection: `writeRecords`, `setEBV`

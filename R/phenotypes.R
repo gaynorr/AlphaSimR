@@ -12,19 +12,19 @@ addError = function(gv,varE,reps=1){
       varE = diag(varE)
     }
   }
-  error = MASS::mvrnorm(nInd,
-                        mu=rep(0,nTraits),
-                        Sigma=varE)
+  error = mvrnorm(nInd,
+                  mu=rep(0,nTraits),
+                  Sigma=varE)
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
   return(pheno)
 }
 
-calcPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
+calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
   validObject(pop)
   gv = pop@gv
   if(class(pop)=="HybridPop"){
-    stopifnot(w==0)
+    stopifnot(w==0.5)
   }else{
     stopifnot(class(pop)=="Pop")
     for(i in 1:simParam@nTraits){
@@ -52,21 +52,21 @@ calcPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits. If pop 
 #' is \code{\link{HybridPop-class}} an error will be returned for any 
-#' value other than 0.
+#' value other than 0.5.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
-#' It was intended for representation of replicated yield trials in plant 
+#' It is intended to represent replicated yield trials in plant 
 #' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number plots per entry. The resulting phenotype 
-#' would reflect the mean of all replications.
+#' reps is set to the number of plots per entry. The resulting phenotype 
+#' represents entry means.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-setPheno = function(pop,varE,reps=1,w=0,simParam=SIMPARAM){
+setPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
   pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,w=w,
                         simParam=simParam)
   validObject(pop)

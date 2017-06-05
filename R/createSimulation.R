@@ -138,80 +138,211 @@ pickQtlLoci = function(nQtlPerChr, simParam){
   return(qtlLoci)
 }
 
-#' @title Add an additive trait
+#' @title Add additive traits
 #' 
 #' @description 
-#' Randomly assigns eligble QTLs for an additive trait. 
+#' Randomly assigns eligble QTLs for one ore more additive traits. 
+#' If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated additive effects.
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-#' @param meanG the mean genetic value for the trait
-#' @param varG the total genetic variance for the trait
+#' @param meanG a vector of mean genetic values for one or more traits
+#' @param varG a vector of total genetic variances for one or more traits
+#' @param corr a matrix of correlations between traits
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
 #' 
 #' @export
-addTraitA = function(nQtlPerChr,meanG,varG,simParam=SIMPARAM,
-                     founderPop=FOUNDERPOP){
+addTraitA = function(nQtlPerChr,meanG,varG,corr=matrix(1),
+                     simParam=SIMPARAM,founderPop=FOUNDERPOP){
+  stopifnot(length(meanG)==length(varG),
+            nrow(corr)==ncol(corr),
+            length(meanG)==length(diag(corr)))
+  nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = rnorm(qtlLoci@nLoci)
+  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
-  tmp = tuneTraitA(geno,addEff,varG)
-  intercept = tmp$output$intercept
-  addEff = addEff*tmp$parameter
-  trait = new("TraitA",
-              qtlLoci,
-              addEff=addEff,
-              intercept=meanG-intercept)
-  simParam@nTraits = simParam@nTraits + 1L
-  simParam@traits[[simParam@nTraits]] = trait
+  for(i in 1:nTraits){
+    tmp = tuneTraitA(geno,addEff[,i],varG[i])
+    intercept = tmp$output$intercept
+    addEff[,i] = addEff[,i]*tmp$parameter
+    trait = new("TraitA",
+                qtlLoci,
+                addEff=addEff[,i],
+                intercept=meanG[i]-intercept)
+    simParam@nTraits = simParam@nTraits + 1L
+    simParam@traits[[simParam@nTraits]] = trait
+  }
   validObject(simParam)
   return(simParam)
 }
 
-#' @title Add an additive and dominance
+#' @title Add additive and dominance traits
 #' 
 #' @description 
-#' Randomly assigns eligble QTLs for a trait with dominance. 
+#' Randomly assigns eligble QTLs for one or more traits with dominance. 
+#' If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated additive effects.
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-#' @param meanG the mean genetic value for the trait
-#' @param varG the total genetic variance for the trait
-#' @param domDegree the dominance degree of individual loci. Can be a single value or nLoci values.
+#' @param meanG a vector of mean genetic values for one or more traits
+#' @param varG a vector of total genetic variances for one or more traits
+#' @param domDegree the dominance degree of individual loci. 
+#' Can be a single value or nLoci values.
+#' @param corr a matrix of correlations between traits
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
 #'  
 #' @export
-addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,simParam=SIMPARAM,
-                      founderPop=FOUNDERPOP){
+addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,corr=matrix(1),
+                      simParam=SIMPARAM, founderPop=FOUNDERPOP){
+  stopifnot(length(meanG)==length(varG),
+            nrow(corr)==ncol(corr),
+            length(meanG)==length(diag(corr)))
+  nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = rnorm(qtlLoci@nLoci)
+  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
     stopifnot(length(domDegree)==qtlLoci@nLoci) 
   }
-  addEff = rnorm(qtlLoci@nLoci)
-  domEff = abs(addEff)*domDegree
+  domEff = sweep(abs(addEff),1,domDegree,"*")
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
-  tmp = tuneTraitAD(geno,addEff,domEff,varG)
-  intercept = tmp$output$intercept
-  addEff = addEff*tmp$parameter
-  domEff = domEff*tmp$parameter
-  trait = new("TraitAD",
-              qtlLoci,
-              addEff=addEff,
-              domEff=domEff,
-              intercept=meanG-intercept)
-  simParam@nTraits = simParam@nTraits + 1L
-  simParam@traits[[simParam@nTraits]] = trait
+  for(i in 1:nTraits){
+    tmp = tuneTraitAD(geno,addEff[,i],domEff,varG[i])
+    intercept = tmp$output$intercept
+    addEff[,i] = addEff[,i]*tmp$parameter
+    domEffTmp = domEff*tmp$parameter
+    trait = new("TraitAD",
+                qtlLoci,
+                addEff=addEff[,i],
+                domEff=as.numeric(domEffTmp),
+                intercept=meanG[i]-intercept)
+    simParam@nTraits = simParam@nTraits + 1L
+    simParam@traits[[simParam@nTraits]] = trait
+  }
+  validObject(simParam)
+  return(simParam)
+}
+
+#' @title Add additive GxE traits
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for one ore more additive GxE traits. 
+#' If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated effects.
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param meanG a vector of mean genetic values for one or more traits
+#' @param varG a vector of total genetic variances for one or more traits
+#' @param varGE a vector of total genotype-by-environment variances for the traits
+#' @param corr a matrix of correlations between traits
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
+#' 
+#' @export
+addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
+                      simParam=SIMPARAM,founderPop=FOUNDERPOP){
+  stopifnot(length(meanG)==length(varG),
+            nrow(corr)==ncol(corr),
+            length(meanG)==length(diag(corr)),
+            length(meanG)==length(varGE))
+  nTraits = length(meanG)
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
+  gxeEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  for(i in 1:nTraits){
+    tmp = tuneTraitA(geno,addEff[,i],varG[i])
+    intercept = tmp$output$intercept
+    addEff[,i] = addEff[,i]*tmp$parameter
+    gxeEff[,i] = gxeEff[,i]*tmp$parameter*(varGE[i]/varG[i])^0.25
+    trait = new("TraitAG",
+                qtlLoci,
+                addEff=addEff[,i],
+                intercept=meanG[i]-intercept,
+                gxeEff = gxeEff[,i],
+                varGxeLoci = (tmp$parameter*(varGE[i]/varG[i])^0.25)^2)
+    simParam@nTraits = simParam@nTraits + 1L
+    simParam@traits[[simParam@nTraits]] = trait
+  }
+  validObject(simParam)
+  return(simParam)
+}
+
+#' @title Add an additive and dominance GxE trait
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
+#' value or nChr values.
+#' @param meanG a vector of mean genetic values for one or more traits
+#' @param varG a vector of total genetic variances for one or more traits
+#' @param domDegree the dominance degree of individual loci. 
+#' Can be a single value or nLoci values.
+#' @param varGE a vector of total genotype-by-environment variances for the traits
+#' @param corr a matrix of correlations between traits
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#' 
+#' @return Returns an object of \code{\link{SimParam-class}}
+#'  
+#' @export
+addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
+                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
+  stopifnot(length(meanG)==length(varG),
+            nrow(corr)==ncol(corr),
+            length(meanG)==length(diag(corr)),
+            length(meanG)==length(varGE))
+  nTraits = length(meanG)
+  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
+  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
+  gxeEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                   Sigma=corr)
+  if(length(domDegree)==1){
+    domDegree = rep(domDegree,qtlLoci@nLoci)
+  }else{
+    stopifnot(length(domDegree)==qtlLoci@nLoci) 
+  }
+  domEff = sweep(abs(addEff),1,domDegree,"*")
+  geno = getGeno(founderPop@geno,
+                 qtlLoci@lociPerChr,
+                 qtlLoci@lociLoc)
+  for(i in 1:nTraits){
+    tmp = tuneTraitAD(geno,addEff[,i],domEff,varG[i])
+    intercept = tmp$output$intercept
+    addEff[,i] = addEff[,i]*tmp$parameter
+    domEffTmp = domEff*tmp$parameter
+    gxeEff[,i] = gxeEff[,i]*tmp$parameter*(varGE[i]/varG[i])^0.25
+    trait = new("TraitADG",
+                qtlLoci,
+                addEff=addEff[,i],
+                domEff=as.numeric(domEffTmp),
+                intercept=meanG[i]-intercept,
+                gxeEff = gxeEff[,i],
+                varGxeLoci = (tmp$parameter*(varGE[i]/varG[i])^0.25)^2)
+    simParam@nTraits = simParam@nTraits + 1L
+    simParam@traits[[simParam@nTraits]] = trait
+  }
   validObject(simParam)
   return(simParam)
 }
@@ -251,7 +382,7 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
   }else{
     stop(paste("no rules for gender type",simParam@gender))
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0)
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
   gv = do.call("cbind",gv)
   output = new("Pop",
                nInd=rawPop@nInd,
@@ -267,24 +398,14 @@ newPop = function(rawPop, id=NULL, simParam=SIMPARAM){
                gv=gv,
                pheno=matrix(NA_real_,
                             nrow=rawPop@nInd,
-                            ncol=simParam@nTraits))
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
   return(output)
 }
 
-
-#ToDo----
-addTraitAG = function(nQtlPerChr,meanG,varG,varGE,simParam=SIMPARAM,
-                      founderPop=FOUNDERPOP){
-  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  
-}
-
-addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,
-                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
-  qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  
-}
 

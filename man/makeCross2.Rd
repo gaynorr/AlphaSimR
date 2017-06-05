@@ -12,7 +12,8 @@ makeCross2(fPop, mPop, crossPlan, id = NULL, simParam = SIMPARAM)
 \item{mPop}{an object of \code{\link{Pop-class}} for male parents.}
 
 \item{crossPlan}{a matrix with two column representing 
-female and male parents}
+female and male parents. Either integers for the position in 
+population or character strings for the IDs.}
 
 \item{id}{optional ids to give to progeny}
 
@@ -25,4 +26,3 @@ Returns an object of \code{\link{Pop-class}}
 Makes crosses between two populations using a user supplied 
 crossing plan.
 }
-

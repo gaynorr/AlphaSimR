@@ -18,4 +18,3 @@ Returns an object \code{\link{SimParam-class}}
 \description{
 Randomly assigns eligble SNPs to a SNP chip
 }
-
