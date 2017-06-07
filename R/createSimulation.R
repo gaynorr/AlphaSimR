@@ -120,6 +120,54 @@ addSnpChip = function(nSnpPerChr,simParam=SIMPARAM){
   return(simParam)
 }
 
+#' @title Add SNP chips
+#' 
+#' @description 
+#' Randomly selects the number of snps in structure and then
+#' assigns them to chips based on structure
+#' 
+#' @param nSnpPerChr number of SNPs per chromosome. 
+#' Can be a single value or nChr values.
+#' @param structure a matrix.  Rows are snp chips, columns are chips.
+#' If value is true then that snp is on that chip.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object \code{\link{SimParam-class}}
+#' 
+#' @export
+addStructuredSnpChips = function(nSnpPerChr,structure,simParam=SIMPARAM){
+  if(length(nSnpPerChr)==1){
+    nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
+  }
+  stopifnot(length(nSnpPerChr)==simParam@nChr)
+  stopifnot(sapply(simParam@potSnp,length)>=nSnpPerChr)
+  stopifnot(dim(structure)[2]==sum(nSnpPerChr))
+  lociLoc = lapply(1:simParam@nChr,function(x){
+    sort(sample(simParam@potSnp[[x]],nSnpPerChr[x]))
+  })
+  lociLoc = do.call("c",lociLoc)
+  
+  for (i in 1:nrow(structure)){
+    snps = lociLoc[structure[i,]]
+    start = 1
+    numChr = numeric(length(nSnpPerChr))
+    for (j in 1:length(nSnpPerChr)){
+      end = start + nSnpPerChr[j] - 1
+      numChr[j] = sum(structure[i,start:end])
+      start = end + 1
+    }
+    snpChip = new("LociMap",
+                  nLoci = length(snps),
+                  lociPerChr = as.integer(numChr),
+                  lociLoc = as.integer(snps))
+    simParam@nSnpChips = simParam@nSnpChips + 1L
+    simParam@snpChips[[simParam@nSnpChips]] = snpChip
+  }
+  
+  validObject(simParam)
+  return(simParam)
+}
+
 #Function for selecting QTL loci called by all addTrait functions
 pickQtlLoci = function(nQtlPerChr, simParam){
   if(length(nQtlPerChr)==1){
