@@ -224,7 +224,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
     index = index[1:min(nInd,length(index))]
     return(index)
   }
-  take = c(sapply(unique(families),selInFam))
+  take = unlist(sapply(unique(families),selInFam))
   return(pop[take])
 }
 
