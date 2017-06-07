@@ -171,7 +171,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
 #' @title Select individuals within families
 #' 
 #' @description Selects a subset of nInd individuals from each  
-#' full-sib family within a population.
+#' full-sib family within a population. Will return all individuals 
+#' from a full-sib family if it has less than or equal to nInd individuals.
 #' 
 #' @param pop and object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
@@ -190,9 +191,6 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",
                            selectTop=TRUE){
   families = paste(pop@mother,pop@father,sep="_")
-  if(any(table(families)<nInd)){
-    stop("some families have less than nInd individuals")
-  }
   use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
@@ -223,7 +221,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
     index = which(families%in%selFam)
     y = response[index]
     index = index[order(y,decreasing=selectTop)]
-    index = index[1:nInd]
+    index = index[1:min(nInd,length(index))]
     return(index)
   }
   take = c(sapply(unique(families),selInFam))
