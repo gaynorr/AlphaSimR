@@ -77,6 +77,10 @@ createDH2 <- function(geno, nDH, genMaps) {
     .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
 }
 
+crossPedigree <- function(founders, fPar, mPar, genMaps) {
+    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, fPar, mPar, genMaps)
+}
+
 popVar <- function(X) {
     .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
 }

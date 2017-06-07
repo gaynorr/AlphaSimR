@@ -399,3 +399,67 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   }
   return(output)
 }
+
+#' @title Make crosses based on a pedigree
+#' 
+#' @description 
+#' 
+#' @param pedigree an object of \code{\link{Pedigree-class}}
+#' @param founders an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
+  stopifnot(class(pedigree)=="Pedigree")
+  stopifnot(class(founders)=="MapPop")
+  
+  sortedped = sortPed(pedigree)
+  
+  geno = crossPedigree(founders@geno,sortedped@father,
+                sortedped@mother,
+                simParam@genMaps)
+  if(simParam@gender=="no"){
+    gender = rep("H",sortedped@nInd)
+  }else if(simParam@gender=="yes_rand"){
+    gender = sample(c("M","F"),sortedped@nInd,replace=TRUE)
+  }else if(simParam@gender=="yes_sys"){
+    gender = rep_len(c("M","F"),sortedped@nInd)
+  }else{
+    stop(paste("no rules for gender type",simParam@gender))
+  }
+  rawPop = new("RawPop",
+               nInd=sortedped@nInd,
+               nChr=founders@nChr,
+               ploidy=founders@ploidy,
+               nLoci=founders@nLoci,
+               gender=gender,
+               geno=geno)
+  if(is.null(id)){
+    lastId = get("LASTID",envir=.GlobalEnv)
+    id = (1:rawPop@nInd) + lastId
+    lastId = max(id)
+    updateId = TRUE
+  }else{
+    updateId = FALSE
+  }
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+  gv = do.call("cbind",gv)
+  output = new("Pop", rawPop,
+               id=as.character(id),
+               mother=as.character(sortedped@mother),
+               father=as.character(sortedped@father),
+               nTraits=simParam@nTraits,
+               gv=gv,
+               pheno=matrix(NA_real_,
+                            nrow=rawPop@nInd,
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
+  if(updateId){
+    assign("LASTID",lastId,envir=.GlobalEnv)
+  }
+  return(output)
+}

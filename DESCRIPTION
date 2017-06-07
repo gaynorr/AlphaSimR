@@ -8,7 +8,7 @@ Description: This package contains classes and functions for simulating plant an
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: MASS, methods
+Depends: MASS, methods, hashmap
 Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
