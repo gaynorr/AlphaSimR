@@ -169,6 +169,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcGIbs
+arma::mat calcGIbs(arma::mat X);
+RcppExport SEXP AlphaSimR_calcGIbs(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGIbs(X));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fastDist
 arma::mat fastDist(const arma::mat& X);
 RcppExport SEXP AlphaSimR_fastDist(SEXP XSEXP) {

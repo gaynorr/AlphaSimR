@@ -485,7 +485,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
 //'
 //' @param X a matrix of marker genotypes scored as 0,1,2
 //' 
-//' @return a matrix of the realized genomic relationship.
+//' @return a matrix of the realized genomic relationship
 //'
 //' @export
 // [[Rcpp::export]]
@@ -494,6 +494,24 @@ arma::mat calcG(arma::mat X){
   X.each_row() -= 2*p;
   arma::mat G = X*X.t();
   G = G/(2.0*sum(p%(1-p)));
+  return G;
+}
+
+//' @title Calculate IBS G Matrix
+//' 
+//' @description
+//' Calculates an identity-by-state genomic relationship matrix 
+//' based on simple matching.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//' 
+//' @return a matrix of genomic relationships
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcGIbs(arma::mat X){
+  X -= 1.0;
+  arma::mat G = (X*X.t())/X.n_cols + 1.0;
   return G;
 }
 

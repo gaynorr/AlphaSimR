@@ -86,11 +86,26 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
 #'
 #' @param X a matrix of marker genotypes scored as 0,1,2
 #' 
-#' @return a matrix of the realized genomic relationship.
+#' @return a matrix of the realized genomic relationship
 #'
 #' @export
 calcG <- function(X) {
     .Call('AlphaSimR_calcG', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate IBS G Matrix
+#' 
+#' @description
+#' Calculates an identity-by-state genomic relationship matrix 
+#' based on simple matching.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of genomic relationships
+#'
+#' @export
+calcGIbs <- function(X) {
+    .Call('AlphaSimR_calcGIbs', PACKAGE = 'AlphaSimR', X)
 }
 
 #' @title Calculate Euclidean distance
