@@ -21,5 +21,4 @@ arma::fmat calcPopGIbs(const arma::field<arma::Cube<unsigned char> >& geno,
   X -= 1.0;
   arma::fmat G = (X*X.t())/X.n_cols + 1.0;
   return G;
-  return G;
 }
