@@ -158,6 +158,14 @@ gaussKernel <- function(D, theta) {
     .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
 }
 
+.calcPopG <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopG', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+.calcPopGIbs <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGIbs', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
 getGeno <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
