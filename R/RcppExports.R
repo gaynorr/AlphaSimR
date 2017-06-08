@@ -79,6 +79,70 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
     .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
 }
 
+#' @title Calculate G Matrix
+#' 
+#' @description
+#' Calculates the genomic relationship matrix.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of the realized genomic relationship.
+#'
+#' @export
+calcG <- function(X) {
+    .Call('AlphaSimR_calcG', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance matrix using a binomial 
+#' theorem trick. Results in much faster computation than the 
+#' \code{dist} function in package \code{stats}.
+#'
+#' @param X a numeric matrix
+#' 
+#' @return a matrix of columnwise distances
+#'
+#' @export
+fastDist <- function(X) {
+    .Call('AlphaSimR_fastDist', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate Paired Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance between two matrices using 
+#' a binomial theorem trick. 
+#'
+#' @param X a numeric matrix
+#' @param Y a numeric matrix
+#' 
+#' @return a matrix of columnwise distances between matrices 
+#' X and Y
+#'
+#' @export
+fastPairDist <- function(X, Y) {
+    .Call('AlphaSimR_fastPairDist', PACKAGE = 'AlphaSimR', X, Y)
+}
+
+#' @title Calculate Gaussian Kernel
+#' 
+#' @description
+#' Calculates a Gaussian kernel using a Euclidean distance 
+#' matrix.
+#'
+#' @param D a matrix of Euclidean distances, 
+#' see \code{\link{fastDist}}
+#' @param theta the tuning parameter
+#' 
+#' @return a numeric matrix
+#'
+#' @export
+gaussKernel <- function(D, theta) {
+    .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
+}
+
 getGeno <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }

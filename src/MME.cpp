@@ -478,3 +478,98 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   return solveMKM(y,X,Zlist,Klist);
 }
 
+//' @title Calculate G Matrix
+//' 
+//' @description
+//' Calculates the genomic relationship matrix.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//' 
+//' @return a matrix of the realized genomic relationship.
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcG(arma::mat X){
+  arma::rowvec p = mean(X,0)/2.0;
+  X.each_row() -= 2*p;
+  arma::mat G = X*X.t();
+  G = G/(2.0*sum(p%(1-p)));
+  return G;
+}
+
+// Calculates a distance matrix from a marker matrix
+// Uses binomial theorem trick
+// Inspired by code from:
+// http://blog.felixriedel.com/2013/05/pairwise-distances-in-r/
+// First described here: 
+// http://blog.smola.org/post/969195661/in-praise-of-the-second-binomial-formula
+//' @title Calculate Euclidean distance
+//' 
+//' @description
+//' Calculates a Euclidean distance matrix using a binomial 
+//' theorem trick. Results in much faster computation than the 
+//' \code{dist} function in package \code{stats}.
+//'
+//' @param X a numeric matrix
+//' 
+//' @return a matrix of columnwise distances
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat fastDist(const arma::mat& X){
+  arma::colvec Xn =  sum(square(X),1);
+  arma::mat D = -2*(X*X.t());
+  D.each_col() += Xn;
+  D.each_row() += Xn.t();
+  D = sqrt(D);
+  D.diag().zeros(); //Removes NaN values
+  if(D.has_nan()){
+    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+  }
+  return D; 
+}
+
+//' @title Calculate Paired Euclidean distance
+//' 
+//' @description
+//' Calculates a Euclidean distance between two matrices using 
+//' a binomial theorem trick. 
+//'
+//' @param X a numeric matrix
+//' @param Y a numeric matrix
+//' 
+//' @return a matrix of columnwise distances between matrices 
+//' X and Y
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
+  arma::colvec Xn =  sum(square(X),1);
+  arma::colvec Yn =  sum(square(Y),1);
+  arma::mat D = -2*(X*Y.t());
+  D.each_col() += Xn;
+  D.each_row() += Yn.t();
+  D = sqrt(D);
+  if(D.has_nan()){
+    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+  }
+  return D; 
+}
+
+//' @title Calculate Gaussian Kernel
+//' 
+//' @description
+//' Calculates a Gaussian kernel using a Euclidean distance 
+//' matrix.
+//'
+//' @param D a matrix of Euclidean distances, 
+//' see \code{\link{fastDist}}
+//' @param theta the tuning parameter
+//' 
+//' @return a numeric matrix
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat gaussKernel(arma::mat& D, double theta){
+  return exp(-1.0*square(D/theta));
+}
