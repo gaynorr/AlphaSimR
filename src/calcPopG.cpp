@@ -1,7 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
-// [[Rcpp::export(.calcPopG)]]
+// [[Rcpp::export]]
 arma::fmat calcPopG(const arma::field<arma::Cube<unsigned char> >& geno, 
                                   const arma::ivec& lociPerChr,
                                   arma::uvec lociLoc){
@@ -13,7 +13,7 @@ arma::fmat calcPopG(const arma::field<arma::Cube<unsigned char> >& geno,
   return G;
 }
 
-// [[Rcpp::export(.calcPopGIbs)]]
+// [[Rcpp::export]]
 arma::fmat calcPopGIbs(const arma::field<arma::Cube<unsigned char> >& geno, 
                        const arma::ivec& lociPerChr,
                        arma::uvec lociLoc){
