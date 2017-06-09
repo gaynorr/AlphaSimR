@@ -17,6 +17,155 @@ gebvSCA <- function(SCAsol, pop) {
     .Call('AlphaSimR_gebvSCA', PACKAGE = 'AlphaSimR', SCAsol, pop)
 }
 
+#' @title Solve Univariate Model
+#' 
+#' @description
+#' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#'
+#' @export
+solveUVM <- function(y, X, Z, K) {
+    .Call('AlphaSimR_solveUVM', PACKAGE = 'AlphaSimR', y, X, Z, K)
+}
+
+#' @title Solve Multivariate Model
+#' 
+#' @description
+#' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+#'
+#' @param Y a matrix with n rows and q columns
+#' @param X a matrix with n rows and x columns
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#' @param tol tolerance for convergence
+#'
+#' @export
+solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
+    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
+}
+
+#' @title Solve Multikernel Model
+#' 
+#' @description
+#' Solves a univariate mixed model with multiple random effects.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param Zlist a list of Z matrices
+#' @param Klist a list of K matrices
+#'
+#' @export
+solveMKM <- function(y, X, Zlist, Klist) {
+    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
+}
+
+callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+}
+
+callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
+}
+
+callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
+callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
+#' @title Calculate G Matrix
+#' 
+#' @description
+#' Calculates the genomic relationship matrix.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of the realized genomic relationship
+#'
+#' @export
+calcG <- function(X) {
+    .Call('AlphaSimR_calcG', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate IBS G Matrix
+#' 
+#' @description
+#' Calculates an identity-by-state genomic relationship matrix 
+#' based on simple matching.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of genomic relationships
+#'
+#' @export
+calcGIbs <- function(X) {
+    .Call('AlphaSimR_calcGIbs', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance matrix using a binomial 
+#' theorem trick. Results in much faster computation than the 
+#' \code{dist} function in package \code{stats}.
+#'
+#' @param X a numeric matrix
+#' 
+#' @return a matrix of columnwise distances
+#'
+#' @export
+fastDist <- function(X) {
+    .Call('AlphaSimR_fastDist', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate Paired Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance between two matrices using 
+#' a binomial theorem trick. 
+#'
+#' @param X a numeric matrix
+#' @param Y a numeric matrix
+#' 
+#' @return a matrix of columnwise distances between matrices 
+#' X and Y
+#'
+#' @export
+fastPairDist <- function(X, Y) {
+    .Call('AlphaSimR_fastPairDist', PACKAGE = 'AlphaSimR', X, Y)
+}
+
+#' @title Calculate Gaussian Kernel
+#' 
+#' @description
+#' Calculates a Gaussian kernel using a Euclidean distance 
+#' matrix.
+#'
+#' @param D a matrix of Euclidean distances, 
+#' see \code{\link{fastDist}}
+#' @param theta the tuning parameter
+#' 
+#' @return a numeric matrix
+#'
+#' @export
+gaussKernel <- function(D, theta) {
+    .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
+}
+
+.calcPopG <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopG', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+.calcPopGIbs <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGIbs', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
 getGeno <- function(geno, lociPerChr, lociLoc) {
     .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
 }
@@ -77,10 +226,6 @@ createDH2 <- function(geno, nDH, genMaps) {
     .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
 }
 
-crossPedigree <- function(founders, fPar, mPar, genMaps) {
-    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, fPar, mPar, genMaps)
-}
-
 popVar <- function(X) {
     .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
 }
@@ -97,70 +242,12 @@ convToImat <- function(X) {
     .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
 }
 
-#' @title Solve Univariate Model
-#' 
-#' @description
-#' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#'
-#' @export
-solveUVM <- function(y, X, Z, K) {
-    .Call('AlphaSimR_solveUVM', PACKAGE = 'AlphaSimR', y, X, Z, K)
+sampAllComb <- function(nLevel1, nLevel2, n) {
+    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
 }
 
-#' @title Solve Multivariate Model
-#' 
-#' @description
-#' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#' @param tol tolerance for convergence
-#'
-#' @export
-solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
-    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
-}
-
-objWeights <- function(x, ptrData) {
-    .Call('AlphaSimR_objWeights', PACKAGE = 'AlphaSimR', x, ptrData)
-}
-
-#' @title Solve Multikernel Model
-#' 
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Zlist a list of Z matrices
-#' @param Klist a list of K matrices
-#'
-#' @export
-solveMKM <- function(y, X, Zlist, Klist) {
-    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
-}
-
-callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
-}
-
-callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
-}
-
-callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
-}
-
-callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+sampHalfDialComb <- function(nLevel, n) {
+    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {

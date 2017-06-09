@@ -95,6 +95,8 @@ arma::ivec sampleInt(long long int n, long long int N){
 // nLevel1 = number of levels for the first column
 // nLevel2 = number of levels for the second column
 // n = number of combinations to sample
+// If n is larger than the total number of possible combinations (N), 
+// then only n%N combinations are sampled and the rest are systematically assigned
 // Returns an integer matrix with the sampled levels for each column
 // Values in column 1 range from 1 to nLevel1
 // Values in column 2 range from 1 to nLevel2
@@ -102,15 +104,27 @@ arma::ivec sampleInt(long long int n, long long int N){
 arma::imat sampAllComb(long long int nLevel1, long long int nLevel2, 
                          long long int n){
   long long int N = nLevel1*nLevel2;
-  if(n>N){ // Requesting too many combinations
-    throw(1);
+  long long int fullComb = 0;
+  while(n>N){
+    n -= N;
+    ++fullComb;
   }
   arma::ivec samples = sampleInt(n,N);
   // Calculate selected combinations
   arma::imat output(n,2);
-  for(int i=0; i<n; ++i){
+  for(long long int i=0; i<n; ++i){
     output(i,0) = samples(i)/nLevel2;
     output(i,1) = samples(i)%nLevel2;
+  }
+  if(fullComb>0){
+    arma::imat tmp(N*fullComb,2);
+    long long int i;
+    for(long long int j=0; j<(N*fullComb); ++j){
+      i = j%N;
+      tmp(j,0) = i/nLevel2;
+      tmp(j,1) = i%nLevel2;
+    }
+    output = arma::join_cols(output,tmp);
   }
   // C++ to R
   output += 1;
@@ -120,20 +134,34 @@ arma::imat sampAllComb(long long int nLevel1, long long int nLevel2,
 // Samples random pairs without replacement from all half-diallel combinations
 // nLevel = number of levels (number of individuals)
 // n = number of combinations to sample
+// If n is larger than the total number of possible combinations (N), 
+// then only n%N combinations are sampled and the rest are systematically assigned
 // Returns an integer matrix with the sampled levels for each combination
 // Returned values range from 1 to nLevel
 // [[Rcpp::export]]
 arma::imat sampHalfDialComb(long long int nLevel, long long int n){
   long long int N = nLevel*(nLevel-1)/2;
-  if(n>N){ // Requesting too many combinations
-    throw(1);
+  long long int fullComb = 0;
+  while(n>N){
+    n -= N;
+    ++fullComb;
   }
   arma::ivec samples = sampleInt(n,N);
   // Calculate selected combinations
   arma::imat output(n,2);
-  for(int i=0; i<n; ++i){
+  for(long long int i=0; i<n; ++i){
     output(i,0) = mapRow(samples(i),nLevel);
     output(i,1) = mapCol(samples(i),nLevel);
+  }
+  if(fullComb>0){
+    arma::imat tmp(N*fullComb,2);
+    long long int i;
+    for(long long int j=0; j<(N*fullComb); ++j){
+      i = j%N;
+      tmp(j,0) = mapRow(i,nLevel);
+      tmp(j,1) = mapCol(i,nLevel);
+    }
+    output = arma::join_cols(output,tmp);
   }
   // C++ to R
   output += 1;

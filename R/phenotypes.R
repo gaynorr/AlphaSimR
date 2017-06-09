@@ -20,6 +20,34 @@ addError = function(gv,varE,reps=1){
   return(pheno)
 }
 
+#' @title Calculate phenotypes
+#' 
+#' @description 
+#' Calculates phenotypes for all traits by adding random error 
+#' from a multivariate normal distribution. This function is called 
+#' by \code{\link{setPheno}}.
+#' 
+#' @param pop an object of \code{\link{Pop-class}} or 
+#' \code{\link{HybridPop-class}}
+#' @param varE error variances for phenotype. A vector of length 
+#' nTraits for independent error or a square matrix of dimensions 
+#' nTraits for correlated errors.
+#' @param reps number of replications for phenotype. See details.
+#' @param w the environmental covariate used by GxE traits. If pop 
+#' is \code{\link{HybridPop-class}} an error will be returned for any 
+#' value other than 0.5.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @details
+#' The reps parameter is for convient representation of replicated data. 
+#' It is intended to represent replicated yield trials in plant 
+#' breeding programs. In this case, varE is set to the plot error and 
+#' reps is set to the number of plots per entry. The resulting phenotype 
+#' represents entry means.
+#' 
+#' @return Returns a matrix of nInd by nTrait phenotypes
+#' 
+#' @export
 calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
   validObject(pop)
   gv = pop@gv

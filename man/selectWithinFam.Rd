@@ -27,5 +27,6 @@ Returns an object of \code{\link{Pop-class}} or
 }
 \description{
 Selects a subset of nInd individuals from each  
-full-sib family within a population.
+full-sib family within a population. Will return all individuals 
+from a full-sib family if it has less than or equal to nInd individuals.
 }

@@ -338,3 +338,34 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
 predictHybrid = function(){
   
 }
+
+#' @title RRBLUP Memory Usage
+#' 
+#' @description
+#' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}} 
+#' function for a given training population size. Note that this functions 
+#' may underestimate total usage.
+#' 
+#' @param nInd the number of individuals in the training population
+#' @param nMarker the number of markers per individual
+#' 
+#' @return Returns an estimate for the required gigabytes of RAM
+#' 
+#' @export
+RRBLUPMemUse = function(nInd,nMarker){
+  y = nInd
+  X = nInd #times fixed effects, assuming 1 here
+  Z = nInd*nMarker
+  K = nMarker*nMarker
+  S = nInd*nInd
+  ZK = nInd*nMarker
+  ZKZ = nInd*nInd
+  eigval = nInd
+  eigvec = nInd*nInd
+  eta = nInd
+  Hinv = nInd*nInd
+  u = nMarker
+  bytes = sapply(ls(),function(x) get(x))
+  bytes = 8*sum(bytes)
+  return(bytes*1e-9) #GB
+}

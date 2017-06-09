@@ -90,20 +90,8 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
                      id=NULL,simParam=SIMPARAM){
-  crossPlan = NULL
   if(simParam@gender=="no"){
-    maxCrosses = pop@nInd*(pop@nInd-1)/2
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        t(combn(pop@nInd,2)))
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampHalfDialComb(pop@nInd,
-                                         nCrosses)
-                        )
-    }
+    crossPlan = sampHalfDialComb(pop@nInd, nCrosses)
   }else{
     female = which(pop@gender=="F")
     if(length(female)==0){
@@ -113,20 +101,9 @@ randCross = function(pop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    maxCrosses = length(female)*length(male)
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:length(female),
-                                    1:length(male)))
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(length(female),
-                                    length(male),
-                                    nCrosses)
-                        )
-    }
+    crossPlan = sampAllComb(length(female),
+                            length(male),
+                            nCrosses)
     crossPlan[,1] = female[crossPlan[,1]]
     crossPlan[,2] = male[crossPlan[,2]]
   }
@@ -234,23 +211,8 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @export
 randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
                      id=NULL,simParam=SIMPARAM){
-  crossPlan = NULL
   if(simParam@gender=="no"){
-    maxCrosses = fPop@nInd*mPop@nInd
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:fPop@nInd,
-                                    1:mPop@nInd)
-                        )
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(fPop@nInd,
-                                    mPop@nInd,
-                                    nCrosses)
-                        )
-    }
+      crossPlan = sampAllComb(fPop@nInd,mPop@nInd,nCrosses)
   }else{
     female = which(fPop@gender=="F")
     if(length(female)==0){
@@ -260,20 +222,9 @@ randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    maxCrosses = length(female)*length(male)
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:length(female),
-                                    1:length(male)))
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(length(female),
-                                    length(male),
-                                    nCrosses)
-      )
-    }
+    crossPlan = sampAllComb(length(female),
+                            length(male),
+                            nCrosses)
     crossPlan[,1] = female[crossPlan[,1]]
     crossPlan[,2] = male[crossPlan[,2]]
   }
