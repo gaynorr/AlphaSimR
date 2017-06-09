@@ -19,11 +19,11 @@
 calcPopG = function(pop, useSnp=TRUE, snpChip=1, trait=1, 
                     simParam=SIMPARAM){
   if(useSnp){
-    return(.calcPopG(pop@geno, 
+    return(calcPopGC(pop@geno, 
                      simParam@snpChips[[snpChip]]@lociPerChr,
                      simParam@snpChips[[snpChip]]@lociLoc))
   }else{
-    return(.calcPopG(pop@geno, 
+    return(calcPopGC(pop@geno, 
                      simParam@traits[[trait]]@lociPerChr,
                      simParam@traits[[trait]]@lociLoc))
   }
@@ -51,11 +51,11 @@ calcPopG = function(pop, useSnp=TRUE, snpChip=1, trait=1,
 calcPopGIbs = function(pop, useSnp=TRUE, snpChip=1, trait=1, 
                        simParam=SIMPARAM){
   if(useSnp){
-    return(.calcPopGIbs(pop@geno, 
+    return(calcPopGIbsC(pop@geno, 
                         simParam@snpChips[[snpChip]]@lociPerChr,
                         simParam@snpChips[[snpChip]]@lociLoc))
   }else{
-    return(.calcPopGIbs(pop@geno, 
+    return(calcPopGIbsC(pop@geno, 
                         simParam@traits[[trait]]@lociPerChr,
                         simParam@traits[[trait]]@lociLoc))
   }

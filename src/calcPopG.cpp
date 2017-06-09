@@ -2,7 +2,7 @@
 #include "alphasimr.h"
 
 // [[Rcpp::export]]
-arma::fmat calcPopG(const arma::field<arma::Cube<unsigned char> >& geno, 
+arma::fmat calcPopGC(const arma::field<arma::Cube<unsigned char> >& geno, 
                                   const arma::ivec& lociPerChr,
                                   arma::uvec lociLoc){
   arma::fmat X = arma::conv_to<arma::fmat>::from(getGeno(geno, lociPerChr, lociLoc));
@@ -14,7 +14,7 @@ arma::fmat calcPopG(const arma::field<arma::Cube<unsigned char> >& geno,
 }
 
 // [[Rcpp::export]]
-arma::fmat calcPopGIbs(const arma::field<arma::Cube<unsigned char> >& geno, 
+arma::fmat calcPopGIbsC(const arma::field<arma::Cube<unsigned char> >& geno, 
                        const arma::ivec& lociPerChr,
                        arma::uvec lociLoc){
   arma::fmat X = arma::conv_to<arma::fmat>::from(getGeno(geno, lociPerChr, lociLoc));

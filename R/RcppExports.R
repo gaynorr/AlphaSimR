@@ -5,14 +5,6 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-calcPopG <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_calcPopG', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-calcPopGIbs <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_calcPopGIbs', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
 gebvRR <- function(RRsol, pop) {
     .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
 }
@@ -23,94 +15,6 @@ gebvGCA <- function(GCAsol, pop, female) {
 
 gebvSCA <- function(SCAsol, pop) {
     .Call('AlphaSimR_gebvSCA', PACKAGE = 'AlphaSimR', SCAsol, pop)
-}
-
-getGeno <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-getDomGeno <- function(geno) {
-    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
-}
-
-getHaplo <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
-    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
-}
-
-getGvA <- function(trait, pop) {
-    .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getGvAG <- function(trait, pop, z) {
-    .Call('AlphaSimR_getGvAG', PACKAGE = 'AlphaSimR', trait, pop, z)
-}
-
-getGvAD <- function(trait, pop) {
-    .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getGvADG <- function(trait, pop, z) {
-    .Call('AlphaSimR_getGvADG', PACKAGE = 'AlphaSimR', trait, pop, z)
-}
-
-calcGenParam <- function(trait, pop) {
-    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
-    .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
-}
-
-getHybridGvAG <- function(trait, fPop, fPar, mPop, mPar, z) {
-    .Call('AlphaSimR_getHybridGvAG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
-}
-
-getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
-    .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
-}
-
-getHybridGvADG <- function(trait, fPop, fPar, mPop, mPar, z) {
-    .Call('AlphaSimR_getHybridGvADG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
-}
-
-cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
-    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
-}
-
-createDH2 <- function(geno, nDH, genMaps) {
-    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
-}
-
-crossPedigree <- function(founders, fPar, mPar, genMaps) {
-    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, fPar, mPar, genMaps)
-}
-
-popVar <- function(X) {
-    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
-}
-
-mergeGeno <- function(x, y) {
-    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
-}
-
-calcChrMinorFreq <- function(geno, ploidy) {
-    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
-}
-
-convToImat <- function(X) {
-    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
-}
-
-sampAllComb <- function(nLevel1, nLevel2, n) {
-    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
-}
-
-sampHalfDialComb <- function(nLevel, n) {
-    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
 }
 
 #' @title Solve Univariate Model
@@ -252,6 +156,102 @@ fastPairDist <- function(X, Y) {
 #' @export
 gaussKernel <- function(D, theta) {
     .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
+}
+
+calcPopGC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+calcPopGIbsC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGIbsC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getGeno <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getDomGeno <- function(geno) {
+    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+}
+
+getHaplo <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
+    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
+}
+
+getGvA <- function(trait, pop) {
+    .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvAG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvAG', PACKAGE = 'AlphaSimR', trait, pop, z)
+}
+
+getGvAD <- function(trait, pop) {
+    .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvADG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvADG', PACKAGE = 'AlphaSimR', trait, pop, z)
+}
+
+calcGenParam <- function(trait, pop) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvAG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvAG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
+}
+
+getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvADG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvADG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
+}
+
+cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
+    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
+}
+
+createDH2 <- function(geno, nDH, genMaps) {
+    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
+}
+
+crossPedigree <- function(founders, fPar, mPar, genMaps) {
+    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, fPar, mPar, genMaps)
+}
+
+popVar <- function(X) {
+    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
+}
+
+mergeGeno <- function(x, y) {
+    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
+}
+
+calcChrMinorFreq <- function(geno, ploidy) {
+    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
+}
+
+convToImat <- function(X) {
+    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
+}
+
+sampAllComb <- function(nLevel1, nLevel2, n) {
+    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
+}
+
+sampHalfDialComb <- function(nLevel, n) {
+    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {
