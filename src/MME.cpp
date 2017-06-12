@@ -36,7 +36,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   // W=eigval
   // Z=eigvec
   int LDZ = N;
-  arma::ivec ISUPPZ(2*M);
+  arma::Col<int> ISUPPZ(2*M);
   // WORK length to be determined
   double tmpWORK;
   int LWORK = -1; // To be calculated
@@ -51,7 +51,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   LIWORK = tmpIWORK;
   // Allocate WORK and IWORK
   arma::vec WORK(LWORK);
-  arma::ivec IWORK(LIWORK);
+  arma::Col<int> IWORK(LIWORK);
   // Perform decomposition
   dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
