@@ -210,8 +210,8 @@ addTraitA = function(nQtlPerChr,meanG,varG,corr=matrix(1),
             length(meanG)==length(diag(corr)))
   nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
+  addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
@@ -256,8 +256,8 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,corr=matrix(1),
             length(meanG)==length(diag(corr)))
   nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
+  addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
@@ -310,10 +310,10 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
             length(meanG)==length(varGE))
   nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
-  gxeEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
+  addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
+  gxeEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
@@ -362,10 +362,10 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
             length(meanG)==length(varGE))
   nTraits = length(meanG)
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
-  addEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
-  gxeEff = mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                   Sigma=corr)
+  addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
+  gxeEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
+                          Sigma=corr),ncol=nTraits)
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
