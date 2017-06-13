@@ -312,8 +312,6 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
                           Sigma=corr),ncol=nTraits)
-  gxeEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                          Sigma=corr),ncol=nTraits)
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
@@ -321,13 +319,13 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
     tmp = tuneTraitA(geno,addEff[,i],varG[i])
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
-    gxeEff[,i] = gxeEff[,i]*tmp$parameter*(varGE[i]/varG[i])^0.25
+    varGxeLoc = sqrt(popVar(addEff[,i,drop=FALSE])*varGE[i]/varG[i])
     trait = new("TraitAG",
                 qtlLoci,
                 addEff=addEff[,i],
                 intercept=meanG[i]-intercept,
-                gxeEff = gxeEff[,i],
-                varGxeLoci = (tmp$parameter*(varGE[i]/varG[i])^0.25)^2)
+                gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoc)),
+                varGxeLoci = c(varGxeLoc))
     simParam@nTraits = simParam@nTraits + 1L
     simParam@traits[[simParam@nTraits]] = trait
   }
@@ -364,8 +362,6 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
                           Sigma=corr),ncol=nTraits)
-  gxeEff = matrix(mvrnorm(qtlLoci@nLoci,mu=rep(0,nTraits),
-                          Sigma=corr),ncol=nTraits)
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
@@ -380,14 +376,14 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
     domEffTmp = domEff*tmp$parameter
-    gxeEff[,i] = gxeEff[,i]*tmp$parameter*(varGE[i]/varG[i])^0.25
+    varGxeLoc = sqrt(popVar(addEff[,i,drop=FALSE])*varGE[i]/varG[i])
     trait = new("TraitADG",
                 qtlLoci,
                 addEff=addEff[,i],
                 domEff=as.numeric(domEffTmp),
                 intercept=meanG[i]-intercept,
-                gxeEff = gxeEff[,i],
-                varGxeLoci = (tmp$parameter*(varGE[i]/varG[i])^0.25)^2)
+                gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoc)),
+                varGxeLoci = c(varGxeLoc))
     simParam@nTraits = simParam@nTraits + 1L
     simParam@traits[[simParam@nTraits]] = trait
   }

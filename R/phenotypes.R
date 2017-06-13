@@ -12,9 +12,9 @@ addError = function(gv,varE,reps=1){
       varE = diag(varE)
     }
   }
-  error = mvrnorm(nInd,
-                  mu=rep(0,nTraits),
-                  Sigma=varE)
+  error = matrix(mvrnorm(nInd,
+                         mu=rep(0,nTraits),
+                        Sigma=varE),ncol=nTraits)
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
   return(pheno)
