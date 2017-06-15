@@ -15,7 +15,7 @@ loadPedigreeFromFile = function(pedname) {
   
   pedsize = nrow(fped)
   
-  ids = hashmap(keys=fped[,1], values = 1:pedsize)
+  ids = hashmap::hashmap(keys=fped[,1], values = 1:pedsize)
   ids$insert("0",0)
   
   numped = matrix(nrow=pedsize,ncol=2)

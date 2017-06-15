@@ -139,9 +139,9 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' @export
 pullMultipleSnpHaplo = function(pop, chips, haplo="all", 
                                 missing = 9, simParam=SIMPARAM) {
+  stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
   # enough R! (dmoney)
-  stopifnot(length(chips) == pop@nInd)
   missing = as.integer(missing)
   allSnps = numeric(0)
   uniqueChips = unique(chips)
