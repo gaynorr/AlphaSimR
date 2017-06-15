@@ -26,7 +26,7 @@ writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam=SIM
     positions[[i]] = params@snpChips[[i]]@lociLoc[start:end]
   }
 
-  writeASGenotypes(pop@geno[[chr]],positions,allSnps,chips,sprintf("%s",newpop@id),'9',normalizePath(file, mustWork=FALSE))
+  writeASGenotypes(pop@geno[[chr]],positions,allSnps,chips,newpop@id,'9',normalizePath(file, mustWork=FALSE))
 }
 
 #' @export

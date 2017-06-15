@@ -14,7 +14,8 @@ void writeASGenotypes(const arma::Cube<unsigned char> & g,
   
   std::ofstream ASout;
   ASout.open(fname, std::ios::trunc);
-  
+
+  char name[20];
   for (int i = 0; i < snpchips.n_rows; i++){
     arma::Col<unsigned char> all0 = g.slice(i).col(0);
     arma::Col<unsigned char> all1 = g.slice(i).col(1);
@@ -32,7 +33,8 @@ void writeASGenotypes(const arma::Cube<unsigned char> & g,
     
     arma::Col<unsigned char> selectedg = selected0 + selected1;
     
-    ASout << names[i];
+    std::sprintf(name,"%20s",names[i].c_str());
+    ASout << name;
     
     if (snpchips(i) == 0) {
       for (int k = 0; k < allLocations.n_rows; k++) {
@@ -71,11 +73,13 @@ void writeASHaplotypes(const arma::Cube<unsigned char> & g,
   std::ofstream ASout;
   ASout.open(fname, std::ios::trunc);
   
+  char name[20];
   for (int i = 0; i < snpchips.n_rows; i++){
     for (int j = 0; j < 2; j ++){
       arma::Col<unsigned char> all = g.slice(i).col(j);
 
-      ASout << names[i];
+      std::sprintf(name,"%20s",names[i].c_str());
+      ASout << name;
 
       if (snpchips(i) == 0) {
         arma::Col<unsigned char> selected = all.elem(allLocations - 1);
