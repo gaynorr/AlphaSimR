@@ -268,14 +268,14 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,corr=matrix(1),
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
   for(i in 1:nTraits){
-    tmp = tuneTraitAD(geno,addEff[,i],domEff,varG[i])
+    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i])
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
-    domEffTmp = domEff*tmp$parameter
+    domEff[,i] = domEff[,i]*tmp$parameter
     trait = new("TraitAD",
                 qtlLoci,
                 addEff=addEff[,i],
-                domEff=as.numeric(domEffTmp),
+                domEff=domEff[,i],
                 intercept=meanG[i]-intercept)
     simParam@nTraits = simParam@nTraits + 1L
     simParam@traits[[simParam@nTraits]] = trait
@@ -372,15 +372,15 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
   for(i in 1:nTraits){
-    tmp = tuneTraitAD(geno,addEff[,i],domEff,varG[i])
+    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i])
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
-    domEffTmp = domEff*tmp$parameter
+    domEff[,i] = domEff[,i]*tmp$parameter
     varGxeLoc = sqrt(popVar(addEff[,i,drop=FALSE])*varGE[i]/varG[i])
     trait = new("TraitADG",
                 qtlLoci,
                 addEff=addEff[,i],
-                domEff=as.numeric(domEffTmp),
+                domEff=domEff[,i],
                 intercept=meanG[i]-intercept,
                 gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoc)),
                 varGxeLoci = c(varGxeLoc))

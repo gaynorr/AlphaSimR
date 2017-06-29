@@ -4,7 +4,7 @@
 \alias{selectFam}
 \title{Select families}
 \usage{
-selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE)
+selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -13,13 +13,16 @@ selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE)
 \item{nFam}{the number of families to select}
 
 \item{trait}{the trait for selection. Either a number indicating 
-a single trait or a function returning a single value.}
+a single trait or a function returning a vector of length nInd.}
 
 \item{use}{select on genetic value (\code{gv}), estimated
 genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
+
+\item{...}{additional arguments if using a function for 
+trait}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

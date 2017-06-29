@@ -7,26 +7,29 @@
 #' \code{\link{HybridPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a single value.
+#' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param ... additional arguments if using a function for 
+#' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
+selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
+                     ...){
   stopifnot(nInd<=pop@nInd)
   use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
-      response = apply(pop@gv,1,trait)
+      response = trait(pop@gv,...)
     }else if(use == "ebv"){
-      response = apply(pop@ebv,1,trait)
+      response = trait(pop@ebv,...)
     }else if(use == "pheno"){
-      response = apply(pop@pheno,1,trait)
+      response = trait(pop@pheno,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -58,23 +61,26 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a single value.
+#' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param ... additional arguments if using a function for 
+#' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
+selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
+                      ...){
   pop = pop[which(pop@gender=="M")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"males"))
   }
   pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop)
+                  selectTop=selectTop,...)
   return(pop)
 }
 
@@ -87,23 +93,26 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a single value.
+#' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno})
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param ... additional arguments if using a function for 
+#' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
+selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
+                        ...){
   pop = pop[which(pop@gender=="F")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"females"))
   }
   pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop)
+                  selectTop=selectTop,...)
   return(pop)
 }
 
@@ -116,17 +125,20 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a single value.
+#' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param ... additional arguments if using a function for 
+#' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
+selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
+                     ...){
   families = paste(pop@mother,pop@father,sep="_")
   availFam = length(unique(families))
   if(nFam>availFam){
@@ -136,11 +148,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
   use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
-      response = apply(pop@gv,1,trait)
+      response = trait(pop@gv,...)
     }else if(use == "ebv"){
-      response = apply(pop@ebv,1,trait)
+      response = trait(pop@ebv,...)
     }else if(use == "pheno"){
-      response = apply(pop@pheno,1,trait)
+      response = trait(pop@pheno,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -178,27 +190,29 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE){
 #' \code{\link{HybridPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a single value.
+#' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic value (\code{gv}), estimated
 #' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param ... additional arguments if using a function for 
+#' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",
-                           selectTop=TRUE){
+                           selectTop=TRUE,...){
   families = paste(pop@mother,pop@father,sep="_")
   use = tolower(use)
   if(class(trait)=="function"){
     if(use == "gv"){
-      response = apply(pop@gv,1,trait)
+      response = trait(pop@gv,...)
     }else if(use == "ebv"){
-      response = apply(pop@ebv,1,trait)
+      response = trait(pop@ebv,...)
     }else if(use == "pheno"){
-      response = apply(pop@pheno,1,trait)
+      response = trait(pop@pheno,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
