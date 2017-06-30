@@ -53,10 +53,10 @@ selIndex = function(Y,b){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
 #' @param chr a vector of chromosomes to edit. Length must match 
-#' length of segSite.
-#' @param segSites a vector of segrigating sites to edit. Length must 
+#' length of segSites.
+#' @param segSites a vector of segregating sites to edit. Length must 
 #' match length of chr.
-#' @param allele either 0 or 1 for desired allele.
+#' @param allele either 0 or 1 for desired allele
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
