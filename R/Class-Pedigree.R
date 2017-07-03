@@ -15,8 +15,8 @@
 setClass("Pedigree",
          slots=c(nInd="numeric",
                  ids="character",
-                 mother="numeric",
-                 father="numeric"))
+                 mother="integer",
+                 father="integer"))
 
 setValidity("Pedigree",function(object){
   errors = character()
@@ -75,8 +75,8 @@ sortPed = function(x, maxGen=100){
   }
   
   ids=character(ped@nInd)
-  mother=numeric(ped@nInd)
-  father=numeric(ped@nInd)
+  mother=integer(ped@nInd)
+  father=integer(ped@nInd)
   maxg = g
   c = 0
   for (g in 1:maxg) {

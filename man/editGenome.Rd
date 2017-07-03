@@ -12,12 +12,12 @@ editGenome(pop, ind, chr, segSites, allele, simParam = SIMPARAM)
 \item{ind}{a vector of individuals to edit}
 
 \item{chr}{a vector of chromosomes to edit. Length must match 
-length of segSite.}
+length of segSites.}
 
-\item{segSites}{a vector of segrigating sites to edit. Length must 
+\item{segSites}{a vector of segregating sites to edit. Length must 
 match length of chr.}
 
-\item{allele}{either 0 or 1 for desired allele.}
+\item{allele}{either 0 or 1 for desired allele}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
