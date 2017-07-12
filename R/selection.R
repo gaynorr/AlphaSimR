@@ -8,10 +8,12 @@
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic value (\code{gv}), estimated
-#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values (\code{gv}), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -20,7 +22,7 @@
 #' 
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                     ...){
+                     simParam=SIMPARAM,...){
   stopifnot(nInd<=pop@nInd)
   use = tolower(use)
   if(class(trait)=="function"){
@@ -30,6 +32,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
       response = trait(pop@ebv,...)
     }else if(use == "pheno"){
       response = trait(pop@pheno,...)
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
+      response = trait(response,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -41,6 +46,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
       response = pop@ebv[,trait]
     }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -62,10 +69,12 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic value (\code{gv}), estimated
-#' genetic values (\code{ebv}) or phenotypes (\code{pheno})
+#' @param use select on genetic values (\code{gv}), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -80,7 +89,7 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
     stop(paste("the population only contains",pop@nInd,"males"))
   }
   pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop,...)
+                  selectTop=selectTop,simParam=simParam,...)
   return(pop)
 }
 
@@ -94,10 +103,12 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic value (\code{gv}), estimated
-#' genetic values (\code{ebv}) or phenotypes (\code{pheno})
+#' @param use select on genetic values (\code{gv}), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -112,7 +123,7 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
     stop(paste("the population only contains",pop@nInd,"females"))
   }
   pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop,...)
+                  selectTop=selectTop,simParam=simParam,...)
   return(pop)
 }
 
@@ -126,10 +137,12 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic value (\code{gv}), estimated
-#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values (\code{gv}), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -153,6 +166,9 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
       response = trait(pop@ebv,...)
     }else if(use == "pheno"){
       response = trait(pop@pheno,...)
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
+      response = trait(response,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -164,6 +180,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
       response = pop@ebv[,trait]
     }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -191,10 +209,12 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic value (\code{gv}), estimated
-#' genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values (\code{gv}), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -213,6 +233,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
       response = trait(pop@ebv,...)
     }else if(use == "pheno"){
       response = trait(pop@pheno,...)
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
+      response = trait(response,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -224,6 +247,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
       response = pop@ebv[,trait]
     }else if(use == "pheno"){
       response = pop@pheno[,trait]
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }

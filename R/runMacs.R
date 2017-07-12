@@ -28,6 +28,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
     popSize = ploidy*nInd
   }
   if(!is.null(manualCommand)){
+    if(is.null(manualGenLen)) stop("You must define manualGenLen")
     command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1))
     genLen = manualGenLen
   }else{
