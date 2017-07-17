@@ -147,11 +147,23 @@ calcGCA = function(pop,use="pheno"){
   colnames(females) = colnames(males) = colnames(y)
   for(i in 1:pop@nTraits){
     #Calculate female GCA
-    ans = lm(y[,i]~female+male-1,contrasts=list(male="contr.sum"))
-    females[,i] = coef(ans)[1:length(unique(female))]
+    if(length(unique(male))==1){
+      females[,i] = y[,i]
+    }else if(length(unique(female))==1){
+      females[,i] = mean(y[,i])
+    }else{
+      ans = lm(y[,i]~female+male-1,contrasts=list(male="contr.sum"))
+      females[,i] = coef(ans)[1:length(unique(female))]
+    }
     #Calculate male GCA
-    ans = lm(y[,i]~male+female-1,contrasts=list(female="contr.sum"))
-    males[,i] = coef(ans)[1:length(unique(male))]
+    if(length(unique(female))==1){
+      males[,i] = y[,i]
+    }else if(length(unique(male))==1){
+      males[,i] = mean(y[,i])
+    }else{
+      ans = lm(y[,i]~male+female-1,contrasts=list(female="contr.sum"))
+      males[,i] = coef(ans)[1:length(unique(male))]
+    }
   }
   #Create output
   output = list()
