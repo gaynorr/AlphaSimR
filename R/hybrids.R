@@ -38,7 +38,7 @@ getHybridGvByChunk = function(trait,fPop,fPar,
 #' \code{\link{setPheno}} for details.
 #' @param returnHybridPop should results be returned as 
 #' \code{\link{HybridPop-class}}. If false returns results as 
-#' \code{\link{Pop-class}}
+#' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
 #' @param chunkSize when using returnHybridPop=TRUE, this 
 #' parameter determines the maximum number of hybrids created 
 #' at one time. Smaller values reduce RAM usage, but may take 
@@ -138,20 +138,29 @@ calcGCA = function(pop,use="pheno"){
     stop(paste0("Use=",use," is not an option"))
   }
   colnames(y) = paste0("Trait",1:pop@nTraits)
+  female = factor(pop@mother,
+                  levels=unique(pop@mother))
+  male = factor(pop@father,
+                levels=unique(pop@father))
+  females = matrix(NA_real_,nrow=length(unique(female)),ncol=pop@nTraits)
+  males = matrix(NA_real_,nrow=length(unique(male)),ncol=pop@nTraits)
+  colnames(females) = colnames(males) = colnames(y)
+  for(i in 1:pop@nTraits){
+    #Calculate female GCA
+    ans = lm(y[,i]~female+male-1,contrasts=list(male="contr.sum"))
+    females[,i] = coef(ans)[1:length(unique(female))]
+    #Calculate male GCA
+    ans = lm(y[,i]~male+female-1,contrasts=list(female="contr.sum"))
+    males[,i] = coef(ans)[1:length(unique(male))]
+  }
+  #Create output
   output = list()
-  output$females=aggregate(y,list(female=factor(pop@mother,
-                                                levels=unique(pop@mother))),
-                           mean)
+  output$females = data.frame(female=unique(female),females)
+  output$males = data.frame(male=unique(male),males)
   output$females$female = as.character(output$females$female)
-  output$males=aggregate(y,list(male=factor(pop@father,
-                                            levels=unique(pop@father))),
-                         mean)
   output$males$male = as.character(output$males$male)
-  output$SCA=aggregate(y,list(female=factor(pop@mother,
-                                            levels=unique(pop@mother)),
-                              male=factor(pop@father,
-                                          levels=unique(pop@father))),
-                       mean)
+  #SCA
+  output$SCA=aggregate(y,list(female=female,male=male),mean)
   output$SCA$female = as.character(output$SCA$female)
   output$SCA$male = as.character(output$SCA$male)
   return(output)

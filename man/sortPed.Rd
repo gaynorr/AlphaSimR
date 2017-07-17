@@ -7,9 +7,9 @@
 sortPed(x, maxGen = 100)
 }
 \arguments{
-\item{maxGen}{how many times should it loop when trying to sort}
+\item{x}{an object of code{\link{Pedigree-class}}}
 
-\item{pedigree}{an object of code{\link{Pedigree-class}}}
+\item{maxGen}{how many times should it loop when trying to sort}
 }
 \value{
 Returns an object of \code{\link{Pedigree-class}}

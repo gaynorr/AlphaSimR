@@ -4,7 +4,8 @@
 \alias{randCross}
 \title{Make random crosses}
 \usage{
-randCross(pop, nCrosses, nProgeny = 1, id = NULL, simParam = SIMPARAM)
+randCross(pop, nCrosses, nProgeny = 1, id = NULL, balance = TRUE,
+  simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -14,6 +15,9 @@ randCross(pop, nCrosses, nProgeny = 1, id = NULL, simParam = SIMPARAM)
 \item{nProgeny}{number of progeny per cross}
 
 \item{id}{optional id to assign to progeny}
+
+\item{balance}{if using gender, this option will balance the number 
+of progeny per parent}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

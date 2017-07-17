@@ -46,10 +46,8 @@ SIMPARAM = addTraitAD(nQtlPerChr=1000,
 # Set-up heterotic pools --------------------------------------------------
 
 # Extract parents
-femaleParents = newPop(FOUNDERPOP[1:50],
-                       id=paste0("G0_F",1:50)) #Giving lines a custom id
-maleParents = newPop(FOUNDERPOP[51:100],
-                     id=paste0("G0_M",1:50)) #Giving lines a custom id
+femaleParents = newPop(FOUNDERPOP[1:50])
+maleParents = newPop(FOUNDERPOP[51:100])
 rm(FOUNDERPOP) #No longer needed
 
 # View summary data -------------------------------------------------------
@@ -105,11 +103,9 @@ rm(femaleF2,maleF2) #No longer needed
 
 # Make DH lines from F1s
 femaleDH = makeDH(pop=femaleF1,
-                  nDH=50, #Create 50 DH lines per F1
-                  id=paste0("G1_F",1:(50*50))) #Optional for pedigree
+                  nDH=50) #Create 50 DH lines per F1
 maleDH = makeDH(pop=maleF1,
-                nDH=50,
-                id=paste0("G1_M",1:(50*50)))
+                nDH=50)
 rm(femaleF1,maleF1) #No longer needed
 
 # Evaluate inbred lines----
@@ -151,7 +147,7 @@ rm(femaleTC,maleTC,femaleGCA,maleGCA) #No longer needed
 # For females with a phenotype with error variance of 10
 femaleDH = setPhenoGCA(pop=femaleDH,testers=femaleTesters,varE=10,inbred=TRUE)
 # For males using genetic values, i.e. true values
-maleDH = setPhenoGCA(pop=maleDH,testers=maleTesters,useGv=TRUE,inbred=TRUE)
+maleDH = setPhenoGCA(pop=maleDH,testers=maleTesters,use="gv",inbred=TRUE)
 plot(maleDH@gv,maleDH@pheno,
      xlab="GV (per se)", ylab="GCA",
      main="Male DH")

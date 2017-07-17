@@ -335,10 +335,6 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
   return(pop)
 }
 
-predictHybrid = function(){
-  
-}
-
 #' @title RRBLUP Memory Usage
 #' 
 #' @description

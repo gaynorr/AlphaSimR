@@ -41,7 +41,7 @@ setValidity("Pedigree",function(object){
 #' @description
 #' Sorts a pedigree so parents appear before children
 #'
-#' @param pedigree an object of code{\link{Pedigree-class}}
+#' @param x an object of code{\link{Pedigree-class}}
 #' @param maxGen how many times should it loop when trying to sort
 #'
 #' @return Returns an object of \code{\link{Pedigree-class}}

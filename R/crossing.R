@@ -83,13 +83,15 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
 #' @param id optional id to assign to progeny
+#' @param balance if using gender, this option will balance the number 
+#' of progeny per parent
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
-                     id=NULL,simParam=SIMPARAM){
+                     id=NULL,balance=TRUE,simParam=SIMPARAM){
   if(simParam@gender=="no"){
     crossPlan = sampHalfDialComb(pop@nInd, nCrosses)
   }else{
@@ -101,11 +103,20 @@ randCross = function(pop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    crossPlan = sampAllComb(length(female),
-                            length(male),
-                            nCrosses)
-    crossPlan[,1] = female[crossPlan[,1]]
-    crossPlan[,2] = male[crossPlan[,2]]
+    if(balance){
+      female = female[sample.int(length(female),length(female))]
+      female = rep(female,length.out=nCrosses)
+      male = male[sample.int(length(male),length(male))]
+      male = rep(male,length.out=nCrosses)
+      male = male[sample.int(nCrosses,nCrosses)]
+      crossPlan = cbind(female,male)
+    }else{
+      crossPlan = sampAllComb(length(female),
+                              length(male),
+                              nCrosses)
+      crossPlan[,1] = female[crossPlan[,1]]
+      crossPlan[,2] = male[crossPlan[,2]]
+    }
   }
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
@@ -204,13 +215,15 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
 #' @param id optional id to assign to progeny
+#' @param balance if using gender, this option will balance the number 
+#' of progeny per parent
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
-                     id=NULL,simParam=SIMPARAM){
+                     id=NULL,balance=TRUE,simParam=SIMPARAM){
   if(simParam@gender=="no"){
       crossPlan = sampAllComb(fPop@nInd,mPop@nInd,nCrosses)
   }else{
@@ -222,11 +235,20 @@ randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    crossPlan = sampAllComb(length(female),
-                            length(male),
-                            nCrosses)
-    crossPlan[,1] = female[crossPlan[,1]]
-    crossPlan[,2] = male[crossPlan[,2]]
+    if(balance){
+      female = female[sample.int(length(female),length(female))]
+      female = rep(female,length.out=nCrosses)
+      male = male[sample.int(length(male),length(male))]
+      male = rep(male,length.out=nCrosses)
+      male = male[sample.int(nCrosses,nCrosses)]
+      crossPlan = cbind(female,male)
+    }else{
+      crossPlan = sampAllComb(length(female),
+                              length(male),
+                              nCrosses)
+      crossPlan[,1] = female[crossPlan[,1]]
+      crossPlan[,2] = male[crossPlan[,2]]
+    }
   }
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
@@ -354,6 +376,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
 #' @title Make crosses based on a pedigree
 #' 
 #' @description 
+#' To Do
 #' 
 #' @param pedigree an object of \code{\link{Pedigree-class}}
 #' @param founders an object of \code{\link{Pop-class}}

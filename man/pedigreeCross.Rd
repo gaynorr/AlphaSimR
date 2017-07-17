@@ -17,5 +17,5 @@ pedigreeCross(pedigree, founders, id = NULL, simParam = SIMPARAM)
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-
+To Do
 }

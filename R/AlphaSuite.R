@@ -1,3 +1,14 @@
+#' @title Write AlphaSuite style genotypes
+#' 
+#' @description
+#' To Do
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param file name of output file
+#' @param chr which chromosome
+#' @param chips ??
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
 #' @export
 writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam=SIMPARAM) {
   allSnps = numeric(0)
@@ -29,6 +40,17 @@ writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam=SIM
   writeASGenotypes(pop@geno[[chr]],positions,allSnps,chips,newpop@id,'9',normalizePath(file, mustWork=FALSE))
 }
 
+#' @title Write AlphaSuite style haplotypes
+#' 
+#' @description
+#' To Do
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param file name of output file
+#' @param chr which chromosome
+#' @param chips ??
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
 #' @export
 writeAlphaHaplotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam=SIMPARAM) {
   allSnps = numeric(0)
