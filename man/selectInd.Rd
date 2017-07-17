@@ -4,7 +4,8 @@
 \alias{selectInd}
 \title{Select individuals}
 \usage{
-selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE)
+selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
+  simParam = SIMPARAM, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -13,13 +14,19 @@ selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE)
 \item{nInd}{the number of individuals to select}
 
 \item{trait}{the trait for selection. Either a number indicating 
-a single trait or a function returning a single value.}
+a single trait or a function returning a vector of length nInd.}
 
-\item{use}{select on genetic value (\code{gv}), estimated
-genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)}
+\item{use}{select on genetic values (\code{gv}), estimated
+breeding values (\code{ebv}), breeding values (\code{bv}), 
+or phenotypes (\code{pheno}, default)}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
+
+\item{...}{additional arguments if using a function for 
+trait}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

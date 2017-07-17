@@ -11,7 +11,7 @@ extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, int* N, double* A, 
                        int* LDZ, int* ISUPPZ, double* WORK, int* LWORK, int* IWORK, int* LIWORK, int* INFO);
 
 // Replacement for Armadillo's eig_sym
-// Fixes an errors with decompisition of large matrices on Eddie
+// Fixes an error with decompisition of large matrices on Eddie
 // If calcVec = false, eigvec is not used
 // It would be better to template this function
 int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X, 
@@ -36,7 +36,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   // W=eigval
   // Z=eigvec
   int LDZ = N;
-  arma::ivec ISUPPZ(2*M);
+  arma::Col<int> ISUPPZ(2*M);
   // WORK length to be determined
   double tmpWORK;
   int LWORK = -1; // To be calculated
@@ -51,7 +51,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   LIWORK = tmpIWORK;
   // Allocate WORK and IWORK
   arma::vec WORK(LWORK);
-  arma::ivec IWORK(LIWORK);
+  arma::Col<int> IWORK(LIWORK);
   // Perform decomposition
   dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
@@ -478,3 +478,116 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   return solveMKM(y,X,Zlist,Klist);
 }
 
+//' @title Calculate G Matrix
+//' 
+//' @description
+//' Calculates the genomic relationship matrix.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//' 
+//' @return a matrix of the realized genomic relationship
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcG(arma::mat X){
+  arma::rowvec p = mean(X,0)/2.0;
+  X.each_row() -= 2*p;
+  arma::mat G = X*X.t();
+  G = G/(2.0*sum(p%(1-p)));
+  return G;
+}
+
+//' @title Calculate IBS G Matrix
+//' 
+//' @description
+//' Calculates an identity-by-state genomic relationship matrix 
+//' based on simple matching.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//' 
+//' @return a matrix of genomic relationships
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcGIbs(arma::mat X){
+  X -= 1.0;
+  arma::mat G = (X*X.t())/X.n_cols + 1.0;
+  return G;
+}
+
+// Calculates a distance matrix from a marker matrix
+// Uses binomial theorem trick
+// Inspired by code from:
+// http://blog.felixriedel.com/2013/05/pairwise-distances-in-r/
+// First described here: 
+// http://blog.smola.org/post/969195661/in-praise-of-the-second-binomial-formula
+//' @title Calculate Euclidean distance
+//' 
+//' @description
+//' Calculates a Euclidean distance matrix using a binomial 
+//' theorem trick. Results in much faster computation than the 
+//' \code{dist} function in package \code{stats}.
+//'
+//' @param X a numeric matrix
+//' 
+//' @return a matrix of columnwise distances
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat fastDist(const arma::mat& X){
+  arma::colvec Xn =  sum(square(X),1);
+  arma::mat D = -2*(X*X.t());
+  D.each_col() += Xn;
+  D.each_row() += Xn.t();
+  D = sqrt(D);
+  D.diag().zeros(); //Removes NaN values
+  if(D.has_nan()){
+    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+  }
+  return D; 
+}
+
+//' @title Calculate Paired Euclidean distance
+//' 
+//' @description
+//' Calculates a Euclidean distance between two matrices using 
+//' a binomial theorem trick. 
+//'
+//' @param X a numeric matrix
+//' @param Y a numeric matrix
+//' 
+//' @return a matrix of columnwise distances between matrices 
+//' X and Y
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
+  arma::colvec Xn =  sum(square(X),1);
+  arma::colvec Yn =  sum(square(Y),1);
+  arma::mat D = -2*(X*Y.t());
+  D.each_col() += Xn;
+  D.each_row() += Yn.t();
+  D = sqrt(D);
+  if(D.has_nan()){
+    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+  }
+  return D; 
+}
+
+//' @title Calculate Gaussian Kernel
+//' 
+//' @description
+//' Calculates a Gaussian kernel using a Euclidean distance 
+//' matrix.
+//'
+//' @param D a matrix of Euclidean distances, 
+//' see \code{\link{fastDist}}
+//' @param theta the tuning parameter
+//' 
+//' @return a numeric matrix
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat gaussKernel(arma::mat& D, double theta){
+  return exp(-1.0*square(D/theta));
+}

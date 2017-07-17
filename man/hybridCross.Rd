@@ -26,7 +26,7 @@ aren't calculated.}
 
 \item{returnHybridPop}{should results be returned as 
 \code{\link{HybridPop-class}}. If false returns results as 
-\code{\link{Pop-class}}}
+\code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
 
 \item{chunkSize}{when using returnHybridPop=TRUE, this 
 parameter determines the maximum number of hybrids created 

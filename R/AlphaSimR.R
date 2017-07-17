@@ -1,4 +1,4 @@
-#' @useDynLib AlphaSimR
+#' @useDynLib AlphaSimR, .registration = TRUE
 #' @import Rcpp RcppArmadillo
 #' @importFrom methods new validObject
 #' @importFrom stats aggregate rnorm qnorm var

@@ -83,27 +83,17 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
 #' @param id optional id to assign to progeny
+#' @param balance if using gender, this option will balance the number 
+#' of progeny per parent
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
-                     id=NULL,simParam=SIMPARAM){
-  crossPlan = NULL
+                     id=NULL,balance=TRUE,simParam=SIMPARAM){
   if(simParam@gender=="no"){
-    maxCrosses = pop@nInd*(pop@nInd-1)/2
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        t(combn(pop@nInd,2)))
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampHalfDialComb(pop@nInd,
-                                         nCrosses)
-                        )
-    }
+    crossPlan = sampHalfDialComb(pop@nInd, nCrosses)
   }else{
     female = which(pop@gender=="F")
     if(length(female)==0){
@@ -113,22 +103,20 @@ randCross = function(pop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    maxCrosses = length(female)*length(male)
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:length(female),
-                                    1:length(male)))
-      nCrosses = nCrosses - maxCrosses
+    if(balance){
+      female = female[sample.int(length(female),length(female))]
+      female = rep(female,length.out=nCrosses)
+      male = male[sample.int(length(male),length(male))]
+      male = rep(male,length.out=nCrosses)
+      male = male[sample.int(nCrosses,nCrosses)]
+      crossPlan = cbind(female,male)
+    }else{
+      crossPlan = sampAllComb(length(female),
+                              length(male),
+                              nCrosses)
+      crossPlan[,1] = female[crossPlan[,1]]
+      crossPlan[,2] = male[crossPlan[,2]]
     }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(length(female),
-                                    length(male),
-                                    nCrosses)
-                        )
-    }
-    crossPlan[,1] = female[crossPlan[,1]]
-    crossPlan[,2] = male[crossPlan[,2]]
   }
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
@@ -227,30 +215,17 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
 #' @param id optional id to assign to progeny
+#' @param balance if using gender, this option will balance the number 
+#' of progeny per parent
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
-                     id=NULL,simParam=SIMPARAM){
-  crossPlan = NULL
+                     id=NULL,balance=TRUE,simParam=SIMPARAM){
   if(simParam@gender=="no"){
-    maxCrosses = fPop@nInd*mPop@nInd
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:fPop@nInd,
-                                    1:mPop@nInd)
-                        )
-      nCrosses = nCrosses - maxCrosses
-    }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(fPop@nInd,
-                                    mPop@nInd,
-                                    nCrosses)
-                        )
-    }
+      crossPlan = sampAllComb(fPop@nInd,mPop@nInd,nCrosses)
   }else{
     female = which(fPop@gender=="F")
     if(length(female)==0){
@@ -260,22 +235,20 @@ randCross2 = function(fPop,mPop,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    maxCrosses = length(female)*length(male)
-    while(nCrosses>maxCrosses){
-      crossPlan = rbind(crossPlan,
-                        expand.grid(1:length(female),
-                                    1:length(male)))
-      nCrosses = nCrosses - maxCrosses
+    if(balance){
+      female = female[sample.int(length(female),length(female))]
+      female = rep(female,length.out=nCrosses)
+      male = male[sample.int(length(male),length(male))]
+      male = rep(male,length.out=nCrosses)
+      male = male[sample.int(nCrosses,nCrosses)]
+      crossPlan = cbind(female,male)
+    }else{
+      crossPlan = sampAllComb(length(female),
+                              length(male),
+                              nCrosses)
+      crossPlan[,1] = female[crossPlan[,1]]
+      crossPlan[,2] = male[crossPlan[,2]]
     }
-    if(nCrosses>0){
-      crossPlan = rbind(crossPlan,
-                        sampAllComb(length(female),
-                                    length(male),
-                                    nCrosses)
-      )
-    }
-    crossPlan[,1] = female[crossPlan[,1]]
-    crossPlan[,2] = male[crossPlan[,2]]
   }
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
@@ -386,6 +359,71 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
                id=as.character(id),
                mother=rep(pop@mother,each=nDH),
                father=rep(pop@father,each=nDH),
+               nTraits=simParam@nTraits,
+               gv=gv,
+               pheno=matrix(NA_real_,
+                            nrow=rawPop@nInd,
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=1))
+  if(updateId){
+    assign("LASTID",lastId,envir=.GlobalEnv)
+  }
+  return(output)
+}
+
+#' @title Make crosses based on a pedigree
+#' 
+#' @description 
+#' To Do
+#' 
+#' @param pedigree an object of \code{\link{Pedigree-class}}
+#' @param founders an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' 
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
+  stopifnot(class(pedigree)=="Pedigree")
+  stopifnot(class(founders)=="MapPop")
+  
+  sortedped = sortPed(pedigree)
+  
+  geno = crossPedigree(founders@geno,sortedped@father,
+                sortedped@mother,
+                simParam@genMaps)
+  if(simParam@gender=="no"){
+    gender = rep("H",sortedped@nInd)
+  }else if(simParam@gender=="yes_rand"){
+    gender = sample(c("M","F"),sortedped@nInd,replace=TRUE)
+  }else if(simParam@gender=="yes_sys"){
+    gender = rep_len(c("M","F"),sortedped@nInd)
+  }else{
+    stop(paste("no rules for gender type",simParam@gender))
+  }
+  rawPop = new("RawPop",
+               nInd=sortedped@nInd,
+               nChr=founders@nChr,
+               ploidy=founders@ploidy,
+               nLoci=founders@nLoci,
+               gender=gender,
+               geno=geno)
+  if(is.null(id)){
+    lastId = get("LASTID",envir=.GlobalEnv)
+    id = (1:rawPop@nInd) + lastId
+    lastId = max(id)
+    updateId = TRUE
+  }else{
+    updateId = FALSE
+  }
+  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+  gv = do.call("cbind",gv)
+  output = new("Pop", rawPop,
+               id=as.character(id),
+               mother=as.character(sortedped@mother),
+               father=as.character(sortedped@father),
                nTraits=simParam@nTraits,
                gv=gv,
                pheno=matrix(NA_real_,

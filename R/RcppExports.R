@@ -5,6 +5,22 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
+writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
+    invisible(.Call('AlphaSimR_writeASGenotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
+}
+
+writeASHaplotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
+    invisible(.Call('AlphaSimR_writeASHaplotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
+}
+
+calcPopGC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+calcPopGIbsC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGIbsC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
 gebvRR <- function(RRsol, pop) {
     .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
 }
@@ -15,6 +31,94 @@ gebvGCA <- function(GCAsol, pop, female) {
 
 gebvSCA <- function(SCAsol, pop) {
     .Call('AlphaSimR_gebvSCA', PACKAGE = 'AlphaSimR', SCAsol, pop)
+}
+
+getGeno <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getDomGeno <- function(geno) {
+    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+}
+
+getHaplo <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
+    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
+}
+
+getGvA <- function(trait, pop) {
+    .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvAG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvAG', PACKAGE = 'AlphaSimR', trait, pop, z)
+}
+
+getGvAD <- function(trait, pop) {
+    .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getGvADG <- function(trait, pop, z) {
+    .Call('AlphaSimR_getGvADG', PACKAGE = 'AlphaSimR', trait, pop, z)
+}
+
+calcGenParam <- function(trait, pop) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvAG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvAG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
+}
+
+getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
+    .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
+}
+
+getHybridGvADG <- function(trait, fPop, fPar, mPop, mPar, z) {
+    .Call('AlphaSimR_getHybridGvADG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
+}
+
+cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
+    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
+}
+
+createDH2 <- function(geno, nDH, genMaps) {
+    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
+}
+
+crossPedigree <- function(founders, fPar, mPar, genMaps) {
+    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, fPar, mPar, genMaps)
+}
+
+popVar <- function(X) {
+    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
+}
+
+mergeGeno <- function(x, y) {
+    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
+}
+
+calcChrMinorFreq <- function(geno, ploidy) {
+    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
+}
+
+convToImat <- function(X) {
+    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
+}
+
+sampAllComb <- function(nLevel1, nLevel2, n) {
+    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
+}
+
+sampHalfDialComb <- function(nLevel, n) {
+    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
 }
 
 #' @title Solve Univariate Model
@@ -79,88 +183,83 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
     .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
 }
 
-getGeno <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+#' @title Calculate G Matrix
+#' 
+#' @description
+#' Calculates the genomic relationship matrix.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of the realized genomic relationship
+#'
+#' @export
+calcG <- function(X) {
+    .Call('AlphaSimR_calcG', PACKAGE = 'AlphaSimR', X)
 }
 
-getDomGeno <- function(geno) {
-    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+#' @title Calculate IBS G Matrix
+#' 
+#' @description
+#' Calculates an identity-by-state genomic relationship matrix 
+#' based on simple matching.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#' 
+#' @return a matrix of genomic relationships
+#'
+#' @export
+calcGIbs <- function(X) {
+    .Call('AlphaSimR_calcGIbs', PACKAGE = 'AlphaSimR', X)
 }
 
-getHaplo <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+#' @title Calculate Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance matrix using a binomial 
+#' theorem trick. Results in much faster computation than the 
+#' \code{dist} function in package \code{stats}.
+#'
+#' @param X a numeric matrix
+#' 
+#' @return a matrix of columnwise distances
+#'
+#' @export
+fastDist <- function(X) {
+    .Call('AlphaSimR_fastDist', PACKAGE = 'AlphaSimR', X)
 }
 
-getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
-    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
+#' @title Calculate Paired Euclidean distance
+#' 
+#' @description
+#' Calculates a Euclidean distance between two matrices using 
+#' a binomial theorem trick. 
+#'
+#' @param X a numeric matrix
+#' @param Y a numeric matrix
+#' 
+#' @return a matrix of columnwise distances between matrices 
+#' X and Y
+#'
+#' @export
+fastPairDist <- function(X, Y) {
+    .Call('AlphaSimR_fastPairDist', PACKAGE = 'AlphaSimR', X, Y)
 }
 
-getGvA <- function(trait, pop) {
-    .Call('AlphaSimR_getGvA', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getGvAG <- function(trait, pop, z) {
-    .Call('AlphaSimR_getGvAG', PACKAGE = 'AlphaSimR', trait, pop, z)
-}
-
-getGvAD <- function(trait, pop) {
-    .Call('AlphaSimR_getGvAD', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getGvADG <- function(trait, pop, z) {
-    .Call('AlphaSimR_getGvADG', PACKAGE = 'AlphaSimR', trait, pop, z)
-}
-
-calcGenParam <- function(trait, pop) {
-    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getHybridGvA <- function(trait, fPop, fPar, mPop, mPar) {
-    .Call('AlphaSimR_getHybridGvA', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
-}
-
-getHybridGvAG <- function(trait, fPop, fPar, mPop, mPar, z) {
-    .Call('AlphaSimR_getHybridGvAG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
-}
-
-getHybridGvAD <- function(trait, fPop, fPar, mPop, mPar) {
-    .Call('AlphaSimR_getHybridGvAD', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar)
-}
-
-getHybridGvADG <- function(trait, fPop, fPar, mPop, mPar, z) {
-    .Call('AlphaSimR_getHybridGvADG', PACKAGE = 'AlphaSimR', trait, fPop, fPar, mPop, mPar, z)
-}
-
-cross2 <- function(fGeno, fPar, mGeno, mPar, genMaps) {
-    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', fGeno, fPar, mGeno, mPar, genMaps)
-}
-
-createDH2 <- function(geno, nDH, genMaps) {
-    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps)
-}
-
-popVar <- function(X) {
-    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
-}
-
-mergeGeno <- function(x, y) {
-    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
-}
-
-calcChrMinorFreq <- function(geno, ploidy) {
-    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
-}
-
-convToImat <- function(X) {
-    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
-}
-
-sampAllComb <- function(nLevel1, nLevel2, n) {
-    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
-}
-
-sampHalfDialComb <- function(nLevel, n) {
-    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
+#' @title Calculate Gaussian Kernel
+#' 
+#' @description
+#' Calculates a Gaussian kernel using a Euclidean distance 
+#' matrix.
+#'
+#' @param D a matrix of Euclidean distances, 
+#' see \code{\link{fastDist}}
+#' @param theta the tuning parameter
+#' 
+#' @return a numeric matrix
+#'
+#' @export
+gaussKernel <- function(D, theta) {
+    .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {

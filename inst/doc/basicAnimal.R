@@ -1,7 +1,7 @@
 # Basic animal breeding simulation
 # Based on "historical breeding" portion of Jenko et al., 2015
 # https://gsejournal.biomedcentral.com/articles/10.1186/s12711-015-0135-3
-
+library(AlphaSimR)
 # Generate initial haplotypes, replace macsPath
 macsPath = "/Users/rgaynor/Documents/testPBS/macs"
 FOUNDERPOP = runMacs(macs=macsPath,nInd=1000,nChr=10,segSites=1000,

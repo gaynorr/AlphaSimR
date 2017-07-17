@@ -4,7 +4,8 @@
 \alias{selectWithinFam}
 \title{Select individuals within families}
 \usage{
-selectWithinFam(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE)
+selectWithinFam(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
+  ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -13,13 +14,19 @@ selectWithinFam(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE)
 \item{nInd}{the number of individuals to select within a family}
 
 \item{trait}{the trait for selection. Either a number indicating 
-a single trait or a function returning a single value.}
+a single trait or a function returning a vector of length nInd.}
 
-\item{use}{select on genetic value (\code{gv}), estimated
-genetic values (\code{ebv}) or phenotypes (\code{pheno}, default)}
+\item{use}{select on genetic values (\code{gv}), estimated
+breeding values (\code{ebv}), breeding values (\code{bv}), 
+or phenotypes (\code{pheno}, default)}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
+
+\item{...}{additional arguments if using a function for 
+trait}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 
@@ -27,5 +34,6 @@ Returns an object of \code{\link{Pop-class}} or
 }
 \description{
 Selects a subset of nInd individuals from each  
-full-sib family within a population.
+full-sib family within a population. Will return all individuals 
+from a full-sib family if it has less than or equal to nInd individuals.
 }
