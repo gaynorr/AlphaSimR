@@ -53,8 +53,14 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
-  gv = do.call("cbind",gv)
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=rawPop@nInd,
+                ncol=simParam@nTraits)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
   output = new("Pop", rawPop,
                id=as.character(id),
                mother=pop@id[crossPlan[,1]],
@@ -66,7 +72,7 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
                             ncol=simParam@nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=1))
+                          ncol=0))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -183,8 +189,14 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
-  gv = do.call("cbind",gv)
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=rawPop@nInd,
+                ncol=simParam@nTraits)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
   output = new("Pop", rawPop,
                id=as.character(id),
                mother=fPop@id[crossPlan[,1]],
@@ -196,7 +208,7 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
                             ncol=simParam@nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=1))
+                          ncol=0))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -299,8 +311,14 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
-  gv = do.call("cbind",gv)
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=rawPop@nInd,
+                ncol=simParam@nTraits)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
   output = new("Pop", rawPop,
                id=as.character(id),
                mother=rep(pop@mother,each=nProgeny),
@@ -312,7 +330,7 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
                             ncol=simParam@nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=1))
+                          ncol=0))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -353,8 +371,14 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
-  gv = do.call("cbind",gv)
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=rawPop@nInd,
+                ncol=simParam@nTraits)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
   output = new("Pop", rawPop,
                id=as.character(id),
                mother=rep(pop@mother,each=nDH),
@@ -366,7 +390,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
                             ncol=simParam@nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=1))
+                          ncol=0))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }
@@ -380,6 +404,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
 #' 
 #' @param pedigree an object of \code{\link{Pedigree-class}}
 #' @param founders an object of \code{\link{Pop-class}}
+#' @param id optional id to assign to progeny
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -418,8 +443,14 @@ pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
   }else{
     updateId = FALSE
   }
-  gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
-  gv = do.call("cbind",gv)
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=rawPop@nInd,
+                ncol=simParam@nTraits)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
   output = new("Pop", rawPop,
                id=as.character(id),
                mother=as.character(sortedped@mother),
@@ -431,7 +462,7 @@ pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
                             ncol=simParam@nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=1))
+                          ncol=0))
   if(updateId){
     assign("LASTID",lastId,envir=.GlobalEnv)
   }

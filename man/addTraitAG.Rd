@@ -4,8 +4,8 @@
 \alias{addTraitAG}
 \title{Add additive GxE traits}
 \usage{
-addTraitAG(nQtlPerChr, meanG, varG, varGE, corr = matrix(1),
-  simParam = SIMPARAM, founderPop = FOUNDERPOP)
+addTraitAG(nQtlPerChr, meanG, varG, varGE, corr = matrix(1), gamma = FALSE,
+  shape = 1, simParam = SIMPARAM, founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
@@ -17,6 +17,10 @@ addTraitAG(nQtlPerChr, meanG, varG, varGE, corr = matrix(1),
 \item{varGE}{a vector of total genotype-by-environment variances for the traits}
 
 \item{corr}{a matrix of correlations between traits}
+
+\item{gamma}{should a gamma distribution be used instead of normal}
+
+\item{shape}{value of the shape parameter if using a gamma distribution}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 

@@ -4,7 +4,8 @@
 \alias{selectFam}
 \title{Select families}
 \usage{
-selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE, ...)
+selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE,
+  simParam = SIMPARAM, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -22,10 +23,10 @@ or phenotypes (\code{pheno}, default)}
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
 
+\item{simParam}{an object of \code{\link{SimParam-class}}}
+
 \item{...}{additional arguments if using a function for 
 trait}
-
-\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

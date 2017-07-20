@@ -11,6 +11,8 @@ pedigreeCross(pedigree, founders, id = NULL, simParam = SIMPARAM)
 
 \item{founders}{an object of \code{\link{Pop-class}}}
 
+\item{id}{optional id to assign to progeny}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{

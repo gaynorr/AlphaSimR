@@ -289,7 +289,7 @@ setMethod("c",
                 x@ebv = rbind(x@ebv,y@ebv)
                 },silent=TRUE)
               if(class(tmp)=="try-error"){
-                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=1)
+                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=0)
               }
             }
             validObject(x)

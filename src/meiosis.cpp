@@ -54,10 +54,10 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
   int nSites = chr1.n_elem;
   double genLen = genMap(nSites-1);
   arma::Col<unsigned char> gamete(nSites);
-  int nCO = Rcpp::rpois(1, genLen)[0];
+  int nCO = Rcpp::rpois(1, genLen)(0);
   if(nCO==0){
     // No CO, randomly pick a chromosome
-    if(std::rand()%2){
+    if(Rcpp::rbinom(1,1,0.5)(0)){
       gamete = chr1;
     }else{
       gamete = chr2;
@@ -70,7 +70,7 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
     int startPos = 0;
     int endPos;
     // Randomly pick starting chromosome and fill first segSite
-    int readChr = std::rand()%2;
+    int readChr = Rcpp::rbinom(1,1,0.5)(0);
     if(readChr){
       gamete(0) = chr1(0);
     }else{
@@ -90,7 +90,7 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
       startPos = endPos;
       // Switch chromosome
       ++readChr;
-      readChr = readChr%2;
+      readChr = Rcpp::rbinom(1,1,0.5)(0);
     }
     // Fill in last segSites if needed
     if(endPos<(nSites-1)){

@@ -3,7 +3,6 @@
 #' @importFrom methods new validObject
 #' @importFrom stats aggregate rnorm qnorm var
 #' @importFrom utils combn read.table write.table
-#' @importFrom MASS mvrnorm
 
 #' @title AlphaSimR: Breeding Program Simulations
 #' 

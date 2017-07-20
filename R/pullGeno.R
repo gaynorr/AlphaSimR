@@ -228,3 +228,41 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   colnames(output) = paste("QTL",1:ncol(output),sep="_")
   return(output)
 }
+
+#' @title Pull seg site haplotypes
+#' 
+#' @description 
+#' Retrieves haplotype data for all segregating sites
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param haplo either "all" for all haplotypes or an integer 
+#' for a single set of haplotypes. Use a value of 1 for female 
+#' haplotyes and a value of 2 for male haplotypes.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @return Returns a matrix of haplotypes
+#' @export
+pullSegSiteHaplo = function(pop, haplo="all", 
+                            simParam=SIMPARAM){
+  allLoci = unlist(sapply(simParam@segSites,
+                          function(x)1:x))
+  if(haplo=="all"){
+    output = getHaplo(pop@geno,
+                      simParam@segSites,
+                      allLoci)
+    output = convToImat(output)
+    rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                             rep(1:pop@ploidy,pop@nInd),sep="_")
+  }else{
+    stopifnot(haplo%in%c(1,2))
+    output = getOneHaplo(pop@geno,
+                         simParam@segSites,
+                         allLoci,
+                         as.integer(haplo))
+    output = convToImat(output)
+    rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    
+  }
+  colnames(output) = paste("SITE",1:ncol(output),sep="_")
+  return(output)
+}

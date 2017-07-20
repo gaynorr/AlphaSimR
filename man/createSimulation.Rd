@@ -4,8 +4,8 @@
 \alias{createSimulation}
 \title{Create new simulation}
 \usage{
-createSimulation(maxQtl, maxSnp, snpQtlOverlap = FALSE, minSnpFreq = NULL,
-  gender = "no", founderPop = FOUNDERPOP)
+createSimulation(maxQtl = 0, maxSnp = 0, snpQtlOverlap = FALSE,
+  minSnpFreq = NULL, gender = "no", founderPop = FOUNDERPOP)
 }
 \arguments{
 \item{maxQtl}{the maximum number of segSites for QTLs. 
