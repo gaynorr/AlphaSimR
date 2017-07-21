@@ -4,7 +4,7 @@
 \alias{rescaleTraits}
 \title{Rescale traits}
 \usage{
-rescaleTraits(pop, meanG, varG, varGE = 1, simParam = SIMPARAM)
+rescaleTraits(pop, meanG, varG, varGE = 0, simParam = SIMPARAM)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -13,8 +13,7 @@ rescaleTraits(pop, meanG, varG, varGE = 1, simParam = SIMPARAM)
 
 \item{varG}{a vector of new trait variances}
 
-\item{varGE}{a vector of new relative GxE variances.
-A value of 1 leaves the current magnitudes unchanged}
+\item{varGE}{a vector of new GxE variances}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
@@ -22,9 +21,11 @@ A value of 1 leaves the current magnitudes unchanged}
 an object of \code{\link{SimParam-class}}
 }
 \description{
-Linearly scales all trait to achieve a desired 
-genetic variance in a given population. Also sets 
-a new trait mean for the population and able to 
-rescale the magnitude of the GxE variance relative 
-to the current value.
+Linearly scales all traits to achieve desired 
+values of mean, variance and GxE variance for a 
+given population.
+}
+\note{
+You must run \code{\link{resetPop}} on existing 
+populations to obtain the new trait values.
 }

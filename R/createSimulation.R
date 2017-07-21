@@ -337,14 +337,16 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
     tmp = tuneTraitA(geno,addEff[,i],varG[i])
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
-    varGxeLoc = sqrt((popVar(addEff[,i,drop=FALSE])+
-                        mean(addEff[,i])^2)*varGE[i]/varG[i])
+    varGxeLoci = sqrt((popVar(addEff[,i,drop=FALSE])+
+                         mean(addEff[,i])^2)*varGE[i]/varG[i])
+    gxeEff = c(scale(rnorm(qtlLoci@nLoci),center=FALSE))*c(sqrt(varGxeLoci))
+    varGxeLoci = varGE[i]/popVar(convToImat(geno)%*%gxeEff)
     trait = new("TraitAG",
                 qtlLoci,
                 addEff=addEff[,i],
                 intercept=meanG[i]-intercept,
-                gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoc)),
-                varGxeLoci = c(varGxeLoc))
+                gxeEff = gxeEff,
+                varGxeLoci = c(varGxeLoci))
     simParam@nTraits = simParam@nTraits + 1L
     simParam@traits[[simParam@nTraits]] = trait
   }
@@ -401,15 +403,17 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
     domEff[,i] = domEff[,i]*tmp$parameter
-    varGxeLoc = sqrt((popVar(addEff[,i,drop=FALSE])+
-                        mean(addEff[,i])^2)*varGE[i]/varG[i])
+    varGxeLoci = sqrt((popVar(addEff[,i,drop=FALSE])+
+                         mean(addEff[,i])^2)*varGE[i]/varG[i])
+    gxeEff = c(scale(rnorm(qtlLoci@nLoci),center=FALSE))*c(sqrt(varGxeLoci))
+    varGxeLoci = varGE[i]/popVar(convToImat(geno)%*%gxeEff)
     trait = new("TraitADG",
                 qtlLoci,
                 addEff=addEff[,i],
                 domEff=domEff[,i],
                 intercept=meanG[i]-intercept,
-                gxeEff = rnorm(qtlLoci@nLoci,sd=sqrt(varGxeLoc)),
-                varGxeLoci = c(varGxeLoc))
+                gxeEff = gxeEff,
+                varGxeLoci = c(varGxeLoci))
     simParam@nTraits = simParam@nTraits + 1L
     simParam@traits[[simParam@nTraits]] = trait
   }
@@ -420,23 +424,24 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
 #' @title Rescale traits
 #' 
 #' @description
-#' Linearly scales all trait to achieve a desired 
-#' genetic variance in a given population. Also sets 
-#' a new trait mean for the population and able to 
-#' rescale the magnitude of the GxE variance relative 
-#' to the current value.
+#' Linearly scales all traits to achieve desired 
+#' values of mean, variance and GxE variance for a 
+#' given population.
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param meanG a vector of new trait means
 #' @param varG a vector of new trait variances
-#' @param varGE a vector of new relative GxE variances.
-#' A value of 1 leaves the current magnitudes unchanged
+#' @param varGE a vector of new GxE variances
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
+#' @note
+#' You must run \code{\link{resetPop}} on existing 
+#' populations to obtain the new trait values.
+#' 
 #' @return an object of \code{\link{SimParam-class}}
 #' 
 #' @export
-rescaleTraits = function(pop,meanG,varG,varGE=1,
+rescaleTraits = function(pop,meanG,varG,varGE=0,
                          simParam=SIMPARAM){
   if(length(varGE)==1){
     varGE = rep(varGE,simParam@nTraits)
@@ -458,8 +463,10 @@ rescaleTraits = function(pop,meanG,varG,varGE=1,
     trait@addEff = trait@addEff*tmp$parameter
     trait@intercept = meanG[i]-tmp$output$intercept
     if(class(trait)%in%c("TraitAG","TraitADG")){
-      trait@varGxeLoci = trait@varGxeLoci*tmp$parameter*sqrt(varGE[i])
-      trait@gxeEff = trait@gxeEff*sqrt(tmp$parameter*sqrt(varGE[i]))
+      varGxeLoci = sqrt((popVar(matrix(trait@addEff,ncol=1))+
+                           mean(trait@addEff)^2)*varGE[i]/varG[i])
+      trait@gxeEff = c(scale(trait@gxeEff,center=FALSE))*c(sqrt(varGxeLoci))
+      trait@varGxeLoci = c(varGE[i]/popVar(convToImat(geno)%*%trait@gxeEff))
     }
     simParam@traits[[i]] = trait
   }

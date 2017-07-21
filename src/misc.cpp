@@ -3,6 +3,19 @@
 #include "alphasimr.h"
 
 // Calculates population variance
+//' @title Population variance
+//' 
+//' @description
+//' Calculates the population variance matrix as 
+//' opposed to the sample variance matrix calculated 
+//' by \code{\link{var}}. i.e. divides by n instead 
+//' of n-1
+//' 
+//' @param X an n by m matrix
+//' 
+//' @return an m by m variance-covariance matrix
+//' 
+//' @export
 // [[Rcpp::export]]
 arma::mat popVar(const arma::mat& X) {
   return arma::cov(X,1);
