@@ -56,7 +56,7 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=SIMPARAM){
   if(simParam@nTraits==0){
     gv = matrix(NA_real_,
                 nrow=rawPop@nInd,
-                ncol=simParam@nTraits)
+                ncol=0)
   }else{
     gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
     gv = do.call("cbind",gv)
@@ -192,7 +192,7 @@ makeCross2 = function(fPop,mPop,crossPlan,id=NULL,simParam=SIMPARAM){
   if(simParam@nTraits==0){
     gv = matrix(NA_real_,
                 nrow=rawPop@nInd,
-                ncol=simParam@nTraits)
+                ncol=0)
   }else{
     gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
     gv = do.call("cbind",gv)
@@ -314,7 +314,7 @@ self = function(pop,nProgeny,id=NULL,simParam=SIMPARAM){
   if(simParam@nTraits==0){
     gv = matrix(NA_real_,
                 nrow=rawPop@nInd,
-                ncol=simParam@nTraits)
+                ncol=0)
   }else{
     gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
     gv = do.call("cbind",gv)
@@ -374,7 +374,7 @@ makeDH = function(pop,nDH,id=NULL,simParam=SIMPARAM){
   if(simParam@nTraits==0){
     gv = matrix(NA_real_,
                 nrow=rawPop@nInd,
-                ncol=simParam@nTraits)
+                ncol=0)
   }else{
     gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
     gv = do.call("cbind",gv)
@@ -446,7 +446,7 @@ pedigreeCross = function(pedigree,founders,id=NULL,simParam=SIMPARAM){
   if(simParam@nTraits==0){
     gv = matrix(NA_real_,
                 nrow=rawPop@nInd,
-                ncol=simParam@nTraits)
+                ncol=0)
   }else{
     gv = lapply(simParam@traits,getGv,pop=rawPop,w=0.5)
     gv = do.call("cbind",gv)

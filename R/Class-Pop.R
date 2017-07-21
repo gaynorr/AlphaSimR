@@ -296,3 +296,67 @@ setMethod("c",
             return(x)
           }
 )
+
+#' @title Reset population
+#' 
+#' @description
+#' Recalculates a population's genetic values and 
+#' resets phenotypes and EBVs.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param resetPed should pedigree also be reset
+#' @param id optional ids to assign individuals. Only used 
+#' if resetPed=TRUE
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @return an object of \code{\link{Pop-class}}
+#' 
+#' @export
+resetPop = function(pop,resetPed=FALSE,id=NULL,simParam=SIMPARAM){
+  if(resetPed){
+    if(is.null(id)){
+      lastId = get("LASTID",envir=.GlobalEnv)
+      id = (1:pop@nInd) + lastId
+      lastId = max(id)
+      updateId = TRUE
+    }else{
+      updateId = FALSE
+    }
+    mother = father = rep(0L,pop@nInd)
+  }else{
+    id = pop@id
+    mother = pop@mother
+    father = pop@father
+    updateId = FALSE
+  }
+  if(simParam@nTraits==0){
+    gv = matrix(NA_real_,
+                nrow=pop@nInd,
+                ncol=0)
+  }else{
+    gv = lapply(simParam@traits,getGv,pop=pop,w=0.5)
+    gv = do.call("cbind",gv)
+  }
+  output = new("Pop",
+               nInd=pop@nInd,
+               nChr=pop@nChr,
+               ploidy=pop@ploidy,
+               nLoci=pop@nLoci,
+               gender=pop@gender,
+               geno=pop@geno,
+               id=as.character(id),
+               mother=as.character(mother),
+               father=as.character(father),
+               nTraits=simParam@nTraits,
+               gv=gv,
+               pheno=matrix(NA_real_,
+                            nrow=pop@nInd,
+                            ncol=simParam@nTraits),
+               ebv=matrix(NA_real_,
+                          nrow=pop@nInd,
+                          ncol=0))
+  if(updateId){
+    assign("LASTID",lastId,envir=.GlobalEnv)
+  }
+  return(output)
+}

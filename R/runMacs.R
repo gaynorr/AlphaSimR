@@ -18,6 +18,8 @@
 #' The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
 #' PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
 #'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
 #' @export
 runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
                    split=NULL,manualCommand=NULL,manualGenLen=NULL){

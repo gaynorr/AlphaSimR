@@ -12,8 +12,16 @@ addError = function(gv,varE,reps=1){
       varE = diag(varE)
     }
   }
-  error = matrix(rnorm(nInd*nTraits),
-                 ncol=nTraits)%*%chol(varE)
+  if(any(diag(varE)==0)){
+    zeros = which(diag(varE)==0)
+    diag(varE)[zeros] = 1
+    error = matrix(rnorm(nInd*nTraits),
+                   ncol=nTraits)%*%chol(varE)
+    error[,zeros] = 0
+  }else{
+    error = matrix(rnorm(nInd*nTraits),
+                   ncol=nTraits)%*%chol(varE)
+  }
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
   return(pheno)

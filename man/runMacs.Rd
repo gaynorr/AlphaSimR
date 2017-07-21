@@ -26,6 +26,9 @@ runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
 
 \item{manualGenLen}{user provided genLen option for use with manual command.  For advanced users only.}
 }
+\value{
+an object of \code{\link{MapPop-class}}
+}
 \description{
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
 }
