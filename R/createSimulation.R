@@ -307,6 +307,8 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,corr=matrix(1),
 #' @param meanG a vector of mean genetic values for one or more traits
 #' @param varG a vector of total genetic variances for one or more traits
 #' @param varGE a vector of total genotype-by-environment variances for the traits
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape value of the shape parameter if using a gamma distribution
 #' @param corr a matrix of correlations between traits
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
@@ -315,7 +317,8 @@ addTraitAD = function(nQtlPerChr,meanG,varG,domDegree,corr=matrix(1),
 #' 
 #' @export
 addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
-                      simParam=SIMPARAM,founderPop=FOUNDERPOP){
+                      gamma=FALSE,shape=1,simParam=SIMPARAM,
+                      founderPop=FOUNDERPOP){
   stopifnot(length(meanG)==length(varG),
             nrow(corr)==ncol(corr),
             length(meanG)==length(diag(corr)),
@@ -324,6 +327,9 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%chol(corr)
+  if(gamma){
+    addEff = qgamma(pnorm(addEff),shape=shape)
+  }
   geno = getGeno(founderPop@geno,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
@@ -331,7 +337,8 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
     tmp = tuneTraitA(geno,addEff[,i],varG[i])
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
-    varGxeLoc = sqrt(popVar(addEff[,i,drop=FALSE])*varGE[i]/varG[i])
+    varGxeLoc = sqrt((popVar(addEff[,i,drop=FALSE])+
+                        mean(addEff[,i])^2)*varGE[i]/varG[i])
     trait = new("TraitAG",
                 qtlLoci,
                 addEff=addEff[,i],
@@ -358,6 +365,8 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
 #' Can be a single value or nLoci values.
 #' @param varGE a vector of total genotype-by-environment variances for the traits
 #' @param corr a matrix of correlations between traits
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape value of the shape parameter if using a gamma distribution
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
@@ -365,7 +374,8 @@ addTraitAG = function(nQtlPerChr,meanG,varG,varGE,corr=matrix(1),
 #'  
 #' @export
 addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
-                       simParam=SIMPARAM,founderPop=FOUNDERPOP){
+                       gamma=FALSE,shape=1,simParam=SIMPARAM,
+                       founderPop=FOUNDERPOP){
   stopifnot(length(meanG)==length(varG),
             nrow(corr)==ncol(corr),
             length(meanG)==length(diag(corr)),
@@ -374,6 +384,9 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
   qtlLoci = pickQtlLoci(nQtlPerChr,simParam=simParam)
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%chol(corr)
+  if(gamma){
+    addEff = qgamma(pnorm(addEff),shape=shape)
+  }
   if(length(domDegree)==1){
     domDegree = rep(domDegree,qtlLoci@nLoci)
   }else{
@@ -388,7 +401,8 @@ addTraitADG = function(nQtlPerChr,meanG,varG,domDegree,varGE,corr=matrix(1),
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
     domEff[,i] = domEff[,i]*tmp$parameter
-    varGxeLoc = sqrt(popVar(addEff[,i,drop=FALSE])*varGE[i]/varG[i])
+    varGxeLoc = sqrt((popVar(addEff[,i,drop=FALSE])+
+                        mean(addEff[,i])^2)*varGE[i]/varG[i])
     trait = new("TraitADG",
                 qtlLoci,
                 addEff=addEff[,i],
