@@ -97,7 +97,34 @@ arma::mat readMat(std::string fileName, int rows, int cols,
     for(int j=0; j<cols; ++j){
       std::getline(lineStream,cell,sep);
       output(i,j) = std::atof(cell.c_str());
-      //output(i,j) = std::stod(cell);
+    }
+  }
+  file.close();
+  return output;
+}
+
+arma::fmat readFMat(std::string fileName, int rows, int cols, 
+                   char sep=' ', int skipRows=0, int skipCols=0){
+  arma::fmat output(rows,cols);
+  std::ifstream file(fileName.c_str());
+  std::string line;
+  //Skip rows
+  for(int i=0; i<skipRows; ++i){
+    std::getline(file,line);
+  }
+  //Read rows
+  for(int i=0; i<rows; ++i){
+    std::getline(file,line);
+    std::stringstream lineStream(line);
+    std::string cell;
+    //Skip columns
+    for(int j=0; j<skipCols; ++j){
+      std::getline(lineStream,cell,sep);
+    }
+    //Read columns
+    for(int j=0; j<cols; ++j){
+      std::getline(lineStream,cell,sep);
+      output(i,j) = std::atof(cell.c_str());
     }
   }
   file.close();
@@ -109,6 +136,26 @@ arma::mat makeX(arma::uvec& x){
   int nTrain = x.n_elem;
   double nLevels = x.max();
   arma::mat X(nTrain,nLevels);
+  if(nLevels==1){
+    X.ones();
+  }else{
+    X.zeros();
+    X.col(0).ones();
+    for(int i=0; i<nTrain; ++i){
+      if(x(i)==nLevels){
+        X(i,arma::span(1,nLevels-1)).fill(-1.0);
+      }else{
+        X(i,x(i))=1;
+      }
+    }
+  }
+  return X;
+}
+
+arma::fmat makeFX(arma::uvec& x){
+  int nTrain = x.n_elem;
+  float nLevels = x.max();
+  arma::fmat X(nTrain,nLevels);
   if(nLevels==1){
     X.ones();
   }else{
@@ -140,6 +187,12 @@ arma::mat makeZ(arma::uvec& z, int nGeno){
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
 void sweepReps(arma::mat& X, arma::vec& reps){
+  for(int i=0; i<X.n_cols; ++i){
+    X.col(i) = X.col(i)/reps;
+  }
+}
+
+void sweepRepsF(arma::fmat& X, arma::fvec& reps){
   for(int i=0; i<X.n_cols; ++i){
     X.col(i) = X.col(i)/reps;
   }
@@ -318,13 +371,14 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   arma::mat WX(n,q);
   arma::mat WQX(n,n);
   arma::mat rss(1,1);
-  arma::vec eigval;
   arma::mat tmpMat(1,1);
   double ldet;
   double llik;
   double llik0;
   double deltaLlik;
   double taper;
+  double value;
+  double sign;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
   for(int cycle=0; cycle<maxcyc; ++cycle){
@@ -340,15 +394,8 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
       sigma(i) = sigma(i)*(rss(0,0)/df);
     }
     WQX = WQX*(df/rss(0,0));
-    // Compute eigendecomposition
-    eigval.set_size(n);
-    eigen2(eigval, tmpMat, WQX, false);
-    eigval = eigval(arma::span(q,n-1));
-    if(eigval(0)<0.0){
-      WQX += (tol-eigval(0))*arma::eye(n,n);
-      eigval += (tol-eigval(0));
-    }
-    ldet = accu(log(eigval));
+    log_det(value, sign, WQX);
+    ldet = value*sign;
     llik = ldet/2 - df/2;
     if(cycle == 1) 
       llik0 = llik;
@@ -403,6 +450,107 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                             Rcpp::Named("LL")=llik);
 }
 
+Rcpp::List solveLowMemRRBLUP(arma::fmat& y, 
+                             arma::fmat& X, 
+                             arma::field<arma::fmat>& Zlist){
+  int maxcyc = 20;
+  float tol = 1e-4;
+  int k = Zlist.n_elem;
+  int n = y.n_rows;
+  int q = X.n_cols;
+  float df = float(n)-float(q);
+  arma::field<arma::fmat> V(k+1);
+  for(int i=0; i<k; ++i){
+    V(i) = Zlist(i)*Zlist(i).t();
+  }
+  V(k) = arma::eye<arma::fmat>(n,n);
+  k += 1;
+  arma::fmat A(k,k);
+  arma::fvec qvec(k);
+  arma::fvec sigma(k);
+  arma::fmat W(n,n);
+  arma::fmat WX(n,q);
+  arma::fmat WQX(n,n);
+  arma::fmat rss(1,1);
+  arma::fmat tmpMat(1,1);
+  float ldet;
+  float llik;
+  float llik0;
+  float deltaLlik;
+  float taper;
+  float value;
+  float sign;
+  arma::field<arma::fmat> T(k);
+  sigma.fill(var(y.col(0)));
+  for(int cycle=0; cycle<maxcyc; ++cycle){
+    W = V(0)*sigma(0);
+    for(int i=1; i<k; ++i){
+      W += V(i)*sigma(i);
+    }
+    W = arma::inv_sympd(W);
+    WX = W*X;
+    WQX = W - WX*arma::solve(X.t()*WX, WX.t());
+    rss = y.t()*WQX*y;
+    for(int i=0; i<k; ++i){
+      sigma(i) = sigma(i)*(rss(0,0)/df);
+    }
+    WQX = WQX*(df/rss(0,0));
+    log_det(value, sign, WQX);
+    ldet = value*sign;
+    llik = ldet/2 - df/2;
+    if(cycle == 1) 
+      llik0 = llik;
+    deltaLlik = llik - llik0;
+    llik0 = llik;
+    for(int i=0; i<k; ++i){
+      T(i) = WQX*V(i);
+    }
+    for(int i=0; i<k; ++i){
+      tmpMat = y.t()*T(i)*WQX*y - sum(T(i).diag());
+      qvec(i) = tmpMat(0,0);
+      for(int j=0; j<k; ++j){
+        A(i,j) = accu(T(i)%T(j).t());
+      }
+    }
+    A = pinv(A);
+    qvec = A*qvec;
+    if(cycle == 1){
+      taper = 0.5;
+    }else if(cycle == 2){
+      taper = 0.7;
+    }else{
+      taper = 0.9;
+    }
+    sigma += taper*qvec;
+    while(sigma.min() < -(1e-6)){
+      sigma(sigma.index_min()) = -(1e-6);
+    }
+    if(cycle>1 & fabs(deltaLlik)<tol*10){
+      break;
+    }
+    if(max(abs(qvec))<tol){
+      break;
+    }
+  }
+  arma::fmat beta(q,1);
+  arma::field<arma::fmat> u(k-1);
+  arma::fmat ee(n,1);
+  beta = solve(X.t()*W*X,X.t()*W*y);
+  ee = y - X*beta;
+  for(int i=0; i<(k-1); ++i){
+    u(i) = sigma(i)*Zlist(i).t()*W*ee;
+  }
+  arma::fvec Vu(k-1);
+  Vu = sigma(arma::span(0,k-2));
+  arma::fvec Ve(1);
+  Ve = sigma(k-1);
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=llik);
+}
+
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, 
@@ -415,6 +563,20 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Z,reps);
   arma::mat K = arma::eye(nMarker,nMarker);
   return solveUVM(y, X, Z, K);
+}
+
+// Called by RRBLUP function
+// [[Rcpp::export]]
+Rcpp::List callLowMemRRBLUP(arma::fmat y, arma::uvec x, arma::fvec reps, 
+                            std::string genoTrain, int nMarker){
+  arma::fmat X = makeFX(x);
+  arma::field<arma::fmat> Zlist(1);
+  Zlist(0) = readFMat(genoTrain,y.n_elem,nMarker,' ',0,0);
+  reps = sqrt(1.0/reps);
+  sweepRepsF(y,reps);
+  sweepRepsF(X,reps);
+  sweepRepsF(Zlist(0),reps);
+  return solveLowMemRRBLUP(y, X, Zlist);
 }
 
 // Called by RRBLUP function
@@ -452,6 +614,23 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   return solveMKM(y,X,Zlist,Klist);
 }
 
+// [[Rcpp::export]]
+Rcpp::List callLowMemRRBLUP_GCA(arma::fmat y, arma::uvec x, arma::fvec reps,
+                                std::string genoFemale, std::string genoMale, 
+                                int nMarker){
+  int n = y.n_rows;
+  arma::fmat X = makeFX(x);
+  arma::field<arma::fmat> Zlist(2);
+  Zlist(0) = readFMat(genoFemale,n,nMarker,' ',0,0);
+  Zlist(1) = readFMat(genoMale,n,nMarker,' ',0,0);
+  reps = sqrt(1.0/reps);
+  sweepRepsF(y, reps);
+  sweepRepsF(X, reps);
+  sweepRepsF(Zlist(0), reps);
+  sweepRepsF(Zlist(1), reps);
+  return solveLowMemRRBLUP(y,X,Zlist);
+}
+
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
@@ -476,6 +655,27 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Zlist(1), reps);
   sweepReps(Zlist(2), reps);
   return solveMKM(y,X,Zlist,Klist);
+}
+
+// [[Rcpp::export]]
+Rcpp::List callLowMemRRBLUP_SCA(arma::fmat y, arma::uvec x, arma::fvec reps,
+                                std::string genoFemale, std::string genoMale, 
+                                int nMarker){
+  int n = y.n_rows;
+  arma::fmat X = makeFX(x);
+  arma::field<arma::fmat> Zlist(3);
+  Zlist(0) = readFMat(genoFemale,n,nMarker,' ',0,0);
+  Zlist(0) = Zlist(0)*2-1;
+  Zlist(1) = readFMat(genoMale,n,nMarker,' ',0,0);
+  Zlist(1) = Zlist(1)*2-1;
+  Zlist(2) = Zlist(0)%Zlist(1);
+  reps = sqrt(1.0/reps);
+  sweepRepsF(y, reps);
+  sweepRepsF(X, reps);
+  sweepRepsF(Zlist(0), reps);
+  sweepRepsF(Zlist(1), reps);
+  sweepRepsF(Zlist(2), reps);
+  return solveLowMemRRBLUP(y,X,Zlist);
 }
 
 //' @title Calculate G Matrix

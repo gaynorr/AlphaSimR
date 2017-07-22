@@ -117,10 +117,12 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv}) 
 #' or phenotypes (\code{pheno}, default)
+#' @param lowMem should the single precision solver be used
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
+RRBLUP = function(dir, traits=1, use="pheno", 
+                  lowMem=FALSE, simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -150,8 +152,13 @@ RRBLUP = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
     ans = callRRBLUP_MV(y,fixEff,markerInfo$reps,
                            file.path(dir,"genotype.txt"),nMarkers)
   }else{
-    ans = callRRBLUP(y,fixEff,markerInfo$reps,
-                        file.path(dir,"genotype.txt"),nMarkers)
+    if(lowMem){
+      ans = callLowMemRRBLUP(y,fixEff,markerInfo$reps,
+                             file.path(dir,"genotype.txt"),nMarkers)
+    }else{
+      ans = callRRBLUP(y,fixEff,markerInfo$reps,
+                       file.path(dir,"genotype.txt"),nMarkers)
+    }
   }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
@@ -159,11 +166,16 @@ RRBLUP = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   }else{
     markers = simParam@traits[[as.integer(tmp[2])]]
   }
+  if(lowMem){
+    markerEff=ans$u[[1]]
+  }else{
+    markerEff=ans$u
+  }
   output = new("RRsol",
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               markerEff=ans$u,
+               markerEff=markerEff,
                fixEff=ans$beta)
   return(output)
 }
@@ -180,10 +192,12 @@ RRBLUP = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv}) 
 #' or phenotypes (\code{pheno}, default)
+#' @param lowMem should the single precision solver be used
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_GCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
+RRBLUP_GCA = function(dir, traits=1, use="pheno", 
+                      lowMem=FALSE, simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -210,10 +224,17 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   stopifnot(ncol(y)==1)
   #Fit model
   fixEff = as.integer(factor(markerInfo$fixEff))
-  ans = callRRBLUP_GCA(y,fixEff,markerInfo$reps,
-                       file.path(dir,"haplotype1.txt"),
-                       file.path(dir,"haplotype2.txt"),
-                       nMarkers)
+  if(lowMem){
+    ans = callLowMemRRBLUP_GCA(y,fixEff,markerInfo$reps,
+                               file.path(dir,"haplotype1.txt"),
+                               file.path(dir,"haplotype2.txt"),
+                               nMarkers)
+  }else{
+    ans = callRRBLUP_GCA(y,fixEff,markerInfo$reps,
+                         file.path(dir,"haplotype1.txt"),
+                         file.path(dir,"haplotype2.txt"),
+                         nMarkers)
+  }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
@@ -242,10 +263,12 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv}) 
 #' or phenotypes (\code{pheno}, default)
+#' @param lowMem should the single precision solver be used
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_SCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
+RRBLUP_SCA = function(dir, traits=1, use="pheno", 
+                      lowMem=FALSE, simParam=SIMPARAM){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -272,10 +295,17 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno", simParam=SIMPARAM){
   stopifnot(ncol(y)==1)
   #Fit model
   fixEff = as.integer(factor(markerInfo$fixEff))
-  ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
-                       file.path(dir,"haplotype1.txt"),
-                       file.path(dir,"haplotype2.txt"),
-                       nMarkers)
+  if(lowMem){
+    ans = callLowMemRRBLUP_SCA(y,fixEff,markerInfo$reps,
+                               file.path(dir,"haplotype1.txt"),
+                               file.path(dir,"haplotype2.txt"),
+                               nMarkers)
+  }else{
+    ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
+                         file.path(dir,"haplotype1.txt"),
+                         file.path(dir,"haplotype2.txt"),
+                         nMarkers)
+  }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
@@ -344,24 +374,41 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
 #' 
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual
+#' @param lowMem is single precision solver being used
 #' 
 #' @return Returns an estimate for the required gigabytes of RAM
 #' 
 #' @export
-RRBLUPMemUse = function(nInd,nMarker){
-  y = nInd
-  X = nInd #times fixed effects, assuming 1 here
-  Z = nInd*nMarker
-  K = nMarker*nMarker
-  S = nInd*nInd
-  ZK = nInd*nMarker
-  ZKZ = nInd*nInd
-  eigval = nInd
-  eigvec = nInd*nInd
-  eta = nInd
-  Hinv = nInd*nInd
-  u = nMarker
-  bytes = sapply(ls(),function(x) get(x))
-  bytes = 8*sum(bytes)
+RRBLUPMemUse = function(nInd,nMarker,lowMem=FALSE){
+  if(lowMem){
+    y = nInd
+    X = nInd #times fixed effects, assuming 1 here
+    Z = nInd*nMarker
+    V = nInd*nInd
+    R = nInd*nInd
+    W = nInd*nInd
+    WX = nInd
+    WQX = nInd*nInd
+    T = nInd*nInd
+    ee = nInd
+    u = nMarker
+    bytes = sapply(ls(),function(x) get(x))
+    bytes = 4*sum(bytes)
+  }else{
+    y = nInd
+    X = nInd #times fixed effects, assuming 1 here
+    Z = nInd*nMarker
+    K = nMarker*nMarker
+    S = nInd*nInd
+    ZK = nInd*nMarker
+    ZKZ = nInd*nInd
+    eigval = nInd
+    eigvec = nInd*nInd
+    eta = nInd
+    Hinv = nInd*nInd
+    u = nMarker
+    bytes = sapply(ls(),function(x) get(x))
+    bytes = 8*sum(bytes)
+  }
   return(bytes*1e-9) #GB
 }

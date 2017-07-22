@@ -4,7 +4,8 @@
 \alias{RRBLUP}
 \title{RR-BLUP Model}
 \usage{
-RRBLUP(dir, traits = 1, use = "pheno", simParam = SIMPARAM)
+RRBLUP(dir, traits = 1, use = "pheno", lowMem = FALSE,
+  simParam = SIMPARAM)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}
@@ -14,6 +15,8 @@ function of the traits returning a single value.}
 
 \item{use}{train model using genetic value (\code{gv}) 
 or phenotypes (\code{pheno}, default)}
+
+\item{lowMem}{should the single precision solver be used}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

@@ -67,6 +67,10 @@ callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
     .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
 }
 
+callLowMemRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
+    .Call('AlphaSimR_callLowMemRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
+}
+
 callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
     .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
 }
@@ -75,8 +79,16 @@ callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
     .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
 }
 
+callLowMemRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callLowMemRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
 callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
     .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
+}
+
+callLowMemRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
+    .Call('AlphaSimR_callLowMemRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker)
 }
 
 #' @title Calculate G Matrix
