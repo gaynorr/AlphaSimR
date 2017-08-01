@@ -4,8 +4,7 @@
 \alias{calcPopGIbs}
 \title{Calculate IBS G matrix}
 \usage{
-calcPopGIbs(pop, useSnp = TRUE, snpChip = 1, trait = 1,
-  simParam = SIMPARAM)
+calcPopGIbs(pop, useSnp = TRUE, snpChip = 1, trait = 1, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

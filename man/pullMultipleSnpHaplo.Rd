@@ -4,8 +4,7 @@
 \alias{pullMultipleSnpHaplo}
 \title{Pull SNP haplotypes for multiple chips}
 \usage{
-pullMultipleSnpHaplo(pop, chips, haplo = "all", missing = 9,
-  simParam = SIMPARAM)
+pullMultipleSnpHaplo(pop, chips, haplo = "all", missing = 9, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

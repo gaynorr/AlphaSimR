@@ -17,7 +17,7 @@
 #' 
 #' @export
 calcPopG = function(pop, useSnp=TRUE, snpChip=1, trait=1, 
-                    simParam=SIMPARAM){
+                    simParam){
   if(useSnp){
     return(calcPopGC(pop@geno, 
                      simParam@snpChips[[snpChip]]@lociPerChr,
@@ -49,7 +49,7 @@ calcPopG = function(pop, useSnp=TRUE, snpChip=1, trait=1,
 #' 
 #' @export
 calcPopGIbs = function(pop, useSnp=TRUE, snpChip=1, trait=1, 
-                       simParam=SIMPARAM){
+                       simParam){
   if(useSnp){
     return(calcPopGIbsC(pop@geno, 
                         simParam@snpChips[[snpChip]]@lociPerChr,

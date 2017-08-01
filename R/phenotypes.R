@@ -40,9 +40,7 @@ addError = function(gv,varE,reps=1){
 #' nTraits for independent error or a square matrix of dimensions 
 #' nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
-#' @param w the environmental covariate used by GxE traits. If pop 
-#' is \code{\link{HybridPop-class}} an error will be returned for any 
-#' value other than 0.5.
+#' @param w the environmental covariate used by GxE traits.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
@@ -55,18 +53,18 @@ addError = function(gv,varE,reps=1){
 #' @return Returns a matrix of nInd by nTrait phenotypes
 #' 
 #' @export
-calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
+calcPheno = function(pop,varE,reps=1,w=0.5,simParam){
   validObject(pop)
+  if(length(w)==1){
+    w = rep(w,simParam@nTraits)
+  }
+  stopifnot(length(w)==simParam@nTraits)
   gv = pop@gv
-  if(class(pop)=="HybridPop"){
-    stopifnot(w==0.5)
-  }else{
-    stopifnot(class(pop)=="Pop")
-    for(i in 1:simParam@nTraits){
-      traitClass = class(simParam@traits[[i]])
-      if(traitClass=="TraitAG" | traitClass=="TraitADG"){
-        gv[,i] = getGv(simParam@traits[[i]],pop=pop,w=w)
-      }
+  for(i in 1:simParam@nTraits){
+    traitClass = class(simParam@traits[[i]])
+    if(traitClass=="TraitAG" | traitClass=="TraitADG"){
+      stdDev = sqrt(simParam@traits[[i]]@envVar)
+      gv[,i] = gv[,i]+pop@gxe[[i]]*qnorm(w[i],sd=stdDev)
     }
   }
   pheno = addError(gv=gv,varE=varE,reps=reps)
@@ -85,9 +83,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
 #' nTraits for independent error or a square matrix of dimensions 
 #' nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
-#' @param w the environmental covariate used by GxE traits. If pop 
-#' is \code{\link{HybridPop-class}} an error will be returned for any 
-#' value other than 0.5.
+#' @param w the environmental covariate used by GxE traits.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
@@ -101,7 +97,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-setPheno = function(pop,varE,reps=1,w=0.5,simParam=SIMPARAM){
+setPheno = function(pop,varE,reps=1,w=0.5,simParam){
   pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,w=w,
                         simParam=simParam)
   validObject(pop)

@@ -9,18 +9,19 @@ FOUNDERPOP = runMacs(macs=macsPath,nInd=1000,nChr=10,segSites=1000,
 rm(macsPath) #No longer needed
 
 # Set simulation parameters
-SIMPARAM = createSimulation(maxQtl=1000,maxSnp=0,gender="yes_sys")
+SIMPARAM = createSimulation(FOUNDERPOP,maxQtl=1000,maxSnp=0,gender="yes_sys")
 # Add a trait with additive effects
-SIMPARAM = addTraitA(nQtlPerChr=1000,meanG=0,varG=1)
+SIMPARAM = addTraitA(FOUNDERPOP,nQtlPerChr=1000,meanG=0,varG=1,
+                     simParam=SIMPARAM)
 
 
-calves = newPop(FOUNDERPOP)
+calves = newPop(FOUNDERPOP,simParam=SIMPARAM)
 popMean = meanG(calves)
 popVar = varG(calves)
 for(i in 1:20){
-  bulls = selectMale(calves,25,use="gv")
-  cows = selectFemale(calves,500,use="gv")
-  calves = randCross2(cows,bulls,1000)
+  bulls = selectMale(calves,25,use="gv",simParam=SIMPARAM)
+  cows = selectFemale(calves,500,use="gv",simParam=SIMPARAM)
+  calves = randCross2(cows,bulls,1000,simParam=SIMPARAM)
   popMean = c(popMean,meanG(calves))
   popVar = c(popVar,varG(bulls))
 }

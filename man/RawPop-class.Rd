@@ -11,9 +11,15 @@
 
 \S4method{c}{RawPop}(x, ...)
 }
+\arguments{
+\item{x}{a 'RawPop'}
+
+\item{i}{index of individuals}
+
+\item{...}{additional 'RawPop' objects}
+}
 \description{
-The raw population class contains only genotype and gender data. 
-It is intended as a temporary population whose genentic values aren't needed.
+The raw population class contains only genotype data.
 }
 \section{Methods (by generic)}{
 \itemize{
@@ -32,8 +38,6 @@ It is intended as a temporary population whose genentic values aren't needed.
 \item{\code{ploidy}}{level of ploidy}
 
 \item{\code{nLoci}}{number of loci per chromosome}
-
-\item{\code{gender}}{gender of individuals}
 
 \item{\code{geno}}{"matrix" containing chromosome genotypes. The "matrix" 
 has dimensions nChr by 1 and each element is a three dimensional

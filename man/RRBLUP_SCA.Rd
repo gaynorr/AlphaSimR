@@ -4,8 +4,7 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, use = "pheno", lowMem = FALSE,
-  simParam = SIMPARAM)
+RRBLUP_SCA(dir, traits = 1, use = "pheno", lowMem = FALSE, simParam)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}

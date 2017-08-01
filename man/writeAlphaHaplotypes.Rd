@@ -4,8 +4,7 @@
 \alias{writeAlphaHaplotypes}
 \title{Write AlphaSuite style haplotypes}
 \usage{
-writeAlphaHaplotypes(pop, file, chr = 1, chips = rep(0, pop@nInd),
-  simParam = SIMPARAM)
+writeAlphaHaplotypes(pop, file, chr = 1, chips = rep(0, pop@nInd), simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

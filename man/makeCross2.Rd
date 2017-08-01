@@ -4,12 +4,12 @@
 \alias{makeCross2}
 \title{Make designed crosses}
 \usage{
-makeCross2(fPop, mPop, crossPlan, id = NULL, simParam = SIMPARAM)
+makeCross2(females, males, crossPlan, id = NULL, simParam)
 }
 \arguments{
-\item{fPop}{an object of \code{\link{Pop-class}} for female parents.}
+\item{females}{an object of \code{\link{Pop-class}} for female parents.}
 
-\item{mPop}{an object of \code{\link{Pop-class}} for male parents.}
+\item{males}{an object of \code{\link{Pop-class}} for male parents.}
 
 \item{crossPlan}{a matrix with two column representing 
 female and male parents. Either integers for the position in 

@@ -11,10 +11,16 @@
 
 \S4method{c}{HybridPop}(x, ...)
 }
+\arguments{
+\item{x}{a 'HybridPop'}
+
+\item{i}{index of individuals}
+
+\item{...}{additional 'HybridPop' objects}
+}
 \description{
 A lightweight version of \code{\link{Pop-class}} for hybrid lines.
-Memory is saved by not storing genotypic data. This prevents recaclulation 
-of phenotypes for GxE traits as well as direct retrieval of genotype data.
+Memory is saved by not storing genotypic data.
 }
 \section{Methods (by generic)}{
 \itemize{
@@ -41,5 +47,7 @@ gv reflects gv when w=0. Dimensions are nInd by nTraits.}
 
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are
 nInd by nTraits.}
+
+\item{\code{gxe}}{list containing GxE slopes for GxE traits}
 }}
 

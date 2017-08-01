@@ -4,8 +4,7 @@
 \alias{calcPopG}
 \title{Calculate G matrix}
 \usage{
-calcPopG(pop, useSnp = TRUE, snpChip = 1, trait = 1,
-  simParam = SIMPARAM)
+calcPopG(pop, useSnp = TRUE, snpChip = 1, trait = 1, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

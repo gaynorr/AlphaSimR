@@ -24,7 +24,7 @@
 #'
 #' @export
 writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
-                        includeHaplo=FALSE,append=TRUE,simParam=SIMPARAM){
+                        includeHaplo=FALSE,append=TRUE,simParam){
   dir = normalizePath(dir, mustWork=TRUE)
   if(!append){
     #Delete any existing files
@@ -122,7 +122,7 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #'
 #' @export
 RRBLUP = function(dir, traits=1, use="pheno", 
-                  lowMem=FALSE, simParam=SIMPARAM){
+                  lowMem=FALSE, simParam){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -197,7 +197,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_GCA = function(dir, traits=1, use="pheno", 
-                      lowMem=FALSE, simParam=SIMPARAM){
+                      lowMem=FALSE, simParam){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
@@ -268,7 +268,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno", 
-                      lowMem=FALSE, simParam=SIMPARAM){
+                      lowMem=FALSE, simParam){
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,

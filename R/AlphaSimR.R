@@ -2,6 +2,7 @@
 #' @import Rcpp RcppArmadillo
 #' @importFrom methods new validObject
 #' @importFrom stats aggregate rnorm qnorm var
+#' @importFrom stats coef dnorm lm pnorm qgamma
 #' @importFrom utils combn read.table write.table
 
 #' @title AlphaSimR: Breeding Program Simulations

@@ -4,15 +4,10 @@
 \alias{resetPop}
 \title{Reset population}
 \usage{
-resetPop(pop, resetPed = FALSE, id = NULL, simParam = SIMPARAM)
+resetPop(pop, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
-
-\item{resetPed}{should pedigree also be reset}
-
-\item{id}{optional ids to assign individuals. Only used 
-if resetPed=TRUE}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

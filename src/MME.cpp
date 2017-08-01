@@ -216,9 +216,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
+  bool invPass;
   
   // Construct system of equations for eigendecomposition
-  arma::mat S = arma::eye(n,n) - X*arma::inv_sympd(X.t()*X)*X.t();
+  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
   arma::mat ZK = Z*K;
   arma::mat ZKZ = ZK*Z.t();
   S = S*(ZKZ+offset*arma::eye(n,n))*S;
@@ -242,7 +243,11 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                                  Rcpp::Named("lambda")=eigval), 
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv = arma::inv_sympd(ZKZ+delta*arma::eye(n,n));
+  arma::mat Hinv; 
+  invPass = inv_sympd(Hinv,ZKZ+delta*arma::eye(n,n));
+  if(!invPass){
+    Hinv = pinv(ZKZ+delta*arma::eye(n,n));
+  }
   arma::mat XHinv = X.t()*Hinv;
   arma::mat beta = solve(XHinv*X,XHinv*y);
   arma::mat u = ZK.t()*(Hinv*(y-X*beta));
@@ -293,16 +298,17 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   double denom;
   double numer;
   bool converging=true;
+  bool invPass;
   while(converging){
     VeNew.fill(0.0);
     VuNew.fill(0.0);
     for(int i=0; i<n; ++i){
-      Gt.col(i) = eigval(i)*Vu*arma::inv_sympd(eigval(i)*Vu+
+      Gt.col(i) = eigval(i)*Vu*inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
     }
     BNew = (Yt - Gt)*W;
     for(int i=0; i<n; ++i){
-      sigma = eigval(i)*Vu-(eigval(i)*Vu)*arma::inv_sympd(eigval(i)*Vu+
+      sigma = eigval(i)*Vu-(eigval(i)*Vu)*inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
       VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
       VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*
@@ -317,14 +323,19 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Vu = VuNew;
     B = BNew;
   }
-  arma::mat HI = inv_sympd(kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
+  arma::mat HI;
+  invPass = inv_sympd(HI,kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
     tol*arma::eye(n*m,n*m));
+  if(!invPass){
+    HI = pinv(kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
+      tol*arma::eye(n*m,n*m));
+  }
   arma::mat E = Y.t() - B*X.t();
   arma::mat U = kron(K, Vu)*kron(Z.t(), 
-                     arma::eye(m,m))*(HI*arma::vectorise(E)); //BLUPs
+                     arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
   U.reshape(m,U.n_elem/m);
   //Log Likelihood calculation
-  arma::mat ll = -0.5*arma::vectorise(E).t()*HI*arma::vectorise(E);
+  arma::mat ll = -0.5*arma::vectorise(E).t()*HI*vectorise(E);
   ll -= double(n*m)/2.0*log(2*PI);
   double value;
   double sign;
@@ -370,8 +381,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   arma::mat W(n,n);
   arma::mat WX(n,q);
   arma::mat WQX(n,n);
-  arma::mat rss(1,1);
-  arma::mat tmpMat(1,1);
+  double rss;
   double ldet;
   double llik;
   double llik0;
@@ -386,14 +396,14 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     for(int i=1; i<k; ++i){
       W += V(i)*sigma(i);
     }
-    W = arma::inv_sympd(W);
+    W = inv_sympd(W);
     WX = W*X;
-    WQX = W - WX*arma::solve(X.t()*WX, WX.t());
-    rss = y.t()*WQX*y;
+    WQX = W - WX*solve(X.t()*WX, WX.t());
+    rss = as_scalar(y.t()*WQX*y);
     for(int i=0; i<k; ++i){
-      sigma(i) = sigma(i)*(rss(0,0)/df);
+      sigma(i) = sigma(i)*(rss/df);
     }
-    WQX = WQX*(df/rss(0,0));
+    WQX = WQX*(df/rss);
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
@@ -405,8 +415,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
       T(i) = WQX*V(i);
     }
     for(int i=0; i<k; ++i){
-      tmpMat = y.t()*T(i)*WQX*y - sum(T(i).diag());
-      qvec(i) = tmpMat(0,0);
+      qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
       for(int j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }
@@ -471,8 +480,7 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
   arma::fmat W(n,n);
   arma::fmat WX(n,q);
   arma::fmat WQX(n,n);
-  arma::fmat rss(1,1);
-  arma::fmat tmpMat(1,1);
+  float rss;
   float ldet;
   float llik;
   float llik0;
@@ -487,14 +495,14 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
     for(int i=1; i<k; ++i){
       W += V(i)*sigma(i);
     }
-    W = arma::inv_sympd(W);
+    W = inv_sympd(W);
     WX = W*X;
-    WQX = W - WX*arma::solve(X.t()*WX, WX.t());
-    rss = y.t()*WQX*y;
+    WQX = W - WX*solve(X.t()*WX, WX.t());
+    rss = as_scalar(y.t()*WQX*y);
     for(int i=0; i<k; ++i){
-      sigma(i) = sigma(i)*(rss(0,0)/df);
+      sigma(i) = sigma(i)*(rss/df);
     }
-    WQX = WQX*(df/rss(0,0));
+    WQX = WQX*(df/rss);
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
@@ -506,8 +514,7 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
       T(i) = WQX*V(i);
     }
     for(int i=0; i<k; ++i){
-      tmpMat = y.t()*T(i)*WQX*y - sum(T(i).diag());
-      qvec(i) = tmpMat(0,0);
+      qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
       for(int j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }

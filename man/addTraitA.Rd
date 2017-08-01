@@ -4,10 +4,12 @@
 \alias{addTraitA}
 \title{Add additive traits}
 \usage{
-addTraitA(nQtlPerChr, meanG, varG, corr = matrix(1), gamma = FALSE,
-  shape = 1, simParam = SIMPARAM, founderPop = FOUNDERPOP)
+addTraitA(founderPop, nQtlPerChr, meanG, varG, corr = NULL, gamma = FALSE,
+  shape = 1, simParam)
 }
 \arguments{
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
 \item{meanG}{a vector of mean genetic values for one or more traits}
@@ -21,8 +23,6 @@ addTraitA(nQtlPerChr, meanG, varG, corr = matrix(1), gamma = FALSE,
 \item{shape}{value of the shape parameter if using a gamma distribution}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
-
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

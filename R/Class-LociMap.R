@@ -90,12 +90,14 @@ setValidity("TraitAD",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
-#' @slot varGxeLoci GxE variance for loci
+#' @slot gxeInt GxE intercept
+#' @slot envVar Environmental variance
 #'
 #' @export
 setClass("TraitAG",
          slots=c(gxeEff="numeric",
-                 varGxeLoci="numeric"),
+                 gxeInt="numeric",
+                 envVar="numeric"),
          contains="TraitA")
 
 setValidity("TraitAG",function(object){
@@ -117,12 +119,14 @@ setValidity("TraitAG",function(object){
 #' to add GxE effects
 #' 
 #' @slot gxeEff GxE effects
-#' @slot varGxeLoci GxE variance for loci
+#' @slot gxeInt GxE intercept
+#' @slot envVar Environmental variance
 #'
 #' @export
 setClass("TraitADG",
          slots=c(gxeEff="numeric",
-                 varGxeLoci="numeric"),
+                 gxeInt="numeric",
+                 envVar="numeric"),
          contains="TraitAD")
 
 setValidity("TraitADG",function(object){
@@ -238,48 +242,3 @@ setValidity("SCAsol",function(object){
     return(errors)
   }
 })
-
-#getGv----
-setGeneric("getGv",function(object,...){
-  standardGeneric("getGv")
-})
-setMethod("getGv",signature("TraitA"),
-          function(object,pop,...){
-            getGvA(object,pop)
-          })
-setMethod("getGv",signature("TraitAD"),
-          function(object,pop,...){
-            getGvAD(object,pop)
-          })
-setMethod("getGv",signature("TraitAG"),
-          function(object,pop,w){
-            z = qnorm(w,sd=sqrt(object@varGxeLoci))
-            getGvAG(object,pop,z)
-          })
-setMethod("getGv",signature("TraitADG"),
-          function(object,pop,w){
-            z = qnorm(w,sd=sqrt(object@varGxeLoci))
-            getGvADG(object,pop,z)
-          })
-#getHybridGv----
-setGeneric("getHybridGv",function(object,...){
-  standardGeneric("getHybridGv")
-})
-setMethod("getHybridGv",signature("TraitA"),
-          function(object,fPop,fPar,mPop,mPar,...){
-            getHybridGvA(object,fPop,fPar,mPop,mPar)
-          })
-setMethod("getHybridGv",signature("TraitAD"),
-          function(object,fPop,fPar,mPop,mPar,...){
-            getHybridGvAD(object,fPop,fPar,mPop,mPar)
-          })
-setMethod("getHybridGv",signature("TraitAG"),
-          function(object,fPop,fPar,mPop,mPar,w){
-            z = qnorm(w,sd=sqrt(object@varGxeLoci))
-            getHybridGvAG(object,fPop,fPar,mPop,mPar,z)
-          })
-setMethod("getHybridGv",signature("TraitADG"),
-          function(object,fPop,fPar,mPop,mPar,w){
-            z = qnorm(w,sd=sqrt(object@varGxeLoci))
-            getHybridGvADG(object,fPop,fPar,mPop,mPar,z)
-          })

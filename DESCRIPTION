@@ -12,5 +12,5 @@ Depends: methods
 Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
-Suggests: knitr, rmarkdown, testthat
+Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

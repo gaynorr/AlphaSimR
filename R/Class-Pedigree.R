@@ -74,9 +74,9 @@ sortPed = function(x, maxGen=100){
     }
   }
   
-  ids=character(ped@nInd)
-  mother=integer(ped@nInd)
-  father=integer(ped@nInd)
+  ids=character(x@nInd)
+  mother=integer(x@nInd)
+  father=integer(x@nInd)
   maxg = g
   c = 0
   for (g in 1:maxg) {

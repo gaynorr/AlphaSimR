@@ -22,9 +22,10 @@ extern SEXP AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_changeId(SEXP, SEXP);
 extern SEXP AlphaSimR_convToImat(SEXP);
-extern SEXP AlphaSimR_createDH2(SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_crossPedigree(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_fastDist(SEXP);
 extern SEXP AlphaSimR_fastPairDist(SEXP, SEXP);
@@ -34,15 +35,9 @@ extern SEXP AlphaSimR_gebvRR(SEXP, SEXP);
 extern SEXP AlphaSimR_gebvSCA(SEXP, SEXP);
 extern SEXP AlphaSimR_getDomGeno(SEXP);
 extern SEXP AlphaSimR_getGeno(SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getGvA(SEXP, SEXP);
-extern SEXP AlphaSimR_getGvAD(SEXP, SEXP);
-extern SEXP AlphaSimR_getGvADG(SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getGvAG(SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_getGv(SEXP, SEXP);
 extern SEXP AlphaSimR_getHaplo(SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getHybridGvA(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getHybridGvAD(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getHybridGvADG(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_getHybridGvAG(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_getHybridGv(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_getOneHaplo(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_mergeGeno(SEXP, SEXP);
 extern SEXP AlphaSimR_popVar(SEXP);
@@ -72,9 +67,10 @@ static const R_CallMethodDef CallEntries[] = {
   {"AlphaSimR_callRRBLUP_GCA",       (DL_FUNC) &AlphaSimR_callRRBLUP_GCA,       6},
   {"AlphaSimR_callRRBLUP_MV",        (DL_FUNC) &AlphaSimR_callRRBLUP_MV,        5},
   {"AlphaSimR_callRRBLUP_SCA",       (DL_FUNC) &AlphaSimR_callRRBLUP_SCA,       6},
+  {"AlphaSimR_changeId",             (DL_FUNC) &AlphaSimR_changeId,             2},
   {"AlphaSimR_convToImat",           (DL_FUNC) &AlphaSimR_convToImat,           1},
-  {"AlphaSimR_createDH2",            (DL_FUNC) &AlphaSimR_createDH2,            3},
-  {"AlphaSimR_cross2",               (DL_FUNC) &AlphaSimR_cross2,               5},
+  {"AlphaSimR_createDH2",            (DL_FUNC) &AlphaSimR_createDH2,            5},
+  {"AlphaSimR_cross2",               (DL_FUNC) &AlphaSimR_cross2,               6},
   {"AlphaSimR_crossPedigree",        (DL_FUNC) &AlphaSimR_crossPedigree,        4},
   {"AlphaSimR_fastDist",             (DL_FUNC) &AlphaSimR_fastDist,             1},
   {"AlphaSimR_fastPairDist",         (DL_FUNC) &AlphaSimR_fastPairDist,         2},
@@ -84,15 +80,9 @@ static const R_CallMethodDef CallEntries[] = {
   {"AlphaSimR_gebvSCA",              (DL_FUNC) &AlphaSimR_gebvSCA,              2},
   {"AlphaSimR_getDomGeno",           (DL_FUNC) &AlphaSimR_getDomGeno,           1},
   {"AlphaSimR_getGeno",              (DL_FUNC) &AlphaSimR_getGeno,              3},
-  {"AlphaSimR_getGvA",               (DL_FUNC) &AlphaSimR_getGvA,               2},
-  {"AlphaSimR_getGvAD",              (DL_FUNC) &AlphaSimR_getGvAD,              2},
-  {"AlphaSimR_getGvADG",             (DL_FUNC) &AlphaSimR_getGvADG,             3},
-  {"AlphaSimR_getGvAG",              (DL_FUNC) &AlphaSimR_getGvAG,              3},
+  {"AlphaSimR_getGv",                (DL_FUNC) &AlphaSimR_getGv,                2},
   {"AlphaSimR_getHaplo",             (DL_FUNC) &AlphaSimR_getHaplo,             3},
-  {"AlphaSimR_getHybridGvA",         (DL_FUNC) &AlphaSimR_getHybridGvA,         5},
-  {"AlphaSimR_getHybridGvAD",        (DL_FUNC) &AlphaSimR_getHybridGvAD,        5},
-  {"AlphaSimR_getHybridGvADG",       (DL_FUNC) &AlphaSimR_getHybridGvADG,       6},
-  {"AlphaSimR_getHybridGvAG",        (DL_FUNC) &AlphaSimR_getHybridGvAG,        6},
+  {"AlphaSimR_getHybridGv",          (DL_FUNC) &AlphaSimR_getHybridGv,          5},
   {"AlphaSimR_getOneHaplo",          (DL_FUNC) &AlphaSimR_getOneHaplo,          4},
   {"AlphaSimR_mergeGeno",            (DL_FUNC) &AlphaSimR_mergeGeno,            2},
   {"AlphaSimR_popVar",               (DL_FUNC) &AlphaSimR_popVar,               1},

@@ -4,7 +4,7 @@
 \alias{pullQtlHaplo}
 \title{Pull QTL haplotypes}
 \usage{
-pullQtlHaplo(pop, trait = 1, haplo = "all", simParam = SIMPARAM)
+pullQtlHaplo(pop, trait = 1, haplo = "all", simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

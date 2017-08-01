@@ -4,13 +4,13 @@
 \alias{randCross2}
 \title{Make random crosses}
 \usage{
-randCross2(fPop, mPop, nCrosses, nProgeny = 1, id = NULL, balance = TRUE,
-  simParam = SIMPARAM)
+randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
+  balance = TRUE, simParam)
 }
 \arguments{
-\item{fPop}{an object of \code{\link{Pop-class}} for female parents.}
+\item{females}{an object of \code{\link{Pop-class}} for female parents.}
 
-\item{mPop}{an object of \code{\link{Pop-class}} for male parents.}
+\item{males}{an object of \code{\link{Pop-class}} for male parents.}
 
 \item{nCrosses}{total number of crosses to make}
 

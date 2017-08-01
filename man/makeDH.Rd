@@ -4,7 +4,7 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH, id = NULL, simParam = SIMPARAM)
+makeDH(pop, nDH, id = NULL, useFemale = TRUE, simParam)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
@@ -12,6 +12,9 @@ makeDH(pop, nDH, id = NULL, simParam = SIMPARAM)
 \item{nDH}{total number of DH lines per individual}
 
 \item{id}{optional id to assign to DH lines}
+
+\item{useFemale}{should female recombination rates be used. 
+This parameter has no effect if, recombRatio=1.}
 
 \item{simParam}{an object of 'SimParam' class}
 }

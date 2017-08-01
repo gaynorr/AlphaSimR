@@ -180,3 +180,10 @@ arma::imat sampHalfDialComb(long long int nLevel, long long int n){
   output += 1;
   return output;
 }
+
+// [[Rcpp::export]]
+void changeId(Rcpp::IntegerVector newId,
+              Rcpp::IntegerVector& oldId){
+  oldId[0] = newId[0];
+}
+

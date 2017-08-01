@@ -5,7 +5,7 @@
 \title{Select males}
 \usage{
 selectMale(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
-  simParam = SIMPARAM, ...)
+  simParam, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

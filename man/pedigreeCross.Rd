@@ -4,7 +4,7 @@
 \alias{pedigreeCross}
 \title{Make crosses based on a pedigree}
 \usage{
-pedigreeCross(pedigree, founders, id = NULL, simParam = SIMPARAM)
+pedigreeCross(pedigree, founders, id = NULL, simParam)
 }
 \arguments{
 \item{pedigree}{an object of \code{\link{Pedigree-class}}}

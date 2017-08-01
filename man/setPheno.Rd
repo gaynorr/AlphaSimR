@@ -4,7 +4,7 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE, reps = 1, w = 0.5, simParam = SIMPARAM)
+setPheno(pop, varE, reps = 1, w = 0.5, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -16,9 +16,7 @@ nTraits for correlated errors.}
 
 \item{reps}{number of replications for phenotype. See details.}
 
-\item{w}{the environmental covariate used by GxE traits. If pop 
-is \code{\link{HybridPop-class}} an error will be returned for any 
-value other than 0.5.}
+\item{w}{the environmental covariate used by GxE traits.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

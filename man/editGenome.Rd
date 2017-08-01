@@ -4,7 +4,7 @@
 \alias{editGenome}
 \title{Edit Genome}
 \usage{
-editGenome(pop, ind, chr, segSites, allele, simParam = SIMPARAM)
+editGenome(pop, ind, chr, segSites, allele, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

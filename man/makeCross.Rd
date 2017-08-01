@@ -4,7 +4,7 @@
 \alias{makeCross}
 \title{Make designed crosses}
 \usage{
-makeCross(pop, crossPlan, id = NULL, simParam = SIMPARAM)
+makeCross(pop, crossPlan, id = NULL, simParam)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

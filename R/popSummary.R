@@ -67,7 +67,7 @@ varP = function(pop){
 #' }
 #' 
 #' @export
-varAD = function(pop,retGenParam=FALSE,simParam=SIMPARAM){
+varAD = function(pop,retGenParam=FALSE,simParam){
   stopifnot(class(pop)=="Pop")
   bv=NULL
   dd=NULL

@@ -62,7 +62,7 @@ selIndex = function(Y,b){
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-editGenome = function(pop,ind,chr,segSites,allele,simParam=SIMPARAM){
+editGenome = function(pop,ind,chr,segSites,allele,simParam){
   ind = unique(as.integer(ind))
   stopifnot(all(ind%in%(1:pop@nInd)))
   chr = as.integer(chr)
@@ -82,4 +82,21 @@ editGenome = function(pop,ind,chr,segSites,allele,simParam=SIMPARAM){
   return(pop)
 }
 
-
+#' @title Correlated variable
+#' 
+#' @description
+#' Creates a correlated vector by adding random error.
+#'
+#' @param x a numeric vector
+#' @param rho desired correlation. Must be greater than 
+#' 0 and less than or equal to 1.
+#'
+#' @return a numeric vector
+#'
+#' @export
+corVar = function(x,rho){
+  stopifnot(rho>0, rho<=1)
+  varX = var(x)
+  varY = varX/(rho^2)-varX
+  return(x+rnorm(length(x),sd=sqrt(varY)))
+}

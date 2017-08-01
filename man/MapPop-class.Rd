@@ -9,7 +9,14 @@
 \usage{
 \S4method{[}{MapPop}(x, i)
 
-\S4method{c}{MapPop}(x, ..., recursive = FALSE)
+\S4method{c}{MapPop}(x, ...)
+}
+\arguments{
+\item{x}{a 'MapPop'}
+
+\item{i}{index of chromosomes}
+
+\item{...}{aditional 'MapPop' objects}
 }
 \description{
 Extends \code{\link{RawPop-class}} to add a genetic map. 

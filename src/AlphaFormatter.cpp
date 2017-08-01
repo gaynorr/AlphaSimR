@@ -28,9 +28,7 @@ int AlphaFormatter(){
   int totalpos;
   int totalpersons;
   ostringstream oss;
-  srand(time(NULL));
-  double r = rand();
-  oss<<TEMPFILE_PREFIX<<r;
+  oss<<TEMPFILE_PREFIX<<"ALPHAFORMATTERTMPFILE";
   string tempfile=oss.str();
   ofstream haploDataFile(tempfile.data()); 
   double * positions = NULL;
@@ -49,22 +47,22 @@ int AlphaFormatter(){
   inFile.open("output.txt");
   
   if (!inFile) {
-    cout<<"ERROR- alphaformatter- output.txt not found.\n";
+    Rcpp::Rcout<<"ERROR- alphaformatter- output.txt not found.\n";
     return -1;
   }
   
   if (!MacsHaplotypes) {
-    cout<<"ERROR- alphaformatter- MacsHaplotypes.txt cannot be created.\n";
+    Rcpp::Rcout<<"ERROR- alphaformatter- MacsHaplotypes.txt cannot be created.\n";
     return -1;
   }
   
   if (!SegSites) {
-    cout<<"ERROR- alphaformatter- SegSites.txt cannot be created.\n";
+    Rcpp::Rcout<<"ERROR- alphaformatter- SegSites.txt cannot be created.\n";
     return -1;
   }
   
   if (!PhysicalMapInput) {
-    cout<<"ERROR- alphaformatter- PhysicalMapInput.txt cannot be created.\n";
+    Rcpp::Rcout<<"ERROR- alphaformatter- PhysicalMapInput.txt cannot be created.\n";
     return -1;
   }
   
@@ -97,7 +95,7 @@ int AlphaFormatter(){
         
       }
       catch (const std::bad_alloc&) {
-        cerr<< "Bad Alloc";
+        Rcpp::Rcout<< "Bad Alloc";
         return -1;
       }
       
@@ -128,7 +126,7 @@ int AlphaFormatter(){
             genotypes[j][i] = 1;
             break;
           default:
-            cerr<<"Error -Unknown characters being given to formatter";
+            Rcpp::Rcout<<"Error -Unknown characters being given to formatter";
           return -1;
           break;
           }

@@ -16,63 +16,39 @@ arma::vec calcGvAD(const arma::Mat<unsigned char>& geno,
   return output+intercept;
 }
 
-// Retrieves genetic values for TraitA
-// A wrapper for accessing calcGvA
+// Calculates genetic values for a trait
+// Returns output in a list with length 1 or 2
+//   The first item contains genetic values
+//   The second item contains GxE effects (optional)
 // [[Rcpp::export]]
-arma::vec getGvA(const Rcpp::S4& trait, const Rcpp::S4& pop){
+arma::field<arma::vec> getGv(const Rcpp::S4& trait, 
+                             const Rcpp::S4& pop){
+  arma::field<arma::vec> output;
+  bool hasD = trait.hasSlot("domEff");
+  bool hasGxe = trait.hasSlot("gxeEff");
+  if(hasGxe){
+    output.set_size(2);
+  }else{
+    output.set_size(1);
+  }
+  arma::Mat<unsigned char> geno;
+  geno = getGeno(pop.slot("geno"), 
+                 trait.slot("lociPerChr"),
+                 trait.slot("lociLoc"));
   arma::vec a = trait.slot("addEff");
   double intercept = trait.slot("intercept");
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
-  return calcGvA(geno, a, intercept);
-}
-
-// Retrieves genetic values for TraitAG
-// A wrapper for accessing calcGvA
-// [[Rcpp::export]]
-arma::vec getGvAG(const Rcpp::S4& trait, const Rcpp::S4& pop, double z){
-  arma::vec a = trait.slot("addEff");
-  arma::vec x = trait.slot("gxeEff");
-  a = a+x*z;
-  double intercept = trait.slot("intercept");
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
-  return calcGvA(geno, a, intercept);
-}
-
-// Retrieves genetic value for TraitAD
-// A wrapper for accessing calcGvAD
-// [[Rcpp::export]]
-arma::vec getGvAD(const Rcpp::S4& trait, const Rcpp::S4& pop){
-  arma::vec a = trait.slot("addEff");
-  arma::vec d = trait.slot("domEff");
-  double intercept = trait.slot("intercept");
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
-  return calcGvAD(geno, a, d, intercept);
-}
-
-// Retrieves genetic value for TraitADG
-// A wrapper for accessing calcGvAD
-// [[Rcpp::export]]
-arma::vec getGvADG(const Rcpp::S4& trait, const Rcpp::S4& pop, double z){
-  arma::vec aOld = trait.slot("addEff");
-  arma::vec d = trait.slot("domEff");
-  arma::vec x = trait.slot("gxeEff");
-  arma::vec a = aOld+x*z;
-  d = d%(a/aOld);
-  double intercept = trait.slot("intercept");
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
-  return calcGvAD(geno, a, d, intercept);
+  if(hasD){
+    arma::vec d = trait.slot("domEff");
+    output(0) = calcGvAD(geno, a, d, intercept);
+  }else{
+    output(0) = calcGvA(geno, a, intercept);
+  }
+  if(hasGxe){
+    arma::vec g = trait.slot("gxeEff");
+    double gxeInt = trait.slot("gxeInt");
+    output(1) = calcGvA(geno, g, gxeInt);
+  }
+  return output;
 }
 
 // A calculates breeding values, dominance deviations and allele
