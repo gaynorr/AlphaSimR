@@ -74,7 +74,7 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop){
   arma::rowvec p = arma::mean(X,0)/2.0;
   arma::vec alpha = a+d%(1-2*p.t()); //allele subsitution effect
   double pT;
-  for(int i=0; i<X.n_cols; ++i){ //Matrix is column-major
+  for(arma::uword i=0; i<X.n_cols; ++i){ //Matrix is column-major
     pT = p(i);
     dd += -d(i)*X.col(i)%(X.col(i)-2*pT-1)-2*d(i)*pT*pT;
   }

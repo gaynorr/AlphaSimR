@@ -76,7 +76,7 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
     }else{
       gamete(0) = chr2(0);
     }
-    for(int i=0; i<nCO; ++i){
+    for(arma::uword i=0; i<nCO; ++i){
       endPos = intervalSearch(genMap,posCO[i],startPos);
       // Fill gamete
       if(endPos>startPos){ // Check for double crossovers
@@ -125,13 +125,13 @@ arma::field<arma::Cube<unsigned char> > cross2(
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   //Loop through chromosomes
-  for(int chr=0; chr<nChr; ++chr){
+  for(arma::uword chr=0; chr<nChr; ++chr){
     arma::vec maleMap = 2*(recombRatio+1)*genMaps(chr);
     arma::vec femaleMap = 2*recombRatio*(recombRatio+1)*genMaps(chr);
     int segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     //Loop through individuals
-    for(int ind=0; ind<nInd; ++ind){
+    for(arma::uword ind=0; ind<nInd; ++ind){
       //Female gamete
       tmpGeno.slice(ind).col(0) = 
         bivalent(motherGeno(chr).slice(mother(ind)).col(0),
@@ -164,17 +164,17 @@ arma::field<arma::Cube<unsigned char> > createDH2(
   }
   //Output data
   arma::field<arma::Cube<unsigned char> > output(nChr);
-  for(int chr=0; chr<nChr; ++chr){ //Chromosome loop
+  for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
     arma::vec genMap = ratio*genMaps(chr);
     int segSites = geno(chr).n_rows;
     arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
-    for(int ind=0; ind<nInd; ++ind){ //Individual loop
-      for(int i=0; i<nDH; ++i){ //nDH loop
+    for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
+      for(arma::uword i=0; i<nDH; ++i){ //nDH loop
         arma::Col<unsigned char> gamete = 
           bivalent(geno(chr).slice(ind).col(0),
                    geno(chr).slice(ind).col(1),
                    genMap);
-        for(int j=0; j<2; ++j){ //ploidy loop
+        for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
         } //End ploidy loop
       } //End nDH loop
@@ -209,12 +209,12 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   //Loop through chromosomes
-  for(int chr=0; chr<nChr; ++chr){
+  for(arma::uword chr=0; chr<nChr; ++chr){
     int segSites = founders(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     
     //Loop through individuals
-    for(int ind=0; ind<nInd; ++ind){
+    for(arma::uword ind=0; ind<nInd; ++ind){
       if (mother(ind) == -1){
         //Female gamete
         tmpGeno.slice(ind).col(0) = 

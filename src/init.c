@@ -3,10 +3,6 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
-/* FIXME: 
-Check these declarations against the C/Fortran source code.
-*/
-
 /* .Call calls */
 extern SEXP AlphaSimR_AlphaFormatter();
 extern SEXP AlphaSimR_calcChrMinorFreq(SEXP, SEXP);
@@ -42,6 +38,7 @@ extern SEXP AlphaSimR_getOneHaplo(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_mergeGeno(SEXP, SEXP);
 extern SEXP AlphaSimR_popVar(SEXP);
 extern SEXP AlphaSimR_readAF(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_readMat(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_sampHalfDialComb(SEXP, SEXP);
 extern SEXP AlphaSimR_solveMKM(SEXP, SEXP, SEXP, SEXP);
@@ -87,6 +84,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"AlphaSimR_mergeGeno",            (DL_FUNC) &AlphaSimR_mergeGeno,            2},
   {"AlphaSimR_popVar",               (DL_FUNC) &AlphaSimR_popVar,               1},
   {"AlphaSimR_readAF",               (DL_FUNC) &AlphaSimR_readAF,               5},
+  {"AlphaSimR_readMat",              (DL_FUNC) &AlphaSimR_readMat,              6},
   {"AlphaSimR_sampAllComb",          (DL_FUNC) &AlphaSimR_sampAllComb,          3},
   {"AlphaSimR_sampHalfDialComb",     (DL_FUNC) &AlphaSimR_sampHalfDialComb,     2},
   {"AlphaSimR_solveMKM",             (DL_FUNC) &AlphaSimR_solveMKM,             4},

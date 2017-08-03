@@ -28,7 +28,7 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
     const arma::field<arma::Cube<unsigned char> >& y){
   int nChr = x.n_elem;
   arma::field<arma::Cube<unsigned char> > z(nChr);
-  for(int i=0; i<nChr; ++i){
+  for(arma::uword i=0; i<nChr; ++i){
     z(i) = arma::join_slices(x(i),y(i));
   }
   return z;
@@ -162,7 +162,7 @@ arma::imat sampHalfDialComb(long long int nLevel, long long int n){
   arma::ivec samples = sampleInt(n,N);
   // Calculate selected combinations
   arma::imat output(n,2);
-  for(long long int i=0; i<n; ++i){
+  for(arma::uword i=0; i<n; ++i){
     output(i,0) = mapRow(samples(i),nLevel);
     output(i,1) = mapCol(samples(i),nLevel);
   }

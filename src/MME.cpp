@@ -69,32 +69,44 @@ Rcpp::List objREML(double param, Rcpp::List args){
                             Rcpp::Named("output") = 0);
 }
 
-/*
- * Reads a text file into an arma::mat
- * Must be supplied with the correct number of rows and columns for the matrix
- * A header can be skipped by setting skipRows to 1
- * Row names can be skipped by setting skipCols to 1
- */
+//' @title Read Matrix
+//' 
+//' @description
+//' Uses C++ to quickly read a matrix from a text 
+//' file. Requires knowledge of the number of rows 
+//' and columns in the file.
+//'
+//' @param fileName path to the file to read
+//' @param rows number of rows to read in
+//' @param cols number of columns to read in
+//' @param sep a single character seperating data entries
+//' @param skipRows number of rows to skip
+//' @param skipCols number of columns to skip
+//' 
+//' @return a numeric matrix
+//'
+//' @export
+// [[Rcpp::export]]
 arma::mat readMat(std::string fileName, int rows, int cols, 
                   char sep=' ', int skipRows=0, int skipCols=0){
   arma::mat output(rows,cols);
   std::ifstream file(fileName.c_str());
   std::string line;
   //Skip rows
-  for(int i=0; i<skipRows; ++i){
+  for(arma::uword i=0; i<skipRows; ++i){
     std::getline(file,line);
   }
   //Read rows
-  for(int i=0; i<rows; ++i){
+  for(arma::uword i=0; i<rows; ++i){
     std::getline(file,line);
     std::stringstream lineStream(line);
     std::string cell;
     //Skip columns
-    for(int j=0; j<skipCols; ++j){
+    for(arma::uword j=0; j<skipCols; ++j){
       std::getline(lineStream,cell,sep);
     }
     //Read columns
-    for(int j=0; j<cols; ++j){
+    for(arma::uword j=0; j<cols; ++j){
       std::getline(lineStream,cell,sep);
       output(i,j) = std::atof(cell.c_str());
     }
@@ -103,26 +115,27 @@ arma::mat readMat(std::string fileName, int rows, int cols,
   return output;
 }
 
+// Single precision version of readMat
 arma::fmat readFMat(std::string fileName, int rows, int cols, 
                    char sep=' ', int skipRows=0, int skipCols=0){
   arma::fmat output(rows,cols);
   std::ifstream file(fileName.c_str());
   std::string line;
   //Skip rows
-  for(int i=0; i<skipRows; ++i){
+  for(arma::uword i=0; i<skipRows; ++i){
     std::getline(file,line);
   }
   //Read rows
-  for(int i=0; i<rows; ++i){
+  for(arma::uword i=0; i<rows; ++i){
     std::getline(file,line);
     std::stringstream lineStream(line);
     std::string cell;
     //Skip columns
-    for(int j=0; j<skipCols; ++j){
+    for(arma::uword j=0; j<skipCols; ++j){
       std::getline(lineStream,cell,sep);
     }
     //Read columns
-    for(int j=0; j<cols; ++j){
+    for(arma::uword j=0; j<cols; ++j){
       std::getline(lineStream,cell,sep);
       output(i,j) = std::atof(cell.c_str());
     }
@@ -141,7 +154,7 @@ arma::mat makeX(arma::uvec& x){
   }else{
     X.zeros();
     X.col(0).ones();
-    for(int i=0; i<nTrain; ++i){
+    for(arma::uword i=0; i<nTrain; ++i){
       if(x(i)==nLevels){
         X(i,arma::span(1,nLevels-1)).fill(-1.0);
       }else{
@@ -161,7 +174,7 @@ arma::fmat makeFX(arma::uvec& x){
   }else{
     X.zeros();
     X.col(0).ones();
-    for(int i=0; i<nTrain; ++i){
+    for(arma::uword i=0; i<nTrain; ++i){
       if(x(i)==nLevels){
         X(i,arma::span(1,nLevels-1)).fill(-1.0);
       }else{
@@ -178,7 +191,7 @@ arma::fmat makeFX(arma::uvec& x){
 arma::mat makeZ(arma::uvec& z, int nGeno){
   int nTrain = z.n_elem;
   arma::mat Z(nTrain,nGeno,arma::fill::zeros);
-  for(int i=0; i<nTrain; ++i){
+  for(arma::uword i=0; i<nTrain; ++i){
     Z(i,z(i)) = 1;
   }
   return Z;
@@ -187,13 +200,14 @@ arma::mat makeZ(arma::uvec& z, int nGeno){
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
 void sweepReps(arma::mat& X, arma::vec& reps){
-  for(int i=0; i<X.n_cols; ++i){
+  for(arma::uword i=0; i<X.n_cols; ++i){
     X.col(i) = X.col(i)/reps;
   }
 }
 
+// Single precision version of sweepReps
 void sweepRepsF(arma::fmat& X, arma::fvec& reps){
-  for(int i=0; i<X.n_cols; ++i){
+  for(arma::uword i=0; i<X.n_cols; ++i){
     X.col(i) = X.col(i)/reps;
   }
 }
@@ -302,12 +316,12 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   while(converging){
     VeNew.fill(0.0);
     VuNew.fill(0.0);
-    for(int i=0; i<n; ++i){
+    for(arma::uword i=0; i<n; ++i){
       Gt.col(i) = eigval(i)*Vu*inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
     }
     BNew = (Yt - Gt)*W;
-    for(int i=0; i<n; ++i){
+    for(arma::uword i=0; i<n; ++i){
       sigma = eigval(i)*Vu-(eigval(i)*Vu)*inv_sympd(eigval(i)*Vu+
         Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
       VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
@@ -370,7 +384,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   int q = X.n_cols;
   double df = double(n)-double(q);
   arma::field<arma::mat> V(k+1);
-  for(int i=0; i<k; ++i){
+  for(arma::uword i=0; i<k; ++i){
     V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
   }
   V(k) = arma::eye(n,n);
@@ -391,7 +405,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   double sign;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
-  for(int cycle=0; cycle<maxcyc; ++cycle){
+  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
     W = V(0)*sigma(0);
     for(int i=1; i<k; ++i){
       W += V(i)*sigma(i);
@@ -400,7 +414,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     WX = W*X;
     WQX = W - WX*solve(X.t()*WX, WX.t());
     rss = as_scalar(y.t()*WQX*y);
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       sigma(i) = sigma(i)*(rss/df);
     }
     WQX = WQX*(df/rss);
@@ -414,7 +428,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     for(int i=0; i<k; ++i){
       T(i) = WQX*V(i);
     }
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
       for(int j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
@@ -445,7 +459,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   arma::mat ee(n,1);
   beta = solve(X.t()*W*X,X.t()*W*y);
   ee = y - X*beta;
-  for(int i=0; i<(k-1); ++i){
+  for(arma::uword i=0; i<(k-1); ++i){
     u(i) = (Klist(i)*sigma(i))*Zlist(i).t()*W*ee;
   }
   arma::vec Vu(k-1);
@@ -469,7 +483,7 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
   int q = X.n_cols;
   float df = float(n)-float(q);
   arma::field<arma::fmat> V(k+1);
-  for(int i=0; i<k; ++i){
+  for(arma::uword i=0; i<k; ++i){
     V(i) = Zlist(i)*Zlist(i).t();
   }
   V(k) = arma::eye<arma::fmat>(n,n);
@@ -490,16 +504,16 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
   float sign;
   arma::field<arma::fmat> T(k);
   sigma.fill(var(y.col(0)));
-  for(int cycle=0; cycle<maxcyc; ++cycle){
+  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
     W = V(0)*sigma(0);
-    for(int i=1; i<k; ++i){
+    for(arma::uword i=1; i<k; ++i){
       W += V(i)*sigma(i);
     }
     W = inv_sympd(W);
     WX = W*X;
     WQX = W - WX*solve(X.t()*WX, WX.t());
     rss = as_scalar(y.t()*WQX*y);
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       sigma(i) = sigma(i)*(rss/df);
     }
     WQX = WQX*(df/rss);
@@ -510,12 +524,12 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
       llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       T(i) = WQX*V(i);
     }
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
-      for(int j=0; j<k; ++j){
+      for(arma::uword j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }
     }
@@ -544,7 +558,7 @@ Rcpp::List solveLowMemRRBLUP(arma::fmat& y,
   arma::fmat ee(n,1);
   beta = solve(X.t()*W*X,X.t()*W*y);
   ee = y - X*beta;
-  for(int i=0; i<(k-1); ++i){
+  for(arma::uword i=0; i<(k-1); ++i){
     u(i) = sigma(i)*Zlist(i).t()*W*ee;
   }
   arma::fvec Vu(k-1);

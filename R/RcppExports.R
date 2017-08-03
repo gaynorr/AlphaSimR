@@ -5,22 +5,6 @@ AlphaFormatter <- function() {
     .Call('AlphaSimR_AlphaFormatter', PACKAGE = 'AlphaSimR')
 }
 
-writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
-    invisible(.Call('AlphaSimR_writeASGenotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
-}
-
-writeASHaplotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
-    invisible(.Call('AlphaSimR_writeASHaplotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
-}
-
-calcPopGC <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_calcPopGC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-calcPopGIbsC <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_calcPopGIbsC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
 gebvRR <- function(RRsol, pop) {
     .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
 }
@@ -33,85 +17,25 @@ gebvSCA <- function(SCAsol, pop) {
     .Call('AlphaSimR_gebvSCA', PACKAGE = 'AlphaSimR', SCAsol, pop)
 }
 
-getGeno <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-getDomGeno <- function(geno) {
-    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
-}
-
-getHaplo <- function(geno, lociPerChr, lociLoc) {
-    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
-}
-
-getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
-    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
-}
-
-getGv <- function(trait, pop) {
-    .Call('AlphaSimR_getGv', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-calcGenParam <- function(trait, pop) {
-    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
-}
-
-getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father) {
-    .Call('AlphaSimR_getHybridGv', PACKAGE = 'AlphaSimR', trait, motherGeno, mother, fatherGeno, father)
-}
-
-cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio) {
-    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', motherGeno, mother, fatherGeno, father, genMaps, recombRatio)
-}
-
-createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale) {
-    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps, recombRatio, useFemale)
-}
-
-crossPedigree <- function(founders, mother, father, genMaps) {
-    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, mother, father, genMaps)
-}
-
-#' @title Population variance
+#' @title Read Matrix
 #' 
 #' @description
-#' Calculates the population variance matrix as 
-#' opposed to the sample variance matrix calculated 
-#' by \code{\link{var}}. i.e. divides by n instead 
-#' of n-1
+#' Uses C++ to quickly read a matrix from a text 
+#' file. Requires knowledge of the number of rows 
+#' and columns in the file.
+#'
+#' @param fileName path to the file to read
+#' @param rows number of rows to read in
+#' @param cols number of columns to read in
+#' @param sep a single character seperating data entries
+#' @param skipRows number of rows to skip
+#' @param skipCols number of columns to skip
 #' 
-#' @param X an n by m matrix
-#' 
-#' @return an m by m variance-covariance matrix
-#' 
+#' @return a numeric matrix
+#'
 #' @export
-popVar <- function(X) {
-    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
-}
-
-mergeGeno <- function(x, y) {
-    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
-}
-
-calcChrMinorFreq <- function(geno, ploidy) {
-    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
-}
-
-convToImat <- function(X) {
-    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
-}
-
-sampAllComb <- function(nLevel1, nLevel2, n) {
-    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
-}
-
-sampHalfDialComb <- function(nLevel, n) {
-    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
-}
-
-changeId <- function(newId, oldId) {
-    invisible(.Call('AlphaSimR_changeId', PACKAGE = 'AlphaSimR', newId, oldId))
+readMat <- function(fileName, rows, cols, sep = ' ', skipRows = 0L, skipCols = 0L) {
+    .Call('AlphaSimR_readMat', PACKAGE = 'AlphaSimR', fileName, rows, cols, sep, skipRows, skipCols)
 }
 
 #' @title Solve Univariate Model
@@ -265,6 +189,103 @@ fastPairDist <- function(X, Y) {
 #' @export
 gaussKernel <- function(D, theta) {
     .Call('AlphaSimR_gaussKernel', PACKAGE = 'AlphaSimR', D, theta)
+}
+
+writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
+    invisible(.Call('AlphaSimR_writeASGenotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
+}
+
+writeASHaplotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
+    invisible(.Call('AlphaSimR_writeASHaplotypes', PACKAGE = 'AlphaSimR', g, locations, allLocations, snpchips, names, missing, fname))
+}
+
+calcPopGC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+calcPopGIbsC <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_calcPopGIbsC', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getGeno <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getGeno', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getDomGeno <- function(geno) {
+    .Call('AlphaSimR_getDomGeno', PACKAGE = 'AlphaSimR', geno)
+}
+
+getHaplo <- function(geno, lociPerChr, lociLoc) {
+    .Call('AlphaSimR_getHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc)
+}
+
+getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
+    .Call('AlphaSimR_getOneHaplo', PACKAGE = 'AlphaSimR', geno, lociPerChr, lociLoc, haplo)
+}
+
+getGv <- function(trait, pop) {
+    .Call('AlphaSimR_getGv', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+calcGenParam <- function(trait, pop) {
+    .Call('AlphaSimR_calcGenParam', PACKAGE = 'AlphaSimR', trait, pop)
+}
+
+getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father) {
+    .Call('AlphaSimR_getHybridGv', PACKAGE = 'AlphaSimR', trait, motherGeno, mother, fatherGeno, father)
+}
+
+cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio) {
+    .Call('AlphaSimR_cross2', PACKAGE = 'AlphaSimR', motherGeno, mother, fatherGeno, father, genMaps, recombRatio)
+}
+
+createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale) {
+    .Call('AlphaSimR_createDH2', PACKAGE = 'AlphaSimR', geno, nDH, genMaps, recombRatio, useFemale)
+}
+
+crossPedigree <- function(founders, mother, father, genMaps) {
+    .Call('AlphaSimR_crossPedigree', PACKAGE = 'AlphaSimR', founders, mother, father, genMaps)
+}
+
+#' @title Population variance
+#' 
+#' @description
+#' Calculates the population variance matrix as 
+#' opposed to the sample variance matrix calculated 
+#' by \code{\link{var}}. i.e. divides by n instead 
+#' of n-1
+#' 
+#' @param X an n by m matrix
+#' 
+#' @return an m by m variance-covariance matrix
+#' 
+#' @export
+popVar <- function(X) {
+    .Call('AlphaSimR_popVar', PACKAGE = 'AlphaSimR', X)
+}
+
+mergeGeno <- function(x, y) {
+    .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
+}
+
+calcChrMinorFreq <- function(geno, ploidy) {
+    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
+}
+
+convToImat <- function(X) {
+    .Call('AlphaSimR_convToImat', PACKAGE = 'AlphaSimR', X)
+}
+
+sampAllComb <- function(nLevel1, nLevel2, n) {
+    .Call('AlphaSimR_sampAllComb', PACKAGE = 'AlphaSimR', nLevel1, nLevel2, n)
+}
+
+sampHalfDialComb <- function(nLevel, n) {
+    .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
+}
+
+changeId <- function(newId, oldId) {
+    invisible(.Call('AlphaSimR_changeId', PACKAGE = 'AlphaSimR', newId, oldId))
 }
 
 readAF <- function(nInd, segSites, ploidy, keep, inbred) {
