@@ -354,7 +354,7 @@ resetPop = function(pop,simParam){
       tmp = getGv(simParam@traits[[i]],pop)
       pop@gv[,i] = tmp[[1]]
       if(length(tmp)>1){
-        pop@gxe[[i]] = tmp[2]
+        pop@gxe[[i]] = tmp[[2]]
       }
     }
   }

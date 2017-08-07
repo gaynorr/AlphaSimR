@@ -407,7 +407,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   sigma.fill(var(y.col(0)));
   for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
     W = V(0)*sigma(0);
-    for(int i=1; i<k; ++i){
+    for(arma::uword i=1; i<k; ++i){
       W += V(i)*sigma(i);
     }
     W = inv_sympd(W);
@@ -425,12 +425,12 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
       llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
-    for(int i=0; i<k; ++i){
+    for(arma::uword i=0; i<k; ++i){
       T(i) = WQX*V(i);
     }
     for(arma::uword i=0; i<k; ++i){
       qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
-      for(int j=0; j<k; ++j){
+      for(arma::uword j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }
     }
