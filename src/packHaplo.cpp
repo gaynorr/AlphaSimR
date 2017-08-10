@@ -11,7 +11,7 @@ arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
     if(haplo.n_rows%ploidy != 0){
       Rcpp::stop("Number of rows not a factor of ploidy");
     }
-    nInd = haplo.n_cols/ploidy;
+    nInd = haplo.n_rows/ploidy;
   }
   arma::uword nLoci = haplo.n_cols;
   arma::Cube<unsigned char> output(nLoci,ploidy,nInd);
