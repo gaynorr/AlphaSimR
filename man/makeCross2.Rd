@@ -4,7 +4,7 @@
 \alias{makeCross2}
 \title{Make designed crosses}
 \usage{
-makeCross2(females, males, crossPlan, id = NULL, simParam)
+makeCross2(females, males, crossPlan, id = NULL, simParam = NULL)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}

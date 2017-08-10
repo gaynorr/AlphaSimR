@@ -4,14 +4,12 @@
 \alias{RRBLUPMemUse}
 \title{RRBLUP Memory Usage}
 \usage{
-RRBLUPMemUse(nInd, nMarker, lowMem = FALSE)
+RRBLUPMemUse(nInd, nMarker)
 }
 \arguments{
 \item{nInd}{the number of individuals in the training population}
 
 \item{nMarker}{the number of markers per individual}
-
-\item{lowMem}{is single precision solver being used}
 }
 \value{
 Returns an estimate for the required gigabytes of RAM

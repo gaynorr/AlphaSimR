@@ -4,7 +4,7 @@
 \alias{pullSegSiteHaplo}
 \title{Pull seg site haplotypes}
 \usage{
-pullSegSiteHaplo(pop, haplo = "all", simParam)
+pullSegSiteHaplo(pop, haplo = "all", simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

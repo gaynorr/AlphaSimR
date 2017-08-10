@@ -9,7 +9,10 @@
 #'
 #' @return Returns a matrix of SNP genotypes.
 #' @export
-pullSnpGeno = function(pop, snpChip=1, simParam){
+pullSnpGeno = function(pop, snpChip=1, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   output = getGeno(pop@geno,
                    simParam@snpChips[[snpChip]]@lociPerChr,
                    simParam@snpChips[[snpChip]]@lociLoc)
@@ -31,7 +34,10 @@ pullSnpGeno = function(pop, snpChip=1, simParam){
 #' @return Returns a matrix of SNP genotypes.
 #' @export
 pullMultipleSnpGeno = function(pop, chips,
-                              missing = 9, simParam) {
+                              missing=9, simParam=NULL) {
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
   # enough R! (dmoney)
@@ -75,7 +81,10 @@ pullMultipleSnpGeno = function(pop, chips,
 #'
 #' @return Returns a matrix of QTL genotypes.
 #' @export
-pullQtlGeno = function(pop, trait=1, simParam){
+pullQtlGeno = function(pop, trait=1, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   output = getGeno(pop@geno,
                    simParam@traits[[trait]]@lociPerChr,
                    simParam@traits[[trait]]@lociLoc)
@@ -100,7 +109,10 @@ pullQtlGeno = function(pop, trait=1, simParam){
 #' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullSnpHaplo = function(pop, snpChip=1, haplo="all", 
-                        simParam){
+                        simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(haplo=="all"){
     output = getHaplo(pop@geno,
                       simParam@snpChips[[snpChip]]@lociPerChr,
@@ -138,7 +150,10 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullMultipleSnpHaplo = function(pop, chips, haplo="all", 
-                                missing = 9, simParam) {
+                                missing=9, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
   # enough R! (dmoney)
@@ -207,7 +222,10 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
 #' @return Returns a matrix of QTL haplotypes.
 #' @export
 pullQtlHaplo = function(pop, trait=1, haplo="all", 
-                        simParam){
+                        simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(haplo=="all"){
     output = getHaplo(pop@geno,
                       simParam@traits[[trait]]@lociPerChr,
@@ -243,7 +261,10 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @return Returns a matrix of haplotypes
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all", 
-                            simParam){
+                            simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   allLoci = unlist(sapply(simParam@segSites,
                           function(x)1:x))
   if(haplo=="all"){

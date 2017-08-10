@@ -14,7 +14,10 @@
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-makeCross = function(pop,crossPlan,id=NULL,simParam){
+makeCross = function(pop,crossPlan,id=NULL,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
@@ -59,7 +62,10 @@ makeCross = function(pop,crossPlan,id=NULL,simParam){
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
-                     id=NULL,balance=TRUE,simParam){
+                     id=NULL,balance=TRUE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(simParam@gender=="no"){
     crossPlan = sampHalfDialComb(pop@nInd, nCrosses)
   }else{
@@ -111,7 +117,11 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-makeCross2 = function(females,males,crossPlan,id=NULL,simParam){
+makeCross2 = function(females,males,crossPlan,id=NULL,
+                      simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(females@ploidy!=2){
     stop("Only works with diploids")
   }
@@ -158,7 +168,10 @@ makeCross2 = function(females,males,crossPlan,id=NULL,simParam){
 #' 
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
-                     id=NULL,balance=TRUE,simParam){
+                     id=NULL,balance=TRUE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(simParam@gender=="no"){
       crossPlan = sampAllComb(females@nInd,males@nInd,nCrosses)
   }else{
@@ -208,7 +221,10 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-self = function(pop,nProgeny,id=NULL,simParam){
+self = function(pop,nProgeny,id=NULL,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(simParam@gender=="no")
   if(pop@ploidy!=2){
     stop("Only works with diploids")
@@ -244,7 +260,11 @@ self = function(pop,nProgeny,id=NULL,simParam){
 #' @param simParam an object of 'SimParam' class
 #' 
 #' @export
-makeDH = function(pop,nDH,id=NULL,useFemale=TRUE,simParam){
+makeDH = function(pop,nDH,id=NULL,useFemale=TRUE,
+                  simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(simParam@gender=="no")
   if(pop@ploidy!=2){
     stop("Only works with diploids")
@@ -278,7 +298,11 @@ makeDH = function(pop,nDH,id=NULL,useFemale=TRUE,simParam){
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-pedigreeCross = function(pedigree,founders,id=NULL,simParam){
+pedigreeCross = function(pedigree,founders,id=NULL,
+                         simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(class(pedigree)=="Pedigree")
   stopifnot(class(founders)=="MapPop")
   

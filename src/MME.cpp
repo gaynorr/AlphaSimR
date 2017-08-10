@@ -115,60 +115,11 @@ arma::mat readMat(std::string fileName, int rows, int cols,
   return output;
 }
 
-// Single precision version of readMat
-arma::fmat readFMat(std::string fileName, int rows, int cols, 
-                   char sep=' ', int skipRows=0, int skipCols=0){
-  arma::fmat output(rows,cols);
-  std::ifstream file(fileName.c_str());
-  std::string line;
-  //Skip rows
-  for(arma::uword i=0; i<skipRows; ++i){
-    std::getline(file,line);
-  }
-  //Read rows
-  for(arma::uword i=0; i<rows; ++i){
-    std::getline(file,line);
-    std::stringstream lineStream(line);
-    std::string cell;
-    //Skip columns
-    for(arma::uword j=0; j<skipCols; ++j){
-      std::getline(lineStream,cell,sep);
-    }
-    //Read columns
-    for(arma::uword j=0; j<cols; ++j){
-      std::getline(lineStream,cell,sep);
-      output(i,j) = std::atof(cell.c_str());
-    }
-  }
-  file.close();
-  return output;
-}
-
 // Produces a sum to zero design matrix with an intercept
 arma::mat makeX(arma::uvec& x){
   int nTrain = x.n_elem;
   double nLevels = x.max();
   arma::mat X(nTrain,nLevels);
-  if(nLevels==1){
-    X.ones();
-  }else{
-    X.zeros();
-    X.col(0).ones();
-    for(arma::uword i=0; i<nTrain; ++i){
-      if(x(i)==nLevels){
-        X(i,arma::span(1,nLevels-1)).fill(-1.0);
-      }else{
-        X(i,x(i))=1;
-      }
-    }
-  }
-  return X;
-}
-
-arma::fmat makeFX(arma::uvec& x){
-  int nTrain = x.n_elem;
-  float nLevels = x.max();
-  arma::fmat X(nTrain,nLevels);
   if(nLevels==1){
     X.ones();
   }else{
@@ -200,13 +151,6 @@ arma::mat makeZ(arma::uvec& z, int nGeno){
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
 void sweepReps(arma::mat& X, arma::vec& reps){
-  for(arma::uword i=0; i<X.n_cols; ++i){
-    X.col(i) = X.col(i)/reps;
-  }
-}
-
-// Single precision version of sweepReps
-void sweepRepsF(arma::fmat& X, arma::fvec& reps){
   for(arma::uword i=0; i<X.n_cols; ++i){
     X.col(i) = X.col(i)/reps;
   }
@@ -392,6 +336,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   arma::mat A(k,k);
   arma::vec qvec(k);
   arma::vec sigma(k);
+  arma::mat W0(n,n);
   arma::mat W(n,n);
   arma::mat WX(n,q);
   arma::mat WQX(n,n);
@@ -403,14 +348,18 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   double taper;
   double value;
   double sign;
+  bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
   for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
-    W = V(0)*sigma(0);
+    W0 = V(0)*sigma(0);
     for(arma::uword i=1; i<k; ++i){
-      W += V(i)*sigma(i);
+      W0 += V(i)*sigma(i);
     }
-    W = inv_sympd(W);
+    invPass = inv_sympd(W,W0);
+    if(!invPass){
+      W = pinv(W0);
+    }
     WX = W*X;
     WQX = W - WX*solve(X.t()*WX, WX.t());
     rss = as_scalar(y.t()*WQX*y);
@@ -588,20 +537,6 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callLowMemRRBLUP(arma::fmat y, arma::uvec x, arma::fvec reps, 
-                            std::string genoTrain, int nMarker){
-  arma::fmat X = makeFX(x);
-  arma::field<arma::fmat> Zlist(1);
-  Zlist(0) = readFMat(genoTrain,y.n_elem,nMarker,' ',0,0);
-  reps = sqrt(1.0/reps);
-  sweepRepsF(y,reps);
-  sweepRepsF(X,reps);
-  sweepRepsF(Zlist(0),reps);
-  return solveLowMemRRBLUP(y, X, Zlist);
-}
-
-// Called by RRBLUP function
-// [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, 
                             std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
@@ -635,23 +570,6 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   return solveMKM(y,X,Zlist,Klist);
 }
 
-// [[Rcpp::export]]
-Rcpp::List callLowMemRRBLUP_GCA(arma::fmat y, arma::uvec x, arma::fvec reps,
-                                std::string genoFemale, std::string genoMale, 
-                                int nMarker){
-  int n = y.n_rows;
-  arma::fmat X = makeFX(x);
-  arma::field<arma::fmat> Zlist(2);
-  Zlist(0) = readFMat(genoFemale,n,nMarker,' ',0,0);
-  Zlist(1) = readFMat(genoMale,n,nMarker,' ',0,0);
-  reps = sqrt(1.0/reps);
-  sweepRepsF(y, reps);
-  sweepRepsF(X, reps);
-  sweepRepsF(Zlist(0), reps);
-  sweepRepsF(Zlist(1), reps);
-  return solveLowMemRRBLUP(y,X,Zlist);
-}
-
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
@@ -676,27 +594,6 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Zlist(1), reps);
   sweepReps(Zlist(2), reps);
   return solveMKM(y,X,Zlist,Klist);
-}
-
-// [[Rcpp::export]]
-Rcpp::List callLowMemRRBLUP_SCA(arma::fmat y, arma::uvec x, arma::fvec reps,
-                                std::string genoFemale, std::string genoMale, 
-                                int nMarker){
-  int n = y.n_rows;
-  arma::fmat X = makeFX(x);
-  arma::field<arma::fmat> Zlist(3);
-  Zlist(0) = readFMat(genoFemale,n,nMarker,' ',0,0);
-  Zlist(0) = Zlist(0)*2-1;
-  Zlist(1) = readFMat(genoMale,n,nMarker,' ',0,0);
-  Zlist(1) = Zlist(1)*2-1;
-  Zlist(2) = Zlist(0)%Zlist(1);
-  reps = sqrt(1.0/reps);
-  sweepRepsF(y, reps);
-  sweepRepsF(X, reps);
-  sweepRepsF(Zlist(0), reps);
-  sweepRepsF(Zlist(1), reps);
-  sweepRepsF(Zlist(2), reps);
-  return solveLowMemRRBLUP(y,X,Zlist);
 }
 
 //' @title Calculate G Matrix

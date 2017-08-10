@@ -6,7 +6,7 @@
 \usage{
 addTraitADG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, domDegree,
   domDegreeVar = 0, corr = NULL, corrGxe = NULL, gamma = FALSE,
-  shape = 1, simParam)
+  shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}

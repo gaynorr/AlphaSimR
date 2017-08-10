@@ -52,7 +52,10 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' @export
 hybridCross = function(females,males,crossPlan="testcross",
                        returnHybridPop=FALSE,chunkSize=1000,
-                       simParam){
+                       simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(simParam@ploidy!=2){
     stop("Only works with diploids")
   }
@@ -195,7 +198,10 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,simParam){
+                       w=0.5,inbred=FALSE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
   if(use == "pheno"){

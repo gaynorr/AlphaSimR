@@ -5,7 +5,7 @@
 \title{Add additive traits}
 \usage{
 addTraitA(founderPop, nQtlPerChr, meanG, varG, corr = NULL, gamma = FALSE,
-  shape = 1, simParam)
+  shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}

@@ -5,7 +5,7 @@
 \title{Make random crosses}
 \usage{
 randCross(pop, nCrosses, nProgeny = 1, id = NULL, balance = TRUE,
-  simParam)
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

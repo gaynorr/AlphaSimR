@@ -10,7 +10,11 @@
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam) {
+writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),
+                               simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   allSnps = numeric(0)
   uniqueChips = unique(chips)
   if (0 %in% uniqueChips){

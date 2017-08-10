@@ -5,7 +5,7 @@
 \title{Make random crosses}
 \usage{
 randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
-  balance = TRUE, simParam)
+  balance = TRUE, simParam = NULL)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}

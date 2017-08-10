@@ -125,7 +125,7 @@ arma::imat sampAllComb(long long int nLevel1, long long int nLevel2,
   arma::ivec samples = sampleInt(n,N);
   // Calculate selected combinations
   arma::imat output(n,2);
-  for(long long int i=0; i<n; ++i){
+  for(arma::uword  i=0; i<n; ++i){
     output(i,0) = samples(i)/nLevel2;
     output(i,1) = samples(i)%nLevel2;
   }

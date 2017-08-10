@@ -4,7 +4,7 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH, id = NULL, useFemale = TRUE, simParam)
+makeDH(pop, nDH, id = NULL, useFemale = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}

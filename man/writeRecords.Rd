@@ -5,7 +5,7 @@
 \title{Write data records}
 \usage{
 writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1, fixEff = 1,
-  includeHaplo = FALSE, append = TRUE, simParam)
+  includeHaplo = FALSE, append = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

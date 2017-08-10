@@ -338,7 +338,10 @@ setMethod("c",
 #' @return an object of \code{\link{Pop-class}}
 #' 
 #' @export
-resetPop = function(pop,simParam){
+resetPop = function(pop,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   pop@nTraits = simParam@nTraits
   pop@pheno = matrix(NA_real_,
                      nrow=pop@nInd,

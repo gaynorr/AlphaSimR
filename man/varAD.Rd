@@ -4,7 +4,7 @@
 \alias{varAD}
 \title{Additive and dominance variances}
 \usage{
-varAD(pop, retGenParam = FALSE, simParam)
+varAD(pop, retGenParam = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

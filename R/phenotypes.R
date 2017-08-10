@@ -53,7 +53,11 @@ addError = function(gv,varE,reps=1){
 #' @return Returns a matrix of nInd by nTrait phenotypes
 #' 
 #' @export
-calcPheno = function(pop,varE,reps=1,w=0.5,simParam){
+calcPheno = function(pop,varE,reps=1,w=0.5,
+                     simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   validObject(pop)
   if(length(w)==1){
     w = rep(w,simParam@nTraits)
@@ -97,7 +101,10 @@ calcPheno = function(pop,varE,reps=1,w=0.5,simParam){
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-setPheno = function(pop,varE,reps=1,w=0.5,simParam){
+setPheno = function(pop,varE,reps=1,w=0.5,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,w=w,
                         simParam=simParam)
   validObject(pop)

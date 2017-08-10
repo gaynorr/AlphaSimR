@@ -4,7 +4,7 @@
 \alias{newPop}
 \title{Create new Population}
 \usage{
-newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam)
+newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam = NULL)
 }
 \arguments{
 \item{rawPop}{an object of \code{\link{MapPop-class}} or 

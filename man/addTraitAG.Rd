@@ -5,7 +5,7 @@
 \title{Add additive GxE traits}
 \usage{
 addTraitAG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, corr = NULL,
-  corrGxe = NULL, gamma = FALSE, shape = 1, simParam)
+  corrGxe = NULL, gamma = FALSE, shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}

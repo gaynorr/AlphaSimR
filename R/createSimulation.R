@@ -103,7 +103,10 @@ createSimulation = function(founderPop,maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
 #' @return Returns an object \code{\link{SimParam-class}}
 #' 
 #' @export
-addSnpChip = function(nSnpPerChr,simParam){
+addSnpChip = function(nSnpPerChr,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(length(nSnpPerChr)==1){
     nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
   }
@@ -138,7 +141,11 @@ addSnpChip = function(nSnpPerChr,simParam){
 #' @return Returns an object \code{\link{SimParam-class}}
 #' 
 #' @export
-addStructuredSnpChips = function(nSnpPerChr,structure,simParam){
+addStructuredSnpChips = function(nSnpPerChr,structure,
+                                 simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(length(nSnpPerChr)==1){
     nSnpPerChr = rep(nSnpPerChr,simParam@nChr)
   }
@@ -172,7 +179,10 @@ addStructuredSnpChips = function(nSnpPerChr,structure,simParam){
 }
 
 #Function for selecting QTL loci called by all addTrait functions
-pickQtlLoci = function(nQtlPerChr, simParam){
+pickQtlLoci = function(nQtlPerChr, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(length(nQtlPerChr)==1){
     nQtlPerChr = rep(nQtlPerChr,simParam@nChr)
   }
@@ -209,7 +219,10 @@ pickQtlLoci = function(nQtlPerChr, simParam){
 #' 
 #' @export
 addTraitA = function(founderPop,nQtlPerChr,meanG,varG,corr=NULL,
-                     gamma=FALSE,shape=1,simParam){
+                     gamma=FALSE,shape=1,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   nTraits = length(meanG)
   if(length(gamma)==1) gamma = rep(gamma,nTraits)
   if(length(shape)==1) shape = rep(shape,nTraits)
@@ -267,7 +280,10 @@ addTraitA = function(founderPop,nQtlPerChr,meanG,varG,corr=NULL,
 #' @export
 addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
                       domDegreeVar=0,corr=NULL,
-                      gamma=FALSE,shape=1,simParam){
+                      gamma=FALSE,shape=1,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   nTraits = length(meanG)
   if(length(gamma)==1) gamma = rep(gamma,nTraits)
   if(length(shape)==1) shape = rep(shape,nTraits)
@@ -331,7 +347,10 @@ addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
 #' @export
 addTraitAG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                       corr=NULL,corrGxe=NULL,gamma=FALSE,
-                      shape=1,simParam){
+                      shape=1,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   nTraits = length(meanG)
   if(length(gamma)==1) gamma = rep(gamma,nTraits)
   if(length(shape)==1) shape = rep(shape,nTraits)
@@ -406,7 +425,10 @@ addTraitAG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                        domDegree,domDegreeVar=0,corr=NULL,
                        corrGxe=NULL,gamma=FALSE,shape=1,
-                       simParam){
+                       simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   nTraits = length(meanG)
   if(length(gamma)==1) gamma = rep(gamma,nTraits)
   if(length(shape)==1) shape = rep(shape,nTraits)
@@ -481,7 +503,10 @@ addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 #' 
 #' @export
 rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
-                         varGE=NULL,simParam){
+                         varGE=NULL,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   isGxe = sapply(simParam@traits,function(x){
     class(x)%in%c("TraitAG","TraitADG")
   })
@@ -540,7 +565,10 @@ rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
 #' 
 #' @export
 newPop = function(rawPop, id=NULL, mother=NULL,
-                  father=NULL, simParam){
+                  father=NULL, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(class(rawPop)=="RawPop" | class(rawPop)=="MapPop")
   if(is.null(id)){
     lastId = simParam@lastId

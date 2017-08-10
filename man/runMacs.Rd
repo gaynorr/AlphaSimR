@@ -4,12 +4,10 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
+runMacs(nInd, nChr, segSites, inbred = TRUE, species = "TEST",
   split = NULL, manualCommand = NULL, manualGenLen = NULL)
 }
 \arguments{
-\item{macs}{path to MaCS}
-
 \item{nInd}{number of individuals to simulate}
 
 \item{nChr}{number of chromosomes to simulate}

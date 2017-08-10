@@ -4,7 +4,8 @@
 \alias{rescaleTraits}
 \title{Rescale traits}
 \usage{
-rescaleTraits(pop, meanG, varG, varEnv = NULL, varGE = NULL, simParam)
+rescaleTraits(pop, meanG, varG, varEnv = NULL, varGE = NULL,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

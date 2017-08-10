@@ -4,8 +4,8 @@
 \alias{selectInd}
 \title{Select individuals}
 \usage{
-selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE, simParam,
-  ...)
+selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
+  simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

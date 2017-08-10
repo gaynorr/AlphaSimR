@@ -4,7 +4,7 @@
 \alias{resetPop}
 \title{Reset population}
 \usage{
-resetPop(pop, simParam)
+resetPop(pop, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

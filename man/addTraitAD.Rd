@@ -5,7 +5,7 @@
 \title{Add additive and dominance traits}
 \usage{
 addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
-  corr = NULL, gamma = FALSE, shape = 1, simParam)
+  corr = NULL, gamma = FALSE, shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}

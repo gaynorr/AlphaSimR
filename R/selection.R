@@ -22,7 +22,10 @@
 #' 
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                     simParam,...){
+                     simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(nInd<=pop@nInd)
   use = tolower(use)
   if(class(trait)=="function"){
@@ -83,7 +86,10 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                      simParam,...){
+                      simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   pop = pop[which(pop@gender=="M")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"males"))
@@ -117,7 +123,10 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                        simParam,...){
+                        simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   pop = pop[which(pop@gender=="F")]
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"females"))
@@ -151,7 +160,10 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
-                     simParam,...){
+                     simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   families = paste(pop@mother,pop@father,sep="_")
   availFam = length(unique(families))
   if(nFam>availFam){
@@ -223,8 +235,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",
-                           selectTop=TRUE,simParam,
+                           selectTop=TRUE,simParam=NULL,
                            ...){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   families = paste(pop@mother,pop@father,sep="_")
   use = tolower(use)
   if(class(trait)=="function"){

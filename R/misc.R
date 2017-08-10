@@ -62,7 +62,11 @@ selIndex = function(Y,b){
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-editGenome = function(pop,ind,chr,segSites,allele,simParam){
+editGenome = function(pop,ind,chr,segSites,allele,
+                      simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   ind = unique(as.integer(ind))
   stopifnot(all(ind%in%(1:pop@nInd)))
   chr = as.integer(chr)
@@ -75,9 +79,18 @@ editGenome = function(pop,ind,chr,segSites,allele,simParam){
     selSegSites = segSites[chr==selChr]
     pop@geno[[selChr]][selSegSites,,ind] = allele
   }
-  gv = lapply(simParam@traits,getGv,pop=pop,w=0.5)
-  gv = do.call("cbind",gv)
-  pop@gv = gv
+  pop@gxe = vector("list",simParam@nTraits)
+  pop@gv = matrix(NA_real_,nrow=pop@nInd,
+                  ncol=simParam@nTraits)
+  if(simParam@nTraits>=1){
+    for(i in 1:simParam@nTraits){
+      tmp = getGv(simParam@traits[[i]],pop)
+      pop@gv[,i] = tmp[[1]]
+      if(length(tmp)>1){
+        pop@gxe[[i]] = tmp[[2]]
+      }
+    }
+  }
   validObject(pop)
   return(pop)
 }

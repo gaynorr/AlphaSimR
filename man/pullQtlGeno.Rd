@@ -4,7 +4,7 @@
 \alias{pullQtlGeno}
 \title{Pull QTL genotype}
 \usage{
-pullQtlGeno(pop, trait = 1, simParam)
+pullQtlGeno(pop, trait = 1, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
