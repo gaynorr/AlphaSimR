@@ -373,7 +373,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
             const char * arg = arguments[iCurrentArg][2+i].data();
             newPop.setChrSampled(atoi(arg));
             iRunningSample+=newPop.getChrSampled();
-            Rcpp::Rcerr<<"INPUT: Setting chr sampled for pop "<<(i+1)<<" to "<<newPop.getChrSampled()<<endl;
+            //Rcpp::Rcerr<<"INPUT: Setting chr sampled for pop "<<(i+1)<<" to "<<newPop.getChrSampled()<<endl;
             newPop.setPopSize(dDefaultPopSize) ;
             newPop.setGrowthAlpha(dDefaultGrowthAlpha);
             newPop.setLastTime(0);
@@ -656,10 +656,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
             }
             wrapper = EventPtr(new PopJoinEvent(
               Event::POPJOIN,dTime,iPop1,iPop2));
-            Rcpp::Rcerr<<"Population "<<
-              arguments[iCurrentArg][2].data()<<
-                " will merge with "<<
-                  arguments[iCurrentArg][3].data()<<endl;
+            //Rcpp::Rcerr<<"Population "<<
+            //  arguments[iCurrentArg][2].data()<<
+            //    " will merge with "<<
+            //      arguments[iCurrentArg][3].data()<<endl;
           }
           break;
         case 'm':

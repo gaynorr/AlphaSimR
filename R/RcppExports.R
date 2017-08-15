@@ -244,8 +244,8 @@ mergeGeno <- function(x, y) {
     .Call('AlphaSimR_mergeGeno', PACKAGE = 'AlphaSimR', x, y)
 }
 
-calcChrMinorFreq <- function(geno, ploidy) {
-    .Call('AlphaSimR_calcChrMinorFreq', PACKAGE = 'AlphaSimR', geno, ploidy)
+calcChrFreq <- function(geno) {
+    .Call('AlphaSimR_calcChrFreq', PACKAGE = 'AlphaSimR', geno)
 }
 
 convToImat <- function(X) {
@@ -258,6 +258,10 @@ sampAllComb <- function(nLevel1, nLevel2, n) {
 
 sampHalfDialComb <- function(nLevel, n) {
     .Call('AlphaSimR_sampHalfDialComb', PACKAGE = 'AlphaSimR', nLevel, n)
+}
+
+zero <- function() {
+    .Call('AlphaSimR_zero', PACKAGE = 'AlphaSimR')
 }
 
 changeId <- function(newId, oldId) {

@@ -34,15 +34,15 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
   return z;
 }
 
-// Calculates minor allele frequency on a single chromsome
+// Calculates allele frequency on a single chromsome
 // Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]
-arma::vec calcChrMinorFreq(const arma::Cube<unsigned char>& geno,
-                           int ploidy){
+arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
+  int ploidy = geno.n_cols;
   arma::Mat<unsigned char> tmp = arma::sum(geno,1);
   arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
                                 1)/ploidy;
-  return 0.5-arma::abs(output-0.5);
+  return output;
 }
 
 // [[Rcpp::export]]
@@ -181,6 +181,14 @@ arma::imat sampHalfDialComb(long long int nLevel, long long int n){
   return output;
 }
 
+// Create a value of zero for initial ID
+// Needed to prevent side effects of modify in place
+// [[Rcpp::export]]
+int zero(){
+  return 0;
+}
+
+// Modifies the ID value in place
 // [[Rcpp::export]]
 void changeId(Rcpp::IntegerVector newId,
               Rcpp::IntegerVector& oldId){

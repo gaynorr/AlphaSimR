@@ -8,7 +8,7 @@
 */
 
 /* .Call calls */
-extern SEXP AlphaSimR_calcChrMinorFreq(SEXP, SEXP);
+extern SEXP AlphaSimR_calcChrFreq(SEXP);
 extern SEXP AlphaSimR_calcG(SEXP);
 extern SEXP AlphaSimR_calcGenParam(SEXP, SEXP);
 extern SEXP AlphaSimR_calcGIbs(SEXP);
@@ -47,9 +47,10 @@ extern SEXP AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_zero();
 
 static const R_CallMethodDef CallEntries[] = {
-    {"AlphaSimR_calcChrMinorFreq",  (DL_FUNC) &AlphaSimR_calcChrMinorFreq,  2},
+    {"AlphaSimR_calcChrFreq",       (DL_FUNC) &AlphaSimR_calcChrFreq,       1},
     {"AlphaSimR_calcG",             (DL_FUNC) &AlphaSimR_calcG,             1},
     {"AlphaSimR_calcGenParam",      (DL_FUNC) &AlphaSimR_calcGenParam,      2},
     {"AlphaSimR_calcGIbs",          (DL_FUNC) &AlphaSimR_calcGIbs,          1},
@@ -88,6 +89,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_tuneTraitAD",       (DL_FUNC) &AlphaSimR_tuneTraitAD,       4},
     {"AlphaSimR_writeASGenotypes",  (DL_FUNC) &AlphaSimR_writeASGenotypes,  7},
     {"AlphaSimR_writeASHaplotypes", (DL_FUNC) &AlphaSimR_writeASHaplotypes, 7},
+    {"AlphaSimR_zero",              (DL_FUNC) &AlphaSimR_zero,              0},
     {NULL, NULL, 0}
 };
 

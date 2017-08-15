@@ -53,8 +53,8 @@ createSimulation = function(founderPop,maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
         potSnp[[chr]] = sort(sample.int(founderPop@nLoci[chr],
                                         maxSnp[chr]))
       }else{
-        q = calcChrMinorFreq(founderPop@geno[[chr]],
-                             founderPop@ploidy)
+        q = calcChrFreq(founderPop@geno[[chr]])
+        q = 0.5-abs(q-0.5) #Convert to minor allele frequency
         potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
       }
       potQtl[[chr]] = sort(sample.int(founderPop@nLoci[chr],
@@ -66,8 +66,8 @@ createSimulation = function(founderPop,maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
         potSnp[[chr]] = sort(tmp[1:maxSnp[chr]])
         potQtl[[chr]] = sort(tmp[(maxSnp[chr]+1):length(tmp)])
       }else{
-        q = calcChrMinorFreq(founderPop@geno[[chr]],
-                             founderPop@ploidy)
+        q = calcChrFreq(founderPop@geno[[chr]])
+        q = 0.5-abs(q-0.5)
         potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
         potQtl[[chr]] = sort(sample(which(!((1:founderPop@nLoci[chr])%in%potSnp[[chr]])),
                                     maxQtl[chr]))
@@ -87,7 +87,7 @@ createSimulation = function(founderPop,maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
                snpChips=list(),
                potQtl=potQtl,
                potSnp=potSnp,
-               lastId=0L)
+               lastId=zero())
   return(output)
 }
 

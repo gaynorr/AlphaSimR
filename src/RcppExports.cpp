@@ -411,15 +411,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calcChrMinorFreq
-arma::vec calcChrMinorFreq(const arma::Cube<unsigned char>& geno, int ploidy);
-RcppExport SEXP AlphaSimR_calcChrMinorFreq(SEXP genoSEXP, SEXP ploidySEXP) {
+// calcChrFreq
+arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno);
+RcppExport SEXP AlphaSimR_calcChrFreq(SEXP genoSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type geno(genoSEXP);
-    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
-    rcpp_result_gen = Rcpp::wrap(calcChrMinorFreq(geno, ploidy));
+    rcpp_result_gen = Rcpp::wrap(calcChrFreq(geno));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -456,6 +455,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< long long int >::type nLevel(nLevelSEXP);
     Rcpp::traits::input_parameter< long long int >::type n(nSEXP);
     rcpp_result_gen = Rcpp::wrap(sampHalfDialComb(nLevel, n));
+    return rcpp_result_gen;
+END_RCPP
+}
+// zero
+int zero();
+RcppExport SEXP AlphaSimR_zero() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(zero());
     return rcpp_result_gen;
 END_RCPP
 }
