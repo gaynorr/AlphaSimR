@@ -19,15 +19,17 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
   int loc1;
   int loc2 = -1;
   for(int i=0; i<nChr; ++i){
-    // Get loci locations
-    loc1 = loc2+1;
-    loc2 += lociPerChr[i];
-    arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
-    // Get chromsome genotype
-    arma::Mat<unsigned char> tmp;
-    tmp = arma::sum(geno(i),1);
-    // Assign genotypes to output matrix
-    output.cols(loc1,loc2) = (tmp.rows(chrLociLoc)).t();
+    if(lociPerChr(i)>0){
+      // Get loci locations
+      loc1 = loc2+1;
+      loc2 += lociPerChr(i);
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      // Get chromsome genotype
+      arma::Mat<unsigned char> tmp;
+      tmp = arma::sum(geno(i),1);
+      // Assign genotypes to output matrix
+      output.cols(loc1,loc2) = (tmp.rows(chrLociLoc)).t();
+    }
   }
   return output;
 }
@@ -59,15 +61,17 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
   int loc2 = -1;
   // Get chromosome data
   for(int i=0; i<nChr; ++i){
-    // Get loci locations
-    loc1 = loc2+1;
-    loc2 += lociPerChr[i];
-    arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
-    // Get individual data
-    for(int ind=0; ind<nInd; ++ind){
-      output(arma::span(ind*ploidy,(ind+1)*ploidy-1),
-             arma::span(loc1,loc2)) = 
-        (geno(i).slice(ind).rows(chrLociLoc)).t();
+    if(lociPerChr(i)>0){
+      // Get loci locations
+      loc1 = loc2+1;
+      loc2 += lociPerChr(i);
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      // Get individual data
+      for(int ind=0; ind<nInd; ++ind){
+        output(arma::span(ind*ploidy,(ind+1)*ploidy-1),
+               arma::span(loc1,loc2)) = 
+                 (geno(i).slice(ind).rows(chrLociLoc)).t();
+      }
     }
   }
   return output;
@@ -92,14 +96,16 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
   colSel(0) = haplo;
   // Get chromosome data
   for(int i=0; i<nChr; ++i){
-    // Get loci locations
-    loc1 = loc2+1;
-    loc2 += lociPerChr[i];
-    arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
-    // Get individual data
-    for(int ind=0; ind<nInd; ++ind){
-      output(ind,arma::span(loc1,loc2)) = 
-        (geno(i).slice(ind).submat(chrLociLoc,colSel)).t();
+    if(lociPerChr(i)>0){
+      // Get loci locations
+      loc1 = loc2+1;
+      loc2 += lociPerChr(i);
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      // Get individual data
+      for(int ind=0; ind<nInd; ++ind){
+        output(ind,arma::span(loc1,loc2)) = 
+          (geno(i).slice(ind).submat(chrLociLoc,colSel)).t();
+      }
     }
   }
   return output;

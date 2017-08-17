@@ -189,7 +189,11 @@ pickQtlLoci = function(nQtlPerChr, simParam=NULL){
   stopifnot(length(nQtlPerChr)==simParam@nChr)
   stopifnot(sapply(simParam@potQtl,length)>=nQtlPerChr)
   lociLoc = lapply(1:simParam@nChr,function(x){
-    sort(sample(simParam@potQtl[[x]],nQtlPerChr[x]))
+    if(nQtlPerChr[x]==0){
+      return(NULL)
+    }else{
+      return(sort(sample(simParam@potQtl[[x]],nQtlPerChr[x])))
+    }
   })
   lociLoc = do.call("c",lociLoc)
   qtlLoci = new("LociMap",
