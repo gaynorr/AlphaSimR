@@ -5,6 +5,10 @@
 #include <stdexcept>
 #include <tuple>
 #include <math.h>
+#include <algorithm> 
+#include <cctype>
+#include <locale>
+
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 #include "simulator.h"
@@ -132,6 +136,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
   bool bAcceptFullMigrMatrix;
   
   unsigned int iTotalArgs = arguments.size();
+  
+  if (iTotalArgs == 0) {
+    Rcpp::stop("You must enter a value for the sample size and seq length.");
+  } 
   dDefaultPopSize = 1.0;
   dDefaultGrowthAlpha =0.0;
   
@@ -881,6 +889,15 @@ Simulator::~Simulator() {
 vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   vector<std::string> words;
   Simulator simulator;
+  
+  
+  if (in == ""){
+    Rcpp::stop("Not enough args for macs call");
+  }
+  
+  if (in.empty()) {
+    Rcpp::stop("Not enough args for macs call");
+  }
   boost::split(words, in, boost::is_any_of(", "), boost::token_compress_on);
   CommandArguments arguments;
   vector<string> subOption;
@@ -896,6 +913,10 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
       arguments.push_back(subOption);
       subOption.clear();
     }
+  }
+  
+  if (arguments.size() == 0) {
+    Rcpp::stop("Not enough args for macs call");
   }
   
   
@@ -926,8 +947,15 @@ Rcpp::List MaCS(Rcpp::String args, long long int maxSites=0){
   
   // Run MaCS
   vector<AlphaSimRReturn> macsOutput;
-  macsOutput = runFromAlphaSimR(args);
   
+  string t = args;
+  if (t == "") {
+    Rcpp::stop("error");
+  }
+  macsOutput = runFromAlphaSimR(args);
+  if(macsOutput.empty()){
+    Rcpp::stop("Macs has failed to run.");
+  }
   // Check MaCS output
   long long int nSites, nHap;
   arma::Mat<unsigned char> haplo;
