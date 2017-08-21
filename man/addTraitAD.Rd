@@ -5,7 +5,8 @@
 \title{Add additive and dominance traits}
 \usage{
 addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
-  corr = NULL, gamma = FALSE, shape = 1, simParam = NULL)
+  corr = NULL, useVarA = FALSE, gamma = FALSE, shape = 1,
+  simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}
@@ -22,9 +23,12 @@ addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
 
 \item{corr}{a matrix of correlations between traits}
 
+\item{useVarA}{tune according to additive genetic variance if true}
+
 \item{gamma}{should a gamma distribution be used instead of normal}
 
-\item{shape}{value of the shape parameter if using a gamma distribution}
+\item{shape}{value of the shape parameter if using a gamma distribution. 
+Note that shape=1 is equivalent to an exponential distribution.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

@@ -26,7 +26,7 @@ for creating initial populations and setting traits in the
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract \code{\link{RawPop-class}} by index
+\item \code{[}: Extract MapPop by index
 
 \item \code{c}: Combine MapPop chromosomes
 }}
