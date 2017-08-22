@@ -85,7 +85,6 @@ void Simulator::printUsage() {
         "population i+1."<<endl;
     Rcpp::Rcout<<"-ej <t> <i> <j> (Join two populations.  At time t "<<
       "all chromosomes migrate from pop i to pop j."<<endl;
-    Rcpp::stop("");
 }
 
 Configuration::Configuration(){
@@ -105,13 +104,16 @@ Configuration::Configuration(){
   iRandomSeed = time(NULL);
   iIterations = 1;
   pAlleleFreqBinPtrSet = NULL;
+  pEventList = NULL;
 }
 
 Configuration::~Configuration(){
 #ifdef DIAG
   Rcpp::Rcerr<<"Configuration destructor\n";
 #endif
+  if (pEventList) {
   delete pEventList;
+  }
   if (bSNPAscertainment){
     AlleleFreqBinPtrSet::iterator it;
     for (it=pAlleleFreqBinPtrSet->begin();it!=pAlleleFreqBinPtrSet->end();++it){
@@ -124,7 +126,9 @@ Configuration::~Configuration(){
     for(it=pHotSpotBinPtrList->begin();it!=pHotSpotBinPtrList->end();++it){
       delete(*it);
     }
-    delete pHotSpotBinPtrList;
+    if (pHotSpotBinPtrList) {
+      delete pHotSpotBinPtrList;
+    }
   }
 }
 
@@ -137,13 +141,13 @@ void Simulator::readInputParameters(CommandArguments arguments){
   
   unsigned int iTotalArgs = arguments.size();
   
-  if (iTotalArgs == 0) {
-    Rcpp::stop("You must enter a value for the sample size and seq length.");
-  } 
+  pConfig=new Configuration();
+
+
   dDefaultPopSize = 1.0;
   dDefaultGrowthAlpha =0.0;
   
-  pConfig=new Configuration();
+  
   pConfig->iTotalPops = 1;
   
   EventPtrList * pEventList = new EventPtrList;
@@ -155,6 +159,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
       newRow.push_back(dDefaultMigrationRate);
     pConfig->dMigrationMatrix.push_back(newRow);
   }
+
+  if (iTotalArgs == 0) {
+    Rcpp::stop("You must enter a value for the sample size and seq length.");
+  } 
   
   if( arguments[0].size()!=2 ){
     Rcpp::stop("You must enter a value for the sample size and seq length.");
@@ -171,8 +179,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
   Rcpp::Rcerr<<"INPUT: Sample size is now "<<pConfig->iSampleSize<<endl;
 #endif
   if( iSampleSize<= 0) {
-    Rcpp::Rcerr<<"First argument error. Sample size needs to be greater than 0.\n";
     printUsage();
+    Rcpp::stop("First argument error. Sample size needs to be greater than 0.\n");
+    
+
   }
   
   pConfig->dSeqLength = atof(arguments[0][1].data());
@@ -214,6 +224,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single integer for retaining the number of previous trees\n";
           Rcpp::stop("Argument error");
+          return;
         }
         pConfig->dBasesToTrack = atof(arguments[iCurrentArg][1].data());
 #ifdef DIAG
