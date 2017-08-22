@@ -26,7 +26,8 @@ addTraitAG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, corr = NULL,
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 
-\item{shape}{value of the shape parameter if using a gamma distribution}
+\item{shape}{value of the shape parameter if using a gamma distribution. 
+Note that shape=1 is equivalent to an exponential distribution.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

@@ -216,7 +216,8 @@ pickQtlLoci = function(nQtlPerChr, simParam=NULL){
 #' @param varG a vector of total genetic variances for one or more traits
 #' @param corr a matrix of correlations between traits
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution
+#' @param shape value of the shape parameter if using a gamma distribution. 
+#' Note that shape=1 is equivalent to an exponential distribution.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
@@ -239,8 +240,13 @@ addTraitA = function(founderPop,nQtlPerChr,meanG,varG,corr=NULL,
                   ncol=nTraits)%*%chol(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      addEff[,i] = qgamma(pnorm(addEff[,i]),
-                          shape=shape[i])
+      tmp = addEff[,i]>=0
+      addEff[tmp,i] = qgamma(
+        (pnorm(addEff[tmp,i])-0.5)*2,
+        shape=shape[i])
+      addEff[!tmp,i] = -qgamma(
+        (pnorm(abs(addEff[!tmp,i]))-0.5)*2,
+        shape=shape[i])
     }
   }
   geno = getGeno(founderPop@geno,
@@ -275,15 +281,17 @@ addTraitA = function(founderPop,nQtlPerChr,meanG,varG,corr=NULL,
 #' @param domDegree mean dominance degree
 #' @param domDegreeVar variance of dominance degree
 #' @param corr a matrix of correlations between traits
+#' @param useVarA tune according to additive genetic variance if true
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution
+#' @param shape value of the shape parameter if using a gamma distribution. 
+#' Note that shape=1 is equivalent to an exponential distribution.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
 #'  
 #' @export
 addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
-                      domDegreeVar=0,corr=NULL,
+                      domDegreeVar=0,corr=NULL,useVarA=FALSE,
                       gamma=FALSE,shape=1,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -300,8 +308,13 @@ addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
                   ncol=nTraits)%*%chol(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      addEff[,i] = qgamma(pnorm(addEff[,i]),
-                          shape=shape[i])
+      tmp = addEff[,i]>=0
+      addEff[tmp,i] = qgamma(
+        (pnorm(addEff[tmp,i])-0.5)*2,
+        shape=shape[i])
+      addEff[!tmp,i] = -qgamma(
+        (pnorm(abs(addEff[!tmp,i]))-0.5)*2,
+        shape=shape[i])
     }
   }
   domDegree = rnorm(qtlLoci@nLoci,domDegree,
@@ -311,7 +324,7 @@ addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
   for(i in 1:nTraits){
-    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i])
+    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i],useVarA)
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
     domEff[,i] = domEff[,i]*tmp$parameter
@@ -343,7 +356,8 @@ addTraitAD = function(founderPop,nQtlPerChr,meanG,varG,domDegree,
 #' @param corr a matrix of correlations between traits
 #' @param corrGxe a matrix of correlations between GxE effects
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution
+#' @param shape value of the shape parameter if using a gamma distribution. 
+#' Note that shape=1 is equivalent to an exponential distribution.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
@@ -372,8 +386,13 @@ addTraitAG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                   ncol=nTraits)%*%chol(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      addEff[,i] = qgamma(pnorm(addEff[,i]),
-                          shape=shape[i])
+      tmp = addEff[,i]>=0
+      addEff[tmp,i] = qgamma(
+        (pnorm(addEff[tmp,i])-0.5)*2,
+        shape=shape[i])
+      addEff[!tmp,i] = -qgamma(
+        (pnorm(abs(addEff[!tmp,i]))-0.5)*2,
+        shape=shape[i])
     }
   }
   gxeEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
@@ -419,8 +438,10 @@ addTraitAG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 #' @param domDegreeVar variance of dominance degree
 #' @param corr a matrix of correlations between traits
 #' @param corrGxe a matrix of correlations between GxE effects
+#' @param useVarA tune according to additive genetic variance if true
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution
+#' @param shape value of the shape parameter if using a gamma distribution. 
+#' Note that shape=1 is equivalent to an exponential distribution.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @return Returns an object of \code{\link{SimParam-class}}
@@ -428,7 +449,7 @@ addTraitAG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 #' @export
 addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                        domDegree,domDegreeVar=0,corr=NULL,
-                       corrGxe=NULL,gamma=FALSE,shape=1,
+                       corrGxe=NULL,useVarA=FALSE,gamma=FALSE,shape=1,
                        simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -450,8 +471,13 @@ addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                   ncol=nTraits)%*%chol(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      addEff[,i] = qgamma(pnorm(addEff[,i]),
-                          shape=shape[i])
+      tmp = addEff[,i]>=0
+      addEff[tmp,i] = qgamma(
+        (pnorm(addEff[tmp,i])-0.5)*2,
+        shape=shape[i])
+      addEff[!tmp,i] = -qgamma(
+        (pnorm(abs(addEff[!tmp,i]))-0.5)*2,
+        shape=shape[i])
     }
   }
   domDegree = rnorm(qtlLoci@nLoci,domDegree,
@@ -463,7 +489,7 @@ addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
                  qtlLoci@lociPerChr,
                  qtlLoci@lociLoc)
   for(i in 1:nTraits){
-    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i])
+    tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],varG[i],useVarA)
     intercept = tmp$output$intercept
     addEff[,i] = addEff[,i]*tmp$parameter
     domEff[,i] = domEff[,i]*tmp$parameter

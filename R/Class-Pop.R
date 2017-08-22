@@ -131,7 +131,7 @@ setValidity("MapPop",function(object){
   }
 })
 
-#' @describeIn MapPop Extract \code{\link{RawPop-class}} by index
+#' @describeIn MapPop Extract MapPop by index
 setMethod("[",
           signature(x = "MapPop"),
           function(x, i){
@@ -139,7 +139,7 @@ setMethod("[",
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
-            class(x) = "RawPop"
+            class(x) = "MapPop"
             validObject(x)
             return(x)
           }
