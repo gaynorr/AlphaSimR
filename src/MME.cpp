@@ -159,7 +159,7 @@ void sweepReps(arma::mat& X, arma::vec& reps){
 //' @title Solve Univariate Model
 //' 
 //' @description
-//' Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
 //'
 //' @param y a matrix with n rows and 1 column
 //' @param X a matrix with n rows and x columns
@@ -219,10 +219,70 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("LL")=ll);
 }
 
+//' @title Solve RR-BLUP
+//' 
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X, 
+                       const arma::mat& M){
+  int n = y.n_rows;
+  int q = X.n_cols;
+  double df = double(n)-double(q);
+  double offset = log(double(n));
+  bool invPass;
+  
+  // Construct system of equations for eigendecomposition
+  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
+  S = S*((M*M.t())+offset*arma::eye(n,n))*S;
+  
+  // Compute eigendecomposition
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, S);
+  
+  // Drop eigenvalues
+  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
+  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
+                  arma::span(q,eigvec.n_cols-1));
+  
+  // Estimate variances and solve equations
+  arma::vec eta = eigvec.t()*y;
+  Rcpp::List optRes = optimize(*objREML,
+                               Rcpp::List::create(
+                                 Rcpp::Named("df")=df,
+                                 Rcpp::Named("eta")=eta,
+                                 Rcpp::Named("lambda")=eigval), 
+                                 1.0e-10, 1.0e10);
+  double delta = optRes["parameter"];
+  arma::mat Hinv; 
+  invPass = inv_sympd(Hinv,M*M.t()+delta*arma::eye(n,n));
+  if(!invPass){
+    Hinv = pinv(M*M.t()+delta*arma::eye(n,n));
+  }
+  arma::mat XHinv = X.t()*Hinv;
+  arma::mat beta = solve(XHinv*X,XHinv*y);
+  arma::mat u = M.t()*(Hinv*(y-X*beta));
+  double Vu = sum(eta%eta/(eigval+delta))/df;
+  double Ve = delta*Vu;
+  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=ll);
+}
+
 //' @title Solve Multivariate Model
 //' 
 //' @description
-//' Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
 //'
 //' @param Y a matrix with n rows and q columns
 //' @param X a matrix with n rows and x columns
@@ -298,6 +358,89 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   double value;
   double sign;
   log_det(value, sign, kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve));
+  ll -= 0.5*value*sign;
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=B.t(),
+                            Rcpp::Named("u")=U.t(),
+                            Rcpp::Named("LL")=double(ll(0,0)));
+}
+
+//' @title Solve Multivariate RR-BLUP
+//' 
+//' @description
+//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
+//'
+//' @param Y a matrix with n rows and q columns
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//' @param tol tolerance for convergence
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X, 
+                         const arma::mat& M, double tol=1e-6){
+  int n = Y.n_rows;
+  int m = Y.n_cols;
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, M*M.t());
+  arma::mat Yt = Y.t()*eigvec;
+  arma::mat Xt = X.t()*eigvec;
+  arma::mat Vu = cov(Y)/2;
+  arma::mat Ve = Vu;
+  arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
+  arma::mat B = Yt*W; //BLUEs
+  arma::mat Gt(m,n);
+  arma::mat sigma(m,m);
+  arma::mat BNew;
+  arma::mat VeNew(m,m);
+  arma::mat VuNew(m,m);
+  double denom;
+  double numer;
+  bool converging=true;
+  bool invPass;
+  while(converging){
+    VeNew.fill(0.0);
+    VuNew.fill(0.0);
+    for(arma::uword i=0; i<n; ++i){
+      Gt.col(i) = eigval(i)*Vu*inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
+    }
+    BNew = (Yt - Gt)*W;
+    for(arma::uword i=0; i<n; ++i){
+      sigma = eigval(i)*Vu-(eigval(i)*Vu)*inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
+      VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
+      VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*
+        (Yt.col(i)-BNew*Xt.col(i)-Gt.col(i)).t()+sigma);
+    }
+    denom = fabs(sum(Ve.diag()));
+    if(denom>0.0){
+      numer = fabs(sum(VeNew.diag()-Ve.diag()));
+      if((numer/denom)<tol) converging=false;
+    }
+    Ve = VeNew;
+    Vu = VuNew;
+    B = BNew;
+  }
+  arma::mat HI;
+  invPass = inv_sympd(HI,kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
+    tol*arma::eye(n*m,n*m));
+  if(!invPass){
+    HI = pinv(kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
+      tol*arma::eye(n*m,n*m));
+  }
+  arma::mat E = Y.t() - B*X.t();
+  arma::mat U = kron(arma::eye(M.n_cols,M.n_cols), Vu)*kron(M.t(), 
+                     arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
+  U.reshape(m,U.n_elem/m);
+  //Log Likelihood calculation
+  arma::mat ll = -0.5*arma::vectorise(E).t()*HI*vectorise(E);
+  ll -= double(n*m)/2.0*log(2*PI);
+  double value;
+  double sign;
+  log_det(value, sign, kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve));
   ll -= 0.5*value*sign;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
@@ -422,18 +565,131 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                             Rcpp::Named("LL")=llik);
 }
 
+//' @title Solve Multikernel RR-BLUP
+//' 
+//' @description
+//' Solves a univariate mixed model with multiple random effects.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Mlist a list of M matrices
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X, 
+                         arma::field<arma::mat>& Mlist){
+  int maxcyc = 20;
+  double tol = 1e-4;
+  int k = Mlist.n_elem;
+  int n = y.n_rows;
+  int q = X.n_cols;
+  double df = double(n)-double(q);
+  arma::field<arma::mat> V(k+1);
+  for(arma::uword i=0; i<k; ++i){
+    V(i) = Mlist(i)*Mlist(i).t();
+  }
+  V(k) = arma::eye(n,n);
+  k += 1;
+  arma::mat A(k,k);
+  arma::vec qvec(k);
+  arma::vec sigma(k);
+  arma::mat W0(n,n);
+  arma::mat W(n,n);
+  arma::mat WX(n,q);
+  arma::mat WQX(n,n);
+  double rss;
+  double ldet;
+  double llik;
+  double llik0;
+  double deltaLlik;
+  double taper;
+  double value;
+  double sign;
+  bool invPass;
+  arma::field<arma::mat> T(k);
+  sigma.fill(var(y.col(0)));
+  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
+    W0 = V(0)*sigma(0);
+    for(arma::uword i=1; i<k; ++i){
+      W0 += V(i)*sigma(i);
+    }
+    invPass = inv_sympd(W,W0);
+    if(!invPass){
+      W = pinv(W0);
+    }
+    WX = W*X;
+    WQX = W - WX*solve(X.t()*WX, WX.t());
+    rss = as_scalar(y.t()*WQX*y);
+    for(arma::uword i=0; i<k; ++i){
+      sigma(i) = sigma(i)*(rss/df);
+    }
+    WQX = WQX*(df/rss);
+    log_det(value, sign, WQX);
+    ldet = value*sign;
+    llik = ldet/2 - df/2;
+    if(cycle == 1) 
+      llik0 = llik;
+    deltaLlik = llik - llik0;
+    llik0 = llik;
+    for(arma::uword i=0; i<k; ++i){
+      T(i) = WQX*V(i);
+    }
+    for(arma::uword i=0; i<k; ++i){
+      qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
+      for(arma::uword j=0; j<k; ++j){
+        A(i,j) = accu(T(i)%T(j).t());
+      }
+    }
+    A = pinv(A);
+    qvec = A*qvec;
+    if(cycle == 1){
+      taper = 0.5;
+    }else if(cycle == 2){
+      taper = 0.7;
+    }else{
+      taper = 0.9;
+    }
+    sigma += taper*qvec;
+    while(sigma.min() < -(1e-6)){
+      sigma(sigma.index_min()) = -(1e-6);
+    }
+    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+      break;
+    }
+    if(max(abs(qvec)) < tol){
+      break;
+    }
+  }
+  arma::mat beta(q,1);
+  arma::field<arma::mat> u(k-1);
+  arma::mat ee(n,1);
+  beta = solve(X.t()*W*X,X.t()*W*y);
+  ee = y - X*beta;
+  for(arma::uword i=0; i<(k-1); ++i){
+    u(i) = sigma(i)*Mlist(i).t()*W*ee;
+  }
+  arma::vec Vu(k-1);
+  Vu = sigma(arma::span(0,k-2));
+  arma::vec Ve(1);
+  Ve = sigma(k-1);
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=llik);
+}
+
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, 
                          std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
-  arma::mat Z = readMat(genoTrain,y.n_elem,nMarker,' ',0,0);
+  arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ',0,1);
   reps = sqrt(1.0/reps);
   sweepReps(y,reps);
   sweepReps(X,reps);
-  sweepReps(Z,reps);
-  arma::mat K = arma::eye(nMarker,nMarker);
-  return solveUVM(y, X, Z, K);
+  sweepReps(M,reps);
+  return solveRRBLUP(y, X, M);
 }
 
 // Called by RRBLUP function
@@ -441,13 +697,12 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, 
                             std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
-  arma::mat Z = readMat(genoTrain,Y.n_rows,nMarker,' ',0,0);
+  arma::mat M = readMat(genoTrain,Y.n_rows,nMarker,' ',0,1);
   reps = sqrt(1.0/reps);
   sweepReps(Y,reps);
   sweepReps(X,reps);
-  sweepReps(Z,reps);
-  arma::mat K = arma::eye(nMarker,nMarker);
-  return solveMVM(Y, X, Z, K);
+  sweepReps(M,reps);
+  return solveRRBLUPMV(Y, X, M);
 }
 
 // Called by RRBLUP_GCA function
@@ -457,18 +712,15 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           int nMarker){
   int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::field<arma::mat> Zlist(2);
-  Zlist(0) = readMat(genoFemale,n,nMarker,' ',0,0);
-  Zlist(1) = readMat(genoMale,n,nMarker,' ',0,0);
-  arma::field<arma::mat> Klist(2);
-  Klist(0) = arma::eye(nMarker,nMarker);
-  Klist(1) = arma::eye(nMarker,nMarker);
+  arma::field<arma::mat> Mlist(2);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
   reps = sqrt(1.0/reps);
   sweepReps(y, reps);
   sweepReps(X, reps);
-  sweepReps(Zlist(0), reps);
-  sweepReps(Zlist(1), reps);
-  return solveMKM(y,X,Zlist,Klist);
+  sweepReps(Mlist(0), reps);
+  sweepReps(Mlist(1), reps);
+  return solveRRBLUPMK(y,X,Mlist);
 }
 
 // Called by RRBLUP_SCA function
@@ -478,23 +730,19 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           int nMarker){
   int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::field<arma::mat> Zlist(3);
-  Zlist(0) = readMat(genoFemale,n,nMarker,' ',0,0);
-  Zlist(0) = Zlist(0)*2-1;
-  Zlist(1) = readMat(genoMale,n,nMarker,' ',0,0);
-  Zlist(1) = Zlist(1)*2-1;
-  Zlist(2) = Zlist(0)%Zlist(1);
-  arma::field<arma::mat> Klist(3);
-  Klist(0) = arma::eye(nMarker,nMarker);
-  Klist(1) = arma::eye(nMarker,nMarker);
-  Klist(2) = arma::eye(nMarker,nMarker);
+  arma::field<arma::mat> Mlist(3);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = Mlist(0)*2-1;
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = Mlist(1)*2-1;
+  Mlist(2) = Mlist(0)%Mlist(1);
   reps = sqrt(1.0/reps);
   sweepReps(y, reps);
   sweepReps(X, reps);
-  sweepReps(Zlist(0), reps);
-  sweepReps(Zlist(1), reps);
-  sweepReps(Zlist(2), reps);
-  return solveMKM(y,X,Zlist,Klist);
+  sweepReps(Mlist(0), reps);
+  sweepReps(Mlist(1), reps);
+  sweepReps(Mlist(2), reps);
+  return solveRRBLUPMK(y,X,Mlist);
 }
 
 //' @title Calculate G Matrix

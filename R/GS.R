@@ -83,28 +83,28 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
   #Write genotype.txt, unless snpChip=0
   if(snpChip!=0){
     if(useQtl){
-      write.table(pullQtlGeno(pop,snpChip,simParam=simParam),
-                  file.path(dir,"genotype.txt"),append=TRUE,
-                  col.names=FALSE,row.names=FALSE)
+      writeGeno(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
+                simParam@traits[[snpChip]]@lociLoc,
+                file.path(dir,"genotype.txt"))
       if(includeHaplo){
-        write.table(pullQtlHaplo(pop,snpChip,haplo=1,simParam=simParam),
-                    file.path(dir,"haplotype1.txt"),append=TRUE,
-                    col.names=FALSE,row.names=FALSE)
-        write.table(pullQtlHaplo(pop,snpChip,haplo=2,simParam=simParam),
-                    file.path(dir,"haplotype2.txt"),append=TRUE,
-                    col.names=FALSE,row.names=FALSE)
+        writeOneHaplo(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
+                      simParam@traits[[snpChip]]@lociLoc,1L,
+                      file.path(dir,"haplotype1.txt"))
+        writeOneHaplo(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
+                      simParam@traits[[snpChip]]@lociLoc,2L,
+                      file.path(dir,"haplotype2.txt"))
       }
     }else{
-      write.table(pullSnpGeno(pop,snpChip,simParam=simParam),
-                  file.path(dir,"genotype.txt"),append=TRUE,
-                  col.names=FALSE,row.names=FALSE)
+      writeGeno(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
+                simParam@snpChips[[snpChip]]@lociLoc,
+                file.path(dir,"genotype.txt"))
       if(includeHaplo){
-        write.table(pullSnpHaplo(pop,snpChip,haplo=1,simParam=simParam),
-                    file.path(dir,"haplotype1.txt"),append=TRUE,
-                    col.names=FALSE,row.names=FALSE)
-        write.table(pullSnpHaplo(pop,snpChip,haplo=2,simParam=simParam),
-                    file.path(dir,"haplotype2.txt"),append=TRUE,
-                    col.names=FALSE,row.names=FALSE)
+        writeOneHaplo(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
+                      simParam@snpChips[[snpChip]]@lociLoc,1L,
+                      file.path(dir,"haplotype1.txt"))
+        writeOneHaplo(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
+                      simParam@snpChips[[snpChip]]@lociLoc,2L,
+                      file.path(dir,"haplotype2.txt"))
       }
     }
   }
@@ -368,10 +368,7 @@ RRBLUPMemUse = function(nInd,nMarker){
   y = nInd
   X = nInd #times fixed effects, assuming 1 here
   Z = nInd*nMarker
-  K = nMarker*nMarker
   S = nInd*nInd
-  ZK = nInd*nMarker
-  ZKZ = nInd*nInd
   eigval = nInd
   eigvec = nInd*nInd
   eta = nInd

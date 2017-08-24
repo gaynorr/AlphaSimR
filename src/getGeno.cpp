@@ -110,3 +110,29 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
   }
   return output;
 }
+
+// [[Rcpp::export]]
+void writeGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+               const arma::ivec& lociPerChr,
+               arma::uvec lociLoc,
+               Rcpp::String filePath){
+  arma::Mat<unsigned char> output;
+  output = getGeno(geno,lociPerChr,lociLoc);
+  std::ofstream outFile;
+  outFile.open(filePath, std::ios_base::app);
+  output.save(outFile,arma::raw_ascii);
+  outFile.close();
+}
+
+// [[Rcpp::export]]
+void writeOneHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 
+                   const arma::ivec& lociPerChr, 
+                   arma::uvec lociLoc, int haplo,
+                   Rcpp::String filePath){
+  arma::Mat<unsigned char> output;
+  output = getOneHaplo(geno,lociPerChr,lociLoc,haplo);
+  std::ofstream outFile;
+  outFile.open(filePath, std::ios_base::app);
+  output.save(outFile,arma::raw_ascii);
+  outFile.close();
+}

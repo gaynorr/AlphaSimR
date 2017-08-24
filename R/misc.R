@@ -37,9 +37,13 @@ smithHazel = function(econWt,varG,varP){
 #' 
 #' @param Y a matrix of trait values
 #' @param b a vector of weights
+#' @param scale should Y be scaled and centered
 #' 
 #' @export
-selIndex = function(Y,b){
+selIndex = function(Y,b,scale=FALSE){
+  if(scale){
+    return(scale(Y)%*%b)
+  }
   return(Y%*%b)
 }
 

@@ -42,11 +42,16 @@ extern SEXP AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_sampHalfDialComb(SEXP, SEXP);
 extern SEXP AlphaSimR_solveMKM(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveMVM(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_solveRRBLUP(SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_solveRRBLUPMK(SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_solveRRBLUPMV(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveUVM(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_writeGeno(SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_writeOneHaplo(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_zero();
 
 static const R_CallMethodDef CallEntries[] = {
@@ -84,11 +89,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_sampHalfDialComb",  (DL_FUNC) &AlphaSimR_sampHalfDialComb,  2},
     {"AlphaSimR_solveMKM",          (DL_FUNC) &AlphaSimR_solveMKM,          4},
     {"AlphaSimR_solveMVM",          (DL_FUNC) &AlphaSimR_solveMVM,          5},
+    {"AlphaSimR_solveRRBLUP",       (DL_FUNC) &AlphaSimR_solveRRBLUP,       3},
+    {"AlphaSimR_solveRRBLUPMK",     (DL_FUNC) &AlphaSimR_solveRRBLUPMK,     3},
+    {"AlphaSimR_solveRRBLUPMV",     (DL_FUNC) &AlphaSimR_solveRRBLUPMV,     4},
     {"AlphaSimR_solveUVM",          (DL_FUNC) &AlphaSimR_solveUVM,          4},
     {"AlphaSimR_tuneTraitA",        (DL_FUNC) &AlphaSimR_tuneTraitA,        3},
     {"AlphaSimR_tuneTraitAD",       (DL_FUNC) &AlphaSimR_tuneTraitAD,       5},
     {"AlphaSimR_writeASGenotypes",  (DL_FUNC) &AlphaSimR_writeASGenotypes,  7},
     {"AlphaSimR_writeASHaplotypes", (DL_FUNC) &AlphaSimR_writeASHaplotypes, 7},
+    {"AlphaSimR_writeGeno",         (DL_FUNC) &AlphaSimR_writeGeno,         4},
+    {"AlphaSimR_writeOneHaplo",     (DL_FUNC) &AlphaSimR_writeOneHaplo,     5},
     {"AlphaSimR_zero",              (DL_FUNC) &AlphaSimR_zero,              0},
     {NULL, NULL, 0}
 };

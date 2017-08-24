@@ -4,12 +4,14 @@
 \alias{selIndex}
 \title{Selection Index}
 \usage{
-selIndex(Y, b)
+selIndex(Y, b, scale = FALSE)
 }
 \arguments{
 \item{Y}{a matrix of trait values}
 
 \item{b}{a vector of weights}
+
+\item{scale}{should Y be scaled and centered}
 }
 \description{
 Calculates values of a selection index given trait values and 
