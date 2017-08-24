@@ -828,16 +828,13 @@ void Simulator::runFromAlphaSimRParams(int sampleSize, float sequenceLength, dou
                                        vector<float> *migrationRate,
                                        vector<int> lineage) {
   
-  double defaultMigrationRate;
+  // double defaultMigrationRate;
   
   pConfig = new Configuration();
   pConfig->iTotalPops = 1;
-  
-  EventPtrList *pEventList = new EventPtrList;
-  
+    
   double dDefaultMigrationRate = 0.0;
   double dDefaultPopSize = 1.0;
-  double dDefaultGrowthAlpha = 0.0;
   
   for (unsigned int i = 0; i < pConfig->iTotalPops; ++i) {
     vector<double> newRow;
