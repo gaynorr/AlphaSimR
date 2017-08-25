@@ -951,7 +951,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List MaCS(Rcpp::String args, long long int maxSites=0){
+Rcpp::List MaCS(Rcpp::String args, arma::uword maxSites=0){
   
   // Run MaCS
   vector<AlphaSimRReturn> macsOutput;
@@ -965,7 +965,7 @@ Rcpp::List MaCS(Rcpp::String args, long long int maxSites=0){
     Rcpp::stop("Macs has failed to run.");
   }
   // Check MaCS output
-  long long int nSites, nHap;
+  arma::uword nSites, nHap;
   arma::Mat<unsigned char> haplo;
   arma::vec genMap;
   nSites = macsOutput.size();
@@ -978,7 +978,7 @@ Rcpp::List MaCS(Rcpp::String args, long long int maxSites=0){
     }
     haplo.set_size(nHap,maxSites);
     genMap.set_size(maxSites);
-    arma::ivec selSites;
+    arma::Col<arma::uword> selSites;
     selSites = sampleInt(maxSites,nSites); //Samples sites
     for(arma::uword i=0; i<selSites.n_elem; i++){
       for(arma::uword j=0; j<nHap; j++){

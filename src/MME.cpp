@@ -6,9 +6,10 @@
 
 // Note: Fortran compiler appends '_' to subroutine name
 // See http://www.netlib.org/lapack/explore-html/ for description of args
-extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, int* N, double* A, int* LDA, double* VL,
-                       double* VU, int* IL, int* IU, double* ABSTOL, int* M, double* W, double* Z,
-                       int* LDZ, int* ISUPPZ, double* WORK, int* LWORK, int* IWORK, int* LIWORK, int* INFO);
+extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
+                       double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
+                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK, 
+                       long long int* LIWORK, long long int* INFO);
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices on Eddie
@@ -24,34 +25,34 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   }
   char RANGE = 'A';
   char UPLO = 'L';
-  int N = X.n_rows;
+  long long int N = X.n_rows;
   // A = X
-  int LDA = N;
+  long long int LDA = N;
   double VL = 0.0;
   double VU = 0.0;
-  int IL;
-  int IU;
+  long long int IL;
+  long long int IU;
   double ABSTOL = 0.0;
-  int M = N;
+  long long int M = N;
   // W=eigval
   // Z=eigvec
-  int LDZ = N;
-  arma::Col<int> ISUPPZ(2*M);
+  long long int LDZ = N;
+  arma::Col<long long int> ISUPPZ(2*M);
   // WORK length to be determined
   double tmpWORK;
-  int LWORK = -1; // To be calculated
+  long long int LWORK = -1; // To be calculated
   // IWORK length to be determined
-  int tmpIWORK;
-  int LIWORK = -1; // To be calculated
-  int INFO;
+  long long int tmpIWORK;
+  long long int LIWORK = -1; // To be calculated
+  long long int INFO;
   // Calculate LWORK and LIWORK
   dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);
-  LWORK = int(tmpWORK);
+  LWORK = (long long int) tmpWORK;
   LIWORK = tmpIWORK;
   // Allocate WORK and IWORK
   arma::vec WORK(LWORK);
-  arma::Col<int> IWORK(LIWORK);
+  arma::Col<long long int> IWORK(LIWORK);
   // Perform decomposition
   dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
