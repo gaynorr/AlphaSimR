@@ -5,7 +5,8 @@
 \title{Make random crosses}
 \usage{
 randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
-  balance = TRUE, simParam = NULL)
+  balance = TRUE, femaleParents = NULL, maleParents = NULL,
+  rawPop = FALSE, ignoreGender = FALSE, simParam = NULL)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}
@@ -21,10 +22,21 @@ randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
 \item{balance}{if using gender, this option will balance the number 
 of progeny per parent}
 
+\item{femaleParents}{an optional vector of indices for allowable 
+female parents}
+
+\item{maleParents}{an optional vector of indices for allowable 
+male parents}
+
+\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
+
+\item{ignoreGender}{should gender be ignored}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} or 
+\code{\link{RawPop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross2}} that randomly 

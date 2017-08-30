@@ -5,7 +5,7 @@
 \title{Select families}
 \usage{
 selectFam(pop, nFam, trait = 1, use = "pheno", selectTop = TRUE,
-  simParam = NULL, ...)
+  returnPop = TRUE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -22,6 +22,10 @@ or phenotypes (\code{pheno}, default)}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
+
+\item{returnPop}{should results be returned as a 
+\code{\link{Pop-class}}. If FALSE, only the index of selected 
+individuals is returned.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 

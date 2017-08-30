@@ -4,7 +4,8 @@
 \alias{makeCross2}
 \title{Make designed crosses}
 \usage{
-makeCross2(females, males, crossPlan, id = NULL, simParam = NULL)
+makeCross2(females, males, crossPlan, id = NULL, rawPop = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}
@@ -17,10 +18,13 @@ population or character strings for the IDs.}
 
 \item{id}{optional ids to give to progeny}
 
+\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} or 
+\code{\link{RawPop-class}}
 }
 \description{
 Makes crosses between two populations using a user supplied 

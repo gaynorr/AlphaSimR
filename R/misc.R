@@ -117,3 +117,65 @@ corVar = function(x,rho){
   varY = varX/(rho^2)-varX
   return(x+rnorm(length(x),sd=sqrt(varY)))
 }
+
+#' @title Usefulness Criterion
+#' 
+#' @description Calculates the usefulness criterion
+#' 
+#' @param pop and object of \code{\link{Pop-class}} or 
+#' \code{\link{HybridPop-class}}
+#' @param trait the trait for selection. Either a number indicating 
+#' a single trait or a function returning a vector of length nInd.
+#' @param use select on genetic values (\code{gv}, default), estimated
+#' breeding values (\code{ebv}), breeding values (\code{bv}), 
+#' or phenotypes (\code{pheno})
+#' @param p the proportion of individuals selected
+#' @param selectTop selects highest values if true. 
+#' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param ... additional arguments if using a function for 
+#' trait
+#' 
+#' @return Returns a numeric value
+#' 
+#' @export
+usefulness = function(pop,trait=1,use="gv",p=0.1,
+                      selectTop=TRUE,simParam=NULL,...){
+  if(is.null(simParam) & use=="bv"){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
+  use = tolower(use)
+  if(class(trait)=="function"){
+    if(use == "gv"){
+      response = trait(pop@gv,...)
+    }else if(use == "ebv"){
+      response = trait(pop@ebv,...)
+    }else if(use == "pheno"){
+      response = trait(pop@pheno,...)
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
+      response = trait(response,...)
+    }else{
+      stop(paste0("Use=",use," is not an option"))
+    }
+  }else{
+    stopifnot(length(trait)==1,trait<=pop@nTraits)
+    if(use == "gv"){
+      response = pop@gv[,trait]
+    }else if(use == "ebv"){
+      response = pop@ebv[,trait]
+    }else if(use == "pheno"){
+      response = pop@pheno[,trait]
+    }else if(use == "bv"){
+      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
+    }else{
+      stop(paste0("Use=",use," is not an option"))
+    }
+  }
+  if(any(is.na(response))){
+    stop("selection trait has missing values, phenotype may need to be set")
+  }
+  response = sort(response,decreasing=selectTop)
+  response = response[1:ceiling(p*length(response))]
+  return(mean(response))
+}

@@ -13,6 +13,9 @@
 #' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param returnPop should results be returned as a 
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' individuals is returned.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -22,8 +25,8 @@
 #' 
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                     simParam=NULL,...){
-  if(is.null(simParam)){
+                     returnPop=TRUE,simParam=NULL,...){
+  if(is.null(simParam) & use=="bv"){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
   stopifnot(nInd<=pop@nInd)
@@ -59,7 +62,11 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
     stop("selection trait has missing values, phenotype may need to be set")
   }
   take = order(response,decreasing=selectTop)
-  return(pop[take[1:nInd]])
+  if(returnPop){
+    return(pop[take[1:nInd]])
+  }else{
+    return(take[1:nInd])
+  }
 }
 
 #' @title Select males
@@ -77,6 +84,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param returnPop should results be returned as a 
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' individuals is returned.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -86,7 +96,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                      simParam=NULL,...){
+                      returnPop=TRUE,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -94,9 +104,10 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"males"))
   }
-  pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop,simParam=simParam,...)
-  return(pop)
+  output = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
+                     selectTop=selectTop,returnPop=returnPop,
+                     simParam=simParam,...)
+  return(output)
 }
 
 #' @title Select females
@@ -114,6 +125,9 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param returnPop should results be returned as a 
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' individuals is returned.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -123,7 +137,7 @@ selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                        simParam=NULL,...){
+                        returnPop=TRUE,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -131,9 +145,10 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
   if(nInd>pop@nInd){
     stop(paste("the population only contains",pop@nInd,"females"))
   }
-  pop = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                  selectTop=selectTop,simParam=simParam,...)
-  return(pop)
+  output = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
+                     selectTop=selectTop,returnPop=returnPop,
+                     simParam=simParam,...)
+  return(output)
 }
 
 #' @title Select families
@@ -151,6 +166,9 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param returnPop should results be returned as a 
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' individuals is returned.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -160,8 +178,8 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
-                     simParam=NULL,...){
-  if(is.null(simParam)){
+                     returnPop=TRUE,simParam=NULL,...){
+  if(is.null(simParam) & use=="bv"){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
   families = paste(pop@mother,pop@father,sep="_")
@@ -207,7 +225,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
   #Select families
   take = order(response,decreasing=selectTop)[1:nFam]
   take = families%in%(famMeans$families[take])
-  return(pop[take])
+  if(returnPop){
+    return(pop[take])
+  }else{
+    return(take)
+  }
 }
 
 #' @title Select individuals within families
@@ -226,6 +248,9 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' or phenotypes (\code{pheno}, default)
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param returnPop should results be returned as a 
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' individuals is returned.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -235,9 +260,9 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' 
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",
-                           selectTop=TRUE,simParam=NULL,
-                           ...){
-  if(is.null(simParam)){
+                           selectTop=TRUE,returnPop=TRUE,
+                           simParam=NULL,...){
+  if(is.null(simParam) & use=="bv"){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
   families = paste(pop@mother,pop@father,sep="_")
@@ -280,6 +305,10 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
     return(index)
   }
   take = unlist(sapply(unique(families),selInFam))
-  return(pop[take])
+  if(returnPop){
+    return(pop[take])
+  }else{
+    return(take)
+  }
 }
 

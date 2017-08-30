@@ -4,7 +4,7 @@
 \alias{makeCross}
 \title{Make designed crosses}
 \usage{
-makeCross(pop, crossPlan, id = NULL, simParam = NULL)
+makeCross(pop, crossPlan, id = NULL, rawPop = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -15,10 +15,13 @@ population or character strings for the IDs.}
 
 \item{id}{optional ids to give to progeny}
 
+\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} or 
+\code{\link{RawPop-class}}
 }
 \description{
 Makes crosses within a population using a user supplied 

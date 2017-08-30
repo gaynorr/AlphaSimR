@@ -9,19 +9,21 @@
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #'
 #' @export
-makeCross = function(pop,crossPlan,id=NULL,simParam=NULL){
+makeCross = function(pop,crossPlan,id=NULL,rawPop=FALSE,
+                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
-  stopifnot(class(pop)=="Pop")
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],pop$id),
                       match(crossPlan[,2],pop$id))
@@ -29,16 +31,17 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
-  rawPop = new("RawPop",
-               nInd=nrow(crossPlan),
-               nChr=pop@nChr,
-               ploidy=pop@ploidy,
-               nLoci=pop@nLoci,
-               geno=cross2(pop@geno,crossPlan[,1],
-                           pop@geno,crossPlan[,2],
-                           simParam@genMaps,
-                           simParam@recombRatio))
-  return(newPop(rawPop=rawPop,id=id,
+  rPop = new("RawPop",
+             nInd=nrow(crossPlan),
+             nChr=pop@nChr,
+             ploidy=pop@ploidy,
+             nLoci=pop@nLoci,
+             geno=cross2(pop@geno,crossPlan[,1],
+                         pop@geno,crossPlan[,2],
+                         simParam@genMaps,
+                         simParam@recombRatio))
+  if(rawPop) return(rPop)
+  return(newPop(rawPop=rPop,id=id,
                 mother=pop@id[crossPlan[,1]],
                 father=pop@id[crossPlan[,2]],
                 simParam=simParam))
@@ -56,24 +59,38 @@ makeCross = function(pop,crossPlan,id=NULL,simParam=NULL){
 #' @param id optional id to assign to progeny
 #' @param balance if using gender, this option will balance the number 
 #' of progeny per parent
+#' @param parents an optional vector of indices for allowable parents
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
+#' @param ignoreGender should gender be ignored
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
-                     id=NULL,balance=TRUE,simParam=NULL){
+                     id=NULL,balance=TRUE,parents=NULL,
+                     rawPop=FALSE,ignoreGender=FALSE,
+                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  if(simParam@gender=="no"){
-    crossPlan = sampHalfDialComb(pop@nInd, nCrosses)
+  if(is.null(parents)){
+    parents = 1:pop@nInd
   }else{
-    female = which(pop@gender=="F")
+    parents = as.integer(parents)
+  }
+  n = length(parents)
+  if(simParam@gender=="no" | ignoreGender){
+    crossPlan = sampHalfDialComb(n, nCrosses)
+    crossPlan[,1] = parents[crossPlan[,1]]
+    crossPlan[,2] = parents[crossPlan[,2]]
+  }else{
+    female = which(pop@gender=="F" & (1:n)%in%parents)
     if(length(female)==0){
       stop("population doesn't contain any females")
     }
-    male = which(pop@gender=="M")
+    male = which(pop@gender=="M" & (1:n)%in%parents)
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
@@ -97,7 +114,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
                       rep(crossPlan[,2],each=nProgeny))
   }
   return(makeCross(pop=pop,crossPlan=crossPlan,id=id,
-                   simParam=simParam))
+                   rawPop=rawPop,simParam=simParam))
 }
 
 #' @title Make designed crosses
@@ -112,20 +129,21 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
 #' @param id optional ids to give to progeny
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #'
 #' @export
 makeCross2 = function(females,males,crossPlan,id=NULL,
-                      simParam=NULL){
+                      rawPop=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
   if(females@ploidy!=2){
     stop("Only works with diploids")
   }
-  stopifnot(class(males)=="Pop",class(females)=="Pop")
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],females$id),
                       match(crossPlan[,2],males$id))
@@ -133,16 +151,17 @@ makeCross2 = function(females,males,crossPlan,id=NULL,
       stop("Failed to match supplied IDs")
     }
   }
-  rawPop = new("RawPop",
-               nInd=nrow(crossPlan),
-               nChr=females@nChr,
-               ploidy=females@ploidy,
-               nLoci=females@nLoci,
-               geno=cross2(females@geno,crossPlan[,1],
-                           males@geno,crossPlan[,2],
-                           simParam@genMaps,
-                           simParam@recombRatio))
-  return(newPop(rawPop=rawPop,id=id,
+  rPop = new("RawPop",
+             nInd=nrow(crossPlan),
+             nChr=females@nChr,
+             ploidy=females@ploidy,
+             nLoci=females@nLoci,
+             geno=cross2(females@geno,crossPlan[,1],
+                         males@geno,crossPlan[,2],
+                         simParam@genMaps,
+                         simParam@recombRatio))
+  if(rawPop) return(rPop)
+  return(newPop(rawPop=rPop,id=id,
                 mother=females@id[crossPlan[,1]],
                 father=males@id[crossPlan[,2]],
                 simParam=simParam))
@@ -162,24 +181,50 @@ makeCross2 = function(females,males,crossPlan,id=NULL,
 #' @param id optional id to assign to progeny
 #' @param balance if using gender, this option will balance the number 
 #' of progeny per parent
+#' @param femaleParents an optional vector of indices for allowable 
+#' female parents
+#' @param maleParents an optional vector of indices for allowable 
+#' male parents
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
+#' @param ignoreGender should gender be ignored
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #' 
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
-                     id=NULL,balance=TRUE,simParam=NULL){
+                     id=NULL,balance=TRUE,femaleParents=NULL,
+                     maleParents=NULL,rawPop=FALSE,
+                     ignoreGender=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  if(simParam@gender=="no"){
-      crossPlan = sampAllComb(females@nInd,males@nInd,nCrosses)
+  #Set allowable parents
+  if(is.null(femaleParents)){
+    femaleParents = 1:females@nInd
   }else{
-    female = which(females@gender=="F")
+    femaleParents = as.integer(femaleParents)
+  }
+  if(is.null(maleParents)){
+    maleParents = 1:males@nInd
+  }else{
+    maleParents = as.integer(maleParents)
+  }
+  nF = length(femaleParents)
+  nM = length(maleParents)
+  if(simParam@gender=="no" | ignoreGender){
+      crossPlan = sampAllComb(nF,nM,nCrosses)
+      crossPlan[,1] = femaleParents[crossPlan[,1]]
+      crossPlan[,2] = maleParents[crossPlan[,2]]
+  }else{
+    female = which(females@gender=="F" & 
+                     (1:nF)%in%femaleParents)
     if(length(female)==0){
       stop("population doesn't contain any females")
     }
-    male = which(males@gender=="M")
+    male = which(males@gender=="M" & 
+                   (1:nM)%in%maleParents)
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
@@ -204,7 +249,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
   }
   return(makeCross2(females=females,males=males,
                     crossPlan=crossPlan,
-                    id=id,simParam=simParam))
+                    id=id,rawPop=rawPop,simParam=simParam))
 }
 
 #' @title Self individuals
@@ -216,32 +261,40 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
 #' @param id optional id to give to progeny
+#' @param parents an optional vector of indices for allowable parents
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #' 
 #' @export
-self = function(pop,nProgeny,id=NULL,simParam=NULL){
+self = function(pop,nProgeny=1,id=NULL,parents=NULL,
+                rawPop=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  stopifnot(simParam@gender=="no")
+  if(is.null(parents)){
+    parents = 1:pop@nInd
+  }else{
+    parents = as.integer(parents)
+  }
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
-  stopifnot(class(pop)=="Pop")
-  crossPlan = cbind(rep(1:pop@nInd,each=nProgeny),
-                    rep(1:pop@nInd,each=nProgeny))
-  rawPop = new("RawPop",
-               nInd=nrow(crossPlan),
-               nChr=pop@nChr,
-               ploidy=pop@ploidy,
-               nLoci=pop@nLoci,
-               geno=cross2(pop@geno,crossPlan[,1],
-                           pop@geno,crossPlan[,2],
-                           simParam@genMaps,
-                           simParam@recombRatio))
-  return(newPop(rawPop=rawPop,id=id,
+  crossPlan = rep(parents,each=nProgeny)
+  crossPlan = cbind(crossPlan,crossPlan)
+  rPop = new("RawPop",
+             nInd=nrow(crossPlan),
+             nChr=pop@nChr,
+             ploidy=pop@ploidy,
+             nLoci=pop@nLoci,
+             geno=cross2(pop@geno,crossPlan[,1],
+                         pop@geno,crossPlan[,2],
+                         simParam@genMaps,
+                         simParam@recombRatio))
+  if(rawPop) return(rPop)
+  return(newPop(rawPop=rPop,id=id,
                 mother=rep(pop@mother,each=nProgeny),
                 father=rep(pop@father,each=nProgeny),
                 simParam=simParam))
@@ -257,29 +310,32 @@ self = function(pop,nProgeny,id=NULL,simParam=NULL){
 #' @param id optional id to assign to DH lines
 #' @param useFemale should female recombination rates be used. 
 #' This parameter has no effect if, recombRatio=1.
+#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of 'SimParam' class
 #' 
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
+#' 
 #' @export
-makeDH = function(pop,nDH,id=NULL,useFemale=TRUE,
-                  simParam=NULL){
+makeDH = function(pop,nDH=1,id=NULL,useFemale=TRUE,
+                  rawPop=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  stopifnot(simParam@gender=="no")
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
-  stopifnot(class(pop)=="Pop")
-  rawPop = new("RawPop",
-               nInd=as.integer(pop@nInd*nDH),
-               nChr=pop@nChr,
-               ploidy=pop@ploidy,
-               nLoci=pop@nLoci,
-               geno=createDH2(pop@geno,nDH,
-                              simParam@genMaps,
-                              simParam@recombRatio,
-                              useFemale))
-  return(newPop(rawPop=rawPop,id=id,
+  rPop = new("RawPop",
+             nInd=as.integer(pop@nInd*nDH),
+             nChr=pop@nChr,
+             ploidy=pop@ploidy,
+             nLoci=pop@nLoci,
+             geno=createDH2(pop@geno,nDH,
+                            simParam@genMaps,
+                            simParam@recombRatio,
+                            useFemale))
+  if(rawPop) return(rPop)
+  return(newPop(rawPop=rPop,id=id,
                 mother=rep(pop@mother,each=nDH),
                 father=rep(pop@father,each=nDH),
                 simParam=simParam))
