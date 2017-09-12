@@ -151,9 +151,10 @@ arma::mat makeZ(arma::uvec& z, int nGeno){
 
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
-void sweepReps(arma::mat& X, arma::vec& reps){
+void sweepReps(arma::mat& X, arma::vec reps){
+  reps = sqrt(reps);
   for(arma::uword i=0; i<X.n_cols; ++i){
-    X.col(i) = X.col(i)/reps;
+    X.col(i) = X.col(i)%reps;
   }
 }
 
@@ -686,7 +687,6 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
                          std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
   arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ',0,1);
-  reps = sqrt(1.0/reps);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -699,7 +699,6 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker){
   arma::mat X = makeX(x);
   arma::mat M = readMat(genoTrain,Y.n_rows,nMarker,' ',0,1);
-  reps = sqrt(1.0/reps);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -716,7 +715,6 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
   Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
-  reps = sqrt(1.0/reps);
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
@@ -737,7 +735,6 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
   Mlist(1) = Mlist(1)*2-1;
   Mlist(2) = Mlist(0)%Mlist(1);
-  reps = sqrt(1.0/reps);
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
