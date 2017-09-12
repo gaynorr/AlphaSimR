@@ -9,7 +9,14 @@
 \usage{
 \S4method{[}{MapPop}(x, i)
 
-\S4method{c}{MapPop}(x, ..., recursive = FALSE)
+\S4method{c}{MapPop}(x, ...)
+}
+\arguments{
+\item{x}{a 'MapPop'}
+
+\item{i}{index of chromosomes}
+
+\item{...}{aditional 'MapPop' objects}
 }
 \description{
 Extends \code{\link{RawPop-class}} to add a genetic map. 
@@ -19,7 +26,7 @@ for creating initial populations and setting traits in the
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract \code{\link{RawPop-class}} by index
+\item \code{[}: Extract MapPop by index
 
 \item \code{c}: Combine MapPop chromosomes
 }}

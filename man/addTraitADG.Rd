@@ -4,10 +4,13 @@
 \alias{addTraitADG}
 \title{Add an additive and dominance GxE trait}
 \usage{
-addTraitADG(nQtlPerChr, meanG, varG, domDegree, varGE, corr = matrix(1),
-  simParam = SIMPARAM, founderPop = FOUNDERPOP)
+addTraitADG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, domDegree,
+  domDegreeVar = 0, corr = NULL, corrGxe = NULL, useVarA = FALSE,
+  gamma = FALSE, shape = 1, simParam = NULL)
 }
 \arguments{
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single 
 value or nChr values.}
 
@@ -15,16 +18,26 @@ value or nChr values.}
 
 \item{varG}{a vector of total genetic variances for one or more traits}
 
-\item{domDegree}{the dominance degree of individual loci. 
-Can be a single value or nLoci values.}
+\item{varEnv}{a vector of environmental variances for one or more traits}
 
 \item{varGE}{a vector of total genotype-by-environment variances for the traits}
 
+\item{domDegree}{mean dominance degree}
+
+\item{domDegreeVar}{variance of dominance degree}
+
 \item{corr}{a matrix of correlations between traits}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{corrGxe}{a matrix of correlations between GxE effects}
 
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
+\item{useVarA}{tune according to additive genetic variance if true}
+
+\item{gamma}{should a gamma distribution be used instead of normal}
+
+\item{shape}{value of the shape parameter if using a gamma distribution. 
+Note that shape=1 is equivalent to an exponential distribution.}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

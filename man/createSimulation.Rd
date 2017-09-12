@@ -4,10 +4,13 @@
 \alias{createSimulation}
 \title{Create new simulation}
 \usage{
-createSimulation(maxQtl, maxSnp, snpQtlOverlap = FALSE, minSnpFreq = NULL,
-  gender = "no", founderPop = FOUNDERPOP)
+createSimulation(founderPop, maxQtl = 0, maxSnp = 0,
+  snpQtlOverlap = FALSE, minSnpFreq = NULL, gender = "no",
+  recombRatio = 1)
 }
 \arguments{
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
 \item{maxQtl}{the maximum number of segSites for QTLs. 
 Can be a single value or values for each chromosome.}
 
@@ -21,7 +24,9 @@ Can be a single value or values for each chromosome.}
 \item{gender}{should gender be considered in the simulation. 
 Options are: no, yes_rand, or yes_sys. See details.}
 
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
+\item{recombRatio}{ratio of genetic recombination in female 
+gametes relative to male gametes. A value of 1 means equal 
+recombination rates in both sexes.}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

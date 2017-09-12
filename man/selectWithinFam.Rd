@@ -5,7 +5,7 @@
 \title{Select individuals within families}
 \usage{
 selectWithinFam(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
-  ...)
+  returnPop = TRUE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -23,10 +23,14 @@ or phenotypes (\code{pheno}, default)}
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
 
-\item{...}{additional arguments if using a function for 
-trait}
+\item{returnPop}{should results be returned as a 
+\code{\link{Pop-class}}. If FALSE, only the index of selected 
+individuals is returned.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
+
+\item{...}{additional arguments if using a function for 
+trait}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

@@ -5,7 +5,7 @@
 \title{Set GCA as phenotype}
 \usage{
 setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, w = 0.5,
-  inbred = FALSE, simParam = SIMPARAM)
+  inbred = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

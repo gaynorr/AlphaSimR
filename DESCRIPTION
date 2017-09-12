@@ -1,16 +1,16 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 0.2.4
-Author: Chris Gaynor
+Version: 0.3.0
+Author: Chris Gaynor, David Wilson, Daniel Money
 Maintainer: Chris Gaynor <gaynor.robert@hotmail.com>
 Description: This package contains classes and functions for simulating plant and animal breeding programs.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: MASS, methods
+Depends: R (>= 3.4.0), methods
 Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, BH
 RoxygenNote: 6.0.1
-Suggests: knitr, rmarkdown, testthat
+Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

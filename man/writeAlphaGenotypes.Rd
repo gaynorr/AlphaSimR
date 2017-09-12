@@ -5,7 +5,7 @@
 \title{Write AlphaSuite style genotypes}
 \usage{
 writeAlphaGenotypes(pop, file, chr = 1, chips = rep(0, pop@nInd),
-  simParam = SIMPARAM)
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

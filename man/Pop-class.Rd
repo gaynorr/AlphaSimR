@@ -9,10 +9,17 @@
 \usage{
 \S4method{[}{Pop}(x, i)
 
-\S4method{c}{Pop}(x, ..., recursive = FALSE)
+\S4method{c}{Pop}(x, ...)
+}
+\arguments{
+\item{x}{a 'Pop'}
+
+\item{i}{index of individuals}
+
+\item{...}{additional 'Pop' objects}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add genetic values, 
+Extends \code{\link{RawPop-class}} to add gender, genetic values, 
 phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{
@@ -31,6 +38,8 @@ phenotypes, and pedigrees.
 
 \item{\code{father}}{the identifier of the individual's father}
 
+\item{\code{gender}}{gender of individuals}
+
 \item{\code{nTraits}}{number of traits}
 
 \item{\code{gv}}{matrix of genetic values. When using GxE traits,
@@ -40,6 +49,8 @@ gv reflects gv when w=0. Dimensions are nInd by nTraits.}
 nInd by nTraits.}
 
 \item{\code{ebv}}{matrix of estimated breeding values. Dimensions 
-are nInd rows and one or more columns.}
+are nInd rows and a variable number of columns.}
+
+\item{\code{gxe}}{list containing GxE slopes for GxE traits}
 }}
 

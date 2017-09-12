@@ -4,7 +4,7 @@
 \alias{RRBLUP}
 \title{RR-BLUP Model}
 \usage{
-RRBLUP(dir, traits = 1, use = "pheno", simParam = SIMPARAM)
+RRBLUP(dir, traits = 1, use = "pheno", simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}

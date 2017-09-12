@@ -4,12 +4,10 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
+runMacs(nInd, nChr, segSites, inbred = TRUE, species = "TEST",
   split = NULL, manualCommand = NULL, manualGenLen = NULL)
 }
 \arguments{
-\item{macs}{path to MaCS}
-
 \item{nInd}{number of individuals to simulate}
 
 \item{nChr}{number of chromosomes to simulate}
@@ -25,6 +23,9 @@ runMacs(macs, nInd, nChr, segSites, inbred = TRUE, species = "TEST",
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 
 \item{manualGenLen}{user provided genLen option for use with manual command.  For advanced users only.}
+}
+\value{
+an object of \code{\link{MapPop-class}}
 }
 \description{
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.

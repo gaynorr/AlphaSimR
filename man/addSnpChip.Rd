@@ -4,7 +4,7 @@
 \alias{addSnpChip}
 \title{Add SNP chip}
 \usage{
-addSnpChip(nSnpPerChr, simParam = SIMPARAM)
+addSnpChip(nSnpPerChr, simParam = NULL)
 }
 \arguments{
 \item{nSnpPerChr}{number of SNPs per chromosome. 

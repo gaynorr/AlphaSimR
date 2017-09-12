@@ -4,25 +4,16 @@
 \alias{hybridCross}
 \title{Hybrid crossing}
 \usage{
-hybridCross(fPop, mPop, crossPlan = "testcross", varE = NULL, w = 0.5,
-  reps = 1, returnHybridPop = FALSE, chunkSize = 1000,
-  simParam = SIMPARAM)
+hybridCross(females, males, crossPlan = "testcross",
+  returnHybridPop = FALSE, chunkSize = 1000, simParam = NULL)
 }
 \arguments{
-\item{fPop}{female population, an object of \code{\link{Pop-class}}}
+\item{females}{female population, an object of \code{\link{Pop-class}}}
 
-\item{mPop}{male population, an object of \code{\link{Pop-class}}}
+\item{males}{male population, an object of \code{\link{Pop-class}}}
 
 \item{crossPlan}{either "testcross" for all possible combinantions 
 or a matrix with two columns for designed crosses}
-
-\item{varE}{error variance for phenotypes. If NULL, phenotypes 
-aren't calculated.}
-
-\item{w}{environmental covariate for phenotypes}
-
-\item{reps}{number of replications for phenotype. See 
-\code{\link{setPheno}} for details.}
 
 \item{returnHybridPop}{should results be returned as 
 \code{\link{HybridPop-class}}. If false returns results as 

@@ -25,6 +25,9 @@ as SIMPARAM will allow it to be accessed by function defaults.
 
 \item{\code{genMaps}}{"matrix" of chromsome genetic maps}
 
+\item{\code{recombRatio}}{ratio of genetic recombination in 
+females relative to male}
+
 \item{\code{traits}}{list of trait}
 
 \item{\code{snpChips}}{list of SNP chips}
@@ -32,5 +35,7 @@ as SIMPARAM will allow it to be accessed by function defaults.
 \item{\code{potQtl}}{list of potential QTL segregating sites}
 
 \item{\code{potSnp}}{list of potential SNP segregating sites}
+
+\item{\code{lastId}}{last ID number assigned}
 }}
 

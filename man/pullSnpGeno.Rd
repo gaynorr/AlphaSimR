@@ -4,7 +4,7 @@
 \alias{pullSnpGeno}
 \title{Pull SNP genotype}
 \usage{
-pullSnpGeno(pop, snpChip = 1, simParam = SIMPARAM)
+pullSnpGeno(pop, snpChip = 1, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

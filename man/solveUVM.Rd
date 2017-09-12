@@ -16,5 +16,5 @@ solveUVM(y, X, Z, K)
 \item{K}{a matrix with m rows and m columns}
 }
 \description{
-Solves a univariate mixed model of form \deqn{y=X\beta+Zu+e}.
+Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
 }

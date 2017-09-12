@@ -18,5 +18,5 @@ solveMVM(Y, X, Z, K, tol = 1e-06)
 \item{tol}{tolerance for convergence}
 }
 \description{
-Solves a multivariate mixed model of form \deqn{Y=X\beta+Zu+e}.
+Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
 }

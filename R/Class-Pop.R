@@ -4,14 +4,16 @@
 #' @title Raw Population
 #' 
 #' @description 
-#' The raw population class contains only genotype and gender data. 
-#' It is intended as a temporary population whose genentic values aren't needed.
+#' The raw population class contains only genotype data. 
+#' 
+#' @param x a 'RawPop'
+#' @param i index of individuals
+#' @param ... additional 'RawPop' objects
 #' 
 #' @slot nInd number of individuals
 #' @slot nChr number of chromosomes
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
-#' @slot gender gender of individuals
 #' @slot geno "matrix" containing chromosome genotypes. The "matrix" 
 #' has dimensions nChr by 1 and each element is a three dimensional
 #' array of raw values. The array dimensions are nLoci by ploidy by nInd.
@@ -23,14 +25,10 @@ setClass("RawPop",
                  nChr="integer",
                  ploidy="integer",
                  nLoci="integer",
-                 gender="character",
                  geno="matrix"))
 
 setValidity("RawPop",function(object){
   errors = character()
-  if(object@nInd!=length(object@gender)){
-    errors = c(errors,"nInd!=length(gender)")
-  }
   if(object@nChr!=length(object@geno)){
     errors = c(errors,"nChr!=length(geno)")
   }
@@ -62,19 +60,20 @@ setValidity("RawPop",function(object){
   }
 })
 
+
 #' @describeIn RawPop Extract RawPop by index
 setMethod("[",
           signature(x = "RawPop"),
           function(x, i){
-            x@gender = x@gender[i]
-            x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
+            x@nInd = dim(x@geno[[1]])[3]
             validObject(x)
             return(x)
           }
 )
+
 
 #' @describeIn RawPop Combine multiple RawPops
 setMethod("c",
@@ -86,7 +85,6 @@ setMethod("c",
                         x@ploidy==y@ploidy,
                         x@nLoci==y@nLoci)
               x@nInd = x@nInd+y@nInd
-              x@gender = c(x@gender,y@gender)
               x@geno = mergeGeno(x@geno,y@geno)
             }
             validObject(x)
@@ -103,6 +101,10 @@ setMethod("c",
 #' This is the first object created in a simulation. It is used
 #' for creating initial populations and setting traits in the 
 #' \code{\link{SimParam-class}}.
+#' 
+#' @param x a 'MapPop'
+#' @param i index of chromosomes
+#' @param ... aditional 'MapPop' objects
 #' 
 #' @slot genMaps "matrix" of chromsome genetic maps
 #' 
@@ -129,16 +131,15 @@ setValidity("MapPop",function(object){
   }
 })
 
-#' @describeIn MapPop Extract \code{\link{RawPop-class}} by index
+#' @describeIn MapPop Extract MapPop by index
 setMethod("[",
           signature(x = "MapPop"),
           function(x, i){
-            x@gender = x@gender[i]
-            x@nInd = length(x@gender)
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
-            class(x) = "RawPop"
+            x@nInd = dim(x@geno[[1]])[3]
+            class(x) = "MapPop"
             validObject(x)
             return(x)
           }
@@ -147,7 +148,7 @@ setMethod("[",
 #' @describeIn MapPop Combine MapPop chromosomes
 setMethod("c",
           signature(x = "MapPop"),
-          function (x, ..., recursive = FALSE){
+          function (x, ...){
             for(y in list(...)){
               stopifnot(class(y)=="MapPop",
                         x@nInd==y@nInd,
@@ -167,29 +168,37 @@ setMethod("c",
 #' @title Population
 #' 
 #' @description 
-#' Extends \code{\link{RawPop-class}} to add genetic values, 
+#' Extends \code{\link{RawPop-class}} to add gender, genetic values, 
 #' phenotypes, and pedigrees.
+#' 
+#' @param x a 'Pop'
+#' @param i index of individuals
+#' @param ... additional 'Pop' objects
 #' 
 #' @slot id an individual's identifier
 #' @slot mother the identifier of the individual's mother
 #' @slot father the identifier of the individual's father
+#' @slot gender gender of individuals
 #' @slot nTraits number of traits
 #' @slot gv matrix of genetic values. When using GxE traits,
 #' gv reflects gv when w=0. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
 #' @slot ebv matrix of estimated breeding values. Dimensions 
-#' are nInd rows and one or more columns.
+#' are nInd rows and a variable number of columns.
+#' @slot gxe list containing GxE slopes for GxE traits
 #' 
 #' @export
 setClass("Pop",
          slots=c(id="character",
                  mother="character",
                  father="character",
+                 gender="character",
                  nTraits="integer",
                  gv="matrix",
                  pheno="matrix",
-                 ebv="matrix"),
+                 ebv="matrix",
+                 gxe="list"),
          contains="RawPop")
 
 setValidity("Pop",function(object){
@@ -202,6 +211,9 @@ setValidity("Pop",function(object){
   }
   if(any(grepl(" ",object@father,fixed=TRUE))){
     errors = c(errors,"father can not contain spaces")
+  }
+  if(object@nInd!=length(object@gender)){
+    errors = c(errors,"nInd!=length(gender)")
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
@@ -236,6 +248,9 @@ setValidity("Pop",function(object){
   if(object@nTraits!=ncol(object@pheno)){
     errors = c(errors,"nTraits!=ncol(pheno)")
   }
+  if(object@nTraits!=length(object@gxe)){
+    errors = c(errors,"nTraits!=length(gxe)")
+  }
   if(length(errors)==0){
     return(TRUE)
   }else{
@@ -259,6 +274,13 @@ setMethod("[",
             x@ebv = x@ebv[i,,drop=FALSE]
             x@gender = x@gender[i]
             x@nInd = length(x@gender)
+            if(x@nTraits>=1){
+              for(trait in 1:x@nTraits){
+                if(!is.null(x@gxe[[trait]])){
+                  x@gxe[[trait]] = x@gxe[[trait]][i]
+                }
+              }
+            }
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
@@ -270,7 +292,7 @@ setMethod("[",
 #' @describeIn Pop Combine multiple Pops
 setMethod("c",
           signature(x = "Pop"),
-          function (x, ..., recursive = FALSE){
+          function (x, ...){
             for(y in list(...)){
               stopifnot(class(y)=="Pop",
                         x@nChr==y@nChr,
@@ -284,15 +306,61 @@ setMethod("c",
               x@pheno = rbind(x@pheno,y@pheno)
               x@gender = c(x@gender,y@gender)
               x@geno = mergeGeno(x@geno,y@geno)
+              if(x@nTraits>=1){
+                for(trait in 1:x@nTraits){
+                  if(!is.null(x@gxe[[trait]])){
+                    x@gxe[[trait]] = c(x@gxe[[trait]],y@gxe[[trait]])
+                  }
+                }
+              }
               #Account for variable number of ebv columns
               tmp = try({
                 x@ebv = rbind(x@ebv,y@ebv)
                 },silent=TRUE)
               if(class(tmp)=="try-error"){
-                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=1)
+                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=0)
               }
             }
             validObject(x)
             return(x)
           }
 )
+
+#' @title Reset population
+#' 
+#' @description
+#' Recalculates a population's genetic values and 
+#' resets phenotypes and EBVs.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @return an object of \code{\link{Pop-class}}
+#' 
+#' @export
+resetPop = function(pop,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
+  pop@nTraits = simParam@nTraits
+  pop@pheno = matrix(NA_real_,
+                     nrow=pop@nInd,
+                     ncol=simParam@nTraits)
+  pop@ebv = matrix(NA_real_,
+                   nrow=pop@nInd,
+                   ncol=0)
+  pop@gxe = vector("list",simParam@nTraits)
+  pop@gv = matrix(NA_real_,nrow=pop@nInd,
+                  ncol=simParam@nTraits)
+  if(simParam@nTraits>=1){
+    for(i in 1:simParam@nTraits){
+      tmp = getGv(simParam@traits[[i]],pop)
+      pop@gv[,i] = tmp[[1]]
+      if(length(tmp)>1){
+        pop@gxe[[i]] = tmp[[2]]
+      }
+    }
+  }
+  validObject(pop)
+  return(pop)
+}

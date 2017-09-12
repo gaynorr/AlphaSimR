@@ -3,8 +3,11 @@
 #' 
 #' @description
 #' A lightweight version of \code{\link{Pop-class}} for hybrid lines.
-#' Memory is saved by not storing genotypic data. This prevents recaclulation 
-#' of phenotypes for GxE traits as well as direct retrieval of genotype data.
+#' Memory is saved by not storing genotypic data.
+#' 
+#' @param x a 'HybridPop'
+#' @param i index of individuals
+#' @param ... additional 'HybridPop' objects 
 #' 
 #' @slot nInd number of individuals
 #' @slot id an individual's identifier
@@ -15,6 +18,7 @@
 #' gv reflects gv when w=0. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
+#' @slot gxe list containing GxE slopes for GxE traits
 #' 
 #' @export
 setClass("HybridPop",
@@ -24,7 +28,8 @@ setClass("HybridPop",
                  father="character",
                  nTraits="integer",
                  gv="matrix",
-                 pheno="matrix"))
+                 pheno="matrix",
+                 gxe="list"))
 
 setValidity("HybridPop",function(object){
   errors = character()
@@ -58,6 +63,9 @@ setValidity("HybridPop",function(object){
   if(object@nTraits!=ncol(object@pheno)){
     errors = c(errors,"nTraits!=ncol(pheno)")
   }
+  if(object@nTraits!=length(object@gxe)){
+    errors = c(errors,"nTraits!=length(gxe)")
+  }
   if(length(errors)==0){
     return(TRUE)
   }else{
@@ -78,6 +86,13 @@ setMethod("[",
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
             x@nInd = length(x@id)
+            if(x@nTraits>=1){
+              for(trait in 1:x@nTraits){
+                if(!is.null(x@gxe[[trait]])){
+                  x@gxe[[trait]] = x@gxe[[trait]][i]
+                }
+              }
+            }
             validObject(x)
             return(x)
           }
@@ -95,8 +110,16 @@ setMethod("c",
               x@father = c(x@father,y@father)
               x@gv = rbind(x@gv,y@gv)
               x@pheno = rbind(x@pheno,y@pheno)
+              if(x@nTraits>=1){
+                for(trait in 1:x@nTraits){
+                  if(!is.null(x@gxe[[trait]])){
+                    x@gxe[[trait]] = c(x@gxe[[trait]],y@gxe[[trait]])
+                  }
+                }
+              }
             }
             validObject(x)
             return(x)
           }
 )
+

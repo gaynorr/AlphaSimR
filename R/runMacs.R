@@ -4,7 +4,6 @@
 #'
 #' @description Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
 #' 
-#' @param macs path to MaCS
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
 #' @param segSites number of segregating sites to keep per chromosome
@@ -18,10 +17,15 @@
 #' The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
 #' PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
 #'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
 #' @export
-runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
+runMacs = function(nInd,nChr,segSites,inbred=TRUE,species="TEST",
                    split=NULL,manualCommand=NULL,manualGenLen=NULL){
   ploidy = 2 #The only ploidy level currently supported
+  if(length(segSites)==1){
+    segSites = rep(segSites,nChr)
+  }
   if(inbred){
     popSize = nInd
   }else{
@@ -29,7 +33,7 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
   }
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
-    command = paste0(macs," ",popSize," ",manualCommand," -s ",sample.int(1e8,1))
+    command = paste0(popSize," ",manualCommand," -s ",sample.int(1e8,1))
     genLen = manualGenLen
   }else{
     species = toupper(species)
@@ -84,64 +88,25 @@ runMacs = function(macs,nInd,nChr,segSites,inbred=TRUE,species="TEST",
       splitI = paste(" -I 2",popSize%/%2,popSize%/%2)
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
-    command = paste0(macs," ",popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
+    command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
   }
-  if(.Platform$OS.type=="windows"){
-    command = paste0("powershell \"(",command,") 2>$null | out-file -filePath output.txt -encoding ASCII\"")
-  }else{
-    command = paste(command,"1>output.txt 2>/dev/null")
-  }
-  currentDir = getwd()
-  tmpDir = tempdir()
-  setwd(tmpDir)
-  errorHandler = function(e){
-    setwd(currentDir)
-    print(e)
-    stop(paste("Output in directory",tmpDir))
-  }
-  genMaps = list()
-  geno = list()
+  output = vector("list",nChr)
   for(chr in 1:nChr){
     cat("Making chomosome",chr,"of",nChr,"\n")
-    cat("  Running MaCS...\n")
-    system(command)
-    cat("  Running AlphaFormatter...\n")
-    errorInt = AlphaFormatter()
-    if(errorInt!=0){
-      setwd(currentDir)
-      cat("Error in AlphaFormatter","\n")
-      stop(paste("Output in directory",tmpDir))
-    }
-    cat("  Reading output...\n")
-    initSegSites = tryCatch(scan("SegSites.txt",what=integer(),quiet=TRUE),
-                            error=errorHandler)
-    if(length(initSegSites)!=1){
-      setwd(currentDir)
-      cat("length(intSegSites) =",length(initSegSites),"\n")
-      stop(paste("Output in directory",tmpDir))
-    }
-    if(segSites>initSegSites){
-      setwd(currentDir)
-      stop(paste("Requested",segSites,"segSites but only created",initSegSites))
-    }
-    keep = sort(sample.int(initSegSites,segSites))
-    map = tryCatch(scan("PhysicalMapInput.txt",what=numeric(),quiet=TRUE),
-                   error=errorHandler)
-    map = map[keep]
-    map = map - map[1]
-    map = map*genLen
-    tmpGeno = tryCatch(readAF(nInd,initSegSites,ploidy,keep,inbred),
-                       error=errorHandler)
-    genMaps[[chr]] = map
-    geno[[chr]] = tmpGeno
+    macsOut = MaCS(command,segSites[chr])
+    genMap = c(macsOut$genMap)
+    genMap = genLen*(genMap-min(genMap))
+    geno = packHaplo(macsOut$haplo,ploidy=ploidy,
+                     inbred=inbred)
+    output[[chr]] = new("MapPop",
+                        nInd=as.integer(nInd),
+                        nChr=1L,
+                        ploidy=as.integer(ploidy),
+                        nLoci=as.integer(segSites[chr]),
+                        geno=as.matrix(list(geno)),
+                        genMaps=as.matrix(list(genMap)))
   }
-  setwd(currentDir)
-  output = new("MapPop",nInd=as.integer(nInd),nChr=as.integer(nChr),
-               ploidy=as.integer(ploidy),nLoci=as.integer(rep(segSites,nChr)),
-               gender=rep("H",nInd),geno=as.matrix(geno),genMaps=as.matrix(genMaps))
+  output = do.call("c",output)
   cat("Done\n")
   return(output)
 }
-
-
-

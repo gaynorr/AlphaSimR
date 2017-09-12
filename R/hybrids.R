@@ -1,16 +1,25 @@
 #A wrapper for calling getHybridGv
 #This function uses chunking to reduce RAM usage
-getHybridGvByChunk = function(trait,fPop,fPar,
-                              mPop,mPar,w,chunkSize){
-  nOut = length(fPar)
+getHybridGvByChunk = function(trait,females,femaleParents,
+                              males,maleParents,chunkSize){
+  nOut = length(femaleParents)
   if(nOut<=chunkSize){
-    output = getHybridGv(trait,fPop,fPar,mPop,mPar,w)
+    output = getHybridGv(trait,females,femaleParents,males,maleParents)
   }else{
     Chunks = split(1:nOut,ceiling(seq_along(1:nOut)/chunkSize))
-    output = matrix(NA_real_,nrow=nOut,ncol=1)
+    output = list()
+    output[[1]] = matrix(NA_real_,nrow=nOut,ncol=1)
     for(chunk in Chunks){
-      output[chunk,] = getHybridGv(trait,fPop,fPar[chunk],
-                                   mPop,mPar[chunk],w)
+      tmp = getHybridGv(trait,females,femaleParents[chunk],
+                        males,maleParents[chunk])
+      output[[1]][chunk,] = tmp[[1]]
+      if(length(tmp)==2){
+        if(length(output)==2){
+          output[[2]] = c(output[[2]],tmp[[2]])
+        }else{
+          output[[2]] = tmp[[2]]
+        }
+      }
     }
   }
   return(output)
@@ -27,15 +36,10 @@ getHybridGvByChunk = function(trait,fPop,fPar,
 #' function or \code{\link{newPop}} using inbred founders. The id for 
 #' new individuals is [mother_id]_[father_id]
 #' 
-#' @param fPop female population, an object of \code{\link{Pop-class}}
-#' @param mPop male population, an object of \code{\link{Pop-class}}
+#' @param females female population, an object of \code{\link{Pop-class}}
+#' @param males male population, an object of \code{\link{Pop-class}}
 #' @param crossPlan either "testcross" for all possible combinantions 
 #' or a matrix with two columns for designed crosses
-#' @param varE error variance for phenotypes. If NULL, phenotypes 
-#' aren't calculated.
-#' @param w environmental covariate for phenotypes
-#' @param reps number of replications for phenotype. See 
-#' \code{\link{setPheno}} for details.
 #' @param returnHybridPop should results be returned as 
 #' \code{\link{HybridPop-class}}. If false returns results as 
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
@@ -46,70 +50,56 @@ getHybridGvByChunk = function(trait,fPop,fPar,
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @export
-hybridCross = function(fPop,mPop,crossPlan="testcross",varE=NULL,
-                       w=0.5,reps=1,returnHybridPop=FALSE,
-                       chunkSize=1000,
-                       simParam=SIMPARAM){
-  stopifnot(simParam@gender=="no")
+hybridCross = function(females,males,crossPlan="testcross",
+                       returnHybridPop=FALSE,chunkSize=1000,
+                       simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   if(simParam@ploidy!=2){
     stop("Only works with diploids")
   }
   #crossPlan for test cross
   if(crossPlan=="testcross"){
-    crossPlan = cbind(rep(1:fPop@nInd,each=mPop@nInd),
-                      rep(1:mPop@nInd,fPop@nInd))
+    crossPlan = cbind(rep(1:females@nInd,each=males@nInd),
+                      rep(1:males@nInd,females@nInd))
   }
   #Set id
-  fPar = fPop@id[crossPlan[,1]]
-  mPar = mPop@id[crossPlan[,2]]
-  id = paste(fPar,mPar,sep="_")
+  femaleParents = females@id[crossPlan[,1]]
+  maleParents = males@id[crossPlan[,2]]
+  id = paste(femaleParents,maleParents,sep="_")
   
   #Return Pop-class
   if(!returnHybridPop){
-    output = makeCross2(fPop,mPop,crossPlan,id,simParam)
-    if(is.null(varE)){
-      return(output)
-    }else{ #Calculate phenotype
-      output@pheno = calcPheno(pop=output,varE=varE,reps=reps,
-                               w=w,simParam=simParam)
-      return(output)
-    }
+    return(makeCross2(females=females,males=males,
+                      crossPlan=crossPlan,id=id,
+                      simParam=simParam))
   }
   
   #Return HybridPop-class
-  #Calculate gv and pheno
-  gv = NULL
-  pheno = NULL
+  gv = pheno = matrix(NA_real_,nrow=length(id),
+                      ncol=simParam@nTraits)
+  gxe = vector("list",simParam@nTraits)
+  i = 0L
   for(trait in simParam@traits){
-    tmp = getHybridGvByChunk(trait=trait,fPop=fPop,fPar=crossPlan[,1],
-                             mPop=mPop,mPar=crossPlan[,2],w=0.5,
-                             chunkSize=chunkSize)
-    gv = cbind(gv, tmp)
-    #Will a phenotype be calculated
-    if(is.null(varE)){
-      pheno = cbind(pheno,matrix(rep(NA_real_,length(fPar)),ncol=1))
-    }else{
-      #Does GxE matter
-      if(class(trait)=="TraitAG" | class(trait)=="TraitADG"){
-        pheno = cbind(pheno, 
-                      getHybridGvByChunk(trait=trait,fPop=fPop,fPar=crossPlan[,1],
-                                         mPop=mPop,mPar=crossPlan[,2],w=w,
-                                         chunkSize=chunkSize))
-      }else{
-        pheno = cbind(pheno,tmp)
-      }
+    i = i+1L
+    tmp = getHybridGvByChunk(trait=trait,females=females,femaleParents=crossPlan[,1],
+                             males=males,maleParents=crossPlan[,2],chunkSize=chunkSize)
+    gv[,i] = tmp[[1]]
+    if(length(tmp)==2){
+      gxe[[i]] = tmp[[2]]
     }
   }
-  if(!is.null(varE)) pheno = addError(gv=pheno,varE=varE,reps=reps)
   
   output = new("HybridPop",
                nInd=length(id),
                id=id,
-               mother=fPar,
-               father=mPar,
+               mother=femaleParents,
+               father=maleParents,
                nTraits=simParam@nTraits,
                gv=gv,
-               pheno=pheno)
+               pheno=pheno,
+               gxe=gxe)
   return(output)
 }
 
@@ -208,7 +198,10 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,simParam=SIMPARAM){
+                       w=0.5,inbred=FALSE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
   if(use == "pheno"){
@@ -216,9 +209,11 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
       stop("varE must be specified if use=\"pheno\"")
     }
   }
-  tmp = hybridCross(fPop=pop,mPop=testers,crossPlan="testcross",
-                    varE=varE,w=w,reps=reps,returnHybridPop=inbred,
-                    simParam=simParam)
+  tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
+                    returnHybridPop=inbred,simParam=simParam)
+  if(use=="pheno"){
+    tmp = setPheno(tmp,varE=varE,w=w,reps=reps,simParam=simParam)
+  }
   tmp = calcGCA(pop=tmp,use=use)
   pop@pheno = as.matrix(tmp$females[,-1])
   return(pop)

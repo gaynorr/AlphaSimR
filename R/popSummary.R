@@ -67,7 +67,10 @@ varP = function(pop){
 #' }
 #' 
 #' @export
-varAD = function(pop,retGenParam=FALSE,simParam=SIMPARAM){
+varAD = function(pop,retGenParam=FALSE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
   stopifnot(class(pop)=="Pop")
   bv=NULL
   dd=NULL

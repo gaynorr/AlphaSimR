@@ -13,6 +13,8 @@ to add GxE effects
 \describe{
 \item{\code{gxeEff}}{GxE effects}
 
-\item{\code{varGxeLoci}}{GxE variance for loci}
+\item{\code{gxeInt}}{GxE intercept}
+
+\item{\code{envVar}}{Environmental variance}
 }}
 

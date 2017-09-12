@@ -4,7 +4,7 @@
 \alias{RRBLUP_GCA}
 \title{RR-BLUP GCA Model}
 \usage{
-RRBLUP_GCA(dir, traits = 1, use = "pheno", simParam = SIMPARAM)
+RRBLUP_GCA(dir, traits = 1, use = "pheno", simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from /code{/link{writeRecords}}}

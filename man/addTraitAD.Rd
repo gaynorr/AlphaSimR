@@ -4,24 +4,33 @@
 \alias{addTraitAD}
 \title{Add additive and dominance traits}
 \usage{
-addTraitAD(nQtlPerChr, meanG, varG, domDegree, corr = matrix(1),
-  simParam = SIMPARAM, founderPop = FOUNDERPOP)
+addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
+  corr = NULL, useVarA = FALSE, gamma = FALSE, shape = 1,
+  simParam = NULL)
 }
 \arguments{
+\item{founderPop}{an object of \code{\link{MapPop-class}}}
+
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
 \item{meanG}{a vector of mean genetic values for one or more traits}
 
 \item{varG}{a vector of total genetic variances for one or more traits}
 
-\item{domDegree}{the dominance degree of individual loci. 
-Can be a single value or nLoci values.}
+\item{domDegree}{mean dominance degree}
+
+\item{domDegreeVar}{variance of dominance degree}
 
 \item{corr}{a matrix of correlations between traits}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{useVarA}{tune according to additive genetic variance if true}
 
-\item{founderPop}{an object of \code{\link{MapPop-class}}}
+\item{gamma}{should a gamma distribution be used instead of normal}
+
+\item{shape}{value of the shape parameter if using a gamma distribution. 
+Note that shape=1 is equivalent to an exponential distribution.}
+
+\item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
 Returns an object of \code{\link{SimParam-class}}

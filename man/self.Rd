@@ -4,7 +4,8 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny, id = NULL, simParam = SIMPARAM)
+self(pop, nProgeny = 1, id = NULL, parents = NULL, rawPop = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -13,10 +14,15 @@ self(pop, nProgeny, id = NULL, simParam = SIMPARAM)
 
 \item{id}{optional id to give to progeny}
 
+\item{parents}{an optional vector of indices for allowable parents}
+
+\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} or 
+\code{\link{RawPop-class}}
 }
 \description{
 Creates selfed progeny from each individual in a 
