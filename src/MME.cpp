@@ -856,3 +856,87 @@ arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
 arma::mat gaussKernel(arma::mat& D, double theta){
   return exp(-1.0*square(D/theta));
 }
+
+// Efficiently solves an animal model with records on all individuals
+Rcpp::List animalModel(const arma::mat& y, 
+                       const arma::mat& X, 
+                       const arma::mat& K){
+  int n = y.n_rows;
+  int q = X.n_cols;
+  double df = double(n)-double(q);
+  double offset = log(double(n));
+  bool invPass;
+  
+  // Construct system of equations for eigendecomposition
+  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
+  S = S*(K+offset*arma::eye(n,n))*S;
+  
+  // Compute eigendecomposition
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, S);
+  
+  // Drop eigenvalues
+  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
+  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
+                  arma::span(q,eigvec.n_cols-1));
+  
+  // Estimate variances and solve equations
+  arma::vec eta = eigvec.t()*y;
+  Rcpp::List optRes = optimize(*objREML,
+                               Rcpp::List::create(
+                                 Rcpp::Named("df")=df,
+                                 Rcpp::Named("eta")=eta,
+                                 Rcpp::Named("lambda")=eigval), 
+                                 1.0e-10, 1.0e10);
+  double delta = optRes["parameter"];
+  arma::mat Hinv; 
+  invPass = inv_sympd(Hinv,K+delta*arma::eye(n,n));
+  if(!invPass){
+    Hinv = pinv(K+delta*arma::eye(n,n));
+  }
+  arma::mat XHinv = X.t()*Hinv;
+  arma::mat beta = solve(XHinv*X,XHinv*y);
+  arma::mat u = K.t()*(Hinv*(y-X*beta));
+  double Vu = sum(eta%eta/(eigval+delta))/df;
+  double Ve = delta*Vu;
+  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=ll);
+}
+
+// Objective function for Gaussian kernel method
+Rcpp::List objRKHS(double theta, Rcpp::List args){
+  Rcpp::List output;
+  arma::mat D = args["D"];
+  output = animalModel(args["y"],args["X"],
+                       gaussKernel(D,theta));
+  return Rcpp::List::create(Rcpp::Named("objective")=output["LL"],
+                            Rcpp::Named("output")=output);
+}
+// 
+// //' @title Solve RKHS
+// //'
+// //' @description
+// //' Solves a Reproducing Kernel Hilbert Space regression
+// //' using a Gaussian Kernel.
+// //'
+// //' @param y a matrix with n rows and 1 column
+// //' @param X a matrix with n rows and x columns
+// //' @param M a matrix with n rows and m columns
+// //'
+// //' @export
+// // [[Rcpp::export]]
+// Rcpp::List solveRKHS(const arma::mat& y, const arma::mat& X,
+//                      const arma::mat& M){
+// 
+// 
+//   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+//                             Rcpp::Named("Ve")=Ve,
+//                             Rcpp::Named("beta")=beta,
+//                             Rcpp::Named("u")=u,
+//                             Rcpp::Named("LL")=ll);
+// }
