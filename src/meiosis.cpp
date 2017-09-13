@@ -89,8 +89,7 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
       }
       startPos = endPos;
       // Switch chromosome
-      ++readChr;
-      readChr = Rcpp::rbinom(1,1,0.5)(0);
+      readChr = ++readChr % 2;
     }
     // Fill in last segSites if needed
     if(endPos<(nSites-1)){
