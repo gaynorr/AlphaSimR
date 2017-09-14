@@ -6,10 +6,18 @@
 #' @importFrom utils combn read.table write.table
 
 #' @title AlphaSimR: Breeding Program Simulations
-#' 
+#'
 #' @description
 #' This package is currently under development and is not yet ready for release.
-#' 
+#'
 #' @docType package
 #' @name AlphaSimR
 NULL
+
+calcPEV = function(){
+
+}
+
+predPEV = function(){
+
+}

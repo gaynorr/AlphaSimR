@@ -172,7 +172,10 @@ RRBLUP = function(dir, traits=1, use="pheno",
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
                markerEff=markerEff,
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 
@@ -238,7 +241,10 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
                lociLoc=markers@lociLoc,
                femaleEff=ans$u[[1]],
                maleEff=ans$u[[2]],
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 
@@ -305,7 +311,10 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                femaleEff=ans$u[[1]],
                maleEff=ans$u[[2]],
                scaEff=ans$u[[3]],
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 

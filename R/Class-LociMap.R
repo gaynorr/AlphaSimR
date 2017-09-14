@@ -149,11 +149,17 @@ setValidity("TraitADG",function(object){
 #' 
 #' @slot markerEff GEBVs for markers
 #' @slot fixEff Estimates for fixed effects
+#' @slot Vu Estimated marker variance
+#' @slot Ve Estimated error variance
+#' @slot LL Log-likelihood
 #'
 #' @export
 setClass("RRsol",
          slots=c(markerEff="matrix",
-                 fixEff="matrix"),
+                 fixEff="matrix",
+                 Vu="numeric",
+                 Ve="numeric",
+                 LL="numeric"),
          contains="LociMap")
 
 setValidity("RRsol",function(object){
@@ -183,12 +189,18 @@ setValidity("RRsol",function(object){
 #' @slot femaleEff marker GCA for "female" pool
 #' @slot maleEff marker GCA for "male" pool
 #' @slot fixEff Estimates for fixed effects
+#' @slot Vu Estimated marker variances
+#' @slot Ve Estimated error variance
+#' @slot LL Log-likelihood
 #'
 #' @export
 setClass("GCAsol",
          slots=c(femaleEff="matrix",
                  maleEff="matrix",
-                 fixEff="matrix"),
+                 fixEff="matrix",
+                 Vu="matrix",
+                 Ve="matrix",
+                 LL="numeric"),
          contains="LociMap")
 
 setValidity("GCAsol",function(object){
