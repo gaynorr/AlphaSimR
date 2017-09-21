@@ -714,7 +714,9 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = Mlist(0)*2;
   Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);

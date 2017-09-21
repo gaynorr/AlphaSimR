@@ -14,10 +14,10 @@ gebvSCA <- function(SCAsol, pop) {
 }
 
 #' @title Read Matrix
-#' 
+#'
 #' @description
-#' Uses C++ to quickly read a matrix from a text 
-#' file. Requires knowledge of the number of rows 
+#' Uses C++ to quickly read a matrix from a text
+#' file. Requires knowledge of the number of rows
 #' and columns in the file.
 #'
 #' @param fileName path to the file to read
@@ -26,7 +26,7 @@ gebvSCA <- function(SCAsol, pop) {
 #' @param sep a single character seperating data entries
 #' @param skipRows number of rows to skip
 #' @param skipCols number of columns to skip
-#' 
+#'
 #' @return a numeric matrix
 #'
 #' @export
@@ -35,7 +35,7 @@ readMat <- function(fileName, rows, cols, sep = ' ', skipRows = 0L, skipCols = 0
 }
 
 #' @title Solve Univariate Model
-#' 
+#'
 #' @description
 #' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
 #'
@@ -50,7 +50,7 @@ solveUVM <- function(y, X, Z, K) {
 }
 
 #' @title Solve RR-BLUP
-#' 
+#'
 #' @description
 #' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
 #'
@@ -64,7 +64,7 @@ solveRRBLUP <- function(y, X, M) {
 }
 
 #' @title Solve Multivariate Model
-#' 
+#'
 #' @description
 #' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
 #'
@@ -80,7 +80,7 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
 }
 
 #' @title Solve Multivariate RR-BLUP
-#' 
+#'
 #' @description
 #' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
 #'
@@ -95,7 +95,7 @@ solveRRBLUPMV <- function(Y, X, M, tol = 1e-6) {
 }
 
 #' @title Solve Multikernel Model
-#' 
+#'
 #' @description
 #' Solves a univariate mixed model with multiple random effects.
 #'
@@ -110,7 +110,7 @@ solveMKM <- function(y, X, Zlist, Klist) {
 }
 
 #' @title Solve Multikernel RR-BLUP
-#' 
+#'
 #' @description
 #' Solves a univariate mixed model with multiple random effects.
 #'
@@ -140,12 +140,12 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
 }
 
 #' @title Calculate G Matrix
-#' 
+#'
 #' @description
 #' Calculates the genomic relationship matrix.
 #'
 #' @param X a matrix of marker genotypes scored as 0,1,2
-#' 
+#'
 #' @return a matrix of the realized genomic relationship
 #'
 #' @export
@@ -154,13 +154,13 @@ calcG <- function(X) {
 }
 
 #' @title Calculate IBS G Matrix
-#' 
+#'
 #' @description
-#' Calculates an identity-by-state genomic relationship matrix 
+#' Calculates an identity-by-state genomic relationship matrix
 #' based on simple matching.
 #'
 #' @param X a matrix of marker genotypes scored as 0,1,2
-#' 
+#'
 #' @return a matrix of genomic relationships
 #'
 #' @export
@@ -169,14 +169,14 @@ calcGIbs <- function(X) {
 }
 
 #' @title Calculate Euclidean distance
-#' 
+#'
 #' @description
-#' Calculates a Euclidean distance matrix using a binomial 
-#' theorem trick. Results in much faster computation than the 
+#' Calculates a Euclidean distance matrix using a binomial
+#' theorem trick. Results in much faster computation than the
 #' \code{dist} function in package \code{stats}.
 #'
 #' @param X a numeric matrix
-#' 
+#'
 #' @return a matrix of columnwise distances
 #'
 #' @export
@@ -185,15 +185,15 @@ fastDist <- function(X) {
 }
 
 #' @title Calculate Paired Euclidean distance
-#' 
+#'
 #' @description
-#' Calculates a Euclidean distance between two matrices using 
-#' a binomial theorem trick. 
+#' Calculates a Euclidean distance between two matrices using
+#' a binomial theorem trick.
 #'
 #' @param X a numeric matrix
 #' @param Y a numeric matrix
-#' 
-#' @return a matrix of columnwise distances between matrices 
+#'
+#' @return a matrix of columnwise distances between matrices
 #' X and Y
 #'
 #' @export
@@ -202,15 +202,15 @@ fastPairDist <- function(X, Y) {
 }
 
 #' @title Calculate Gaussian Kernel
-#' 
+#'
 #' @description
-#' Calculates a Gaussian kernel using a Euclidean distance 
+#' Calculates a Gaussian kernel using a Euclidean distance
 #' matrix.
 #'
-#' @param D a matrix of Euclidean distances, 
+#' @param D a matrix of Euclidean distances,
 #' see \code{\link{fastDist}}
 #' @param theta the tuning parameter
-#' 
+#'
 #' @return a numeric matrix
 #'
 #' @export

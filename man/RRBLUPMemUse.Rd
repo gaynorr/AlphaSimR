@@ -15,7 +15,7 @@ RRBLUPMemUse(nInd, nMarker)
 Returns an estimate for the required gigabytes of RAM
 }
 \description{
-Estimates the amount of RAM needed to run the \code{\link{RRBLUP}} 
-function for a given training population size. Note that this functions 
+Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
+function for a given training population size. Note that this functions
 may underestimate total usage.
 }
