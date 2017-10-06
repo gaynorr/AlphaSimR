@@ -13,6 +13,6 @@ calcGIbs(X)
 a matrix of genomic relationships
 }
 \description{
-Calculates an identity-by-state genomic relationship matrix 
+Calculates an identity-by-state genomic relationship matrix
 based on simple matching.
 }

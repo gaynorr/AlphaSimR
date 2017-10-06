@@ -14,5 +14,11 @@ to contain estimated effects from \code{\link{RRBLUP}}
 \item{\code{markerEff}}{GEBVs for markers}
 
 \item{\code{fixEff}}{Estimates for fixed effects}
+
+\item{\code{Vu}}{Estimated marker variance}
+
+\item{\code{Ve}}{Estimated error variance}
+
+\item{\code{LL}}{Log-likelihood}
 }}
 

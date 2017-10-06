@@ -23,7 +23,7 @@ readMat(fileName, rows, cols, sep = " ", skipRows = 0L, skipCols = 0L)
 a numeric matrix
 }
 \description{
-Uses C++ to quickly read a matrix from a text 
-file. Requires knowledge of the number of rows 
+Uses C++ to quickly read a matrix from a text
+file. Requires knowledge of the number of rows
 and columns in the file.
 }

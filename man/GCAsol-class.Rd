@@ -16,5 +16,11 @@ to contain estimated effects from \code{\link{RRBLUP_GCA}}
 \item{\code{maleEff}}{marker GCA for "male" pool}
 
 \item{\code{fixEff}}{Estimates for fixed effects}
+
+\item{\code{Vu}}{Estimated marker variances}
+
+\item{\code{Ve}}{Estimated error variance}
+
+\item{\code{LL}}{Log-likelihood}
 }}
 

@@ -28,7 +28,6 @@ arma::mat gebvGCA(const Rcpp::S4& GCAsol, const Rcpp::S4& pop,
                  GCAsol.slot("lociPerChr"),
                  GCAsol.slot("lociLoc"));
   arma::mat X = arma::conv_to<arma::mat>::from(geno);
-  X = X/2;
   return X*a;
 }
 

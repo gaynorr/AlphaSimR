@@ -1,7 +1,7 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 0.3.1
+Version: 0.3.3
 Author: Chris Gaynor, David Wilson, Daniel Money
 Maintainer: Chris Gaynor <gaynor.robert@hotmail.com>
 Description: This package contains classes and functions for simulating plant and animal breeding programs.

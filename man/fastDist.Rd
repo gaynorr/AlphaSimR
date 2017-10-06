@@ -13,7 +13,7 @@ fastDist(X)
 a matrix of columnwise distances
 }
 \description{
-Calculates a Euclidean distance matrix using a binomial 
-theorem trick. Results in much faster computation than the 
+Calculates a Euclidean distance matrix using a binomial
+theorem trick. Results in much faster computation than the
 \code{dist} function in package \code{stats}.
 }

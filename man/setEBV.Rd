@@ -9,10 +9,10 @@ setEBV(pop, solution, gender = NULL, append = FALSE)
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{solution}{an object of \code{\link{RRsol-class}}, 
+\item{solution}{an object of \code{\link{RRsol-class}},
 \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}}
 
-\item{gender}{either "male" or "female" if solution is 
+\item{gender}{either "male" or "female" if solution is
 \code{\link{GCAsol-class}}}
 
 \item{append}{should EBVs be appended to existing EBVs}
@@ -21,7 +21,7 @@ setEBV(pop, solution, gender = NULL, append = FALSE)
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Sets a population's EBV with genomic estimated 
-values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}}, 
+Sets a population's EBV with genomic estimated
+values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}},
 or \code{\link{RRBLUP_SCA}}.
 }

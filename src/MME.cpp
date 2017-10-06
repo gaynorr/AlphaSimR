@@ -1,5 +1,5 @@
 // solveUVM and solveMVM are based on R/EMMREML functions
-// solveMKM is based on the mmer function in R/sommer 
+// solveMKM is based on the mmer function in R/sommer
 #include "alphasimr.h"
 #include <iostream>
 #include <string>
@@ -8,14 +8,14 @@
 // See http://www.netlib.org/lapack/explore-html/ for description of args
 extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
                        double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
-                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK, 
+                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
                        long long int* LIWORK, long long int* INFO);
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices on Eddie
 // If calcVec = false, eigvec is not used
 // It would be better to template this function
-int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X, 
+int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
            bool calcVec = true){
   char JOBZ;
   if(calcVec){
@@ -71,10 +71,10 @@ Rcpp::List objREML(double param, Rcpp::List args){
 }
 
 //' @title Read Matrix
-//' 
+//'
 //' @description
-//' Uses C++ to quickly read a matrix from a text 
-//' file. Requires knowledge of the number of rows 
+//' Uses C++ to quickly read a matrix from a text
+//' file. Requires knowledge of the number of rows
 //' and columns in the file.
 //'
 //' @param fileName path to the file to read
@@ -83,12 +83,12 @@ Rcpp::List objREML(double param, Rcpp::List args){
 //' @param sep a single character seperating data entries
 //' @param skipRows number of rows to skip
 //' @param skipCols number of columns to skip
-//' 
+//'
 //' @return a numeric matrix
 //'
 //' @export
 // [[Rcpp::export]]
-arma::mat readMat(std::string fileName, int rows, int cols, 
+arma::mat readMat(std::string fileName, int rows, int cols,
                   char sep=' ', int skipRows=0, int skipCols=0){
   arma::mat output(rows,cols);
   std::ifstream file(fileName.c_str());
@@ -118,8 +118,8 @@ arma::mat readMat(std::string fileName, int rows, int cols,
 
 // Produces a sum to zero design matrix with an intercept
 arma::mat makeX(arma::uvec& x){
-  int nTrain = x.n_elem;
-  double nLevels = x.max();
+  arma::uword nTrain = x.n_elem;
+  arma::uword nLevels = x.max();
   arma::mat X(nTrain,nLevels);
   if(nLevels==1){
     X.ones();
@@ -159,7 +159,7 @@ void sweepReps(arma::mat& X, arma::vec reps){
 }
 
 //' @title Solve Univariate Model
-//' 
+//'
 //' @description
 //' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
 //'
@@ -170,40 +170,40 @@ void sweepReps(arma::mat& X, arma::vec reps){
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X, 
+Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K){
   int n = y.n_rows;
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
   bool invPass;
-  
+
   // Construct system of equations for eigendecomposition
   arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
   arma::mat ZK = Z*K;
   arma::mat ZKZ = ZK*Z.t();
   S = S*(ZKZ+offset*arma::eye(n,n))*S;
-  
+
   // Compute eigendecomposition
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, S);
-  
+
   // Drop eigenvalues
   eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
   eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
                   arma::span(q,eigvec.n_cols-1));
-  
+
   // Estimate variances and solve equations
   arma::vec eta = eigvec.t()*y;
   Rcpp::List optRes = optimize(*objREML,
                                Rcpp::List::create(
                                  Rcpp::Named("df")=df,
                                  Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=eigval), 
+                                 Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv; 
+  arma::mat Hinv;
   invPass = inv_sympd(Hinv,ZKZ+delta*arma::eye(n,n));
   if(!invPass){
     Hinv = pinv(ZKZ+delta*arma::eye(n,n));
@@ -222,7 +222,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 }
 
 //' @title Solve RR-BLUP
-//' 
+//'
 //' @description
 //' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
 //'
@@ -232,38 +232,38 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X, 
+Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   int n = y.n_rows;
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
   bool invPass;
-  
+
   // Construct system of equations for eigendecomposition
   arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
   S = S*((M*M.t())+offset*arma::eye(n,n))*S;
-  
+
   // Compute eigendecomposition
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, S);
-  
+
   // Drop eigenvalues
   eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
   eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
                   arma::span(q,eigvec.n_cols-1));
-  
+
   // Estimate variances and solve equations
   arma::vec eta = eigvec.t()*y;
   Rcpp::List optRes = optimize(*objREML,
                                Rcpp::List::create(
                                  Rcpp::Named("df")=df,
                                  Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=eigval), 
+                                 Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv; 
+  arma::mat Hinv;
   invPass = inv_sympd(Hinv,M*M.t()+delta*arma::eye(n,n));
   if(!invPass){
     Hinv = pinv(M*M.t()+delta*arma::eye(n,n));
@@ -282,7 +282,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
 }
 
 //' @title Solve Multivariate Model
-//' 
+//'
 //' @description
 //' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
 //'
@@ -294,7 +294,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X, 
+Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K,
                     double tol=1e-6){
   int n = Y.n_rows;
@@ -351,7 +351,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
       tol*arma::eye(n*m,n*m));
   }
   arma::mat E = Y.t() - B*X.t();
-  arma::mat U = kron(K, Vu)*kron(Z.t(), 
+  arma::mat U = kron(K, Vu)*kron(Z.t(),
                      arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
   U.reshape(m,U.n_elem/m);
   //Log Likelihood calculation
@@ -369,7 +369,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
 }
 
 //' @title Solve Multivariate RR-BLUP
-//' 
+//'
 //' @description
 //' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
 //'
@@ -380,7 +380,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X, 
+Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, double tol=1e-6){
   int n = Y.n_rows;
   int m = Y.n_cols;
@@ -434,7 +434,7 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
       tol*arma::eye(n*m,n*m));
   }
   arma::mat E = Y.t() - B*X.t();
-  arma::mat U = kron(arma::eye(M.n_cols,M.n_cols), Vu)*kron(M.t(), 
+  arma::mat U = kron(arma::eye(M.n_cols,M.n_cols), Vu)*kron(M.t(),
                      arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
   U.reshape(m,U.n_elem/m);
   //Log Likelihood calculation
@@ -452,7 +452,7 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 }
 
 //' @title Solve Multikernel Model
-//' 
+//'
 //' @description
 //' Solves a univariate mixed model with multiple random effects.
 //'
@@ -463,8 +463,8 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveMKM(arma::mat& y, arma::mat& X, 
-                     arma::field<arma::mat>& Zlist, 
+Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
+                     arma::field<arma::mat>& Zlist,
                      arma::field<arma::mat>& Klist){
   int maxcyc = 20;
   double tol = 1e-4;
@@ -515,7 +515,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1) 
+    if(cycle == 1)
       llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
@@ -568,7 +568,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
 }
 
 //' @title Solve Multikernel RR-BLUP
-//' 
+//'
 //' @description
 //' Solves a univariate mixed model with multiple random effects.
 //'
@@ -578,7 +578,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X, 
+Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist){
   int maxcyc = 20;
   double tol = 1e-4;
@@ -629,7 +629,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1) 
+    if(cycle == 1)
       llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
@@ -683,10 +683,11 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, 
+Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
                          std::string genoTrain, int nMarker){
+  int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -695,10 +696,11 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, 
+Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker){
+  int n = Y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,Y.n_rows,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -708,13 +710,15 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale, 
+                          std::string genoFemale, std::string genoMale,
                           int nMarker){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = Mlist(0)*2;
   Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
@@ -725,7 +729,7 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale, 
+                          std::string genoFemale, std::string genoMale,
                           int nMarker){
   int n = y.n_rows;
   arma::mat X = makeX(x);
@@ -744,12 +748,12 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
 }
 
 //' @title Calculate G Matrix
-//' 
+//'
 //' @description
 //' Calculates the genomic relationship matrix.
 //'
 //' @param X a matrix of marker genotypes scored as 0,1,2
-//' 
+//'
 //' @return a matrix of the realized genomic relationship
 //'
 //' @export
@@ -763,13 +767,13 @@ arma::mat calcG(arma::mat X){
 }
 
 //' @title Calculate IBS G Matrix
-//' 
+//'
 //' @description
-//' Calculates an identity-by-state genomic relationship matrix 
+//' Calculates an identity-by-state genomic relationship matrix
 //' based on simple matching.
 //'
 //' @param X a matrix of marker genotypes scored as 0,1,2
-//' 
+//'
 //' @return a matrix of genomic relationships
 //'
 //' @export
@@ -784,17 +788,17 @@ arma::mat calcGIbs(arma::mat X){
 // Uses binomial theorem trick
 // Inspired by code from:
 // http://blog.felixriedel.com/2013/05/pairwise-distances-in-r/
-// First described here: 
+// First described here:
 // http://blog.smola.org/post/969195661/in-praise-of-the-second-binomial-formula
 //' @title Calculate Euclidean distance
-//' 
+//'
 //' @description
-//' Calculates a Euclidean distance matrix using a binomial 
-//' theorem trick. Results in much faster computation than the 
+//' Calculates a Euclidean distance matrix using a binomial
+//' theorem trick. Results in much faster computation than the
 //' \code{dist} function in package \code{stats}.
 //'
 //' @param X a numeric matrix
-//' 
+//'
 //' @return a matrix of columnwise distances
 //'
 //' @export
@@ -809,19 +813,19 @@ arma::mat fastDist(const arma::mat& X){
   if(D.has_nan()){
     D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
   }
-  return D; 
+  return D;
 }
 
 //' @title Calculate Paired Euclidean distance
-//' 
+//'
 //' @description
-//' Calculates a Euclidean distance between two matrices using 
-//' a binomial theorem trick. 
+//' Calculates a Euclidean distance between two matrices using
+//' a binomial theorem trick.
 //'
 //' @param X a numeric matrix
 //' @param Y a numeric matrix
-//' 
-//' @return a matrix of columnwise distances between matrices 
+//'
+//' @return a matrix of columnwise distances between matrices
 //' X and Y
 //'
 //' @export
@@ -836,19 +840,19 @@ arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
   if(D.has_nan()){
     D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
   }
-  return D; 
+  return D;
 }
 
 //' @title Calculate Gaussian Kernel
-//' 
+//'
 //' @description
-//' Calculates a Gaussian kernel using a Euclidean distance 
+//' Calculates a Gaussian kernel using a Euclidean distance
 //' matrix.
 //'
-//' @param D a matrix of Euclidean distances, 
+//' @param D a matrix of Euclidean distances,
 //' see \code{\link{fastDist}}
 //' @param theta the tuning parameter
-//' 
+//'
 //' @return a numeric matrix
 //'
 //' @export
@@ -858,39 +862,39 @@ arma::mat gaussKernel(arma::mat& D, double theta){
 }
 
 // Efficiently solves an animal model with records on all individuals
-Rcpp::List animalModel(const arma::mat& y, 
-                       const arma::mat& X, 
+Rcpp::List animalModel(const arma::mat& y,
+                       const arma::mat& X,
                        const arma::mat& K){
   int n = y.n_rows;
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
   bool invPass;
-  
+
   // Construct system of equations for eigendecomposition
   arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
   S = S*(K+offset*arma::eye(n,n))*S;
-  
+
   // Compute eigendecomposition
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, S);
-  
+
   // Drop eigenvalues
   eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
   eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
                   arma::span(q,eigvec.n_cols-1));
-  
+
   // Estimate variances and solve equations
   arma::vec eta = eigvec.t()*y;
   Rcpp::List optRes = optimize(*objREML,
                                Rcpp::List::create(
                                  Rcpp::Named("df")=df,
                                  Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=eigval), 
+                                 Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv; 
+  arma::mat Hinv;
   invPass = inv_sympd(Hinv,K+delta*arma::eye(n,n));
   if(!invPass){
     Hinv = pinv(K+delta*arma::eye(n,n));
@@ -917,7 +921,7 @@ Rcpp::List objRKHS(double theta, Rcpp::List args){
   return Rcpp::List::create(Rcpp::Named("objective")=output["LL"],
                             Rcpp::Named("output")=output);
 }
-// 
+//
 // //' @title Solve RKHS
 // //'
 // //' @description
@@ -932,8 +936,8 @@ Rcpp::List objRKHS(double theta, Rcpp::List args){
 // // [[Rcpp::export]]
 // Rcpp::List solveRKHS(const arma::mat& y, const arma::mat& X,
 //                      const arma::mat& M){
-// 
-// 
+//
+//
 //   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
 //                             Rcpp::Named("Ve")=Ve,
 //                             Rcpp::Named("beta")=beta,

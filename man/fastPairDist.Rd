@@ -12,10 +12,10 @@ fastPairDist(X, Y)
 \item{Y}{a numeric matrix}
 }
 \value{
-a matrix of columnwise distances between matrices 
+a matrix of columnwise distances between matrices
 X and Y
 }
 \description{
-Calculates a Euclidean distance between two matrices using 
+Calculates a Euclidean distance between two matrices using
 a binomial theorem trick.
 }

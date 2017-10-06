@@ -1,24 +1,24 @@
 #' @title Write data records
-#' 
+#'
 #' @description
 #' Saves a population's phenotypic and marker data to a directory.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param dir path to a directory for saving output
-#' @param snpChip which SNP chip genotype to save. If useQtl=TRUE, this 
-#' value will indicate which trait's QTL genotype to save. A value of 
+#' @param snpChip which SNP chip genotype to save. If useQtl=TRUE, this
+#' value will indicate which trait's QTL genotype to save. A value of
 #' 0 will skip writing a snpChip.
-#' @param useQtl should QTL genotype be written instead of SNP chip 
+#' @param useQtl should QTL genotype be written instead of SNP chip
 #' genotypes.
-#' @param reps number of reps for phenotypes. This values is used for modelling 
-#' heterogenous error variance in genomic selection models. Leave value as 1 
+#' @param reps number of reps for phenotypes. This values is used for modelling
+#' heterogenous error variance in genomic selection models. Leave value as 1
 #' unless using reps for phenotypes.
-#' @param fixEff an integer indicating levels of fixed effect. Leave 
+#' @param fixEff an integer indicating levels of fixed effect. Leave
 #' value as 1 if not using different levels of fixed effects.
-#' @param includeHaplo should markers be seperated by female and male 
+#' @param includeHaplo should markers be seperated by female and male
 #' haplotypes.
-#' @param append if true, new records are added to any existing records. 
-#' If false, any existing records are deleted before writing new records. 
+#' @param append if true, new records are added to any existing records.
+#' If false, any existing records are deleted before writing new records.
 #' Note that this will delete all files in the 'dir' directory.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
@@ -111,19 +111,19 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 }
 
 #' @title RR-BLUP Model
-#' 
+#'
 #' @description
 #' Fits a typical RR-BLUP model for genomic predictions.
 #'
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
-#' @param traits an integer indicating the trait or traits to model, or a 
+#' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv}) 
+#' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP = function(dir, traits=1, use="pheno", 
+RRBLUP = function(dir, traits=1, use="pheno",
                   simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -134,7 +134,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
                           comment.char="",stringsAsFactors=FALSE)
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
   use = tolower(use)
   if(use == "gv"){
@@ -172,26 +172,29 @@ RRBLUP = function(dir, traits=1, use="pheno",
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
                markerEff=markerEff,
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 
 #' @title RR-BLUP GCA Model
-#' 
+#'
 #' @description
-#' Fits an RR-BLUP model that estimates seperate marker effects for 
-#' the female and male gametes. Used for predicting GCA of parents 
+#' Fits an RR-BLUP model that estimates seperate marker effects for
+#' the female and male gametes. Used for predicting GCA of parents
 #' in single cross hybrids.
 #'
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
-#' @param traits an integer indicating the trait or traits to model, or a 
+#' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv}) 
+#' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_GCA = function(dir, traits=1, use="pheno", 
+RRBLUP_GCA = function(dir, traits=1, use="pheno",
                       simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -202,7 +205,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
                           comment.char="",stringsAsFactors=FALSE)
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
   use = tolower(use)
   if(use == "gv"){
@@ -238,26 +241,29 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
                lociLoc=markers@lociLoc,
                femaleEff=ans$u[[1]],
                maleEff=ans$u[[2]],
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 
 #' @title RR-BLUP SCA Model
-#' 
+#'
 #' @description
-#' Fits an RR-BLUP model that models seperate effects for both female 
-#' and male gametes and dominance effects. Used for predicting single 
+#' Fits an RR-BLUP model that models seperate effects for both female
+#' and male gametes and dominance effects. Used for predicting single
 #' cross hybrid performance.
 #'
 #' @param dir path to a directory with output from /code{/link{writeRecords}}
-#' @param traits an integer indicating the trait or traits to model, or a 
+#' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv}) 
+#' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP_SCA = function(dir, traits=1, use="pheno", 
+RRBLUP_SCA = function(dir, traits=1, use="pheno",
                       simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -268,7 +274,7 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                           comment.char="",stringsAsFactors=FALSE)
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType =scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
   #Set trait/traits for genomic selection
   use = tolower(use)
   if(use == "gv"){
@@ -305,26 +311,29 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                femaleEff=ans$u[[1]],
                maleEff=ans$u[[2]],
                scaEff=ans$u[[3]],
-               fixEff=ans$beta)
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL)
   return(output)
 }
 
 #' @title Set EBV
-#' 
+#'
 #' @description
-#' Sets a population's EBV with genomic estimated 
-#' values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}}, 
+#' Sets a population's EBV with genomic estimated
+#' values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}},
 #' or \code{\link{RRBLUP_SCA}}.
-#' 
+#'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param solution an object of \code{\link{RRsol-class}}, 
+#' @param solution an object of \code{\link{RRsol-class}},
 #' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either "male" or "female" if solution is 
+#' @param gender either "male" or "female" if solution is
 #' \code{\link{GCAsol-class}}
 #' @param append should EBVs be appended to existing EBVs
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
+#'
 #' @export
 setEBV = function(pop, solution, gender=NULL, append=FALSE){
   if(class(solution)=="RRsol"){
@@ -352,17 +361,17 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
 }
 
 #' @title RRBLUP Memory Usage
-#' 
+#'
 #' @description
-#' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}} 
-#' function for a given training population size. Note that this functions 
+#' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
+#' function for a given training population size. Note that this functions
 #' may underestimate total usage.
-#' 
+#'
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual
-#' 
+#'
 #' @return Returns an estimate for the required gigabytes of RAM
-#' 
+#'
 #' @export
 RRBLUPMemUse = function(nInd,nMarker){
   y = nInd

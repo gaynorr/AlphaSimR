@@ -7,7 +7,7 @@
 gaussKernel(D, theta)
 }
 \arguments{
-\item{D}{a matrix of Euclidean distances, 
+\item{D}{a matrix of Euclidean distances,
 see \code{\link{fastDist}}}
 
 \item{theta}{the tuning parameter}
@@ -16,6 +16,6 @@ see \code{\link{fastDist}}}
 a numeric matrix
 }
 \description{
-Calculates a Gaussian kernel using a Euclidean distance 
+Calculates a Gaussian kernel using a Euclidean distance
 matrix.
 }
