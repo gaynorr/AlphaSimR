@@ -685,8 +685,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
                          std::string genoTrain, int nMarker){
+  int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,y.n_elem,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -697,8 +698,9 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker){
+  int n = Y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,Y.n_rows,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
