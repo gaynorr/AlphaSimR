@@ -30,8 +30,8 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   long long int LDA = N;
   double VL = 0.0;
   double VU = 0.0;
-  long long int IL;
-  long long int IU;
+  long long int IL = 0;
+  long long int IU = 0;
   double ABSTOL = 0.0;
   long long int M = N;
   // W=eigval
@@ -42,9 +42,9 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   double tmpWORK;
   long long int LWORK = -1; // To be calculated
   // IWORK length to be determined
-  long long int tmpIWORK;
+  long long int tmpIWORK = 0;
   long long int LIWORK = -1; // To be calculated
-  long long int INFO;
+  long long int INFO = 0;
   // Calculate LWORK and LIWORK
   dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);

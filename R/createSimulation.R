@@ -523,6 +523,7 @@ addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 #' @param varG a vector of new trait variances
 #' @param varEnv a vector of new environmental variances
 #' @param varGE a vector of new GxE variances
+#' @param useVarA tune according to additive genetic variance if true
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @note
@@ -533,7 +534,7 @@ addTraitADG = function(founderPop,nQtlPerChr,meanG,varG,varEnv,varGE,
 #' 
 #' @export
 rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
-                         varGE=NULL,simParam=NULL){
+                         varGE=NULL,useVarA=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -556,7 +557,7 @@ rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
                    trait@lociPerChr,
                    trait@lociLoc)
     if(class(trait)%in%c("TraitAD","TraitADG")){
-      tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,varG[i])
+      tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,varG[i],useVarA)
       trait@domEff = trait@domEff*tmp$parameter
     }else{
       tmp = tuneTraitA(geno,trait@addEff,varG[i])
@@ -599,7 +600,6 @@ newPop = function(rawPop, id=NULL, mother=NULL,
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  stopifnot(class(rawPop)=="RawPop" | class(rawPop)=="MapPop")
   if(is.null(id)){
     lastId = simParam@lastId
     id = (1:rawPop@nInd) + lastId

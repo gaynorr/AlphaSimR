@@ -5,7 +5,7 @@
 \title{Rescale traits}
 \usage{
 rescaleTraits(pop, meanG, varG, varEnv = NULL, varGE = NULL,
-  simParam = NULL)
+  useVarA = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -17,6 +17,8 @@ rescaleTraits(pop, meanG, varG, varEnv = NULL, varGE = NULL,
 \item{varEnv}{a vector of new environmental variances}
 
 \item{varGE}{a vector of new GxE variances}
+
+\item{useVarA}{tune according to additive genetic variance if true}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
