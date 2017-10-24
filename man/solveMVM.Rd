@@ -4,7 +4,7 @@
 \alias{solveMVM}
 \title{Solve Multivariate Model}
 \usage{
-solveMVM(Y, X, Z, K, tol = 1e-06)
+solveMVM(Y, X, Z, K, tol = 1e-06, maxIter = 1000L)
 }
 \arguments{
 \item{Y}{a matrix with n rows and q columns}
@@ -16,6 +16,8 @@ solveMVM(Y, X, Z, K, tol = 1e-06)
 \item{K}{a matrix with m rows and m columns}
 
 \item{tol}{tolerance for convergence}
+
+\item{maxIter}{maximum number of iteration}
 }
 \description{
 Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}

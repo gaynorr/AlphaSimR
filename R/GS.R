@@ -120,11 +120,13 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
+#' @param maxIter maximum number of iterations. Only used 
+#' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
-RRBLUP = function(dir, traits=1, use="pheno",
-                  simParam=NULL){
+RRBLUP = function(dir, traits=1, use="pheno", 
+                  maxIter=1000, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }

@@ -291,12 +291,13 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
 //' @param Z a matrix with n rows and m columns
 //' @param K a matrix with m rows and m columns
 //' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K,
-                    double tol=1e-6){
+                    double tol=1e-6, int maxIter=1000){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::mat ZK = Z*K;
@@ -319,7 +320,9 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   double numer;
   bool converging=true;
   bool invPass;
+  int iter=0;
   while(converging){
+    ++iter;
     VeNew.fill(0.0);
     VuNew.fill(0.0);
     for(arma::uword i=0; i<n; ++i){
@@ -342,6 +345,10 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Ve = VeNew;
     Vu = VuNew;
     B = BNew;
+    if(iter>=maxIter){
+      Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+      break;
+    }
   }
   arma::mat HI;
   invPass = inv_sympd(HI,kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
@@ -377,11 +384,13 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param M a matrix with n rows and m columns
 //' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
-                         const arma::mat& M, double tol=1e-6){
+                         const arma::mat& M, double tol=1e-6,
+                         int maxIter=1000){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::vec eigval(n);
@@ -402,7 +411,9 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   double numer;
   bool converging=true;
   bool invPass;
+  int iter=0;
   while(converging){
+    ++iter;
     VeNew.fill(0.0);
     VuNew.fill(0.0);
     for(arma::uword i=0; i<n; ++i){
@@ -425,6 +436,10 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
     Ve = VeNew;
     Vu = VuNew;
     B = BNew;
+    if(iter>=maxIter){
+      Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+      break;
+    }
   }
   arma::mat HI;
   invPass = inv_sympd(HI,kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
@@ -697,14 +712,15 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
-                            std::string genoTrain, int nMarker){
+                            std::string genoTrain, int nMarker, 
+                            int maxIter){
   int n = Y.n_rows;
   arma::mat X = makeX(x);
   arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
-  return solveRRBLUPMV(Y, X, M);
+  return solveRRBLUPMV(Y, X, M, maxIter);
 }
 
 // Called by RRBLUP_GCA function

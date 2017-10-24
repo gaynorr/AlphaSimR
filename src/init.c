@@ -41,7 +41,7 @@ extern SEXP AlphaSimR_readMat(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_sampHalfDialComb(SEXP, SEXP);
 extern SEXP AlphaSimR_solveMKM(SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_solveMVM(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_solveMVM(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveRRBLUP(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveRRBLUPMK(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveRRBLUPMV(SEXP, SEXP, SEXP, SEXP);
@@ -88,7 +88,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_sampAllComb",       (DL_FUNC) &AlphaSimR_sampAllComb,       3},
     {"AlphaSimR_sampHalfDialComb",  (DL_FUNC) &AlphaSimR_sampHalfDialComb,  2},
     {"AlphaSimR_solveMKM",          (DL_FUNC) &AlphaSimR_solveMKM,          4},
-    {"AlphaSimR_solveMVM",          (DL_FUNC) &AlphaSimR_solveMVM,          5},
+    {"AlphaSimR_solveMVM",          (DL_FUNC) &AlphaSimR_solveMVM,          6},
     {"AlphaSimR_solveRRBLUP",       (DL_FUNC) &AlphaSimR_solveRRBLUP,       3},
     {"AlphaSimR_solveRRBLUPMK",     (DL_FUNC) &AlphaSimR_solveRRBLUPMK,     3},
     {"AlphaSimR_solveRRBLUPMV",     (DL_FUNC) &AlphaSimR_solveRRBLUPMV,     4},

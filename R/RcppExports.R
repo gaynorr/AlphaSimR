@@ -73,10 +73,11 @@ solveRRBLUP <- function(y, X, M) {
 #' @param Z a matrix with n rows and m columns
 #' @param K a matrix with m rows and m columns
 #' @param tol tolerance for convergence
+#' @param maxIter maximum number of iteration
 #'
 #' @export
-solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
-    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol)
+solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
+    .Call('AlphaSimR_solveMVM', PACKAGE = 'AlphaSimR', Y, X, Z, K, tol, maxIter)
 }
 
 #' @title Solve Multivariate RR-BLUP
@@ -88,10 +89,11 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6) {
 #' @param X a matrix with n rows and x columns
 #' @param M a matrix with n rows and m columns
 #' @param tol tolerance for convergence
+#' @param maxIter maximum number of iteration
 #'
 #' @export
-solveRRBLUPMV <- function(Y, X, M, tol = 1e-6) {
-    .Call('AlphaSimR_solveRRBLUPMV', PACKAGE = 'AlphaSimR', Y, X, M, tol)
+solveRRBLUPMV <- function(Y, X, M, tol = 1e-6, maxIter = 1000L) {
+    .Call('AlphaSimR_solveRRBLUPMV', PACKAGE = 'AlphaSimR', Y, X, M, tol, maxIter)
 }
 
 #' @title Solve Multikernel Model
@@ -127,8 +129,8 @@ callRRBLUP <- function(y, x, reps, genoTrain, nMarker) {
     .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker)
 }
 
-callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker) {
-    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker)
+callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, maxIter) {
+    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker, maxIter)
 }
 
 callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker) {
