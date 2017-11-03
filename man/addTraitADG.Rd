@@ -4,9 +4,9 @@
 \alias{addTraitADG}
 \title{Add an additive and dominance GxE trait}
 \usage{
-addTraitADG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, domDegree,
-  domDegreeVar = 0, corr = NULL, corrGxe = NULL, useVarA = FALSE,
-  gamma = FALSE, shape = 1, simParam = NULL)
+addTraitADG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGxE, domDegMean,
+  domDegVar = 0, corA = NULL, corD = NULL, corGxE = NULL,
+  useVarA = TRUE, gamma = FALSE, shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}
@@ -14,21 +14,23 @@ addTraitADG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, domDegree,
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single 
 value or nChr values.}
 
-\item{meanG}{a vector of mean genetic values for one or more traits}
+\item{meanG}{a vector of desired mean genetic values for one or more traits}
 
-\item{varG}{a vector of total genetic variances for one or more traits}
+\item{varG}{a vector of desired genetic variances for one or more traits}
 
 \item{varEnv}{a vector of environmental variances for one or more traits}
 
-\item{varGE}{a vector of total genotype-by-environment variances for the traits}
+\item{varGxE}{a vector of total genotype-by-environment variances for the traits}
 
-\item{domDegree}{mean dominance degree}
+\item{domDegMean}{mean dominance degree}
 
-\item{domDegreeVar}{variance of dominance degree}
+\item{domDegVar}{variance of dominance degree}
 
-\item{corr}{a matrix of correlations between traits}
+\item{corA}{a matrix of correlations between additive effects}
 
-\item{corrGxe}{a matrix of correlations between GxE effects}
+\item{corD}{a matrix of correlations between dominance effects}
+
+\item{corGxE}{a matrix of correlations between GxE effects}
 
 \item{useVarA}{tune according to additive genetic variance if true}
 

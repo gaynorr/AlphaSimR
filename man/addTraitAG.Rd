@@ -4,25 +4,25 @@
 \alias{addTraitAG}
 \title{Add additive GxE traits}
 \usage{
-addTraitAG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGE, corr = NULL,
-  corrGxe = NULL, gamma = FALSE, shape = 1, simParam = NULL)
+addTraitAG(founderPop, nQtlPerChr, meanG, varG, varEnv, varGxE, corA = NULL,
+  corGxE = NULL, gamma = FALSE, shape = 1, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{an object of \code{\link{MapPop-class}}}
 
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{a vector of mean genetic values for one or more traits}
+\item{meanG}{a vector of desired mean genetic values for one or more traits}
 
-\item{varG}{a vector of total genetic variances for one or more traits}
+\item{varG}{a vector of desired genetic variances for one or more traits}
 
 \item{varEnv}{a vector of environmental variances for one or more traits}
 
-\item{varGE}{a vector of total genotype-by-environment variances for the traits}
+\item{varGxE}{a vector of total genotype-by-environment variances for the traits}
 
-\item{corr}{a matrix of correlations between traits}
+\item{corA}{a matrix of correlations between additive effects}
 
-\item{corrGxe}{a matrix of correlations between GxE effects}
+\item{corGxE}{a matrix of correlations between GxE effects}
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 

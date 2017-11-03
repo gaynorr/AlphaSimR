@@ -4,8 +4,8 @@
 \alias{addTraitAD}
 \title{Add additive and dominance traits}
 \usage{
-addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
-  corr = NULL, useVarA = FALSE, gamma = FALSE, shape = 1,
+addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegMean, domDegVar = 0,
+  corA = NULL, corD = NULL, useVarA = TRUE, gamma = FALSE, shape = 1,
   simParam = NULL)
 }
 \arguments{
@@ -13,15 +13,17 @@ addTraitAD(founderPop, nQtlPerChr, meanG, varG, domDegree, domDegreeVar = 0,
 
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{a vector of mean genetic values for one or more traits}
+\item{meanG}{a vector of desired mean genetic values for one or more traits}
 
-\item{varG}{a vector of total genetic variances for one or more traits}
+\item{varG}{a vector of desired genetic variances for one or more traits}
 
-\item{domDegree}{mean dominance degree}
+\item{domDegMean}{mean dominance degree}
 
-\item{domDegreeVar}{variance of dominance degree}
+\item{domDegVar}{variance of dominance degree}
 
-\item{corr}{a matrix of correlations between traits}
+\item{corA}{a matrix of correlations between additive effects}
+
+\item{corD}{a matrix of correlations between dominance effects}
 
 \item{useVarA}{tune according to additive genetic variance if true}
 

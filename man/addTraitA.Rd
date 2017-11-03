@@ -4,7 +4,7 @@
 \alias{addTraitA}
 \title{Add additive traits}
 \usage{
-addTraitA(founderPop, nQtlPerChr, meanG, varG, corr = NULL, gamma = FALSE,
+addTraitA(founderPop, nQtlPerChr, meanG, varG, corA = NULL, gamma = FALSE,
   shape = 1, simParam = NULL)
 }
 \arguments{
@@ -12,11 +12,11 @@ addTraitA(founderPop, nQtlPerChr, meanG, varG, corr = NULL, gamma = FALSE,
 
 \item{nQtlPerChr}{number of QTLs per chromosome. Can be a single value or nChr values.}
 
-\item{meanG}{a vector of mean genetic values for one or more traits}
+\item{meanG}{a vector of desired mean genetic values for one or more traits}
 
-\item{varG}{a vector of total genetic variances for one or more traits}
+\item{varG}{a vector of desired genetic variances for one or more traits}
 
-\item{corr}{a matrix of correlations between traits}
+\item{corA}{a matrix of correlations between additive effects}
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 
