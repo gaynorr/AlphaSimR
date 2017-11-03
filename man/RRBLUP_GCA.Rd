@@ -7,7 +7,7 @@
 RRBLUP_GCA(dir, traits = 1, use = "pheno", simParam = NULL)
 }
 \arguments{
-\item{dir}{path to a directory with output from /code{/link{writeRecords}}}
+\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
 
 \item{traits}{an integer indicating the trait or traits to model, or a
 function of the traits returning a single value.}

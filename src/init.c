@@ -14,7 +14,7 @@ extern SEXP AlphaSimR_calcGenParam(SEXP, SEXP);
 extern SEXP AlphaSimR_calcGIbs(SEXP);
 extern SEXP AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_changeId(SEXP, SEXP);
 extern SEXP AlphaSimR_convToImat(SEXP);
@@ -24,7 +24,7 @@ extern SEXP AlphaSimR_crossPedigree(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_fastDist(SEXP);
 extern SEXP AlphaSimR_fastPairDist(SEXP, SEXP);
 extern SEXP AlphaSimR_gaussKernel(SEXP, SEXP);
-extern SEXP AlphaSimR_gebvGCA(SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_gebvGCA(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_gebvRR(SEXP, SEXP);
 extern SEXP AlphaSimR_gebvSCA(SEXP, SEXP);
 extern SEXP AlphaSimR_getDomGeno(SEXP);
@@ -44,7 +44,7 @@ extern SEXP AlphaSimR_solveMKM(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveMVM(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveRRBLUP(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveRRBLUPMK(SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_solveRRBLUPMV(SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_solveRRBLUPMV(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_solveUVM(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -61,7 +61,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_calcGIbs",          (DL_FUNC) &AlphaSimR_calcGIbs,          1},
     {"AlphaSimR_callRRBLUP",        (DL_FUNC) &AlphaSimR_callRRBLUP,        5},
     {"AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_GCA,    6},
-    {"AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &AlphaSimR_callRRBLUP_MV,     5},
+    {"AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &AlphaSimR_callRRBLUP_MV,     6},
     {"AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_SCA,    6},
     {"AlphaSimR_changeId",          (DL_FUNC) &AlphaSimR_changeId,          2},
     {"AlphaSimR_convToImat",        (DL_FUNC) &AlphaSimR_convToImat,        1},
@@ -71,7 +71,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_fastDist",          (DL_FUNC) &AlphaSimR_fastDist,          1},
     {"AlphaSimR_fastPairDist",      (DL_FUNC) &AlphaSimR_fastPairDist,      2},
     {"AlphaSimR_gaussKernel",       (DL_FUNC) &AlphaSimR_gaussKernel,       2},
-    {"AlphaSimR_gebvGCA",           (DL_FUNC) &AlphaSimR_gebvGCA,           3},
+    {"AlphaSimR_gebvGCA",           (DL_FUNC) &AlphaSimR_gebvGCA,           4},
     {"AlphaSimR_gebvRR",            (DL_FUNC) &AlphaSimR_gebvRR,            2},
     {"AlphaSimR_gebvSCA",           (DL_FUNC) &AlphaSimR_gebvSCA,           2},
     {"AlphaSimR_getDomGeno",        (DL_FUNC) &AlphaSimR_getDomGeno,        1},
@@ -91,7 +91,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_solveMVM",          (DL_FUNC) &AlphaSimR_solveMVM,          6},
     {"AlphaSimR_solveRRBLUP",       (DL_FUNC) &AlphaSimR_solveRRBLUP,       3},
     {"AlphaSimR_solveRRBLUPMK",     (DL_FUNC) &AlphaSimR_solveRRBLUPMK,     3},
-    {"AlphaSimR_solveRRBLUPMV",     (DL_FUNC) &AlphaSimR_solveRRBLUPMV,     4},
+    {"AlphaSimR_solveRRBLUPMV",     (DL_FUNC) &AlphaSimR_solveRRBLUPMV,     5},
     {"AlphaSimR_solveUVM",          (DL_FUNC) &AlphaSimR_solveUVM,          4},
     {"AlphaSimR_tuneTraitA",        (DL_FUNC) &AlphaSimR_tuneTraitA,        3},
     {"AlphaSimR_tuneTraitAD",       (DL_FUNC) &AlphaSimR_tuneTraitAD,       5},

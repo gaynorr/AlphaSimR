@@ -115,7 +115,7 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' @description
 #' Fits a typical RR-BLUP model for genomic predictions.
 #'
-#' @param dir path to a directory with output from /code{/link{writeRecords}}
+#' @param dir path to a directory with output from \code{\link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
@@ -188,7 +188,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #' the female and male gametes. Used for predicting GCA of parents
 #' in single cross hybrids.
 #'
-#' @param dir path to a directory with output from /code{/link{writeRecords}}
+#' @param dir path to a directory with output from \code{\link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
@@ -257,7 +257,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' and male gametes and dominance effects. Used for predicting single
 #' cross hybrid performance.
 #'
-#' @param dir path to a directory with output from /code{/link{writeRecords}}
+#' @param dir path to a directory with output from \code{\link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
@@ -330,8 +330,9 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param solution an object of \code{\link{RRsol-class}},
 #' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either "male" or "female" if solution is
-#' \code{\link{GCAsol-class}}
+#' @param gender either "male" or "female". Required if 
+#' solution is \code{\link{GCAsol-class}} and optional if 
+#' solution is \code{\link{SCAsol-class}}.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -342,15 +343,21 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="GCAsol"){
     if(toupper(gender)=="FEMALE"){
-      asFemale = TRUE
+      ebv = gebvGCA(solution, pop, TRUE)
     }else if(toupper(gender)=="MALE"){
-      asFemale = FALSE
+      ebv = gebvGCA(solution, pop, FALSE)
     }else{
       stop("You must specify gender as 'male' or 'female' with class(solution)='GCAsol'")
     }
-    ebv = gebvGCA(solution, pop, asFemale)
+    
   }else if(class(solution)=="SCAsol"){
-    ebv = gebvSCA(solution, pop)
+    if(toupper(gender)=="FEMALE"){
+      ebv = gebvGCA(solution, pop, TRUE, TRUE)
+    }else if(toupper(gender)=="MALE"){
+      ebv = gebvGCA(solution, pop, FALSE, TRUE)
+    }else{
+      ebv = gebvSCA(solution, pop)
+    }
   }else{
     stop("No method for class(solution)=",class(solution))
   }

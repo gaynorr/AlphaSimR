@@ -14,10 +14,3 @@
 #' @name AlphaSimR
 NULL
 
-calcPEV = function(){
-
-}
-
-predPEV = function(){
-
-}

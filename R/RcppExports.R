@@ -5,8 +5,8 @@ gebvRR <- function(RRsol, pop) {
     .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
 }
 
-gebvGCA <- function(GCAsol, pop, female) {
-    .Call('AlphaSimR_gebvGCA', PACKAGE = 'AlphaSimR', GCAsol, pop, female)
+gebvGCA <- function(GCAsol, pop, female, isSCAsol = FALSE) {
+    .Call('AlphaSimR_gebvGCA', PACKAGE = 'AlphaSimR', GCAsol, pop, female, isSCAsol)
 }
 
 gebvSCA <- function(SCAsol, pop) {

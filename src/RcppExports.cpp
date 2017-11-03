@@ -19,15 +19,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // gebvGCA
-arma::mat gebvGCA(const Rcpp::S4& GCAsol, const Rcpp::S4& pop, bool female);
-RcppExport SEXP AlphaSimR_gebvGCA(SEXP GCAsolSEXP, SEXP popSEXP, SEXP femaleSEXP) {
+arma::mat gebvGCA(const Rcpp::S4& GCAsol, const Rcpp::S4& pop, bool female, bool isSCAsol);
+RcppExport SEXP AlphaSimR_gebvGCA(SEXP GCAsolSEXP, SEXP popSEXP, SEXP femaleSEXP, SEXP isSCAsolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type GCAsol(GCAsolSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
     Rcpp::traits::input_parameter< bool >::type female(femaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvGCA(GCAsol, pop, female));
+    Rcpp::traits::input_parameter< bool >::type isSCAsol(isSCAsolSEXP);
+    rcpp_result_gen = Rcpp::wrap(gebvGCA(GCAsol, pop, female, isSCAsol));
     return rcpp_result_gen;
 END_RCPP
 }

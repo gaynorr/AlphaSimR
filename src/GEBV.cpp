@@ -16,7 +16,7 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
 
 // [[Rcpp::export]]
 arma::mat gebvGCA(const Rcpp::S4& GCAsol, const Rcpp::S4& pop, 
-                  bool female){
+                  bool female, bool isSCAsol=false){
   arma::mat a;
   if(female){
     a = Rcpp::as<arma::mat>(GCAsol.slot("femaleEff"));
@@ -28,6 +28,7 @@ arma::mat gebvGCA(const Rcpp::S4& GCAsol, const Rcpp::S4& pop,
                  GCAsol.slot("lociPerChr"),
                  GCAsol.slot("lociLoc"));
   arma::mat X = arma::conv_to<arma::mat>::from(geno);
+  if(isSCAsol) X -= 1;
   return X*a;
 }
 
