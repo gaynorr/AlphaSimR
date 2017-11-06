@@ -185,6 +185,7 @@ calcGCA = function(pop,use="pheno"){
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
+#' @param phenoOnly should only the phenotype be returned
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
@@ -194,11 +195,12 @@ calcGCA = function(pop,use="pheno"){
 #' reps is set to the number plots per entry. The resulting phenotype 
 #' would reflect the mean of all replications.
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' a matrix if onlyPheno=TRUE
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,simParam=NULL){
+                       w=0.5,inbred=FALSE,onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -215,6 +217,9 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
     tmp = setPheno(tmp,varE=varE,w=w,reps=reps,simParam=simParam)
   }
   tmp = calcGCA(pop=tmp,use=use)
+  if(onlyPheno){
+    return(as.matrix(tmp$females[,-1]))
+  }
   pop@pheno = as.matrix(tmp$females[,-1])
   return(pop)
 }
