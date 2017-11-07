@@ -5,7 +5,7 @@
 \title{Hybrid crossing}
 \usage{
 hybridCross(females, males, crossPlan = "testcross",
-  returnHybridPop = FALSE, chunkSize = 1000, simParam = NULL)
+  returnHybridPop = FALSE, chunkSize = 10000, simParam = NULL)
 }
 \arguments{
 \item{females}{female population, an object of \code{\link{Pop-class}}}

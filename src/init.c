@@ -12,10 +12,10 @@ extern SEXP AlphaSimR_calcChrFreq(SEXP);
 extern SEXP AlphaSimR_calcG(SEXP);
 extern SEXP AlphaSimR_calcGenParam(SEXP, SEXP);
 extern SEXP AlphaSimR_calcGIbs(SEXP);
-extern SEXP AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_changeId(SEXP, SEXP);
 extern SEXP AlphaSimR_convToImat(SEXP);
 extern SEXP AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -59,10 +59,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_calcG",             (DL_FUNC) &AlphaSimR_calcG,             1},
     {"AlphaSimR_calcGenParam",      (DL_FUNC) &AlphaSimR_calcGenParam,      2},
     {"AlphaSimR_calcGIbs",          (DL_FUNC) &AlphaSimR_calcGIbs,          1},
-    {"AlphaSimR_callRRBLUP",        (DL_FUNC) &AlphaSimR_callRRBLUP,        5},
-    {"AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_GCA,    6},
-    {"AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &AlphaSimR_callRRBLUP_MV,     6},
-    {"AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_SCA,    6},
+    {"AlphaSimR_callRRBLUP",        (DL_FUNC) &AlphaSimR_callRRBLUP,        6},
+    {"AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_GCA,    7},
+    {"AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &AlphaSimR_callRRBLUP_MV,     7},
+    {"AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_SCA,    7},
     {"AlphaSimR_changeId",          (DL_FUNC) &AlphaSimR_changeId,          2},
     {"AlphaSimR_convToImat",        (DL_FUNC) &AlphaSimR_convToImat,        1},
     {"AlphaSimR_createDH2",         (DL_FUNC) &AlphaSimR_createDH2,         5},

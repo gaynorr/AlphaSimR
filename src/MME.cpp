@@ -699,10 +699,10 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
-                         std::string genoTrain, int nMarker){
+                         std::string genoTrain, int nMarker, int skip){
   int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -713,10 +713,10 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker, 
-                            int maxIter){
+                            int maxIter, int skip){
   int n = Y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -727,13 +727,13 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker){
+                          int nMarker, int skip){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
   Mlist(0) = Mlist(0)*2;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
   Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
@@ -746,13 +746,13 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker){
+                          int nMarker, int skip){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
   Mlist(0) = Mlist(0)*2-1;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
   Mlist(1) = Mlist(1)*2-1;
   Mlist(2) = Mlist(0)%Mlist(1);
   sweepReps(y, reps);

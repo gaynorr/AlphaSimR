@@ -4,7 +4,7 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, use = "pheno", simParam = NULL)
+RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}
@@ -14,6 +14,8 @@ function of the traits returning a single value.}
 
 \item{use}{train model using genetic value (\code{gv})
 or phenotypes (\code{pheno}, default)}
+
+\item{skip}{number of older records to skip}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

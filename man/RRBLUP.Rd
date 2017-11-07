@@ -4,7 +4,8 @@
 \alias{RRBLUP}
 \title{RR-BLUP Model}
 \usage{
-RRBLUP(dir, traits = 1, use = "pheno", maxIter = 1000, simParam = NULL)
+RRBLUP(dir, traits = 1, use = "pheno", maxIter = 1000, skip = 0,
+  simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}
@@ -17,6 +18,8 @@ or phenotypes (\code{pheno}, default)}
 
 \item{maxIter}{maximum number of iterations. Only used 
 when number of traits is greater than 1.}
+
+\item{skip}{number of older records to skip}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

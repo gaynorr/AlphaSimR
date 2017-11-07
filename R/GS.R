@@ -122,11 +122,12 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' or phenotypes (\code{pheno}, default)
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
+#' @param skip number of older records to skip
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP = function(dir, traits=1, use="pheno", 
-                  maxIter=1000, simParam=NULL){
+                  maxIter=1000, skip=0, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -134,6 +135,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
                           comment.char="",stringsAsFactors=FALSE)
+  if(skip>0) markerInfo = markerInfo[-(1:skip),]
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
@@ -146,21 +148,24 @@ RRBLUP = function(dir, traits=1, use="pheno",
   }else{
     stop(paste0("Use=",use," is not an option"))
   }
-  y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
+  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
   if(is.function(traits)){
     y = apply(y,1,traits)
     y = as.matrix(y)
   }else{
     y = y[,traits,drop=FALSE]
   }
+  if(skip>0) y=y[-(1:skip),,drop=FALSE]
   #Fit model
   fixEff = as.integer(factor(markerInfo$fixEff))
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y,fixEff,markerInfo$reps,
-                        file.path(dir,"genotype.txt"),nMarkers)
+                        file.path(dir,"genotype.txt"),nMarkers,
+                        maxIter,skip)
   }else{
     ans = callRRBLUP(y,fixEff,markerInfo$reps,
-                     file.path(dir,"genotype.txt"),nMarkers)
+                     file.path(dir,"genotype.txt"),nMarkers,
+                     skip)
   }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
@@ -193,11 +198,12 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
+#' @param skip number of older records to skip
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP_GCA = function(dir, traits=1, use="pheno",
-                      simParam=NULL){
+                      skip=0, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -205,6 +211,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
                           comment.char="",stringsAsFactors=FALSE)
+  if(skip>0) markerInfo = markerInfo[-(1:skip),]
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
@@ -217,20 +224,21 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
   }else{
     stop(paste0("Use=",use," is not an option"))
   }
-  y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
+  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
   if(is.function(traits)){
     y = apply(y,1,traits)
     y = as.matrix(y)
   }else{
     y = y[,traits,drop=FALSE]
   }
+  if(skip>0) y=y[-(1:skip),,drop=FALSE]
   stopifnot(ncol(y)==1)
   #Fit model
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_GCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers)
+                       nMarkers,skip)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
@@ -262,11 +270,12 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
+#' @param skip number of older records to skip
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      simParam=NULL){
+                      skip=0, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -274,6 +283,7 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
   #Read and calculate basic information
   markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
                           comment.char="",stringsAsFactors=FALSE)
+  if(skip>0) markerInfo = markerInfo[-(1:skip),]
   nInd = nrow(markerInfo)
   nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
   markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
@@ -286,20 +296,21 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
   }else{
     stop(paste0("Use=",use," is not an option"))
   }
-  y = matrix(y,nrow=nInd,ncol=length(y)/nInd,byrow=TRUE)
+  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
   if(is.function(traits)){
     y = apply(y,1,traits)
     y = as.matrix(y)
   }else{
     y = y[,traits,drop=FALSE]
   }
+  if(skip>0) y=y[-(1:skip),,drop=FALSE]
   stopifnot(ncol(y)==1)
   #Fit model
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers)
+                       nMarkers,skip)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
