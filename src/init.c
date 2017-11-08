@@ -26,7 +26,7 @@ extern SEXP AlphaSimR_fastPairDist(SEXP, SEXP);
 extern SEXP AlphaSimR_gaussKernel(SEXP, SEXP);
 extern SEXP AlphaSimR_gebvGCA(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_gebvRR(SEXP, SEXP);
-extern SEXP AlphaSimR_gebvSCA(SEXP, SEXP);
+extern SEXP AlphaSimR_gebvSCA(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_getDomGeno(SEXP);
 extern SEXP AlphaSimR_getGeno(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_getGv(SEXP, SEXP);
@@ -73,7 +73,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_gaussKernel",       (DL_FUNC) &AlphaSimR_gaussKernel,       2},
     {"AlphaSimR_gebvGCA",           (DL_FUNC) &AlphaSimR_gebvGCA,           4},
     {"AlphaSimR_gebvRR",            (DL_FUNC) &AlphaSimR_gebvRR,            2},
-    {"AlphaSimR_gebvSCA",           (DL_FUNC) &AlphaSimR_gebvSCA,           2},
+    {"AlphaSimR_gebvSCA",           (DL_FUNC) &AlphaSimR_gebvSCA,           3},
     {"AlphaSimR_getDomGeno",        (DL_FUNC) &AlphaSimR_getDomGeno,        1},
     {"AlphaSimR_getGeno",           (DL_FUNC) &AlphaSimR_getGeno,           3},
     {"AlphaSimR_getGv",             (DL_FUNC) &AlphaSimR_getGv,             2},

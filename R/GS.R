@@ -341,9 +341,9 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param solution an object of \code{\link{RRsol-class}},
 #' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either "male" or "female". Required if 
-#' solution is \code{\link{GCAsol-class}} and optional if 
-#' solution is \code{\link{SCAsol-class}}.
+#' @param gender either NULL, "male" or "female". Used if 
+#' solution is \code{\link{GCAsol-class}} or 
+#' \code{\link{SCAsol-class}}.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -353,12 +353,14 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="GCAsol"){
-    if(toupper(gender)=="FEMALE"){
+    if(is.null(gender)){
+      ebv = gebvSCA(solution, pop, FALSE)
+    }else if(toupper(gender)=="FEMALE"){
       ebv = gebvGCA(solution, pop, TRUE)
     }else if(toupper(gender)=="MALE"){
       ebv = gebvGCA(solution, pop, FALSE)
     }else{
-      stop("You must specify gender as 'male' or 'female' with class(solution)='GCAsol'")
+      stop(paste0("gender=",gender," is not a valid option"))
     }
     
   }else if(class(solution)=="SCAsol"){
