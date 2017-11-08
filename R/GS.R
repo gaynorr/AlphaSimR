@@ -362,12 +362,14 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
     }
     
   }else if(class(solution)=="SCAsol"){
-    if(toupper(gender)=="FEMALE"){
+    if(is.null(gender)){
+      ebv = gebvSCA(solution, pop)
+    }else if(toupper(gender)=="FEMALE"){
       ebv = gebvGCA(solution, pop, TRUE, TRUE)
     }else if(toupper(gender)=="MALE"){
       ebv = gebvGCA(solution, pop, FALSE, TRUE)
     }else{
-      ebv = gebvSCA(solution, pop)
+      stop(paste0("gender=",gender," is not a valid option"))
     }
   }else{
     stop("No method for class(solution)=",class(solution))
