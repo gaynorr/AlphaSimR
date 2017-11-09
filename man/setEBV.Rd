@@ -12,9 +12,10 @@ setEBV(pop, solution, gender = NULL, append = FALSE)
 \item{solution}{an object of \code{\link{RRsol-class}},
 \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}}
 
-\item{gender}{either NULL, "male" or "female". Used if 
+\item{gender}{either NULL, "male" or "female". If 
 solution is \code{\link{GCAsol-class}} or 
-\code{\link{SCAsol-class}}.}
+\code{\link{SCAsol-class}} the EBV is the GCA if used in 
+the corresponding pool}
 
 \item{append}{should EBVs be appended to existing EBVs}
 }

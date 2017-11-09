@@ -4,7 +4,7 @@
 \alias{solveMKM}
 \title{Solve Multikernel Model}
 \usage{
-solveMKM(y, X, Zlist, Klist)
+solveMKM(y, X, Zlist, Klist, maxIter = 20L)
 }
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
@@ -14,6 +14,8 @@ solveMKM(y, X, Zlist, Klist)
 \item{Zlist}{a list of Z matrices}
 
 \item{Klist}{a list of K matrices}
+
+\item{maxIter}{maximum number of iteration}
 }
 \description{
 Solves a univariate mixed model with multiple random effects.

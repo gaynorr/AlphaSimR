@@ -4,7 +4,7 @@
 \alias{solveRRBLUPMK}
 \title{Solve Multikernel RR-BLUP}
 \usage{
-solveRRBLUPMK(y, X, Mlist)
+solveRRBLUPMK(y, X, Mlist, maxIter = 20L)
 }
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
@@ -12,6 +12,8 @@ solveRRBLUPMK(y, X, Mlist)
 \item{X}{a matrix with n rows and x columns}
 
 \item{Mlist}{a list of M matrices}
+
+\item{maxIter}{maximum number of iteration}
 }
 \description{
 Solves a univariate mixed model with multiple random effects.

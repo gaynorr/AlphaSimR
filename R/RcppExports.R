@@ -105,10 +105,11 @@ solveRRBLUPMV <- function(Y, X, M, tol = 1e-6, maxIter = 1000L) {
 #' @param X a matrix with n rows and x columns
 #' @param Zlist a list of Z matrices
 #' @param Klist a list of K matrices
+#' @param maxIter maximum number of iteration
 #'
 #' @export
-solveMKM <- function(y, X, Zlist, Klist) {
-    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist)
+solveMKM <- function(y, X, Zlist, Klist, maxIter = 20L) {
+    .Call('AlphaSimR_solveMKM', PACKAGE = 'AlphaSimR', y, X, Zlist, Klist, maxIter)
 }
 
 #' @title Solve Multikernel RR-BLUP
@@ -119,26 +120,27 @@ solveMKM <- function(y, X, Zlist, Klist) {
 #' @param y a matrix with n rows and 1 column
 #' @param X a matrix with n rows and x columns
 #' @param Mlist a list of M matrices
+#' @param maxIter maximum number of iteration
 #'
 #' @export
-solveRRBLUPMK <- function(y, X, Mlist) {
-    .Call('AlphaSimR_solveRRBLUPMK', PACKAGE = 'AlphaSimR', y, X, Mlist)
+solveRRBLUPMK <- function(y, X, Mlist, maxIter = 20L) {
+    .Call('AlphaSimR_solveRRBLUPMK', PACKAGE = 'AlphaSimR', y, X, Mlist, maxIter)
 }
 
 callRRBLUP <- function(y, x, reps, genoTrain, nMarker, skip) {
     .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, skip)
 }
 
-callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, maxIter, skip) {
-    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker, maxIter, skip)
+callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, skip, maxIter) {
+    .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker, skip, maxIter)
 }
 
-callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip) {
-    .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker, skip)
+callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter) {
+    .Call('AlphaSimR_callRRBLUP_GCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter)
 }
 
-callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip) {
-    .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker, skip)
+callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter) {
+    .Call('AlphaSimR_callRRBLUP_SCA', PACKAGE = 'AlphaSimR', y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter)
 }
 
 #' @title Calculate G Matrix

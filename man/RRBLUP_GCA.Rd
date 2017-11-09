@@ -4,7 +4,8 @@
 \alias{RRBLUP_GCA}
 \title{RR-BLUP GCA Model}
 \usage{
-RRBLUP_GCA(dir, traits = 1, use = "pheno", skip = 0, simParam = NULL)
+RRBLUP_GCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 20,
+  simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}
@@ -16,6 +17,8 @@ function of the traits returning a single value.}
 or phenotypes (\code{pheno}, default)}
 
 \item{skip}{number of older records to skip}
+
+\item{maxIter}{maximum number of iterations for convergence.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

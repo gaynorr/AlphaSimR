@@ -152,6 +152,7 @@ setValidity("TraitADG",function(object){
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
 #' @slot LL Log-likelihood
+#' @slot iter Number of iterations for convergence
 #'
 #' @export
 setClass("RRsol",
@@ -159,7 +160,8 @@ setClass("RRsol",
                  fixEff="matrix",
                  Vu="numeric",
                  Ve="numeric",
-                 LL="numeric"),
+                 LL="numeric",
+                 iter="integer"),
          contains="LociMap")
 
 setValidity("RRsol",function(object){
@@ -192,6 +194,7 @@ setValidity("RRsol",function(object){
 #' @slot Vu Estimated marker variances
 #' @slot Ve Estimated error variance
 #' @slot LL Log-likelihood
+#' @slot iter Number of iterations for convergence
 #'
 #' @export
 setClass("GCAsol",
@@ -200,7 +203,8 @@ setClass("GCAsol",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
-                 LL="numeric"),
+                 LL="numeric",
+                 iter="integer"),
          contains="LociMap")
 
 setValidity("GCAsol",function(object){

@@ -346,7 +346,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Vu = VuNew;
     B = BNew;
     if(iter>=maxIter){
-      Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+      Rf_warning("Reached maxIter without converging");
       break;
     }
   }
@@ -372,7 +372,8 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=B.t(),
                             Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=double(ll(0,0)));
+                            Rcpp::Named("LL")=arma::as_scalar(ll),
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multivariate RR-BLUP
@@ -463,7 +464,8 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=B.t(),
                             Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=double(ll(0,0)));
+                            Rcpp::Named("LL")=arma::as_scalar(ll),
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multikernel Model
@@ -475,13 +477,14 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param Zlist a list of Z matrices
 //' @param Klist a list of K matrices
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                      arma::field<arma::mat>& Zlist,
-                     arma::field<arma::mat>& Klist){
-  int maxcyc = 20;
+                     arma::field<arma::mat>& Klist,
+                     int maxIter=20){
   double tol = 1e-4;
   int k = Klist.n_elem;
   int n = y.n_rows;
@@ -492,7 +495,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
   }
   V(k) = arma::eye(n,n);
-  k += 1;
+  ++k;
   arma::mat A(k,k);
   arma::vec qvec(k);
   arma::vec sigma(k);
@@ -511,7 +514,9 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
-  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
+  int iter = 0;
+  while(true){
+    ++iter;
     W0 = V(0)*sigma(0);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
@@ -530,8 +535,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1)
-      llik0 = llik;
+    if(iter == 1) llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
     for(arma::uword i=0; i<k; ++i){
@@ -545,9 +549,9 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     }
     A = pinv(A);
     qvec = A*qvec;
-    if(cycle == 1){
+    if(iter == 1){
       taper = 0.5;
-    }else if(cycle == 2){
+    }else if(iter == 2){
       taper = 0.7;
     }else{
       taper = 0.9;
@@ -556,12 +560,19 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+    if(iter > 1 & fabs(deltaLlik) < tol*10){
       break;
     }
     if(max(abs(qvec)) < tol){
       break;
     }
+    if(iter >= maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  while(sigma.min() < 0.0){
+    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1);
   arma::field<arma::mat> u(k-1);
@@ -579,7 +590,8 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik);
+                            Rcpp::Named("LL")=llik,
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multikernel RR-BLUP
@@ -590,12 +602,13 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
 //' @param y a matrix with n rows and 1 column
 //' @param X a matrix with n rows and x columns
 //' @param Mlist a list of M matrices
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
-                         arma::field<arma::mat>& Mlist){
-  int maxcyc = 20;
+                         arma::field<arma::mat>& Mlist,
+                         int maxIter=20){
   double tol = 1e-4;
   int k = Mlist.n_elem;
   int n = y.n_rows;
@@ -606,7 +619,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     V(i) = Mlist(i)*Mlist(i).t();
   }
   V(k) = arma::eye(n,n);
-  k += 1;
+  ++k;
   arma::mat A(k,k);
   arma::vec qvec(k);
   arma::vec sigma(k);
@@ -625,7 +638,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
-  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
+  int iter = 0;
+  while(true){
+    ++iter;
     W0 = V(0)*sigma(0);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
@@ -644,8 +659,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1)
-      llik0 = llik;
+    if(iter == 1) llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
     for(arma::uword i=0; i<k; ++i){
@@ -659,9 +673,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     }
     A = pinv(A);
     qvec = A*qvec;
-    if(cycle == 1){
+    if(iter == 1){
       taper = 0.5;
-    }else if(cycle == 2){
+    }else if(iter == 2){
       taper = 0.7;
     }else{
       taper = 0.9;
@@ -670,12 +684,19 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+    if(iter > 1 & fabs(deltaLlik) < tol*10){
       break;
     }
     if(max(abs(qvec)) < tol){
       break;
     }
+    if(iter >= maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  while(sigma.min() < 0.0){
+    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1);
   arma::field<arma::mat> u(k-1);
@@ -693,7 +714,8 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik);
+                            Rcpp::Named("LL")=llik,
+                            Rcpp::Named("iter")=iter);
 }
 
 // Called by RRBLUP function
@@ -713,7 +735,7 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker, 
-                            int maxIter, int skip){
+                            int skip, int maxIter){
   int n = Y.n_rows;
   arma::mat X = makeX(x);
   arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
@@ -727,7 +749,7 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip){
+                          int nMarker, int skip, int maxIter){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
@@ -739,14 +761,14 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
-  return solveRRBLUPMK(y,X,Mlist);
+  return solveRRBLUPMK(y,X,Mlist,maxIter);
 }
 
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip){
+                          int nMarker, int skip, int maxIter){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(3);
@@ -760,7 +782,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   sweepReps(Mlist(2), reps);
-  return solveRRBLUPMK(y,X,Mlist);
+  return solveRRBLUPMK(y,X,Mlist,maxIter);
 }
 
 //' @title Calculate G Matrix

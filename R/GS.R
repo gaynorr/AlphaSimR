@@ -120,14 +120,14 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' function of the traits returning a single value.
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
+#' @param skip number of older records to skip
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
-#' @param skip number of older records to skip
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP = function(dir, traits=1, use="pheno", 
-                  maxIter=1000, skip=0, simParam=NULL){
+                  skip=0, maxIter=1000, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -161,7 +161,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y,fixEff,markerInfo$reps,
                         file.path(dir,"genotype.txt"),nMarkers,
-                        maxIter,skip)
+                        skip,maxIter)
   }else{
     ans = callRRBLUP(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
@@ -174,6 +174,11 @@ RRBLUP = function(dir, traits=1, use="pheno",
     markers = simParam@traits[[as.integer(tmp[2])]]
   }
   markerEff=ans$u
+  if(is.null(ans[["iter"]])){
+    iter = 0
+  }else{
+    iter = ans$iter
+  }
   output = new("RRsol",
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
@@ -182,7 +187,8 @@ RRBLUP = function(dir, traits=1, use="pheno",
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL)
+               LL=ans$LL,
+               iter=iter)
   return(output)
 }
 
@@ -199,11 +205,12 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param maxIter maximum number of iterations for convergence.
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP_GCA = function(dir, traits=1, use="pheno",
-                      skip=0, simParam=NULL){
+                      skip=0, maxIter=20, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -238,7 +245,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
   ans = callRRBLUP_GCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip)
+                       nMarkers,skip,maxIter)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
@@ -254,7 +261,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL)
+               LL=ans$LL,
+               iter=ans$iter)
   return(output)
 }
 
@@ -271,11 +279,15 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param maxIter maximum number of iterations for convergence.
+#' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
+#' RRBLUP_SCA gives a variance component of zero
 #' @param simParam an object of \code{\link{SimParam-class}}
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      skip=0, simParam=NULL){
+                      skip=0, maxIter=20, onFailGCA=TRUE, 
+                      simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -310,12 +322,19 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
   ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip)
+                       nMarkers,skip,maxIter)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam@snpChips[[as.integer(tmp[2])]]
   }else{
     markers = simParam@traits[[as.integer(tmp[2])]]
+  }
+  if(onFailGCA & any(ans$Vu<1e-10)){
+    warning("using RRBLUP_GCA due to zero variance components")
+    output = RRBLUP_GCA(dir=dir, traits=traits, use=use,
+                        skip=skip, maxIter=maxIter, 
+                        simParam=simParam)
+    return(output)
   }
   output = new("SCAsol",
                nLoci=markers@nLoci,
@@ -327,7 +346,8 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL)
+               LL=ans$LL,
+               iter=ans$iter)
   return(output)
 }
 
@@ -341,9 +361,10 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param solution an object of \code{\link{RRsol-class}},
 #' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either NULL, "male" or "female". Used if 
+#' @param gender either NULL, "male" or "female". If 
 #' solution is \code{\link{GCAsol-class}} or 
-#' \code{\link{SCAsol-class}}.
+#' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
+#' the corresponding pool
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
