@@ -4,7 +4,7 @@
 \alias{solveRRBLUPMK}
 \title{Solve Multikernel RR-BLUP}
 \usage{
-solveRRBLUPMK(y, X, Mlist, maxIter = 20L)
+solveRRBLUPMK(y, X, Mlist, maxIter = 40L)
 }
 \arguments{
 \item{y}{a matrix with n rows and 1 column}

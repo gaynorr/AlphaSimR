@@ -4,7 +4,7 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 20,
+RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 40,
   onFailGCA = TRUE, simParam = NULL)
 }
 \arguments{

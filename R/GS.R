@@ -210,7 +210,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_GCA = function(dir, traits=1, use="pheno",
-                      skip=0, maxIter=20, simParam=NULL){
+                      skip=0, maxIter=40, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -286,7 +286,7 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      skip=0, maxIter=20, onFailGCA=TRUE, 
+                      skip=0, maxIter=40, onFailGCA=TRUE, 
                       simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)

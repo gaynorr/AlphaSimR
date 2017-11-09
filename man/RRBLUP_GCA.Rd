@@ -4,7 +4,7 @@
 \alias{RRBLUP_GCA}
 \title{RR-BLUP GCA Model}
 \usage{
-RRBLUP_GCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 20,
+RRBLUP_GCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 40,
   simParam = NULL)
 }
 \arguments{

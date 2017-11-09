@@ -4,7 +4,7 @@
 \alias{solveMKM}
 \title{Solve Multikernel Model}
 \usage{
-solveMKM(y, X, Zlist, Klist, maxIter = 20L)
+solveMKM(y, X, Zlist, Klist, maxIter = 40L)
 }
 \arguments{
 \item{y}{a matrix with n rows and 1 column}

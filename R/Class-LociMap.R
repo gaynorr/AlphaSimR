@@ -161,7 +161,7 @@ setClass("RRsol",
                  Vu="numeric",
                  Ve="numeric",
                  LL="numeric",
-                 iter="integer"),
+                 iter="numeric"),
          contains="LociMap")
 
 setValidity("RRsol",function(object){
@@ -204,7 +204,7 @@ setClass("GCAsol",
                  Vu="matrix",
                  Ve="matrix",
                  LL="numeric",
-                 iter="integer"),
+                 iter="numeric"),
          contains="LociMap")
 
 setValidity("GCAsol",function(object){

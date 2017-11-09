@@ -484,7 +484,7 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                      arma::field<arma::mat>& Zlist,
                      arma::field<arma::mat>& Klist,
-                     int maxIter=20){
+                     int maxIter=40){
   double tol = 1e-4;
   int k = Klist.n_elem;
   int n = y.n_rows;
@@ -608,7 +608,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
-                         int maxIter=20){
+                         int maxIter=40){
   double tol = 1e-4;
   int k = Mlist.n_elem;
   int n = y.n_rows;
