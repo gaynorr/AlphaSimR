@@ -10,7 +10,7 @@ calcG(X)
 \item{X}{a matrix of marker genotypes scored as 0,1,2}
 }
 \value{
-a matrix of the realized genomic relationship
+a matrix of the realized genomic relationships
 }
 \description{
 Calculates the genomic relationship matrix.

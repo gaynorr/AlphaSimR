@@ -13,6 +13,10 @@ gebvRR <- function(RRsol, pop) {
     .Call('AlphaSimR_gebvRR', PACKAGE = 'AlphaSimR', RRsol, pop)
 }
 
+gebvRRD <- function(RRsol, pop) {
+    .Call('AlphaSimR_gebvRRD', PACKAGE = 'AlphaSimR', RRsol, pop)
+}
+
 gebvGCA <- function(sol, pop, female, isSCAsol = FALSE) {
     .Call('AlphaSimR_gebvGCA', PACKAGE = 'AlphaSimR', sol, pop, female, isSCAsol)
 }
@@ -232,6 +236,10 @@ callRRBLUP <- function(y, x, reps, genoTrain, nMarker, skip) {
     .Call('AlphaSimR_callRRBLUP', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, skip)
 }
 
+callRRBLUP_D <- function(y, x, reps, genoTrain, nMarker, skip) {
+    .Call('AlphaSimR_callRRBLUP_D', PACKAGE = 'AlphaSimR', y, x, reps, genoTrain, nMarker, skip)
+}
+
 callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, skip, maxIter) {
     .Call('AlphaSimR_callRRBLUP_MV', PACKAGE = 'AlphaSimR', Y, x, reps, genoTrain, nMarker, skip, maxIter)
 }
@@ -251,11 +259,28 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxI
 #'
 #' @param X a matrix of marker genotypes scored as 0,1,2
 #'
-#' @return a matrix of the realized genomic relationship
+#' @return a matrix of the realized genomic relationships
 #'
 #' @export
 calcG <- function(X) {
     .Call('AlphaSimR_calcG', PACKAGE = 'AlphaSimR', X)
+}
+
+#' @title Calculate Dominance Matrix
+#'
+#' @description
+#' Calculates the dominance relationship matrix.
+#'
+#' @param X a matrix of marker genotypes scored as 0,1,2
+#'
+#' @references
+#' \cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
+#' 
+#' @return a matrix of the realized dominance relationships
+#'
+#' @export
+calcD <- function(X) {
+    .Call('AlphaSimR_calcD', PACKAGE = 'AlphaSimR', X)
 }
 
 #' @title Calculate IBS G Matrix

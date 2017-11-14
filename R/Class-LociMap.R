@@ -182,6 +182,55 @@ setValidity("RRsol",function(object){
   }
 })
 
+#RRDsol----
+#' @title RR-BLUP Solution with Dominance
+#' 
+#' @description Extends \code{\link{LociMap-class}} 
+#' to contain estimated effects from \code{\link{RRBLUP}}
+#' 
+#' @slot markerEff GEBVs for markers
+#' @slot domEff dominance effects
+#' @slot fixEff Estimates for fixed effects
+#' @slot Vu Estimated marker variance
+#' @slot Ve Estimated error variance
+#' @slot LL Log-likelihood
+#' @slot iter Number of iterations for convergence
+#'
+#' @export
+setClass("RRDsol",
+         slots=c(markerEff="matrix",
+                 domEff="matrix",
+                 fixEff="matrix",
+                 Vu="matrix",
+                 Ve="matrix",
+                 LL="numeric",
+                 iter="numeric"),
+         contains="LociMap")
+
+setValidity("RRDsol",function(object){
+  errors = character()
+  if(!is.numeric(object@markerEff)){
+    errors = c(errors,"!is.numeric(markerEff)")
+  }
+  if(!is.numeric(object@domEff)){
+    errors = c(errors,"!is.numeric(domEff)")
+  }
+  if(!is.numeric(object@fixEff)){
+    errors = c(errors,"!is.numeric(fixEff)")
+  }
+  if(object@nLoci!=nrow(object@markerEff)){
+    errors = c(errors,"nLoci!=nrow(markerEff)")
+  }
+  if(object@nLoci!=nrow(object@domEff)){
+    errors = c(errors,"nLoci!=nrow(domEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
 #GCAsol----
 #' @title RR-BLUP GCA Solution
 #' 

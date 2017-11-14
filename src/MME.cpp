@@ -733,6 +733,22 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
+Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
+                        std::string genoTrain, int nMarker, int skip){
+  int n = y.n_rows;
+  arma::mat X = makeX(x);
+  arma::field<arma::mat> Mlist(2);
+  Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
+  Mlist(1) = 1-abs(Mlist(0)-1);
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Mlist(0),reps);
+  sweepReps(Mlist(1),reps);
+  return solveRRBLUPMK(y, X, Mlist);
+}
+
+// Called by RRBLUP function
+// [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                             std::string genoTrain, int nMarker, 
                             int skip, int maxIter){
@@ -792,7 +808,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
 //'
 //' @param X a matrix of marker genotypes scored as 0,1,2
 //'
-//' @return a matrix of the realized genomic relationship
+//' @return a matrix of the realized genomic relationships
 //'
 //' @export
 // [[Rcpp::export]]
@@ -803,6 +819,31 @@ arma::mat calcG(arma::mat X){
   G = G/(2.0*sum(p%(1-p)));
   return G;
 }
+
+//' @title Calculate Dominance Matrix
+//'
+//' @description
+//' Calculates the dominance relationship matrix.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//'
+//' @references
+//' \cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
+//' 
+//' @return a matrix of the realized dominance relationships
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcD(arma::mat X){
+  arma::rowvec p = mean(X,0)/2.0;
+  arma::rowvec pq2 = 2*p%(1-p);
+  X = 1-abs(X-1);
+  X.each_row() -= pq2;
+  arma::mat D = X*X.t();
+  D = D/(sum(pq2%(1-pq2)));
+  return D;
+}
+
 
 //' @title Calculate IBS G Matrix
 //'

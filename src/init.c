@@ -9,10 +9,12 @@
 
 /* .Call calls */
 extern SEXP AlphaSimR_calcChrFreq(SEXP);
+extern SEXP AlphaSimR_calcD(SEXP);
 extern SEXP AlphaSimR_calcG(SEXP);
 extern SEXP AlphaSimR_calcGenParam(SEXP, SEXP);
 extern SEXP AlphaSimR_calcGIbs(SEXP);
 extern SEXP AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP AlphaSimR_callRRBLUP_D(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -26,6 +28,7 @@ extern SEXP AlphaSimR_fastPairDist(SEXP, SEXP);
 extern SEXP AlphaSimR_gaussKernel(SEXP, SEXP);
 extern SEXP AlphaSimR_gebvGCA(SEXP, SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_gebvRR(SEXP, SEXP);
+extern SEXP AlphaSimR_gebvRRD(SEXP, SEXP);
 extern SEXP AlphaSimR_gebvSCA(SEXP, SEXP, SEXP);
 extern SEXP AlphaSimR_getDomGeno(SEXP);
 extern SEXP AlphaSimR_getGeno(SEXP, SEXP, SEXP);
@@ -56,10 +59,12 @@ extern SEXP AlphaSimR_zero();
 
 static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_calcChrFreq",       (DL_FUNC) &AlphaSimR_calcChrFreq,       1},
+    {"AlphaSimR_calcD",             (DL_FUNC) &AlphaSimR_calcD,             1},
     {"AlphaSimR_calcG",             (DL_FUNC) &AlphaSimR_calcG,             1},
     {"AlphaSimR_calcGenParam",      (DL_FUNC) &AlphaSimR_calcGenParam,      2},
     {"AlphaSimR_calcGIbs",          (DL_FUNC) &AlphaSimR_calcGIbs,          1},
     {"AlphaSimR_callRRBLUP",        (DL_FUNC) &AlphaSimR_callRRBLUP,        6},
+    {"AlphaSimR_callRRBLUP_D",      (DL_FUNC) &AlphaSimR_callRRBLUP_D,      6},
     {"AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_GCA,    8},
     {"AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &AlphaSimR_callRRBLUP_MV,     7},
     {"AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &AlphaSimR_callRRBLUP_SCA,    8},
@@ -73,6 +78,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"AlphaSimR_gaussKernel",       (DL_FUNC) &AlphaSimR_gaussKernel,       2},
     {"AlphaSimR_gebvGCA",           (DL_FUNC) &AlphaSimR_gebvGCA,           4},
     {"AlphaSimR_gebvRR",            (DL_FUNC) &AlphaSimR_gebvRR,            2},
+    {"AlphaSimR_gebvRRD",           (DL_FUNC) &AlphaSimR_gebvRRD,           2},
     {"AlphaSimR_gebvSCA",           (DL_FUNC) &AlphaSimR_gebvSCA,           3},
     {"AlphaSimR_getDomGeno",        (DL_FUNC) &AlphaSimR_getDomGeno,        1},
     {"AlphaSimR_getGeno",           (DL_FUNC) &AlphaSimR_getGeno,           3},

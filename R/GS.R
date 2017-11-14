@@ -192,6 +192,79 @@ RRBLUP = function(dir, traits=1, use="pheno",
   return(output)
 }
 
+#' @title RR-BLUP Model with Dominance
+#'
+#' @description
+#' Fits an RR-BLUP model for genomic predictions that includes 
+#' dominance effects.
+#'
+#' @param dir path to a directory with output from \code{\link{writeRecords}}
+#' @param traits an integer indicating the trait to model, or a
+#' function of the traits returning a single value.
+#' @param use train model using genetic value (\code{gv})
+#' or phenotypes (\code{pheno}, default)
+#' @param skip number of older records to skip
+#' @param maxIter maximum number of iterations.
+#' @param simParam an object of \code{\link{SimParam-class}}
+#'
+#' @export
+RRBLUP_D = function(dir, traits=1, use="pheno", 
+                    skip=0, maxIter=1000, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  }
+  dir = normalizePath(dir, mustWork=TRUE)
+  #Read and calculate basic information
+  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
+                          comment.char="",stringsAsFactors=FALSE)
+  if(skip>0) markerInfo = markerInfo[-(1:skip),]
+  nInd = nrow(markerInfo)
+  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
+  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  #Set trait/traits for genomic selection
+  use = tolower(use)
+  if(use == "gv"){
+    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
+  }else if(use == "pheno"){
+    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }else{
+    stop(paste0("Use=",use," is not an option"))
+  }
+  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
+  if(is.function(traits)){
+    y = apply(y,1,traits)
+    y = as.matrix(y)
+  }else{
+    y = y[,traits,drop=FALSE]
+  }
+  if(skip>0) y=y[-(1:skip),,drop=FALSE]
+  stopifnot(ncol(y)==1)
+  #Fit model
+  fixEff = as.integer(factor(markerInfo$fixEff))
+  ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
+                     file.path(dir,"genotype.txt"),nMarkers,
+                     skip)
+  tmp = unlist(strsplit(markerType,"_"))
+  if(tmp[1]=="SNP"){
+    markers = simParam@snpChips[[as.integer(tmp[2])]]
+  }else{
+    markers = simParam@traits[[as.integer(tmp[2])]]
+  }
+  output = new("RRDsol",
+               nLoci=markers@nLoci,
+               lociPerChr=markers@lociPerChr,
+               lociLoc=markers@lociLoc,
+               markerEff=ans$u[[1]],
+               domEff=ans$u[[2]],
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=ans$Ve,
+               LL=ans$LL,
+               iter=ans$iter)
+  return(output)
+}
+
+
 #' @title RR-BLUP GCA Model
 #'
 #' @description
@@ -365,14 +438,24 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' solution is \code{\link{GCAsol-class}} or 
 #' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
 #' the corresponding pool
+#' @param useD if model is \code{\link{RRDsol-class}}, should 
+#' dominance be included in the EBV. If yes, the "EBV" is an 
+#' estimate of genetic value and not an estimate of breeding value.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-setEBV = function(pop, solution, gender=NULL, append=FALSE){
+setEBV = function(pop, solution, gender=NULL, useD=FALSE, 
+                  append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
+  }else if(class(solution)=="RRDsol"){
+    if(useD){
+      ebv = gebvRRD(solution, pop)
+    }else{
+      ebv = gebvRR(solution, pop)
+    }
   }else if(class(solution)=="GCAsol"){
     if(is.null(gender)){
       ebv = gebvSCA(solution, pop, FALSE)
@@ -383,7 +466,6 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
     }else{
       stop(paste0("gender=",gender," is not a valid option"))
     }
-    
   }else if(class(solution)=="SCAsol"){
     if(is.null(gender)){
       ebv = gebvSCA(solution, pop)
@@ -409,26 +491,46 @@ setEBV = function(pop, solution, gender=NULL, append=FALSE){
 #'
 #' @description
 #' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
-#' function for a given training population size. Note that this functions
-#' may underestimate total usage.
+#' and its related functions for a given training population size. 
+#' Note that this functions may underestimate total usage.
 #'
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual
+#' @param model either "REG", "GCA", or "SCA" for \code{\link{RRBLUP}} 
+#' \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} respectively.
 #'
 #' @return Returns an estimate for the required gigabytes of RAM
 #'
 #' @export
-RRBLUPMemUse = function(nInd,nMarker){
+RRBLUPMemUse = function(nInd,nMarker,model="REG"){
   y = nInd
   X = nInd #times fixed effects, assuming 1 here
-  Z = nInd*nMarker
-  S = nInd*nInd
-  eigval = nInd
-  eigvec = nInd*nInd
-  eta = nInd
-  Hinv = nInd*nInd
+  M = nInd*nMarker
   u = nMarker
-  bytes = sapply(ls(),function(x) get(x))
+  if(toupper(model)=="REG"){
+    S = nInd*nInd
+    eigval = nInd
+    eigvec = nInd*nInd
+    eta = nInd
+    Hinv = nInd*nInd
+  }else if(toupper(model)=="GCA"){
+    M = M*2
+    V = nInd*nInd*3
+    W = W0 = WQX= nInd*nInd
+    WX = ee = nInd
+    u = u*2
+  }else if(toupper(model)=="SCA"){
+    M = M*3
+    V = nInd*nInd*4
+    W = W0 = WQX= nInd*nInd
+    WX = ee = nInd
+    u = u*3
+  }else{
+    stop(paste0("model=",toupper(model)," not recognized"))
+  }
+  objects = ls()
+  objects = objects[objects!="model"]
+  bytes = sapply(objects,function(x) get(x))
   bytes = 8*sum(bytes)
   return(bytes*1e-9) #GB
 }

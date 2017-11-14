@@ -14,6 +14,19 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   return output;
 }
 
+// Retrieves GEBVs for RRDsol
+// [[Rcpp::export]]
+arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
+  arma::mat a = RRsol.slot("markerEff");
+  arma::mat d = RRsol.slot("domEff");
+  arma::Mat<unsigned char> geno;
+  geno = getGeno(pop.slot("geno"), 
+                 RRsol.slot("lociPerChr"),
+                 RRsol.slot("lociLoc"));
+  arma::mat output = geno*a+getDomGeno(geno)*d;
+  return output;
+}
+
 // [[Rcpp::export]]
 arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, 
                   bool female, bool isSCAsol=false){

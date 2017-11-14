@@ -50,6 +50,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gebvRRD
+arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
+RcppExport SEXP AlphaSimR_gebvRRD(SEXP RRsolSEXP, SEXP popSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type RRsol(RRsolSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    rcpp_result_gen = Rcpp::wrap(gebvRRD(RRsol, pop));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gebvGCA
 arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, bool female, bool isSCAsol);
 RcppExport SEXP AlphaSimR_gebvGCA(SEXP solSEXP, SEXP popSEXP, SEXP femaleSEXP, SEXP isSCAsolSEXP) {
@@ -449,6 +461,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// callRRBLUP_D
+Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip);
+RcppExport SEXP AlphaSimR_callRRBLUP_D(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_D(y, x, reps, genoTrain, nMarker, skip));
+    return rcpp_result_gen;
+END_RCPP
+}
 // callRRBLUP_MV
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip, int maxIter);
 RcppExport SEXP AlphaSimR_callRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
@@ -510,6 +538,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     rcpp_result_gen = Rcpp::wrap(calcG(X));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcD
+arma::mat calcD(arma::mat X);
+RcppExport SEXP AlphaSimR_calcD(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcD(X));
     return rcpp_result_gen;
 END_RCPP
 }
