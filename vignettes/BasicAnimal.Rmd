@@ -1,0 +1,39 @@
+---
+title: "Basic Animal Simulation"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Basic Animal}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```r
+# Basic animal breeding simulation
+# Based on "historical breeding" portion of Jenko et al., 2015
+# https://gsejournal.biomedcentral.com/articles/10.1186/s12711-015-0135-3
+library(AlphaSimR)
+# Generate initial haplotypes
+FOUNDERPOP = runMacs(nInd=1000,nChr=10,segSites=1000,
+                     inbred=FALSE,species="TEST") #Using TEST instead of CATTLE for speed
+
+# Set simulation parameters
+SIMPARAM = createSimulation(FOUNDERPOP,maxQtl=1000,maxSnp=0,gender="yes_sys")
+# Add a trait with additive effects
+SIMPARAM = addTraitA(FOUNDERPOP,nQtlPerChr=1000,meanG=0,varG=1)
+
+calves = newPop(FOUNDERPOP)
+popMean = meanG(calves)
+popVar = varG(calves)
+for(i in 1:20){
+  bulls = selectMale(calves,25,use="gv")
+  cows = selectFemale(calves,500,use="gv")
+  calves = randCross2(cows,bulls,nCrosses=1000)
+  popMean = c(popMean,meanG(calves))
+  popVar = c(popVar,varG(bulls))
+}
+plot(0:20,popMean,type="l",xlab="Generation",ylab="GV",main="Genetic Gain")
+plot(0:20,popVar,type="l",xlab="Generation",ylab="GV",main="Genetic Variance")
+```
+
