@@ -10,7 +10,7 @@ vignette: >
 ---
 
 
-The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/articles/0/0/plantgenome2016.02.0013) program. This document will introduce the basic steps for running a simulation in AlphaSimR.
+The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/abstracts/9/3/plantgenome2016.02.0013) program. This document will introduce the basic steps for running a simulation in AlphaSimR.
 
 The basic steps of an AlphaSimR simulation are:
 
