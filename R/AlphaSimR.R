@@ -13,4 +13,3 @@
 #' @docType package
 #' @name AlphaSimR
 NULL
-

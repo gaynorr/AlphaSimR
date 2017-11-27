@@ -100,4 +100,3 @@ varAD = function(pop,retGenParam=FALSE,simParam=NULL){
   }
   return(output)
 }
-

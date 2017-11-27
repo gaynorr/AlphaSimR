@@ -23,11 +23,10 @@ writeAlphaGenotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),
     }
   }
   else {
-    for (c in uniqueChips){
-      allSnps = sort(union(allSnps,simParam@snpChips[[c]]@lociLoc))
+    for (i in uniqueChips){
+      allSnps = sort(union(allSnps,simParam@snpChips[[i]]@lociLoc))
     }
   }
-  
   positions = list()
   for (i in 1:simParam@nSnpChips) {
     start = 1
@@ -65,8 +64,8 @@ writeAlphaHaplotypes = function(pop,file,chr=1,chips=rep(0,pop@nInd),simParam) {
     }
   }
   else {
-    for (c in uniqueChips){
-      allSnps = sort(union(allSnps,simParam@snpChips[[c]]@lociLoc))
+    for (i in uniqueChips){
+      allSnps = sort(union(allSnps,simParam@snpChips[[i]]@lociLoc))
     }
   }
 

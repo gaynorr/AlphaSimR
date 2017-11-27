@@ -185,8 +185,8 @@ RRBLUP = function(dir, traits=1, use="pheno",
                lociLoc=markers@lociLoc,
                markerEff=markerEff,
                fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
+               Vu=as.matrix(ans$Vu),
+               Ve=as.matrix(ans$Ve),
                LL=ans$LL,
                iter=iter)
   return(output)

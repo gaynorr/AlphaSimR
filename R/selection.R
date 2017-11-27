@@ -311,4 +311,3 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",
     return(take)
   }
 }
-

@@ -650,5 +650,3 @@ newPop = function(rawPop, id=NULL, mother=NULL,
   }
   return(output)
 }
-
-

@@ -228,4 +228,3 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   pop@pheno = as.matrix(tmp$females[,-1])
   return(pop)
 }
-

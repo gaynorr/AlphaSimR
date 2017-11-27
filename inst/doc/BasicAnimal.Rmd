@@ -2,12 +2,17 @@
 title: "Basic Animal Simulation"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: pdf_document
+bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Basic Animal}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
+This document provides
+
+[-@Jenko15]
 
 ```r
 # Basic animal breeding simulation
@@ -36,4 +41,6 @@ for(i in 1:20){
 plot(0:20,popMean,type="l",xlab="Generation",ylab="GV",main="Genetic Gain")
 plot(0:20,popVar,type="l",xlab="Generation",ylab="GV",main="Genetic Variance")
 ```
+
+# References
 

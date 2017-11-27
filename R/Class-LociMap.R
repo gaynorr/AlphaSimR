@@ -158,8 +158,8 @@ setValidity("TraitADG",function(object){
 setClass("RRsol",
          slots=c(markerEff="matrix",
                  fixEff="matrix",
-                 Vu="numeric",
-                 Ve="numeric",
+                 Vu="matrix",
+                 Ve="matrix",
                  LL="numeric",
                  iter="numeric"),
          contains="LociMap")
@@ -181,6 +181,8 @@ setValidity("RRsol",function(object){
     return(errors)
   }
 })
+
+
 
 #RRDsol----
 #' @title RR-BLUP Solution with Dominance

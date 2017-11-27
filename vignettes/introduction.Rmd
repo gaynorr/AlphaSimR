@@ -2,7 +2,8 @@
 title: "Introduction to AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: pdf_document
+bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Introduction}
   %\VignetteEngine{knitr::rmarkdown}
@@ -10,7 +11,7 @@ vignette: >
 ---
 
 
-The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the [AlphaSim](https://dl.sciencesocieties.org/publications/tpg/abstracts/9/3/plantgenome2016.02.0013) program. This document will introduce the basic steps for running a simulation in AlphaSimR.
+The AlphaSimR package provides a framework for simulating plant and animal breeding programs in R. It is based on the AlphaSim program [@AlphaSim]. This document will introduce the basic steps for running a simulation in AlphaSimR.
 
 The basic steps of an AlphaSimR simulation are:
 
@@ -20,37 +21,37 @@ The basic steps of an AlphaSimR simulation are:
 
 3. Add traits using `addTraitA` or any other addTrait function
 
-4. Optionally, add SNP chips using `addSnpChip`
+4. Add SNP chips using `addSnpChip` (optional)
 
 5. Create one or more initial populations using `newPop`
 
 6. Perform a mix of crossing and selection to simulate a breeding program
 
-### Creating founder haplotypes
+# Creating Founder Haplotypes
 
-The first step to a simulation in AlphaSimR is to create a set of founder haplotypes. This is done using the `runMacs` function which uses a built in version of the [MaCS](https://github.com/gchen98/macs) program. The `runMacs` function allows for simulation of haplotypes using several predefined species histories or can be used to run a custom population using MaCS command line arguements. 
+The first step in an AlphaSimR simulation is to create a set of founder haplotypes. To do this, run the function `runMacs`. The `runMacs` function uses a built in version of the MaCS program [@MaCS]. The `runMacs` function allows for simulation of haplotypes using several predefined species histories or can be used to create a custom population using MaCS command line arguments. 
 
-### Setting simulation parameters
+# Setting Simulation Parameters
 
-Parameters for a simulation are stored in an object of `SimParam-class`. This object is created by calling the function `createSimulation`. The `SimParam-class` is a container for global parameters that will be used by many functions in AlphaSimR. To avoid specifying a `SimParam-class` in all functions that use one, it is recommended that you give your `SimParam-class` the name `SIMPARAM`. All functions that take a `SimParam-class` as an arguement will search your global environment for an object called `SIMPARAM` if the argument is `NULL`.
+Parameters for a simulation are stored in an object of `SimParam-class`. The function `createSimulation` creates this object. The `SimParam-class` is a container for global parameters that will be used by many functions in AlphaSimR. To avoid specifying a `SimParam-class` in all functions that use one, it is recommended that you give your `SimParam-class` the name `SIMPARAM`. All functions that take a `SimParam-class` as an arguement will search your global environment for an object called `SIMPARAM` if the argument is `NULL`.
 
-### Adding traits
+# Adding Traits
 
-Traits are added to the simulation using one of the fullowing functions: `addTraitA`, `addTraitAD`, `addTraitAG`, or `addTraitADG`. These functions can be called multiple times to run simulations with multiple traits. These functions can also be used to simulate correlated pleiotropic traits. Simulation without any traits are possible as long as you don't use a selection function.
+Traits are added to the simulation using one of the fullowing functions: `addTraitA`, `addTraitAD`, `addTraitAG`, or `addTraitADG`. These functions can be called multiple times to run simulations with multiple traits. These functions can also be used to simulate correlated pleiotropic traits. Simulations without any traits are possible as long as you don't use a selection function.
 
-### Adding SNP chips
+# Adding SNP Chips
 
 SNP chips are added to the simulation using the `addSnpChip` or `addStructuredSnpChips` functions. As with traits, these functions can be called multiple times to assign multiple SNP chips. SNP chips are not necessary for a simulation, so this step can be skipped.
 
-### Creating a population
+# Creating a Population
 
-The main objects in an AlphaSimR simulation are `Pop-class` objects. These objects represent a population which contains one or more individuals. Many AlphaSimR functions use a `Pop-class` object as an argument and return a `Pop-class` object as a result.
+The main objects in an AlphaSimR simulation are `Pop-class` objects. These objects represent a population that contains one or more individuals. Many AlphaSimR functions use a `Pop-class` object as an argument and return a `Pop-class` object as a result.
 
 To create your first `Pop-class` object use the function `newPop`. This function should only be called after you have finished all of the above steps.
 
-### Working with populations
+# Working with Populations
 
-Below are some functions for operations carried out on populations.
+Listed below are some functions for carrying out operations on populations.
 
 * Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`, `pullSegSitHaplo`
 
@@ -64,3 +65,5 @@ Below are some functions for operations carried out on populations.
 `self`, `makeDH`
 
 * Genomic selection: `writeRecords`, `setEBV`
+
+# References

@@ -2,8 +2,7 @@ Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
 Version: 0.4.0
-Author: Chris Gaynor, David Wilson, Daniel Money, Gregor Gorjanc
-Maintainer: Chris Gaynor <gaynor.robert@hotmail.com>
+Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre"),person("David","Wilson",role="ctb"),person("Daniel","Money",role="ctb"),person("Gregor","Gorjanc",role="ctb"))
 Description: This package contains classes and functions for simulating plant and animal breeding programs.
 License: MIT + file LICENSE
 Encoding: UTF-8
