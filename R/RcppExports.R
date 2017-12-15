@@ -69,8 +69,8 @@ createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale) {
     .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale)
 }
 
-crossPedigree <- function(founders, mother, father, genMaps) {
-    .Call(`_AlphaSimR_crossPedigree`, founders, mother, father, genMaps)
+crossPedigree <- function(founders, mother, father, genMaps, recombRatio) {
+    .Call(`_AlphaSimR_crossPedigree`, founders, mother, father, genMaps, recombRatio)
 }
 
 #' @title Population variance

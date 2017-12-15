@@ -238,8 +238,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // crossPedigree
-arma::field<arma::Cube<unsigned char> > crossPedigree(const arma::field<arma::Cube<unsigned char> >& founders, arma::uvec mother, arma::uvec father, const arma::field<arma::vec>& genMaps);
-RcppExport SEXP _AlphaSimR_crossPedigree(SEXP foundersSEXP, SEXP motherSEXP, SEXP fatherSEXP, SEXP genMapsSEXP) {
+arma::field<arma::Cube<unsigned char> > crossPedigree(const arma::field<arma::Cube<unsigned char> >& founders, arma::uvec mother, arma::uvec father, const arma::field<arma::vec>& genMaps, double recombRatio);
+RcppExport SEXP _AlphaSimR_crossPedigree(SEXP foundersSEXP, SEXP motherSEXP, SEXP fatherSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -247,7 +247,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type father(fatherSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
-    rcpp_result_gen = Rcpp::wrap(crossPedigree(founders, mother, father, genMaps));
+    Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
+    rcpp_result_gen = Rcpp::wrap(crossPedigree(founders, mother, father, genMaps, recombRatio));
     return rcpp_result_gen;
 END_RCPP
 }

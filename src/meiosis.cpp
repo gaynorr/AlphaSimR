@@ -122,10 +122,12 @@ arma::field<arma::Cube<unsigned char> > cross2(
   int nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
+  double femaleRecRate = 2/(1/recombRatio+1);
+  double maleRecRate = 2/(recombRatio+1);
   //Loop through chromosomes
   for(arma::uword chr=0; chr<nChr; ++chr){
-    arma::vec maleMap = 2*(recombRatio+1)*genMaps(chr);
-    arma::vec femaleMap = 2*recombRatio*(recombRatio+1)*genMaps(chr);
+    arma::vec maleMap = maleRecRate*genMaps(chr);
+    arma::vec femaleMap = femaleRecRate*genMaps(chr);
     int segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     //Loop through individuals
@@ -156,7 +158,7 @@ arma::field<arma::Cube<unsigned char> > createDH2(
   int nInd = geno(0).n_slices;
   double ratio;
   if(useFemale){
-    ratio = 2*recombRatio/(recombRatio+1);
+    ratio = 2/(1/recombRatio+1);
   }else{
     ratio = 2/(recombRatio+1);
   }
@@ -193,11 +195,14 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
     const arma::field<arma::Cube<unsigned char> >& founders, 
     arma::uvec mother,
     arma::uvec father,
-    const arma::field<arma::vec>& genMaps){
+    const arma::field<arma::vec>& genMaps,
+    double recombRatio){
   mother -= 1; // R to C++
   father -= 1; // R to C++
   int nChr = founders.n_elem;
   int nInd = mother.n_elem;
+  double femaleRecRate = 2/(1/recombRatio+1);
+  double maleRecRate = 2/(recombRatio+1);
   
   typedef std::minstd_rand G;
   G g;
@@ -210,7 +215,8 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
   for(arma::uword chr=0; chr<nChr; ++chr){
     int segSites = founders(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
-    
+    arma::vec maleMap = maleRecRate*genMaps(chr);
+    arma::vec femaleMap = femaleRecRate*genMaps(chr);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       if (mother(ind) == -1){
@@ -218,21 +224,21 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
         tmpGeno.slice(ind).col(0) = 
           bivalent(founders(chr).slice(d(g)).col(0),
                    founders(chr).slice(d(g)).col(1),
-                   genMaps(chr));
+                   femaleMap);
       }
       else {
         //Female gamete
         tmpGeno.slice(ind).col(0) = 
           bivalent(tmpGeno.slice(mother(ind)).col(0),
                    tmpGeno.slice(mother(ind)).col(1),
-                   genMaps(chr));           
+                   femaleMap);           
       }
       if (father(ind) == -1) {
         //Male gamete
         tmpGeno.slice(ind).col(1) = 
           bivalent(founders(chr).slice(d(g)).col(0),
                    founders(chr).slice(d(g)).col(1),
-                   genMaps(chr));
+                   maleMap);
       }
       else
       {
@@ -240,7 +246,7 @@ arma::field<arma::Cube<unsigned char> > crossPedigree(
         tmpGeno.slice(ind).col(1) = 
           bivalent(tmpGeno.slice(father(ind)).col(0),
                    tmpGeno.slice(father(ind)).col(1),
-                   genMaps(chr));
+                   maleMap);
       }
     } //End individual loop
     geno(chr) = tmpGeno;
