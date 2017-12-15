@@ -51,7 +51,7 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' 
 #' @export
 hybridCross = function(females,males,crossPlan="testcross",
-                       returnHybridPop=FALSE,chunkSize=1000,
+                       returnHybridPop=FALSE,chunkSize=10000,
                        simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
@@ -185,6 +185,11 @@ calcGCA = function(pop,use="pheno"){
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
+#' @param chunkSize when using inbred=TRUE, this 
+#' parameter determines the maximum number of hybrids created 
+#' at one time. Smaller values reduce RAM usage, but may take 
+#' more time.
+#' @param onlyPheno should only the phenotype be returned
 #' @param simParam an object of \code{\link{SimParam-class}}
 #' 
 #' @details
@@ -194,11 +199,13 @@ calcGCA = function(pop,use="pheno"){
 #' reps is set to the number plots per entry. The resulting phenotype 
 #' would reflect the mean of all replications.
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' a matrix if onlyPheno=TRUE
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,simParam=NULL){
+                       w=0.5,inbred=FALSE,chunkSize=10000,
+                       onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
@@ -210,12 +217,14 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
     }
   }
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
-                    returnHybridPop=inbred,simParam=simParam)
+                    returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
   if(use=="pheno"){
     tmp = setPheno(tmp,varE=varE,w=w,reps=reps,simParam=simParam)
   }
   tmp = calcGCA(pop=tmp,use=use)
+  if(onlyPheno){
+    return(as.matrix(tmp$females[,-1]))
+  }
   pop@pheno = as.matrix(tmp$females[,-1])
   return(pop)
 }
-

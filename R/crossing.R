@@ -371,7 +371,8 @@ pedigreeCross = function(pedigree,founders,id=NULL,
                geno=crossPedigree(founders@geno,
                                   sortedped@mother,
                                   sortedped@father,
-                                  simParam@genMaps))
+                                  simParam@genMaps,
+                                  simParam@recombRatio))
   return(newPop(rawPop=rawPop,id=id,
                 mother=as.character(sortedped@mother),
                 father=as.character(sortedped@father),

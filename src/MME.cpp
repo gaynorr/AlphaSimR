@@ -30,8 +30,8 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   long long int LDA = N;
   double VL = 0.0;
   double VU = 0.0;
-  long long int IL;
-  long long int IU;
+  long long int IL = 0;
+  long long int IU = 0;
   double ABSTOL = 0.0;
   long long int M = N;
   // W=eigval
@@ -291,12 +291,13 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
 //' @param Z a matrix with n rows and m columns
 //' @param K a matrix with m rows and m columns
 //' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K,
-                    double tol=1e-6){
+                    double tol=1e-6, int maxIter=1000){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::mat ZK = Z*K;
@@ -319,7 +320,9 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   double numer;
   bool converging=true;
   bool invPass;
+  int iter=0;
   while(converging){
+    ++iter;
     VeNew.fill(0.0);
     VuNew.fill(0.0);
     for(arma::uword i=0; i<n; ++i){
@@ -342,6 +345,10 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Ve = VeNew;
     Vu = VuNew;
     B = BNew;
+    if(iter>=maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
   }
   arma::mat HI;
   invPass = inv_sympd(HI,kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
@@ -365,7 +372,8 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=B.t(),
                             Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=double(ll(0,0)));
+                            Rcpp::Named("LL")=arma::as_scalar(ll),
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multivariate RR-BLUP
@@ -377,11 +385,13 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param M a matrix with n rows and m columns
 //' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
-                         const arma::mat& M, double tol=1e-6){
+                         const arma::mat& M, double tol=1e-6,
+                         int maxIter=1000){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::vec eigval(n);
@@ -402,7 +412,9 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   double numer;
   bool converging=true;
   bool invPass;
+  int iter=0;
   while(converging){
+    ++iter;
     VeNew.fill(0.0);
     VuNew.fill(0.0);
     for(arma::uword i=0; i<n; ++i){
@@ -425,6 +437,10 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
     Ve = VeNew;
     Vu = VuNew;
     B = BNew;
+    if(iter>=maxIter){
+      Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+      break;
+    }
   }
   arma::mat HI;
   invPass = inv_sympd(HI,kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
@@ -448,7 +464,8 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=B.t(),
                             Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=double(ll(0,0)));
+                            Rcpp::Named("LL")=arma::as_scalar(ll),
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multikernel Model
@@ -460,13 +477,14 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param Zlist a list of Z matrices
 //' @param Klist a list of K matrices
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                      arma::field<arma::mat>& Zlist,
-                     arma::field<arma::mat>& Klist){
-  int maxcyc = 20;
+                     arma::field<arma::mat>& Klist,
+                     int maxIter=40){
   double tol = 1e-4;
   int k = Klist.n_elem;
   int n = y.n_rows;
@@ -477,7 +495,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
   }
   V(k) = arma::eye(n,n);
-  k += 1;
+  ++k;
   arma::mat A(k,k);
   arma::vec qvec(k);
   arma::vec sigma(k);
@@ -496,7 +514,9 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
-  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
+  int iter = 0;
+  while(true){
+    ++iter;
     W0 = V(0)*sigma(0);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
@@ -515,8 +535,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1)
-      llik0 = llik;
+    if(iter == 1) llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
     for(arma::uword i=0; i<k; ++i){
@@ -530,9 +549,9 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     }
     A = pinv(A);
     qvec = A*qvec;
-    if(cycle == 1){
+    if(iter == 1){
       taper = 0.5;
-    }else if(cycle == 2){
+    }else if(iter == 2){
       taper = 0.7;
     }else{
       taper = 0.9;
@@ -541,12 +560,19 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+    if(iter > 1 & fabs(deltaLlik) < tol*10){
       break;
     }
     if(max(abs(qvec)) < tol){
       break;
     }
+    if(iter >= maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  while(sigma.min() < 0.0){
+    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1);
   arma::field<arma::mat> u(k-1);
@@ -564,7 +590,8 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik);
+                            Rcpp::Named("LL")=llik,
+                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve Multikernel RR-BLUP
@@ -575,12 +602,13 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
 //' @param y a matrix with n rows and 1 column
 //' @param X a matrix with n rows and x columns
 //' @param Mlist a list of M matrices
+//' @param maxIter maximum number of iteration
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
-                         arma::field<arma::mat>& Mlist){
-  int maxcyc = 20;
+                         arma::field<arma::mat>& Mlist,
+                         int maxIter=40){
   double tol = 1e-4;
   int k = Mlist.n_elem;
   int n = y.n_rows;
@@ -591,7 +619,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     V(i) = Mlist(i)*Mlist(i).t();
   }
   V(k) = arma::eye(n,n);
-  k += 1;
+  ++k;
   arma::mat A(k,k);
   arma::vec qvec(k);
   arma::vec sigma(k);
@@ -610,7 +638,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
-  for(arma::uword cycle=0; cycle<maxcyc; ++cycle){
+  int iter = 0;
+  while(true){
+    ++iter;
     W0 = V(0)*sigma(0);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
@@ -629,8 +659,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     log_det(value, sign, WQX);
     ldet = value*sign;
     llik = ldet/2 - df/2;
-    if(cycle == 1)
-      llik0 = llik;
+    if(iter == 1) llik0 = llik;
     deltaLlik = llik - llik0;
     llik0 = llik;
     for(arma::uword i=0; i<k; ++i){
@@ -644,9 +673,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     }
     A = pinv(A);
     qvec = A*qvec;
-    if(cycle == 1){
+    if(iter == 1){
       taper = 0.5;
-    }else if(cycle == 2){
+    }else if(iter == 2){
       taper = 0.7;
     }else{
       taper = 0.9;
@@ -655,12 +684,19 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(cycle > 1 & fabs(deltaLlik) < tol*10){
+    if(iter > 1 & fabs(deltaLlik) < tol*10){
       break;
     }
     if(max(abs(qvec)) < tol){
       break;
     }
+    if(iter >= maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  while(sigma.min() < 0.0){
+    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1);
   arma::field<arma::mat> u(k-1);
@@ -678,16 +714,17 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik);
+                            Rcpp::Named("LL")=llik,
+                            Rcpp::Named("iter")=iter);
 }
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
-                         std::string genoTrain, int nMarker){
+                         std::string genoTrain, int nMarker, int skip){
   int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -696,47 +733,64 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
+Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
+                        std::string genoTrain, int nMarker, int skip){
+  int n = y.n_rows;
+  arma::mat X = makeX(x);
+  arma::field<arma::mat> Mlist(2);
+  Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
+  Mlist(1) = 1-abs(Mlist(0)-1);
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Mlist(0),reps);
+  sweepReps(Mlist(1),reps);
+  return solveRRBLUPMK(y, X, Mlist);
+}
+
+// Called by RRBLUP function
+// [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
-                            std::string genoTrain, int nMarker){
+                            std::string genoTrain, int nMarker, 
+                            int skip, int maxIter){
   int n = Y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',0,1);
+  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
-  return solveRRBLUPMV(Y, X, M);
+  return solveRRBLUPMV(Y, X, M, maxIter);
 }
 
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker){
+                          int nMarker, int skip, int maxIter){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
   Mlist(0) = Mlist(0)*2;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
   Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
-  return solveRRBLUPMK(y,X,Mlist);
+  return solveRRBLUPMK(y,X,Mlist,maxIter);
 }
 
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker){
+                          int nMarker, int skip, int maxIter){
   int n = y.n_rows;
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',0,1);
+  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
   Mlist(0) = Mlist(0)*2-1;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',0,1);
+  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
   Mlist(1) = Mlist(1)*2-1;
   Mlist(2) = Mlist(0)%Mlist(1);
   sweepReps(y, reps);
@@ -744,7 +798,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   sweepReps(Mlist(2), reps);
-  return solveRRBLUPMK(y,X,Mlist);
+  return solveRRBLUPMK(y,X,Mlist,maxIter);
 }
 
 //' @title Calculate G Matrix
@@ -754,7 +808,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
 //'
 //' @param X a matrix of marker genotypes scored as 0,1,2
 //'
-//' @return a matrix of the realized genomic relationship
+//' @return a matrix of the realized genomic relationships
 //'
 //' @export
 // [[Rcpp::export]]
@@ -765,6 +819,31 @@ arma::mat calcG(arma::mat X){
   G = G/(2.0*sum(p%(1-p)));
   return G;
 }
+
+//' @title Calculate Dominance Matrix
+//'
+//' @description
+//' Calculates the dominance relationship matrix.
+//'
+//' @param X a matrix of marker genotypes scored as 0,1,2
+//'
+//' @references
+//' \cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
+//' 
+//' @return a matrix of the realized dominance relationships
+//'
+//' @export
+// [[Rcpp::export]]
+arma::mat calcD(arma::mat X){
+  arma::rowvec p = mean(X,0)/2.0;
+  arma::rowvec pq2 = 2*p%(1-p);
+  X = 1-abs(X-1);
+  X.each_row() -= pq2;
+  arma::mat D = X*X.t();
+  D = D/(sum(pq2%(1-pq2)));
+  return D;
+}
+
 
 //' @title Calculate IBS G Matrix
 //'

@@ -22,5 +22,7 @@ to contain estimated effects from \code{\link{RRBLUP_GCA}}
 \item{\code{Ve}}{Estimated error variance}
 
 \item{\code{LL}}{Log-likelihood}
+
+\item{\code{iter}}{Number of iterations for convergence}
 }}
 

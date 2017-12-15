@@ -122,4 +122,3 @@ setMethod("c",
             return(x)
           }
 )
-

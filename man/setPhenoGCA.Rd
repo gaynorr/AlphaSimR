@@ -5,7 +5,7 @@
 \title{Set GCA as phenotype}
 \usage{
 setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, w = 0.5,
-  inbred = FALSE, simParam = NULL)
+  inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -26,10 +26,18 @@ dimensions nTraits for correlated errors.}
 fully inbred if created by \code{\link{newPop}} using inbred founders 
 or by the \code{\link{makeDH}} function}
 
+\item{chunkSize}{when using inbred=TRUE, this 
+parameter determines the maximum number of hybrids created 
+at one time. Smaller values reduce RAM usage, but may take 
+more time.}
+
+\item{onlyPheno}{should only the phenotype be returned}
+
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} or 
+a matrix if onlyPheno=TRUE
 }
 \description{
 Calculates general combining ability from a set of testers and 

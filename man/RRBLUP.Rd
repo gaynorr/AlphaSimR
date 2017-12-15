@@ -4,16 +4,22 @@
 \alias{RRBLUP}
 \title{RR-BLUP Model}
 \usage{
-RRBLUP(dir, traits = 1, use = "pheno", simParam = NULL)
+RRBLUP(dir, traits = 1, use = "pheno", skip = 0, maxIter = 1000,
+  simParam = NULL)
 }
 \arguments{
-\item{dir}{path to a directory with output from /code{/link{writeRecords}}}
+\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
 
 \item{traits}{an integer indicating the trait or traits to model, or a
 function of the traits returning a single value.}
 
 \item{use}{train model using genetic value (\code{gv})
 or phenotypes (\code{pheno}, default)}
+
+\item{skip}{number of older records to skip}
+
+\item{maxIter}{maximum number of iterations. Only used 
+when number of traits is greater than 1.}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

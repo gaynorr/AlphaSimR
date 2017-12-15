@@ -4,16 +4,24 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, use = "pheno", simParam = NULL)
+RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 40,
+  onFailGCA = TRUE, simParam = NULL)
 }
 \arguments{
-\item{dir}{path to a directory with output from /code{/link{writeRecords}}}
+\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
 
 \item{traits}{an integer indicating the trait or traits to model, or a
 function of the traits returning a single value.}
 
 \item{use}{train model using genetic value (\code{gv})
 or phenotypes (\code{pheno}, default)}
+
+\item{skip}{number of older records to skip}
+
+\item{maxIter}{maximum number of iterations for convergence.}
+
+\item{onFailGCA}{if true, \code{\link{RRBLUP_GCA}} is used if 
+RRBLUP_SCA gives a variance component of zero}
 
 \item{simParam}{an object of \code{\link{SimParam-class}}}
 }

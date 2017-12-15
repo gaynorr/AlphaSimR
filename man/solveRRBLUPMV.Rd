@@ -4,7 +4,7 @@
 \alias{solveRRBLUPMV}
 \title{Solve Multivariate RR-BLUP}
 \usage{
-solveRRBLUPMV(Y, X, M, tol = 1e-06)
+solveRRBLUPMV(Y, X, M, tol = 1e-06, maxIter = 1000L)
 }
 \arguments{
 \item{Y}{a matrix with n rows and q columns}
@@ -14,6 +14,8 @@ solveRRBLUPMV(Y, X, M, tol = 1e-06)
 \item{M}{a matrix with n rows and m columns}
 
 \item{tol}{tolerance for convergence}
+
+\item{maxIter}{maximum number of iteration}
 }
 \description{
 Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
