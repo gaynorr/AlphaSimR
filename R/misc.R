@@ -141,40 +141,11 @@ corVar = function(x,rho){
 #' @export
 usefulness = function(pop,trait=1,use="gv",p=0.1,
                       selectTop=TRUE,simParam=NULL,...){
-  if(is.null(simParam) & use=="bv"){
+  if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  use = tolower(use)
-  if(class(trait)=="function"){
-    if(use == "gv"){
-      response = trait(pop@gv,...)
-    }else if(use == "ebv"){
-      response = trait(pop@ebv,...)
-    }else if(use == "pheno"){
-      response = trait(pop@pheno,...)
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
-      response = trait(response,...)
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }else{
-    stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(use == "gv"){
-      response = pop@gv[,trait]
-    }else if(use == "ebv"){
-      response = pop@ebv[,trait]
-    }else if(use == "pheno"){
-      response = pop@pheno[,trait]
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }
-  if(any(is.na(response))){
-    stop("selection trait has missing values, phenotype may need to be set")
-  }
+  response = getResponse(pop=pop,trait=trait,use=use,
+                         simParam=simParam,...)
   response = sort(response,decreasing=selectTop)
   response = response[1:ceiling(p*length(response))]
   return(mean(response))

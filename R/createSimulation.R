@@ -572,7 +572,6 @@ rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or 
 #' \code{\link{RawPop-class}}
-#' @param id optional ids to assign individuals
 #' @param mother optional id for mothers
 #' @param father optional id for fathers
 #' @param simParam an object of \code{\link{SimParam-class}}
@@ -580,19 +579,13 @@ rescaleTraits = function(pop,meanG,varG,varEnv=NULL,
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-newPop = function(rawPop, id=NULL, mother=NULL,
-                  father=NULL, simParam=NULL){
+newPop = function(rawPop,mother=NULL,father=NULL,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SIMPARAM",envir=.GlobalEnv)
   }
-  if(is.null(id)){
-    lastId = simParam@lastId
-    id = (1:rawPop@nInd) + lastId
-    lastId = max(id)
-    updateId = TRUE
-  }else{
-    updateId = FALSE
-  }
+  lastId = simParam@lastId
+  id = (1:rawPop@nInd) + lastId
+  lastId = max(id)
   if(is.null(mother)){
     mother = rep("0",rawPop@nInd)
   }else{
@@ -645,8 +638,6 @@ newPop = function(rawPop, id=NULL, mother=NULL,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
                           ncol=0))
-  if(updateId){
-    changeId(lastId,simParam@lastId)
-  }
+  changeId(lastId,simParam@lastId)
   return(output)
 }

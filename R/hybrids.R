@@ -72,7 +72,7 @@ hybridCross = function(females,males,crossPlan="testcross",
   #Return Pop-class
   if(!returnHybridPop){
     return(makeCross2(females=females,males=males,
-                      crossPlan=crossPlan,id=id,
+                      crossPlan=crossPlan,
                       simParam=simParam))
   }
   
@@ -112,60 +112,61 @@ hybridCross = function(females,males,crossPlan="testcross",
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
-#' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
+#' @param use true genetic value "gv" or phenotypes "pheno" (default)
 #' 
 #' @export
 calcGCA = function(pop,use="pheno"){
-  use = tolower(use)
-  if(use == "gv"){
-    y=pop@gv
-  }else if(use == "pheno"){
-    y=pop@pheno
-    if(any(is.na(y))){
-      stop("Missing values in pop@pheno")
-    }
+  if(use=="pheno"){
+    y = pop@pheno
+  }else if(use=="gv"){
+    y = pop@gv
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    stop(paste0("use=",use," is not a valid option"))
   }
-  colnames(y) = paste0("Trait",1:pop@nTraits)
   female = factor(pop@mother,
                   levels=unique(pop@mother))
   male = factor(pop@father,
                 levels=unique(pop@father))
-  females = matrix(NA_real_,nrow=length(unique(female)),ncol=pop@nTraits)
-  males = matrix(NA_real_,nrow=length(unique(male)),ncol=pop@nTraits)
-  colnames(females) = colnames(males) = colnames(y)
-  for(i in 1:pop@nTraits){
-    #Calculate female GCA
+  sca = paste(as.character(female),as.character(male),sep="_")
+  sca = factor(sca,levels=unique(sca))
+  # Female GCA
+  if(length(unique(female))==1){
+    GCAf = matrix(colMeans(y),nrow=1)
+  }else{
     if(length(unique(male))==1){
-      females[,i] = y[,i]
-    }else if(length(unique(female))==1){
-      females[,i] = mean(y[,i])
+      GCAf = y
     }else{
-      ans = lm(y[,i]~female+male-1,contrasts=list(male="contr.sum"))
-      females[,i] = coef(ans)[1:length(unique(female))]
-    }
-    #Calculate male GCA
-    if(length(unique(female))==1){
-      males[,i] = y[,i]
-    }else if(length(unique(male))==1){
-      males[,i] = mean(y[,i])
-    }else{
-      ans = lm(y[,i]~male+female-1,contrasts=list(female="contr.sum"))
-      males[,i] = coef(ans)[1:length(unique(male))]
+      X = model.matrix(~female+male-1,contrasts=list(male="contr.sum"))
+      GCAf = calcCoef(X,y)
     }
   }
-  #Create output
-  output = list()
-  output$females = data.frame(female=unique(female),females)
-  output$males = data.frame(male=unique(male),males)
-  output$females$female = as.character(output$females$female)
-  output$males$male = as.character(output$males$male)
-  #SCA
-  output$SCA=aggregate(y,list(female=female,male=male),mean)
-  output$SCA$female = as.character(output$SCA$female)
-  output$SCA$male = as.character(output$SCA$male)
-  return(output)
+  rownames(GCAf) = unique(female)
+  colnames(GCAf) = paste0("Trait",1:pop@nTraits)
+  # Male GCA
+  if(length(unique(male))==1){
+    GCAm = matrix(colMeans(y),nrow=1)
+  }else{
+    if(length(unique(female))==1){
+      GCAm = y
+    }else{
+      X = model.matrix(~male+female-1,contrasts=list(female="contr.sum"))
+      GCAm = calcCoef(X,y)
+    }
+  }
+  rownames(GCAm) = unique(male)
+  colnames(GCAm) = paste0("Trait",1:pop@nTraits)
+  # SCA
+  if(unique(sca)==1){
+    SCA = y
+  }else{
+    X = model.matrix(.~sca-1)
+    SCA = calcCoef(X,y)
+  }
+  rownames(SCA) = unique(sca)
+  colnames(SCA) = paste0("Trait",1:pop@nTraits)
+  return(list(GCAf=GCAf,
+              GCAm=GCAm,
+              SCA=SCA))
 }
 
 #' @title Set GCA as phenotype
@@ -223,8 +224,8 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   }
   tmp = calcGCA(pop=tmp,use=use)
   if(onlyPheno){
-    return(as.matrix(tmp$females[,-1]))
+    return(as.matrix(tmp$GCAf))
   }
-  pop@pheno = as.matrix(tmp$females[,-1])
+  pop@pheno = as.matrix(tmp$GCAf)
   return(pop)
 }

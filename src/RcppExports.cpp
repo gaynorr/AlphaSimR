@@ -343,6 +343,18 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// calcCoef
+arma::mat calcCoef(arma::mat& X, arma::mat& Y);
+RcppExport SEXP _AlphaSimR_calcCoef(SEXP XSEXP, SEXP YSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Y(YSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcCoef(X, Y));
+    return rcpp_result_gen;
+END_RCPP
+}
 // readMat
 arma::mat readMat(std::string fileName, int rows, int cols, char sep, int skipRows, int skipCols);
 RcppExport SEXP _AlphaSimR_readMat(SEXP fileNameSEXP, SEXP rowsSEXP, SEXP colsSEXP, SEXP sepSEXP, SEXP skipRowsSEXP, SEXP skipColsSEXP) {

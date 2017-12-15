@@ -195,3 +195,7 @@ void changeId(Rcpp::IntegerVector newId,
   oldId[0] = newId[0];
 }
 
+// [[Rcpp::export]]
+arma::mat calcCoef(arma::mat& X, arma::mat& Y){
+  return arma::solve(X,Y);
+}

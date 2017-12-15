@@ -4,13 +4,11 @@
 \alias{newPop}
 \title{Create new Population}
 \usage{
-newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam = NULL)
+newPop(rawPop, mother = NULL, father = NULL, simParam = NULL)
 }
 \arguments{
 \item{rawPop}{an object of \code{\link{MapPop-class}} or 
 \code{\link{RawPop-class}}}
-
-\item{id}{optional ids to assign individuals}
 
 \item{mother}{optional id for mothers}
 

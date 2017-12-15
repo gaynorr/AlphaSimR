@@ -4,15 +4,12 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny = 1, id = NULL, parents = NULL, rawPop = FALSE,
-  simParam = NULL)
+self(pop, nProgeny = 1, parents = NULL, rawPop = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{nProgeny}{total number of selfed progeny per individual}
-
-\item{id}{optional id to give to progeny}
 
 \item{parents}{an optional vector of indices for allowable parents}
 

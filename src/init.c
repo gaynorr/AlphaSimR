@@ -9,6 +9,7 @@
 
 /* .Call calls */
 extern SEXP _AlphaSimR_calcChrFreq(SEXP);
+extern SEXP _AlphaSimR_calcCoef(SEXP, SEXP);
 extern SEXP _AlphaSimR_calcD(SEXP);
 extern SEXP _AlphaSimR_calcG(SEXP);
 extern SEXP _AlphaSimR_calcGenParam(SEXP, SEXP);
@@ -59,6 +60,7 @@ extern SEXP _AlphaSimR_zero();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcChrFreq",       (DL_FUNC) &_AlphaSimR_calcChrFreq,       1},
+    {"_AlphaSimR_calcCoef",          (DL_FUNC) &_AlphaSimR_calcCoef,          2},
     {"_AlphaSimR_calcD",             (DL_FUNC) &_AlphaSimR_calcD,             1},
     {"_AlphaSimR_calcG",             (DL_FUNC) &_AlphaSimR_calcG,             1},
     {"_AlphaSimR_calcGenParam",      (DL_FUNC) &_AlphaSimR_calcGenParam,      2},

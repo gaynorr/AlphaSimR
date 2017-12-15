@@ -118,6 +118,10 @@ changeId <- function(newId, oldId) {
     invisible(.Call(`_AlphaSimR_changeId`, newId, oldId))
 }
 
+calcCoef <- function(X, Y) {
+    .Call(`_AlphaSimR_calcCoef`, X, Y)
+}
+
 #' @title Read Matrix
 #'
 #' @description
