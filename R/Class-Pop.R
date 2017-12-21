@@ -99,7 +99,7 @@ setMethod("c",
 #' Extends \code{\link{RawPop-class}} to add a genetic map. 
 #' This is the first object created in a simulation. It is used
 #' for creating initial populations and setting traits in the 
-#' \code{\link{SimParam-class}}.
+#' \code{\link{SimParam}}.
 #' 
 #' @param x a 'MapPop'
 #' @param i index of chromosomes
@@ -261,7 +261,6 @@ setValidity("Pop",function(object){
 setMethod("[",
           signature(x = "Pop"),
           function(x, i){
-            n = x@nInd
             if(is.character(i)){
               i = x@id%in%i
             }
@@ -325,6 +324,97 @@ setMethod("c",
           }
 )
 
+#' @title Create new Population
+#' 
+#' @description
+#' Creates a new \code{\link{Pop-class}} from an object of 
+#' \code{\link{MapPop-class}} or \code{\link{RawPop-class}}. 
+#' The function is intended for creating initial populations from 
+#' 'FOUNDERPOP' created by \code{\link{runMacs}}.
+#'
+#' @param rawPop an object of \code{\link{MapPop-class}} or 
+#' \code{\link{RawPop-class}}
+#' @param mother optional id for mothers. Must match 
+#' id in pedigree if using track pedigree.
+#' @param father optional id for fathers. Must match 
+#' id in pedigree if using track pedigree.
+#' @param origM optional alternative id for mothers
+#' @param origF optional alternative id for fathers
+#' @param isDH optional value indicating if the individuals 
+#' are doubled haploids and/or inbred founders
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
+                  origF=NULL,isDH=FALSE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  lastId = simParam$lastId
+  id = (1:rawPop@nInd) + lastId
+  lastId = max(id)
+  if(is.null(mother)){
+    mother = rep("0",rawPop@nInd)
+  }else{
+    mother = as.character(mother)
+  }
+  if(is.null(father)){
+    father = rep("0",rawPop@nInd)
+  }else{
+    father = as.character(father)
+  }
+  stopifnot(length(id)==length(mother),
+            length(id)==length(father))
+  if(simParam$gender=="no"){
+    gender = rep("",rawPop@nInd)
+  }else if(simParam$gender=="yes_rand"){
+    gender = sample(c("M","F"),rawPop@nInd,replace=TRUE)
+  }else if(simParam$gender=="yes_sys"){
+    gender = rep_len(c("M","F"),rawPop@nInd)
+  }else{
+    stop(paste("no rules for gender type",simParam$gender))
+  }
+  gxe = vector("list",simParam$nTraits)
+  gv = matrix(NA_real_,nrow=rawPop@nInd,
+              ncol=simParam$nTraits)
+  if(simParam$nTraits>=1){
+    for(i in 1:simParam$nTraits){
+      tmp = getGv(simParam$traits[[i]],rawPop)
+      gv[,i] = tmp[[1]]
+      if(length(tmp)>1){
+        gxe[[i]] = tmp[[2]]
+      }
+    }
+  }
+  if(is.null(origM)) origM = mother
+  if(is.null(origF)) origF = father
+  output = new("Pop",
+               nInd=rawPop@nInd,
+               nChr=rawPop@nChr,
+               ploidy=rawPop@ploidy,
+               nLoci=rawPop@nLoci,
+               gender=gender,
+               geno=rawPop@geno,
+               id=as.character(id),
+               mother=origM,
+               father=origF,
+               nTraits=simParam$nTraits,
+               gv=gv,
+               gxe=gxe,
+               pheno=addError(gv,simParam$varE),
+               ebv=matrix(NA_real_,
+                          nrow=rawPop@nInd,
+                          ncol=0))
+  if(simParam$isTrackPed){
+    simParam$addToPed(lastId,mother,father,isDH)
+  }else{
+    simParam$updateLastId(lastId)
+  }
+  return(output)
+}
+
 #' @title Reset population
 #' 
 #' @description
@@ -332,28 +422,28 @@ setMethod("c",
 #' resets phenotypes and EBVs.
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return an object of \code{\link{Pop-class}}
 #' 
 #' @export
 resetPop = function(pop,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  pop@nTraits = simParam@nTraits
+  pop@nTraits = simParam$nTraits
   pop@pheno = matrix(NA_real_,
                      nrow=pop@nInd,
-                     ncol=simParam@nTraits)
+                     ncol=simParam$nTraits)
   pop@ebv = matrix(NA_real_,
                    nrow=pop@nInd,
                    ncol=0)
-  pop@gxe = vector("list",simParam@nTraits)
+  pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
-                  ncol=simParam@nTraits)
-  if(simParam@nTraits>=1){
-    for(i in 1:simParam@nTraits){
-      tmp = getGv(simParam@traits[[i]],pop)
+                  ncol=simParam$nTraits)
+  if(simParam$nTraits>=1){
+    for(i in 1:simParam$nTraits){
+      tmp = getGv(simParam$traits[[i]],pop)
       pop@gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         pop@gxe[[i]] = tmp[[2]]

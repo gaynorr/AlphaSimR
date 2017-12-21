@@ -12,7 +12,7 @@ pullQtlGeno(pop, trait = 1, simParam = NULL)
 \item{trait}{an integer. Indicates which trait's
 QTL genotypes to retrieve.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns a matrix of QTL genotypes.

@@ -17,7 +17,7 @@ population or character strings for the IDs.}
 
 \item{rawPop}{should a \code{\link{RawPop-class}} be returned}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

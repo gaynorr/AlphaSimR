@@ -207,8 +207,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cross2
-arma::field<arma::Cube<unsigned char> > cross2(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& genMaps, double recombRatio);
-RcppExport SEXP _AlphaSimR_cross2(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP) {
+Rcpp::List cross2(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& genMaps, double recombRatio, bool trackRec);
+RcppExport SEXP _AlphaSimR_cross2(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP, SEXP trackRecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -218,13 +218,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type father(fatherSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
     Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross2(motherGeno, mother, fatherGeno, father, genMaps, recombRatio));
+    Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
+    rcpp_result_gen = Rcpp::wrap(cross2(motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec));
     return rcpp_result_gen;
 END_RCPP
 }
 // createDH2
-arma::field<arma::Cube<unsigned char> > createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMaps, double recombRatio, bool useFemale);
-RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP, SEXP useFemaleSEXP) {
+Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMaps, double recombRatio, bool useFemale, bool trackRec);
+RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP, SEXP useFemaleSEXP, SEXP trackRecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -233,22 +234,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
     Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
     Rcpp::traits::input_parameter< bool >::type useFemale(useFemaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMaps, recombRatio, useFemale));
-    return rcpp_result_gen;
-END_RCPP
-}
-// crossPedigree
-arma::field<arma::Cube<unsigned char> > crossPedigree(const arma::field<arma::Cube<unsigned char> >& founders, arma::uvec mother, arma::uvec father, const arma::field<arma::vec>& genMaps, double recombRatio);
-RcppExport SEXP _AlphaSimR_crossPedigree(SEXP foundersSEXP, SEXP motherSEXP, SEXP fatherSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type founders(foundersSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type mother(motherSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type father(fatherSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
-    Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
-    rcpp_result_gen = Rcpp::wrap(crossPedigree(founders, mother, father, genMaps, recombRatio));
+    Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
+    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMaps, recombRatio, useFemale, trackRec));
     return rcpp_result_gen;
 END_RCPP
 }

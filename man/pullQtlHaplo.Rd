@@ -16,7 +16,7 @@ QTL haplotypes to retrieve.}
 for a single set of haplotypes. Use a value of 1 for female 
 haplotyes and a value of 2 for male haplotypes.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns a matrix of QTL haplotypes.

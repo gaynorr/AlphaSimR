@@ -4,7 +4,7 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(nInd, nChr, segSites, inbred = TRUE, species = "TEST",
+runMacs(nInd, nChr, segSites, inbred = FALSE, species = "TEST",
   split = NULL, manualCommand = NULL, manualGenLen = NULL)
 }
 \arguments{

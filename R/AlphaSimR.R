@@ -10,8 +10,9 @@
 #' @title AlphaSimR: Breeding Program Simulations
 #'
 #' @description
-#' This package is currently under development and is not yet ready for release.
+#' This package contains classes and functions for 
+#' simulating plant and animal breeding programs.
 #'
 #' @docType package
-#' @name AlphaSimR
+#' @name AlphaSimR-package
 NULL

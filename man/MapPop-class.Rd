@@ -22,7 +22,7 @@
 Extends \code{\link{RawPop-class}} to add a genetic map. 
 This is the first object created in a simulation. It is used
 for creating initial populations and setting traits in the 
-\code{\link{SimParam-class}}.
+\code{\link{SimParam}}.
 }
 \section{Methods (by generic)}{
 \itemize{

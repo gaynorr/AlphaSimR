@@ -23,7 +23,7 @@ of progeny per parent}
 
 \item{ignoreGender}{should gender be ignored}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

@@ -40,7 +40,7 @@ or randomly "rand"}
 \item{balance}{if using gender, this option will balance the number 
 of progeny per parent}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}

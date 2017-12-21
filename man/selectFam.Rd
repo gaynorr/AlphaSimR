@@ -31,7 +31,7 @@ Selects lowest values if false.}
 \code{\link{Pop-class}}. If FALSE, only the index of selected 
 individuals is returned.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}

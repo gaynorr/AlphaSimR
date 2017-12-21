@@ -12,7 +12,7 @@ pullSnpGeno(pop, snpChip = 1, simParam = NULL)
 \item{snpChip}{an integer. Indicates which SNP 
 chip's genotypes to retrieve.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns a matrix of SNP genotypes.

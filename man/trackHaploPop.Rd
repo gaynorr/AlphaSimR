@@ -28,8 +28,5 @@ If inbred=FALSE, the value of nInd must be less than or equal to
 \examples{
 genMaps = list(seq(0,1,length.out=11))
 FOUNDERPOP = trackHaploPop(genMaps=genMaps,nInd=10)
-SIMPARAM = createSimulation(founderPop=FOUNDERPOP)
-pop = newPop(FOUNDERPOP,simParam=SIMPARAM)
-segSites = pullSegSiteHaplo(pop,simParam=SIMPARAM)
 
 }

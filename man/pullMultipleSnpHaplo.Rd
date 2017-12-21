@@ -19,7 +19,7 @@ haplotyes and a value of 2 for male haplotypes.}
 
 \item{missing}{What value to use for missing}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns a matrix of SNP haplotypes.

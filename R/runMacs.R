@@ -20,7 +20,7 @@
 #' @return an object of \code{\link{MapPop-class}}
 #' 
 #' @export
-runMacs = function(nInd,nChr,segSites,inbred=TRUE,species="TEST",
+runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
                    split=NULL,manualCommand=NULL,manualGenLen=NULL){
   ploidy = 2 #The only ploidy level currently supported
   if(length(segSites)==1){

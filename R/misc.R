@@ -61,7 +61,7 @@ selIndex = function(Y,b,scale=FALSE){
 #' @param segSites a vector of segregating sites to edit. Length must 
 #' match length of chr.
 #' @param allele either 0 or 1 for desired allele
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
@@ -69,7 +69,7 @@ selIndex = function(Y,b,scale=FALSE){
 editGenome = function(pop,ind,chr,segSites,allele,
                       simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   ind = unique(as.integer(ind))
   stopifnot(all(ind%in%(1:pop@nInd)))
@@ -83,12 +83,12 @@ editGenome = function(pop,ind,chr,segSites,allele,
     selSegSites = segSites[chr==selChr]
     pop@geno[[selChr]][selSegSites,,ind] = allele
   }
-  pop@gxe = vector("list",simParam@nTraits)
+  pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
-                  ncol=simParam@nTraits)
-  if(simParam@nTraits>=1){
-    for(i in 1:simParam@nTraits){
-      tmp = getGv(simParam@traits[[i]],pop)
+                  ncol=simParam$nTraits)
+  if(simParam$nTraits>=1){
+    for(i in 1:simParam$nTraits){
+      tmp = getGv(simParam$traits[[i]],pop)
       pop@gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         pop@gxe[[i]] = tmp[[2]]
@@ -132,7 +132,7 @@ corVar = function(x,rho){
 #' @param p the proportion of individuals selected
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -142,7 +142,7 @@ corVar = function(x,rho){
 usefulness = function(pop,trait=1,use="gv",p=0.1,
                       selectTop=TRUE,simParam=NULL,...){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)

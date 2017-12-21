@@ -61,16 +61,12 @@ getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father) {
     .Call(`_AlphaSimR_getHybridGv`, trait, motherGeno, mother, fatherGeno, father)
 }
 
-cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio) {
-    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, genMaps, recombRatio)
+cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec) {
+    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec)
 }
 
-createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale)
-}
-
-crossPedigree <- function(founders, mother, father, genMaps, recombRatio) {
-    .Call(`_AlphaSimR_crossPedigree`, founders, mother, father, genMaps, recombRatio)
+createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale, trackRec) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale, trackRec)
 }
 
 #' @title Population variance

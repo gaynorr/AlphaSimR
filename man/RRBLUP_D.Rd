@@ -20,7 +20,7 @@ or phenotypes (\code{pheno}, default)}
 
 \item{maxIter}{maximum number of iterations.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Fits an RR-BLUP model for genomic predictions that includes 

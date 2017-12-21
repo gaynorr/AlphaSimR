@@ -18,7 +18,7 @@ nTraits for correlated errors.}
 
 \item{w}{the environmental covariate used by GxE traits.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

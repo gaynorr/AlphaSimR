@@ -2,25 +2,28 @@ addError = function(gv,varE,reps=1){
   nTraits = ncol(gv)
   nInd = nrow(gv)
   if(is.matrix(varE)){
-    stopifnot(nrow(varE)==nTraits,
+    stopifnot(isSymmetric(varE),
               ncol(varE)==nTraits)
+    if(any(diag(varE)==0)){
+      zeros = which(diag(varE)==0)
+      diag(varE)[zeros] = 1
+      error = matrix(rnorm(nInd*nTraits),
+                     ncol=nTraits)%*%chol(varE)
+      error[,zeros] = 0
+    }else{
+      error = matrix(rnorm(nInd*nTraits),
+                     ncol=nTraits)%*%chol(varE)
+    }
   }else{
     stopifnot(length(varE)==nTraits)
-    if(length(varE)==1){
-      varE = matrix(varE)
-    }else{
-      varE = diag(varE)
-    }
-  }
-  if(any(diag(varE)==0)){
-    zeros = which(diag(varE)==0)
-    diag(varE)[zeros] = 1
-    error = matrix(rnorm(nInd*nTraits),
-                   ncol=nTraits)%*%chol(varE)
-    error[,zeros] = 0
-  }else{
-    error = matrix(rnorm(nInd*nTraits),
-                   ncol=nTraits)%*%chol(varE)
+    error = lapply(varE,function(x){
+      if(is.na(x)){
+        return(rep(NA_real_,nInd))
+      }else{
+        return(rnorm(nInd,sd=sqrt(x)))
+      }
+    })
+    error = do.call("cbind",error)
   }
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
@@ -41,7 +44,7 @@ addError = function(gv,varE,reps=1){
 #' nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
@@ -56,18 +59,18 @@ addError = function(gv,varE,reps=1){
 calcPheno = function(pop,varE,reps=1,w=0.5,
                      simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   validObject(pop)
   if(length(w)==1){
-    w = rep(w,simParam@nTraits)
+    w = rep(w,simParam$nTraits)
   }
-  stopifnot(length(w)==simParam@nTraits)
+  stopifnot(length(w)==simParam$nTraits)
   gv = pop@gv
-  for(i in 1:simParam@nTraits){
-    traitClass = class(simParam@traits[[i]])
+  for(i in 1:simParam$nTraits){
+    traitClass = class(simParam$traits[[i]])
     if(traitClass=="TraitAG" | traitClass=="TraitADG"){
-      stdDev = sqrt(simParam@traits[[i]]@envVar)
+      stdDev = sqrt(simParam$traits[[i]]@envVar)
       gv[,i] = gv[,i]+pop@gxe[[i]]*qnorm(w[i],sd=stdDev)
     }
   }
@@ -88,7 +91,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,
 #' nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
@@ -103,7 +106,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,
 #' @export
 setPheno = function(pop,varE,reps=1,w=0.5,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,w=w,
                         simParam=simParam)

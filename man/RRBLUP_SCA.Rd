@@ -23,7 +23,7 @@ or phenotypes (\code{pheno}, default)}
 \item{onFailGCA}{if true, \code{\link{RRBLUP_GCA}} is used if 
 RRBLUP_SCA gives a variance component of zero}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Fits an RR-BLUP model that models seperate effects for both female

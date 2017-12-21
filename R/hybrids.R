@@ -47,16 +47,16 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' parameter determines the maximum number of hybrids created 
 #' at one time. Smaller values reduce RAM usage, but may take 
 #' more time.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 hybridCross = function(females,males,crossPlan="testcross",
                        returnHybridPop=FALSE,chunkSize=10000,
                        simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  if(simParam@ploidy!=2){
+  if(simParam$ploidy!=2){
     stop("Only works with diploids")
   }
   #crossPlan for test cross
@@ -78,10 +78,10 @@ hybridCross = function(females,males,crossPlan="testcross",
   
   #Return HybridPop-class
   gv = pheno = matrix(NA_real_,nrow=length(id),
-                      ncol=simParam@nTraits)
-  gxe = vector("list",simParam@nTraits)
+                      ncol=simParam$nTraits)
+  gxe = vector("list",simParam$nTraits)
   i = 0L
-  for(trait in simParam@traits){
+  for(trait in simParam$traits){
     i = i+1L
     tmp = getHybridGvByChunk(trait=trait,females=females,femaleParents=crossPlan[,1],
                              males=males,maleParents=crossPlan[,2],chunkSize=chunkSize)
@@ -96,7 +96,7 @@ hybridCross = function(females,males,crossPlan="testcross",
                id=id,
                mother=femaleParents,
                father=maleParents,
-               nTraits=simParam@nTraits,
+               nTraits=simParam$nTraits,
                gv=gv,
                pheno=pheno,
                gxe=gxe)
@@ -191,7 +191,7 @@ calcGCA = function(pop,use="pheno"){
 #' at one time. Smaller values reduce RAM usage, but may take 
 #' more time.
 #' @param onlyPheno should only the phenotype be returned
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
@@ -208,7 +208,7 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                        w=0.5,inbred=FALSE,chunkSize=10000,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)

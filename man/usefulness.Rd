@@ -23,7 +23,7 @@ or phenotypes (\code{pheno})}
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}

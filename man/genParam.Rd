@@ -12,7 +12,7 @@ genParam(pop, indValues = FALSE, simParam = NULL)
 \item{indValues}{should breeding values, dominance deviations 
 and allele subsitution effects be returned}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 \describe{

@@ -24,7 +24,7 @@ parameter determines the maximum number of hybrids created
 at one time. Smaller values reduce RAM usage, but may take 
 more time.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 A convience function for hybrid plant breeding simulations. Allows for 

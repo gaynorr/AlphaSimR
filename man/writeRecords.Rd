@@ -33,7 +33,7 @@ haplotypes.}
 If false, any existing records are deleted before writing new records.
 Note that this will delete all files in the 'dir' directory.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Saves a population's phenotypic and marker data to a directory.

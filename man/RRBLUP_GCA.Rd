@@ -20,7 +20,7 @@ or phenotypes (\code{pheno}, default)}
 
 \item{maxIter}{maximum number of iterations for convergence.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Fits an RR-BLUP model that estimates seperate marker effects for

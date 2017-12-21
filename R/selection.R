@@ -53,7 +53,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
 checkGender = function(pop,gender,simParam){
   gender = toupper(gender)
   eligible = 1:pop@nInd
-  if(simParam@gender=="no"){
+  if(simParam$gender=="no"){
     return(eligible)
   }else{
     if(gender=="B"){
@@ -85,7 +85,7 @@ checkGender = function(pop,gender,simParam){
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -97,7 +97,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
                      selectTop=TRUE,returnPop=TRUE,
                      simParam=NULL,...){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
   if(sum(eligible)<nInd){
@@ -135,7 +135,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -147,7 +147,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
                      selectTop=TRUE,returnPop=TRUE,
                      simParam=NULL,...){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
   allFam = paste(pop@mother,pop@father,sep="_")
@@ -195,7 +195,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -207,7 +207,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
                            selectTop=TRUE,returnPop=TRUE,
                            simParam=NULL,...){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
   families = paste(pop@mother,pop@father,sep="_")

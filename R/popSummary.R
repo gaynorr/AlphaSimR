@@ -51,7 +51,7 @@ varP = function(pop){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param indValues should breeding values, dominance deviations 
 #' and allele subsitution effects be returned
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return
 #' \describe{
@@ -69,7 +69,7 @@ varP = function(pop){
 #' @export
 genParam = function(pop,indValues=FALSE,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop")
   bv=NULL
@@ -78,8 +78,8 @@ genParam = function(pop,indValues=FALSE,simParam=NULL){
   genicVarD=NULL
   alpha=list()
   #Loop through bv and dd calculations
-  for(i in 1:simParam@nTraits){
-    trait = simParam@traits[[i]]
+  for(i in 1:simParam$nTraits){
+    trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop)
     genicVarA = c(genicVarA,tmp$genicVarA)
     genicVarD = c(genicVarD,tmp$genicVarD)
@@ -106,7 +106,7 @@ genParam = function(pop,indValues=FALSE,simParam=NULL){
 #' @description Returns additive variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 varA = function(pop,simParam=NULL){
@@ -118,7 +118,7 @@ varA = function(pop,simParam=NULL){
 #' @description Returns dominance variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 varD = function(pop,simParam=NULL){
@@ -130,7 +130,7 @@ varD = function(pop,simParam=NULL){
 #' @description Returns breeding values for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 bv = function(pop,simParam=NULL){
@@ -142,7 +142,7 @@ bv = function(pop,simParam=NULL){
 #' @description Returns dominance deviations for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 dd = function(pop,simParam=NULL){
@@ -154,7 +154,7 @@ dd = function(pop,simParam=NULL){
 #' @description Returns additive genic variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 genicVarA = function(pop,simParam=NULL){
@@ -166,7 +166,7 @@ genicVarA = function(pop,simParam=NULL){
 #' @description Returns dominance genic variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 genicVarD = function(pop,simParam=NULL){
@@ -178,7 +178,7 @@ genicVarD = function(pop,simParam=NULL){
 #' @description Returns total genic variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 genicVarG = function(pop,simParam=NULL){

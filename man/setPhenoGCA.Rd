@@ -33,7 +33,7 @@ more time.}
 
 \item{onlyPheno}{should only the phenotype be returned}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

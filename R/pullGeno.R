@@ -5,17 +5,17 @@
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param snpChip an integer. Indicates which SNP 
 #' chip's genotypes to retrieve.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP genotypes.
 #' @export
 pullSnpGeno = function(pop, snpChip=1, simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   output = getGeno(pop@geno,
-                   simParam@snpChips[[snpChip]]@lociPerChr,
-                   simParam@snpChips[[snpChip]]@lociLoc)
+                   simParam$snpChips[[snpChip]]@lociPerChr,
+                   simParam$snpChips[[snpChip]]@lociLoc)
   output = convToImat(output)
   rownames(output) = pop@id
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
@@ -30,13 +30,13 @@ pullSnpGeno = function(pop, snpChip=1, simParam=NULL){
 #' @param chips a vector. For each animal indicates what snp
 #' chip to use
 #' @param missing What value to use for missing
-#' @param simParam an object of \code{\link{SimParam-class}}#'
+#' @param simParam an object of \code{\link{SimParam}}
 #' @return Returns a matrix of SNP genotypes.
 #' @export
 pullMultipleSnpGeno = function(pop, chips,
                               missing=9, simParam=NULL) {
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
@@ -45,17 +45,17 @@ pullMultipleSnpGeno = function(pop, chips,
   allSnps = numeric(0)
   uniqueChips = unique(chips)
   for (c in uniqueChips){
-    allSnps = sort(union(allSnps,simParam@snpChips[[c]]@lociLoc))
+    allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
   }
   
   output = matrix(pop@nInd,length(allSnps),data=missing)
   rownames(output) = pop@id
   
   for (snpChip in uniqueChips){
-    mask = allSnps %in% simParam@snpChips[[snpChip]]@lociLoc
+    mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
     one = getGeno(pop@geno,
-                      simParam@snpChips[[snpChip]]@lociPerChr,
-                      simParam@snpChips[[snpChip]]@lociLoc)
+                      simParam$snpChips[[snpChip]]@lociPerChr,
+                      simParam$snpChips[[snpChip]]@lociLoc)
     one = convToImat(one)
     for (i in 1:pop@nInd){
       if (chips[i] == snpChip) {
@@ -77,17 +77,17 @@ pullMultipleSnpGeno = function(pop, chips,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param trait an integer. Indicates which trait's
 #' QTL genotypes to retrieve.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of QTL genotypes.
 #' @export
 pullQtlGeno = function(pop, trait=1, simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   output = getGeno(pop@geno,
-                   simParam@traits[[trait]]@lociPerChr,
-                   simParam@traits[[trait]]@lociLoc)
+                   simParam$traits[[trait]]@lociPerChr,
+                   simParam$traits[[trait]]@lociLoc)
   output = convToImat(output)
   rownames(output) = pop@id
   colnames(output) = paste("QTL",1:ncol(output),sep="_")
@@ -104,27 +104,27 @@ pullQtlGeno = function(pop, trait=1, simParam=NULL){
 #' @param haplo either "all" for all haplotypes or an integer 
 #' for a single set of haplotypes. Use a value of 1 for female 
 #' haplotyes and a value of 2 for male haplotypes.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullSnpHaplo = function(pop, snpChip=1, haplo="all", 
                         simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   if(haplo=="all"){
     output = getHaplo(pop@geno,
-                      simParam@snpChips[[snpChip]]@lociPerChr,
-                      simParam@snpChips[[snpChip]]@lociLoc)
+                      simParam$snpChips[[snpChip]]@lociPerChr,
+                      simParam$snpChips[[snpChip]]@lociLoc)
     output = convToImat(output)
     rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                              rep(1:pop@ploidy,pop@nInd),sep="_")
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
-                         simParam@snpChips[[snpChip]]@lociPerChr,
-                         simParam@snpChips[[snpChip]]@lociLoc,
+                         simParam$snpChips[[snpChip]]@lociPerChr,
+                         simParam$snpChips[[snpChip]]@lociLoc,
                          as.integer(haplo))
     output = convToImat(output)
     rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
@@ -145,14 +145,14 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' for a single set of haplotypes. Use a value of 1 for female 
 #' haplotyes and a value of 2 for male haplotypes.
 #' @param missing What value to use for missing
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP haplotypes.
 #' @export
 pullMultipleSnpHaplo = function(pop, chips, haplo="all", 
                                 missing=9, simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(length(chips) == pop@nInd)
   # I feel like the next line shouldn't be needed but I don't know
@@ -161,7 +161,7 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
   allSnps = numeric(0)
   uniqueChips = unique(chips)
   for (c in uniqueChips){
-    allSnps = sort(union(allSnps,simParam@snpChips[[c]]@lociLoc))
+    allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
   }
   
   if (haplo == "all") {
@@ -174,11 +174,11 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
     rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
   }
   for (snpChip in uniqueChips){
-    mask = allSnps %in% simParam@snpChips[[snpChip]]@lociLoc
+    mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
     if (haplo == "all") {
       one = getHaplo(pop@geno,
-                     simParam@snpChips[[snpChip]]@lociPerChr,
-                     simParam@snpChips[[snpChip]]@lociLoc)
+                     simParam$snpChips[[snpChip]]@lociPerChr,
+                     simParam$snpChips[[snpChip]]@lociLoc)
       one = convToImat(one)
       for (i in 1:pop@nInd){
         if (chips[i] == snpChip) {
@@ -189,8 +189,8 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
     }
     else {
       one = getOneHaplo(pop@geno,
-                     simParam@snpChips[[snpChip]]@lociPerChr,
-                     simParam@snpChips[[snpChip]]@lociLoc,
+                     simParam$snpChips[[snpChip]]@lociPerChr,
+                     simParam$snpChips[[snpChip]]@lociLoc,
                      as.integer(haplo))
       one = convToImat(one)
       for (i in 1:pop@nInd){
@@ -217,27 +217,27 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
 #' @param haplo either "all" for all haplotypes or an integer 
 #' for a single set of haplotypes. Use a value of 1 for female 
 #' haplotyes and a value of 2 for male haplotypes.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of QTL haplotypes.
 #' @export
 pullQtlHaplo = function(pop, trait=1, haplo="all", 
                         simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   if(haplo=="all"){
     output = getHaplo(pop@geno,
-                      simParam@traits[[trait]]@lociPerChr,
-                      simParam@traits[[trait]]@lociLoc)
+                      simParam$traits[[trait]]@lociPerChr,
+                      simParam$traits[[trait]]@lociLoc)
     output = convToImat(output)
     rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                              rep(1:pop@ploidy,pop@nInd),sep="_")
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
-                         simParam@traits[[trait]]@lociPerChr,
-                         simParam@traits[[trait]]@lociLoc,
+                         simParam$traits[[trait]]@lociPerChr,
+                         simParam$traits[[trait]]@lociLoc,
                          as.integer(haplo))
     output = convToImat(output)
     rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
@@ -256,20 +256,20 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @param haplo either "all" for all haplotypes or an integer 
 #' for a single set of haplotypes. Use a value of 1 for female 
 #' haplotyes and a value of 2 for male haplotypes.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of haplotypes
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all", 
                             simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  allLoci = unlist(sapply(simParam@segSites,
+  allLoci = unlist(sapply(simParam$segSites,
                           function(x)1:x))
   if(haplo=="all"){
     output = getHaplo(pop@geno,
-                      simParam@segSites,
+                      simParam$segSites,
                       allLoci)
     output = convToImat(output)
     rownames(output) = paste(rep(pop@id,each=pop@ploidy),
@@ -277,7 +277,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
-                         simParam@segSites,
+                         simParam$segSites,
                          allLoci,
                          as.integer(haplo))
     output = convToImat(output)

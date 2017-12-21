@@ -9,7 +9,7 @@ genicVarD(pop, simParam = NULL)
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Returns dominance genic variance for all traits
