@@ -41,7 +41,7 @@ addError = function(gv,varE,reps=1){
 #' \code{\link{HybridPop-class}}
 #' @param varE error variances for phenotype. A vector of length 
 #' nTraits for independent error or a square matrix of dimensions 
-#' nTraits for correlated errors.
+#' nTraits for correlated errors. If NULL, value in simParam is used.
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -56,7 +56,7 @@ addError = function(gv,varE,reps=1){
 #' @return Returns a matrix of nInd by nTrait phenotypes
 #' 
 #' @export
-calcPheno = function(pop,varE,reps=1,w=0.5,
+calcPheno = function(pop,varE=NULL,reps=1,w=0.5,
                      simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -67,6 +67,9 @@ calcPheno = function(pop,varE,reps=1,w=0.5,
   }
   stopifnot(length(w)==simParam$nTraits)
   gv = pop@gv
+  if(is.null(varE)){
+    varE = simParam$varE
+  }
   for(i in 1:simParam$nTraits){
     traitClass = class(simParam$traits[[i]])
     if(traitClass=="TraitAG" | traitClass=="TraitADG"){
@@ -88,7 +91,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,
 #' \code{\link{HybridPop-class}}
 #' @param varE error variances for phenotype. A vector of length 
 #' nTraits for independent error or a square matrix of dimensions 
-#' nTraits for correlated errors.
+#' nTraits for correlated errors. If NULL, value in simParam is used.
 #' @param reps number of replications for phenotype. See details.
 #' @param w the environmental covariate used by GxE traits.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -104,7 +107,7 @@ calcPheno = function(pop,varE,reps=1,w=0.5,
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-setPheno = function(pop,varE,reps=1,w=0.5,simParam=NULL){
+setPheno = function(pop,varE=NULL,reps=1,w=0.5,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }

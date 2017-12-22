@@ -4,7 +4,7 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE, reps = 1, w = 0.5, simParam = NULL)
+setPheno(pop, varE = NULL, reps = 1, w = 0.5, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -12,7 +12,7 @@ setPheno(pop, varE, reps = 1, w = 0.5, simParam = NULL)
 
 \item{varE}{error variances for phenotype. A vector of length 
 nTraits for independent error or a square matrix of dimensions 
-nTraits for correlated errors.}
+nTraits for correlated errors. If NULL, value in simParam is used.}
 
 \item{reps}{number of replications for phenotype. See details.}
 

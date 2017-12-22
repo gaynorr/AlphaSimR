@@ -388,6 +388,11 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
       }
     }
   }
+  if(simParam$nTraits>0){
+    pheno = addError(gv,simParam$varE)
+  }else{
+    pheno = gv
+  }
   if(is.null(origM)) origM = mother
   if(is.null(origF)) origF = father
   output = new("Pop",
@@ -403,7 +408,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                nTraits=simParam$nTraits,
                gv=gv,
                gxe=gxe,
-               pheno=addError(gv,simParam$varE),
+               pheno=pheno,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
                           ncol=0))

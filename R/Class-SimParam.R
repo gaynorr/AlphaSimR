@@ -411,22 +411,22 @@ SimParam$set(
     potQtl = list()
     for(chr in 1:private$.nChr){
       if(snpQtlOverlap){
-        stopifnot(private$.nLoci[chr]>=maxSnp[chr],
-                  private$.nLoci[chr]>=maxQtl[chr])
+        stopifnot(private$.segSites[chr]>=maxSnp[chr],
+                  private$.segSites[chr]>=maxQtl[chr])
         if(is.null(minSnpFreq)){
-          potSnp[[chr]] = sort(sample.int(private$.nLoci[chr],
+          potSnp[[chr]] = sort(sample.int(private$.segSites[chr],
                                           maxSnp[chr]))
         }else{
           q = calcChrFreq(private$.founderPop@geno[[chr]])
           q = 0.5-abs(q-0.5) #Convert to minor allele frequency
           potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
         }
-        potQtl[[chr]] = sort(sample.int(private$.nLoci[chr],
+        potQtl[[chr]] = sort(sample.int(private$.segSites[chr],
                                         maxQtl[chr]))
       }else{
-        stopifnot(private$.nLoci[chr]>=sum(maxSnp[chr],maxQtl[chr]))
+        stopifnot(private$.segSites[chr]>=sum(maxSnp[chr],maxQtl[chr]))
         if(is.null(minSnpFreq)){
-          tmp = sample.int(private$.nLoci[chr],sum(maxSnp[chr],maxQtl[chr]))
+          tmp = sample.int(private$.segSites[chr],sum(maxSnp[chr],maxQtl[chr]))
           if(maxSnp[chr]>0){
             potSnp[[chr]] = sort(tmp[1:maxSnp[chr]])
           }else{
@@ -441,7 +441,7 @@ SimParam$set(
           q = calcChrFreq(private$.founderPop@geno[[chr]])
           q = 0.5-abs(q-0.5)
           potSnp[[chr]] = sort(sample(which(q>=minSnpFreq),maxSnp[chr]))
-          potQtl[[chr]] = sort(sample(which(!((1:private$.nLoci[chr])%in%potSnp[[chr]])),
+          potQtl[[chr]] = sort(sample(which(!((1:private$.segSites[chr])%in%potSnp[[chr]])),
                                       maxQtl[chr]))
         }
       }
@@ -856,9 +856,10 @@ SimParam$set(
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
     if(is.null(corA)) corA=diag(nTraits)
-    if(is.null(corD)) corDD=diag(nTraits)
+    if(is.null(corDD)) corDD=diag(nTraits)
     stopifnot(length(mean)==length(var),
               isSymmetric(corA),
+              isSymmetric(corDD),
               length(mean)==nrow(corA))
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
