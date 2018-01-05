@@ -14,3 +14,7 @@ except those created by \code{\link{hybridCross}}. Turning
 off pedigree tracking will turn off recombination tracking 
 if it is turned on.
 }
+\section{Usage}{
+ SP$setTrackPed(isTrackPed)
+}
+

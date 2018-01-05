@@ -18,3 +18,7 @@ If NULL, the existing value is retained.}
 \description{
 Replaces an existing trait.
 }
+\section{Usage}{
+ SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL)
+}
+

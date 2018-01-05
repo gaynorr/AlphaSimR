@@ -182,7 +182,7 @@ calcGCA = function(pop,use="pheno"){
 #' of length nTraits for independent error or a square matrix of 
 #' dimensions nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
-#' @param w the environmental covariate used by GxE traits.
+#' @param p the p-value for the environmental covariate 
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
@@ -205,7 +205,7 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,chunkSize=10000,
+                       p=0.5,inbred=FALSE,chunkSize=10000,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -220,7 +220,7 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
                     returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
   if(use=="pheno"){
-    tmp = setPheno(tmp,varE=varE,w=w,reps=reps,simParam=simParam)
+    tmp = setPheno(tmp,varE=varE,p=p,reps=reps,simParam=simParam)
   }
   tmp = calcGCA(pop=tmp,use=use)
   if(onlyPheno){

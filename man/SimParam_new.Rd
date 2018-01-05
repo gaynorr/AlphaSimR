@@ -16,3 +16,7 @@ their simParam arguments are NULL. This allows you to call
 these functions without explicitly supplying a simParam 
 argument with every call.
 }
+\section{Usage}{
+ SimParam$new(founderPop)
+}
+

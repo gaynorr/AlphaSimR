@@ -24,8 +24,8 @@ makeCross = function(pop,crossPlan,rawPop=FALSE,
     stop("Only works with diploids")
   }
   if(is.character(crossPlan)){ #Match by ID
-    crossPlan = cbind(match(crossPlan[,1],pop$id),
-                      match(crossPlan[,2],pop$id))
+    crossPlan = cbind(match(crossPlan[,1],pop@id),
+                      match(crossPlan[,2],pop@id))
     if(any(is.na(crossPlan))){
       stop("Failed to match supplied IDs")
     }
@@ -218,8 +218,8 @@ makeCross2 = function(females,males,crossPlan,
     stop("Only works with diploids")
   }
   if(is.character(crossPlan)){ #Match by ID
-    crossPlan = cbind(match(crossPlan[,1],females$id),
-                      match(crossPlan[,2],males$id))
+    crossPlan = cbind(match(crossPlan[,1],females@id),
+                      match(crossPlan[,2],males@id))
     if(any(is.na(crossPlan))){
       stop("Failed to match supplied IDs")
     }

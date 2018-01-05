@@ -11,3 +11,7 @@ Defines a correlation structure for default
 error variances. You must call \code{\link{SimParam_setVarE}} 
 first to define the default error variances.
 }
+\section{Usage}{
+ SP$setCorrVarE(corr)
+}
+

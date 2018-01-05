@@ -4,7 +4,7 @@
 \alias{calcPheno}
 \title{Calculate phenotypes}
 \usage{
-calcPheno(pop, varE = NULL, reps = 1, w = 0.5, simParam = NULL)
+calcPheno(pop, varE = NULL, reps = 1, p = 0.5, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -16,7 +16,8 @@ nTraits for correlated errors. If NULL, value in simParam is used.}
 
 \item{reps}{number of replications for phenotype. See details.}
 
-\item{w}{the environmental covariate used by GxE traits.}
+\item{p}{the p-value for the environmental covariate 
+used by GxE traits.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

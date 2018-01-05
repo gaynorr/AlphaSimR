@@ -19,7 +19,6 @@ extern SEXP _AlphaSimR_callRRBLUP_D(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_changeId(SEXP, SEXP);
 extern SEXP _AlphaSimR_convToImat(SEXP);
 extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -30,6 +29,7 @@ extern SEXP _AlphaSimR_gebvGCA(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvRR(SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvRRD(SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvSCA(SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_gegvRRD(SEXP, SEXP);
 extern SEXP _AlphaSimR_getDomGeno(SEXP);
 extern SEXP _AlphaSimR_getGeno(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getGv(SEXP, SEXP);
@@ -43,6 +43,7 @@ extern SEXP _AlphaSimR_popVar(SEXP);
 extern SEXP _AlphaSimR_readMat(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_sampHalfDialComb(SEXP, SEXP);
+extern SEXP _AlphaSimR_solveAniModel(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_solveMKM(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_solveMVM(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_solveRRBLUP(SEXP, SEXP, SEXP);
@@ -55,7 +56,6 @@ extern SEXP _AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP
 extern SEXP _AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeGeno(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeOneHaplo(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_zero();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcChrFreq",       (DL_FUNC) &_AlphaSimR_calcChrFreq,       1},
@@ -69,7 +69,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA,    8},
     {"_AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &_AlphaSimR_callRRBLUP_MV,     7},
     {"_AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA,    8},
-    {"_AlphaSimR_changeId",          (DL_FUNC) &_AlphaSimR_changeId,          2},
     {"_AlphaSimR_convToImat",        (DL_FUNC) &_AlphaSimR_convToImat,        1},
     {"_AlphaSimR_createDH2",         (DL_FUNC) &_AlphaSimR_createDH2,         6},
     {"_AlphaSimR_cross2",            (DL_FUNC) &_AlphaSimR_cross2,            7},
@@ -80,6 +79,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_gebvRR",            (DL_FUNC) &_AlphaSimR_gebvRR,            2},
     {"_AlphaSimR_gebvRRD",           (DL_FUNC) &_AlphaSimR_gebvRRD,           2},
     {"_AlphaSimR_gebvSCA",           (DL_FUNC) &_AlphaSimR_gebvSCA,           3},
+    {"_AlphaSimR_gegvRRD",           (DL_FUNC) &_AlphaSimR_gegvRRD,           2},
     {"_AlphaSimR_getDomGeno",        (DL_FUNC) &_AlphaSimR_getDomGeno,        1},
     {"_AlphaSimR_getGeno",           (DL_FUNC) &_AlphaSimR_getGeno,           3},
     {"_AlphaSimR_getGv",             (DL_FUNC) &_AlphaSimR_getGv,             2},
@@ -93,6 +93,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_readMat",           (DL_FUNC) &_AlphaSimR_readMat,           6},
     {"_AlphaSimR_sampAllComb",       (DL_FUNC) &_AlphaSimR_sampAllComb,       3},
     {"_AlphaSimR_sampHalfDialComb",  (DL_FUNC) &_AlphaSimR_sampHalfDialComb,  2},
+    {"_AlphaSimR_solveAniModel",     (DL_FUNC) &_AlphaSimR_solveAniModel,     3},
     {"_AlphaSimR_solveMKM",          (DL_FUNC) &_AlphaSimR_solveMKM,          5},
     {"_AlphaSimR_solveMVM",          (DL_FUNC) &_AlphaSimR_solveMVM,          6},
     {"_AlphaSimR_solveRRBLUP",       (DL_FUNC) &_AlphaSimR_solveRRBLUP,       3},
@@ -105,7 +106,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_writeASHaplotypes", (DL_FUNC) &_AlphaSimR_writeASHaplotypes, 7},
     {"_AlphaSimR_writeGeno",         (DL_FUNC) &_AlphaSimR_writeGeno,         4},
     {"_AlphaSimR_writeOneHaplo",     (DL_FUNC) &_AlphaSimR_writeOneHaplo,     5},
-    {"_AlphaSimR_zero",              (DL_FUNC) &_AlphaSimR_zero,              0},
     {NULL, NULL, 0}
 };
 

@@ -14,3 +14,7 @@ Recombination tracking keeps records of all individuals created,
 except those created by \code{\link{hybridCross}}, because their 
 pedigree is not tracked.
 }
+\section{Usage}{
+ SimParam$setTrackRec(isTrackRec)
+}
+

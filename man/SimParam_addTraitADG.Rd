@@ -35,3 +35,9 @@ Note that shape=1 is equivalent to an exponential distribution.}
 \description{
 Randomly assigns eligble QTLs for a trait with dominance and GxE.
 }
+\section{Usage}{
+ SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
+varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
+corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1)
+}
+

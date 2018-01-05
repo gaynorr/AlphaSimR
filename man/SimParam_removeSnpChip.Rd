@@ -9,3 +9,7 @@
 \description{
 Removes designated SNP chip(s).
 }
+\section{Usage}{
+ SP$removeSnpChip(chips)
+}
+

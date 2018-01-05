@@ -17,3 +17,7 @@ Thus, odd numbers of individuals will have one more male than
 female. The value "yes_rand" will randomly assign gender to 
 individuals.
 }
+\section{Usage}{
+ SP$setGender(gender)
+}
+

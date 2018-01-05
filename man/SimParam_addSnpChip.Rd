@@ -10,3 +10,7 @@ Can be a single value or nChr values.}
 \description{
 Randomly assigns eligble SNPs to a SNP chip
 }
+\section{Usage}{
+ SP$addSnpChip(nSnpPerChr)
+}
+

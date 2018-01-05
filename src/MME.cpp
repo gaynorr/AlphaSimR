@@ -176,7 +176,6 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
-  bool invPass;
 
   // Construct system of equations for eigendecomposition
   arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
@@ -203,14 +202,67 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                                  Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv;
-  invPass = inv_sympd(Hinv,ZKZ+delta*arma::eye(n,n));
-  if(!invPass){
-    Hinv = pinv(ZKZ+delta*arma::eye(n,n));
-  }
+  arma::mat Hinv = inv_sympd(ZKZ+delta*arma::eye(n,n));
   arma::mat XHinv = X.t()*Hinv;
   arma::mat beta = solve(XHinv*X,XHinv*y);
   arma::mat u = ZK.t()*(Hinv*(y-X*beta));
+  double Vu = sum(eta%eta/(eigval+delta))/df;
+  double Ve = delta*Vu;
+  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=ll);
+}
+
+//' @title Solve animal model
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+u+e}
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param K the numeric relationship matrix 
+//' with n rows and n columns
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveAniModel(const arma::mat& y,
+                         const arma::mat& X,
+                         const arma::mat& K){
+  int n = y.n_rows;
+  int q = X.n_cols;
+  double df = double(n)-double(q);
+  double offset = log(double(n));
+  
+  // Construct system of equations for eigendecomposition
+  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
+  S = S*(K+offset*arma::eye(n,n))*S;
+  
+  // Compute eigendecomposition
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, S);
+  
+  // Drop eigenvalues
+  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
+  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
+                  arma::span(q,eigvec.n_cols-1));
+  
+  // Estimate variances and solve equations
+  arma::vec eta = eigvec.t()*y;
+  Rcpp::List optRes = optimize(*objREML,
+                               Rcpp::List::create(
+                                 Rcpp::Named("df")=df,
+                                 Rcpp::Named("eta")=eta,
+                                 Rcpp::Named("lambda")=eigval),
+                                 1.0e-10, 1.0e10);
+  double delta = optRes["parameter"];
+  arma::mat Hinv = inv_sympd(K+delta*arma::eye(n,n));
+  arma::mat XHinv = X.t()*Hinv;
+  arma::mat beta = solve(XHinv*X,XHinv*y);
+  arma::mat u = K.t()*(Hinv*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
   double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
@@ -238,7 +290,6 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
-  bool invPass;
 
   // Construct system of equations for eigendecomposition
   arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
@@ -263,11 +314,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                                  Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv;
-  invPass = inv_sympd(Hinv,M*M.t()+delta*arma::eye(n,n));
-  if(!invPass){
-    Hinv = pinv(M*M.t()+delta*arma::eye(n,n));
-  }
+  arma::mat Hinv = inv_sympd(M*M.t()+delta*arma::eye(n,n));
   arma::mat XHinv = X.t()*Hinv;
   arma::mat beta = solve(XHinv*X,XHinv*y);
   arma::mat u = M.t()*(Hinv*(y-X*beta));
@@ -319,7 +366,6 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   double denom;
   double numer;
   bool converging=true;
-  bool invPass;
   int iter=0;
   while(converging){
     ++iter;
@@ -350,13 +396,9 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
       break;
     }
   }
-  arma::mat HI;
-  invPass = inv_sympd(HI,kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
+  arma::mat HI = inv_sympd(kron(ZKZ, Vu)+
+    kron(arma::eye(n,n), Ve)+
     tol*arma::eye(n*m,n*m));
-  if(!invPass){
-    HI = pinv(kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve)+
-      tol*arma::eye(n*m,n*m));
-  }
   arma::mat E = Y.t() - B*X.t();
   arma::mat U = kron(K, Vu)*kron(Z.t(),
                      arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
@@ -411,7 +453,6 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   double denom;
   double numer;
   bool converging=true;
-  bool invPass;
   int iter=0;
   while(converging){
     ++iter;
@@ -442,13 +483,9 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
       break;
     }
   }
-  arma::mat HI;
-  invPass = inv_sympd(HI,kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
+  arma::mat HI = inv_sympd(kron(M*M.t(), Vu)+
+    kron(arma::eye(n,n), Ve)+
     tol*arma::eye(n*m,n*m));
-  if(!invPass){
-    HI = pinv(kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve)+
-      tol*arma::eye(n*m,n*m));
-  }
   arma::mat E = Y.t() - B*X.t();
   arma::mat U = kron(arma::eye(M.n_cols,M.n_cols), Vu)*kron(M.t(),
                      arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
@@ -940,63 +977,12 @@ arma::mat gaussKernel(arma::mat& D, double theta){
   return exp(-1.0*square(D/theta));
 }
 
-// Efficiently solves an animal model with records on all individuals
-Rcpp::List animalModel(const arma::mat& y,
-                       const arma::mat& X,
-                       const arma::mat& K){
-  int n = y.n_rows;
-  int q = X.n_cols;
-  double df = double(n)-double(q);
-  double offset = log(double(n));
-  bool invPass;
-
-  // Construct system of equations for eigendecomposition
-  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
-  S = S*(K+offset*arma::eye(n,n))*S;
-
-  // Compute eigendecomposition
-  arma::vec eigval(n);
-  arma::mat eigvec(n,n);
-  eigen2(eigval, eigvec, S);
-
-  // Drop eigenvalues
-  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
-  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
-                  arma::span(q,eigvec.n_cols-1));
-
-  // Estimate variances and solve equations
-  arma::vec eta = eigvec.t()*y;
-  Rcpp::List optRes = optimize(*objREML,
-                               Rcpp::List::create(
-                                 Rcpp::Named("df")=df,
-                                 Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=eigval),
-                                 1.0e-10, 1.0e10);
-  double delta = optRes["parameter"];
-  arma::mat Hinv;
-  invPass = inv_sympd(Hinv,K+delta*arma::eye(n,n));
-  if(!invPass){
-    Hinv = pinv(K+delta*arma::eye(n,n));
-  }
-  arma::mat XHinv = X.t()*Hinv;
-  arma::mat beta = solve(XHinv*X,XHinv*y);
-  arma::mat u = K.t()*(Hinv*(y-X*beta));
-  double Vu = sum(eta%eta/(eigval+delta))/df;
-  double Ve = delta*Vu;
-  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ll);
-}
-
 // Objective function for Gaussian kernel method
 Rcpp::List objRKHS(double theta, Rcpp::List args){
   Rcpp::List output;
   arma::mat D = args["D"];
-  output = animalModel(args["y"],args["X"],
-                       gaussKernel(D,theta));
+  output = solveAniModel(args["y"],args["X"],
+                         gaussKernel(D,theta));
   return Rcpp::List::create(Rcpp::Named("objective")=output["LL"],
                             Rcpp::Named("output")=output);
 }

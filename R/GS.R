@@ -438,23 +438,24 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' solution is \code{\link{GCAsol-class}} or 
 #' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
 #' the corresponding pool
-#' @param useD if model is \code{\link{RRDsol-class}}, should 
-#' dominance be included in the EBV. If yes, the "EBV" is an 
-#' estimate of genetic value and not an estimate of breeding value.
+#' @param useGV if model is \code{\link{RRDsol-class}}, 
+#' setting this parameter to TRUE will give use estimated 
+#' genetic values. Otherwise, you get estimated breeding 
+#' values that depend on the population's allele frequency.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-setEBV = function(pop, solution, gender=NULL, useD=FALSE, 
+setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
                   append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="RRDsol"){
-    if(useD){
-      ebv = gebvRRD(solution, pop)
+    if(useGV){
+      ebv = gegvRRD(solution, pop)
     }else{
-      ebv = gebvRR(solution, pop)
+      ebv = gebvRRD(solution, pop)
     }
   }else if(class(solution)=="GCAsol"){
     if(is.null(gender)){

@@ -10,3 +10,7 @@ using \code{\link{Pop-class}} objects created before running this
 function, because they are tied to the older pedigree that is 
 being deleted.
 }
+\section{Usage}{
+ SP$resetPed()
+}
+

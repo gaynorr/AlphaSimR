@@ -13,6 +13,10 @@ gebvRR <- function(RRsol, pop) {
     .Call(`_AlphaSimR_gebvRR`, RRsol, pop)
 }
 
+gegvRRD <- function(RRsol, pop) {
+    .Call(`_AlphaSimR_gegvRRD`, RRsol, pop)
+}
+
 gebvRRD <- function(RRsol, pop) {
     .Call(`_AlphaSimR_gebvRRD`, RRsol, pop)
 }
@@ -106,14 +110,6 @@ sampHalfDialComb <- function(nLevel, n) {
     .Call(`_AlphaSimR_sampHalfDialComb`, nLevel, n)
 }
 
-zero <- function() {
-    .Call(`_AlphaSimR_zero`)
-}
-
-changeId <- function(newId, oldId) {
-    invisible(.Call(`_AlphaSimR_changeId`, newId, oldId))
-}
-
 calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
@@ -152,6 +148,21 @@ readMat <- function(fileName, rows, cols, sep = ' ', skipRows = 0L, skipCols = 0
 #' @export
 solveUVM <- function(y, X, Z, K) {
     .Call(`_AlphaSimR_solveUVM`, y, X, Z, K)
+}
+
+#' @title Solve animal model
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+u+e}
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param K the numeric relationship matrix 
+#' with n rows and n columns
+#'
+#' @export
+solveAniModel <- function(y, X, K) {
+    .Call(`_AlphaSimR_solveAniModel`, y, X, K)
 }
 
 #' @title Solve RR-BLUP
@@ -352,23 +363,6 @@ packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
-#' @title Markovian Coalescent Simulator
-#' 
-#' @description
-#' Runs a built-in version of the Markovian Coalescent Simulator. 
-#' 
-#' @param args command line arguments passed to MaCS.
-#' @param maxSites maximum number of segregating sites to 
-#' return. If value is 0, all segregating sites are returned. 
-#' Otherwise, segregating sites are randomly sampled.
-#' 
-#' @references
-#' \cite{Chen, G.K., P. Marjoram, and J.D. Wall. 2009. Fast and flexible simulation of DNA sequence data. Genome Res. 19(1): 136–142.}
-#' 
-#' @return A list containing a matrix of haplotypes and a 
-#' vector of genetic distances.
-#'
-#' @export
 MaCS <- function(args, maxSites = 0L) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites)
 }

@@ -252,7 +252,8 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @description 
 #' Retrieves haplotype data for all segregating sites
 #'
-#' @param pop an object of \code{\link{Pop-class}}
+#' @param pop an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
 #' @param haplo either "all" for all haplotypes or an integer 
 #' for a single set of haplotypes. Use a value of 1 for female 
 #' haplotyes and a value of 2 for male haplotypes.
@@ -272,8 +273,13 @@ pullSegSiteHaplo = function(pop, haplo="all",
                       simParam$segSites,
                       allLoci)
     output = convToImat(output)
-    rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                             rep(1:pop@ploidy,pop@nInd),sep="_")
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
@@ -281,8 +287,11 @@ pullSegSiteHaplo = function(pop, haplo="all",
                          allLoci,
                          as.integer(haplo))
     output = convToImat(output)
-    rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
+    }
   }
   colnames(output) = paste("SITE",1:ncol(output),sep="_")
   return(output)

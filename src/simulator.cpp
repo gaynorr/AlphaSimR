@@ -898,11 +898,9 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   vector<std::string> words;
   Simulator simulator;
   
-  
   if (in == ""){
     Rcpp::stop("Not enough args for macs call");
   }
-  
   if (in.empty()) {
     Rcpp::stop("Not enough args for macs call");
   }
@@ -922,40 +920,20 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
       subOption.clear();
     }
   }
-  
   if (arguments.size() == 0) {
     Rcpp::stop("Not enough args for macs call");
   }
-  
   
   simulator.readInputParameters(arguments);
   vector<AlphaSimRReturn> test = simulator.beginSimulationMemory();
   return test;
 }
 
-//' @title Markovian Coalescent Simulator
-//' 
-//' @description
-//' Runs a built-in version of the Markovian Coalescent Simulator. 
-//' 
-//' @param args command line arguments passed to MaCS.
-//' @param maxSites maximum number of segregating sites to 
-//' return. If value is 0, all segregating sites are returned. 
-//' Otherwise, segregating sites are randomly sampled.
-//' 
-//' @references
-//' \cite{Chen, G.K., P. Marjoram, and J.D. Wall. 2009. Fast and flexible simulation of DNA sequence data. Genome Res. 19(1): 136–142.}
-//' 
-//' @return A list containing a matrix of haplotypes and a 
-//' vector of genetic distances.
-//'
-//' @export
 // [[Rcpp::export]]
 Rcpp::List MaCS(Rcpp::String args, arma::uword maxSites=0){
   
   // Run MaCS
   vector<AlphaSimRReturn> macsOutput;
-  
   string t = args;
   if (t == "") {
     Rcpp::stop("error");

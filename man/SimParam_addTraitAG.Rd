@@ -28,3 +28,8 @@ Randomly assigns eligble QTLs for one ore more additive GxE traits.
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated effects.
 }
+\section{Usage}{
+ SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
+varGxE = 1e-6, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
+}
+

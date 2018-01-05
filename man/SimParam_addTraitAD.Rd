@@ -31,3 +31,9 @@ Randomly assigns eligble QTLs for one or more traits with dominance.
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated additive effects.
 }
+\section{Usage}{
+ SP$addTraitAD(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
+varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE, 
+shape = 1)
+}
+

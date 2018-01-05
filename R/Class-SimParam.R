@@ -5,8 +5,6 @@
 #' Container for global simulation parameters. Saving this object 
 #' as SIMPARAM will allow it to be accessed by function defaults.
 #' 
-#' @docType class
-#' 
 #' @field ploidy ploidy level of species
 #' @field nChr number of chromosomes
 #' @field nTraits number of traits
@@ -60,7 +58,7 @@ SimParam = R6Class(
   active = list(
     ploidy=function(value){
       if(missing(value)){
-        private$ploidy
+        private$.ploidy
       }else{
         stop("`$ploidy` is read only",call.=FALSE)
       }
@@ -220,6 +218,8 @@ SimParam = R6Class(
 #' these functions without explicitly supplying a simParam 
 #' argument with every call.
 #' 
+#' @section Usage: SimParam$new(founderPop)
+#' 
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
 #' @name SimParam_new
@@ -306,6 +306,8 @@ SimParam$set(
 #' off pedigree tracking will turn off recombination tracking 
 #' if it is turned on.
 #' 
+#' @section Usage: SP$setTrackPed(isTrackPed)
+#' 
 #' @param isTrackPed should pedigree tracking be on.
 #' 
 #' @name SimParam_setTrackPed
@@ -334,6 +336,8 @@ SimParam$set(
 #' except those created by \code{\link{hybridCross}}, because their 
 #' pedigree is not tracked.
 #' 
+#' @section Usage: SimParam$setTrackRec(isTrackRec)
+#' 
 #' @param isTrackRec should recombination tracking be on.
 #' 
 #' @name SimParam_setTrackRec
@@ -361,6 +365,8 @@ SimParam$set(
 #' function, because they are tied to the older pedigree that is 
 #' being deleted.
 #' 
+#' @section Usage: SP$resetPed()
+#' 
 #' @name SimParam_resetPed
 NULL
 # resetPed ----
@@ -378,6 +384,9 @@ SimParam$set(
 #'
 #' @description Sets restrictions on which segregating sites 
 #' can serve and SNP and/or QTL loci.
+#' 
+#' @section Usage: SP$restrSegSites(maxQtl = 0, maxSnp = 0, 
+#' snpQtlOverlap = FALSE, minSnpFreq = NULL)
 #' 
 #' @param maxQtl the maximum number of segSites for QTLs. 
 #' Can be a single value or a vector values for each 
@@ -463,6 +472,8 @@ SimParam$set(
 #' female. The value "yes_rand" will randomly assign gender to 
 #' individuals.
 #' 
+#' @section Usage: SP$setGender(gender)
+#' 
 #' @param gender acceptable value are "no", "yes_sys", or 
 #' "yes_rand"
 #' 
@@ -498,6 +509,8 @@ SimParam$set(
 #' and a value of 0.5 specifies half as much recombination in 
 #' females.
 #' 
+#' @section Usage: SP$setRecombRatio(ratio)
+#' 
 #' @param ratio any value greater than 0
 #' 
 #' @name SimParam_setRecombRatio
@@ -518,6 +531,8 @@ SimParam$set(
 #'
 #' @description Defines a default value for error 
 #' variances in the simulation.
+#' 
+#' @section Usage: SP$setVarE(h2 = NULL, H2 = NULL, varE = NULL)
 #' 
 #' @param h2 a vector of desired narrow-sense heritabilities
 #' @param H2 a vector of desired broad-sense heritabilities
@@ -567,6 +582,8 @@ SimParam$set(
 #' error variances. You must call \code{\link{SimParam_setVarE}} 
 #' first to define the default error variances.
 #' 
+#' @section Usage: SP$setCorrVarE(corr)
+#' 
 #' @param corr a correlation matrix for the error variances
 #' 
 #' @name SimParam_setCorrVarE
@@ -592,6 +609,8 @@ SimParam$set(
 #' 
 #' @description 
 #' Randomly assigns eligble SNPs to a SNP chip
+#' 
+#' @section Usage: SP$addSnpChip(nSnpPerChr)
 #' 
 #' @param nSnpPerChr number of SNPs per chromosome. 
 #' Can be a single value or nChr values.
@@ -628,6 +647,8 @@ SimParam$set(
 #' @description 
 #' Randomly selects the number of snps in structure and then
 #' assigns them to chips based on structure
+#' 
+#' @section Usage: SP$addStructuredSnpChip(nSnpPerChr, structure)
 #' 
 #' @param nSnpPerChr number of SNPs per chromosome. 
 #' Can be a single value or nChr values.
@@ -678,6 +699,8 @@ SimParam$set(
 #' @description 
 #' Removes designated SNP chip(s).
 #' 
+#' @section Usage: SP$removeSnpChip(chips)
+#' 
 #' @param chips a vector of SNP chips to remove
 #' 
 #' @name SimParam_removeSnpChip
@@ -700,6 +723,8 @@ SimParam$set(
 #' 
 #' @description 
 #' Replaces the \code{\link{LociMap-class}} for a SNP chip.
+#' 
+#' @section Usage: SP$switchSnpChips(lociMap, chip)
 #' 
 #' @param lociMap a new \code{\link{LociMap-class}}
 #' @param chip an integer indicating which chip to replace
@@ -778,6 +803,9 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated additive effects.
 #' 
+#' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
+#' gamma = FALSE, shape = 1)
+#' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
@@ -828,6 +856,10 @@ SimParam$set(
 #' Randomly assigns eligble QTLs for one or more traits with dominance. 
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated additive effects.
+#' 
+#' @section Usage: SP$addTraitAD(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
+#' varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE, 
+#' shape = 1)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
@@ -891,6 +923,9 @@ SimParam$set(
 #' Randomly assigns eligble QTLs for one ore more additive GxE traits. 
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated effects.
+#' 
+#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
+#' varGxE = 1e-6, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
@@ -958,6 +993,10 @@ SimParam$set(
 #' 
 #' @description 
 #' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
+#' 
+#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
+#' varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
+#' corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
 #' value or nChr values.
@@ -1040,6 +1079,8 @@ SimParam$set(
 #' @description 
 #' Removes designated trait(s).
 #' 
+#' @section Usage: SP$removeTrait(traits)
+#' 
 #' @param traits a vector of traits to remove
 #' 
 #' @name SimParam_removeTrait
@@ -1072,6 +1113,8 @@ SimParam$set(
 #' 
 #' @description 
 #' Replaces an existing trait.
+#' 
+#' @section Usage: SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL)
 #' 
 #' @param lociMap a new object descended from 
 #' \code{\link{LociMap-class}}
@@ -1107,9 +1150,12 @@ SimParam$set(
 #' Linearly scales all traits to achieve desired 
 #' values of means and variances.
 #' 
+#' @section Usage: SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 1e-6, 
+#' varGxE = 1e-6, useVarA = TRUE)
+#' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param meanG a vector of new trait means
-#' @param varG a vector of new trait variances
+#' @param mean a vector of new trait means
+#' @param var a vector of new trait variances
 #' @param varEnv a vector of new environmental variances
 #' @param varGxE a vector of new GxE variances
 #' @param useVarA tune according to additive genetic variance if true
@@ -1124,19 +1170,19 @@ NULL
 SimParam$set(
   "public",
   "rescaleTraits",
-  function(pop,meanG=0,varG=1,varEnv=1e-6,
+  function(pop,mean=0,var=1,varEnv=1e-6,
            varGxE=1e-6,useVarA=TRUE){
     isGxe = sapply(private$.traits,function(x){
       class(x)%in%c("TraitAG","TraitADG")
     })
     if(any(isGxe)){
-      stopifnot(length(meanG)==private$.nTraits,
-                length(varG)==private$.nTraits,
+      stopifnot(length(mean)==private$.nTraits,
+                length(var)==private$.nTraits,
                 length(varEnv)==private$.nTraits,
                 length(varGxE)==private$.nTraits)
     }else{
-      stopifnot(length(meanG)==private$.nTraits,
-                length(varG)==private$.nTraits)
+      stopifnot(length(mean)==private$.nTraits,
+                length(var)==private$.nTraits)
     }
     
     for(i in 1:private$.nTraits){
@@ -1145,13 +1191,13 @@ SimParam$set(
                      trait@lociPerChr,
                      trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
-        tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,varG[i],useVarA)
+        tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],useVarA)
         trait@domEff = trait@domEff*tmp$parameter
       }else{
-        tmp = tuneTraitA(geno,trait@addEff,varG[i])
+        tmp = tuneTraitA(geno,trait@addEff,var[i])
       }
       trait@addEff = trait@addEff*tmp$parameter
-      trait@intercept = meanG[i]-tmp$output$intercept
+      trait@intercept = mean[i]-tmp$output$intercept
       if(class(trait)%in%c("TraitAG","TraitADG")){
         targetVar = varGxE[i]/varEnv[i]
         tmp = tuneTraitA(geno,trait@gxeEff,targetVar)
@@ -1165,12 +1211,39 @@ SimParam$set(
   }
 )
 
+#' @title Switch founder population
+#' 
+#' @description
+#' Switches the founder population in the founderPop 
+#' field. This may be desirable if traits are to be 
+#' tuned to a population derived from the original 
+#' founderPop. Note that no checking is performed to verify 
+#' that the genetic map and/or number of segregating sites 
+#' hasn't changed. The new founderPop can be 
+#' \code{\link{MapPop-class}} or \code{\link{RawPop-class}}
+#' 
+#' @section Usage: SP$switchFounderPop(founderPop)
+#' 
+#' @name SimParam_removeFounderPop
+NULL
+# switchFounderPop ----
+SimParam$set(
+  "public",
+  "switchFounderPop",
+  function(founderPop){
+    private$.founderPop = founderPop
+    invisible(self)
+  }
+)
+
 #' @title Remove founder population
 #' 
 #' @description
 #' Removes the founder population from the founderPop 
 #' field. This can be ran after all traits have been 
 #' added to reduce the size of the SimParam object.
+#' 
+#' @section Usage: SP$removeFounderPop()
 #' 
 #' @name SimParam_removeFounderPop
 NULL

@@ -50,6 +50,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gegvRRD
+arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
+RcppExport SEXP _AlphaSimR_gegvRRD(SEXP RRsolSEXP, SEXP popSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type RRsol(RRsolSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    rcpp_result_gen = Rcpp::wrap(gegvRRD(RRsol, pop));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gebvRRD
 arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
 RcppExport SEXP _AlphaSimR_gebvRRD(SEXP RRsolSEXP, SEXP popSEXP) {
@@ -309,27 +321,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// zero
-int zero();
-RcppExport SEXP _AlphaSimR_zero() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(zero());
-    return rcpp_result_gen;
-END_RCPP
-}
-// changeId
-void changeId(Rcpp::IntegerVector newId, Rcpp::IntegerVector& oldId);
-RcppExport SEXP _AlphaSimR_changeId(SEXP newIdSEXP, SEXP oldIdSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type newId(newIdSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector& >::type oldId(oldIdSEXP);
-    changeId(newId, oldId);
-    return R_NilValue;
-END_RCPP
-}
 // calcCoef
 arma::mat calcCoef(arma::mat& X, arma::mat& Y);
 RcppExport SEXP _AlphaSimR_calcCoef(SEXP XSEXP, SEXP YSEXP) {
@@ -369,6 +360,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type K(KSEXP);
     rcpp_result_gen = Rcpp::wrap(solveUVM(y, X, Z, K));
+    return rcpp_result_gen;
+END_RCPP
+}
+// solveAniModel
+Rcpp::List solveAniModel(const arma::mat& y, const arma::mat& X, const arma::mat& K);
+RcppExport SEXP _AlphaSimR_solveAniModel(SEXP ySEXP, SEXP XSEXP, SEXP KSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type K(KSEXP);
+    rcpp_result_gen = Rcpp::wrap(solveAniModel(y, X, K));
     return rcpp_result_gen;
 END_RCPP
 }

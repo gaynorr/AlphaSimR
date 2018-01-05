@@ -14,3 +14,7 @@
 Defines a default value for error 
 variances in the simulation.
 }
+\section{Usage}{
+ SP$setVarE(h2 = NULL, H2 = NULL, varE = NULL)
+}
+

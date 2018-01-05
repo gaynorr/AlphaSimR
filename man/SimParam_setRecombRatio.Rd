@@ -15,3 +15,7 @@ A value of 2 specifies twice as much recombination in females
 and a value of 0.5 specifies half as much recombination in 
 females.
 }
+\section{Usage}{
+ SP$setRecombRatio(ratio)
+}
+

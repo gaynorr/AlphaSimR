@@ -6,9 +6,9 @@
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{meanG}{a vector of new trait means}
+\item{mean}{a vector of new trait means}
 
-\item{varG}{a vector of new trait variances}
+\item{var}{a vector of new trait variances}
 
 \item{varEnv}{a vector of new environmental variances}
 
@@ -24,3 +24,8 @@ values of means and variances.
 You must run \code{\link{resetPop}} on existing 
 populations to obtain the new trait values.
 }
+\section{Usage}{
+ SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 1e-6, 
+varGxE = 1e-6, useVarA = TRUE)
+}
+

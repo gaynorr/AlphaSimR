@@ -14,3 +14,7 @@ If value is true then that snp is on that chip.}
 Randomly selects the number of snps in structure and then
 assigns them to chips based on structure
 }
+\section{Usage}{
+ SP$addStructuredSnpChip(nSnpPerChr, structure)
+}
+

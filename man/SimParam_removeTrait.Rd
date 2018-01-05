@@ -9,3 +9,7 @@
 \description{
 Removes designated trait(s).
 }
+\section{Usage}{
+ SP$removeTrait(traits)
+}
+

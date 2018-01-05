@@ -181,20 +181,6 @@ arma::Mat<arma::uword> sampHalfDialComb(arma::uword nLevel, arma::uword n){
   return output;
 }
 
-// Create a value of zero for initial ID
-// Needed to prevent side effects of modify in place
-// [[Rcpp::export]]
-int zero(){
-  return 0;
-}
-
-// Modifies the ID value in place
-// [[Rcpp::export]]
-void changeId(Rcpp::IntegerVector newId,
-              Rcpp::IntegerVector& oldId){
-  oldId[0] = newId[0];
-}
-
 // [[Rcpp::export]]
 arma::mat calcCoef(arma::mat& X, arma::mat& Y){
   return arma::solve(X,Y);

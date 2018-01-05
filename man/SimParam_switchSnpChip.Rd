@@ -11,3 +11,7 @@
 \description{
 Replaces the \code{\link{LociMap-class}} for a SNP chip.
 }
+\section{Usage}{
+ SP$switchSnpChips(lociMap, chip)
+}
+

@@ -22,3 +22,8 @@ Randomly assigns eligble QTLs for one ore more additive traits.
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated additive effects.
 }
+\section{Usage}{
+ SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
+gamma = FALSE, shape = 1)
+}
+
