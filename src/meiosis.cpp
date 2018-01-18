@@ -14,6 +14,7 @@ public:
                arma::uword chrGroup,
                arma::uword chrInd);
 };
+
 void RecHist::setSize(arma::uword nInd, arma::uword nChr, 
                  arma::uword ploidy=2){
   hist.set_size(nInd);
@@ -24,6 +25,7 @@ void RecHist::setSize(arma::uword nInd, arma::uword nChr,
     }
   }
 }
+
 void RecHist::addHist(arma::Mat<int>& input, 
              arma::uword nInd, 
              arma::uword chrGroup,
@@ -43,7 +45,6 @@ void RecHist::addHist(arma::Mat<int>& input,
   take = take(find(takeTake>0));
   hist(nInd)(chrGroup)(chrInd) = input.rows(take);
 }
-
 
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval

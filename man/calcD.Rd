@@ -16,5 +16,5 @@ a matrix of the realized dominance relationships
 Calculates the dominance relationship matrix.
 }
 \references{
-\cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
+\cite{Nishio, M, and M. Satoh. 2014. Including Dominance Effects in the Genomic BLUP Method for Genomic Evaluation. PLOS ONE 9(1): e85792.}
 }

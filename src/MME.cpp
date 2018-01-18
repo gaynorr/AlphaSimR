@@ -178,10 +178,12 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   double offset = log(double(n));
 
   // Construct system of equations for eigendecomposition
-  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
+  arma::mat S = -(X*inv_sympd(X.t()*X)*X.t());
+  S.diag() += 1;
   arma::mat ZK = Z*K;
-  arma::mat ZKZ = ZK*Z.t();
-  S = S*(ZKZ+offset*arma::eye(n,n))*S;
+  arma::mat H = ZK*Z.t(); // Used later
+  H.diag() += offset;
+  S = S*H*S;
 
   // Compute eigendecomposition
   arma::vec eigval(n);
@@ -202,10 +204,11 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                                  Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv = inv_sympd(ZKZ+delta*arma::eye(n,n));
-  arma::mat XHinv = X.t()*Hinv;
-  arma::mat beta = solve(XHinv*X,XHinv*y);
-  arma::mat u = ZK.t()*(Hinv*(y-X*beta));
+  H.diag() += (delta-offset);
+  H = inv_sympd(H);
+  arma::mat XH = X.t()*H;
+  arma::mat beta = solve(XH*X,XH*y);
+  arma::mat u = ZK.t()*(H*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
   double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
@@ -237,8 +240,11 @@ Rcpp::List solveAniModel(const arma::mat& y,
   double offset = log(double(n));
   
   // Construct system of equations for eigendecomposition
-  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
-  S = S*(K+offset*arma::eye(n,n))*S;
+  arma::mat S = -(X*inv_sympd(X.t()*X)*X.t());
+  S.diag() += 1;
+  arma::mat H = K; //Used later
+  H.diag() += offset;
+  S = S*H*S;
   
   // Compute eigendecomposition
   arma::vec eigval(n);
@@ -259,10 +265,11 @@ Rcpp::List solveAniModel(const arma::mat& y,
                                  Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv = inv_sympd(K+delta*arma::eye(n,n));
-  arma::mat XHinv = X.t()*Hinv;
-  arma::mat beta = solve(XHinv*X,XHinv*y);
-  arma::mat u = K.t()*(Hinv*(y-X*beta));
+  H.diag() += (delta-offset);
+  H = inv_sympd(H);
+  arma::mat XH = X.t()*H;
+  arma::mat beta = solve(XH*X,XH*y);
+  arma::mat u = K.t()*(H*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
   double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
@@ -292,8 +299,11 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   double offset = log(double(n));
 
   // Construct system of equations for eigendecomposition
-  arma::mat S = arma::eye(n,n) - X*inv_sympd(X.t()*X)*X.t();
-  S = S*((M*M.t())+offset*arma::eye(n,n))*S;
+  arma::mat S = -(X*inv_sympd(X.t()*X)*X.t());
+  S.diag() += 1;
+  arma::mat H = M*M.t(); // Used later
+  H.diag() += offset;
+  S = S*H*S;
 
   // Compute eigendecomposition
   arma::vec eigval(n);
@@ -314,10 +324,11 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                                  Rcpp::Named("lambda")=eigval),
                                  1.0e-10, 1.0e10);
   double delta = optRes["parameter"];
-  arma::mat Hinv = inv_sympd(M*M.t()+delta*arma::eye(n,n));
-  arma::mat XHinv = X.t()*Hinv;
-  arma::mat beta = solve(XHinv*X,XHinv*y);
-  arma::mat u = M.t()*(Hinv*(y-X*beta));
+  H.diag() += (delta-offset);
+  H = inv_sympd(H);
+  arma::mat XH = X.t()*H;
+  arma::mat beta = solve(XH*X,XH*y);
+  arma::mat u = M.t()*(H*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
   double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
@@ -358,13 +369,9 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
-  arma::mat Gt(m,n);
-  arma::mat sigma(m,m);
-  arma::mat BNew;
-  arma::mat VeNew(m,m);
-  arma::mat VuNew(m,m);
-  double denom;
-  double numer;
+  arma::mat Gt(m,n), sigma(m,m), BNew, 
+  VeNew(m,m), VuNew(m,m);
+  double denom, numer;
   bool converging=true;
   int iter=0;
   while(converging){
@@ -445,13 +452,9 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
-  arma::mat Gt(m,n);
-  arma::mat sigma(m,m);
-  arma::mat BNew;
-  arma::mat VeNew(m,m);
-  arma::mat VuNew(m,m);
-  double denom;
-  double numer;
+  arma::mat Gt(m,n), sigma(m,m), BNew, 
+  VeNew(m,m), VuNew(m,m);
+  double denom, numer;
   bool converging=true;
   int iter=0;
   while(converging){
@@ -527,27 +530,14 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   int n = y.n_rows;
   int q = X.n_cols;
   double df = double(n)-double(q);
-  arma::field<arma::mat> V(k+1);
+  arma::field<arma::mat> V(k);
   for(arma::uword i=0; i<k; ++i){
     V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
   }
-  V(k) = arma::eye(n,n);
-  ++k;
-  arma::mat A(k,k);
-  arma::vec qvec(k);
-  arma::vec sigma(k);
-  arma::mat W0(n,n);
-  arma::mat W(n,n);
-  arma::mat WX(n,q);
-  arma::mat WQX(n,n);
-  double rss;
-  double ldet;
-  double llik;
-  double llik0;
-  double deltaLlik;
-  double taper;
-  double value;
-  double sign;
+  arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
+  arma::vec qvec(k+1), sigma(k+1);
+  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
@@ -555,6 +545,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   while(true){
     ++iter;
     W0 = V(0)*sigma(0);
+    W0.diag() += sigma(k);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
     }
@@ -565,9 +556,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
     WX = W*X;
     WQX = W - WX*solve(X.t()*WX, WX.t());
     rss = as_scalar(y.t()*WQX*y);
-    for(arma::uword i=0; i<k; ++i){
-      sigma(i) = sigma(i)*(rss/df);
-    }
+    sigma = sigma*(rss/df);
     WQX = WQX*(df/rss);
     log_det(value, sign, WQX);
     ldet = value*sign;
@@ -583,7 +572,13 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
       for(arma::uword j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }
+      A(i,k) = accu(T(i)%WQX.t());
     }
+    for(arma::uword j=0; j<k; ++j){
+      A(k,j) = accu(WQX%T(j).t());
+    }
+    A(k,k) = accu(WQX%WQX.t());
+    qvec(k) = as_scalar(y.t()*WQX*WQX*y - sum(WQX.diag()));
     A = pinv(A);
     qvec = A*qvec;
     if(iter == 1){
@@ -611,18 +606,16 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   while(sigma.min() < 0.0){
     sigma(sigma.index_min()) = 0.0;
   }
-  arma::mat beta(q,1);
-  arma::field<arma::mat> u(k-1);
-  arma::mat ee(n,1);
+  arma::mat beta(q,1), ee(n,1);
+  arma::field<arma::mat> u(k);
   beta = solve(X.t()*W*X,X.t()*W*y);
   ee = y - X*beta;
-  for(arma::uword i=0; i<(k-1); ++i){
+  for(arma::uword i=0; i<k; ++i){
     u(i) = (Klist(i)*sigma(i))*Zlist(i).t()*W*ee;
   }
-  arma::vec Vu(k-1);
-  Vu = sigma(arma::span(0,k-2));
-  arma::vec Ve(1);
-  Ve = sigma(k-1);
+  arma::vec Vu(k), Ve(1);
+  Vu = sigma(arma::span(0,k-1));
+  Ve = sigma(k);
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
@@ -651,27 +644,14 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   int n = y.n_rows;
   int q = X.n_cols;
   double df = double(n)-double(q);
-  arma::field<arma::mat> V(k+1);
+  arma::field<arma::mat> V(k);
   for(arma::uword i=0; i<k; ++i){
     V(i) = Mlist(i)*Mlist(i).t();
   }
-  V(k) = arma::eye(n,n);
-  ++k;
-  arma::mat A(k,k);
-  arma::vec qvec(k);
-  arma::vec sigma(k);
-  arma::mat W0(n,n);
-  arma::mat W(n,n);
-  arma::mat WX(n,q);
-  arma::mat WQX(n,n);
-  double rss;
-  double ldet;
-  double llik;
-  double llik0;
-  double deltaLlik;
-  double taper;
-  double value;
-  double sign;
+  arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
+  arma::vec qvec(k+1), sigma(k+1);
+  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);
   sigma.fill(var(y.col(0)));
@@ -679,6 +659,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   while(true){
     ++iter;
     W0 = V(0)*sigma(0);
+    W0.diag() += sigma(k);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
     }
@@ -689,9 +670,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     WX = W*X;
     WQX = W - WX*solve(X.t()*WX, WX.t());
     rss = as_scalar(y.t()*WQX*y);
-    for(arma::uword i=0; i<k; ++i){
-      sigma(i) = sigma(i)*(rss/df);
-    }
+    sigma = sigma*(rss/df);
     WQX = WQX*(df/rss);
     log_det(value, sign, WQX);
     ldet = value*sign;
@@ -707,7 +686,13 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       for(arma::uword j=0; j<k; ++j){
         A(i,j) = accu(T(i)%T(j).t());
       }
+      A(i,k) = accu(T(i)%WQX.t());
     }
+    for(arma::uword j=0; j<k; ++j){
+      A(k,j) = accu(WQX%T(j).t());
+    }
+    A(k,k) = accu(WQX%WQX.t());
+    qvec(k) = as_scalar(y.t()*WQX*WQX*y - sum(WQX.diag()));
     A = pinv(A);
     qvec = A*qvec;
     if(iter == 1){
@@ -735,18 +720,16 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   while(sigma.min() < 0.0){
     sigma(sigma.index_min()) = 0.0;
   }
-  arma::mat beta(q,1);
-  arma::field<arma::mat> u(k-1);
-  arma::mat ee(n,1);
+  arma::mat beta(q,1), ee(n,1);
+  arma::field<arma::mat> u(k);
   beta = solve(X.t()*W*X,X.t()*W*y);
   ee = y - X*beta;
-  for(arma::uword i=0; i<(k-1); ++i){
+  for(arma::uword i=0; i<k; ++i){
     u(i) = sigma(i)*Mlist(i).t()*W*ee;
   }
-  arma::vec Vu(k-1);
-  Vu = sigma(arma::span(0,k-2));
-  arma::vec Ve(1);
-  Ve = sigma(k-1);
+  arma::vec Vu(k), Ve(1);
+  Vu = sigma(arma::span(0,k-1));
+  Ve = sigma(k);
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
@@ -776,12 +759,16 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(Mlist(0),reps);
   sweepReps(Mlist(1),reps);
-  return solveRRBLUPMK(y, X, Mlist);
+  return Rcpp::List::create(
+    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist),
+    Rcpp::Named("p")=p
+  );
 }
 
 // Called by RRBLUP function
@@ -865,7 +852,7 @@ arma::mat calcG(arma::mat X){
 //' @param X a matrix of marker genotypes scored as 0,1,2
 //'
 //' @references
-//' \cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
+//' \cite{Nishio, M, and M. Satoh. 2014. Including Dominance Effects in the Genomic BLUP Method for Genomic Evaluation. PLOS ONE 9(1): e85792.}
 //' 
 //' @return a matrix of the realized dominance relationships
 //'
@@ -873,11 +860,26 @@ arma::mat calcG(arma::mat X){
 // [[Rcpp::export]]
 arma::mat calcD(arma::mat X){
   arma::rowvec p = mean(X,0)/2.0;
-  arma::rowvec pq2 = 2*p%(1-p);
-  X = 1-abs(X-1);
-  X.each_row() -= pq2;
+  arma::rowvec q = 1-p;
+  double zero,one,two;
+  int x;
+  for(arma::uword i=0; i<X.n_cols; ++i){
+    zero = -2.0*(p(i)*p(i));
+    one = 2.0*p(i)*q(i);
+    two = -2.0*(q(i)*q(i));
+    for(arma::uword j=0; j<X.n_rows; ++j){
+      x = int(X(j,i));
+      if(x==2){
+        X(j,i) = two;
+      }else if(x==1){
+        X(j,i) = one;
+      }else{
+        X(j,i) = zero;
+      }
+    }
+  }
   arma::mat D = X*X.t();
-  D = D/(sum(pq2%(1-pq2)));
+  D = D/(4.0*sum(p%p%q%q));
   return D;
 }
 
@@ -927,7 +929,7 @@ arma::mat fastDist(const arma::mat& X){
   D = sqrt(D);
   D.diag().zeros(); //Removes NaN values
   if(D.has_nan()){
-    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+    D.elem(find_nonfinite(D)).fill(0.0);
   }
   return D;
 }
@@ -954,7 +956,7 @@ arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
   D.each_row() += Yn.t();
   D = sqrt(D);
   if(D.has_nan()){
-    D.elem(find_nonfinite(D)).fill(0.0); //Assuming there won't be any Inf values
+    D.elem(find_nonfinite(D)).fill(0.0); 
   }
   return D;
 }

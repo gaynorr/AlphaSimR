@@ -320,3 +320,51 @@ sampleHaplo = function(nInd,mapPop,inbred=FALSE,replace=TRUE){
   output = do.call("c",output)
   return(output)
 }
+
+#' @title Pedigree population
+#' 
+#' @description
+#' Creates a \code{\link{MapPop-class}} from a 
+#' pedigree and a set of founder haplotypes.
+#'
+#' @param founderPop a \code{\link{MapPop-class}}
+#' @param id a vector of unique identifiers for individuals 
+#' in the pedigree. Must be coercable to a character vector.
+#' @param mother a vector of identifiers for the mothers 
+#' of individuals in the pedigree. 
+#' @param father a vector of identifiers for the fathers 
+#' of individuals in the pedigree. 
+#' @param inbred an optional vector indicating if any of the 
+#' individuals are inbred.
+#' @param replace should haplotypes by sampled with replacement.
+#' @param unknown a character used to indicate an unknown 
+#' mother or father in the pedigree.
+#' 
+#' 
+#' @export
+pedigreePop = function(founderPop, id, mother, father, 
+                       inbred=NULL, unknown="0"){
+  #Coerce input data
+  id = as.character(id)
+  mother = as.character(id)
+  father = as.character(id)
+  if(is.null(inbred)){
+    inbred = logical(length(id))
+  }else{
+    inbred = as.logical(inbred)
+  }
+  unknown = as.character(unknown)
+  #Check input data
+  stopifnot(!any(duplicated(id)),
+            length(id)==length(mother),
+            length(id)==length(father),
+            length(id)==length(inbred),
+            !any(id==unknown),
+            class(founderPop)=="MapPop")
+  allId = unique(c(id,mother,father))
+  allId = allId[!(allId==unknown)]
+  allM
+  allF
+  
+}
+

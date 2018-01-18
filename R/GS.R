@@ -244,6 +244,12 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
                      skip)
+  p = t(ans$p)
+  q = 1-p
+  ans = ans$ans
+  a = ans$u[[1]]
+  d = ans$u[[2]]
+  alpha = a+d*(q-p)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam$snpChips[[as.integer(tmp[2])]]
@@ -254,8 +260,9 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               markerEff=ans$u[[1]],
-               domEff=ans$u[[2]],
+               markerEff=alpha,
+               addEff=a,
+               domEff=d,
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
@@ -442,20 +449,28 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' setting this parameter to TRUE will give use estimated 
 #' genetic values. Otherwise, you get estimated breeding 
 #' values that depend on the population's allele frequency.
+#' @param usePopP if model is \code{\link{RRDsol-class}}, 
+#' the population's allele frequency is used for breeding value 
+#' calculations. Otherwise the training population's allele frequency 
+#' is used.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
 setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
-                  append=FALSE){
+                  usePopP=FALSE, append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="RRDsol"){
     if(useGV){
       ebv = gegvRRD(solution, pop)
     }else{
-      ebv = gebvRRD(solution, pop)
+      if(usePopP){
+        ebv = gebvRRD(solution, pop)
+      }else{
+        ebv = gebvRR(solution, pop)
+      }
     }
   }else if(class(solution)=="GCAsol"){
     if(is.null(gender)){

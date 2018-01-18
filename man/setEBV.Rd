@@ -4,7 +4,8 @@
 \alias{setEBV}
 \title{Set EBV}
 \usage{
-setEBV(pop, solution, gender = NULL, useGV = FALSE, append = FALSE)
+setEBV(pop, solution, gender = NULL, useGV = FALSE, usePopP = FALSE,
+  append = FALSE)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -21,6 +22,11 @@ the corresponding pool}
 setting this parameter to TRUE will give use estimated 
 genetic values. Otherwise, you get estimated breeding 
 values that depend on the population's allele frequency.}
+
+\item{usePopP}{if model is \code{\link{RRDsol-class}}, 
+the population's allele frequency is used for breeding value 
+calculations. Otherwise the training population's allele frequency 
+is used.}
 
 \item{append}{should EBVs be appended to existing EBVs}
 }

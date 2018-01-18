@@ -17,7 +17,7 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
 // Retrieves GEGVs for RRDsol
 // [[Rcpp::export]]
 arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
-  arma::mat a = RRsol.slot("markerEff");
+  arma::mat a = RRsol.slot("addEff");
   arma::mat d = RRsol.slot("domEff");
   arma::Mat<unsigned char> geno;
   geno = getGeno(pop.slot("geno"), 
@@ -27,10 +27,10 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   return output;
 }
 
-// Retrieves GEBVs for RRDsol
+// Retrieves GEBVs for RRDsol using population specific p
 // [[Rcpp::export]]
 arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
-  arma::mat a = RRsol.slot("markerEff");
+  arma::mat a = RRsol.slot("addEff");
   arma::mat d = RRsol.slot("domEff");
   arma::Mat<unsigned char> geno;
   geno = getGeno(pop.slot("geno"), 

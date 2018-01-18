@@ -29,40 +29,54 @@ test_that("addError",{
   expect_error(AlphaSimR:::addError(gv=gv,varE=varE,reps=1))
 })
 
-# test_that("Univariate GS",{
-#   # All mixed model solvers should give nearly the 
-#   # same prediction
-#   skip_on_cran()
-#   founderPop = runMacs(nInd=10,nChr=10,segSites=100)
-#   SP = SimParam$new(founderPop)
-#   SP$addTraitA(100,0,1)
-#   SP$setVarE(varE=10)
-#   pop = newPop(founderPop,simParam=SP)
-#   pop = randCross(pop,1000,simParam=SP)
-#   y = pop@pheno
-#   X = matrix(1,nrow=pop@nInd)
-#   Z = diag(pop@nInd)
-#   M = pullQtlGeno(pop,simParam=SP)
-#   G = calcG(M)
-#   M = scale(M,scale=FALSE)
-#   # GBLUP models
-#   ansAni = solveAniModel(y,X,G)
-#   ansAni = c(ansAni$u)
-#   ansAniUVM = solveUVM(y,X,Z,G)
-#   ansAniUVM = c(ansAniUVM$u)
-#   ansAniMVM = solveMVM(y,X,Z,G)
-#   ansAniMVM = c(ansAniMVM$u)
-#   
-#   
-#   ansAniMKM = solveMKM(y,X,list(Z),list(G))
-#   ansAniMKM = c(ansAniMKM$u[[1]])
-#   
-#   # RR-BLUP models
-#   ansRR = solveRRBLUP(y,X,M)
-#   
-#   ansRRUVM = solveUVM(y,X,Z,G)
-#   ansRRMKM = solveMKM(y,X,list(Z),list(G))
-#   
-#   expect_equal(ansUVM$u,ansAni$u,tol=1e-4)
-#   expect_equal(c(ansUVM$u),c(u),tol=1e-4)
-# })
+test_that("Univariate GS",{
+  # All mixed model solvers should give nearly the
+  # same prediction
+  skip_on_cran()
+  capture_output((founderPop = runMacs(nInd=10,nChr=10,segSites=100)))
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(100,0,1)
+  SP$setVarE(varE=10)
+  pop = newPop(founderPop,simParam=SP)
+  pop = randCross(pop,1000,simParam=SP)
+  y = pop@pheno
+  X = matrix(1,nrow=pop@nInd)
+  Z = diag(pop@nInd)
+  M = pullQtlGeno(pop,simParam=SP)
+  G = calcG(M)
+  M = scale(M,scale=FALSE)
+  K = diag(ncol(M))
+  # GBLUP models
+  ansAni = solveAniModel(y,X,G)
+  ansAni = c(ansAni$u)
+  ansAniUVM = solveUVM(y,X,Z,G)
+  ansAniUVM = c(ansAniUVM$u)
+  ansAniMVM = solveMVM(y,X,Z,G)
+  ansAniMVM = c(ansAniMVM$u)
+  ansAniMKM = solveMKM(y,X,list(Z),list(G))
+  ansAniMKM = c(ansAniMKM$u[[1]])
+  # Compare models
+  # tolerance based on simularity of models
+  expect_equal(ansAni,ansAniUVM,tol=1e-4)
+  expect_equal(ansAni,ansAniMVM,tol=1e-2)
+  expect_equal(ansAni,ansAniMKM,tol=1e-3)
+  # RR-BLUP models
+  ansRR = solveRRBLUP(y,X,M)
+  ansRR = c(M%*%ansRR$u)
+  ansRRUVM = solveUVM(y,X,M,K)
+  ansRRUVM = c(M%*%ansRRUVM$u)
+  ansRRMVM = solveMVM(y,X,M,K)
+  ansRRMVM = c(M%*%ansRRMVM$u)
+  ansRRMKM = solveMKM(y,X,list(M),list(K))
+  ansRRMKM = c(M%*%ansRRMKM$u[[1]])
+  # Compare models
+  expect_equal(ansRR,ansRRUVM,tol=1e-4)
+  expect_equal(ansRR,ansRRMVM,tol=1e-2)
+  expect_equal(ansRR,ansRRMKM,tol=1e-3)
+  
+  # Compare different types of models
+  expect_equal(ansAni,ansRR,tol=1e-4)
+  expect_equal(ansAniUVM,ansRRUVM,tol=1e-4)
+  expect_equal(ansAniMVM,ansRRMVM,tol=1e-4)
+  expect_equal(ansAniMKM,ansRRMKM,tol=1e-4)
+})

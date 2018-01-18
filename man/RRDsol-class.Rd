@@ -13,6 +13,8 @@ to contain estimated effects from \code{\link{RRBLUP}}
 \describe{
 \item{\code{markerEff}}{GEBVs for markers}
 
+\item{\code{addEff}}{additive effects}
+
 \item{\code{domEff}}{dominance effects}
 
 \item{\code{fixEff}}{Estimates for fixed effects}
