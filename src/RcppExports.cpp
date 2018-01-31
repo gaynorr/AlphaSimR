@@ -543,6 +543,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mergeMultGeno
+arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList, arma::uvec nInd, arma::uvec nLoci, arma::uword ploidy);
+RcppExport SEXP _AlphaSimR_mergeMultGeno(SEXP popListSEXP, SEXP nIndSEXP, SEXP nLociSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List& >::type popList(popListSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type nInd(nIndSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type nLoci(nLociSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(mergeMultGeno(popList, nInd, nLoci, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calcChrFreq
 arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno);
 RcppExport SEXP _AlphaSimR_calcChrFreq(SEXP genoSEXP) {

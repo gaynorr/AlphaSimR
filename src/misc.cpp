@@ -34,6 +34,36 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
   return z;
 }
 
+// Merges multiple geno objects contained a list of Class-Pop
+// [[Rcpp::export]]
+arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
+                                                      arma::uvec nInd,
+                                                      arma::uvec nLoci,
+                                                      arma::uword ploidy){
+  arma::field<arma::Cube<unsigned char> > output(nLoci.n_elem);
+  arma::uword nTot = sum(nInd);
+  arma::uword nPop = nInd.n_elem;
+  // Allocate output
+  for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
+    output(chr).set_size(nLoci(chr),ploidy,nTot);
+  }
+  // Add individual genotypes
+  arma::uword startInd=0, endInd=0;
+  for(arma::uword i=0; i<nPop; ++i){
+    if(nInd(i)>0){
+      endInd += nInd(i)-1;
+      Rcpp::S4 pop = popList[i];
+      arma::field<arma::Cube<unsigned char> >geno = pop.slot("geno");
+      for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
+        output(chr).slices(startInd,endInd) = geno(chr);
+      }
+      startInd += nInd(i);
+      endInd = startInd;
+    }
+  }
+  return output;
+}
+
 // Calculates allele frequency on a single chromsome
 // Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]

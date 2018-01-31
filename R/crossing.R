@@ -566,6 +566,6 @@ pedigreeCross = function(founderPop,id,mother,father,
       }
     }
   }
-  return(do.call("c",output))
+  return(mergePops(output))
 }
 

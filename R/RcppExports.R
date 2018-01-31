@@ -339,6 +339,10 @@ mergeGeno <- function(x, y) {
     .Call(`_AlphaSimR_mergeGeno`, x, y)
 }
 
+mergeMultGeno <- function(popList, nInd, nLoci, ploidy) {
+    .Call(`_AlphaSimR_mergeMultGeno`, popList, nInd, nLoci, ploidy)
+}
+
 calcChrFreq <- function(geno) {
     .Call(`_AlphaSimR_calcChrFreq`, geno)
 }
