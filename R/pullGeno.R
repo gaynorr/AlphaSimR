@@ -17,7 +17,11 @@ pullSnpGeno = function(pop, snpChip=1, simParam=NULL){
                    simParam$snpChips[[snpChip]]@lociPerChr,
                    simParam$snpChips[[snpChip]]@lociLoc)
   output = convToImat(output)
-  rownames(output) = pop@id
+  if(class(pop)=="Pop"){
+    rownames(output) = pop@id
+  }else{
+    rownames(output) = as.character(1:pop@nInd)
+  }
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
   return(output)
 }
@@ -49,7 +53,11 @@ pullMultipleSnpGeno = function(pop, chips,
   }
   
   output = matrix(pop@nInd,length(allSnps),data=missing)
-  rownames(output) = pop@id
+  if(class(pop)=="Pop"){
+    rownames(output) = pop@id
+  }else{
+    rownames(output) = as.character(1:pop@nInd)
+  }
   
   for (snpChip in uniqueChips){
     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
@@ -89,8 +97,49 @@ pullQtlGeno = function(pop, trait=1, simParam=NULL){
                    simParam$traits[[trait]]@lociPerChr,
                    simParam$traits[[trait]]@lociLoc)
   output = convToImat(output)
-  rownames(output) = pop@id
+  if(class(pop)=="Pop"){
+    rownames(output) = pop@id
+  }else{
+    rownames(output) = as.character(1:pop@nInd)
+  }
   colnames(output) = paste("QTL",1:ncol(output),sep="_")
+  return(output)
+}
+
+#' @title Pull seg site genotypes
+#' 
+#' @description 
+#' Retrieves genotype data for all segregating sites
+#'
+#' @param pop an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a matrix of genotypes
+#' @export
+pullSegSiteGeno = function(pop, simParam=NULL){
+  if(class(pop)=="MapPop"){
+    allLoci = unlist(sapply(pop@nLoci,
+                            function(x) 1:x))
+    lociTot = pop@nLoci
+  }else{
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
+    }
+    allLoci = unlist(sapply(simParam$segSites,
+                            function(x) 1:x))
+    lociTot = simParam$segSites
+  }
+  output = getGeno(pop@geno,
+                   lociTot,
+                   allLoci)
+  output = convToImat(output)
+  if(class(pop)=="Pop"){
+    rownames(output) = pop@id
+  }else{
+    rownames(output) = as.character(1:pop@nInd)
+  }
+  colnames(output) = paste("SITE",1:ncol(output),sep="_")
   return(output)
 }
 
@@ -118,8 +167,13 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
                       simParam$snpChips[[snpChip]]@lociPerChr,
                       simParam$snpChips[[snpChip]]@lociLoc)
     output = convToImat(output)
-    rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                             rep(1:pop@ploidy,pop@nInd),sep="_")
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
@@ -127,8 +181,11 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
                          simParam$snpChips[[snpChip]]@lociLoc,
                          as.integer(haplo))
     output = convToImat(output)
-    rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
+    }
   }
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
   return(output)
@@ -166,12 +223,20 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
   
   if (haplo == "all") {
     output = matrix(pop@nInd*2,length(allSnps),data=missing)
-    rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                             rep(1:pop@ploidy,pop@nInd),sep="_")
-  }
-  else {
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }
+  }else{
     output = matrix(pop@nInd,length(allSnps),data=missing)
-    rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
+    }
   }
   for (snpChip in uniqueChips){
     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
@@ -231,8 +296,13 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
                       simParam$traits[[trait]]@lociPerChr,
                       simParam$traits[[trait]]@lociLoc)
     output = convToImat(output)
-    rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                             rep(1:pop@ploidy,pop@nInd),sep="_")
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
+                               rep(1:pop@ploidy,pop@nInd),sep="_")
+    }
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
@@ -240,8 +310,11 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
                          simParam$traits[[trait]]@lociLoc,
                          as.integer(haplo))
     output = convToImat(output)
-    rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    
+    if(class(pop)=="Pop"){
+      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+    }else{
+      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
+    }
   }
   colnames(output) = paste("QTL",1:ncol(output),sep="_")
   return(output)
@@ -263,14 +336,21 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all", 
                             simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
+  if(class(pop)=="MapPop"){
+    allLoci = unlist(sapply(pop@nLoci,
+                            function(x) 1:x))
+    lociTot = pop@nLoci
+  }else{
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
+    }
+    allLoci = unlist(sapply(simParam$segSites,
+                            function(x) 1:x))
+    lociTot = simParam$segSites
   }
-  allLoci = unlist(sapply(simParam$segSites,
-                          function(x)1:x))
   if(haplo=="all"){
     output = getHaplo(pop@geno,
-                      simParam$segSites,
+                      lociTot,
                       allLoci)
     output = convToImat(output)
     if(class(pop)=="Pop"){
@@ -283,7 +363,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
-                         simParam$segSites,
+                         lociTot,
                          allLoci,
                          as.integer(haplo))
     output = convToImat(output)

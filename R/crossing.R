@@ -430,3 +430,142 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,
                 isDH=TRUE,
                 simParam=simParam))
 }
+
+#' @title Pedigree cross
+#' 
+#' @description
+#' Creates a \code{\link{Pop-class}} from a generic 
+#' pedigree and a set of founder individuals. 
+#'
+#' @param founderPop a \code{\link{Pop-class}}
+#' @param id a vector of unique identifiers for individuals 
+#' in the pedigree. The values of these ids are seperate from   
+#' the ids in the founderPop.
+#' @param mother a vector of identifiers for the mothers 
+#' of individuals in the pedigree. Must match one of the 
+#' elements in the id vector or they will be treated as unknown.
+#' @param father a vector of identifiers for the fathers 
+#' of individuals in the pedigree. Must match one of the 
+#' elements in the id vector or they will be treated as unknown.
+#' @param maxCycle the maximum number of loops to make over the pedigree 
+#' to sort it.
+#' @param DH an optional vector indicating if an individual 
+#' should be made a doubled haploid.
+#' @param useFemale If creating DH lines, should female recombination 
+#' rates be used. This parameter has no effect if, recombRatio=1.
+#' @param simParam an object of 'SimParam' class
+#' 
+#' 
+#' @export
+pedigreeCross = function(founderPop,id,mother,father, 
+                         maxCycle=100,DH=NULL,useFemale=TRUE,
+                         simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(simParam$gender!="no"){
+    stop("pedigreeCross currently only works with gender='no'")
+  }
+  #Coerce input data
+  id = as.character(id)
+  mother = as.character(mother)
+  father = as.character(father)
+  if(is.null(DH)){
+    DH = logical(length(id))
+  }else{
+    DH = as.logical(DH)
+  }
+  #Check input data
+  stopifnot(!any(duplicated(id)),
+            length(id)==length(mother),
+            length(id)==length(father),
+            length(id)==length(DH))
+  matchFather = match(father,id)
+  matchMother = match(mother,id)
+  nFounder = sum(is.na(matchFather)|is.na(matchMother))
+  if(founderPop@nInd<nFounder){
+    stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
+  }
+  selFounder = sample.int(founderPop@nInd,nFounder)
+  output = vector("list",length=length(id))
+  # Sort pedigree
+  genInd = rep(0,length(id))
+  sorted = rep(FALSE,length(id))
+  for(gen in 1:maxCycle){
+    for(i in 1:length(id)){
+      if(!sorted[i]){
+        if(is.na(matchMother[i])&is.na(matchFather[i])){
+          #Is a founder
+          genInd[i] = gen
+          sorted[i] = TRUE
+        }else if(is.na(matchMother[i])){
+          #Mother is a founder
+          if(sorted[matchFather[i]]){
+            genInd[i] = gen
+            sorted[i] = TRUE
+          }
+        }else if(is.na(matchFather[i])){
+          #Father is a founder
+          if(sorted[matchMother[i]]){
+            genInd[i] = gen
+            sorted[i] = TRUE
+          }
+        }else{
+          #Both parents are in the pedigree
+          if(sorted[matchMother[i]]&sorted[matchFather[i]]){
+            genInd[i] = gen
+            sorted[i] = TRUE
+          }
+        }
+      }
+    }
+    if(all(sorted)){
+      break
+    }
+  }
+  if(!all(sorted)){
+    stop("Failed to sort pedigree, may contain loops or require a higher maxGen")
+  }
+  # Create individuals
+  founderIndicator = 0
+  crossPlan = matrix(c(1,1),ncol=2)
+  for(gen in 1:max(genInd)){
+    for(i in 1:length(id)){
+      if(genInd[i]==gen){
+        if(is.na(matchMother[i])&is.na(matchFather[i])){
+          #Is a founder
+          founderIndicator = founderIndicator+1L
+          output[[i]] = founderPop[selFounder[founderIndicator]]
+        }else if(is.na(matchMother[i])){
+          #Mother is a founder
+          founderIndicator = founderIndicator+1L
+          output[[i]] = makeCross2(founderPop[selFounder[founderIndicator]],
+                                   output[[matchFather[i]]],
+                                   crossPlan=crossPlan,
+                                   simParam=simParam)
+        }else if(is.na(matchFather[i])){
+          #Father is a founder
+          founderIndicator = founderIndicator+1L
+          output[[i]] = makeCross2(output[[matchMother[i]]],
+                                   founderPop[selFounder[founderIndicator]],
+                                   crossPlan=crossPlan,
+                                   simParam=simParam)
+        }else{
+          #Both parents are in the pedigree
+          output[[i]] = makeCross2(output[[matchMother[i]]],
+                                   output[[matchFather[i]]],
+                                   crossPlan=crossPlan,
+                                   simParam=simParam)
+        }
+        #Make the individual a DH?
+        if(DH[i]){
+          output[[i]] = makeDH(output[[i]],
+                               useFemale=useFemale,
+                               simParam=simParam)
+        }
+      }
+    }
+  }
+  return(do.call("c",output))
+}
+

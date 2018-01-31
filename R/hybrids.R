@@ -137,7 +137,7 @@ calcGCA = function(pop,use="pheno"){
       GCAf = y
     }else{
       X = model.matrix(~female+male-1,contrasts=list(male="contr.sum"))
-      GCAf = calcCoef(X,y)
+      GCAf = calcCoef(X,y)[1:length(unique(female)),,drop=FALSE]
     }
   }
   rownames(GCAf) = unique(female)
@@ -150,16 +150,16 @@ calcGCA = function(pop,use="pheno"){
       GCAm = y
     }else{
       X = model.matrix(~male+female-1,contrasts=list(female="contr.sum"))
-      GCAm = calcCoef(X,y)
+      GCAm = calcCoef(X,y)[1:length(unique(male)),,drop=FALSE]
     }
   }
   rownames(GCAm) = unique(male)
   colnames(GCAm) = paste0("Trait",1:pop@nTraits)
   # SCA
-  if(unique(sca)==1){
+  if(length(unique(sca))==1){
     SCA = y
   }else{
-    X = model.matrix(.~sca-1)
+    X = model.matrix(~sca-1)
     SCA = calcCoef(X,y)
   }
   rownames(SCA) = unique(sca)

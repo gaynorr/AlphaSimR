@@ -1,9 +1,9 @@
 # README #
 
-This package is currently under development and is not yet ready for release.
+This package is currently under development and will soon be released on CRAN.
 
-This package can be installed in R using the 'devtools' library with the following command:
+You can install this package in R by using the 'devtools' library and the following command:
 devtools::install_bitbucket("hickeyjohnteam/AlphaSimR")
 
-The 'Rcpp', 'RcppArmadillo', and 'BH' libraries are required for installing this package.
+The 'R6', 'Rcpp', 'RcppArmadillo', and 'BH' libraries are required to install this package.
 
