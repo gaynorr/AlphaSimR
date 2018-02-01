@@ -2,15 +2,24 @@
 % Please edit documentation in R/popSummary.R
 \name{varA}
 \alias{varA}
+\alias{varA}
 \title{Additive variance}
 \usage{
+varA(pop, simParam = NULL)
+
 varA(pop, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{pop}{an object of \code{\link{Pop-class}}}
+
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
+Returns additive variance for all traits
+
 Returns additive variance for all traits
 }

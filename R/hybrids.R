@@ -140,8 +140,9 @@ calcGCA = function(pop,use="pheno"){
       GCAf = calcCoef(X,y)[1:length(unique(female)),,drop=FALSE]
     }
   }
-  rownames(GCAf) = unique(female)
-  colnames(GCAf) = paste0("Trait",1:pop@nTraits)
+  GCAf = data.frame(as.character(unique(female)),
+                    GCAf,stringsAsFactors=FALSE)
+  names(GCAf) = c("id",paste0("Trait",1:pop@nTraits))
   # Male GCA
   if(length(unique(male))==1){
     GCAm = matrix(colMeans(y),nrow=1)
@@ -153,8 +154,9 @@ calcGCA = function(pop,use="pheno"){
       GCAm = calcCoef(X,y)[1:length(unique(male)),,drop=FALSE]
     }
   }
-  rownames(GCAm) = unique(male)
-  colnames(GCAm) = paste0("Trait",1:pop@nTraits)
+  GCAm = data.frame(as.character(unique(male)),
+                    GCAm,stringsAsFactors=FALSE)
+  names(GCAm) = c("id",paste0("Trait",1:pop@nTraits))
   # SCA
   if(length(unique(sca))==1){
     SCA = y
@@ -162,8 +164,9 @@ calcGCA = function(pop,use="pheno"){
     X = model.matrix(~sca-1)
     SCA = calcCoef(X,y)
   }
-  rownames(SCA) = unique(sca)
-  colnames(SCA) = paste0("Trait",1:pop@nTraits)
+  SCA = data.frame(as.character(unique(sca)),
+                   SCA,stringsAsFactors=FALSE)
+  names(SCA) = c("id",paste0("Trait",1:pop@nTraits))
   return(list(GCAf=GCAf,
               GCAm=GCAm,
               SCA=SCA))
@@ -224,8 +227,8 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   }
   tmp = calcGCA(pop=tmp,use=use)
   if(onlyPheno){
-    return(as.matrix(tmp$GCAf))
+    return(as.matrix(tmp$GCAf[,-1]))
   }
-  pop@pheno = as.matrix(tmp$GCAf)
+  pop@pheno = as.matrix(tmp$GCAf[,-1])
   return(pop)
 }

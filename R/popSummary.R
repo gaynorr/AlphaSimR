@@ -184,3 +184,59 @@ genicVarD = function(pop,simParam=NULL){
 genicVarG = function(pop,simParam=NULL){
   genParam(pop,FALSE,simParam=simParam)$genicVarG
 }
+
+#' @title Additive variance
+#' 
+#' @description Returns additive variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+varA = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$varA
+}
+
+#' @title Genetic value
+#' 
+#' @description A wrapper for accessing the gv slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+gv = function(pop){
+  pop@gv
+}
+
+#' @title Phenotype
+#' 
+#' @description A wrapper for accessing the pheno slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+pheno = function(pop){
+  pop@pheno
+}
+
+#' @title Estimated breeding value
+#' 
+#' @description A wrapper for accessing the ebv slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+ebv = function(pop){
+  pop@ebv
+}
+
+#' @title Number of individuals
+#' 
+#' @description A wrapper for accessing the nInd slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+nInd = function(pop){
+  pop@nInd
+}
