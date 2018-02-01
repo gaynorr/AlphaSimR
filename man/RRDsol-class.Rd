@@ -17,6 +17,8 @@ to contain estimated effects from \code{\link{RRBLUP}}
 
 \item{\code{domEff}}{dominance effects}
 
+\item{\code{hetCov}}{heterozygosity covariate}
+
 \item{\code{fixEff}}{Estimates for fixed effects}
 
 \item{\code{Vu}}{Estimated marker variance}

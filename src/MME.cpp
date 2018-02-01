@@ -376,13 +376,19 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
-                        std::string genoTrain, int nMarker, int skip){
+                        std::string genoTrain, int nMarker, int skip,
+                        bool useHetCov){
   int n = y.n_rows;
-  arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
   arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
+  arma::mat X;
+  if(useHetCov){
+    X = join_rows(makeX(x),mean(Mlist(1),1));
+  }else{
+    X = makeX(x);
+  }
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(Mlist(0),reps);

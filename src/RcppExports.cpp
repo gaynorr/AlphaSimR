@@ -6,38 +6,6 @@
 
 using namespace Rcpp;
 
-// writeASGenotypes
-void writeASGenotypes(const arma::Cube<unsigned char>& g, const arma::field<arma::uvec>& locations, const arma::uvec& allLocations, const arma::vec& snpchips, const std::vector<std::string>& names, const char missing, const std::string fname);
-RcppExport SEXP _AlphaSimR_writeASGenotypes(SEXP gSEXP, SEXP locationsSEXP, SEXP allLocationsSEXP, SEXP snpchipsSEXP, SEXP namesSEXP, SEXP missingSEXP, SEXP fnameSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type g(gSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::uvec>& >::type locations(locationsSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type allLocations(allLocationsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type snpchips(snpchipsSEXP);
-    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type names(namesSEXP);
-    Rcpp::traits::input_parameter< const char >::type missing(missingSEXP);
-    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
-    writeASGenotypes(g, locations, allLocations, snpchips, names, missing, fname);
-    return R_NilValue;
-END_RCPP
-}
-// writeASHaplotypes
-void writeASHaplotypes(const arma::Cube<unsigned char>& g, const arma::field<arma::uvec>& locations, const arma::uvec& allLocations, const arma::vec& snpchips, const std::vector<std::string>& names, const char missing, const std::string fname);
-RcppExport SEXP _AlphaSimR_writeASHaplotypes(SEXP gSEXP, SEXP locationsSEXP, SEXP allLocationsSEXP, SEXP snpchipsSEXP, SEXP namesSEXP, SEXP missingSEXP, SEXP fnameSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type g(gSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::uvec>& >::type locations(locationsSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type allLocations(allLocationsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type snpchips(snpchipsSEXP);
-    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type names(namesSEXP);
-    Rcpp::traits::input_parameter< const char >::type missing(missingSEXP);
-    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
-    writeASHaplotypes(g, locations, allLocations, snpchips, names, missing, fname);
-    return R_NilValue;
-END_RCPP
-}
 // gebvRR
 arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
 RcppExport SEXP _AlphaSimR_gebvRR(SEXP RRsolSEXP, SEXP popSEXP) {
@@ -99,6 +67,124 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type isSCAsol(isSCAsolSEXP);
     rcpp_result_gen = Rcpp::wrap(gebvSCA(sol, pop, isSCAsol));
     return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP
+Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip);
+RcppExport SEXP _AlphaSimR_callRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP(y, x, reps, genoTrain, nMarker, skip));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_D
+Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip, bool useHetCov);
+RcppExport SEXP _AlphaSimR_callRRBLUP_D(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP useHetCovSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    Rcpp::traits::input_parameter< bool >::type useHetCov(useHetCovSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_D(y, x, reps, genoTrain, nMarker, skip, useHetCov));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_MV
+Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip, int maxIter);
+RcppExport SEXP _AlphaSimR_callRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_MV(Y, x, reps, genoTrain, nMarker, skip, maxIter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_GCA
+Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps, std::string genoFemale, std::string genoMale, int nMarker, int skip, int maxIter);
+RcppExport SEXP _AlphaSimR_callRRBLUP_GCA(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoFemaleSEXP, SEXP genoMaleSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoFemale(genoFemaleSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoMale(genoMaleSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_GCA(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP_SCA
+Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps, std::string genoFemale, std::string genoMale, int nMarker, int skip, int maxIter);
+RcppExport SEXP _AlphaSimR_callRRBLUP_SCA(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoFemaleSEXP, SEXP genoMaleSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoFemale(genoFemaleSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoMale(genoMaleSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_SCA(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// writeASGenotypes
+void writeASGenotypes(const arma::Cube<unsigned char>& g, const arma::field<arma::uvec>& locations, const arma::uvec& allLocations, const arma::vec& snpchips, const std::vector<std::string>& names, const char missing, const std::string fname);
+RcppExport SEXP _AlphaSimR_writeASGenotypes(SEXP gSEXP, SEXP locationsSEXP, SEXP allLocationsSEXP, SEXP snpchipsSEXP, SEXP namesSEXP, SEXP missingSEXP, SEXP fnameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type g(gSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::uvec>& >::type locations(locationsSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type allLocations(allLocationsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type snpchips(snpchipsSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type names(namesSEXP);
+    Rcpp::traits::input_parameter< const char >::type missing(missingSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
+    writeASGenotypes(g, locations, allLocations, snpchips, names, missing, fname);
+    return R_NilValue;
+END_RCPP
+}
+// writeASHaplotypes
+void writeASHaplotypes(const arma::Cube<unsigned char>& g, const arma::field<arma::uvec>& locations, const arma::uvec& allLocations, const arma::vec& snpchips, const std::vector<std::string>& names, const char missing, const std::string fname);
+RcppExport SEXP _AlphaSimR_writeASHaplotypes(SEXP gSEXP, SEXP locationsSEXP, SEXP allLocationsSEXP, SEXP snpchipsSEXP, SEXP namesSEXP, SEXP missingSEXP, SEXP fnameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::Cube<unsigned char>& >::type g(gSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::uvec>& >::type locations(locationsSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type allLocations(allLocationsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type snpchips(snpchipsSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type names(namesSEXP);
+    Rcpp::traits::input_parameter< const char >::type missing(missingSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type fname(fnameSEXP);
+    writeASHaplotypes(g, locations, allLocations, snpchips, names, missing, fname);
+    return R_NilValue;
 END_RCPP
 }
 // getGeno
@@ -344,91 +430,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< arma::mat& >::type Y(YSEXP);
     rcpp_result_gen = Rcpp::wrap(calcCoef(X, Y));
-    return rcpp_result_gen;
-END_RCPP
-}
-// callRRBLUP
-Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip);
-RcppExport SEXP _AlphaSimR_callRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
-    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
-    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
-    rcpp_result_gen = Rcpp::wrap(callRRBLUP(y, x, reps, genoTrain, nMarker, skip));
-    return rcpp_result_gen;
-END_RCPP
-}
-// callRRBLUP_D
-Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip);
-RcppExport SEXP _AlphaSimR_callRRBLUP_D(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
-    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
-    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
-    rcpp_result_gen = Rcpp::wrap(callRRBLUP_D(y, x, reps, genoTrain, nMarker, skip));
-    return rcpp_result_gen;
-END_RCPP
-}
-// callRRBLUP_MV
-Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip, int maxIter);
-RcppExport SEXP _AlphaSimR_callRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
-    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
-    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
-    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(callRRBLUP_MV(Y, x, reps, genoTrain, nMarker, skip, maxIter));
-    return rcpp_result_gen;
-END_RCPP
-}
-// callRRBLUP_GCA
-Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps, std::string genoFemale, std::string genoMale, int nMarker, int skip, int maxIter);
-RcppExport SEXP _AlphaSimR_callRRBLUP_GCA(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoFemaleSEXP, SEXP genoMaleSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoFemale(genoFemaleSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoMale(genoMaleSEXP);
-    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
-    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
-    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(callRRBLUP_GCA(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter));
-    return rcpp_result_gen;
-END_RCPP
-}
-// callRRBLUP_SCA
-Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps, std::string genoFemale, std::string genoMale, int nMarker, int skip, int maxIter);
-RcppExport SEXP _AlphaSimR_callRRBLUP_SCA(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoFemaleSEXP, SEXP genoMaleSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP maxIterSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoFemale(genoFemaleSEXP);
-    Rcpp::traits::input_parameter< std::string >::type genoMale(genoMaleSEXP);
-    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
-    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
-    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(callRRBLUP_SCA(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter));
     return rcpp_result_gen;
 END_RCPP
 }

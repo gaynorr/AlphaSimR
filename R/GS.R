@@ -204,12 +204,15 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param useHetCov should the model include a covariate 
+#' for heterozygosity.
 #' @param maxIter maximum number of iterations.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
 RRBLUP_D = function(dir, traits=1, use="pheno", 
-                    skip=0, maxIter=1000, simParam=NULL){
+                    skip=0, useHetCov=TRUE, maxIter=1000,
+                    simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -243,13 +246,21 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
-                     skip)
+                     skip, useHetCov)
   p = t(ans$p)
   q = 1-p
   ans = ans$ans
+  fixEff=ans$beta
   a = ans$u[[1]]
   d = ans$u[[2]]
-  alpha = a+d*(q-p)
+  if(useHetCov){
+    hetCov = fixEff[length(fixEff)]
+    fixEff = matrix(fixEff[-length(fixEff)])
+    alpha = a+(q-p)*(d+hetCov/nMarkers)
+  }else{
+    hetCov = 0
+    alpha = a+(q-p)*d
+  }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam$snpChips[[as.integer(tmp[2])]]
@@ -263,7 +274,8 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
                markerEff=alpha,
                addEff=a,
                domEff=d,
-               fixEff=ans$beta,
+               hetCov=hetCov,
+               fixEff=fixEff,
                Vu=ans$Vu,
                Ve=ans$Ve,
                LL=ans$LL,
