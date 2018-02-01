@@ -69,8 +69,18 @@ mergePops = function(popList){
     ebv = matrix(NA_real_,nrow=nInd,ncol=0)
   }
   #gxe
-  gxe = do.call("c",lapply(popList,
-                           function(x) x@gxe))
+  if(nTraits>=1){
+    gxe = vector("list",length=nTraits)
+    for(trait in 1:nTraits){
+      if(!is.null(popList[[1]]@gxe[[trait]])){
+        tmp = lapply(popList,function(x) x@gxe[[trait]])
+        tmp = do.call("c",tmp)
+        gxe[[trait]] = tmp
+      }
+    }
+  }else{
+    gxe = list()
+  }
   #geno
   geno = AlphaSimR:::mergeMultGeno(popList,nInd=nInd,nLoci=nLoci,ploidy=ploidy)
   nInd = sum(nInd)
