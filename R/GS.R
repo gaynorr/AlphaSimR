@@ -20,13 +20,13 @@
 #' @param append if true, new records are added to any existing records.
 #' If false, any existing records are deleted before writing new records.
 #' Note that this will delete all files in the 'dir' directory.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
-writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
+writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,reps=1,fixEff=1,
                         includeHaplo=FALSE,append=TRUE,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   dir = normalizePath(dir, mustWork=TRUE)
   if(!append){
@@ -41,10 +41,10 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
     markerType = "NULL"
   }else{
     if(useQtl){
-      nMarkers = simParam@traits[[snpChip]]@nLoci
+      nMarkers = simParam$traits[[snpChip]]@nLoci
       markerType = paste("QTL",snpChip,sep="_")
     }else{
-      nMarkers = simParam@snpChips[[snpChip]]@nLoci
+      nMarkers = simParam$snpChips[[snpChip]]@nLoci
       markerType = paste("SNP",snpChip,sep="_")
     }
   }
@@ -83,27 +83,27 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
   #Write genotype.txt, unless snpChip=0
   if(snpChip!=0){
     if(useQtl){
-      writeGeno(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
-                simParam@traits[[snpChip]]@lociLoc,
+      writeGeno(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
+                simParam$traits[[snpChip]]@lociLoc,
                 file.path(dir,"genotype.txt"))
       if(includeHaplo){
-        writeOneHaplo(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
-                      simParam@traits[[snpChip]]@lociLoc,1L,
+        writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
+                      simParam$traits[[snpChip]]@lociLoc,1L,
                       file.path(dir,"haplotype1.txt"))
-        writeOneHaplo(pop@geno,simParam@traits[[snpChip]]@lociPerChr,
-                      simParam@traits[[snpChip]]@lociLoc,2L,
+        writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
+                      simParam$traits[[snpChip]]@lociLoc,2L,
                       file.path(dir,"haplotype2.txt"))
       }
     }else{
-      writeGeno(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
-                simParam@snpChips[[snpChip]]@lociLoc,
+      writeGeno(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
+                simParam$snpChips[[snpChip]]@lociLoc,
                 file.path(dir,"genotype.txt"))
       if(includeHaplo){
-        writeOneHaplo(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
-                      simParam@snpChips[[snpChip]]@lociLoc,1L,
+        writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
+                      simParam$snpChips[[snpChip]]@lociLoc,1L,
                       file.path(dir,"haplotype1.txt"))
-        writeOneHaplo(pop@geno,simParam@snpChips[[snpChip]]@lociPerChr,
-                      simParam@snpChips[[snpChip]]@lociLoc,2L,
+        writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
+                      simParam$snpChips[[snpChip]]@lociLoc,2L,
                       file.path(dir,"haplotype2.txt"))
       }
     }
@@ -123,13 +123,13 @@ writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
 #' @param skip number of older records to skip
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
 RRBLUP = function(dir, traits=1, use="pheno", 
                   skip=0, maxIter=1000, simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
@@ -169,9 +169,9 @@ RRBLUP = function(dir, traits=1, use="pheno",
   }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
-    markers = simParam@snpChips[[as.integer(tmp[2])]]
+    markers = simParam$snpChips[[as.integer(tmp[2])]]
   }else{
-    markers = simParam@traits[[as.integer(tmp[2])]]
+    markers = simParam$traits[[as.integer(tmp[2])]]
   }
   markerEff=ans$u
   if(is.null(ans[["iter"]])){
@@ -204,14 +204,17 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param useHetCov should the model include a covariate 
+#' for heterozygosity.
 #' @param maxIter maximum number of iterations.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
 RRBLUP_D = function(dir, traits=1, use="pheno", 
-                    skip=0, maxIter=1000, simParam=NULL){
+                    skip=0, useHetCov=TRUE, maxIter=1000,
+                    simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
@@ -243,20 +246,36 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
-                     skip)
+                     skip, useHetCov)
+  p = t(ans$p)
+  q = 1-p
+  ans = ans$ans
+  fixEff=ans$beta
+  a = ans$u[[1]]
+  d = ans$u[[2]]
+  if(useHetCov){
+    hetCov = fixEff[length(fixEff)]
+    fixEff = matrix(fixEff[-length(fixEff)])
+    alpha = a+(q-p)*(d+hetCov/nMarkers)
+  }else{
+    hetCov = 0
+    alpha = a+(q-p)*d
+  }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
-    markers = simParam@snpChips[[as.integer(tmp[2])]]
+    markers = simParam$snpChips[[as.integer(tmp[2])]]
   }else{
-    markers = simParam@traits[[as.integer(tmp[2])]]
+    markers = simParam$traits[[as.integer(tmp[2])]]
   }
   output = new("RRDsol",
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               markerEff=ans$u[[1]],
-               domEff=ans$u[[2]],
-               fixEff=ans$beta,
+               markerEff=alpha,
+               addEff=a,
+               domEff=d,
+               hetCov=hetCov,
+               fixEff=fixEff,
                Vu=ans$Vu,
                Ve=ans$Ve,
                LL=ans$LL,
@@ -279,13 +298,13 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
 #' @param maxIter maximum number of iterations for convergence.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
 RRBLUP_GCA = function(dir, traits=1, use="pheno",
                       skip=0, maxIter=40, simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
@@ -321,9 +340,9 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
                        nMarkers,skip,maxIter)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
-    markers = simParam@snpChips[[as.integer(tmp[2])]]
+    markers = simParam$snpChips[[as.integer(tmp[2])]]
   }else{
-    markers = simParam@traits[[as.integer(tmp[2])]]
+    markers = simParam$traits[[as.integer(tmp[2])]]
   }
   output = new("GCAsol",
                nLoci=markers@nLoci,
@@ -355,14 +374,14 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' @param maxIter maximum number of iterations for convergence.
 #' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
 #' RRBLUP_SCA gives a variance component of zero
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
                       skip=0, maxIter=40, onFailGCA=TRUE, 
                       simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   dir = normalizePath(dir, mustWork=TRUE)
   #Read and calculate basic information
@@ -398,9 +417,9 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                        nMarkers,skip,maxIter)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
-    markers = simParam@snpChips[[as.integer(tmp[2])]]
+    markers = simParam$snpChips[[as.integer(tmp[2])]]
   }else{
-    markers = simParam@traits[[as.integer(tmp[2])]]
+    markers = simParam$traits[[as.integer(tmp[2])]]
   }
   if(onFailGCA & any(ans$Vu<1e-10)){
     warning("using RRBLUP_GCA due to zero variance components")
@@ -438,23 +457,32 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' solution is \code{\link{GCAsol-class}} or 
 #' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
 #' the corresponding pool
-#' @param useD if model is \code{\link{RRDsol-class}}, should 
-#' dominance be included in the EBV. If yes, the "EBV" is an 
-#' estimate of genetic value and not an estimate of breeding value.
+#' @param useGV if model is \code{\link{RRDsol-class}}, 
+#' setting this parameter to TRUE will give use estimated 
+#' genetic values. Otherwise, you get estimated breeding 
+#' values that depend on the population's allele frequency.
+#' @param usePopP if model is \code{\link{RRDsol-class}}, 
+#' the population's allele frequency is used for breeding value 
+#' calculations. Otherwise the training population's allele frequency 
+#' is used.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-setEBV = function(pop, solution, gender=NULL, useD=FALSE, 
-                  append=FALSE){
+setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
+                  usePopP=FALSE, append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="RRDsol"){
-    if(useD){
-      ebv = gebvRRD(solution, pop)
+    if(useGV){
+      ebv = gegvRRD(solution, pop)
     }else{
-      ebv = gebvRR(solution, pop)
+      if(usePopP){
+        ebv = gebvRRD(solution, pop)
+      }else{
+        ebv = gebvRR(solution, pop)
+      }
     }
   }else if(class(solution)=="GCAsol"){
     if(is.null(gender)){

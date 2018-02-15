@@ -191,7 +191,9 @@ setValidity("RRsol",function(object){
 #' to contain estimated effects from \code{\link{RRBLUP}}
 #' 
 #' @slot markerEff GEBVs for markers
+#' @slot addEff additive effects
 #' @slot domEff dominance effects
+#' @slot hetCov heterozygosity covariate
 #' @slot fixEff Estimates for fixed effects
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
@@ -201,7 +203,9 @@ setValidity("RRsol",function(object){
 #' @export
 setClass("RRDsol",
          slots=c(markerEff="matrix",
+                 addEff="matrix",
                  domEff="matrix",
+                 hetCov="numeric",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
@@ -213,6 +217,9 @@ setValidity("RRDsol",function(object){
   errors = character()
   if(!is.numeric(object@markerEff)){
     errors = c(errors,"!is.numeric(markerEff)")
+  }
+  if(!is.numeric(object@addEff)){
+    errors = c(errors,"!is.numeric(addEff)")
   }
   if(!is.numeric(object@domEff)){
     errors = c(errors,"!is.numeric(domEff)")

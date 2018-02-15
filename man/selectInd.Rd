@@ -4,8 +4,8 @@
 \alias{selectInd}
 \title{Select individuals}
 \usage{
-selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
-  returnPop = TRUE, simParam = NULL, ...)
+selectInd(pop, nInd, trait = 1, use = "pheno", gender = "B",
+  selectTop = TRUE, returnPop = TRUE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -16,9 +16,13 @@ selectInd(pop, nInd, trait = 1, use = "pheno", selectTop = TRUE,
 \item{trait}{the trait for selection. Either a number indicating 
 a single trait or a function returning a vector of length nInd.}
 
-\item{use}{select on genetic values (\code{gv}), estimated
-breeding values (\code{ebv}), breeding values (\code{bv}), 
-or phenotypes (\code{pheno}, default)}
+\item{use}{select on genetic values "gv", estimated
+breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+or randomly "rand"}
+
+\item{gender}{which gender to select. Use "B" for both, "F" for 
+females and "M" for males. If the simulation is not using gender, 
+the argument is ignored.}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
@@ -27,7 +31,7 @@ Selects lowest values if false.}
 \code{\link{Pop-class}}. If FALSE, only the index of selected 
 individuals is returned.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}

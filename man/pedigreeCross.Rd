@@ -2,22 +2,38 @@
 % Please edit documentation in R/crossing.R
 \name{pedigreeCross}
 \alias{pedigreeCross}
-\title{Make crosses based on a pedigree}
+\title{Pedigree cross}
 \usage{
-pedigreeCross(pedigree, founders, id = NULL, simParam = NULL)
+pedigreeCross(founderPop, id, mother, father, maxCycle = 100, DH = NULL,
+  useFemale = TRUE, simParam = NULL)
 }
 \arguments{
-\item{pedigree}{an object of \code{\link{Pedigree-class}}}
+\item{founderPop}{a \code{\link{Pop-class}}}
 
-\item{founders}{an object of \code{\link{Pop-class}}}
+\item{id}{a vector of unique identifiers for individuals 
+in the pedigree. The values of these ids are seperate from   
+the ids in the founderPop.}
 
-\item{id}{optional id to assign to progeny}
+\item{mother}{a vector of identifiers for the mothers 
+of individuals in the pedigree. Must match one of the 
+elements in the id vector or they will be treated as unknown.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
-}
-\value{
-Returns an object of \code{\link{Pop-class}}
+\item{father}{a vector of identifiers for the fathers 
+of individuals in the pedigree. Must match one of the 
+elements in the id vector or they will be treated as unknown.}
+
+\item{maxCycle}{the maximum number of loops to make over the pedigree 
+to sort it.}
+
+\item{DH}{an optional vector indicating if an individual 
+should be made a doubled haploid.}
+
+\item{useFemale}{If creating DH lines, should female recombination 
+rates be used. This parameter has no effect if, recombRatio=1.}
+
+\item{simParam}{an object of 'SimParam' class}
 }
 \description{
-To Do
+Creates a \code{\link{Pop-class}} from a generic 
+pedigree and a set of founder individuals.
 }

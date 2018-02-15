@@ -13,6 +13,10 @@ gebvRR <- function(RRsol, pop) {
     .Call(`_AlphaSimR_gebvRR`, RRsol, pop)
 }
 
+gegvRRD <- function(RRsol, pop) {
+    .Call(`_AlphaSimR_gegvRRD`, RRsol, pop)
+}
+
 gebvRRD <- function(RRsol, pop) {
     .Call(`_AlphaSimR_gebvRRD`, RRsol, pop)
 }
@@ -61,16 +65,12 @@ getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father) {
     .Call(`_AlphaSimR_getHybridGv`, trait, motherGeno, mother, fatherGeno, father)
 }
 
-cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio) {
-    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, genMaps, recombRatio)
+cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec) {
+    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec)
 }
 
-createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale)
-}
-
-crossPedigree <- function(founders, mother, father, genMaps, recombRatio) {
-    .Call(`_AlphaSimR_crossPedigree`, founders, mother, father, genMaps, recombRatio)
+createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale, trackRec) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale, trackRec)
 }
 
 #' @title Population variance
@@ -94,6 +94,10 @@ mergeGeno <- function(x, y) {
     .Call(`_AlphaSimR_mergeGeno`, x, y)
 }
 
+mergeMultGeno <- function(popList, nInd, nLoci, ploidy) {
+    .Call(`_AlphaSimR_mergeMultGeno`, popList, nInd, nLoci, ploidy)
+}
+
 calcChrFreq <- function(geno) {
     .Call(`_AlphaSimR_calcChrFreq`, geno)
 }
@@ -110,134 +114,16 @@ sampHalfDialComb <- function(nLevel, n) {
     .Call(`_AlphaSimR_sampHalfDialComb`, nLevel, n)
 }
 
-zero <- function() {
-    .Call(`_AlphaSimR_zero`)
-}
-
-changeId <- function(newId, oldId) {
-    invisible(.Call(`_AlphaSimR_changeId`, newId, oldId))
-}
-
-#' @title Read Matrix
-#'
-#' @description
-#' Uses C++ to quickly read a matrix from a text
-#' file. Requires knowledge of the number of rows
-#' and columns in the file.
-#'
-#' @param fileName path to the file to read
-#' @param rows number of rows to read in
-#' @param cols number of columns to read in
-#' @param sep a single character seperating data entries
-#' @param skipRows number of rows to skip
-#' @param skipCols number of columns to skip
-#'
-#' @return a numeric matrix
-#'
-#' @export
-readMat <- function(fileName, rows, cols, sep = ' ', skipRows = 0L, skipCols = 0L) {
-    .Call(`_AlphaSimR_readMat`, fileName, rows, cols, sep, skipRows, skipCols)
-}
-
-#' @title Solve Univariate Model
-#'
-#' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#'
-#' @export
-solveUVM <- function(y, X, Z, K) {
-    .Call(`_AlphaSimR_solveUVM`, y, X, Z, K)
-}
-
-#' @title Solve RR-BLUP
-#'
-#' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param M a matrix with n rows and m columns
-#'
-#' @export
-solveRRBLUP <- function(y, X, M) {
-    .Call(`_AlphaSimR_solveRRBLUP`, y, X, M)
-}
-
-#' @title Solve Multivariate Model
-#'
-#' @description
-#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
-#'
-#' @export
-solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
-    .Call(`_AlphaSimR_solveMVM`, Y, X, Z, K, tol, maxIter)
-}
-
-#' @title Solve Multivariate RR-BLUP
-#'
-#' @description
-#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param M a matrix with n rows and m columns
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
-#'
-#' @export
-solveRRBLUPMV <- function(Y, X, M, tol = 1e-6, maxIter = 1000L) {
-    .Call(`_AlphaSimR_solveRRBLUPMV`, Y, X, M, tol, maxIter)
-}
-
-#' @title Solve Multikernel Model
-#'
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Zlist a list of Z matrices
-#' @param Klist a list of K matrices
-#' @param maxIter maximum number of iteration
-#'
-#' @export
-solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L) {
-    .Call(`_AlphaSimR_solveMKM`, y, X, Zlist, Klist, maxIter)
-}
-
-#' @title Solve Multikernel RR-BLUP
-#'
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Mlist a list of M matrices
-#' @param maxIter maximum number of iteration
-#'
-#' @export
-solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
-    .Call(`_AlphaSimR_solveRRBLUPMK`, y, X, Mlist, maxIter)
+calcCoef <- function(X, Y) {
+    .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
 callRRBLUP <- function(y, x, reps, genoTrain, nMarker, skip) {
     .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, genoTrain, nMarker, skip)
 }
 
-callRRBLUP_D <- function(y, x, reps, genoTrain, nMarker, skip) {
-    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, genoTrain, nMarker, skip)
+callRRBLUP_D <- function(y, x, reps, genoTrain, nMarker, skip, useHetCov) {
+    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, genoTrain, nMarker, skip, useHetCov)
 }
 
 callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, skip, maxIter) {
@@ -252,123 +138,10 @@ callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxI
     .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter)
 }
 
-#' @title Calculate G Matrix
-#'
-#' @description
-#' Calculates the genomic relationship matrix.
-#'
-#' @param X a matrix of marker genotypes scored as 0,1,2
-#'
-#' @return a matrix of the realized genomic relationships
-#'
-#' @export
-calcG <- function(X) {
-    .Call(`_AlphaSimR_calcG`, X)
-}
-
-#' @title Calculate Dominance Matrix
-#'
-#' @description
-#' Calculates the dominance relationship matrix.
-#'
-#' @param X a matrix of marker genotypes scored as 0,1,2
-#'
-#' @references
-#' \cite{Su G, Christensen OF, Ostersen T, Henryon M, Lund MS. 2012. Estimating Additive and Non-Additive Genetic Variances and Predicting Genetic Merits Using Genome-Wide Dense Single Nucleotide Polymorphism Markers. PLoS ONE 7(9): e45293. doi:10.1371/journal.pone.0045293}
-#' 
-#' @return a matrix of the realized dominance relationships
-#'
-#' @export
-calcD <- function(X) {
-    .Call(`_AlphaSimR_calcD`, X)
-}
-
-#' @title Calculate IBS G Matrix
-#'
-#' @description
-#' Calculates an identity-by-state genomic relationship matrix
-#' based on simple matching.
-#'
-#' @param X a matrix of marker genotypes scored as 0,1,2
-#'
-#' @return a matrix of genomic relationships
-#'
-#' @export
-calcGIbs <- function(X) {
-    .Call(`_AlphaSimR_calcGIbs`, X)
-}
-
-#' @title Calculate Euclidean distance
-#'
-#' @description
-#' Calculates a Euclidean distance matrix using a binomial
-#' theorem trick. Results in much faster computation than the
-#' \code{dist} function in package \code{stats}.
-#'
-#' @param X a numeric matrix
-#'
-#' @return a matrix of columnwise distances
-#'
-#' @export
-fastDist <- function(X) {
-    .Call(`_AlphaSimR_fastDist`, X)
-}
-
-#' @title Calculate Paired Euclidean distance
-#'
-#' @description
-#' Calculates a Euclidean distance between two matrices using
-#' a binomial theorem trick.
-#'
-#' @param X a numeric matrix
-#' @param Y a numeric matrix
-#'
-#' @return a matrix of columnwise distances between matrices
-#' X and Y
-#'
-#' @export
-fastPairDist <- function(X, Y) {
-    .Call(`_AlphaSimR_fastPairDist`, X, Y)
-}
-
-#' @title Calculate Gaussian Kernel
-#'
-#' @description
-#' Calculates a Gaussian kernel using a Euclidean distance
-#' matrix.
-#'
-#' @param D a matrix of Euclidean distances,
-#' see \code{\link{fastDist}}
-#' @param theta the tuning parameter
-#'
-#' @return a numeric matrix
-#'
-#' @export
-gaussKernel <- function(D, theta) {
-    .Call(`_AlphaSimR_gaussKernel`, D, theta)
-}
-
 packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
-#' @title Markovian Coalescent Simulator
-#' 
-#' @description
-#' Runs a built-in version of the Markovian Coalescent Simulator. 
-#' 
-#' @param args command line arguments passed to MaCS.
-#' @param maxSites maximum number of segregating sites to 
-#' return. If value is 0, all segregating sites are returned. 
-#' Otherwise, segregating sites are randomly sampled.
-#' 
-#' @references
-#' \cite{Chen, G.K., P. Marjoram, and J.D. Wall. 2009. Fast and flexible simulation of DNA sequence data. Genome Res. 19(1): 136–142.}
-#' 
-#' @return A list containing a matrix of haplotypes and a 
-#' vector of genetic distances.
-#'
-#' @export
 MaCS <- function(args, maxSites = 0L) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites)
 }

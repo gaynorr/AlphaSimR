@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{usefulness}
 \alias{usefulness}
-\title{Usefulness Criterion}
+\title{Usefulness criterion}
 \usage{
 usefulness(pop, trait = 1, use = "gv", p = 0.1, selectTop = TRUE,
   simParam = NULL, ...)
@@ -23,7 +23,7 @@ or phenotypes (\code{pheno})}
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}

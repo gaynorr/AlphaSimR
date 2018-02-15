@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{selInt}
 \alias{selInt}
-\title{Selection Intensity}
+\title{Selection intensity}
 \usage{
 selInt(p)
 }

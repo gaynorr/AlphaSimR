@@ -4,7 +4,7 @@
 \alias{setPhenoGCA}
 \title{Set GCA as phenotype}
 \usage{
-setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, w = 0.5,
+setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, p = 0.5,
   inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE, simParam = NULL)
 }
 \arguments{
@@ -20,7 +20,7 @@ dimensions nTraits for correlated errors.}
 
 \item{reps}{number of replications for phenotype. See details.}
 
-\item{w}{the environmental covariate used by GxE traits.}
+\item{p}{the p-value for the environmental covariate}
 
 \item{inbred}{are both pop and testers fully inbred. They are only 
 fully inbred if created by \code{\link{newPop}} using inbred founders 
@@ -33,7 +33,7 @@ more time.}
 
 \item{onlyPheno}{should only the phenotype be returned}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

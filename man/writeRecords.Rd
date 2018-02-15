@@ -4,8 +4,8 @@
 \alias{writeRecords}
 \title{Write data records}
 \usage{
-writeRecords(pop, dir, snpChip, useQtl = FALSE, reps = 1, fixEff = 1,
-  includeHaplo = FALSE, append = TRUE, simParam = NULL)
+writeRecords(pop, dir, snpChip = 1, useQtl = FALSE, reps = 1,
+  fixEff = 1, includeHaplo = FALSE, append = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -33,7 +33,7 @@ haplotypes.}
 If false, any existing records are deleted before writing new records.
 Note that this will delete all files in the 'dir' directory.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Saves a population's phenotypic and marker data to a directory.

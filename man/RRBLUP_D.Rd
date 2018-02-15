@@ -4,8 +4,8 @@
 \alias{RRBLUP_D}
 \title{RR-BLUP Model with Dominance}
 \usage{
-RRBLUP_D(dir, traits = 1, use = "pheno", skip = 0, maxIter = 1000,
-  simParam = NULL)
+RRBLUP_D(dir, traits = 1, use = "pheno", skip = 0, useHetCov = TRUE,
+  maxIter = 1000, simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}
@@ -18,9 +18,12 @@ or phenotypes (\code{pheno}, default)}
 
 \item{skip}{number of older records to skip}
 
+\item{useHetCov}{should the model include a covariate 
+for heterozygosity.}
+
 \item{maxIter}{maximum number of iterations.}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
 Fits an RR-BLUP model for genomic predictions that includes 

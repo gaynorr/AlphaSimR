@@ -11,7 +11,9 @@ Rcpp::List traitAObj(double tuneValue, Rcpp::List args){
   double intercept = arma::mean(gv);
   double obsVar = arma::var(gv,1); //Population variance
   Rcpp::List output;
-  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept);
+  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept,
+                              Rcpp::Named("varA")=obsVar,
+                              Rcpp::Named("varG")=obsVar);
   return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVar),
                             Rcpp::Named("output")=output);
 }
@@ -26,19 +28,22 @@ Rcpp::List traitADObj(double tuneValue, Rcpp::List args){
   bool useVarA = args["useVarA"];
   arma::vec gv = geno*(addEff*tuneValue)+domGeno*(domEff*tuneValue);
   double intercept = arma::mean(gv);
-  double obsVar;
-  if(useVarA){
-    arma::vec p = (arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2.0).t();
-    arma::vec alpha = (addEff*tuneValue)+(domEff*tuneValue)%(1-2*p);
-    arma::vec bv = geno*alpha;
-    obsVar = arma::var(bv,1);
-  }else{
-    obsVar = arma::var(gv,1); //Population variance
-  }
+  double obsVarG= arma::var(gv,1);
+  arma::vec p = (arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2.0).t();
+  arma::vec alpha = (addEff*tuneValue)+(domEff*tuneValue)%(1-2*p);
+  arma::vec bv = geno*alpha;
+  double obsVarA = arma::var(bv,1);
   Rcpp::List output;
-  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept);
-  return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVar),
-                            Rcpp::Named("output")=output);
+  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept,
+                              Rcpp::Named("varA")=obsVarA,
+                              Rcpp::Named("varG")=obsVarG);
+  if(useVarA){
+    return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVarA),
+                              Rcpp::Named("output")=output);
+  }else{
+    return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVarG),
+                              Rcpp::Named("output")=output);
+  }
 }
 
 //Tunes TraitA for desired varG
@@ -71,8 +76,3 @@ Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
                                      1e-10,
                                      1e3);
 }
-
-
-
-
-

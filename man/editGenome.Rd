@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{editGenome}
 \alias{editGenome}
-\title{Edit Genome}
+\title{Edit genome}
 \usage{
 editGenome(pop, ind, chr, segSites, allele, simParam = NULL)
 }
@@ -19,7 +19,7 @@ match length of chr.}
 
 \item{allele}{either 0 or 1 for desired allele}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

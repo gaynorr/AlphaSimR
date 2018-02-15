@@ -47,16 +47,16 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' parameter determines the maximum number of hybrids created 
 #' at one time. Smaller values reduce RAM usage, but may take 
 #' more time.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @export
 hybridCross = function(females,males,crossPlan="testcross",
                        returnHybridPop=FALSE,chunkSize=10000,
                        simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  if(simParam@ploidy!=2){
+  if(simParam$ploidy!=2){
     stop("Only works with diploids")
   }
   #crossPlan for test cross
@@ -72,16 +72,16 @@ hybridCross = function(females,males,crossPlan="testcross",
   #Return Pop-class
   if(!returnHybridPop){
     return(makeCross2(females=females,males=males,
-                      crossPlan=crossPlan,id=id,
+                      crossPlan=crossPlan,
                       simParam=simParam))
   }
   
   #Return HybridPop-class
   gv = pheno = matrix(NA_real_,nrow=length(id),
-                      ncol=simParam@nTraits)
-  gxe = vector("list",simParam@nTraits)
+                      ncol=simParam$nTraits)
+  gxe = vector("list",simParam$nTraits)
   i = 0L
-  for(trait in simParam@traits){
+  for(trait in simParam$traits){
     i = i+1L
     tmp = getHybridGvByChunk(trait=trait,females=females,femaleParents=crossPlan[,1],
                              males=males,maleParents=crossPlan[,2],chunkSize=chunkSize)
@@ -96,7 +96,7 @@ hybridCross = function(females,males,crossPlan="testcross",
                id=id,
                mother=femaleParents,
                father=maleParents,
-               nTraits=simParam@nTraits,
+               nTraits=simParam$nTraits,
                gv=gv,
                pheno=pheno,
                gxe=gxe)
@@ -112,60 +112,64 @@ hybridCross = function(females,males,crossPlan="testcross",
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
-#' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
+#' @param use true genetic value "gv" or phenotypes "pheno" (default)
 #' 
 #' @export
 calcGCA = function(pop,use="pheno"){
-  use = tolower(use)
-  if(use == "gv"){
-    y=pop@gv
-  }else if(use == "pheno"){
-    y=pop@pheno
-    if(any(is.na(y))){
-      stop("Missing values in pop@pheno")
-    }
+  if(use=="pheno"){
+    y = pop@pheno
+  }else if(use=="gv"){
+    y = pop@gv
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    stop(paste0("use=",use," is not a valid option"))
   }
-  colnames(y) = paste0("Trait",1:pop@nTraits)
   female = factor(pop@mother,
                   levels=unique(pop@mother))
   male = factor(pop@father,
                 levels=unique(pop@father))
-  females = matrix(NA_real_,nrow=length(unique(female)),ncol=pop@nTraits)
-  males = matrix(NA_real_,nrow=length(unique(male)),ncol=pop@nTraits)
-  colnames(females) = colnames(males) = colnames(y)
-  for(i in 1:pop@nTraits){
-    #Calculate female GCA
+  sca = paste(as.character(female),as.character(male),sep="_")
+  sca = factor(sca,levels=unique(sca))
+  # Female GCA
+  if(length(unique(female))==1){
+    GCAf = matrix(colMeans(y),nrow=1)
+  }else{
     if(length(unique(male))==1){
-      females[,i] = y[,i]
-    }else if(length(unique(female))==1){
-      females[,i] = mean(y[,i])
+      GCAf = y
     }else{
-      ans = lm(y[,i]~female+male-1,contrasts=list(male="contr.sum"))
-      females[,i] = coef(ans)[1:length(unique(female))]
-    }
-    #Calculate male GCA
-    if(length(unique(female))==1){
-      males[,i] = y[,i]
-    }else if(length(unique(male))==1){
-      males[,i] = mean(y[,i])
-    }else{
-      ans = lm(y[,i]~male+female-1,contrasts=list(female="contr.sum"))
-      males[,i] = coef(ans)[1:length(unique(male))]
+      X = model.matrix(~female+male-1,contrasts=list(male="contr.sum"))
+      GCAf = calcCoef(X,y)[1:length(unique(female)),,drop=FALSE]
     }
   }
-  #Create output
-  output = list()
-  output$females = data.frame(female=unique(female),females)
-  output$males = data.frame(male=unique(male),males)
-  output$females$female = as.character(output$females$female)
-  output$males$male = as.character(output$males$male)
-  #SCA
-  output$SCA=aggregate(y,list(female=female,male=male),mean)
-  output$SCA$female = as.character(output$SCA$female)
-  output$SCA$male = as.character(output$SCA$male)
-  return(output)
+  GCAf = data.frame(as.character(unique(female)),
+                    GCAf,stringsAsFactors=FALSE)
+  names(GCAf) = c("id",paste0("Trait",1:pop@nTraits))
+  # Male GCA
+  if(length(unique(male))==1){
+    GCAm = matrix(colMeans(y),nrow=1)
+  }else{
+    if(length(unique(female))==1){
+      GCAm = y
+    }else{
+      X = model.matrix(~male+female-1,contrasts=list(female="contr.sum"))
+      GCAm = calcCoef(X,y)[1:length(unique(male)),,drop=FALSE]
+    }
+  }
+  GCAm = data.frame(as.character(unique(male)),
+                    GCAm,stringsAsFactors=FALSE)
+  names(GCAm) = c("id",paste0("Trait",1:pop@nTraits))
+  # SCA
+  if(length(unique(sca))==1){
+    SCA = y
+  }else{
+    X = model.matrix(~sca-1)
+    SCA = calcCoef(X,y)
+  }
+  SCA = data.frame(as.character(unique(sca)),
+                   SCA,stringsAsFactors=FALSE)
+  names(SCA) = c("id",paste0("Trait",1:pop@nTraits))
+  return(list(GCAf=GCAf,
+              GCAm=GCAm,
+              SCA=SCA))
 }
 
 #' @title Set GCA as phenotype
@@ -181,7 +185,7 @@ calcGCA = function(pop,use="pheno"){
 #' of length nTraits for independent error or a square matrix of 
 #' dimensions nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
-#' @param w the environmental covariate used by GxE traits.
+#' @param p the p-value for the environmental covariate 
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
@@ -190,7 +194,7 @@ calcGCA = function(pop,use="pheno"){
 #' at one time. Smaller values reduce RAM usage, but may take 
 #' more time.
 #' @param onlyPheno should only the phenotype be returned
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
 #' The reps parameter is for convient representation of replicated data. 
@@ -204,10 +208,10 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       w=0.5,inbred=FALSE,chunkSize=10000,
+                       p=0.5,inbred=FALSE,chunkSize=10000,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
@@ -219,12 +223,12 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
                     returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
   if(use=="pheno"){
-    tmp = setPheno(tmp,varE=varE,w=w,reps=reps,simParam=simParam)
+    tmp = setPheno(tmp,varE=varE,p=p,reps=reps,simParam=simParam)
   }
   tmp = calcGCA(pop=tmp,use=use)
   if(onlyPheno){
-    return(as.matrix(tmp$females[,-1]))
+    return(as.matrix(tmp$GCAf[,-1]))
   }
-  pop@pheno = as.matrix(tmp$females[,-1])
+  pop@pheno = as.matrix(tmp$GCAf[,-1])
   return(pop)
 }

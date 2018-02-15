@@ -42,16 +42,16 @@ varP = function(pop){
   popVar(pop@pheno)
 }
 
-#' @title Additive and dominance variances
+#' @title Sumarize genetic parameters
 #' 
 #' @description 
 #' Calculates genetic and genic additive and dominance variances 
 #' for an object of \code{\link{Pop-class}}
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param retGenParam should genetic values for breeding values, 
-#' dominance deviations and allele effects be returned
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param indValues should breeding values, dominance deviations 
+#' and allele subsitution effects be returned
+#' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return
 #' \describe{
@@ -67,9 +67,9 @@ varP = function(pop){
 #' }
 #' 
 #' @export
-varAD = function(pop,retGenParam=FALSE,simParam=NULL){
+genParam = function(pop,indValues=FALSE,simParam=NULL){
   if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+    simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop")
   bv=NULL
@@ -78,8 +78,8 @@ varAD = function(pop,retGenParam=FALSE,simParam=NULL){
   genicVarD=NULL
   alpha=list()
   #Loop through bv and dd calculations
-  for(i in 1:simParam@nTraits){
-    trait = simParam@traits[[i]]
+  for(i in 1:simParam$nTraits){
+    trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop)
     genicVarA = c(genicVarA,tmp$genicVarA)
     genicVarD = c(genicVarD,tmp$genicVarD)
@@ -93,10 +93,138 @@ varAD = function(pop,retGenParam=FALSE,simParam=NULL){
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
                 genicVarG=genicVarA+genicVarD)
-  if(retGenParam){
+  if(indValues){
     output$bv = bv
     output$dd = dd
     output$alpha = alpha
   }
   return(output)
+}
+
+#' @title Additive variance
+#' 
+#' @description Returns additive variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+varA = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$varA
+}
+
+#' @title Dominance variance
+#' 
+#' @description Returns dominance variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+varD = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$varD
+}
+
+#' @title Breeding value
+#' 
+#' @description Returns breeding values for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+bv = function(pop,simParam=NULL){
+  genParam(pop,TRUE,simParam=simParam)$bv
+}
+
+#' @title Dominance deviations
+#' 
+#' @description Returns dominance deviations for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+dd = function(pop,simParam=NULL){
+  genParam(pop,TRUE,simParam=simParam)$dd
+}
+
+#' @title Additive genic variance
+#' 
+#' @description Returns additive genic variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+genicVarA = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$genicVarA
+}
+
+#' @title Dominance genic variance
+#' 
+#' @description Returns dominance genic variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+genicVarD = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$genicVarD
+}
+
+#' @title Total genic variance
+#' 
+#' @description Returns total genic variance for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @export
+genicVarG = function(pop,simParam=NULL){
+  genParam(pop,FALSE,simParam=simParam)$genicVarG
+}
+
+#' @title Genetic value
+#' 
+#' @description A wrapper for accessing the gv slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+gv = function(pop){
+  pop@gv
+}
+
+#' @title Phenotype
+#' 
+#' @description A wrapper for accessing the pheno slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+pheno = function(pop){
+  pop@pheno
+}
+
+#' @title Estimated breeding value
+#' 
+#' @description A wrapper for accessing the ebv slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+ebv = function(pop){
+  pop@ebv
+}
+
+#' @title Number of individuals
+#' 
+#' @description A wrapper for accessing the nInd slot
+#' 
+#' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @export
+nInd = function(pop){
+  pop@nInd
 }

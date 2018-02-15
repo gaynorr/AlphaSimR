@@ -14,16 +14,33 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   return output;
 }
 
-// Retrieves GEBVs for RRDsol
+// Retrieves GEGVs for RRDsol
+// [[Rcpp::export]]
+arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
+  arma::mat a = RRsol.slot("addEff");
+  arma::mat d = RRsol.slot("domEff");
+  double b = RRsol.slot("hetCov");
+  arma::Mat<unsigned char> geno;
+  geno = getGeno(pop.slot("geno"), 
+                 RRsol.slot("lociPerChr"),
+                 RRsol.slot("lociLoc"));
+  arma::mat genoD = arma::conv_to<arma::mat>::from(getDomGeno(geno));
+  arma::mat het = mean(genoD,1);
+  arma::mat output = geno*a+genoD*d+het*b;
+  return output;
+}
+
+// Retrieves GEBVs for RRDsol using population specific p
 // [[Rcpp::export]]
 arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
-  arma::mat a = RRsol.slot("markerEff");
+  arma::mat a = RRsol.slot("addEff");
   arma::mat d = RRsol.slot("domEff");
   arma::Mat<unsigned char> geno;
   geno = getGeno(pop.slot("geno"), 
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
-  arma::mat output = geno*a+getDomGeno(geno)*d;
+  arma::mat p = arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2;
+  arma::mat output = geno*(a+d%(1-2*p.t()));
   return output;
 }
 

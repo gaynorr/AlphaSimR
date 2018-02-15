@@ -4,7 +4,8 @@
 \alias{setEBV}
 \title{Set EBV}
 \usage{
-setEBV(pop, solution, gender = NULL, useD = FALSE, append = FALSE)
+setEBV(pop, solution, gender = NULL, useGV = FALSE, usePopP = FALSE,
+  append = FALSE)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -17,9 +18,15 @@ solution is \code{\link{GCAsol-class}} or
 \code{\link{SCAsol-class}} the EBV is the GCA if used in 
 the corresponding pool}
 
-\item{useD}{if model is \code{\link{RRDsol-class}}, should 
-dominance be included in the EBV. If yes, the "EBV" is an 
-estimate of genetic value and not an estimate of breeding value.}
+\item{useGV}{if model is \code{\link{RRDsol-class}}, 
+setting this parameter to TRUE will give use estimated 
+genetic values. Otherwise, you get estimated breeding 
+values that depend on the population's allele frequency.}
+
+\item{usePopP}{if model is \code{\link{RRDsol-class}}, 
+the population's allele frequency is used for breeding value 
+calculations. Otherwise the training population's allele frequency 
+is used.}
 
 \item{append}{should EBVs be appended to existing EBVs}
 }

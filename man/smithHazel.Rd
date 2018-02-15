@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{smithHazel}
 \alias{smithHazel}
-\title{Calculate Smith-Hazel Weights}
+\title{Calculate Smith-Hazel weights}
 \usage{
 smithHazel(econWt, varG, varP)
 }

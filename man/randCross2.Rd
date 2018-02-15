@@ -4,9 +4,9 @@
 \alias{randCross2}
 \title{Make random crosses}
 \usage{
-randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
-  balance = TRUE, femaleParents = NULL, maleParents = NULL,
-  rawPop = FALSE, ignoreGender = FALSE, simParam = NULL)
+randCross2(females, males, nCrosses, nProgeny = 1, balance = TRUE,
+  femaleParents = NULL, maleParents = NULL, rawPop = FALSE,
+  ignoreGender = FALSE, simParam = NULL)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}
@@ -16,8 +16,6 @@ randCross2(females, males, nCrosses, nProgeny = 1, id = NULL,
 \item{nCrosses}{total number of crosses to make}
 
 \item{nProgeny}{number of progeny per cross}
-
-\item{id}{optional id to assign to progeny}
 
 \item{balance}{if using gender, this option will balance the number 
 of progeny per parent}
@@ -32,7 +30,7 @@ male parents}
 
 \item{ignoreGender}{should gender be ignored}
 
-\item{simParam}{an object of \code{\link{SimParam-class}}}
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 

@@ -1,3 +1,69 @@
+# Returns a vector response from a population
+# pop is an object of class Pop or HybridPop
+# trait is a vector of traits or a function
+# use is "rand", "gv", "ebv", "pheno", or "bv"
+#  "bv" doesn't work on class HybridPop
+# simParam is an object of class SimParam, it is only called when use="bv"
+# ... are additional arguments passed to trait when trait is a function
+getResponse = function(pop,trait,use,simParam=NULL,...){
+  use = tolower(use)
+  if(use=="rand"){
+    return(rnorm(pop@nInd))
+  }
+  if(class(trait)=="function"){
+    if(use=="gv"){
+      response = trait(pop@gv,...)
+    }else if(use=="ebv"){
+      response = trait(pop@ebv,...)
+    }else if(use=="pheno"){
+      response = trait(pop@pheno,...)
+    }else if(use=="bv"){
+      if(class(pop)=="HybridPop"){
+        stop("Use='bv' is not a valid option for HybridPop")
+      }
+      response = genParam(pop,TRUE,simParam=simParam)$bv
+      response = trait(response,...)
+    }else{
+      stop(paste0("Use=",use," is not an option"))
+    }
+  }else{
+    stopifnot(length(trait)==1)
+    if(use == "gv"){
+      response = pop@gv[,trait]
+    }else if(use=="ebv"){
+      response = pop@ebv[,trait]
+    }else if(use=="pheno"){
+      response = pop@pheno[,trait]
+    }else if(use=="bv"){
+      if(class(pop)=="HybridPop"){
+        stop("Use='bv' is not a valid option for HybridPop")
+      }
+      response = genParam(pop,TRUE,simParam=simParam)$bv[,trait]
+    }else{
+      stop(paste0("Use=",use," is not an option"))
+    }
+  }
+  if(any(is.na(response))){
+    stop("selection trait has missing values, phenotype may need to be set")
+  }
+  return(response)
+}
+
+# Returns a vector of individuals in a population with the required gender
+checkGender = function(pop,gender,simParam){
+  gender = toupper(gender)
+  eligible = 1:pop@nInd
+  if(simParam$gender=="no"){
+    return(eligible)
+  }else{
+    if(gender=="B"){
+      return(eligible)
+    }else{
+      return(eligible[pop@gender%in%gender])
+    }
+  }
+}
+
 #' @title Select individuals
 #' 
 #' @description Selects a subset of nInd individuals from a 
@@ -8,15 +74,18 @@
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic values (\code{gv}), estimated
-#' breeding values (\code{ebv}), breeding values (\code{bv}), 
-#' or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values "gv", estimated
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' or randomly "rand"
+#' @param gender which gender to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using gender, 
+#' the argument is ignored.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -24,131 +93,25 @@
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectInd = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                     returnPop=TRUE,simParam=NULL,...){
-  if(is.null(simParam) & use=="bv"){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
+                     selectTop=TRUE,returnPop=TRUE,
+                     simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  stopifnot(nInd<=pop@nInd)
-  use = tolower(use)
-  if(class(trait)=="function"){
-    if(use == "gv"){
-      response = trait(pop@gv,...)
-    }else if(use == "ebv"){
-      response = trait(pop@ebv,...)
-    }else if(use == "pheno"){
-      response = trait(pop@pheno,...)
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
-      response = trait(response,...)
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }else{
-    stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(use == "gv"){
-      response = pop@gv[,trait]
-    }else if(use == "ebv"){
-      response = pop@ebv[,trait]
-    }else if(use == "pheno"){
-      response = pop@pheno[,trait]
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
+  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  if(sum(eligible)<nInd){
+    stop("Not enough suitable candidates, check request value and gender")
   }
-  if(any(is.na(response))){
-    stop("selection trait has missing values, phenotype may need to be set")
-  }
+  response = getResponse(pop=pop,trait=trait,use=use,
+                         simParam=simParam,...)
   take = order(response,decreasing=selectTop)
+  take = take[take%in%eligible]
   if(returnPop){
     return(pop[take[1:nInd]])
   }else{
     return(take[1:nInd])
   }
-}
-
-#' @title Select males
-#' 
-#' @description Selects a subset of nInd males from a 
-#' population.
-#' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
-#' @param nInd the number of individuals to select
-#' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic values (\code{gv}), estimated
-#' breeding values (\code{ebv}), breeding values (\code{bv}), 
-#' or phenotypes (\code{pheno}, default)
-#' @param selectTop selects highest values if true. 
-#' Selects lowest values if false.
-#' @param returnPop should results be returned as a 
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
-#' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
-#' @param ... additional arguments if using a function for 
-#' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
-#' 
-#' @export
-selectMale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                      returnPop=TRUE,simParam=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
-  }
-  pop = pop[which(pop@gender=="M")]
-  if(nInd>pop@nInd){
-    stop(paste("the population only contains",pop@nInd,"males"))
-  }
-  output = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                     selectTop=selectTop,returnPop=returnPop,
-                     simParam=simParam,...)
-  return(output)
-}
-
-#' @title Select females
-#' 
-#' @description Selects a subset of nInd females from a 
-#' population.
-#' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
-#' @param nInd the number of individuals to select
-#' @param trait the trait for selection. Either a number indicating 
-#' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic values (\code{gv}), estimated
-#' breeding values (\code{ebv}), breeding values (\code{bv}), 
-#' or phenotypes (\code{pheno}, default)
-#' @param selectTop selects highest values if true. 
-#' Selects lowest values if false.
-#' @param returnPop should results be returned as a 
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
-#' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
-#' @param ... additional arguments if using a function for 
-#' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
-#' 
-#' @export
-selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
-                        returnPop=TRUE,simParam=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
-  }
-  pop = pop[which(pop@gender=="F")]
-  if(nInd>pop@nInd){
-    stop(paste("the population only contains",pop@nInd,"females"))
-  }
-  output = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                     selectTop=selectTop,returnPop=returnPop,
-                     simParam=simParam,...)
-  return(output)
 }
 
 #' @title Select families
@@ -161,15 +124,18 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic values (\code{gv}), estimated
-#' breeding values (\code{ebv}), breeding values (\code{bv}), 
-#' or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values "gv", estimated
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' or randomly "rand"
+#' @param gender which gender to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using gender, 
+#' the argument is ignored.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -177,54 +143,29 @@ selectFemale = function(pop,nInd,trait=1,use="pheno",selectTop=TRUE,
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
-                     returnPop=TRUE,simParam=NULL,...){
-  if(is.null(simParam) & use=="bv"){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
+                     selectTop=TRUE,returnPop=TRUE,
+                     simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
   }
-  families = paste(pop@mother,pop@father,sep="_")
-  availFam = length(unique(families))
-  if(nFam>availFam){
-    stop(paste(nFam,"families requested but only",availFam,
+  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  allFam = paste(pop@mother,pop@father,sep="_")
+  availFam = paste(pop@mother[eligible],pop@father[eligible],sep="_")
+  if(nFam>length(unique(availFam))){
+    stop(paste(nFam,"families requested but only",length(unique(availFam)),
                "families are available"))
   }
-  use = tolower(use)
-  if(class(trait)=="function"){
-    if(use == "gv"){
-      response = trait(pop@gv,...)
-    }else if(use == "ebv"){
-      response = trait(pop@ebv,...)
-    }else if(use == "pheno"){
-      response = trait(pop@pheno,...)
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
-      response = trait(response,...)
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }else{
-    stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(use == "gv"){
-      response = pop@gv[,trait]
-    }else if(use == "ebv"){
-      response = pop@ebv[,trait]
-    }else if(use == "pheno"){
-      response = pop@pheno[,trait]
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }
-  if(any(is.na(response))){
-    stop("selection trait has missing values, phenotype may need to be set")
-  }
+  response = getResponse(pop=pop,trait=trait,use=use,
+                         simParam=simParam,...)[eligible,,drop=FALSE]
   #Calculate family means
-  famMeans=aggregate(response,list(families=families),mean)
+  famMeans = aggregate(response,list(families=availFam),mean)
   response = famMeans$x
   #Select families
-  take = order(response,decreasing=selectTop)[1:nFam]
-  take = families%in%(famMeans$families[take])
+  bestFam = order(response,decreasing=selectTop)[1:nFam]
+  bestFam = famMeans$families[bestFam]
+  take = which(allFam%in%bestFam)
+  take = take[take%in%eligible]
   if(returnPop){
     return(pop[take])
   }else{
@@ -243,15 +184,18 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
-#' @param use select on genetic values (\code{gv}), estimated
-#' breeding values (\code{ebv}), breeding values (\code{bv}), 
-#' or phenotypes (\code{pheno}, default)
+#' @param use select on genetic values "gv", estimated
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' or randomly "rand"
+#' @param gender which gender to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using gender, 
+#' the argument is ignored.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
-#' @param simParam an object of \code{\link{SimParam-class}}
+#' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
@@ -259,50 +203,26 @@ selectFam = function(pop,nFam,trait=1,use="pheno",selectTop=TRUE,
 #' \code{\link{HybridPop-class}}
 #' 
 #' @export
-selectWithinFam = function(pop,nInd,trait=1,use="pheno",
+selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
                            selectTop=TRUE,returnPop=TRUE,
                            simParam=NULL,...){
-  if(is.null(simParam) & use=="bv"){
-    simParam = get("SIMPARAM",envir=.GlobalEnv)
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
   }
+  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
   families = paste(pop@mother,pop@father,sep="_")
-  use = tolower(use)
-  if(class(trait)=="function"){
-    if(use == "gv"){
-      response = trait(pop@gv,...)
-    }else if(use == "ebv"){
-      response = trait(pop@ebv,...)
-    }else if(use == "pheno"){
-      response = trait(pop@pheno,...)
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv
-      response = trait(response,...)
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }else{
-    stopifnot(length(trait)==1,trait<=pop@nTraits)
-    if(use == "gv"){
-      response = pop@gv[,trait]
-    }else if(use == "ebv"){
-      response = pop@ebv[,trait]
-    }else if(use == "pheno"){
-      response = pop@pheno[,trait]
-    }else if(use == "bv"){
-      response = varAD(pop,retGenParam=TRUE,simParam=simParam)$bv[,trait]
-    }else{
-      stop(paste0("Use=",use," is not an option"))
-    }
-  }
-  if(any(is.na(response))){
-    stop("selection trait has missing values, phenotype may need to be set")
-  }
+  response = getResponse(pop=pop,trait=trait,use=use,
+                         simParam=simParam,...)
   selInFam = function(selFam){
     index = which(families%in%selFam)
     y = response[index]
     index = index[order(y,decreasing=selectTop)]
-    index = index[1:min(nInd,length(index))]
-    return(index)
+    index = index[index%in%eligible]
+    if(length(index)==0){
+      return(index)
+    }else{
+      return(index[1:min(nInd,length(index))])
+    }
   }
   take = unlist(sapply(unique(families),selInFam))
   if(returnPop){
