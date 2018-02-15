@@ -306,9 +306,11 @@ SimParam$set(
 #' off pedigree tracking will turn off recombination tracking 
 #' if it is turned on.
 #' 
-#' @section Usage: SP$setTrackPed(isTrackPed)
+#' @section Usage: SP$setTrackPed(isTrackPed, force = FALSE)
 #' 
 #' @param isTrackPed should pedigree tracking be on.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_setTrackPed
 NULL
@@ -316,9 +318,11 @@ NULL
 SimParam$set(
   "public",
   "setTrackPed",
-  function(isTrackPed){
+  function(isTrackPed, force=FALSE){
     stopifnot(is.logical(isTrackPed))
-    private$.isRunning()
+    if(!force){
+      private$.isRunning()
+    }
     private$.isTrackPed = isTrackPed
     if(!isTrackPed){
       private$.isTrackRec = FALSE
@@ -336,9 +340,11 @@ SimParam$set(
 #' except those created by \code{\link{hybridCross}}, because their 
 #' pedigree is not tracked.
 #' 
-#' @section Usage: SimParam$setTrackRec(isTrackRec)
+#' @section Usage: SimParam$setTrackRec(isTrackRec, force = FALSE)
 #' 
 #' @param isTrackRec should recombination tracking be on.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_setTrackRec
 NULL
@@ -346,9 +352,11 @@ NULL
 SimParam$set(
   "public",
   "setTrackRec",
-  function(isTrackRec){
+  function(isTrackRec, force=FALSE){
     stopifnot(is.logical(isTrackRec))
-    private$.isRunning()
+    if(!force){
+      private$.isRunning()
+    }
     private$.isTrackRec = isTrackRec
     if(isTrackRec){
       private$.isTrackPed = TRUE
@@ -386,7 +394,7 @@ SimParam$set(
 #' can serve and SNP and/or QTL loci.
 #' 
 #' @section Usage: SP$restrSegSites(maxQtl = 0, maxSnp = 0, 
-#' snpQtlOverlap = FALSE, minSnpFreq = NULL)
+#' snpQtlOverlap = FALSE, minSnpFreq = NULL, force = FALSE)
 #' 
 #' @param maxQtl the maximum number of segSites for QTLs. 
 #' Can be a single value or a vector values for each 
@@ -398,6 +406,8 @@ SimParam$set(
 #' to overlap.
 #' @param minSnpFreq minimum allowable frequency for SNP loci. 
 #' No minimum SNP frequency is used if value is NULL.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_restrSegSites
 NULL
@@ -406,8 +416,10 @@ SimParam$set(
   "public",
   "restrSegSites",
   function(maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
-           minSnpFreq=NULL){
-    private$.isRunning()
+           minSnpFreq=NULL, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     if(length(maxSnp)==1){
       maxSnp = rep(maxSnp,private$.nChr)
     }
@@ -472,10 +484,12 @@ SimParam$set(
 #' female. The value "yes_rand" will randomly assign gender to 
 #' individuals.
 #' 
-#' @section Usage: SP$setGender(gender)
+#' @section Usage: SP$setGender(gender, force = FALSE)
 #' 
 #' @param gender acceptable value are "no", "yes_sys", or 
 #' "yes_rand"
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_setGender
 NULL
@@ -483,8 +497,10 @@ NULL
 SimParam$set(
   "public",
   "setGender",
-  function(gender){
-    private$.isRunning()
+  function(gender, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     gender = tolower(gender)
     if(gender=="no"){
       private$.gender="no"
@@ -509,9 +525,11 @@ SimParam$set(
 #' and a value of 0.5 specifies half as much recombination in 
 #' females.
 #' 
-#' @section Usage: SP$setRecombRatio(ratio)
+#' @section Usage: SP$setRecombRatio(ratio, force = FALSE)
 #' 
 #' @param ratio any value greater than 0
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_setRecombRatio
 NULL
@@ -519,8 +537,10 @@ NULL
 SimParam$set(
   "public",
   "setRecombRatio",
-  function(ratio){
-    private$.isRunning()
+  function(ratio, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     stopifnot(ratio>0)
     private$.recombRatio = ratio
     invisible(self)
@@ -610,10 +630,12 @@ SimParam$set(
 #' @description 
 #' Randomly assigns eligble SNPs to a SNP chip
 #' 
-#' @section Usage: SP$addSnpChip(nSnpPerChr)
+#' @section Usage: SP$addSnpChip(nSnpPerChr, force = FALSE)
 #' 
 #' @param nSnpPerChr number of SNPs per chromosome. 
 #' Can be a single value or nChr values.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_addSnpChip
 NULL
@@ -621,8 +643,10 @@ NULL
 SimParam$set(
   "public",
   "addSnpChip",
-  function(nSnpPerChr){
-    private$.isRunning()
+  function(nSnpPerChr, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     if(length(nSnpPerChr)==1){
       nSnpPerChr = rep(nSnpPerChr,private$.nChr)
     }
@@ -648,12 +672,14 @@ SimParam$set(
 #' Randomly selects the number of snps in structure and then
 #' assigns them to chips based on structure
 #' 
-#' @section Usage: SP$addStructuredSnpChip(nSnpPerChr, structure)
+#' @section Usage: SP$addStructuredSnpChip(nSnpPerChr, structure, force = FALSE)
 #' 
 #' @param nSnpPerChr number of SNPs per chromosome. 
 #' Can be a single value or nChr values.
 #' @param structure a matrix.  Rows are snp chips, columns are chips.
 #' If value is true then that snp is on that chip.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_addStructuredSnpChips
 NULL
@@ -661,8 +687,10 @@ NULL
 SimParam$set(
   "public",
   "addStructuredSnpChip",
-  function(nSnpPerChr,structure){
-    private$.isRunning()
+  function(nSnpPerChr,structure,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     if(length(nSnpPerChr)==1){
       nSnpPerChr = rep(nSnpPerChr,private$.nChr)
     }
@@ -699,9 +727,11 @@ SimParam$set(
 #' @description 
 #' Removes designated SNP chip(s).
 #' 
-#' @section Usage: SP$removeSnpChip(chips)
+#' @section Usage: SP$removeSnpChip(chips, force = FALSE)
 #' 
 #' @param chips a vector of SNP chips to remove
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_removeSnpChip
 NULL
@@ -709,8 +739,10 @@ NULL
 SimParam$set(
   "public",
   "removeSnpChip",
-  function(chips){
-    private$.isRunning()
+  function(chips, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     chips = as.integer(chips)
     stopifnot(max(chips)<=private$.nSnpChips)
     private$.snpChips = private$.snpChips[-chips]
@@ -724,10 +756,12 @@ SimParam$set(
 #' @description 
 #' Replaces the \code{\link{LociMap-class}} for a SNP chip.
 #' 
-#' @section Usage: SP$switchSnpChips(lociMap, chip)
+#' @section Usage: SP$switchSnpChips(lociMap, chip, force = FALSE)
 #' 
 #' @param lociMap a new \code{\link{LociMap-class}}
 #' @param chip an integer indicating which chip to replace
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_switchSnpChip
 NULL
@@ -735,10 +769,39 @@ NULL
 SimParam$set(
   "public",
   "switchSnpChip",
-  function(lociMap,chip){
-    private$.isRunning()
+  function(lociMap,chip,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     stopifnot(length(chip)==1,chip<=private$.nSnpChips)
     private$.snpChips[[chip]] = lociMap
+    invisible(self)
+  }
+)
+
+#' @title Manually add SNP chip
+#' 
+#' @description 
+#' Adds a new \code{\link{LociMap-class}} for a SNP chip.
+#' 
+#' @section Usage: SP$manAddSnpChips(lociMap, force = FALSE)
+#' 
+#' @param lociMap a new \code{\link{LociMap-class}}
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_manAddSnpChip
+NULL
+# manAddSnpChip ----
+SimParam$set(
+  "public",
+  "manAddSnpChip",
+  function(lociMap,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    private$.nSnpChips = private$.nSnpChips+1L
+    private$.snpChips[[private$.nSnpChips]] = lociMap
     invisible(self)
   }
 )
@@ -804,7 +867,7 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' with correlated additive effects.
 #' 
 #' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
-#' gamma = FALSE, shape = 1)
+#' gamma = FALSE, shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
@@ -813,6 +876,8 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape value of the shape parameter if using a gamma distribution. 
 #' Note that shape=1 is equivalent to an exponential distribution.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_addTraitA
 NULL
@@ -821,8 +886,10 @@ SimParam$set(
   "public",
   "addTraitA",
   function(nQtlPerChr,mean=0,var=1,corr=NULL,
-           gamma=FALSE,shape=1){
-    private$.isRunning()
+           gamma=FALSE,shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
@@ -859,7 +926,7 @@ SimParam$set(
 #' 
 #' @section Usage: SP$addTraitAD(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
 #' varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE, 
-#' shape = 1)
+#' shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
@@ -873,6 +940,8 @@ SimParam$set(
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape value of the shape parameter if using a gamma distribution. 
 #' Note that shape=1 is equivalent to an exponential distribution.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #'  
 #' @name SimParam_addTraitAD
 NULL
@@ -882,8 +951,10 @@ SimParam$set(
   "addTraitAD",
   function(nQtlPerChr,mean=0,var=1,meanDD=0,
            varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
-           gamma=FALSE,shape=1){
-    private$.isRunning()
+           gamma=FALSE,shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
@@ -996,7 +1067,7 @@ SimParam$set(
 #' 
 #' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
 #' varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
-#' corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1)
+#' corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
 #' value or nChr values.
@@ -1013,6 +1084,8 @@ SimParam$set(
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape value of the shape parameter if using a gamma distribution. 
 #' Note that shape=1 is equivalent to an exponential distribution.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #'  
 #' @name SimParam_addTraitADG
 NULL
@@ -1023,8 +1096,10 @@ SimParam$set(
   function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
-           shape=1){
-    private$.isRunning()
+           shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
@@ -1079,18 +1154,22 @@ SimParam$set(
 #' @description 
 #' Removes designated trait(s).
 #' 
-#' @section Usage: SP$removeTrait(traits)
+#' @section Usage: SP$removeTrait(traits, force = FALSE)
 #' 
 #' @param traits a vector of traits to remove
-#' 
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#'  
 #' @name SimParam_removeTrait
 NULL
 # removeTrait ----
 SimParam$set(
   "public",
   "removeTrait",
-  function(traits){
-    private$.isRunning()
+  function(traits,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     traits = as.integer(traits)
     stopifnot(max(traits)<=private$.nTraits)
     private$.traits = private$.traits[-traits]
@@ -1114,7 +1193,8 @@ SimParam$set(
 #' @description 
 #' Replaces an existing trait.
 #' 
-#' @section Usage: SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL)
+#' @section Usage: SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL, 
+#' force = FALSE)
 #' 
 #' @param lociMap a new object descended from 
 #' \code{\link{LociMap-class}}
@@ -1123,6 +1203,8 @@ SimParam$set(
 #' If NULL, the existing value is retained.
 #' @param varG a new value for varG in the base population. 
 #' If NULL, the existing value is retained.
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @name SimParam_switchTrait
 NULL
@@ -1130,8 +1212,10 @@ NULL
 SimParam$set(
   "public",
   "switchTrait",
-  function(lociMap,trait,varA=NULL,varG=NULL){
-    private$.isRunning()
+  function(lociMap,trait,varA=NULL,varG=NULL,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
     stopifnot(length(trait)==1,trait<=private$.nTraits)
     if(!is.null(varA)){
       private$.varA[trait] = varA
@@ -1140,6 +1224,39 @@ SimParam$set(
       private$.varG[trait] = varG
     }
     private$.traits[[trait]] = lociMap
+    invisible(self)
+  }
+)
+
+#' @title Manually add trait
+#' 
+#' @description 
+#' Add a new trait to the simulation.
+#' 
+#' @section Usage: SP$manAddTrait(lociMap, varA = NULL, varG = NULL, 
+#' force = FALSE)
+#' 
+#' @param lociMap a new object descended from 
+#' \code{\link{LociMap-class}}
+#' @param varA a new value for varA in the base population. 
+#' @param varG a new value for varG in the base population. 
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_manAddTrait
+NULL
+# manAddTrait ----
+SimParam$set(
+  "public",
+  "manAddTrait",
+  function(lociMap,varA=NULL,varG=NULL,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    private$.nTraits = private$.nTraits+1L
+    private$.varA[private$.nTraits] = varA
+    private$.varG[private$.nTraits] = varG
+    private$.traits[[private$.nTraits]] = lociMap
     invisible(self)
   }
 )
@@ -1304,3 +1421,30 @@ SimParam$set(
     invisible(self)
   }
 )
+
+#' @title Switch genetic maps
+#' 
+#' @description 
+#' Replaces existing genetic maps.
+#' 
+#' @section Usage: SP$switchGenMaps(genMaps)
+#' 
+#' @param genMaps a list of length nChr containing 
+#' numeric vectors for the position of each segregating 
+#' site on a chromosome.
+#' 
+#' @name SimParam_switchGenMaps
+NULL
+# switchGenMaps ----
+SimParam$set(
+  "public",
+  "switchGenMaps",
+  function(genMaps){
+    stopifnot(length(genMaps)==private$.nChr)
+    tmp = do.call("c",lapply(genMaps,length))
+    stopifnot(all(tmp==private$.segSites))
+    private$.genMaps = genMaps
+    invisible(self)
+  }
+)
+

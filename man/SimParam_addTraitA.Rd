@@ -16,6 +16,9 @@
 
 \item{shape}{value of the shape parameter if using a gamma distribution. 
 Note that shape=1 is equivalent to an exponential distribution.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly assigns eligble QTLs for one ore more additive traits. 
@@ -24,6 +27,6 @@ with correlated additive effects.
 }
 \section{Usage}{
  SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
-gamma = FALSE, shape = 1)
+gamma = FALSE, shape = 1, force = FALSE)
 }
 

@@ -25,6 +25,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{shape}{value of the shape parameter if using a gamma distribution. 
 Note that shape=1 is equivalent to an exponential distribution.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly assigns eligble QTLs for one or more traits with dominance. 
@@ -34,6 +37,6 @@ with correlated additive effects.
 \section{Usage}{
  SP$addTraitAD(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
 varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE, 
-shape = 1)
+shape = 1, force = FALSE)
 }
 

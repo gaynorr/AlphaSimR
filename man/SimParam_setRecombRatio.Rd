@@ -5,6 +5,9 @@
 \title{Set gender specific recombination}
 \arguments{
 \item{ratio}{any value greater than 0}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Defines a gender specific recombination ratio. 
@@ -16,6 +19,6 @@ and a value of 0.5 specifies half as much recombination in
 females.
 }
 \section{Usage}{
- SP$setRecombRatio(ratio)
+ SP$setRecombRatio(ratio, force = FALSE)
 }
 

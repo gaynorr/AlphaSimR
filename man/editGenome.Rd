@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{editGenome}
 \alias{editGenome}
-\title{Edit Genome}
+\title{Edit genome}
 \usage{
 editGenome(pop, ind, chr, segSites, allele, simParam = NULL)
 }

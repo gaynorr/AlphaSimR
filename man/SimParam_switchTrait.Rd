@@ -14,11 +14,15 @@ If NULL, the existing value is retained.}
 
 \item{varG}{a new value for varG in the base population. 
 If NULL, the existing value is retained.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Replaces an existing trait.
 }
 \section{Usage}{
- SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL)
+ SP$switchTrait(lociMap, trait, varA = NULL, varG = NULL, 
+force = FALSE)
 }
 

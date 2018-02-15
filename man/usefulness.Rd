@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{usefulness}
 \alias{usefulness}
-\title{Usefulness Criterion}
+\title{Usefulness criterion}
 \usage{
 usefulness(pop, trait = 1, use = "gv", p = 0.1, selectTop = TRUE,
   simParam = NULL, ...)

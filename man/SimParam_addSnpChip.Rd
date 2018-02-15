@@ -6,11 +6,14 @@
 \arguments{
 \item{nSnpPerChr}{number of SNPs per chromosome. 
 Can be a single value or nChr values.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly assigns eligble SNPs to a SNP chip
 }
 \section{Usage}{
- SP$addSnpChip(nSnpPerChr)
+ SP$addSnpChip(nSnpPerChr, force = FALSE)
 }
 

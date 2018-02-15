@@ -1,5 +1,5 @@
 ---
-title: "Introduction to AlphaSimR"
+title: "A Brief Introduction to AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output: pdf_document
@@ -10,7 +10,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The AlphaSimR package is a set of tools for simulating plant and animal breeding programs in the R software environment. It is a successor to the AlphaSim program for breeding program simulation [@AlphaSim]. Compared to AlphaSim, AlphaSimR offers more capability to simulate complex plant and animal breeding program designs. This capability is made possible by splitting the components of a breeding program simulation into a series of functions. Users of AlphaSimR are thus free to combine these functions in nearly endless combinations to simulate virtually any breeding program. Users can also extend the functionality of AlphaSimR using native R code and/or by interfacing with other R packages or external software.
+The AlphaSimR package provides a set of tools for simulating plant and animal breeding programs in the R software environment. It is a successor to the AlphaSim program for breeding program simulation [@AlphaSim]. Compared to AlphaSim, AlphaSimR offers more capability to simulate complex plant and animal breeding program designs. This capability is made possible by splitting the components of a breeding program simulation into a series of functions. Users of AlphaSimR are thus free to combine these functions in nearly endless combinations to simulate virtually any breeding program. Users can also extend the functionality of AlphaSimR using native R code and/or by interfacing with other R packages or external software.
 
 This vignette will provide you with a brief introduction to how AlphaSimR simulations are structured, point out the functions you are most likely to use, and conclude with a brief example simulation. More detailed information on specific aspects of AlphaSimR can be found in additional vignettes and the help documentation for AlphaSimR functions. There are also vignettes for examples of simulating more complicated breeding programs.
 
@@ -99,7 +99,7 @@ library(AlphaSimR)
 ### Create Founder Haplotypes
 
 # Simulating founder haplotyes for a population of 1000 individuals
-# Each individuals has 10 chromosomes, each with 1000 segregating sites
+# Each individual has 10 chromosomes, each with 1000 segregating sites
 # Using species="TEST" to make this example faster
 # Jenko et al. used parameters matching species="CATTLE"
 # Chromosomes simulated using the "TEST" species have a 1 Morgan length

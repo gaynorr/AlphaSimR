@@ -82,7 +82,7 @@ mergePops = function(popList){
     gxe = list()
   }
   #geno
-  geno = AlphaSimR:::mergeMultGeno(popList,nInd=nInd,nLoci=nLoci,ploidy=ploidy)
+  geno = mergeMultGeno(popList,nInd=nInd,nLoci=nLoci,ploidy=ploidy)
   nInd = sum(nInd)
   return(new("Pop",
              nInd=nInd,

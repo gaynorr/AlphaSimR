@@ -6,6 +6,9 @@
 \arguments{
 \item{gender}{acceptable value are "no", "yes_sys", or 
 "yes_rand"}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Changes how gender is used in the simulation. 
@@ -18,6 +21,6 @@ female. The value "yes_rand" will randomly assign gender to
 individuals.
 }
 \section{Usage}{
- SP$setGender(gender)
+ SP$setGender(gender, force = FALSE)
 }
 

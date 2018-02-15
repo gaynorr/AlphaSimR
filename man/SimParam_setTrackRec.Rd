@@ -5,6 +5,9 @@
 \title{Set recombination tracking}
 \arguments{
 \item{isTrackRec}{should recombination tracking be on.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Sets recombination tracking for the simulation. 
@@ -15,6 +18,6 @@ except those created by \code{\link{hybridCross}}, because their
 pedigree is not tracked.
 }
 \section{Usage}{
- SimParam$setTrackRec(isTrackRec)
+ SimParam$setTrackRec(isTrackRec, force = FALSE)
 }
 

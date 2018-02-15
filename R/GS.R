@@ -23,7 +23,7 @@
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @export
-writeRecords = function(pop,dir,snpChip,useQtl=FALSE,reps=1,fixEff=1,
+writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,reps=1,fixEff=1,
                         includeHaplo=FALSE,append=TRUE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)

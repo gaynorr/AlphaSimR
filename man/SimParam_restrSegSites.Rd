@@ -17,6 +17,9 @@ to overlap.}
 
 \item{minSnpFreq}{minimum allowable frequency for SNP loci. 
 No minimum SNP frequency is used if value is NULL.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Sets restrictions on which segregating sites 
@@ -24,6 +27,6 @@ can serve and SNP and/or QTL loci.
 }
 \section{Usage}{
  SP$restrSegSites(maxQtl = 0, maxSnp = 0, 
-snpQtlOverlap = FALSE, minSnpFreq = NULL)
+snpQtlOverlap = FALSE, minSnpFreq = NULL, force = FALSE)
 }
 

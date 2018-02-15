@@ -185,18 +185,6 @@ genicVarG = function(pop,simParam=NULL){
   genParam(pop,FALSE,simParam=simParam)$genicVarG
 }
 
-#' @title Additive variance
-#' 
-#' @description Returns additive variance for all traits
-#' 
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' @export
-varA = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$varA
-}
-
 #' @title Genetic value
 #' 
 #' @description A wrapper for accessing the gv slot

@@ -5,11 +5,14 @@
 \title{Remove trait}
 \arguments{
 \item{traits}{a vector of traits to remove}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Removes designated trait(s).
 }
 \section{Usage}{
- SP$removeTrait(traits)
+ SP$removeTrait(traits, force = FALSE)
 }
 

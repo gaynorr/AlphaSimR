@@ -7,11 +7,14 @@
 \item{lociMap}{a new \code{\link{LociMap-class}}}
 
 \item{chip}{an integer indicating which chip to replace}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Replaces the \code{\link{LociMap-class}} for a SNP chip.
 }
 \section{Usage}{
- SP$switchSnpChips(lociMap, chip)
+ SP$switchSnpChips(lociMap, chip, force = FALSE)
 }
 

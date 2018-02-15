@@ -5,6 +5,9 @@
 \title{Set pedigree tracking}
 \arguments{
 \item{isTrackPed}{should pedigree tracking be on.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Sets pedigree tracking for the simulation. 
@@ -15,6 +18,6 @@ off pedigree tracking will turn off recombination tracking
 if it is turned on.
 }
 \section{Usage}{
- SP$setTrackPed(isTrackPed)
+ SP$setTrackPed(isTrackPed, force = FALSE)
 }
 

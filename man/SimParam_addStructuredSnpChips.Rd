@@ -9,12 +9,15 @@ Can be a single value or nChr values.}
 
 \item{structure}{a matrix.  Rows are snp chips, columns are chips.
 If value is true then that snp is on that chip.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly selects the number of snps in structure and then
 assigns them to chips based on structure
 }
 \section{Usage}{
- SP$addStructuredSnpChip(nSnpPerChr, structure)
+ SP$addStructuredSnpChip(nSnpPerChr, structure, force = FALSE)
 }
 

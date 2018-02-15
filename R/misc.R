@@ -1,4 +1,4 @@
-#' @title Selection Intensity
+#' @title Selection intensity
 #' 
 #' @description 
 #' Calculates the standardized selection intensity
@@ -10,7 +10,7 @@ selInt = function(p){
   return(dnorm(qnorm(1-p))/p)
 }
 
-#' @title Calculate Smith-Hazel Weights
+#' @title Calculate Smith-Hazel weights
 #' 
 #' @description
 #' Calculates weights for Smith-Hazel index given economice weights 
@@ -27,7 +27,7 @@ smithHazel = function(econWt,varG,varP){
   return(solve(varP)%*%varG%*%econWt)
 }
 
-#' @title Selection Index
+#' @title Selection index
 #' 
 #' @description
 #' Calculates values of a selection index given trait values and 
@@ -47,7 +47,7 @@ selIndex = function(Y,b,scale=FALSE){
   return(Y%*%b)
 }
 
-#' @title Edit Genome
+#' @title Edit genome
 #' 
 #' @description
 #' Edits selected loci of selected individuals to a homozygous 
@@ -80,8 +80,10 @@ editGenome = function(pop,ind,chr,segSites,allele,
   stopifnot(allele==0L | allele==1L)
   allele = as.raw(allele)
   for(selChr in unique(chr)){
-    selSegSites = segSites[chr==selChr]
-    pop@geno[[selChr]][selSegSites,,ind] = allele
+    sel = chr==selChr
+    selSegSites = segSites[sel]
+    selAllele = allele[sel]
+    pop@geno[[selChr]][selSegSites,,ind] = selAllele
   }
   pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
@@ -94,6 +96,104 @@ editGenome = function(pop,ind,chr,segSites,allele,
         pop@gxe[[i]] = tmp[[2]]
       }
     }
+  }
+  validObject(pop)
+  return(pop)
+}
+
+#' @title Edit genome - the top QTL
+#' 
+#' @description
+#' Edits the top QTL (with the largest additive effect) to a homozygous 
+#' state for the allele increasing. Only nonfixed QTL are edited The gv slot is
+#' recalculated to reflect the any changes due to editing, but other slots remain the same.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param ind a vector of individuals to edit
+#' @param nQtl number of QTL to edit
+#' @param trait which trait effects should guide selection of the top QTL
+#' @param increase should the trait value be increased or decreased
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  ind = unique(as.integer(ind))
+  stopifnot(all(ind %in% (1:pop@nInd)))
+  nQtl = as.integer(nQtl)
+  stopifnot(nQtl > 0 & nQtl <= simParam$traits[[trait]]@nLoci)
+  
+  findTopQtl = function(pop, ind, nQtl, trait, increase, simParam) {
+    # @title Find the top non fixed QTL for use in editGenome()
+    # @param pop an object of \code{\link{Pop-class}}
+    # @param ind a vector of individuals to edit
+    # @param nQtl number of QTL to edit
+    # @param trait which trait effects should guide selection of the top QTL
+    # @param increase should the trait value be increased or decreased
+    # @param simParam an object of \code{\link{SimParam}}
+    # @return: a list of four vectors with the:
+    #         first  indicating which QTL (of all genome QTL) are the top,
+    #         second indicating which segsite (of all segsites within a chromosome) are the top,
+    #         third  indicating chromosome of the QTL
+    #         fourth indicates which allele we want to fix (edit to)
+    QtlGeno = pullQtlGeno(pop=pop[ind],trait=trait,simParam=simParam)
+    
+    QtlEff = simParam$traits[[trait]]@addEff
+    ret = vector(mode = "list", length = 2)
+    ret[[1]] = ret[[2]] = ret[[3]] = ret[[4]] = rep(NA, times = nQtl)
+    QtlEffRank = order(abs(QtlEff), decreasing = TRUE)
+    nQtlInd = 0
+    Qtl = 0
+    
+    while (nQtlInd < nQtl) {
+      Qtl = Qtl + 1
+      QtlGenoLoc = QtlGeno[QtlEffRank[Qtl]]
+      if (QtlEff[QtlEffRank[Qtl]] > 0) {
+        if (QtlGenoLoc < 2) {
+          nQtlInd = nQtlInd + 1
+          ret[[1]][nQtlInd] = QtlEffRank[Qtl]
+          ret[[2]][nQtlInd] = simParam$traits[[trait]]@lociLoc[QtlEffRank[Qtl]]
+          if (increase) {
+            ret[[4]][nQtlInd] = 1
+          } else {
+            ret[[4]][nQtlInd] = 0
+          }
+        }
+      } else {
+        if (QtlGenoLoc > 0) {
+          nQtlInd = nQtlInd + 1
+          ret[[1]][nQtlInd] = QtlEffRank[Qtl]
+          ret[[2]][nQtlInd] = simParam$traits[[trait]]@lociLoc[QtlEffRank[Qtl]]
+          if (increase) {
+            ret[[4]][nQtlInd] = 0
+          } else {
+            ret[[4]][nQtlInd] = 1
+          }
+        }
+      }
+    }
+    
+    # Locate QTL segsite to chromosomes
+    tmp = cumsum(simParam$traits[[trait]]@lociPerChr)
+    for (Qtl in 1:nQtl) {
+      ret[[3]][Qtl] = which(ret[[1]][Qtl] <= tmp)[1]
+    }
+    ret
+  }
+  
+  for (ind2 in ind) {
+    targetQtl = findTopQtl(pop = pop, ind = ind2, nQtl = nQtl, trait = trait,
+                           increase = increase, simParam = simParam)
+    pop = editGenome(pop = pop,
+                     ind = ind2,
+                     chr = targetQtl[[3]],
+                     segSites = targetQtl[[2]],
+                     allele = targetQtl[[4]],
+                     simParam = simParam)
   }
   validObject(pop)
   return(pop)
@@ -118,7 +218,7 @@ corVar = function(x,rho){
   return(x+rnorm(length(x),sd=sqrt(varY)))
 }
 
-#' @title Usefulness Criterion
+#' @title Usefulness criterion
 #' 
 #' @description Calculates the usefulness criterion
 #' 

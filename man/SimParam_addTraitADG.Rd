@@ -31,6 +31,9 @@ value or nChr values.}
 
 \item{shape}{value of the shape parameter if using a gamma distribution. 
 Note that shape=1 is equivalent to an exponential distribution.}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly assigns eligble QTLs for a trait with dominance and GxE.
@@ -38,6 +41,6 @@ Randomly assigns eligble QTLs for a trait with dominance and GxE.
 \section{Usage}{
  SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
 varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
-corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1)
+corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, force = FALSE)
 }
 

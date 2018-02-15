@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{selIndex}
 \alias{selIndex}
-\title{Selection Index}
+\title{Selection index}
 \usage{
 selIndex(Y, b, scale = FALSE)
 }
