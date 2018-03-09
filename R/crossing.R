@@ -150,18 +150,19 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' Selects lowest values if false.
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param balance if using gender, this option will balance the number 
-#' of progeny per parent
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
+#' @param balance if using gender, this option will balance the number 
+#' of progeny per parent. This argument occurs after ..., so the argument 
+#' name must be matched exactly.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,trait=1,
                        selectTop=TRUE,use="pheno",nCrosses,nProgeny=1,
-                       balance=TRUE,simParam=NULL,...){
+                       simParam=NULL,...,balance=TRUE){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }

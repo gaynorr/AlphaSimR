@@ -6,7 +6,7 @@
 \usage{
 selectCross(pop, nInd = NULL, nFemale = NULL, nMale = NULL, trait = 1,
   selectTop = TRUE, use = "pheno", nCrosses, nProgeny = 1,
-  balance = TRUE, simParam = NULL, ...)
+  simParam = NULL, ..., balance = TRUE)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -37,13 +37,14 @@ or randomly "rand"}
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{balance}{if using gender, this option will balance the number 
-of progeny per parent}
-
 \item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
 trait}
+
+\item{balance}{if using gender, this option will balance the number 
+of progeny per parent. This argument occurs after ..., so the argument 
+name must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
