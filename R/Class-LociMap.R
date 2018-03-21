@@ -296,19 +296,35 @@ setValidity("GCAsol",function(object){
 #' to contain estimated effects from \code{\link{RRBLUP_SCA}}
 #' 
 #' @slot scaEff marker SCA effects
+#' @slot hetCov heterozygosity covariate
 #'
 #' @export
 setClass("SCAsol",
-         slots=c(scaEff="matrix"),
+         slots=c(a1="matrix",
+                 a2="matrix",
+                 d="matrix",
+                 hetCov="numeric"),
          contains="GCAsol")
 
 setValidity("SCAsol",function(object){
   errors = character()
-  if(!is.numeric(object@scaEff)){
-    errors = c(errors,"!is.numeric(scaEff)")
+  if(!is.numeric(object@a1)){
+    errors = c(errors,"!is.numeric(a1)")
   }
-  if(object@nLoci!=nrow(object@scaEff)){
-    errors = c(errors,"nLoci!=nrow(scaEff)")
+  if(object@nLoci!=nrow(object@a1)){
+    errors = c(errors,"nLoci!=nrow(a1)")
+  }
+  if(!is.numeric(object@a2)){
+    errors = c(errors,"!is.numeric(a2)")
+  }
+  if(object@nLoci!=nrow(object@a2)){
+    errors = c(errors,"nLoci!=nrow(a2)")
+  }
+  if(!is.numeric(object@d)){
+    errors = c(errors,"!is.numeric(d)")
+  }
+  if(object@nLoci!=nrow(object@d)){
+    errors = c(errors,"nLoci!=nrow(d)")
   }
   if(length(errors)==0){
     return(TRUE)

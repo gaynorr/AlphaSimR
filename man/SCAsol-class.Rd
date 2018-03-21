@@ -12,5 +12,7 @@ to contain estimated effects from \code{\link{RRBLUP_SCA}}
 
 \describe{
 \item{\code{scaEff}}{marker SCA effects}
+
+\item{\code{hetCov}}{heterozygosity covariate}
 }}
 

@@ -21,15 +21,16 @@ Rcpp::List traitAObj(double tuneValue, Rcpp::List args){
 //Objective function for tuning TraitD
 Rcpp::List traitADObj(double tuneValue, Rcpp::List args){
   arma::Mat<unsigned char> geno = args["geno"];
-  arma::imat domGeno = args["domGeno"];
+  arma::Mat<unsigned char> domGeno = args["domGeno"];
   arma::vec addEff = args["addEff"];
   arma::vec domEff = args["domEff"];
+  arma::vec p = args["p"];
   double varG = args["varG"];
   bool useVarA = args["useVarA"];
-  arma::vec gv = geno*(addEff*tuneValue)+domGeno*(domEff*tuneValue);
+  arma::vec gv = arma::conv_to<arma::mat>::from(geno)*(addEff*tuneValue)+
+    arma::conv_to<arma::mat>::from(domGeno)*(domEff*tuneValue);
   double intercept = arma::mean(gv);
   double obsVarG= arma::var(gv,1);
-  arma::vec p = (arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2.0).t();
   arma::vec alpha = (addEff*tuneValue)+(domEff*tuneValue)%(1-2*p);
   arma::vec bv = geno*alpha;
   double obsVarA = arma::var(bv,1);
@@ -66,13 +67,15 @@ Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
                       arma::vec& domEff,
                       double varG, 
                       bool useVarA){
+  arma::vec p = (arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2.0).t();
   return optimize(*traitADObj,
                   Rcpp::List::create(Rcpp::Named("geno")=geno,
                                      Rcpp::Named("domGeno")=getDomGeno(geno),
                                      Rcpp::Named("addEff")=addEff,
                                      Rcpp::Named("domEff")=domEff,
                                      Rcpp::Named("varG")=varG,
-                                     Rcpp::Named("useVarA")=useVarA),
+                                     Rcpp::Named("useVarA")=useVarA,
+                                     Rcpp::Named("p")=p),
                                      1e-10,
                                      1e3);
 }

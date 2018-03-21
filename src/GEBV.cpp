@@ -10,8 +10,7 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   geno = getGeno(pop.slot("geno"), 
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
-  arma::mat output = geno*a;
-  return output;
+  return arma::conv_to<arma::mat>::from(geno)*a;
 }
 
 // Retrieves GEGVs for RRDsol
@@ -24,10 +23,10 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   geno = getGeno(pop.slot("geno"), 
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
-  arma::mat genoD = arma::conv_to<arma::mat>::from(getDomGeno(geno));
-  arma::mat het = mean(genoD,1);
-  arma::mat output = geno*a+genoD*d+het*b;
-  return output;
+  arma::Mat<unsigned char> genoD = getDomGeno(geno);
+  arma::mat het = mean(arma::conv_to<arma::mat>::from(genoD),1);
+  return arma::conv_to<arma::mat>::from(geno)*a+
+    arma::conv_to<arma::mat>::from(genoD)*d+het*b;
 }
 
 // Retrieves GEBVs for RRDsol using population specific p
@@ -40,13 +39,12 @@ arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
   arma::mat p = arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2;
-  arma::mat output = geno*(a+d%(1-2*p.t()));
-  return output;
+  return arma::conv_to<arma::mat>::from(geno)*(a+d%(1-2*p.t()));
 }
 
 // [[Rcpp::export]]
 arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, 
-                  bool female, bool isSCAsol=false){
+                  bool female){
   arma::mat a;
   if(female){
     a = Rcpp::as<arma::mat>(sol.slot("femaleEff"));
@@ -57,40 +55,44 @@ arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
   geno = getGeno(pop.slot("geno"), 
                  sol.slot("lociPerChr"),
                  sol.slot("lociLoc"));
-  arma::mat X = arma::conv_to<arma::mat>::from(geno);
-  if(isSCAsol) X -= 1;
-  return X*a;
+  return arma::conv_to<arma::mat>::from(geno)*a;
 }
 
 // [[Rcpp::export]]
-arma::mat gebvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop, 
-                  bool isSCAsol=true){
+arma::mat gebvSCA_GCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
   arma::mat a1 = sol.slot("femaleEff");
   arma::mat a2 = sol.slot("maleEff");
-  arma::mat a3;
-  if(isSCAsol){
-    a3 = Rcpp::as<arma::mat>(sol.slot("scaEff"));
-  }
-  arma::Mat<unsigned char> geno;
-  geno = getOneHaplo(pop.slot("geno"), 
-                     sol.slot("lociPerChr"),
-                     sol.slot("lociLoc"), 
-                     1);
-  arma::mat X1 = arma::conv_to<arma::mat>::from(geno);
-  X1 = X1*2;
-  if(isSCAsol) X1 -= 1;
-  geno = getOneHaplo(pop.slot("geno"), 
-                     sol.slot("lociPerChr"),
-                     sol.slot("lociLoc"), 
-                     2);
-  arma::mat X2 = arma::conv_to<arma::mat>::from(geno);
-  X2 = X2*2;
-  if(isSCAsol) X2 -= 1;
-  arma::mat output;
-  if(isSCAsol){
-    output = X1*a1 + X2*a2 + (X1%X2)*a3;
-  }else{
-    output = X1*a1 + X2*a2;
-  }
-  return output;
+  arma::Mat<unsigned char> geno1,geno2;
+  geno1 = getOneHaplo(pop.slot("geno"), 
+                      sol.slot("lociPerChr"),
+                      sol.slot("lociLoc"), 
+                      1);
+  geno2 = getOneHaplo(pop.slot("geno"), 
+                      sol.slot("lociPerChr"),
+                      sol.slot("lociLoc"), 
+                      2);
+  return 2*(arma::conv_to<arma::mat>::from(geno1)*a1+
+            arma::conv_to<arma::mat>::from(geno2)*a2);
+}
+
+// [[Rcpp::export]]
+arma::mat gebvSCA_SCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
+  arma::mat a1 = sol.slot("a1");
+  arma::mat a2 = sol.slot("a2");
+  arma::mat d = sol.slot("d");
+  double b = sol.slot("hetCov");
+  arma::Mat<unsigned char> geno1,geno2,genoD;
+  geno1 = getOneHaplo(pop.slot("geno"), 
+                      sol.slot("lociPerChr"),
+                      sol.slot("lociLoc"), 
+                      1);
+  geno2 = getOneHaplo(pop.slot("geno"), 
+                      sol.slot("lociPerChr"),
+                      sol.slot("lociLoc"), 
+                      2);
+  genoD = getDomGeno(geno1+geno2);
+  arma::mat het = mean(arma::conv_to<arma::mat>::from(genoD),1);
+  return 2*(arma::conv_to<arma::mat>::from(geno1)*a1+
+            arma::conv_to<arma::mat>::from(geno1)*a1)+
+            arma::conv_to<arma::mat>::from(genoD)*d+het*b;
 }

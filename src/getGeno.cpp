@@ -35,14 +35,9 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
 }
 
 // Converts geno matrix to dominance indicator matrix when ploidy=2
-// Using imat instead of Mat<unsigned char> for increased speed
 // [[Rcpp::export]]
-arma::imat getDomGeno(const arma::Mat<unsigned char>& geno){
-  arma::imat output(geno.n_rows,geno.n_cols);
-  output = arma::conv_to<arma::imat>::from(geno);
-  output -= 1;
-  output = 1-arma::abs(output);
-  return output;
+arma::Mat<unsigned char> getDomGeno(arma::Mat<unsigned char> geno){
+  return geno.replace(2,0);
 }
 
 // Returns haplotype data in a matrix of nInd*ploidy by nLoci

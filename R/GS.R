@@ -211,7 +211,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_D = function(dir, traits=1, use="pheno", 
-                    skip=0, useHetCov=TRUE, maxIter=1000,
+                    skip=0, useHetCov=TRUE, maxIter=40,
                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -246,7 +246,7 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
-                     skip, useHetCov)
+                     skip, maxIter, useHetCov)
   p = t(ans$p)
   q = 1-p
   ans = ans$ans
@@ -371,6 +371,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param useHetCov should the model include a covariate 
+#' for heterozygosity.
 #' @param maxIter maximum number of iterations for convergence.
 #' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
 #' RRBLUP_SCA gives a variance component of zero
@@ -378,8 +380,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      skip=0, maxIter=40, onFailGCA=TRUE, 
-                      simParam=NULL){
+                      skip=0, useHetCov=TRUE, maxIter=40, 
+                      onFailGCA=TRUE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -414,7 +416,7 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
   ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip,maxIter)
+                       nMarkers,skip,maxIter,useHetCov)
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam$snpChips[[as.integer(tmp[2])]]
@@ -484,9 +486,13 @@ setEBV = function(pop, solution, gender=NULL, useGV=FALSE,
         ebv = gebvRR(solution, pop)
       }
     }
-  }else if(class(solution)=="GCAsol"){
+  }else{
     if(is.null(gender)){
-      ebv = gebvSCA(solution, pop, FALSE)
+      if(class(solution)=="GCAsol"){
+        ebv = gebvSCA_GCA(solution, pop)
+      }else{
+        ebv = gebvSCA_SCA(solution, pop)
+      }
     }else if(toupper(gender)=="FEMALE"){
       ebv = gebvGCA(solution, pop, TRUE)
     }else if(toupper(gender)=="MALE"){
@@ -494,18 +500,6 @@ setEBV = function(pop, solution, gender=NULL, useGV=FALSE,
     }else{
       stop(paste0("gender=",gender," is not a valid option"))
     }
-  }else if(class(solution)=="SCAsol"){
-    if(is.null(gender)){
-      ebv = gebvSCA(solution, pop)
-    }else if(toupper(gender)=="FEMALE"){
-      ebv = gebvGCA(solution, pop, TRUE, TRUE)
-    }else if(toupper(gender)=="MALE"){
-      ebv = gebvGCA(solution, pop, FALSE, TRUE)
-    }else{
-      stop(paste0("gender=",gender," is not a valid option"))
-    }
-  }else{
-    stop("No method for class(solution)=",class(solution))
   }
   if(append){
     pop@ebv = cbind(pop@ebv,ebv)

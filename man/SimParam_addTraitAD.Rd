@@ -23,8 +23,7 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 
-\item{shape}{value of the shape parameter if using a gamma distribution. 
-Note that shape=1 is equivalent to an exponential distribution.}
+\item{shape}{the shape parameter for the gamma distribution}
 
 \item{force}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}

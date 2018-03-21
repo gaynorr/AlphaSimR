@@ -250,3 +250,19 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
   response = response[1:ceiling(p*length(response))]
   return(mean(response))
 }
+
+#' @title Variance to correlation
+#' 
+#' @description
+#' Converts a variance-covariance matrix to a 
+#' correlation matrix.
+#'
+#' @param var a variance-covariance matrix 
+#'
+#' @return a numeric matrix
+#'
+#' @export
+var2cor = function(var){
+  tmp = diag(1/sqrt(diag(var)))
+  return(tmp%*%var%*%tmp)
+}

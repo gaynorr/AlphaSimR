@@ -4,16 +4,17 @@
 // Calculates genetic values for a trait with only additive effects
 arma::vec calcGvA(const arma::Mat<unsigned char>& geno,
                   const arma::vec& a, double intercept){
-  arma::vec output = geno*a;
-  return output+intercept;
+  arma::vec output = arma::conv_to<arma::mat>::from(geno)*a+intercept;
+  return output;
 }
 
 // Calculates genetic values for a trait with additive and dominance effects
 arma::vec calcGvAD(const arma::Mat<unsigned char>& geno,
                    const arma::vec& a, const arma::vec& d,
                    double intercept){
-  arma::vec output = geno*a+getDomGeno(geno)*d;
-  return output+intercept;
+  arma::vec output = arma::conv_to<arma::mat>::from(geno)*a+
+    arma::conv_to<arma::mat>::from(getDomGeno(geno))*d+intercept;
+  return output;
 }
 
 // Calculates genetic values for a trait

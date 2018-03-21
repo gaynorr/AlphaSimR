@@ -76,8 +76,8 @@ arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
 }
 
 // [[Rcpp::export]]
-arma::imat convToImat(const arma::Mat<unsigned char>& X){
-  return arma::conv_to<arma::imat>::from(X);
+arma::Mat<int> convToImat(const arma::Mat<unsigned char>& X){
+  return arma::conv_to<arma::Mat<int> >::from(X);
 }
 
 // Linear index functions for upper triangle of a square
