@@ -29,18 +29,6 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
     arma::conv_to<arma::mat>::from(genoD)*d+het*b;
 }
 
-// Retrieves GEBVs for RRDsol using population specific p
-// [[Rcpp::export]]
-arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
-  arma::mat a = RRsol.slot("addEff");
-  arma::mat d = RRsol.slot("domEff");
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 RRsol.slot("lociPerChr"),
-                 RRsol.slot("lociLoc"));
-  arma::mat p = arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2;
-  return arma::conv_to<arma::mat>::from(geno)*(a+d%(1-2*p.t()));
-}
 
 // [[Rcpp::export]]
 arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, 
@@ -59,7 +47,7 @@ arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
 }
 
 // [[Rcpp::export]]
-arma::mat gebvSCA_GCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
+arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
   arma::mat a1 = sol.slot("femaleEff");
   arma::mat a2 = sol.slot("maleEff");
   arma::Mat<unsigned char> geno1,geno2;
@@ -76,7 +64,7 @@ arma::mat gebvSCA_GCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
 }
 
 // [[Rcpp::export]]
-arma::mat gebvSCA_SCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
+arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
   arma::mat a1 = sol.slot("a1");
   arma::mat a2 = sol.slot("a2");
   arma::mat d = sol.slot("d");
@@ -93,6 +81,6 @@ arma::mat gebvSCA_SCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
   genoD = getDomGeno(geno1+geno2);
   arma::mat het = mean(arma::conv_to<arma::mat>::from(genoD),1);
   return 2*(arma::conv_to<arma::mat>::from(geno1)*a1+
-            arma::conv_to<arma::mat>::from(geno1)*a1)+
+            arma::conv_to<arma::mat>::from(geno2)*a2)+
             arma::conv_to<arma::mat>::from(genoD)*d+het*b;
 }

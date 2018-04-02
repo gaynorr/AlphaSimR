@@ -17,20 +17,16 @@ gegvRRD <- function(RRsol, pop) {
     .Call(`_AlphaSimR_gegvRRD`, RRsol, pop)
 }
 
-gebvRRD <- function(RRsol, pop) {
-    .Call(`_AlphaSimR_gebvRRD`, RRsol, pop)
-}
-
 gebvGCA <- function(sol, pop, female) {
     .Call(`_AlphaSimR_gebvGCA`, sol, pop, female)
 }
 
-gebvSCA_GCA <- function(sol, pop) {
-    .Call(`_AlphaSimR_gebvSCA_GCA`, sol, pop)
+gegvGCA <- function(sol, pop) {
+    .Call(`_AlphaSimR_gegvGCA`, sol, pop)
 }
 
-gebvSCA_SCA <- function(sol, pop) {
-    .Call(`_AlphaSimR_gebvSCA_SCA`, sol, pop)
+gegvSCA <- function(sol, pop) {
+    .Call(`_AlphaSimR_gegvSCA`, sol, pop)
 }
 
 getGeno <- function(geno, lociPerChr, lociLoc) {

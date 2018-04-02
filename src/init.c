@@ -21,10 +21,9 @@ extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvGCA(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvRR(SEXP, SEXP);
-extern SEXP _AlphaSimR_gebvRRD(SEXP, SEXP);
-extern SEXP _AlphaSimR_gebvSCA_GCA(SEXP, SEXP);
-extern SEXP _AlphaSimR_gebvSCA_SCA(SEXP, SEXP);
+extern SEXP _AlphaSimR_gegvGCA(SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvRRD(SEXP, SEXP);
+extern SEXP _AlphaSimR_gegvSCA(SEXP, SEXP);
 extern SEXP _AlphaSimR_getDomGeno(SEXP);
 extern SEXP _AlphaSimR_getGeno(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getGv(SEXP, SEXP);
@@ -59,10 +58,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_cross2",            (DL_FUNC) &_AlphaSimR_cross2,            7},
     {"_AlphaSimR_gebvGCA",           (DL_FUNC) &_AlphaSimR_gebvGCA,           3},
     {"_AlphaSimR_gebvRR",            (DL_FUNC) &_AlphaSimR_gebvRR,            2},
-    {"_AlphaSimR_gebvRRD",           (DL_FUNC) &_AlphaSimR_gebvRRD,           2},
-    {"_AlphaSimR_gebvSCA_GCA",       (DL_FUNC) &_AlphaSimR_gebvSCA_GCA,       2},
-    {"_AlphaSimR_gebvSCA_SCA",       (DL_FUNC) &_AlphaSimR_gebvSCA_SCA,       2},
+    {"_AlphaSimR_gegvGCA",           (DL_FUNC) &_AlphaSimR_gegvGCA,           2},
     {"_AlphaSimR_gegvRRD",           (DL_FUNC) &_AlphaSimR_gegvRRD,           2},
+    {"_AlphaSimR_gegvSCA",           (DL_FUNC) &_AlphaSimR_gegvSCA,           2},
     {"_AlphaSimR_getDomGeno",        (DL_FUNC) &_AlphaSimR_getDomGeno,        1},
     {"_AlphaSimR_getGeno",           (DL_FUNC) &_AlphaSimR_getGeno,           3},
     {"_AlphaSimR_getGv",             (DL_FUNC) &_AlphaSimR_getGv,             2},

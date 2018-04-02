@@ -62,18 +62,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gebvRRD
-arma::mat gebvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gebvRRD(SEXP RRsolSEXP, SEXP popSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type RRsol(RRsolSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvRRD(RRsol, pop));
-    return rcpp_result_gen;
-END_RCPP
-}
 // gebvGCA
 arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, bool female);
 RcppExport SEXP _AlphaSimR_gebvGCA(SEXP solSEXP, SEXP popSEXP, SEXP femaleSEXP) {
@@ -87,27 +75,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gebvSCA_GCA
-arma::mat gebvSCA_GCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gebvSCA_GCA(SEXP solSEXP, SEXP popSEXP) {
+// gegvGCA
+arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
+RcppExport SEXP _AlphaSimR_gegvGCA(SEXP solSEXP, SEXP popSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvSCA_GCA(sol, pop));
+    rcpp_result_gen = Rcpp::wrap(gegvGCA(sol, pop));
     return rcpp_result_gen;
 END_RCPP
 }
-// gebvSCA_SCA
-arma::mat gebvSCA_SCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gebvSCA_SCA(SEXP solSEXP, SEXP popSEXP) {
+// gegvSCA
+arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
+RcppExport SEXP _AlphaSimR_gegvSCA(SEXP solSEXP, SEXP popSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvSCA_SCA(sol, pop));
+    rcpp_result_gen = Rcpp::wrap(gegvSCA(sol, pop));
     return rcpp_result_gen;
 END_RCPP
 }
