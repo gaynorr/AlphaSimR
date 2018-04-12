@@ -1,0 +1,12 @@
+---
+title: "Guide to Crossing/Mating"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: bibliography.bib
+vignette: >
+  %\VignetteIndexEntry{Crossing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+

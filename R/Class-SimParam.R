@@ -587,7 +587,7 @@ SimParam$set(
       stopifnot(length(H2)==private$.nTraits)
       varE = numeric(private$.nTraits)
       for(i in 1:length(h2)){
-        tmp = private$.varG[i]/h2[i]-private$.varG[i]
+        tmp = private$.varG[i]/H2[i]-private$.varG[i]
         varE[i] = tmp
       }
       private$.varE = varE

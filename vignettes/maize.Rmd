@@ -1,0 +1,12 @@
+---
+title: "Maize Breeding Program Example"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: bibliography.bib
+vignette: >
+  %\VignetteIndexEntry{Maize Breeding Program}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+

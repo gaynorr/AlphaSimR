@@ -29,7 +29,7 @@ RRBLUP_SCA gives a variance component of zero}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-Fits an RR-BLUP model that models seperate effects for both female
-and male gametes and dominance effects. Used for predicting single
-cross hybrid performance.
+An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects. 
+Note that we have not seen any consistent benefit of this model over 
+\code{\link{RRBLUP_GCA}}.
 }

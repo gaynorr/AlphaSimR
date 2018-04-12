@@ -141,6 +141,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' if nInd is set.
 #' @param nMale the number of males to select. This value is ignored 
 #' if nInd is set.
+#' @param nCrosses total number of crosses to make
+#' @param nProgeny number of progeny per cross
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
@@ -148,8 +150,6 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' or randomly "rand"
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
-#' @param nCrosses total number of crosses to make
-#' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -160,8 +160,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,trait=1,
-                       selectTop=TRUE,use="pheno",nCrosses,nProgeny=1,
+selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
+                       nProgeny=1,trait=1,use="pheno",selectTop=TRUE,
                        simParam=NULL,...,balance=TRUE){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)

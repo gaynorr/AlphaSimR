@@ -60,10 +60,15 @@ hybridCross = function(females,males,crossPlan="testcross",
     stop("Only works with diploids")
   }
   #crossPlan for test cross
-  if(crossPlan=="testcross"){
-    crossPlan = cbind(rep(1:females@nInd,each=males@nInd),
-                      rep(1:males@nInd,females@nInd))
+  if(length(crossPlan)==1){
+    if(crossPlan=="testcross"){
+      crossPlan = cbind(rep(1:females@nInd,each=males@nInd),
+                        rep(1:males@nInd,females@nInd))
+    }else{
+      stop(paste0("crossPlan=",crossPlan," is not a valid option"))
+    }
   }
+  
   #Set id
   femaleParents = females@id[crossPlan[,1]]
   maleParents = males@id[crossPlan[,2]]

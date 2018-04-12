@@ -1,0 +1,10 @@
+Changes in version 0.6.0
+
+  New features
+    -Added NEWS file
+    -Added selectOP to model selection in open pollinating plants
+    -Added runMacs2 as a wrapper for runMacs
+    
+  Bug fixes
+    -Fixed error when using H2 in SimParam_setVarE
+    

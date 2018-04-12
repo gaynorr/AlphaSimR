@@ -4,8 +4,8 @@
 \alias{selectCross}
 \title{Select and randomly cross}
 \usage{
-selectCross(pop, nInd = NULL, nFemale = NULL, nMale = NULL, trait = 1,
-  selectTop = TRUE, use = "pheno", nCrosses, nProgeny = 1,
+selectCross(pop, nInd = NULL, nFemale = NULL, nMale = NULL, nCrosses,
+  nProgeny = 1, trait = 1, use = "pheno", selectTop = TRUE,
   simParam = NULL, ..., balance = TRUE)
 }
 \arguments{
@@ -23,19 +23,19 @@ if nInd is set.}
 \item{nMale}{the number of males to select. This value is ignored 
 if nInd is set.}
 
+\item{nCrosses}{total number of crosses to make}
+
+\item{nProgeny}{number of progeny per cross}
+
 \item{trait}{the trait for selection. Either a number indicating 
 a single trait or a function returning a vector of length nInd.}
-
-\item{selectTop}{selects highest values if true. 
-Selects lowest values if false.}
 
 \item{use}{select on genetic values "gv", estimated
 breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 or randomly "rand"}
 
-\item{nCrosses}{total number of crosses to make}
-
-\item{nProgeny}{number of progeny per cross}
+\item{selectTop}{selects highest values if true. 
+Selects lowest values if false.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

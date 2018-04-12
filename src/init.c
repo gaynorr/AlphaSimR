@@ -33,6 +33,7 @@ extern SEXP _AlphaSimR_getOneHaplo(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_MaCS(SEXP, SEXP);
 extern SEXP _AlphaSimR_mergeGeno(SEXP, SEXP);
 extern SEXP _AlphaSimR_mergeMultGeno(SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_mergeMultIntMat(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_packHaplo(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_popVar(SEXP);
 extern SEXP _AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
@@ -70,6 +71,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_MaCS",              (DL_FUNC) &_AlphaSimR_MaCS,              2},
     {"_AlphaSimR_mergeGeno",         (DL_FUNC) &_AlphaSimR_mergeGeno,         2},
     {"_AlphaSimR_mergeMultGeno",     (DL_FUNC) &_AlphaSimR_mergeMultGeno,     4},
+    {"_AlphaSimR_mergeMultIntMat",   (DL_FUNC) &_AlphaSimR_mergeMultIntMat,   3},
     {"_AlphaSimR_packHaplo",         (DL_FUNC) &_AlphaSimR_packHaplo,         3},
     {"_AlphaSimR_popVar",            (DL_FUNC) &_AlphaSimR_popVar,            1},
     {"_AlphaSimR_sampAllComb",       (DL_FUNC) &_AlphaSimR_sampAllComb,       3},
