@@ -33,10 +33,6 @@ Selects lowest values if false.}
 
 \item{...}{additional arguments if using a function for 
 trait}
-
-\item{balance}{if using gender, this option will balance the number 
-of progeny per parent. This argument occurs after ..., so the argument 
-name must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

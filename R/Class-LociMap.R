@@ -295,7 +295,9 @@ setValidity("GCAsol",function(object){
 #' @description Extends \code{\link{GCAsol-class}} 
 #' to contain estimated effects from \code{\link{RRBLUP_SCA}}
 #' 
-#' @slot scaEff marker SCA effects
+#' @slot a1 additive effect for females
+#' @slot a2 additive effect for males
+#' @slot d dominance effect
 #' @slot hetCov heterozygosity covariate
 #'
 #' @export

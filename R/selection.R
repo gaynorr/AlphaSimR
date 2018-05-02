@@ -256,9 +256,6 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
-#' @param balance if using gender, this option will balance the number 
-#' of progeny per parent. This argument occurs after ..., so the argument 
-#' name must be matched exactly.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
