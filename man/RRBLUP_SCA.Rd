@@ -4,8 +4,8 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 40,
-  onFailGCA = TRUE, simParam = NULL)
+RRBLUP_SCA(dir, traits = 1, use = "pheno", skip = 0, useHetCov = TRUE,
+  maxIter = 40, onFailGCA = TRUE, simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}
@@ -18,6 +18,9 @@ or phenotypes (\code{pheno}, default)}
 
 \item{skip}{number of older records to skip}
 
+\item{useHetCov}{should the model include a covariate 
+for heterozygosity.}
+
 \item{maxIter}{maximum number of iterations for convergence.}
 
 \item{onFailGCA}{if true, \code{\link{RRBLUP_GCA}} is used if 
@@ -26,7 +29,7 @@ RRBLUP_SCA gives a variance component of zero}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-Fits an RR-BLUP model that models seperate effects for both female
-and male gametes and dominance effects. Used for predicting single
-cross hybrid performance.
+An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects. 
+Note that we have not seen any consistent benefit of this model over 
+\code{\link{RRBLUP_GCA}}.
 }

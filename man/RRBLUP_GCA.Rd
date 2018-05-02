@@ -24,6 +24,7 @@ or phenotypes (\code{pheno}, default)}
 }
 \description{
 Fits an RR-BLUP model that estimates seperate marker effects for
-the female and male gametes. Used for predicting GCA of parents
-in single cross hybrids.
+females and males. Useful for predicting GCA of parents
+in single cross hybrids. Can also predict performance of specific 
+single cross hybrids.
 }

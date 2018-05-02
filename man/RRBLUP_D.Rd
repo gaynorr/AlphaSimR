@@ -5,7 +5,7 @@
 \title{RR-BLUP Model with Dominance}
 \usage{
 RRBLUP_D(dir, traits = 1, use = "pheno", skip = 0, useHetCov = TRUE,
-  maxIter = 1000, simParam = NULL)
+  maxIter = 40, simParam = NULL)
 }
 \arguments{
 \item{dir}{path to a directory with output from \code{\link{writeRecords}}}

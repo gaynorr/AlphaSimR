@@ -20,8 +20,7 @@
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 
-\item{shape}{value of the shape parameter if using a gamma distribution. 
-Note that shape=1 is equivalent to an exponential distribution.}
+\item{shape}{the shape parameter for the gamma distribution}
 }
 \description{
 Randomly assigns eligble QTLs for one ore more additive GxE traits. 

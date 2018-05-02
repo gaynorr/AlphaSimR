@@ -211,7 +211,7 @@ RRBLUP = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_D = function(dir, traits=1, use="pheno", 
-                    skip=0, useHetCov=TRUE, maxIter=1000,
+                    skip=0, useHetCov=TRUE, maxIter=40,
                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -246,7 +246,7 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   fixEff = as.integer(factor(markerInfo$fixEff))
   ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
                      file.path(dir,"genotype.txt"),nMarkers,
-                     skip, useHetCov)
+                     skip, maxIter, useHetCov)
   p = t(ans$p)
   q = 1-p
   ans = ans$ans
@@ -254,6 +254,7 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
   a = ans$u[[1]]
   d = ans$u[[2]]
   if(useHetCov){
+    stopifnot(length(fixEff)>1)
     hetCov = fixEff[length(fixEff)]
     fixEff = matrix(fixEff[-length(fixEff)])
     alpha = a+(q-p)*(d+hetCov/nMarkers)
@@ -288,8 +289,9 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
 #'
 #' @description
 #' Fits an RR-BLUP model that estimates seperate marker effects for
-#' the female and male gametes. Used for predicting GCA of parents
-#' in single cross hybrids.
+#' females and males. Useful for predicting GCA of parents
+#' in single cross hybrids. Can also predict performance of specific 
+#' single cross hybrids.
 #'
 #' @param dir path to a directory with output from \code{\link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a
@@ -361,9 +363,9 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' @title RR-BLUP SCA Model
 #'
 #' @description
-#' Fits an RR-BLUP model that models seperate effects for both female
-#' and male gametes and dominance effects. Used for predicting single
-#' cross hybrid performance.
+#' An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects. 
+#' Note that we have not seen any consistent benefit of this model over 
+#' \code{\link{RRBLUP_GCA}}.
 #'
 #' @param dir path to a directory with output from \code{\link{writeRecords}}
 #' @param traits an integer indicating the trait or traits to model, or a
@@ -371,6 +373,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' @param use train model using genetic value (\code{gv})
 #' or phenotypes (\code{pheno}, default)
 #' @param skip number of older records to skip
+#' @param useHetCov should the model include a covariate 
+#' for heterozygosity.
 #' @param maxIter maximum number of iterations for convergence.
 #' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
 #' RRBLUP_SCA gives a variance component of zero
@@ -378,8 +382,8 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #'
 #' @export
 RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      skip=0, maxIter=40, onFailGCA=TRUE, 
-                      simParam=NULL){
+                      skip=0, useHetCov=TRUE, maxIter=40, 
+                      onFailGCA=TRUE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -414,7 +418,27 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
   ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
                        file.path(dir,"haplotype1.txt"),
                        file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip,maxIter)
+                       nMarkers,skip,maxIter,useHetCov)
+  p1 = t(ans$p1)
+  q1 = 1-p1
+  p2 = t(ans$p2)
+  q2 = 1-p2
+  ans = ans$ans
+  fixEff=ans$beta
+  a1 = ans$u[[1]]
+  a2 = ans$u[[2]]
+  d = ans$u[[3]]
+  if(useHetCov){
+    stopifnot(length(fixEff)>1)
+    hetCov = fixEff[length(fixEff)]
+    fixEff = matrix(fixEff[-length(fixEff)])
+    alpha1 = a1+(q2-p2)*(d+hetCov/nMarkers)
+    alpha2 = a2+(q1-p1)*(d+hetCov/nMarkers)
+  }else{
+    hetCov = 0
+    alpha1 = a1+(q2-p2)*d
+    alpha2 = a2+(q1-p1)*d
+  }
   tmp = unlist(strsplit(markerType,"_"))
   if(tmp[1]=="SNP"){
     markers = simParam$snpChips[[as.integer(tmp[2])]]
@@ -432,10 +456,13 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
                nLoci=markers@nLoci,
                lociPerChr=markers@lociPerChr,
                lociLoc=markers@lociLoc,
-               femaleEff=ans$u[[1]],
-               maleEff=ans$u[[2]],
-               scaEff=ans$u[[3]],
-               fixEff=ans$beta,
+               femaleEff=alpha1,
+               maleEff=alpha2,
+               a1=ans$u[[1]],
+               a2=ans$u[[2]],
+               d=ans$u[[3]],
+               hetCov=hetCov,
+               fixEff=fixEff,
                Vu=ans$Vu,
                Ve=ans$Ve,
                LL=ans$LL,
@@ -461,32 +488,28 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
 #' setting this parameter to TRUE will give use estimated 
 #' genetic values. Otherwise, you get estimated breeding 
 #' values that depend on the population's allele frequency.
-#' @param usePopP if model is \code{\link{RRDsol-class}}, 
-#' the population's allele frequency is used for breeding value 
-#' calculations. Otherwise the training population's allele frequency 
-#' is used.
 #' @param append should EBVs be appended to existing EBVs
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
 setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
-                  usePopP=FALSE, append=FALSE){
+                  append=FALSE){
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="RRDsol"){
     if(useGV){
       ebv = gegvRRD(solution, pop)
     }else{
-      if(usePopP){
-        ebv = gebvRRD(solution, pop)
-      }else{
-        ebv = gebvRR(solution, pop)
-      }
+      ebv = gebvRR(solution, pop)
     }
-  }else if(class(solution)=="GCAsol"){
+  }else{
     if(is.null(gender)){
-      ebv = gebvSCA(solution, pop, FALSE)
+      if(class(solution)=="GCAsol"){
+        ebv = gegvGCA(solution, pop)
+      }else{
+        ebv = gegvSCA(solution, pop)
+      }
     }else if(toupper(gender)=="FEMALE"){
       ebv = gebvGCA(solution, pop, TRUE)
     }else if(toupper(gender)=="MALE"){
@@ -494,18 +517,6 @@ setEBV = function(pop, solution, gender=NULL, useGV=FALSE,
     }else{
       stop(paste0("gender=",gender," is not a valid option"))
     }
-  }else if(class(solution)=="SCAsol"){
-    if(is.null(gender)){
-      ebv = gebvSCA(solution, pop)
-    }else if(toupper(gender)=="FEMALE"){
-      ebv = gebvGCA(solution, pop, TRUE, TRUE)
-    }else if(toupper(gender)=="MALE"){
-      ebv = gebvGCA(solution, pop, FALSE, TRUE)
-    }else{
-      stop(paste0("gender=",gender," is not a valid option"))
-    }
-  }else{
-    stop("No method for class(solution)=",class(solution))
   }
   if(append){
     pop@ebv = cbind(pop@ebv,ebv)

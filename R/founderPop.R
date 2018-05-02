@@ -176,7 +176,7 @@ runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
   }
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
-    command = paste0(popSize," ",manualCommand," -s ",sample.int(1e8,1))
+    command = paste(popSize,manualCommand,"-s",sample.int(1e8,1))
     genLen = manualGenLen
   }else{
     species = toupper(species)
@@ -252,6 +252,56 @@ runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
   output = do.call("c",output)
   cat("Done\n")
   return(output)
+}
+
+#' @title Alternative wrapper for MaCS
+#'
+#' @description 
+#' A wrapper function for \code{\link{runMacs}}. This wrapper 
+#' is an alternative to directly using manualCommand in 
+#' \code{\link{runMacs}}. It automatically creates an appropriate 
+#' manualCommand based on user supplied variables.
+#' 
+#' @param nInd number of individuals to simulate
+#' @param nChr number of chromosomes to simulate
+#' @param segSites number of segregating sites to keep per chromosome
+#' @param Ne effective population size
+#' @param bp base pair length of chromosome
+#' @param genLen genetic length of chromosome in Morgans
+#' @param mutRate per base pair mutation rate
+#' @param histNe effective population size in previous 
+#' generations
+#' @param histGen number of generations ago for effective 
+#' population sizes given in histNe
+#' @param inbred should founder individuals be inbred
+#'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
+#' @examples 
+#' # Creates a populations of 10 outbred individuals
+#' # Their genome consists of 1 chromosome and 100 segregating sites
+#' # The command is equivalent to using species="TEST" in runMacs
+#' founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
+#' 
+#' @export
+runMacs2 = function(nInd,nChr,segSites,Ne=100,
+                    bp=1e8,genLen=1,mutRate=2.5e-8,
+                    histNe=NULL,histGen=NULL,
+                    inbred=FALSE){
+  stopifnot(length(histNe)==length(histGen))
+  command = paste(bp,"-t",4*Ne*mutRate,
+                  "-r",4*Ne*genLen/bp)
+  if(length(histNe)>0){
+    histNe = histNe/Ne
+    histGen = histGen/(4*Ne)
+    for(i in 1:length(histNe)){
+      command = paste(command,"-eN",
+                      histGen[i],histNe[i])
+    }
+  }
+  return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
+                 inbred=inbred,species="TEST",split=NULL,
+                 manualCommand=command,manualGenLen=genLen))
 }
 
 #' @title Sample haplotypes from a MapPop

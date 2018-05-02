@@ -231,3 +231,57 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
     return(take)
   }
 }
+
+#' @title Select open pollinating plants
+#' 
+#' @description 
+#' This function models selection in an open pollinating 
+#' plant population. It allows for varying the percentage of 
+#' selfing. The function also provides an option for modeling 
+#' selection as occuring before or after pollination.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param nInd the number of plants to select
+#' @param nSeeds number of seeds per plant
+#' @param probSelf percentage of seeds expected from selfing. 
+#' Value ranges from 0 to 1.
+#' @param pollenControl are plants selected before pollination
+#' @param trait the trait for selection. Either a number indicating 
+#' a single trait or a function returning a vector of length nInd.
+#' @param use select on genetic values "gv", estimated
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' or randomly "rand"
+#' @param selectTop selects highest values if true. 
+#' Selects lowest values if false.
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' trait
+#' 
+#' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @export
+selectOP = function(pop,nInd,nSeeds,probSelf=0,
+                    pollenControl=FALSE,trait=1,
+                    use="pheno",selectTop=TRUE,
+                    simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  female = selectInd(pop=pop,nInd=nInd,trait=trait,
+                     use=use,gender="B",selectTop=selectTop,
+                     returnPop=FALSE,simParam=simParam,...)
+  nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)
+  if(pollenControl){
+    male = female
+  }else{
+    male = 1:nInd
+  }
+  crossPlan = lapply(1:nInd,function(x){
+    cbind(rep(female[x],nSeeds),
+          c(rep(female[x],nSelf[x]),
+            sample(male[!male==female[x]],nSeeds-nSelf[x],replace=TRUE)))
+  })
+  crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
+  return(makeCross(pop=pop,crossPlan=crossPlan,
+                   rawPop=FALSE,simParam=simParam))
+}

@@ -367,13 +367,15 @@ SimParam$set(
 
 #' @title Reset pedigree
 #'
-#' @description Resets both lastId and the pedigree. This will 
-#' unlock SimParam functions that only run when lastId is 0. Be careful 
-#' using \code{\link{Pop-class}} objects created before running this 
-#' function, because they are tied to the older pedigree that is 
-#' being deleted.
+#' @description Resets the internal lastId, the pedigree 
+#' and recombination tracking, if it is being used, to the 
+#' supplied lastId. Be careful using this function because 
+#' it may introduce bug if you supsequently use individuals 
+#' that come from a portion the pedigree that is being reset.
 #' 
-#' @section Usage: SP$resetPed()
+#' @param lastId last ID to include in pedigree
+#' 
+#' @section Usage: SP$resetPed(lastId = 0L)
 #' 
 #' @name SimParam_resetPed
 NULL
@@ -381,9 +383,12 @@ NULL
 SimParam$set(
   "public",
   "resetPed",
-  function(){
-    private$.lastId = 0L
-    private$.pedigree = matrix(NA_integer_,nrow=0,ncol=3)
+  function(lastId=0L){
+    private$.lastId = lastId
+    private$.pedigree = private$.pedigree[0:lastId,,drop=FALSE]
+    if(private$.isTrackRec){
+      private$.recHist = private$.recHist[0:lastId]
+    }
     invisible(self)
   }
 )
@@ -582,7 +587,7 @@ SimParam$set(
       stopifnot(length(H2)==private$.nTraits)
       varE = numeric(private$.nTraits)
       for(i in 1:length(h2)){
-        tmp = private$.varG[i]/h2[i]-private$.varG[i]
+        tmp = private$.varG[i]/H2[i]-private$.varG[i]
         varE[i] = tmp
       }
       private$.varE = varE
@@ -837,13 +842,8 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
                   ncol=nTraits)%*%chol(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      tmp = addEff[,i]>=0
-      addEff[tmp,i] = qgamma(
-        (pnorm(addEff[tmp,i])-0.5)*2,
-        shape=shape[i])
-      addEff[!tmp,i] = -qgamma(
-        (pnorm(abs(addEff[!tmp,i]))-0.5)*2,
-        shape=shape[i])
+      x = (pnorm(addEff[,i])-0.5)*2
+      addEff[,i] = sign(x)*qgamma(abs(x),shape=shape)
     }
   }
   return(addEff)
@@ -874,8 +874,7 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @param var a vector of desired genetic variances for one or more traits
 #' @param corr a matrix of correlations between additive effects
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution. 
-#' Note that shape=1 is equivalent to an exponential distribution.
+#' @param shape the shape parameter for the gamma distribution
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
@@ -938,8 +937,7 @@ SimParam$set(
 #' @param useVarA tune according to additive genetic variance if true. If 
 #' FALSE, tuning is performed according to total genetic variance.
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution. 
-#' Note that shape=1 is equivalent to an exponential distribution.
+#' @param shape the shape parameter for the gamma distribution
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #'  
@@ -1006,8 +1004,7 @@ SimParam$set(
 #' @param corA a matrix of correlations between additive effects
 #' @param corGxE a matrix of correlations between GxE effects
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution. 
-#' Note that shape=1 is equivalent to an exponential distribution.
+#' @param shape the shape parameter for the gamma distribution
 #' 
 #' @name SimParam_addTraitAG
 NULL
@@ -1082,8 +1079,7 @@ SimParam$set(
 #' @param corGxE a matrix of correlations between GxE effects
 #' @param useVarA tune according to additive genetic variance if true
 #' @param gamma should a gamma distribution be used instead of normal
-#' @param shape value of the shape parameter if using a gamma distribution. 
-#' Note that shape=1 is equivalent to an exponential distribution.
+#' @param shape the shape parameter for the gamma distribution
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #'  

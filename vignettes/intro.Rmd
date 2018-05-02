@@ -20,7 +20,7 @@ Most AlphaSimR simulations consist of three steps:
 2. Set Simulation Parameters
 3. Simulate the Breeding Program
 
-# Create Founder Haplotypes
+## Create Founder Haplotypes
 
 The first step of an AlphaSimR simulation is to create a set of founder haplotypes. These haplotypes will represent your organism's genome and determine the genetic variability in your organism. The founder haplotypes will eventually be used to generate founder individuals. These founder individuals will in turn will be use to derive all subsequent individuals in your simulation. There are two primary functions for generating founder haplotypes in AlphaSimR: `newMapPop`, which takes externally generated haplotypes; and `runMacs`, which internally generates haplotypes. 
 
@@ -28,7 +28,7 @@ My preferred method for creating haplotypes is to use `runMacs`. The `runMacs` f
 
 No matter which function is used to create founder haplotypes, the resulting output will be an object of `MapPop-class`. There are several functions that can be used on `MapPop-class` objects to extract individuals, combine chromosomes or simulate matings. These functions allow you to develop simulations that model scenarios such as one where populations are split into separate breeds or heterotic pools, or where organisms have chromosomes with different population histories. However, most users won't need these functions. They will be satisfied with the `MapPop-class` object they have and move directly on to the next step.
 
-# Set Simulation Parameters
+## Set Simulation Parameters
 
 The second step of an AlphaSimR simulation is to define global parameters that will be used throughout the simulation. These global parameters will reside in a special object of class `SimParam`. The `SimParam` class makes use of reference classes from the R6 package. This is notable, because it means that `SimParam` behaves slightly differently from other objects that an R user more commonly encounters. However, it is not necessary to understand the nuances of these differences. Just remember that the `SimParam` class is special.
 
@@ -50,7 +50,7 @@ There are many additional functions that you may wish to use to modify `SP`. The
 
   Once you have finished modifying `SP`, you are ready to start the process of simulating your breeding. You should not modify `SP` once you start this process, because doing so can result in undesired side effects. In fact, you will be prevented from using most functions for modifying `SP` at this point and they will return the following error, "lastId doesn't equal 0, you must run resetPed to proceed". There are some exceptions to this rule, but because they rarely occur I will not discuss them here.
 
-# Simulate the Breeding Program
+## Model the Breeding Program
 
 There is no single way to simulate breeding programs in AlphaSimR. This means you can come up with multiple ways to simulate the same breeding program. This is not to say that all ways are equally good. Some ways are clearly better than others with respect to computational performance. The point is that you need not write your simulation in only one way. This is an intentional element of AlphaSimR's design, because it gives you the freedom structure your simulations in a way that works best for you and the breeding program you are trying to simulate. This is what makes AlphaSimR so powerful for modeling complicated breeding programs. For this reason, I will not present a single way of performing breeding program simulation but present instead some of the functions you can use in your simulations. But before I do this, you need to know about the `Pop-class`.
 
@@ -66,9 +66,9 @@ After you have created one `Pop-class`
 
 
 
-## Selection
+### Selection
 
-## Mating
+### Mating
 
 The main objects in an AlphaSimR simulation are `Pop-class` objects. These objects represent a population that contains one or more individuals. Many AlphaSimR functions use a `Pop-class` object as an argument and return a `Pop-class` object as a result.
 
@@ -89,9 +89,9 @@ Listed below are some functions for carrying out operations on populations.
 
 * Genomic selection: `writeRecords`, `setEBV`
 
-# Example Breeding Program
+## Example Breeding Program
 
-In this section I provide a small example of AlphaSimR in action. The example is based on the "historical breeding" portion of the simulation performed in Jenko et al. [-@Jenko15]. This simulation is meant
+In this section I provide a small example of AlphaSimR in action. The example is based on the "historical breeding" portion of the simulation performed in Jenko et al. [-@Jenko15].
 
 ```{r eval=FALSE}
 library(AlphaSimR)
@@ -117,7 +117,7 @@ SP$addTraitA(nQtlPerChr=1000, mean=0, var=1)
 # Gender is assigned systematically as male, female, male, ...
 SP$setGender("yes_sys")
 
-### Simulate the Breeding Program
+### Model the Breeding Program
 
 # Creating the initial population
 pop = newPop(founderPop)

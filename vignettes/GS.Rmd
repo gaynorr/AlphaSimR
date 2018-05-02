@@ -1,0 +1,12 @@
+---
+title: "Genomic Selection in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: bibliography.bib
+vignette: >
+  %\VignetteIndexEntry{GS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+

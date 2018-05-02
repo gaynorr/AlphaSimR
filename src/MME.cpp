@@ -377,7 +377,7 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         std::string genoTrain, int nMarker, int skip,
-                        bool useHetCov){
+                        int maxIter, bool useHetCov){
   int n = y.n_rows;
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
@@ -394,7 +394,7 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(0),reps);
   sweepReps(Mlist(1),reps);
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist),
+    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
     Rcpp::Named("p")=p
   );
 }
@@ -436,20 +436,32 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip, int maxIter){
+                          int nMarker, int skip, int maxIter,
+                          bool useHetCov){
   int n = y.n_rows;
-  arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(3);
   Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
-  Mlist(0) = Mlist(0)*2-1;
+  arma::rowvec p1 = mean(Mlist(0),0)/2.0;
   Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
-  Mlist(1) = Mlist(1)*2-1;
-  Mlist(2) = Mlist(0)%Mlist(1);
+  arma::rowvec p2 = mean(Mlist(1),0)/2.0;
+  Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
+  Mlist(0) = Mlist(0)*2;
+  Mlist(1) = Mlist(1)*2;
+  arma::mat X;
+  if(useHetCov){
+    X = join_rows(makeX(x),mean(Mlist(2),1));
+  }else{
+    X = makeX(x);
+  }
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   sweepReps(Mlist(2), reps);
-  return solveRRBLUPMK(y,X,Mlist,maxIter);
+  return Rcpp::List::create(
+    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
+    Rcpp::Named("p1")=p1,
+    Rcpp::Named("p2")=p2
+  );
 }
 

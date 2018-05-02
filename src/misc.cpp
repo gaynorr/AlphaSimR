@@ -64,6 +64,24 @@ arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
   return output;
 }
 
+// Merges a list of integer matrices
+// [[Rcpp::export]]
+arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
+                               arma::uvec nRow,
+                               arma::uword nCol){
+  arma::Mat<int> output(sum(nRow),nCol);
+  arma::uword start=0, end=0;
+  for(arma::uword i=0; i<nRow.n_elem; i++){
+    if(nRow(i)>0){
+      end += nRow(i)-1;
+    }
+    output.rows(start,end) = X(i);
+    start += nRow(i);
+    end = start;
+  }
+  return output;
+}
+
 // Calculates allele frequency on a single chromsome
 // Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]
@@ -76,8 +94,8 @@ arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
 }
 
 // [[Rcpp::export]]
-arma::imat convToImat(const arma::Mat<unsigned char>& X){
-  return arma::conv_to<arma::imat>::from(X);
+arma::Mat<int> convToImat(const arma::Mat<unsigned char>& X){
+  return arma::conv_to<arma::Mat<int> >::from(X);
 }
 
 // Linear index functions for upper triangle of a square

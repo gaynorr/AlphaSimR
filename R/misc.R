@@ -199,23 +199,32 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
   return(pop)
 }
 
-#' @title Correlated variable
+#' @title Correlated vector
 #' 
 #' @description
-#' Creates a correlated vector by adding random error.
+#' Creates a correlated vector by adding random error. 
 #'
 #' @param x a numeric vector
 #' @param rho desired correlation. Must be greater than 
 #' 0 and less than or equal to 1.
+#' @param shrink should the output vector be shrunken 
+#' to have similar variance as the input vector
 #'
 #' @return a numeric vector
 #'
 #' @export
-corVar = function(x,rho){
+corVec = function(x,rho,shrink=FALSE){
   stopifnot(rho>0, rho<=1)
+  x = as.vector(x)
   varX = var(x)
-  varY = varX/(rho^2)-varX
-  return(x+rnorm(length(x),sd=sqrt(varY)))
+  varE = varX/(rho^2)-varX
+  y = x+rnorm(length(x),sd=sqrt(varE))
+  if(shrink){
+    meanX = mean(x)
+    y = (y-meanX)/sqrt(varX+varE)
+    y = y*sqrt(varX)+meanX
+  }
+  return(y)
 }
 
 #' @title Usefulness criterion
@@ -249,4 +258,20 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
   response = sort(response,decreasing=selectTop)
   response = response[1:ceiling(p*length(response))]
   return(mean(response))
+}
+
+#' @title Variance to correlation
+#' 
+#' @description
+#' Converts a variance-covariance matrix to a 
+#' correlation matrix.
+#'
+#' @param var a variance-covariance matrix 
+#'
+#' @return a numeric matrix
+#'
+#' @export
+var2cor = function(var){
+  tmp = diag(1/sqrt(diag(var)))
+  return(tmp%*%var%*%tmp)
 }

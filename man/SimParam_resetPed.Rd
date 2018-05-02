@@ -3,14 +3,17 @@
 \name{SimParam_resetPed}
 \alias{SimParam_resetPed}
 \title{Reset pedigree}
+\arguments{
+\item{lastId}{last ID to include in pedigree}
+}
 \description{
-Resets both lastId and the pedigree. This will 
-unlock SimParam functions that only run when lastId is 0. Be careful 
-using \code{\link{Pop-class}} objects created before running this 
-function, because they are tied to the older pedigree that is 
-being deleted.
+Resets the internal lastId, the pedigree 
+and recombination tracking, if it is being used, to the 
+supplied lastId. Be careful using this function because 
+it may introduce bug if you supsequently use individuals 
+that come from a portion the pedigree that is being reset.
 }
 \section{Usage}{
- SP$resetPed()
+ SP$resetPed(lastId = 0L)
 }
 

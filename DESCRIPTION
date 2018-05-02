@@ -1,8 +1,8 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 0.5.0
-Date: 2017-12-21
+Version: 0.6.0
+Date: 2018-3-9
 Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre"),person("Gregor","Gorjanc",role="ctb"),person("David","Wilson",role="ctb"),person("Daniel","Money",role="ctb"),person("John","Hickey",role="ctb"))
 Description: This package contains classes and functions for simulating plant and animal breeding programs.
 License: MIT + file LICENSE
