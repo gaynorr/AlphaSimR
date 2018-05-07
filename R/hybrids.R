@@ -220,11 +220,6 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
-  if(use == "pheno"){
-    if(is.null(varE)){
-      stop("varE must be specified if use=\"pheno\"")
-    }
-  }
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
                     returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
   if(use=="pheno"){
