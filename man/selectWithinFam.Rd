@@ -5,7 +5,8 @@
 \title{Select individuals within families}
 \usage{
 selectWithinFam(pop, nInd, trait = 1, use = "pheno", gender = "B",
-  selectTop = TRUE, returnPop = TRUE, simParam = NULL, ...)
+  famType = "B", selectTop = TRUE, returnPop = TRUE, simParam = NULL,
+  ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -23,6 +24,10 @@ or randomly "rand"}
 \item{gender}{which gender to select. Use "B" for both, "F" for 
 females and "M" for males. If the simulation is not using gender, 
 the argument is ignored.}
+
+\item{famType}{which type of family to select. Use "B" for 
+full-sib families, "F" for half-sib families on female side and "M" 
+for half-sib families on the male side.}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}

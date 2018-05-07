@@ -64,6 +64,20 @@ checkGender = function(pop,gender,simParam){
   }
 }
 
+# Returns a vector of families
+getFam = function(pop,famType){
+  famType = toupper(famType)
+  if(famType=="B"){
+    return(paste(pop@mother,pop@father,sep="_"))
+  }else if(famType=="F"){
+    return(pop@mother)
+  }else if(famType=="M"){
+    return(pop@father)
+  }else{
+    stop(paste0("famType=",famType," is not a valid option"))
+  }
+}
+
 #' @title Select individuals
 #' 
 #' @description Selects a subset of nInd individuals from a 
@@ -130,6 +144,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @param gender which gender to select. Use "B" for both, "F" for 
 #' females and "M" for males. If the simulation is not using gender, 
 #' the argument is ignored.
+#' @param famType which type of family to select. Use "B" for 
+#' full-sib families, "F" for half-sib families on female side and "M" 
+#' for half-sib families on the male side.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' @param returnPop should results be returned as a 
@@ -144,20 +161,20 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' 
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
-                     selectTop=TRUE,returnPop=TRUE,
+                     famType="B",selectTop=TRUE,returnPop=TRUE,
                      simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
-  allFam = paste(pop@mother,pop@father,sep="_")
-  availFam = paste(pop@mother[eligible],pop@father[eligible],sep="_")
+  allFam = getFam(pop=pop,famType=famType)
+  availFam = allFam[eligible]
   if(nFam>length(unique(availFam))){
     stop(paste(nFam,"families requested but only",length(unique(availFam)),
                "families are available"))
   }
   response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)[eligible,,drop=FALSE]
+                         simParam=simParam,...)[eligible]
   #Calculate family means
   famMeans = aggregate(response,list(families=availFam),mean)
   response = famMeans$x
@@ -190,6 +207,9 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @param gender which gender to select. Use "B" for both, "F" for 
 #' females and "M" for males. If the simulation is not using gender, 
 #' the argument is ignored.
+#' @param famType which type of family to select. Use "B" for 
+#' full-sib families, "F" for half-sib families on female side and "M" 
+#' for half-sib families on the male side.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
 #' @param returnPop should results be returned as a 
@@ -204,13 +224,13 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' 
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
-                           selectTop=TRUE,returnPop=TRUE,
+                           famType="B",selectTop=TRUE,returnPop=TRUE,
                            simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
-  families = paste(pop@mother,pop@father,sep="_")
+  families = getFam(pop=pop,famType=famType)
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
   selInFam = function(selFam){
