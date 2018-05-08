@@ -144,7 +144,8 @@ trackHaploPop = function(genMaps,nInd,inbred=FALSE){
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
-#' @param segSites number of segregating sites to keep per chromosome
+#' @param segSites number of segregating sites to keep per chromosome. A 
+#' value of NULL results in all sites being retained.
 #' @param inbred should founder individuals be inbred
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
@@ -163,10 +164,13 @@ trackHaploPop = function(genMaps,nInd,inbred=FALSE){
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
+runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
                    split=NULL,manualCommand=NULL,manualGenLen=NULL){
-  ploidy = 2 #The only ploidy level currently supported
-  if(length(segSites)==1){
+  nInd = as.integer(nInd)
+  ploidy = 2L #The only ploidy level currently supported
+  if(is.null(segSites)){
+    segSites = rep(0,nChr)
+  }else if(length(segSites)==1){
     segSites = rep(segSites,nChr)
   }
   if(inbred){
@@ -242,10 +246,10 @@ runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
     geno = packHaplo(macsOut$haplo,ploidy=ploidy,
                      inbred=inbred)
     output[[chr]] = new("MapPop",
-                        nInd=as.integer(nInd),
+                        nInd=nInd,
                         nChr=1L,
-                        ploidy=as.integer(ploidy),
-                        nLoci=as.integer(segSites[chr]),
+                        ploidy=ploidy,
+                        nLoci=dim(geno)[1],
                         geno=as.matrix(list(geno)),
                         genMaps=as.matrix(list(genMap)))
   }

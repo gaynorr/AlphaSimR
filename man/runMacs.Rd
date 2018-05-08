@@ -4,15 +4,17 @@
 \alias{runMacs}
 \title{Create founder genotypes using MaCS}
 \usage{
-runMacs(nInd, nChr, segSites, inbred = FALSE, species = "TEST",
-  split = NULL, manualCommand = NULL, manualGenLen = NULL)
+runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
+  species = "TEST", split = NULL, manualCommand = NULL,
+  manualGenLen = NULL)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
 
 \item{nChr}{number of chromosomes to simulate}
 
-\item{segSites}{number of segregating sites to keep per chromosome}
+\item{segSites}{number of segregating sites to keep per chromosome. A 
+value of NULL results in all sites being retained.}
 
 \item{inbred}{should founder individuals be inbred}
 

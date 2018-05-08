@@ -1,3 +1,20 @@
+Changes in version 0.6.2
+
+  New features
+    -added default runMacs option to return all segSites
+    
+  Bug fixes
+    -
+
+Changes in version 0.6.1
+
+  New features
+    -selectFam now handles half-sib families
+    -selectWithinFam now handles half-sib families
+    
+  Bug fixes
+    -Removed restriction on varE=NULL in setPhenoGCA
+
 Changes in version 0.6.0
 
   New features
