@@ -4,10 +4,10 @@
 \alias{newMapPop}
 \title{New MapPop}
 \usage{
-newMapPop(genMaps, haplotypes, inbred = FALSE)
+newMapPop(genMap, haplotypes, inbred = FALSE)
 }
 \arguments{
-\item{genMaps}{a list of genetic maps}
+\item{genMap}{a list of genetic maps}
 
 \item{haplotypes}{a list of matrices or data.frames that 
 can be coerced to matrices. See details.}
@@ -22,7 +22,7 @@ Creates a new \code{\link{MapPop-class}} from user supplied
 genetic maps and haplotypes.
 }
 \details{
-Each item of genMaps must be a vector of ordered genetic lengths in 
+Each item of genMap must be a vector of ordered genetic lengths in 
 Morgans. The first value must be zero. The length of the vector 
 determines the number of segregating sites on the chromosome.
 
@@ -33,7 +33,7 @@ match
 \examples{
 # Create genetic map for two chromosomes, each 1 Morgan long
 # Each chromosome contains 11 equally spaced segregating sites
-genMaps = list(seq(0,1,length.out=11),
+genMap = list(seq(0,1,length.out=11),
                seq(0,1,length.out=11))
                
 # Create haplotypes for 10 outbred individuals
@@ -43,6 +43,6 @@ chr2 = sample(x=0:1,size=20*11,replace=TRUE)
 chr2 = matrix(chr2,nrow=20,ncol=11)
 haplotypes = list(chr1,chr2)
 
-founderPop = newMapPop(genMaps=genMaps,haplotypes=haplotypes)
+founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
 
 }

@@ -4,11 +4,14 @@
 \alias{pullSegSiteGeno}
 \title{Pull seg site genotypes}
 \usage{
-pullSegSiteGeno(pop, simParam = NULL)
+pullSegSiteGeno(pop, chr = NULL, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
 \code{\link{RawPop-class}}}
+
+\item{chr}{a vector of chromosomes to retrieve. If NULL, 
+all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

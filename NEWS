@@ -1,7 +1,11 @@
-Changes in version 0.6.2
+Changes in version 0.7.0
 
   New features
     -added default runMacs option to return all segSites
+    -added ability to specify seperate male and female genetic maps
+    -pullGeno and pullHaplo functions can now specifiy chromosomes
+    -added RRBLUP2 for special GS cases
+    -improved speed by replacing Rcpp random number generators
     
   Bug fixes
     -

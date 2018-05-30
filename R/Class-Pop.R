@@ -105,22 +105,22 @@ setMethod("c",
 #' @param i index of chromosomes
 #' @param ... aditional 'MapPop' objects
 #' 
-#' @slot genMaps "matrix" of chromsome genetic maps
+#' @slot genMap "matrix" of chromsome genetic maps
 #' 
 #' @export
 setClass("MapPop",
-         slots=c(genMaps="matrix"),
+         slots=c(genMap="matrix"),
          contains="RawPop")
 
 setValidity("MapPop",function(object){
   errors = character()
-  if(object@nChr!=length(object@genMaps)){
+  if(object@nChr!=length(object@genMap)){
     errors = c(errors,"nInd!=length(id)")
   }
   for(i in 1:object@nChr){
-    if(object@nLoci[i]!=length(object@genMaps[[i]])){
+    if(object@nLoci[i]!=length(object@genMap[[i]])){
       errors = c(errors,
-                 paste0("nLoci[",i,"]!=length(genMaps[[",i,"]]"))
+                 paste0("nLoci[",i,"]!=length(genMap[[",i,"]]"))
     }
   }
   if(length(errors)==0){
@@ -154,7 +154,7 @@ setMethod("c",
                         x@ploidy==y@ploidy)
               x@nChr = x@nChr+y@nChr
               x@geno = rbind(x@geno,y@geno)
-              x@genMaps = rbind(x@genMaps,y@genMaps)
+              x@genMap = rbind(x@genMap,y@genMap)
               x@nLoci = c(x@nLoci,y@nLoci)
             }
             validObject(x)

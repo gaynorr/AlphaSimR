@@ -3,7 +3,7 @@
 #' 
 #' @description 
 #' Container for global simulation parameters. Saving this object 
-#' as SIMPARAM will allow it to be accessed by function defaults.
+#' as SP will allow it to be accessed by function defaults.
 #' 
 #' @field ploidy ploidy level of species
 #' @field nChr number of chromosomes
@@ -11,7 +11,13 @@
 #' @field nSnpChips number of SNP chips
 #' @field segSites segregating sites per chromosome
 #' @field gender is gender used for mating
-#' @field genMaps "matrix" of chromsome genetic maps
+#' @field genMap "matrix" of chromsome genetic maps
+#' @field femaleMap "matrix" of chromsome genetic maps for 
+#' females
+#' @field maleMap "matrix" of chromsome genetic maps for 
+#' males
+#' @field sepMap are there seperate genetic maps for 
+#' males and females
 #' @field recombRatio ratio of genetic recombination in 
 #' females relative to male
 #' @field traits list of trait
@@ -39,7 +45,9 @@ SimParam = R6Class(
     .nSnpChips="integer",
     .segSites="integer",
     .gender="character",
-    .genMaps="matrix",
+    .femaleMap="matrix",
+    .maleMap="matrix",
+    .sepMap="logical",
     .recombRatio="numeric",
     .traits="list",
     .snpChips="list",
@@ -98,18 +106,45 @@ SimParam = R6Class(
         stop("`$gender` is read only",call.=FALSE)
       }
     },
-    genMaps=function(value){
+    sepMap=function(value){
       if(missing(value)){
-        private$.genMaps
+        private$.sepMap
       }else{
-        stop("`$genMaps` is read only",call.=FALSE)
+        stop("`$sepMap` is read only",call.=FALSE)
       }
     },
-    recombRatio=function(value){
+    genMap=function(value){
       if(missing(value)){
-        private$.recombRatio
+        if(private$.sepMap){
+          genMap = vector("list",private$.nChr)
+          for(i in 1:private$.nChr){
+            genMap[[i]] = (private$.femaleMap[[i]]+
+              private$.maleMap[[i]])/2
+          }
+          as.matrix(genMap)
+        }else{
+          private$.femaleMap
+        }
       }else{
-        stop("`$recombRatio` is read only",call.=FALSE)
+        stop("`$genMap` is read only",call.=FALSE)
+      }
+    },
+    femaleMap=function(value){
+      if(missing(value)){
+        private$.femaleMap
+      }else{
+        stop("`$femaleMap` is read only",call.=FALSE)
+      }
+    },
+    maleMap=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleMap
+        }else{
+          private$.femaleMap
+        }
+      }else{
+        stop("`$maleMap` is read only",call.=FALSE)
       }
     },
     traits=function(value){
@@ -236,8 +271,9 @@ SimParam$set(
     private$.nSnpChips = 0L
     private$.segSites = founderPop@nLoci
     private$.gender = "no"
-    private$.genMaps = founderPop@genMaps
-    private$.recombRatio = 1
+    private$.femaleMap = founderPop@genMap
+    private$.maleMap = NULL
+    private$.sepMap = FALSE
     private$.traits = list()
     private$.snpChips = list()
     private$.potQtl = lapply(
@@ -530,24 +566,39 @@ SimParam$set(
 #' and a value of 0.5 specifies half as much recombination in 
 #' females.
 #' 
-#' @section Usage: SP$setRecombRatio(ratio, force = FALSE)
+#' @section Usage: SP$setRecRatio(ratio, force = FALSE)
 #' 
 #' @param ratio any value greater than 0
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
-#' @name SimParam_setRecombRatio
+#' @name SimParam_setRecRatio
 NULL
-# setRecombRatio ----
+# setRecRatio ----
 SimParam$set(
   "public",
-  "setRecombRatio",
+  "setRecRatio",
   function(ratio, force=FALSE){
     if(!force){
       private$.isRunning()
     }
     stopifnot(ratio>0)
-    private$.recombRatio = ratio
+    genMap = self$genMap
+    private$.sepMap = TRUE
+    feSc = 2/(1/ratio+1)
+    maSc = 2/(ratio+1)
+    private$.femaleMap = as.matrix(
+      lapply(genMap,
+             function(x){
+               feSc*x
+             })
+    )
+    private$.maleMap = as.matrix(
+      lapply(genMap,
+             function(x){
+               maSc*x
+             })
+    )
     invisible(self)
   }
 )
@@ -1418,29 +1469,89 @@ SimParam$set(
   }
 )
 
-#' @title Switch genetic maps
+#' @title Switch genetic map
 #' 
 #' @description 
-#' Replaces existing genetic maps.
+#' Replaces existing genetic map.
 #' 
-#' @section Usage: SP$switchGenMaps(genMaps)
+#' @section Usage: SP$switchGenMap(genMap)
 #' 
-#' @param genMaps a list of length nChr containing 
+#' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
 #' 
-#' @name SimParam_switchGenMaps
+#' @name SimParam_switchGenMap
 NULL
-# switchGenMaps ----
+# switchGenMap ----
 SimParam$set(
   "public",
-  "switchGenMaps",
-  function(genMaps){
-    stopifnot(length(genMaps)==private$.nChr)
-    tmp = do.call("c",lapply(genMaps,length))
+  "switchGenMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
-    private$.genMaps = genMaps
+    private$.sepMap = FALSE
+    private$.femaleMap = genMap
+    private$.maleMap = NULL
     invisible(self)
   }
 )
 
+#' @title Switch female genetic map
+#' 
+#' @description 
+#' Replaces existing female genetic map.
+#' 
+#' @section Usage: SP$switchFemaleMap(genMap)
+#' 
+#' @param genMap a list of length nChr containing 
+#' numeric vectors for the position of each segregating 
+#' site on a chromosome.
+#' 
+#' @name SimParam_switchFemaleMap
+NULL
+# switchFemaleMap ----
+SimParam$set(
+  "public",
+  "switchFemaleMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
+    stopifnot(all(tmp==private$.segSites))
+    if(private$.sepMap){
+      private$.femaleMap = genMap
+    }else{
+      private$.sepMap = TRUE
+      private$.maleMap = private$.femaleMap
+      private$.femaleMap = genMap
+    }
+    invisible(self)
+  }
+)
+
+#' @title Switch male genetic map
+#' 
+#' @description 
+#' Replaces existing male genetic map.
+#' 
+#' @section Usage: SP$switchMaleMap(genMap)
+#' 
+#' @param genMap a list of length nChr containing 
+#' numeric vectors for the position of each segregating 
+#' site on a chromosome.
+#' 
+#' @name SimParam_switchMaleMap
+NULL
+# switchMaleMap ----
+SimParam$set(
+  "public",
+  "switchMaleMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
+    stopifnot(all(tmp==private$.segSites))
+    private$.sepMap = TRUE
+    private$.maleMap = genMap
+    invisible(self)
+  }
+)

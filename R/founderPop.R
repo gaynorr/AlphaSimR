@@ -4,13 +4,13 @@
 #' Creates a new \code{\link{MapPop-class}} from user supplied 
 #' genetic maps and haplotypes.
 #' 
-#' @param genMaps a list of genetic maps
+#' @param genMap a list of genetic maps
 #' @param haplotypes a list of matrices or data.frames that 
 #' can be coerced to matrices. See details.
 #' @param inbred are individuals fully inbred
 #' 
 #' @details
-#' Each item of genMaps must be a vector of ordered genetic lengths in 
+#' Each item of genMap must be a vector of ordered genetic lengths in 
 #' Morgans. The first value must be zero. The length of the vector 
 #' determines the number of segregating sites on the chromosome.
 #' 
@@ -23,7 +23,7 @@
 #' @examples 
 #' # Create genetic map for two chromosomes, each 1 Morgan long
 #' # Each chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11),
+#' genMap = list(seq(0,1,length.out=11),
 #'                seq(0,1,length.out=11))
 #'                
 #' # Create haplotypes for 10 outbred individuals
@@ -33,11 +33,11 @@
 #' chr2 = matrix(chr2,nrow=20,ncol=11)
 #' haplotypes = list(chr1,chr2)
 #' 
-#' founderPop = newMapPop(genMaps=genMaps,haplotypes=haplotypes)
+#' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
 #' 
 #' @export
-newMapPop = function(genMaps,haplotypes,inbred=FALSE){
-  stopifnot(length(genMaps)==length(haplotypes))
+newMapPop = function(genMap,haplotypes,inbred=FALSE){
+  stopifnot(length(genMap)==length(haplotypes))
   ploidy = 2 #The only ploidy level currently supported
   nRow = lapply(haplotypes,nrow)
   nRow = unlist(nRow)
@@ -59,13 +59,13 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
   }
   nCol = lapply(haplotypes,ncol)
   nCol = unlist(nCol)
-  segSites = lapply(genMaps,length)
+  segSites = lapply(genMap,length)
   segSites = unlist(segSites)
   if(!all.equal(nCol,segSites)){
-    stop("Number of segregating sites in haplotypes and genMaps don't match")
+    stop("Number of segregating sites in haplotypes and genMap don't match")
   }
-  output = vector("list",length(genMaps))
-  for(chr in 1:length(genMaps)){
+  output = vector("list",length(genMap))
+  for(chr in 1:length(genMap)){
     geno = packHaplo(as.matrix(haplotypes[[chr]]),
                      ploidy=ploidy,inbred=inbred)
     output[[chr]] = new("MapPop",
@@ -74,7 +74,7 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
                         ploidy=as.integer(ploidy),
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(genMaps[chr]))
+                        genMap=as.matrix(genMap[chr]))
   }
   output = do.call("c",output)
   return(output)
@@ -85,12 +85,12 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
 #' @description
 #' Creates a population for tracking haplotypes.
 #'
-#' @param genMaps a list of genetic maps
+#' @param genMap a list of genetic maps
 #' @param nInd number of individuals
 #' @param inbred should individuals be fully inbred
 #' 
 #' @details
-#' Each item of genMaps must be a vector of ordered genetic lengths in 
+#' Each item of genMap must be a vector of ordered genetic lengths in 
 #' Morgans. The first value must be zero. The length of the vector 
 #' determines the number of segregating sites on the chromosome.
 #' 
@@ -100,20 +100,20 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
 #' @examples
 #' # Create genetic map for a single chromosome with 1 Morgan
 #' # Chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMaps=genMaps,nInd=10)
+#' genMap = list(seq(0,1,length.out=11))
+#' founderPop = trackHaploPop(genMap=genMap,nInd=10)
 #' 
 #' @export
-trackHaploPop = function(genMaps,nInd,inbred=FALSE){
-  stopifnot(is.list(genMaps))
+trackHaploPop = function(genMap,nInd,inbred=FALSE){
+  stopifnot(is.list(genMap))
   if(inbred){
     stopifnot(nInd<=128)
   }else{
     stopifnot(nInd<=256)
   }
   nInd = as.integer(nInd)
-  nChr = length(genMaps)
-  nLoci = unlist(lapply(genMaps,length))
+  nChr = length(genMap)
+  nLoci = unlist(lapply(genMap,length))
   geno = vector("list",nChr)
   for(i in 1:nChr){
     tmpGeno = as.raw(0:(2*nInd-1))
@@ -134,7 +134,7 @@ trackHaploPop = function(genMaps,nInd,inbred=FALSE){
   }
   output = new("MapPop",nInd=nInd,nChr=nChr,ploidy=2L,
                nLoci=nLoci,geno=as.matrix(geno),
-               genMaps=as.matrix(genMaps))
+               genMap=as.matrix(genMap))
   return(output)
 }
 
@@ -251,7 +251,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
                         ploidy=ploidy,
                         nLoci=dim(geno)[1],
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(list(genMap)))
+                        genMap=as.matrix(list(genMap)))
   }
   output = do.call("c",output)
   cat("Done\n")
@@ -325,8 +325,8 @@ runMacs2 = function(nInd,nChr,segSites,Ne=100,
 #' @examples 
 #' # Create genetic map for a single chromosome with 1 Morgan
 #' # Chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMaps=genMaps,nInd=2,inbred=TRUE)
+#' genMap = list(seq(0,1,length.out=11))
+#' founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export
@@ -369,7 +369,7 @@ sampleHaplo = function(nInd,mapPop,inbred=FALSE,replace=TRUE){
                         ploidy=mapPop@ploidy,
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(mapPop@genMaps[chr]))
+                        genMap=as.matrix(mapPop@genMap[chr]))
   }
   output = do.call("c",output)
   return(output)

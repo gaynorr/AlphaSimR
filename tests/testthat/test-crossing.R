@@ -2,7 +2,7 @@ context("crossing")
 
 test_that("makeCross",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -27,7 +27,7 @@ test_that("makeCross",{
 
 test_that("makeCross2",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -52,7 +52,7 @@ test_that("makeCross2",{
 
 test_that("randCross",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -70,7 +70,7 @@ test_that("randCross",{
 
 test_that("randCross2",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -88,7 +88,7 @@ test_that("randCross2",{
 
 test_that("self",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -106,7 +106,7 @@ test_that("self",{
 
 test_that("makeDH",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -124,7 +124,7 @@ test_that("makeDH",{
 
 test_that("selectCross",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)

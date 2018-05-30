@@ -26,8 +26,8 @@ Creates a new \code{\link{MapPop-class}} from an existing
 \examples{
 # Create genetic map for a single chromosome with 1 Morgan
 # Chromosome contains 11 equally spaced segregating sites
-genMaps = list(seq(0,1,length.out=11))
-founderPop = trackHaploPop(genMaps=genMaps,nInd=2,inbred=TRUE)
+genMap = list(seq(0,1,length.out=11))
+founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
 founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 
 }

@@ -28,6 +28,8 @@ writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,reps=1,fixEff=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  snpChip = as.integer(snpChip)
+  fixEff = as.integer(fixEff)
   dir = normalizePath(dir, mustWork=TRUE)
   if(!append){
     #Delete any existing files
@@ -191,6 +193,143 @@ RRBLUP = function(dir, traits=1, use="pheno",
                iter=iter)
   return(output)
 }
+
+#' @title RR-BLUP Model 2
+#'
+#' @description
+#' Fits an RR-BLUP model for genomic predictions. This implementation is 
+#' meant for situations where \code{\link{RRBLUP}} is too slow. Note that 
+#' RRBLUP2 is only faster in certain situations, see details below. Most 
+#' users should use \code{\link{RRBLUP}}.
+#' 
+#'
+#' @param dir path to a directory with output from \code{\link{writeRecords}}
+#' @param traits an integer indicating the trait to model or a
+#' function of the traits returning a single value. Unlike \code{\link{RRBLUP}}, 
+#' only univariate models are supported.
+#' @param use train model using genetic value (\code{gv})
+#' or phenotypes (\code{pheno}, default)
+#' @param skip number of older records to skip
+#' @param maxIter maximum number of iterations. Only used 
+#' when number of traits is greater than 1.
+#' @param Vu marker effect variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param useEM use EM to solve variance components. If false, 
+#' The initial values are considered true.
+#' @param tol tolerance for EM algorithm convergence
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @details 
+#' The RRBLUP2 function works best when the number of markers is not 
+#' too large. This is because it solves the RR-BLUP problem by setting 
+#' up and solving Henderson's mixed model equations. Solving these equations 
+#' involves a square matrix with dimensions equal to the number of fixed 
+#' effects plus the number of random effects (markers). Whereas the \code{\link{RRBLUP}} 
+#' function solves the RR-BLUP problem using the EMMA approach. This approach involves 
+#' a square matrix with dimensions equal to the number of phenotypic records. This means 
+#' that the RRBLUP2 function uses less memory than RRBLUP when the number of markers 
+#' is approximately equal to or smaller than the number of phenotypic records. 
+#' 
+#' The RRBLUP2 function is not recommend for cases where the variance components are 
+#' unknown. This is uses the EM algorithm to solve for unknown variance components, 
+#' which is generally considerably slower than the EMMA approach of \code{\link{RRBLUP}}. 
+#' The number of iterations for the EM algorith is set by maxIter. The default value 
+#' is typically too small for convergence. When the algorithm fails to converage a 
+#' warning is displayed, but results are given for the last iteration. These results may 
+#' be "good enough". However we make no claim to this effect, because we can not generalize 
+#' to all possible use cases.
+#' 
+#' The RRBLUP2 function can quickly solve the mixed model equations without estimating variance 
+#' components. The variance components are set by defining Vu and Ve. Estimation of components 
+#' is suppressed by setting useEM to false. This may be useful if the model is being retrained 
+#' multiple times during the simulation. You could run \code{\link{RRBLUP}} function the first 
+#' time the model is trained, and then use the variance components from this output for all 
+#' future runs with the RRBLUP2 functions. Again, we can make no claim to the general robustness 
+#' of this approach.
+#' 
+#' @export
+RRBLUP2 = function(dir, traits=1, use="pheno", 
+                   skip=0, maxIter=10, Vu=NULL,
+                   Ve=NULL, useEM=TRUE, tol=1e-6, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  dir = normalizePath(dir, mustWork=TRUE)
+  #Read and calculate basic information
+  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
+                          comment.char="",stringsAsFactors=FALSE)
+  if(skip>0) markerInfo = markerInfo[-(1:skip),]
+  nInd = nrow(markerInfo)
+  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
+  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
+  #Set trait/traits for genomic selection
+  use = tolower(use)
+  if(use == "gv"){
+    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
+  }else if(use == "pheno"){
+    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  }else{
+    stop(paste0("Use=",use," is not an option"))
+  }
+  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
+  if(is.function(traits)){
+    y = apply(y,1,traits)
+    y = as.matrix(y)
+    if(is.null(Vu)){
+      Vu = var(y)/nMarkers
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    y = y[,traits,drop=FALSE]
+    if(is.null(Vu)){
+      Vu = 2*simParam$varA[traits]/nMarkers
+      if(is.na(Vu)){
+        Vu = var(y)/nMarkers
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  if(skip>0) y=y[-(1:skip),,drop=FALSE]
+  #Fit model
+  fixEff = as.integer(factor(markerInfo$fixEff))
+  ans = callRRBLUP2(y,fixEff,markerInfo$reps,
+                    file.path(dir,"genotype.txt"),nMarkers,
+                    skip,Vu,Ve,tol,maxIter,useEM)
+  tmp = unlist(strsplit(markerType,"_"))
+  if(tmp[1]=="SNP"){
+    markers = simParam$snpChips[[as.integer(tmp[2])]]
+  }else{
+    markers = simParam$traits[[as.integer(tmp[2])]]
+  }
+  markerEff=ans$u
+  if(is.null(ans[["iter"]])){
+    iter = 0
+  }else{
+    iter = ans$iter
+  }
+  output = new("RRsol",
+               nLoci=markers@nLoci,
+               lociPerChr=markers@lociPerChr,
+               lociLoc=markers@lociLoc,
+               markerEff=markerEff,
+               fixEff=ans$beta,
+               Vu=as.matrix(ans$Vu),
+               Ve=as.matrix(ans$Ve),
+               LL=numeric(),
+               iter=iter)
+  return(output)
+}
+
 
 #' @title RR-BLUP Model with Dominance
 #'

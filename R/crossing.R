@@ -32,8 +32,8 @@ makeCross = function(pop,crossPlan,rawPop=FALSE,
   }
   tmp = cross2(pop@geno,crossPlan[,1],
               pop@geno,crossPlan[,2],
-              simParam$genMaps,
-              simParam$recombRatio,
+              simParam$femaleMap,
+              simParam$maleMap,
               simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -227,8 +227,8 @@ makeCross2 = function(females,males,crossPlan,
   }
   tmp=cross2(females@geno,crossPlan[,1],
              males@geno,crossPlan[,2],
-             simParam$genMaps,
-             simParam$recombRatio,
+             simParam$femaleMap,
+             simParam$maleMap,
              simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -363,8 +363,8 @@ self = function(pop,nProgeny=1,parents=NULL,
   crossPlan = cbind(crossPlan,crossPlan)
   tmp = cross2(pop@geno,crossPlan[,1],
               pop@geno,crossPlan[,2],
-              simParam$genMaps,
-              simParam$recombRatio,
+              simParam$femaleMap,
+              simParam$maleMap,
               simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -408,11 +408,15 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
-  tmp = createDH2(pop@geno,nDH,
-                 simParam$genMaps,
-                 simParam$recombRatio,
-                 useFemale,
-                 simParam$isTrackRec)
+  if(useFemale){
+    tmp = createDH2(pop@geno,nDH,
+                    simParam$femaleMap,
+                    simParam$isTrackRec)
+  }else{
+    tmp = createDH2(pop@geno,nDH,
+                    simParam$maleMap,
+                    simParam$isTrackRec)
+  }
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nDH),
              nChr=pop@nChr,

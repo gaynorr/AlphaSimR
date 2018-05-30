@@ -137,10 +137,10 @@ arma::uword mapCol(arma::uword k, arma::uword n){
 arma::Col<arma::uword> sampleInt(arma::uword n, arma::uword N){
   arma::uword t = 0;
   arma::uword m = 0;
-  Rcpp::NumericVector u(1);
+  arma::vec u(1);
   arma::Col<arma::uword> samples(n);
   while(m<n){
-    u = Rcpp::runif(1);
+    u.randu();
     if(double(N-t)*u(0) >= double(n-m)){
       ++t;
     }else{
@@ -232,4 +232,17 @@ arma::Mat<arma::uword> sampHalfDialComb(arma::uword nLevel, arma::uword n){
 // [[Rcpp::export]]
 arma::mat calcCoef(arma::mat& X, arma::mat& Y){
   return arma::solve(X,Y);
+}
+
+// Knuth's algorithm for sampling from a Poisson distribution
+int samplePoisson(double lambda){
+  double p=1,L=exp(-lambda);
+  int k=0;
+  arma::vec u(1);
+  do{
+    k++;
+    u.randu();
+    p *= u(0);
+  }while(p>L);
+  return k-1;
 }

@@ -217,8 +217,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cross2
-Rcpp::List cross2(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& genMaps, double recombRatio, bool trackRec);
-RcppExport SEXP _AlphaSimR_cross2(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP, SEXP trackRecSEXP) {
+Rcpp::List cross2(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec);
+RcppExport SEXP _AlphaSimR_cross2(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -226,26 +226,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type fatherGeno(fatherGenoSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type father(fatherSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
-    Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type femaleMap(femaleMapSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type maleMap(maleMapSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross2(motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec));
+    rcpp_result_gen = Rcpp::wrap(cross2(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec));
     return rcpp_result_gen;
 END_RCPP
 }
 // createDH2
-Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMaps, double recombRatio, bool useFemale, bool trackRec);
-RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapsSEXP, SEXP recombRatioSEXP, SEXP useFemaleSEXP, SEXP trackRecSEXP) {
+Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMap, bool trackRec);
+RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP trackRecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
     Rcpp::traits::input_parameter< int >::type nDH(nDHSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMaps(genMapsSEXP);
-    Rcpp::traits::input_parameter< double >::type recombRatio(recombRatioSEXP);
-    Rcpp::traits::input_parameter< bool >::type useFemale(useFemaleSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
-    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMaps, recombRatio, useFemale, trackRec));
+    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMap, trackRec));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -371,6 +369,27 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
     Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
     rcpp_result_gen = Rcpp::wrap(callRRBLUP(y, x, reps, genoTrain, nMarker, skip));
+    return rcpp_result_gen;
+END_RCPP
+}
+// callRRBLUP2
+Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps, std::string genoTrain, int nMarker, int skip, double Vu, double Ve, double tol, int maxIter, bool useEM);
+RcppExport SEXP _AlphaSimR_callRRBLUP2(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoTrainSEXP, SEXP nMarkerSEXP, SEXP skipSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP tolSEXP, SEXP maxIterSEXP, SEXP useEMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type genoTrain(genoTrainSEXP);
+    Rcpp::traits::input_parameter< int >::type nMarker(nMarkerSEXP);
+    Rcpp::traits::input_parameter< int >::type skip(skipSEXP);
+    Rcpp::traits::input_parameter< double >::type Vu(VuSEXP);
+    Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< bool >::type useEM(useEMSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP2(y, x, reps, genoTrain, nMarker, skip, Vu, Ve, tol, maxIter, useEM));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -89,3 +89,48 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop){
                             Rcpp::Named("genicVarD")=genicVarD);
 }
 
+// // [[Rcpp::export]]
+// Rcpp::List calcGenParam2(const Rcpp::List& traitList, 
+//                          const Rcpp::S4& pop,
+//                          bool indValues=false){
+//   arma::uword nTraits = traitList.length();
+//   int nInd = pop.slot("nInd");
+//   arma::field<arma::Cube<unsigned char> > geno = pop.slot("geno");
+//   arma::uword nChr = geno.n_elem;
+//   arma::mat 
+//     BV(nInd,nTraits,arma::fill::zeros), 
+//     DD(nInd,nTraits,arma::fill::zeros);
+//   arma::mat 
+//     varA(nTraits,nTraits,arma::fill::zeros), 
+//     varD(nTraits,nTraits,arma::fill::zeros),
+//     varG(nTraits,nTraits,arma::fill::zeros), 
+//     genicVarA(nTraits,nTraits,arma::fill::zeros), 
+//     genicVarD(nTraits,nTraits,arma::fill::zeros), 
+//     genicVarG(nTraits,nTraits,arma::fill::zeros);
+//   
+//   for(arma::uword i=0; i<nChr; i++){
+//     arma::Mat<unsigned char> tmp = arma::sum(geno(i),1);
+//     arma::mat X = arma::conv_to<arma::mat>::from(tmp);
+//     arma::uword nSites = X.n_rows;
+//     arma::mat A, D, alpha;
+//     arma::vec a, d;
+//   }
+//   
+//   if(indValues){
+//     return Rcpp::List::create(Rcpp::Named("bv")=BV,
+//                               Rcpp::Named("dd")=DD,
+//                               Rcpp::Named("genicVarA")=genicVarA,
+//                               Rcpp::Named("genicVarD")=genicVarD,
+//                               Rcpp::Named("genicVarG")=genicVarG,
+//                               Rcpp::Named("varA")=varA,
+//                               Rcpp::Named("varD")=varD,
+//                               Rcpp::Named("varG")=varG);
+//   }else{
+//     return Rcpp::List::create(Rcpp::Named("genicVarA")=genicVarA,
+//                               Rcpp::Named("genicVarD")=genicVarD,
+//                               Rcpp::Named("genicVarG")=genicVarG,
+//                               Rcpp::Named("varA")=varA,
+//                               Rcpp::Named("varD")=varD,
+//                               Rcpp::Named("varG")=varG);
+//   }
+// }

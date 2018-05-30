@@ -97,9 +97,9 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
   double genLen = genMap(nSites-1);
   arma::Col<unsigned char> gamete(nSites);
   // Sample number of chromosomes
-  int nCO = Rcpp::rpois(1, genLen)(0);
+  int nCO = samplePoisson(genLen);
   // Randomly pick starting chromosome
-  int readChr = Rcpp::rbinom(1,1,0.5)(0);
+  arma::uword readChr = sampleInt(1,2)(0);
   // Track starting chromosome
   if(trackRec){
     hist.set_size(nCO+2,2);
@@ -166,23 +166,24 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
 // mother: female parents
 // fatherGeno: male genotypes
 // father: male parents
-// genMaps: chromosome genetic maps
+// femaleMap: chromosome genetic maps
+// maleMap: chromosome genetic maps
+// trackRec: track recombination
 // [[Rcpp::export]]
 Rcpp::List cross2(
     const arma::field<arma::Cube<unsigned char> >& motherGeno, 
     arma::uvec mother,
     const arma::field<arma::Cube<unsigned char> >& fatherGeno, 
     arma::uvec father,
-    const arma::field<arma::vec>& genMaps,
-    double recombRatio, bool trackRec){
+    const arma::field<arma::vec>& femaleMap,
+    const arma::field<arma::vec>& maleMap,
+    bool trackRec){
   mother -= 1; // R to C++
   father -= 1; // R to C++
   int nChr = motherGeno.n_elem;
   int nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
-  double femaleRecRate = 2/(1/recombRatio+1);
-  double maleRecRate = 2/(recombRatio+1);
   arma::Mat<int> histMat;
   RecHist hist;
   if(trackRec){
@@ -190,8 +191,6 @@ Rcpp::List cross2(
   }
   //Loop through chromosomes
   for(arma::uword chr=0; chr<nChr; ++chr){
-    arma::vec maleMap = maleRecRate*genMaps(chr);
-    arma::vec femaleMap = femaleRecRate*genMaps(chr);
     int segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     //Loop through individuals
@@ -200,7 +199,7 @@ Rcpp::List cross2(
       tmpGeno.slice(ind).col(0) = 
         bivalent(motherGeno(chr).slice(mother(ind)).col(0),
                  motherGeno(chr).slice(mother(ind)).col(1),
-                 femaleMap,histMat,trackRec);
+                 femaleMap(chr),histMat,trackRec);
       if(trackRec){
         hist.addHist(histMat,ind,chr,0);
       }
@@ -208,7 +207,7 @@ Rcpp::List cross2(
       tmpGeno.slice(ind).col(1) = 
         bivalent(fatherGeno(chr).slice(father(ind)).col(0),
                  fatherGeno(chr).slice(father(ind)).col(1),
-                 maleMap,histMat,trackRec);
+                 maleMap(chr),histMat,trackRec);
       if(trackRec){
         hist.addHist(histMat,ind,chr,1);
       }
@@ -226,16 +225,10 @@ Rcpp::List cross2(
 // [[Rcpp::export]]
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
-    int nDH, const arma::field<arma::vec>& genMaps,
-    double recombRatio, bool useFemale, bool trackRec){
+    int nDH, const arma::field<arma::vec>& genMap, 
+    bool trackRec){
   int nChr = geno.n_elem;
   int nInd = geno(0).n_slices;
-  double ratio;
-  if(useFemale){
-    ratio = 2/(1/recombRatio+1);
-  }else{
-    ratio = 2/(recombRatio+1);
-  }
   //Output data
   arma::field<arma::Cube<unsigned char> > output(nChr);
   arma::Mat<int> histMat;
@@ -244,7 +237,6 @@ Rcpp::List createDH2(
     hist.setSize(nInd,nChr,2);
   }
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
-    arma::vec genMap = ratio*genMaps(chr);
     int segSites = geno(chr).n_rows;
     arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
@@ -252,7 +244,7 @@ Rcpp::List createDH2(
         arma::Col<unsigned char> gamete = 
           bivalent(geno(chr).slice(ind).col(0),
                    geno(chr).slice(ind).col(1),
-                   genMap,histMat,trackRec);
+                   genMap(chr),histMat,trackRec);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){

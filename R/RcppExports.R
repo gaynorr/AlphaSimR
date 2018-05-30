@@ -65,12 +65,12 @@ getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father) {
     .Call(`_AlphaSimR_getHybridGv`, trait, motherGeno, mother, fatherGeno, father)
 }
 
-cross2 <- function(motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec) {
-    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, genMaps, recombRatio, trackRec)
+cross2 <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec) {
+    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec)
 }
 
-createDH2 <- function(geno, nDH, genMaps, recombRatio, useFemale, trackRec) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMaps, recombRatio, useFemale, trackRec)
+createDH2 <- function(geno, nDH, genMap, trackRec) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, trackRec)
 }
 
 #' @title Population variance
@@ -124,6 +124,10 @@ calcCoef <- function(X, Y) {
 
 callRRBLUP <- function(y, x, reps, genoTrain, nMarker, skip) {
     .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, genoTrain, nMarker, skip)
+}
+
+callRRBLUP2 <- function(y, x, reps, genoTrain, nMarker, skip, Vu, Ve, tol, maxIter, useEM) {
+    .Call(`_AlphaSimR_callRRBLUP2`, y, x, reps, genoTrain, nMarker, skip, Vu, Ve, tol, maxIter, useEM)
 }
 
 callRRBLUP_D <- function(y, x, reps, genoTrain, nMarker, skip, maxIter, useHetCov) {
