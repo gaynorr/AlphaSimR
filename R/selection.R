@@ -114,7 +114,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
-  if(sum(eligible)<nInd){
+  if(length(eligible)<nInd){
     stop("Not enough suitable candidates, check request value and gender")
   }
   response = getResponse(pop=pop,trait=trait,use=use,

@@ -64,6 +64,9 @@ setValidity("RawPop",function(object){
 setMethod("[",
           signature(x = "RawPop"),
           function(x, i){
+            if(any(abs(i)>x@nInd)){
+              stop("Trying to select invalid individuals")
+            }
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
@@ -134,6 +137,9 @@ setValidity("MapPop",function(object){
 setMethod("[",
           signature(x = "MapPop"),
           function(x, i){
+            if(any(abs(i)>x@nInd)){
+              stop("Trying to select invalid individuals")
+            }
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
@@ -263,6 +269,10 @@ setMethod("[",
           function(x, i){
             if(is.character(i)){
               i = x@id%in%i
+            }else{
+              if(any(abs(i)>x@nInd)){
+                stop("Trying to select invalid individuals")
+              }
             }
             x@id = x@id[i]
             x@mother = x@mother[i]
