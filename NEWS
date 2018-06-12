@@ -9,6 +9,7 @@ Changes in version 0.7.0
     
   Bug fixes
     -fixed population subsetting checks to prevent invalid selections
+    -fixed slow calcGCA
 
 Changes in version 0.6.1
 

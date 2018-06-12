@@ -2,7 +2,7 @@
 title: "A Brief Introduction to AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: rmarkdown::html_document
 bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Introduction}

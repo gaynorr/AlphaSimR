@@ -31,7 +31,7 @@ parameter determines the maximum number of hybrids created
 at one time. Smaller values reduce RAM usage, but may take 
 more time.}
 
-\item{onlyPheno}{should only the phenotype be returned}
+\item{onlyPheno}{should only the phenotype be returned, see return}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

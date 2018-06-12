@@ -4,7 +4,8 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE = NULL, reps = 1, p = 0.5, simParam = NULL)
+setPheno(pop, varE = NULL, reps = 1, p = 0.5, onlyPheno = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -19,11 +20,14 @@ nTraits for correlated errors. If NULL, value in simParam is used.}
 \item{p}{the p-value for the environmental covariate 
 used by GxE traits.}
 
+\item{onlyPheno}{should only the phenotype be returned, see return}
+
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or 
-\code{\link{HybridPop-class}}
+\code{\link{HybridPop-class}} if onlyPheno=FALSE, if 
+onlyPheno=TRUE a matrix is returned
 }
 \description{
 Sets phenotypes for all traits by adding random error 
