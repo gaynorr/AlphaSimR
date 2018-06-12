@@ -266,7 +266,7 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
     stop(paste0("use=",use," is not a valid option"))
   }
   #
-  female = factor(pop@id,levels=unique(pop@id))
+  female = factor(tmp@mother,levels=unique(tmp@mother))
   if(nlevels(female)==1){
     GCAf = matrix(colMeans(y),nrow=1)
   }else{
