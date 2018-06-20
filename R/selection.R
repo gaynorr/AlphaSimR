@@ -233,18 +233,23 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
   families = getFam(pop=pop,famType=famType)
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
+  warn = FALSE
   selInFam = function(selFam){
     index = which(families%in%selFam)
     y = response[index]
     index = index[order(y,decreasing=selectTop)]
     index = index[index%in%eligible]
-    if(length(index)==0){
+    if(length(index)<nInd){
+      warn <<- TRUE
       return(index)
     }else{
-      return(index[1:min(nInd,length(index))])
+      return(index[1:nInd])
     }
   }
   take = unlist(sapply(unique(families),selInFam))
+  if(warn){
+    warning("One or more families are smaller than nInd")
+  }
   if(returnPop){
     return(pop[take])
   }else{

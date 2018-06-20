@@ -5,8 +5,8 @@
 \title{Create founder genotypes using MaCS}
 \usage{
 runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
-  species = "TEST", split = NULL, manualCommand = NULL,
-  manualGenLen = NULL)
+  species = "GENERIC", split = NULL, manualCommand = NULL,
+  manualGenLen = NULL, suppressMessages = FALSE)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -24,7 +24,10 @@ value of NULL results in all sites being retained.}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 
-\item{manualGenLen}{user provided genLen option for use with manual command.  For advanced users only.}
+\item{manualGenLen}{user provided genLen option for use with manual command. 
+For advanced users only.}
+
+\item{suppressMessages}{should messages on status be suppressed}
 }
 \value{
 an object of \code{\link{MapPop-class}}
@@ -33,8 +36,8 @@ an object of \code{\link{MapPop-class}}
 Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
 }
 \details{
-The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
-PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
+The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
+and EUROPEAN.
 }
 \examples{
 # Creates a populations of 10 outbred individuals

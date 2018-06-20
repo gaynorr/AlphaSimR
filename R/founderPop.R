@@ -150,11 +150,13 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
 #' @param manualCommand user provided MaCS options. For advanced users only.
-#' @param manualGenLen user provided genLen option for use with manual command.  For advanced users only.
+#' @param manualGenLen user provided genLen option for use with manual command. 
+#' For advanced users only.
+#' @param suppressMessages should messages on status be suppressed
 #' 
 #' @details
-#' The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
-#' PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
+#' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
+#' and EUROPEAN. 
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #' 
@@ -164,8 +166,8 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
-                   split=NULL,manualCommand=NULL,manualGenLen=NULL){
+runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
+                   split=NULL,manualCommand=NULL,manualGenLen=NULL,suppressMessages=FALSE){
   nInd = as.integer(nInd)
   ploidy = 2L #The only ploidy level currently supported
   if(is.null(segSites)){
@@ -194,36 +196,21 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
       Ne = 100
       speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100"
-    }else if(species=="MAIZELANDRACE"){ #MAIZELANDRACE----
-      genLen = 2.0
+    }else if(species=="GENERIC"){ #GENERIC----
+      genLen = 1.0
       Ne = 100
-      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
-      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100 -eN 6.00 120 -eN 7.00 140 -eN 8.00 160 -eN 9.00 180 -eN 10.00 200 -eN 12.50 400 -eN 15.00 600 -eN 17.50 800 -eN 20.00 1000 -eN 22.50 1200 -eN 25.00 1400 -eN 27.50 1600 -eN 30.00 2000"
+      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
+      speciesHist = "-eN 0.25 5.0 -eN 1.25 12.5 -eN 2.50 15.0 -eN 12.50 35.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0"
     }else if(species=="CATTLE"){ #CATTLE----
       genLen = 1.0
-      Ne = 100
-      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
-      speciesHist = "-eN 0.06 2.0 -eN 0.13 3.0 -eN 0.25 5.0 -eN 0.50 7.0 -eN 0.75 9.0 -eN 1.00 11.0 -eN 1.25 12.5 -eN 1.50 13.0 -eN 1.75 13.5 -eN 2.00 14.0 -eN 2.25 14.5 -eN 2.50 15.0 -eN 5.00 20.0 -eN 7.50 25.0 -eN 10.00 30.0 -eN 12.50 35.0 -eN 15.00 40.0 -eN 17.50 45.0 -eN 20.00 50.0 -eN 22.50 55.0 -eN 25.00 60.0 -eN 50.00 70.0 -eN 100.00 80.0 -eN 150.00 90.0 -eN 200.00 100.0 -eN 250.00 120.0 -eN 500.00 200.0 -eN 1000.00 400.0 -eN 1500.00 600.0 -eN 2000.00 800.0 -eN 2500.00 1000.0"
-    }else if(species=="PIG"){ #PIG----
-      genLen = 1.71
-      Ne = 100
-      speciesParams = "675000000 -t 0.95E-06 -r 0.10E-05"
-      speciesHist = "-eN 25.00 100.0 -eN 50.00 200.0 -eN 75.00 300.0 -eN 100.00 400.0 -eN 125.00 500.0 -eN 150.00 600.0 -eN 175.00 700.0 -eN 200.00 800.0 -eN 225.00 900.0 -eN 250.00 1000.0 -eN 275.00 2000.0 -eN 300.00 3000.0 -eN 325.00 4000.0 -eN 350.00 5000.0 -eN 375.00 6000.0 -eN 400.00 7000.0 -eN 425.00 8000.0 -eN 450.00 9000.0 -eN 475.00 10000.0"
-    }else if(species=="CHICKEN"){ #CHICKEN----
-      genLen = 0.84
-      Ne = 70
-      speciesParams = "300000000 -t 0.23E-05 -r 0.78E-06"
-      speciesHist = "-eN 0.18 0.71 -eN 0.36 1.43 -eN 0.54 2.14 -eN 0.71 2.86 -eN 0.89 3.57 -eN 1.07 4.29 -eN 1.25 5.00 -eN 1.43 5.71"
-    }else if(species=="RABBIT"){ #RABBIT----
-      genLen = 1.36
-      Ne = 100
-      speciesParams = "159000000 -t 0.44E-05 -r 0.34E-05"
-      speciesHist = "-eN 0.05 1.25 -eN 0.08 1.50 -eN 0.10 1.75 -eN 0.13 2.00 -eN 0.15 2.25 -eN 0.18 2.50 -eN 0.20 2.75 -eN 0.23 3.00 -eN 0.25 3.25 -eN 0.50 4.00 -eN 1.00 5.00 -eN 1.50 6.00 -eN 2.00 7.00 -eN 2.50 8.00 -eN 3.00 90.00 -eN 3.50 10.00 -eN 4.00 11.00 -eN 4.50 12.00 -eN 5.00 1000.00"
-    }else if(species=="TEST"){ #TEST----
-      genLen = 1.0
-      Ne = 100
-      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
-      speciesHist = ""
+      Ne = 90
+      speciesParams = "100000000 -t 9e-6 -r 3.6e-06"
+      speciesHist = "-eN 0.011 1.33 -eN 0.019 2.78 -eN 0.036 3.89 -eN 0.053 11.11 -eN 0.069 16.67 -eN 0.431 22.22 -eN 1.264 27.78 -eN 1.819 38.89 -eN 4.875 77.78 -eN 6.542 111.11 -eN 9.319 188.89 -eN 92.097 688.89 -eN 2592.097 688.89"
+    }else if(species=="EUROPEAN"){ #EUROPEAN----
+      genLen = 1.3
+      Ne = 512000
+      speciesParams = "1.3e8 -t 0.0483328 -r 0.02054849"
+      speciesHist = "-G 1.0195 -eG 0.0001000977 1.0031 -eN 0.0004492188 0.002015625 -eN 0.000449707 0.003634766"
     }else{
       stop(paste("No rules for species",species))
     }
@@ -239,7 +226,9 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
   }
   output = vector("list",nChr)
   for(chr in 1:nChr){
-    cat("Making chomosome",chr,"of",nChr,"\n")
+    if(!suppressMessages){
+      cat("Making chomosome",chr,"of",nChr,"\n")
+    }
     macsOut = MaCS(command,segSites[chr])
     genMap = c(macsOut$genMap)
     genMap = genLen*(genMap-min(genMap))
@@ -254,7 +243,9 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
                         genMap=as.matrix(list(genMap)))
   }
   output = do.call("c",output)
-  cat("Done\n")
+  if(!suppressMessages){
+    cat("Done\n")
+  }
   return(output)
 }
 
@@ -278,6 +269,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
 #' @param histGen number of generations ago for effective 
 #' population sizes given in histNe
 #' @param inbred should founder individuals be inbred
+#' @param suppressMessages should messages on status be suppressed
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #' 
@@ -291,7 +283,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="TEST",
 runMacs2 = function(nInd,nChr,segSites,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
                     histNe=NULL,histGen=NULL,
-                    inbred=FALSE){
+                    inbred=FALSE,suppressMessages=FALSE){
   stopifnot(length(histNe)==length(histGen))
   command = paste(bp,"-t",4*Ne*mutRate,
                   "-r",4*Ne*genLen/bp)
@@ -305,7 +297,8 @@ runMacs2 = function(nInd,nChr,segSites,Ne=100,
   }
   return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
                  inbred=inbred,species="TEST",split=NULL,
-                 manualCommand=command,manualGenLen=genLen))
+                 manualCommand=command,manualGenLen=genLen,
+                 suppressMessages=suppressMessages))
 }
 
 #' @title Sample haplotypes from a MapPop

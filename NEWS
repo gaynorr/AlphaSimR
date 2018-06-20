@@ -6,6 +6,7 @@ Changes in version 0.7.0
     -pullGeno and pullHaplo functions can now specifiy chromosomes
     -added RRBLUP2 for special GS cases
     -improved speed by replacing Rcpp random number generators
+    -changed available MaCS species
     
   Bug fixes
     -fixed population subsetting checks to prevent invalid selections

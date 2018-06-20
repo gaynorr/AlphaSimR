@@ -5,7 +5,8 @@
 \title{Alternative wrapper for MaCS}
 \usage{
 runMacs2(nInd, nChr, segSites, Ne = 100, bp = 1e+08, genLen = 1,
-  mutRate = 2.5e-08, histNe = NULL, histGen = NULL, inbred = FALSE)
+  mutRate = 2.5e-08, histNe = NULL, histGen = NULL, inbred = FALSE,
+  suppressMessages = FALSE)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -29,6 +30,8 @@ generations}
 population sizes given in histNe}
 
 \item{inbred}{should founder individuals be inbred}
+
+\item{suppressMessages}{should messages on status be suppressed}
 }
 \value{
 an object of \code{\link{MapPop-class}}

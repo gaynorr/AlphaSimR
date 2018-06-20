@@ -2,7 +2,7 @@
 title: "Simulating Hybrid Breeding Programs"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_document
+output: rmarkdown::html_vignette
 bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Hybrids}

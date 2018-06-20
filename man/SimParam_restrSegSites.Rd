@@ -23,7 +23,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Sets restrictions on which segregating sites 
-can serve and SNP and/or QTL loci.
+can serve as SNP and/or QTL.
 }
 \section{Usage}{
  SP$restrSegSites(maxQtl = 0, maxSnp = 0, 

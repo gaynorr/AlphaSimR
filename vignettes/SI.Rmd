@@ -2,7 +2,7 @@
 title: "Selection Indices in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_document
+output: rmarkdown::html_vignette
 bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Selection Index}

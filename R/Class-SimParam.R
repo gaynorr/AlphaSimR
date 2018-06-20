@@ -432,7 +432,7 @@ SimParam$set(
 #' @title Restrict segregating sites
 #'
 #' @description Sets restrictions on which segregating sites 
-#' can serve and SNP and/or QTL loci.
+#' can serve as SNP and/or QTL.
 #' 
 #' @section Usage: SP$restrSegSites(maxQtl = 0, maxSnp = 0, 
 #' snpQtlOverlap = FALSE, minSnpFreq = NULL, force = FALSE)
@@ -510,6 +510,66 @@ SimParam$set(
     }
     private$.potSnp = potSnp
     private$.potQtl = potQtl
+    invisible(self)
+  }
+)
+
+#' @title Restrict SNP sites
+#'
+#' @description Sets restrictions on which segregating sites 
+#' can serve as SNPs.
+#' 
+#' @section Usage: SP$restrSnpSites(chr=NULL, site=NULL, force = FALSE)
+#' 
+#' @param chr a vector of chromosome postions for eligible 
+#' SNPs
+#' @param site a vector of eligible segregating sites within 
+#' chromosomes
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_restrSnpSites
+NULL
+# restrSnpSites ----
+SimParam$set(
+  "public",
+  "restrSnpSites",
+  function(chr=NULL, site=NULL, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    #DO SOMETHING
+    private$.potSnp
+    invisible(self)
+  }
+)
+
+#' @title Restrict QTL sites
+#'
+#' @description Sets restrictions on which segregating sites 
+#' can serve as QTL.
+#' 
+#' @section Usage: SP$restrQtlSites(chr = NULL, site = NULL, force = FALSE)
+#' 
+#' @param chr a vector of chromosome postions for eligible 
+#' QTL
+#' @param site a vector of eligible segregating sites within 
+#' chromosomes
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_restrQtlSites
+NULL
+# restrQtlSites ----
+SimParam$set(
+  "public",
+  "restrQtlSites",
+  function(chr=NULL, site=NULL, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    #DO SOMETHING
+    private$.potQtl
     invisible(self)
   }
 )
