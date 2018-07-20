@@ -423,3 +423,148 @@ pullSegSiteHaplo = function(pop, haplo="all",
   colnames(output) = paste("SITE",1:ncol(output),sep="_")
   return(output)
 }
+
+#' @title Pull Identity By Descent (IBD) haplotypes
+#' 
+#' @description 
+#' Retrieves Identity By Descent (IBD) haplotype data
+#'
+#' @param pop an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}. If NULL, haplotypes for the whole
+#' ancestral pedigree are retreived. Otherwise, haplotypes just for
+#' the \code{pop} individuals are retreived. In both cases the base
+#' population is controlled by \code{SimParam} and \code{pedigree}.
+#' @param chr a vector of chromosomes to retrieve. If NULL, 
+#' all chromosome are retrieved.
+#' @param snpChip an integer. Indicates which SNP chip's loci
+#' are retrieved. If NULL, all segregatibg sites are retrieved.
+#' @param pedigree a matrix with ancestral pedigree. It should have
+#' two columns - the first one with mother id and the second one
+#' with father id - as in simParam$pedigree, see
+#' \code{\link{SimParam_setTrackRec}}. If NULL, whole pedigree
+#' from \code{\link{SimParam}} is taken.
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a matrix of haplotypes with Identity By Descent
+#' (IBD) coding of locus alleles. The matrix colnames reflect whether
+#' all segregagting loci (sites) are retreived or only SNP array loci.
+#' @export
+pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get(x = "SP", envir = .GlobalEnv)
+  }
+  if (simParam@ploidy != 2L) {
+    stop("pullIbdHaplo() works (currently) only with diploids!")
+  }
+  if (!simParam$isTrackRec) {
+    stop("To use pullIbdHaplo(), simParam must hold ancestral recombination data! See ?SimParam_setTrackRec")
+  }
+  if (is.null(pedigree) & !simParam$isTrackPed) {
+    stop("To use pullIbdHaplo() with pedigree = NULL, simParam must hold ancestral pedigree data! See ?SimParam_setTrackPed")
+  }
+  allLoci = unlist(sapply(X = simParam$segSites, FUN = function(x) 1L:x))
+  lociTot = simParam$segSites
+  if (is.null(chr)) {
+    chr = 1L:simParam$nChr
+  } else {
+    Tmp = selectLoci(chr = chr, inLociPerChr = lociTot, inLociLoc = allLoci)
+    allLoci = Tmp$lociLoc
+    lociTot = Tmp$lociPerChr
+  }
+  if (is.null(pedigree)) {
+    pedigree = simParam$pedigree
+  }
+  nInd = nrow(pedigree)
+  output = matrix(data = 0L, nrow = 2L * nInd, ncol = sum(lociTot))
+  MatGamete = PatGamete = output[1L, , drop = TRUE] # all gametes passed from parent to an individual
+  for (Ind in 1L:nInd) {
+    # Ind = 1L
+    # Ind = 1001L
+    MId = pedigree[Ind, 1L] # note AlphaSimR::simParam$pedigree has mother as the first  parent
+    FId = pedigree[Ind, 2L] # note AlphaSimR::simParam$pedigree has father as the second parent
+    ChrOrigin = 0L
+    for (Chr in chr) {
+      # Chr = 1L
+      nLocPerChr = lociTot[Chr]
+      
+      # ---- Paternal ----
+      
+      if (FId == 0L) {
+        Start = ChrOrigin + 1L
+        Stop  = ChrOrigin + nLocPerChr
+        PatGamete[Start:Stop] = 2L * Ind - 1L
+      } else {
+        Rec = simParam$recHist[[Ind]][[Chr]][[2L]] # note AlphaSimR::simParam$recHist has father as the second parent
+        nSeg = nrow(Rec)
+        for (Seg in 1L:nSeg) {
+          # Seg = 1
+          Source = Rec[Seg, 1L] # 1 for 
+          Start = ChrOrigin + Rec[Seg, 2L]
+          if (Seg < nSeg) {
+            Stop = ChrOrigin + Rec[Seg + 1L, 2L]
+          } else {
+            Stop = ChrOrigin + nLocPerChr
+          }
+          PatGamete[Start:Stop] = output[2L * FId - 2L + Source, Start:Stop]
+        }
+      }
+      
+      # ---- Maternal ----
+      
+      if (MId == 0L) {
+        Start = ChrOrigin + 1L
+        Stop  = ChrOrigin + nLocPerChr
+        MatGamete[Start:Stop] = 2L * Ind
+      } else {
+        Rec = simParam$recHist[[Ind]][[Chr]][[1L]] # note AlphaSimR::simParam$recHist has mother as the first parent
+        nSeg = nrow(Rec)
+        for (Seg in 1L:nSeg) {
+          # Seg = 1
+          Source = Rec[Seg, 1L]
+          Start = ChrOrigin + Rec[Seg, 2L]
+          if (Seg < nSeg) {
+            Stop = ChrOrigin + Rec[Seg + 1L, 2L] - 1L
+          } else {
+            Stop = ChrOrigin + nLocPerChr
+          }
+          MatGamete[Start:Stop] = output[2L * MId - 2L + Source, Start:Stop]
+        }
+      }
+      ChrOrigin = ChrOrigin + nLocPerChr
+    }
+    output[2L * Ind - 1L, ] = PatGamete
+    output[2L * Ind,      ] = MatGamete
+  }
+
+  # ---- Subset loci and individuals -----
+  
+  if (!is.null(snpChip)) {
+    Sel = integer(length = sum(simParam$snpChips[[snpChip]]@lociPerChr[chr]))
+    ArrayEnd = 0L
+    ChrStart = 0L
+    for (Chr in chr) {
+      # Chr = 1L
+      # Chr = 2L
+      Tmp = selectLoci(chr = Chr,
+                       inLociPerChr = simParam$snpChips[[snpChip]]@lociPerChr,
+                       inLociLoc    = simParam$snpChips[[snpChip]]@lociLoc)
+      ArrayStart = ArrayEnd + 1L
+      ArrayEnd   = ArrayStart + Tmp$lociPerChr[Chr] - 1L
+      # cat(ArrayStart, ArrayEnd, "\n")
+      Sel[ArrayStart:ArrayEnd] = ChrStart + Tmp$lociLoc
+      ChrStart = ChrStart + lociTot[Chr]
+    }
+    output = output[, Sel]
+    colnames(output) = paste("SNP",  1L:ncol(output), sep = "_")
+  } else {
+    colnames(output) = paste("SITE", 1L:ncol(output), sep = "_")
+  }
+  rownames(output) = paste(rep(x = 1L:nInd,            each  = simParam$ploidy),
+                           rep(x = 1L:simParam$ploidy, times = nInd), sep = "_")
+  if (!is.null(pop)) {
+    Sel = paste(rep(x = pop@id,             each  = simParam$ploidy),
+                rep(x = 1L:simParam$ploidy, times = simParam$nInd), sep = "_")
+    output = output[Sel, ]
+  }
+  return(output)
+}
