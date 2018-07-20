@@ -275,3 +275,103 @@ var2cor = function(var){
   tmp = diag(1/sqrt(diag(var)))
   return(tmp%*%var%*%tmp)
 }
+
+#' @title Converts a Pop-class to PLINK data
+#' 
+#' @description
+#' Converts a Pop-class to PLINK FAM and MAP data
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param trait an integer. Which phenotype trait should be used.
+#' @param snpChip an integer. Which SNP array should be used.
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param chromLength an integer. The size of chromosomes in base
+#' pairs; assuming all chromosomes are of the same size.
+#' 
+#' @return a list with the fam, ped, and map data.frames
+#'
+#' @export
+pop2Plink = function(pop, trait = 1L, snpChip = 1L, simParam = NULL, chromLength = 10L^8) {
+  # ---- Setup ----
+  
+  if (is.null(simParam)) {
+    simParam = get(x = "SP", envir = .GlobalEnv)
+  }
+  Ret = vector(mode = "list", length = 3L)
+  names(Ret) = c("fam", "ped", "map")
+  
+  # ---- Fam ----
+  
+  Ret$fam = data.frame(Family = rep(x = 1L, times = pop@nInd),
+                       IId  = pop@id,
+                       FId  = pop@father,
+                       MId  = pop@mother,
+                       Sex  = 0L,
+                       Phen = 0)
+  if (!any(pop@gender == "")) {
+    Ret$fam$Sex = (pop@gender == "F") + 1L
+  }
+  if (!anyNA(pop@pheno[, trait])) {
+    Ret$fam$Phen = pop@pheno[, trait]
+  }
+  
+  # ---- Ped ----
+  
+  nLoc = simParam$snpChips[[snpChip]]@nLoci
+  Ret$ped = as.data.frame(matrix(data = 0L, nrow = pop@nInd, ncol = 6L + 2L * nLoc))
+  Ret$ped[, 1L:6L] = Ret$fam
+  Tmp = pullSnpHaplo(pop = pop, snpChip = snpChip)
+  Sel1 = seq(from = 1L, to = 2L * pop@nInd,   by = 2L)
+  Sel2 = seq(from = 2L, to = 2L * pop@nInd, by = 2L)
+  k = 7L
+  for (Loc in 1L:nLoc) {
+    # Loc = 1L
+    Ret$ped[, k] = Tmp[Sel1, Loc] + 1L
+    k = k + 1L
+    Ret$ped[, k] = Tmp[Sel2, Loc] + 1L
+    k = k + 1L
+  }
+  
+  # ---- Map ----
+  
+  # Assuming equal number of markers per chromosome!
+  Ret$map = data.frame(Chr = rep(x = 1L:simParam$nChr, each = simParam$snpChips[[snpChip]]@lociPerChr[1L]),
+                       Loc = colnames(Tmp),
+                       PosGenetic = 0L,
+                       Pos = simParam$snpChips[[snpChip]]@lociLoc)
+  for (Chr in 1L:simParam$nChr) {
+    Sel = Ret$map$Chr == Chr
+    Ret$map$PosGenetic[Sel] = simParam$genMap[[Chr]][Ret$map$Pos[Sel]]
+  }
+  Ret$map$Pos = round(Ret$map$PosGenetic * chromLength)
+  
+  # ---- Return ----
+  
+  Ret
+}
+
+#' @title Writes a Pop-class to PLINK data
+#' 
+#' @description
+#' Writes a Pop-class to PLINK FAM and MAP data
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param baseName a character. Output file basename.
+#' @param trait an integer. Which phenotype trait should be used.
+#' @param snpChip an integer. Which SNP array should be used.
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param chromLength an integer. The size of chromosomes in base
+#' pairs; assuming all chromosomes are of the same size.
+#' 
+#' @return a list with the fam, ped, and map data.frames
+#'
+#' @export
+writePlink = function(pop, baseName, trait = 1L, snpChip = 1L,
+                      simParam = NULL, chromLength = 10L^8) {
+  x = pop2Plink(pop = pop, trait = trait, snpChip = snpChip,
+                simParam = simParam, chromLength = chromLength)
+  write.table(x = x$ped, file = paste0(baseName, ".ped"),
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
+  write.table(x = x$map, file = paste0(baseName, ".map"),
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
