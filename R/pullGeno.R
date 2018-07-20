@@ -453,7 +453,7 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
   if (is.null(simParam)) {
     simParam = get(x = "SP", envir = .GlobalEnv)
   }
-  if (simParam@ploidy != 2L) {
+  if (simParam$ploidy != 2L) {
     stop("pullIbdHaplo() works (currently) only with diploids!")
   }
   if (!simParam$isTrackRec) {
