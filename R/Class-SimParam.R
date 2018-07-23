@@ -1135,10 +1135,10 @@ SimParam$set(
     stopifnot(length(mean)==length(var),
               isSymmetric(corA),
               isSymmetric(corGxE),
-              length(meanG)==nrow(corA),
-              length(meanG)==nrow(corGxE),
-              length(meanG)==length(varGxE),
-              length(meanG)==length(varEnv))
+              length(mean)==nrow(corA),
+              length(mean)==nrow(corGxE),
+              length(mean)==length(varGxE),
+              length(mean)==length(varEnv))
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corA,gamma=gamma,shape=shape)

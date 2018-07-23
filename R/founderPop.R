@@ -150,7 +150,10 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
 #' @param manualCommand user provided MaCS options. For advanced users only.
-#' @param manualGenLen user provided genLen option for use with manual command. 
+#' @param manualGenLen user provided genetic length. This must be supplied if using 
+#' manualCommand. If not using manualCommand, this value will replace the predefined 
+#' genetic length for the species. However, this the genetic length is only used by 
+#' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 #' For advanced users only.
 #' @param suppressMessages should messages on status be suppressed
 #' 
@@ -167,7 +170,8 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' 
 #' @export
 runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
-                   split=NULL,manualCommand=NULL,manualGenLen=NULL,suppressMessages=FALSE){
+                   split=NULL,manualCommand=NULL,manualGenLen=NULL,
+                   suppressMessages=FALSE){
   nInd = as.integer(nInd)
   ploidy = 2L #The only ploidy level currently supported
   if(is.null(segSites)){
@@ -175,28 +179,14 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
   }else if(length(segSites)==1){
     segSites = rep(segSites,nChr)
   }
-  if(inbred){
-    popSize = nInd
-  }else{
-    popSize = ploidy*nInd
-  }
+  popSize = ifelse(inbred,nInd,ploidy*nInd)
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
     command = paste(popSize,manualCommand,"-s",sample.int(1e8,1))
     genLen = manualGenLen
   }else{
     species = toupper(species)
-    if(species=="WHEAT"){ #WHEAT----
-      genLen = 1.43
-      Ne = 50
-      speciesParams = "800000000 -t 0.40E-06 -r 0.36E-06"
-      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 1.00 40 -eN 2.00 60 -eN 3.00 80 -eN 4.00 100 -eN 5.00 120 -eN 10.00 140 -eN 20.00 160 -eN 30.00 180 -eN 40.00 200 -eN 50.00 240 -eN 100.00 320 -eN 200.00 400 -eN 300.00 480 -eN 400.00 560 -eN 500.00 640"
-    }else if(species=="MAIZE"){ #MAIZE----
-      genLen = 2.0
-      Ne = 100
-      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
-      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100"
-    }else if(species=="GENERIC"){ #GENERIC----
+    if(species=="GENERIC"){ #GENERIC----
       genLen = 1.0
       Ne = 100
       speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
@@ -206,6 +196,16 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
       Ne = 90
       speciesParams = "100000000 -t 9e-6 -r 3.6e-06"
       speciesHist = "-eN 0.011 1.33 -eN 0.019 2.78 -eN 0.036 3.89 -eN 0.053 11.11 -eN 0.069 16.67 -eN 0.431 22.22 -eN 1.264 27.78 -eN 1.819 38.89 -eN 4.875 77.78 -eN 6.542 111.11 -eN 9.319 188.89 -eN 92.097 688.89 -eN 2592.097 688.89"
+    }else if(species=="WHEAT"){ #WHEAT----
+      genLen = 1.43
+      Ne = 50
+      speciesParams = "800000000 -t 0.40E-06 -r 0.36E-06"
+      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 1.00 40 -eN 2.00 60 -eN 3.00 80 -eN 4.00 100 -eN 5.00 120 -eN 10.00 140 -eN 20.00 160 -eN 30.00 180 -eN 40.00 200 -eN 50.00 240 -eN 100.00 320 -eN 200.00 400 -eN 300.00 480 -eN 400.00 560 -eN 500.00 640"
+    }else if(species=="MAIZE"){ #MAIZE----
+      genLen = 2.0
+      Ne = 100
+      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
+      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100" 
     }else if(species=="EUROPEAN"){ #EUROPEAN----
       genLen = 1.3
       Ne = 512000
@@ -223,6 +223,9 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
     command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
+  }
+  if(!is.null(manualGenLen)){
+    genLen = manualGenLen
   }
   output = vector("list",nChr)
   for(chr in 1:nChr){
@@ -252,10 +255,12 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @title Alternative wrapper for MaCS
 #'
 #' @description 
-#' A wrapper function for \code{\link{runMacs}}. This wrapper 
-#' is an alternative to directly using manualCommand in 
-#' \code{\link{runMacs}}. It automatically creates an appropriate 
-#' manualCommand based on user supplied variables.
+#' A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
+#' to be easier to use than supply custom comands to manualCommand in 
+#' \code{\link{runMacs}}. It effectively automates the creation of an 
+#' appropriate manualCommand using user supplied variables, but only deals  
+#' with a subset of the possibilities. The defaults were chosen to match 
+#' species="GENERIC" in \code{\link{runMacs}}.
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
@@ -269,31 +274,52 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @param histGen number of generations ago for effective 
 #' population sizes given in histNe
 #' @param inbred should founder individuals be inbred
+#' @param split an optional historic population split in terms of generations ago
+#' @param returnCommand should the command passed to manualCommand in 
+#' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
+#' the command is returned instead.
 #' @param suppressMessages should messages on status be suppressed
 #'
-#' @return an object of \code{\link{MapPop-class}}
+#' @return an object of \code{\link{MapPop-class}} or if 
+#' returnCommand is true a string giving the MaCS command passed 
+#' the manualCommand argument of \code{\link{runMacs}}.
 #' 
 #' @examples 
 #' # Creates a populations of 10 outbred individuals
 #' # Their genome consists of 1 chromosome and 100 segregating sites
-#' # The command is equivalent to using species="TEST" in runMacs
+#' # The command is equivalent to using species="GENERIC" in runMacs
 #' founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs2 = function(nInd,nChr,segSites,Ne=100,
+runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
-                    histNe=NULL,histGen=NULL,
-                    inbred=FALSE,suppressMessages=FALSE){
+                    histNe=c(500,1250,1500,3500,6000,12000,100000),
+                    histGen=c(100,500,1000,5000,10000,100000,1000000),
+                    inbred=FALSE,split=NULL,returnCommand=FALSE,
+                    suppressMessages=FALSE){
   stopifnot(length(histNe)==length(histGen))
-  command = paste(bp,"-t",4*Ne*mutRate,
-                  "-r",4*Ne*genLen/bp)
+  speciesParams = paste(bp,"-t",4*Ne*mutRate,
+                        "-r",4*Ne*genLen/bp)
+  speciesHist = ""
   if(length(histNe)>0){
     histNe = histNe/Ne
     histGen = histGen/(4*Ne)
     for(i in 1:length(histNe)){
-      command = paste(command,"-eN",
+      speciesHist = paste(speciesHist,"-eN",
                       histGen[i],histNe[i])
     }
+  }
+  if(is.null(split)){
+    command = paste(speciesParams,speciesHist)
+  }else{
+    popSize = ifelse(inbred,nInd,2*nInd)
+    command = paste(speciesParams,
+                    paste("-I 2",popSize%/%2,popSize%/%2),
+                    speciesHist,
+                    paste("-ej",split/(4*Ne)+0.000001,"2 1"))
+  }
+  if(returnCommand){
+    return(command)
   }
   return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
                  inbred=inbred,species="TEST",split=NULL,

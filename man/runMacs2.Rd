@@ -4,8 +4,10 @@
 \alias{runMacs2}
 \title{Alternative wrapper for MaCS}
 \usage{
-runMacs2(nInd, nChr, segSites, Ne = 100, bp = 1e+08, genLen = 1,
-  mutRate = 2.5e-08, histNe = NULL, histGen = NULL, inbred = FALSE,
+runMacs2(nInd, nChr = 1, segSites = NULL, Ne = 100, bp = 1e+08,
+  genLen = 1, mutRate = 2.5e-08, histNe = c(500, 1250, 1500, 3500, 6000,
+  12000, 1e+05), histGen = c(100, 500, 1000, 5000, 10000, 1e+05, 1e+06),
+  inbred = FALSE, split = NULL, returnCommand = FALSE,
   suppressMessages = FALSE)
 }
 \arguments{
@@ -31,21 +33,31 @@ population sizes given in histNe}
 
 \item{inbred}{should founder individuals be inbred}
 
+\item{split}{an optional historic population split in terms of generations ago}
+
+\item{returnCommand}{should the command passed to manualCommand in 
+\code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
+the command is returned instead.}
+
 \item{suppressMessages}{should messages on status be suppressed}
 }
 \value{
-an object of \code{\link{MapPop-class}}
+an object of \code{\link{MapPop-class}} or if 
+returnCommand is true a string giving the MaCS command passed 
+the manualCommand argument of \code{\link{runMacs}}.
 }
 \description{
-A wrapper function for \code{\link{runMacs}}. This wrapper 
-is an alternative to directly using manualCommand in 
-\code{\link{runMacs}}. It automatically creates an appropriate 
-manualCommand based on user supplied variables.
+A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
+to be easier to use than supply custom comands to manualCommand in 
+\code{\link{runMacs}}. It effectively automates the creation of an 
+appropriate manualCommand using user supplied variables, but only deals  
+with a subset of the possibilities. The defaults were chosen to match 
+species="GENERIC" in \code{\link{runMacs}}.
 }
 \examples{
 # Creates a populations of 10 outbred individuals
 # Their genome consists of 1 chromosome and 100 segregating sites
-# The command is equivalent to using species="TEST" in runMacs
+# The command is equivalent to using species="GENERIC" in runMacs
 founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
 
 }

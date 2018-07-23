@@ -24,7 +24,10 @@ value of NULL results in all sites being retained.}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 
-\item{manualGenLen}{user provided genLen option for use with manual command. 
+\item{manualGenLen}{user provided genetic length. This must be supplied if using 
+manualCommand. If not using manualCommand, this value will replace the predefined 
+genetic length for the species. However, this the genetic length is only used by 
+AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 For advanced users only.}
 
 \item{suppressMessages}{should messages on status be suppressed}
