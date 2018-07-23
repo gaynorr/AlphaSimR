@@ -433,15 +433,16 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' \code{\link{RawPop-class}}. If NULL, haplotypes for the whole
 #' ancestral pedigree are retreived. Otherwise, haplotypes just for
 #' the \code{pop} individuals are retreived. In both cases the base
-#' population is controlled by \code{SimParam} and \code{pedigree}.
+#' population is controlled by \code{pedigree}.
 #' @param chr a vector of chromosomes to retrieve. If NULL, 
 #' all chromosome are retrieved.
 #' @param snpChip an integer. Indicates which SNP chip's loci
 #' are retrieved. If NULL, all segregatibg sites are retrieved.
-#' @param pedigree a matrix with ancestral pedigree. It should have
-#' two columns - the first one with mother id and the second one
-#' with father id - as in simParam$pedigree, see
-#' \code{\link{SimParam_setTrackRec}}. If NULL, whole pedigree
+#' @param pedigree a matrix with ancestral pedigree to set a base
+#' population. It should be of the same form as \code{simParam$pedigree} 
+#' (see \code{\link{SimParam_setTrackPed}}), i.e., two columns
+#' and the same number of rows as \code{simParam$pedigree}, but with
+#' more parents coded as 0 to set base population! If NULL, pedigree
 #' from \code{\link{SimParam}} is taken.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
@@ -473,67 +474,44 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
   }
   if (is.null(pedigree)) {
     pedigree = simParam$pedigree
+  } else {
+    if (nrow(pedigree) != length(simParam$recHist)) {
+      stop("pedigree input must have the same number of rows as simParam$recHist!")
+    }
   }
   nInd = nrow(pedigree)
   output = matrix(data = 0L, nrow = 2L * nInd, ncol = sum(lociTot))
-  MatGamete = PatGamete = output[1L, , drop = TRUE] # all gametes passed from parent to an individual
+  Gametes = output[1L, , drop = TRUE] # all gametes passed from parent to an individual
   for (Ind in 1L:nInd) {
     # Ind = 1L
     # Ind = 1001L
-    MId = pedigree[Ind, 1L] # note AlphaSimR::simParam$pedigree has mother as the first  parent
-    FId = pedigree[Ind, 2L] # note AlphaSimR::simParam$pedigree has father as the second parent
-    ChrOrigin = 0L
-    for (Chr in chr) {
-      # Chr = 1L
-      nLocPerChr = lociTot[Chr]
-      
-      # ---- Paternal ----
-      
-      if (FId == 0L) {
-        Start = ChrOrigin + 1L
-        Stop  = ChrOrigin + nLocPerChr
-        PatGamete[Start:Stop] = 2L * Ind - 1L
+    for (Par in 1L:2L) {
+      PId = pedigree[Ind, Par] # note AlphaSimR has mother/father as the first/second parent
+      if (PId == 0L) {
+        Gametes = 2L * Ind - 2L + Par # first gamete is maternal, second is paternal
       } else {
-        Rec = simParam$recHist[[Ind]][[Chr]][[2L]] # note AlphaSimR::simParam$recHist has father as the second parent
-        nSeg = nrow(Rec)
-        for (Seg in 1L:nSeg) {
-          # Seg = 1
-          Source = Rec[Seg, 1L] # 1 for 
-          Start = ChrOrigin + Rec[Seg, 2L]
-          if (Seg < nSeg) {
-            Stop = ChrOrigin + Rec[Seg + 1L, 2L]
-          } else {
-            Stop = ChrOrigin + nLocPerChr
+        ChrOrigin = 0L
+        for (Chr in chr) {
+          # Chr = 1L
+          nLocPerChr = lociTot[Chr]
+          Rec = simParam$recHist[[Ind]][[Chr]][[Par]] # note AlphaSimR has mother/father as the first/second parent
+          nSeg = nrow(Rec)
+          for (Seg in 1L:nSeg) {
+            # Seg = 1
+            Source = Rec[Seg, 1L]
+            Start = ChrOrigin + Rec[Seg, 2L]
+            if (Seg < nSeg) {
+              Stop = ChrOrigin + Rec[Seg + 1L, 2L] - 1L
+            } else {
+              Stop = ChrOrigin + nLocPerChr
+            }
+            Gametes[Start:Stop] = output[2L * PId - 2L + Source, Start:Stop]
           }
-          PatGamete[Start:Stop] = output[2L * FId - 2L + Source, Start:Stop]
         }
+        ChrOrigin = ChrOrigin + nLocPerChr
       }
-      
-      # ---- Maternal ----
-      
-      if (MId == 0L) {
-        Start = ChrOrigin + 1L
-        Stop  = ChrOrigin + nLocPerChr
-        MatGamete[Start:Stop] = 2L * Ind
-      } else {
-        Rec = simParam$recHist[[Ind]][[Chr]][[1L]] # note AlphaSimR::simParam$recHist has mother as the first parent
-        nSeg = nrow(Rec)
-        for (Seg in 1L:nSeg) {
-          # Seg = 1
-          Source = Rec[Seg, 1L]
-          Start = ChrOrigin + Rec[Seg, 2L]
-          if (Seg < nSeg) {
-            Stop = ChrOrigin + Rec[Seg + 1L, 2L] - 1L
-          } else {
-            Stop = ChrOrigin + nLocPerChr
-          }
-          MatGamete[Start:Stop] = output[2L * MId - 2L + Source, Start:Stop]
-        }
-      }
-      ChrOrigin = ChrOrigin + nLocPerChr
+      output[2L * Ind - 2L + Par, ] = Gametes # first gamete is maternal, second is paternal
     }
-    output[2L * Ind - 1L, ] = PatGamete
-    output[2L * Ind,      ] = MatGamete
   }
 
   # ---- Subset loci and individuals -----
