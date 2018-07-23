@@ -563,7 +563,7 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
                            rep(x = 1L:simParam$ploidy, times = nInd), sep = "_")
   if (!is.null(pop)) {
     Sel = paste(rep(x = pop@id,             each  = simParam$ploidy),
-                rep(x = 1L:simParam$ploidy, times = simParam$nInd), sep = "_")
+                rep(x = 1L:simParam$ploidy, times = pop@nInd), sep = "_")
     output = output[Sel, ]
   }
   return(output)
