@@ -150,6 +150,10 @@ packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
+writePlinkPed <- function(fam, geno, lociPerChr, lociLoc, file) {
+    invisible(.Call(`_AlphaSimR_writePlinkPed`, fam, geno, lociPerChr, lociLoc, file))
+}
+
 MaCS <- function(args, maxSites = 0L) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites)
 }

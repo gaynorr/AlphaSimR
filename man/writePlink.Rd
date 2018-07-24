@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{writePlink}
 \alias{writePlink}
-\title{Writes a Pop-class to PLINK data}
+\title{Writes a Pop-class as PLINK files}
 \usage{
 writePlink(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
   chromLength = 10L^8)
@@ -10,7 +10,7 @@ writePlink(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{baseName}{a character. Output file basename.}
+\item{baseName}{a character. Basename of PED and MAP files.}
 
 \item{trait}{an integer. Which phenotype trait should be used.}
 
@@ -21,9 +21,6 @@ writePlink(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
 \item{chromLength}{an integer. The size of chromosomes in base
 pairs; assuming all chromosomes are of the same size.}
 }
-\value{
-a list with the fam, ped, and map data.frames
-}
 \description{
-Writes a Pop-class to PLINK FAM and MAP data
+Writes a Pop-class as PLINK PED and MAP files
 }

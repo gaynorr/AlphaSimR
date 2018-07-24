@@ -478,6 +478,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// writePlinkPed
+void writePlinkPed(Rcpp::DataFrame& fam, const arma::field<arma::Cube<unsigned char> >& geno, const arma::uvec& lociPerChr, arma::uvec& lociLoc, const std::string file);
+RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP fileSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame& >::type fam(famSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type file(fileSEXP);
+    writePlinkPed(fam, geno, lociPerChr, lociLoc, file);
+    return R_NilValue;
+END_RCPP
+}
 // MaCS
 Rcpp::List MaCS(Rcpp::String args, arma::uword maxSites);
 RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP) {
