@@ -45,6 +45,10 @@ getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo) {
     .Call(`_AlphaSimR_getOneHaplo`, geno, lociPerChr, lociLoc, haplo)
 }
 
+getIbdHaplo <- function(pedigree, recHist, lociPerChr) {
+    .Call(`_AlphaSimR_getIbdHaplo`, pedigree, recHist, lociPerChr)
+}
+
 writeGeno <- function(geno, lociPerChr, lociLoc, filePath) {
     invisible(.Call(`_AlphaSimR_writeGeno`, geno, lociPerChr, lociLoc, filePath))
 }

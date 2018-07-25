@@ -15,16 +15,16 @@ the \code{pop} individuals are retreived. In both cases the base
 population is controlled by \code{pedigree}.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL, 
-all chromosome are retrieved.}
+all chromosomes are retrieved.}
 
-\item{snpChip}{an integer. Indicates which SNP chip's loci
-are retrieved. If NULL, all segregatibg sites are retrieved.}
+\item{snpChip}{an integer. Indicates which SNP array loci
+are retrieved. If NULL, all sites are retrieved.}
 
 \item{pedigree}{a matrix with ancestral pedigree to set a base
 population. It should be of the same form as \code{simParam$pedigree} 
-(see \code{\link{SimParam_setTrackPed}}), i.e., two columns
-and the same number of rows as \code{simParam$pedigree}, but with
-more parents coded as 0 to set base population! If NULL, pedigree
+(see \code{\link{SimParam_setTrackPed}}), i.e., two columns (mother
+and father) and the same number of rows as \code{simParam$pedigree}.
+Base population can be set by setting parents as 0. If NULL, pedigree
 from \code{\link{SimParam}} is taken.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}

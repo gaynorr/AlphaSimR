@@ -150,6 +150,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getIbdHaplo
+Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::IntegerMatrix& pedigree, const Rcpp::List& recHist, const Rcpp::IntegerVector& lociPerChr);
+RcppExport SEXP _AlphaSimR_getIbdHaplo(SEXP pedigreeSEXP, SEXP recHistSEXP, SEXP lociPerChrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type pedigree(pedigreeSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type recHist(recHistSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type lociPerChr(lociPerChrSEXP);
+    rcpp_result_gen = Rcpp::wrap(getIbdHaplo(pedigree, recHist, lociPerChr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // writeGeno
 void writeGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc, Rcpp::String filePath);
 RcppExport SEXP _AlphaSimR_writeGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP filePathSEXP) {
