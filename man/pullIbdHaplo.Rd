@@ -12,7 +12,7 @@ pullIbdHaplo(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
 \code{\link{RawPop-class}}. If NULL, haplotypes for the whole
 ancestral pedigree are retreived. Otherwise, haplotypes just for
 the \code{pop} individuals are retreived. In both cases the base
-population is controlled by \code{SimParam} and \code{pedigree}.}
+population is controlled by \code{pedigree}.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL, 
 all chromosome are retrieved.}
@@ -20,10 +20,11 @@ all chromosome are retrieved.}
 \item{snpChip}{an integer. Indicates which SNP chip's loci
 are retrieved. If NULL, all segregatibg sites are retrieved.}
 
-\item{pedigree}{a matrix with ancestral pedigree. It should have
-two columns - the first one with mother id and the second one
-with father id - as in simParam$pedigree, see
-\code{\link{SimParam_setTrackRec}}. If NULL, whole pedigree
+\item{pedigree}{a matrix with ancestral pedigree to set a base
+population. It should be of the same form as \code{simParam$pedigree} 
+(see \code{\link{SimParam_setTrackPed}}), i.e., two columns
+and the same number of rows as \code{simParam$pedigree}, but with
+more parents coded as 0 to set base population! If NULL, pedigree
 from \code{\link{SimParam}} is taken.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
