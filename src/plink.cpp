@@ -49,7 +49,6 @@ void writePlinkPed(const Rcpp::DataFrame                         & fam,
           loc += 1;
         }
       }
-      
     }
     plinkPed << "\n";
   }
