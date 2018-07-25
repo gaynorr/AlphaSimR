@@ -435,14 +435,14 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' the \code{pop} individuals are retreived. In both cases the base
 #' population is controlled by \code{pedigree}.
 #' @param chr a vector of chromosomes to retrieve. If NULL, 
-#' all chromosome are retrieved.
-#' @param snpChip an integer. Indicates which SNP chip's loci
-#' are retrieved. If NULL, all segregatibg sites are retrieved.
+#' all chromosomes are retrieved.
+#' @param snpChip an integer. Indicates which SNP array loci
+#' are retrieved. If NULL, all sites are retrieved.
 #' @param pedigree a matrix with ancestral pedigree to set a base
 #' population. It should be of the same form as \code{simParam$pedigree} 
-#' (see \code{\link{SimParam_setTrackPed}}), i.e., two columns
-#' and the same number of rows as \code{simParam$pedigree}, but with
-#' more parents coded as 0 to set base population! If NULL, pedigree
+#' (see \code{\link{SimParam_setTrackPed}}), i.e., two columns (mother
+#' and father) and the same number of rows as \code{simParam$pedigree}.
+#' Base population can be set by setting parents as 0. If NULL, pedigree
 #' from \code{\link{SimParam}} is taken.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
@@ -451,6 +451,9 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' all segregagting loci (sites) are retreived or only SNP array loci.
 #' @export
 pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
+  
+  # ---- Setup -----
+  
   if (is.null(simParam)) {
     simParam = get(x = "SP", envir = .GlobalEnv)
   }
@@ -463,59 +466,35 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
   if (is.null(pedigree) & !simParam$isTrackPed) {
     stop("To use pullIbdHaplo() with pedigree = NULL, simParam must hold ancestral pedigree data! See ?SimParam_setTrackPed")
   }
-  allLoci = unlist(sapply(X = simParam$segSites, FUN = function(x) 1L:x))
-  lociTot = simParam$segSites
+  lociLoc = c(sapply(X = simParam$segSites, FUN = function(x) 1L:x))
+  lociPerChr = simParam$segSites
   if (is.null(chr)) {
     chr = 1L:simParam$nChr
   } else {
-    Tmp = selectLoci(chr = chr, inLociPerChr = lociTot, inLociLoc = allLoci)
-    allLoci = Tmp$lociLoc
-    lociTot = Tmp$lociPerChr
+    tmp = selectLoci(chr = chr, inLociPerChr = lociPerChr, inLociLoc = lociLoc)
+    lociLoc = tmp$lociLoc
+    lociPerChr = tmp$lociPerChr
   }
   if (is.null(pedigree)) {
     pedigree = simParam$pedigree
   } else {
     if (nrow(pedigree) != length(simParam$recHist)) {
-      stop("pedigree input must have the same number of rows as simParam$recHist!")
+      stop("pedigree must have the same number of rows as simParam$recHist!")
     }
   }
-  nInd = nrow(pedigree)
-  output = matrix(data = 0L, nrow = 2L * nInd, ncol = sum(lociTot))
-  Gametes = output[1L, , drop = TRUE] # all gametes passed from parent to an individual
-  for (Ind in 1L:nInd) {
-    # Ind = 1L
-    # Ind = 1001L
-    for (Par in 1L:2L) {
-      PId = pedigree[Ind, Par] # note AlphaSimR has mother/father as the first/second parent
-      if (PId == 0L) {
-        Gametes = 2L * Ind - 2L + Par # first gamete is maternal, second is paternal
-      } else {
-        ChrOrigin = 0L
-        for (Chr in chr) {
-          # Chr = 1L
-          nLocPerChr = lociTot[Chr]
-          Rec = simParam$recHist[[Ind]][[Chr]][[Par]] # note AlphaSimR has mother/father as the first/second parent
-          nSeg = nrow(Rec)
-          for (Seg in 1L:nSeg) {
-            # Seg = 1
-            Source = Rec[Seg, 1L]
-            Start = ChrOrigin + Rec[Seg, 2L]
-            if (Seg < nSeg) {
-              Stop = ChrOrigin + Rec[Seg + 1L, 2L] - 1L
-            } else {
-              Stop = ChrOrigin + nLocPerChr
-            }
-            Gametes[Start:Stop] = output[2L * PId - 2L + Source, Start:Stop]
-          }
-        }
-        ChrOrigin = ChrOrigin + nLocPerChr
-      }
-      output[2L * Ind - 2L + Par, ] = Gametes # first gamete is maternal, second is paternal
-    }
-  }
+  
+  # ---- Get whole-genome! IBD haplotypes -----
+  
+  output = getIbdHaplo(pedigree   = pedigree,
+                       recHist    = simParam$recHist,
+                       lociPerChr = lociPerChr)
 
   # ---- Subset loci and individuals -----
   
+  # @todo - do this in the above C++ function?
+  #         it is tedious to keep track of recombination locations on 
+  #         whole-genome positions, while working with 1:n SNP arrays with
+  #         lociLoc whole-genome positions
   if (!is.null(snpChip)) {
     Sel = integer(length = sum(simParam$snpChips[[snpChip]]@lociPerChr[chr]))
     ArrayEnd = 0L
@@ -530,13 +509,14 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
       ArrayEnd   = ArrayStart + Tmp$lociPerChr[Chr] - 1L
       # cat(ArrayStart, ArrayEnd, "\n")
       Sel[ArrayStart:ArrayEnd] = ChrStart + Tmp$lociLoc
-      ChrStart = ChrStart + lociTot[Chr]
+      ChrStart = ChrStart + lociPerChr[Chr]
     }
     output = output[, Sel]
     colnames(output) = paste("SNP",  1L:ncol(output), sep = "_")
   } else {
     colnames(output) = paste("SITE", 1L:ncol(output), sep = "_")
   }
+  nInd = nrow(pedigree)
   rownames(output) = paste(rep(x = 1L:nInd,            each  = simParam$ploidy),
                            rep(x = 1L:simParam$ploidy, times = nInd), sep = "_")
   if (!is.null(pop)) {
