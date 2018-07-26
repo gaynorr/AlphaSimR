@@ -13,8 +13,8 @@ pullMultipleSnpHaplo(pop, chips, haplo = "all", missing = 9,
 \item{chips}{a vector. For each animal indicates what snp
 chip to use}
 
-\item{haplo}{either "all" for all haplotypes or an integer 
-for a single set of haplotypes. Use a value of 1 for female 
+\item{haplo}{either "all" for all haplotypes or an integer
+for a single set of haplotypes. Use a value of 1 for female
 haplotyes and a value of 2 for male haplotypes.}
 
 \item{missing}{What value to use for missing}

@@ -10,14 +10,14 @@ pullSnpHaplo(pop, snpChip = 1, haplo = "all", chr = NULL,
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{snpChip}{an integer. Indicates which SNP 
+\item{snpChip}{an integer. Indicates which SNP
 chip's haplotypes to retrieve.}
 
-\item{haplo}{either "all" for all haplotypes or an integer 
-for a single set of haplotypes. Use a value of 1 for female 
+\item{haplo}{either "all" for all haplotypes or an integer
+for a single set of haplotypes. Use a value of 1 for female
 haplotyes and a value of 2 for male haplotypes.}
 
-\item{chr}{a vector of chromosomes to retrieve. If NULL, 
+\item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}

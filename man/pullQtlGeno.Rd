@@ -12,7 +12,7 @@ pullQtlGeno(pop, trait = 1, chr = NULL, simParam = NULL)
 \item{trait}{an integer. Indicates which trait's
 QTL genotypes to retrieve.}
 
-\item{chr}{a vector of chromosomes to retrieve. If NULL, 
+\item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
