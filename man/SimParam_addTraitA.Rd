@@ -10,7 +10,7 @@
 
 \item{var}{a vector of desired genetic variances for one or more traits}
 
-\item{corr}{a matrix of correlations between additive effects}
+\item{corA}{a matrix of correlations between additive effects}
 
 \item{gamma}{should a gamma distribution be used instead of normal}
 
@@ -25,7 +25,7 @@ If simulating more than one trait, all traits will be pleiotrophic
 with correlated additive effects.
 }
 \section{Usage}{
- SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
+ SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corA = NULL, 
 gamma = FALSE, shape = 1, force = FALSE)
 }
 

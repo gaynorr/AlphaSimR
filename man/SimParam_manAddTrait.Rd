@@ -7,18 +7,20 @@
 \item{lociMap}{a new object descended from 
 \code{\link{LociMap-class}}}
 
-\item{varA}{a new value for varA in the base population.}
+\item{varA}{the value for varA in the base population, optional}
 
-\item{varG}{a new value for varG in the base population.}
+\item{varG}{the value for varG in the base population, optional}
+
+\item{varE}{default error variance for phenotype, optional}
 
 \item{force}{should the check for a running simulation be 
-ignored. Only set to TRUE if you know what you are doing.}
+ignored. Only set to TRUE if you know what you are doing}
 }
 \description{
 Add a new trait to the simulation.
 }
 \section{Usage}{
- SP$manAddTrait(lociMap, varA = NULL, varG = NULL, 
-force = FALSE)
+ SP$manAddTrait(lociMap, varA = NA_real_, varG = NA_real_, 
+varE = NA_real_, force = FALSE)
 }
 

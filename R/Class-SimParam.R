@@ -311,12 +311,14 @@ SimParam$set(
 SimParam$set(
   "private",
   ".addTrait",
-  function(lociMap,varA=NA_real_,varG=NA_real_){
+  function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
+    stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
+              length(varA)==1,length(varG)==1,length(varE)==1)
     private$.nTraits = private$.nTraits+1L
     private$.traits[[private$.nTraits]] = lociMap
     private$.varA[private$.nTraits] = varA
     private$.varG[private$.nTraits] = varG
-    private$.varE[private$.nTraits] = NA_real_
+    private$.varE[private$.nTraits] = varE
     invisible(self)
   }
 )
@@ -718,23 +720,24 @@ SimParam$set(
 #' error variances. You must call \code{\link{SimParam_setVarE}} 
 #' first to define the default error variances.
 #' 
-#' @section Usage: SP$setCorrVarE(corr)
+#' @section Usage: SP$setCorE(corE)
 #' 
-#' @param corr a correlation matrix for the error variances
+#' @param corE a correlation matrix for the error variances
 #' 
-#' @name SimParam_setCorrVarE
+#' @name SimParam_setCorE
 NULL
-# setCorrVarE ----
+# setCorE ----
 SimParam$set(
   "public",
-  "setCorrVarE",
-  function(corr){
-    stopifnot(isSymmetric(corr),
-              nrow(corr)==private$.nTraits)
+  "setCorE",
+  function(corE){
+    stopifnot(isSymmetric(corE),
+              nrow(corE)==private$.nTraits,
+              length(private$.varE)==private$.nTraits)
     varE = diag(sqrt(private$.varE),
                 nrow=private$.nTraits,
                 ncol=private$.nTraits)
-    varE = varE%*%corr%*%varE
+    varE = varE%*%corE%*%varE
     private$.varE = varE
     invisible(self)
   }
@@ -977,13 +980,13 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated additive effects.
 #' 
-#' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
+#' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corA = NULL, 
 #' gamma = FALSE, shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param corr a matrix of correlations between additive effects
+#' @param corA a matrix of correlations between additive effects
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape the shape parameter for the gamma distribution
 #' @param force should the check for a running simulation be 
@@ -995,7 +998,7 @@ NULL
 SimParam$set(
   "public",
   "addTraitA",
-  function(nQtlPerChr,mean=0,var=1,corr=NULL,
+  function(nQtlPerChr,mean=0,var=1,corA=NULL,
            gamma=FALSE,shape=1,force=FALSE){
     if(!force){
       private$.isRunning()
@@ -1003,13 +1006,13 @@ SimParam$set(
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
-    if(is.null(corr)) corr=diag(nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
     stopifnot(length(mean)==length(var),
-              isSymmetric(corr),
-              length(mean)==nrow(corr))
+              isSymmetric(corA),
+              length(mean)==nrow(corA))
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                        corr=corr,gamma=gamma,shape=shape)
+                        corr=corA,gamma=gamma,shape=shape)
     geno = getGeno(private$.founderPop@geno,
                    qtlLoci@lociPerChr,
                    qtlLoci@lociLoc)
@@ -1340,15 +1343,16 @@ SimParam$set(
 #' @description 
 #' Add a new trait to the simulation.
 #' 
-#' @section Usage: SP$manAddTrait(lociMap, varA = NULL, varG = NULL, 
-#' force = FALSE)
+#' @section Usage: SP$manAddTrait(lociMap, varA = NA_real_, varG = NA_real_, 
+#' varE = NA_real_, force = FALSE)
 #' 
 #' @param lociMap a new object descended from 
 #' \code{\link{LociMap-class}}
-#' @param varA a new value for varA in the base population. 
-#' @param varG a new value for varG in the base population. 
+#' @param varA the value for varA in the base population, optional
+#' @param varG the value for varG in the base population, optional
+#' @param varE default error variance for phenotype, optional
 #' @param force should the check for a running simulation be 
-#' ignored. Only set to TRUE if you know what you are doing.
+#' ignored. Only set to TRUE if you know what you are doing
 #' 
 #' @name SimParam_manAddTrait
 NULL
@@ -1356,14 +1360,13 @@ NULL
 SimParam$set(
   "public",
   "manAddTrait",
-  function(lociMap,varA=NULL,varG=NULL,force=FALSE){
+  function(lociMap,varA=NA_real_,varG=NA_real_,
+           varE=NA_real_,force=FALSE){
     if(!force){
       private$.isRunning()
     }
-    private$.nTraits = private$.nTraits+1L
-    private$.varA[private$.nTraits] = varA
-    private$.varG[private$.nTraits] = varG
-    private$.traits[[private$.nTraits]] = lociMap
+    stopifnot(is(lociMap,"LociMap"))
+    private$.addTrait(lociMap,varA,varG,varE)
     invisible(self)
   }
 )

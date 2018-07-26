@@ -145,7 +145,7 @@ List optimize(List (*objective)(double, List), List args, double l,
     if(funcu<fx){
       fx = funcu;
       output = fOut["output"];
-      x = uInt;
+      x = lInt;
     }
   }
   if(maximize) fx = -fx;
