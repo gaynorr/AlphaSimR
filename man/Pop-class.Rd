@@ -52,5 +52,11 @@ nInd by nTraits.}
 are nInd rows and a variable number of columns.}
 
 \item{\code{gxe}}{list containing GxE slopes for GxE traits}
+
+\item{\code{fixEff}}{a fixed effect relating to the phenotype. 
+Used by genomic selection models but otherwise ignored.}
+
+\item{\code{reps}}{the number of replications used to measure the 
+phenotype. Used by genomic selection models, but otherwise ignored.}
 }}
 

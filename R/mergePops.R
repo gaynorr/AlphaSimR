@@ -1,4 +1,4 @@
-#' @title Merge multiple populations
+#' @title Merge list of populations
 #' 
 #' @description Rapidly merges a list of populations into a
 #' single population
@@ -41,6 +41,14 @@ mergePops = function(popList){
   father= do.call("c",
                   lapply(popList,
                          function(x) x@father))
+  #fixEff
+  fixEff= do.call("c",
+                  lapply(popList,
+                         function(x) x@fixEff))
+  #reps
+  reps= do.call("c",
+                lapply(popList,
+                       function(x) x@reps))
   #gender
   gender = do.call("c",
                    lapply(popList,
@@ -94,6 +102,8 @@ mergePops = function(popList){
              id=id,
              mother=mother,
              father=father,
+             fixEff=fixEff,
+             reps=reps,
              nTraits=nTraits,
              gv=gv,
              gxe=gxe,

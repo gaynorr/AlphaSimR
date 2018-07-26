@@ -192,6 +192,10 @@ setMethod("c",
 #' @slot ebv matrix of estimated breeding values. Dimensions 
 #' are nInd rows and a variable number of columns.
 #' @slot gxe list containing GxE slopes for GxE traits
+#' @slot fixEff a fixed effect relating to the phenotype. 
+#' Used by genomic selection models but otherwise ignored.
+#' @slot reps the number of replications used to measure the 
+#' phenotype. Used by genomic selection models, but otherwise ignored.
 #' 
 #' @export
 setClass("Pop",
@@ -203,7 +207,9 @@ setClass("Pop",
                  gv="matrix",
                  pheno="matrix",
                  ebv="matrix",
-                 gxe="list"),
+                 gxe="list",
+                 fixEff="integer",
+                 reps="numeric"),
          contains="RawPop")
 
 setValidity("Pop",function(object){
@@ -256,6 +262,12 @@ setValidity("Pop",function(object){
   if(object@nTraits!=length(object@gxe)){
     errors = c(errors,"nTraits!=length(gxe)")
   }
+  if(object@nInd!=length(object@fixEff)){
+    errors = c(errors,"nInd!=length(fixEff)")
+  }
+  if(object@nInd!=length(object@reps)){
+    errors = c(errors,"nInd!=length(reps)")
+  }
   if(length(errors)==0){
     return(TRUE)
   }else{
@@ -277,6 +289,8 @@ setMethod("[",
             x@id = x@id[i]
             x@mother = x@mother[i]
             x@father = x@father[i]
+            x@fixEff = x@fixEff[i]
+            x@reps = x@reps[i]
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
             x@ebv = x@ebv[i,,drop=FALSE]
@@ -301,35 +315,8 @@ setMethod("[",
 setMethod("c",
           signature(x = "Pop"),
           function (x, ...){
-            for(y in list(...)){
-              stopifnot(class(y)=="Pop",
-                        x@nChr==y@nChr,
-                        x@ploidy==y@ploidy,
-                        x@nLoci==y@nLoci)
-              x@nInd = x@nInd+y@nInd
-              x@id = c(x@id,y@id)
-              x@mother = c(x@mother,y@mother)
-              x@father = c(x@father,y@father)
-              x@gv = rbind(x@gv,y@gv)
-              x@pheno = rbind(x@pheno,y@pheno)
-              x@gender = c(x@gender,y@gender)
-              x@geno = mergeGeno(x@geno,y@geno)
-              if(x@nTraits>=1){
-                for(trait in 1:x@nTraits){
-                  if(!is.null(x@gxe[[trait]])){
-                    x@gxe[[trait]] = c(x@gxe[[trait]],y@gxe[[trait]])
-                  }
-                }
-              }
-              #Account for variable number of ebv columns
-              tmp = try({
-                x@ebv = rbind(x@ebv,y@ebv)
-                },silent=TRUE)
-              if(class(tmp)=="try-error"){
-                x@ebv = matrix(NA_real_,nrow=x@nInd,ncol=0)
-              }
-            }
-            validObject(x)
+            # Uses mergePops for increased speed
+            x = mergePops(c(list(x),list(...)))
             return(x)
           }
 )
@@ -415,6 +402,8 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                id=as.character(id),
                mother=origM,
                father=origF,
+               fixEff=rep(1L,rawPop@nInd),
+               reps=rep(1,rawPop@nInd),
                nTraits=simParam$nTraits,
                gv=gv,
                gxe=gxe,
@@ -456,6 +445,8 @@ resetPop = function(pop,simParam=NULL){
   pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
+  pop@fixEff = rep(1L,pop@nInd)
+  pop@reps = rep(1,pop@nInd) 
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]],pop)

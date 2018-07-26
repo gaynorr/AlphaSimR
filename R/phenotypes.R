@@ -68,6 +68,8 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' nTraits for independent error or a square matrix of dimensions 
 #' nTraits for correlated errors. If NULL, value in simParam is used.
 #' @param reps number of replications for phenotype. See details.
+#' @param fixEff fixed effect to assign to the population. Used 
+#' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
 #' used by GxE traits.
 #' @param onlyPheno should only the phenotype be returned, see return
@@ -85,7 +87,7 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' onlyPheno=TRUE a matrix is returned
 #' 
 #' @export
-setPheno = function(pop,varE=NULL,reps=1,p=0.5,
+setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=0.5,
                     onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -96,5 +98,8 @@ setPheno = function(pop,varE=NULL,reps=1,p=0.5,
     return(pheno)
   }
   pop@pheno = pheno
+  if(is(pop,"Pop")){
+    pop@fixEff = rep(as.integer(fixEff),pop@nInd)
+  }
   return(pop)
 }

@@ -4,26 +4,35 @@
 \alias{RRBLUP_D}
 \title{RR-BLUP Model with Dominance}
 \usage{
-RRBLUP_D(dir, traits = 1, use = "pheno", skip = 0, useHetCov = TRUE,
-  maxIter = 40, simParam = NULL)
+RRBLUP_D(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
+  useHetCov = TRUE, maxIter = 40L, simParam = NULL, ...)
 }
 \arguments{
-\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
+\item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
 \item{traits}{an integer indicating the trait to model, or a
 function of the traits returning a single value.}
 
-\item{use}{train model using genetic value (\code{gv})
-or phenotypes (\code{pheno}, default)}
+\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{skip}{number of older records to skip}
+\item{snpChip}{an integer indicating which SNP chip genotype 
+to use}
+
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
+If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{useHetCov}{should the model include a covariate 
 for heterozygosity.}
 
-\item{maxIter}{maximum number of iterations.}
+\item{maxIter}{maximum number of iterations. Only used 
+when number of traits is greater than 1.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{...}{additional arguments if using a function for 
+traits}
 }
 \description{
 Fits an RR-BLUP model for genomic predictions that includes 

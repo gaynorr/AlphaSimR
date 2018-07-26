@@ -4,23 +4,28 @@
 \alias{RRBLUP2}
 \title{RR-BLUP Model 2}
 \usage{
-RRBLUP2(dir, traits = 1, use = "pheno", skip = 0, maxIter = 10,
-  Vu = NULL, Ve = NULL, useEM = TRUE, tol = 1e-06, simParam = NULL)
+RRBLUP2(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
+  maxIter = 10, Vu = NULL, Ve = NULL, useEM = TRUE, tol = 1e-06,
+  simParam = NULL, ...)
 }
 \arguments{
-\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
+\item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
 \item{traits}{an integer indicating the trait to model or a
 function of the traits returning a single value. Unlike \code{\link{RRBLUP}}, 
 only univariate models are supported.}
 
-\item{use}{train model using genetic value (\code{gv})
-or phenotypes (\code{pheno}, default)}
+\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{skip}{number of older records to skip}
+\item{snpChip}{an integer indicating which SNP chip genotype 
+to use}
 
-\item{maxIter}{maximum number of iterations. Only used 
-when number of traits is greater than 1.}
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
+If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+QTL may not match the QTL underlying the phenotype supplied in traits.}
+
+\item{maxIter}{maximum number of iterations.}
 
 \item{Vu}{marker effect variance. If value is NULL, a 
 reasonable starting point is chosen automatically.}
@@ -34,6 +39,9 @@ The initial values are considered true.}
 \item{tol}{tolerance for EM algorithm convergence}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{...}{additional arguments if using a function for 
+traits}
 }
 \description{
 Fits an RR-BLUP model for genomic predictions. This implementation is 

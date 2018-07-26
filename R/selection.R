@@ -27,18 +27,17 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       stop(paste0("Use=",use," is not an option"))
     }
   }else{
-    stopifnot(length(trait)==1)
     if(use == "gv"){
-      response = pop@gv[,trait]
+      response = pop@gv[,trait,drop=FALSE]
     }else if(use=="ebv"){
-      response = pop@ebv[,trait]
+      response = pop@ebv[,trait,drop=FALSE]
     }else if(use=="pheno"){
-      response = pop@pheno[,trait]
+      response = pop@pheno[,trait,drop=FALSE]
     }else if(use=="bv"){
       if(class(pop)=="HybridPop"){
         stop("Use='bv' is not a valid option for HybridPop")
       }
-      response = genParam(pop,TRUE,simParam=simParam)$bv[,trait]
+      response = genParam(pop,TRUE,simParam=simParam)$bv[,trait,drop=FALSE]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -119,6 +118,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
+  if(is.matrix(response)){
+    stopifnot(ncol(response)==1)
+  }
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
   if(returnPop){
@@ -174,7 +176,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
                "families are available"))
   }
   response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)[eligible]
+                         simParam=simParam,...)
+  if(is.matrix(response)){
+    stopifnot(ncol(response)==1)
+  }
+  response = response[eligible]
   #Calculate family means
   famMeans = aggregate(response,list(families=availFam),mean)
   response = famMeans$x
@@ -233,6 +239,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
   families = getFam(pop=pop,famType=famType)
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
+  if(is.matrix(response)){
+    stopifnot(ncol(response)==1)
+  }
   warn = FALSE
   selInFam = function(selFam){
     index = which(families%in%selFam)

@@ -4,23 +4,31 @@
 \alias{RRBLUP_GCA}
 \title{RR-BLUP GCA Model}
 \usage{
-RRBLUP_GCA(dir, traits = 1, use = "pheno", skip = 0, maxIter = 40,
-  simParam = NULL)
+RRBLUP_GCA(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
+  maxIter = 40L, simParam = NULL, ...)
 }
 \arguments{
-\item{dir}{path to a directory with output from \code{\link{writeRecords}}}
+\item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait or traits to model, or a
+\item{traits}{an integer indicating the trait to model, or a
 function of the traits returning a single value.}
 
-\item{use}{train model using genetic value (\code{gv})
-or phenotypes (\code{pheno}, default)}
+\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{skip}{number of older records to skip}
+\item{snpChip}{an integer indicating which SNP chip genotype 
+to use}
+
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
+If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations for convergence.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{...}{additional arguments if using a function for 
+traits}
 }
 \description{
 Fits an RR-BLUP model that estimates seperate marker effects for

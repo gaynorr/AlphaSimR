@@ -70,34 +70,6 @@ Rcpp::List objREML(double param, Rcpp::List args){
                             Rcpp::Named("output") = 0);
 }
 
-arma::mat readMat(std::string fileName, int rows, int cols,
-                  char sep=' ', int skipRows=0, int skipCols=0){
-  arma::mat output(rows,cols);
-  std::ifstream file(fileName.c_str());
-  std::string line;
-  //Skip rows
-  for(arma::uword i=0; i<skipRows; ++i){
-    std::getline(file,line);
-  }
-  //Read rows
-  for(arma::uword i=0; i<rows; ++i){
-    std::getline(file,line);
-    std::stringstream lineStream(line);
-    std::string cell;
-    //Skip columns
-    for(arma::uword j=0; j<skipCols; ++j){
-      std::getline(lineStream,cell,sep);
-    }
-    //Read columns
-    for(arma::uword j=0; j<cols; ++j){
-      std::getline(lineStream,cell,sep);
-      output(i,j) = std::atof(cell.c_str());
-    }
-  }
-  file.close();
-  return output;
-}
-
 // Produces a sum to zero design matrix with an intercept
 arma::mat makeX(arma::uvec& x){
   arma::uword nTrain = x.n_elem;
@@ -239,8 +211,8 @@ Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
 }
 
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
-                         const arma::mat& M, double tol=1e-6,
-                         int maxIter=1000){
+                         const arma::mat& M, int maxIter=1000, 
+                         double tol=1e-6){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::vec eigval(n);
@@ -413,10 +385,10 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
-                         std::string genoTrain, int nMarker, int skip){
-  int n = y.n_rows;
+                      arma::field<arma::Cube<unsigned char> >& geno, 
+                      arma::ivec& lociPerChr, arma::uvec lociLoc){
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -426,12 +398,12 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
-                       std::string genoTrain, int nMarker, int skip,
+                       arma::field<arma::Cube<unsigned char> >& geno, 
+                       arma::ivec& lociPerChr, arma::uvec lociLoc,
                        double Vu, double Ve, double tol, int maxIter, 
                        bool useEM){
-  int n = y.n_rows;
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -442,11 +414,11 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
-                        std::string genoTrain, int nMarker, int skip,
+                        arma::field<arma::Cube<unsigned char> >& geno, 
+                        arma::ivec& lociPerChr, arma::uvec lociLoc,
                         int maxIter, bool useHetCov){
-  int n = y.n_rows;
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
+  Mlist(0) = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
   arma::mat X;
@@ -468,11 +440,11 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
-                            std::string genoTrain, int nMarker, 
-                            int skip, int maxIter){
-  int n = Y.n_rows;
+                         arma::field<arma::Cube<unsigned char> >& geno, 
+                         arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                         int maxIter){
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -482,14 +454,13 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip, int maxIter){
-  int n = y.n_rows;
+                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          arma::ivec& lociPerChr, arma::uvec lociLoc, int maxIter){
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
+  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
   Mlist(0) = Mlist(0)*2;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
+  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
   Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
@@ -501,15 +472,14 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip, int maxIter,
-                          bool useHetCov){
-  int n = y.n_rows;
+                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                          int maxIter, bool useHetCov){
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
-  arma::rowvec p1 = mean(Mlist(0),0)/2.0;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
-  arma::rowvec p2 = mean(Mlist(1),0)/2.0;
+  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
+  arma::rowvec p1 = mean(Mlist(0),0);
+  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
+  arma::rowvec p2 = mean(Mlist(1),0);
   Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
   Mlist(0) = Mlist(0)*2;
   Mlist(1) = Mlist(1)*2;

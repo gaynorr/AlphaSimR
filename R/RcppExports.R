@@ -122,28 +122,28 @@ calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
-callRRBLUP <- function(y, x, reps, genoTrain, nMarker, skip) {
-    .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, genoTrain, nMarker, skip)
+callRRBLUP <- function(y, x, reps, geno, lociPerChr, lociLoc) {
+    .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, geno, lociPerChr, lociLoc)
 }
 
-callRRBLUP2 <- function(y, x, reps, genoTrain, nMarker, skip, Vu, Ve, tol, maxIter, useEM) {
-    .Call(`_AlphaSimR_callRRBLUP2`, y, x, reps, genoTrain, nMarker, skip, Vu, Ve, tol, maxIter, useEM)
+callRRBLUP2 <- function(y, x, reps, geno, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM) {
+    .Call(`_AlphaSimR_callRRBLUP2`, y, x, reps, geno, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM)
 }
 
-callRRBLUP_D <- function(y, x, reps, genoTrain, nMarker, skip, maxIter, useHetCov) {
-    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, genoTrain, nMarker, skip, maxIter, useHetCov)
+callRRBLUP_D <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, useHetCov) {
+    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, useHetCov)
 }
 
-callRRBLUP_MV <- function(Y, x, reps, genoTrain, nMarker, skip, maxIter) {
-    .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, reps, genoTrain, nMarker, skip, maxIter)
+callRRBLUP_MV <- function(Y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
+    .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, reps, geno, lociPerChr, lociLoc, maxIter)
 }
 
-callRRBLUP_GCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter) {
-    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter)
+callRRBLUP_GCA <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
+    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, reps, geno, lociPerChr, lociLoc, maxIter)
 }
 
-callRRBLUP_SCA <- function(y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter, useHetCov) {
-    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, reps, genoFemale, genoMale, nMarker, skip, maxIter, useHetCov)
+callRRBLUP_SCA <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, useHetCov) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, useHetCov)
 }
 
 packHaplo <- function(haplo, ploidy, inbred) {

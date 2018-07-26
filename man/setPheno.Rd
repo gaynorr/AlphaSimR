@@ -4,8 +4,8 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE = NULL, reps = 1, p = 0.5, onlyPheno = FALSE,
-  simParam = NULL)
+setPheno(pop, varE = NULL, reps = 1, fixEff = 1L, p = 0.5,
+  onlyPheno = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 
@@ -16,6 +16,9 @@ nTraits for independent error or a square matrix of dimensions
 nTraits for correlated errors. If NULL, value in simParam is used.}
 
 \item{reps}{number of replications for phenotype. See details.}
+
+\item{fixEff}{fixed effect to assign to the population. Used 
+by genomic selection models only.}
 
 \item{p}{the p-value for the environmental covariate 
 used by GxE traits.}
