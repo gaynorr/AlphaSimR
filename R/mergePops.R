@@ -72,9 +72,9 @@ mergePops = function(popList){
                            function(x) ncol(x@ebv)))
   if(all(ebv==ebv[1])){
     ebv = do.call("rbind",lapply(popList,
-                                 function(x) x@pheno))
+                                 function(x) x@ebv))
   }else{
-    ebv = matrix(NA_real_,nrow=nInd,ncol=0)
+    ebv = matrix(NA_real_,nrow=sum(nInd),ncol=0)
   }
   #gxe
   if(nTraits>=1){

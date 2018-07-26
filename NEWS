@@ -13,6 +13,7 @@ Changes in version 0.7.0
     -fixed population subsetting checks to prevent invalid selections
     -fixed slow calcGCA
     -fixed error in addTraitAG preventing multiple traits
+    -fixed bug with mergePops when merging ebv
 
 Changes in version 0.6.1
 
