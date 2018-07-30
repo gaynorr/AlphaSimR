@@ -77,6 +77,10 @@ createDH2 <- function(geno, nDH, genMap, trackRec) {
     .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, trackRec)
 }
 
+getIbdRecHist <- function(recHist, pedigree, nChr, nLoci) {
+    .Call(`_AlphaSimR_getIbdRecHist`, recHist, pedigree, nChr, nLoci)
+}
+
 #' @title Population variance
 #' 
 #' @description

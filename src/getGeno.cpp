@@ -116,7 +116,7 @@ Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::IntegerMatrix & pedigree,
   int nLoc = sum(lociPerChr);
   int pId;
   Rcpp::IntegerMatrix output(nInd * 2, nLoc);
-  Rcpp::  IntegerVector gametes(nLoc); // all gametes passed from a parent to an individual
+  Rcpp::IntegerVector gametes(nLoc); // all gametes passed from a parent to an individual
   for (int ind = 0; ind < nInd; ++ind) {
     // std::cout << ind + 1 << " " << pedigree(ind, 0) << " " << pedigree(ind, 1) << "\n";
     Rcpp::List recHistInd = recHist[ind];

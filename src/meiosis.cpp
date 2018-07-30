@@ -13,6 +13,9 @@ public:
                arma::uword nInd, 
                arma::uword chrGroup,
                arma::uword chrInd);
+  arma::Mat<int> getHist(arma::uword ind, 
+                         arma::uword chr,
+                         arma::uword par);
 };
 
 void RecHist::setSize(arma::uword nInd, arma::uword nChr, 
@@ -44,6 +47,12 @@ void RecHist::addHist(arma::Mat<int>& input,
   }
   take = take(find(takeTake>0));
   hist(nInd)(chrGroup)(chrInd) = input.rows(take);
+}
+
+arma::Mat<int> RecHist::getHist(arma::uword ind, 
+                                arma::uword chr,
+                                arma::uword par){
+  return hist(ind)(chr)(par);
 }
 
 // Searches for an interval in x containing value
@@ -260,4 +269,185 @@ Rcpp::List createDH2(
                               Rcpp::Named("recHist")=hist.hist);
   }
   return Rcpp::List::create(Rcpp::Named("geno")=output);
+}
+
+// Converts    recHist (recombinations between generations) to
+//          ibdRecHist (recombinations since the base generation/population)
+// [[Rcpp::export]]
+Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
+                         const Rcpp::IntegerMatrix & pedigree,
+                         const int                   nChr,
+                         const int                   nLoci) {
+  // This is a rather complicated function! There has to be a neater way to do this. Gregor
+  RecHist ibdRecHist;
+  int nInd = pedigree.nrow();
+  ibdRecHist.setSize(nInd, nChr, 2);
+  for (int ind = 0; ind < nInd; ++ind) {
+    Rcpp::List recHistInd = recHist(ind);
+    // std::cout << "Ind " << ind + 1 << "\n";
+    for (int par = 0; par < 2; ++par) {
+      int pId = pedigree(ind, par);
+      // std::cout << "Par " << par + 1 << " pId " << pId << "\n";
+      if (pId == 0) { // Individual is     a founder --> set founder gamete code
+        for (int chr = 0; chr < nChr; ++chr) {
+          arma::Mat<int> recHistIndChrPar;
+          recHistIndChrPar.set_size(1, 2);
+          recHistIndChrPar(0, 0) = 2 * (ind + 1) - 1 + par;
+          recHistIndChrPar(0, 1) = 1;
+          ibdRecHist.addHist(recHistIndChrPar, ind, chr, par);
+          // std::cout << "Chr " << chr + 1 << " Par " << par + 1 << "\n";
+          // std::cout << recHistIndChrPar << "\n";
+        }
+      } else {        // Individual is not a founder --> get founder gamete code & recombinations
+        pId -= 1; // R to C++ indexing
+        Rcpp::List recHistPar = recHist(pId);
+        for (int chr = 0; chr < nChr; ++chr) {
+          Rcpp::List recHistIndChr = recHistInd(chr);
+          arma::Mat<int> recHistIndChrPar = recHistIndChr(par);
+          int nRecSegInd = recHistIndChrPar.n_rows;
+          // std::cout << "Chr " << chr + 1 << " Par " << par + 1 << "\n";
+          // std::cout << recHistIndChrPar << "\n";
+          // std::cout << nRecSegInd << "\n";
+          if (recHistPar.size() == 0) { // Parent is     a founder and has no recHist info --> get founder gamete codes and put them onto individual recombinations
+            for (int recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
+              int source = recHistIndChrPar(recSegInd, 0) - 1;
+              recHistIndChrPar(recSegInd, 0) = ibdRecHist.getHist(pId, chr, source)(0, 0);
+            }
+            ibdRecHist.addHist(recHistIndChrPar, ind, chr, par);
+            // std::cout << recHistIndChrPar << "\n";
+          } else {                      // Parent is not a founder and has    recHist info --> parse and combine parent and individual recombinations
+            Rcpp::List recHistParChr = recHistPar(chr);
+            arma::Mat<int> recHistParChrPar1 = recHistParChr(0);
+            arma::Mat<int> recHistParChrPar2 = recHistParChr(1);
+            arma::field<arma::Mat<int> > recHistParChrPar(2);
+            recHistParChrPar(0) = recHistParChrPar1;
+            recHistParChrPar(1) = recHistParChrPar2;
+            arma::uvec nRecSegParChrPar(2);
+            nRecSegParChrPar(0) = recHistParChrPar(0).n_rows;
+            nRecSegParChrPar(1) = recHistParChrPar(1).n_rows;
+            arma::uvec recSegPar(2);
+            int nIbdSegInd;
+            
+            // First parse to figure how many IBD segments are there
+            recSegPar(0) = 0;
+            recSegPar(1) = 0;
+            nIbdSegInd = 0;
+            for (int recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
+              int source = recHistIndChrPar(recSegInd, 0) - 1;
+              int startInd = recHistIndChrPar(recSegInd, 1);
+              int stopInd;
+              if (recSegInd == (nRecSegInd - 1)) {
+                stopInd = nLoci;
+              } else {
+                stopInd = recHistIndChrPar(recSegInd + 1, 1) - 1;
+              }
+              // std::cout << "\n"
+              //           << "SegInd "     << recSegInd + 1
+              //           << " startInd: " << startInd
+              //           << " stopInd: "  << stopInd
+              //           << " source: "   << source + 1 << "\n";
+              bool loop = true;
+              while (loop & (recSegPar(source) < nRecSegParChrPar(source))) {
+                int sourcePar = ibdRecHist.getHist(pId, chr, source)(recSegPar(source), 0);
+                int startPar = recHistParChrPar(source)(recSegPar(source), 1);
+                int stopPar;
+                if (recSegPar(source) == (nRecSegParChrPar(source) - 1)) {
+                  stopPar = nLoci;
+                } else {
+                  stopPar = recHistParChrPar(source)(recSegPar(source) + 1, 1) - 1;
+                }
+                // std::cout << " recSegPar: "  << recSegPar(source) + 1
+                //           << " startPar: "   << startPar
+                //           << " stopPar: "    << stopPar
+                //           << " sourcePar: "  << sourcePar;
+                if (startInd <= stopPar) {
+                  if (stopInd >= startPar) {
+                    int startIbd = std::max(startInd, startPar);
+                    nIbdSegInd += 1;
+                    // std::cout << "  --> nIbdSegInd: "  << nIbdSegInd
+                    //           << " sourcePar: "        << sourcePar
+                    //           << " start: "            << startIbd;
+                    if (stopInd <= stopPar) {
+                      loop = false;
+                    }
+                    if ((stopInd >= stopPar) & (stopPar < nLoci)) {
+                      recSegPar(source) += 1;
+                    }
+                  } else {
+                    loop = false;
+                  }
+                } else {
+                  recSegPar(source) += 1;
+                }
+                // std::cout << "\n";
+              }
+            }
+            // std::cout << "nIbdSegInd: " << nIbdSegInd << "\n\n";
+            
+            // Now store the IBD segments - 99% code the same as above
+            arma::Mat<int> ibdHistIndChrPar;
+            ibdHistIndChrPar.set_size(nIbdSegInd, 2);
+            recSegPar(0) = 0;
+            recSegPar(1) = 0;
+            nIbdSegInd = 0;
+            for (int recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
+              int source = recHistIndChrPar(recSegInd, 0) - 1;
+              int startInd = recHistIndChrPar(recSegInd, 1);
+              int stopInd;
+              if (recSegInd == (nRecSegInd - 1)) {
+                stopInd = nLoci;
+              } else {
+                stopInd = recHistIndChrPar(recSegInd + 1, 1) - 1;
+              }
+              // std::cout << "\n"
+              //           << "SegInd "     << recSegInd + 1
+              //           << " startInd: " << startInd
+              //           << " stopInd: "  << stopInd
+              //           << " source: "   << source + 1 << "\n";
+              bool loop = true;
+              while (loop & (recSegPar(source) < nRecSegParChrPar(source))) {
+                int sourcePar = ibdRecHist.getHist(pId, chr, source)(recSegPar(source), 0);
+                int startPar = recHistParChrPar(source)(recSegPar(source), 1);
+                int stopPar;
+                if (recSegPar(source) == (nRecSegParChrPar(source) - 1)) {
+                  stopPar = nLoci;
+                } else {
+                  stopPar = recHistParChrPar(source)(recSegPar(source) + 1, 1) - 1;
+                }
+                // std::cout << " recSegPar: "  << recSegPar(source) + 1
+                //           << " startPar: "   << startPar
+                //           << " stopPar: "    << stopPar
+                //           << " sourcePar: "  << sourcePar;
+                if (startInd <= stopPar) {
+                  if (stopInd >= startPar) {
+                    int startIbd = std::max(startInd, startPar);
+                    ibdHistIndChrPar(nIbdSegInd, 0) = sourcePar; // added in comparison to the above code
+                    ibdHistIndChrPar(nIbdSegInd, 1) = startIbd;  // added in comparison to the above code
+                    nIbdSegInd += 1;
+                    // std::cout << "  --> nIbdSegInd: "  << nIbdSegInd
+                    //           << " sourcePar: "        << sourcePar
+                    //           << " start: "            << startIbd;
+                    if (stopInd <= stopPar) {
+                      loop = false;
+                    }
+                    if ((stopInd >= stopPar) & (stopPar < nLoci)) {
+                      recSegPar(source) += 1;
+                    }
+                  } else {
+                    loop = false;
+                  }
+                } else {
+                  recSegPar(source) += 1;
+                }
+                // std::cout << "\n";
+              }
+            }
+            // std::cout << ibdHistIndChrPar << "\n";
+            ibdRecHist.addHist(ibdHistIndChrPar, ind, chr, par);
+          }
+        }
+      }
+    }
+  }
+  return Rcpp::List::create(Rcpp::Named("ibdRecHist") = ibdRecHist.hist);
 }

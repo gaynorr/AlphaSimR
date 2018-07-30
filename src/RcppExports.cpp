@@ -260,6 +260,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getIbdRecHist
+Rcpp::List getIbdRecHist(const Rcpp::List& recHist, const Rcpp::IntegerMatrix& pedigree, const int nChr, const int nLoci);
+RcppExport SEXP _AlphaSimR_getIbdRecHist(SEXP recHistSEXP, SEXP pedigreeSEXP, SEXP nChrSEXP, SEXP nLociSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type recHist(recHistSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type pedigree(pedigreeSEXP);
+    Rcpp::traits::input_parameter< const int >::type nChr(nChrSEXP);
+    Rcpp::traits::input_parameter< const int >::type nLoci(nLociSEXP);
+    rcpp_result_gen = Rcpp::wrap(getIbdRecHist(recHist, pedigree, nChr, nLoci));
+    return rcpp_result_gen;
+END_RCPP
+}
 // popVar
 arma::mat popVar(const arma::mat& X);
 RcppExport SEXP _AlphaSimR_popVar(SEXP XSEXP) {
