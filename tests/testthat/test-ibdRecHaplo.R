@@ -1,6 +1,7 @@
 context("ibdRecHaplo")
 
 test_that("getIbdRecHist converts recHist & pedigree to ibdRecHist correctly", {
+  
   # A simple pedigree
   pedigree = matrix(data = 0L, nrow = 7, ncol = 2)
   pedigree[5, 1:2] = c(1L, 2L)
@@ -106,7 +107,7 @@ test_that("getIbdRecHist converts recHist & pedigree to ibdRecHist correctly", {
   recHist[[7]][[2]][[2]][5, 1:2] = c(1L, 101L)
   recHist[[7]][[2]][[2]][6, 1:2] = c(2L, 149L)
   recHist[[7]][[2]][[2]][7, 1:2] = c(1L, 151L)
-
+  
   # IBD recombinations (since the base generation)
   expect = recHist
   # ind 1
@@ -244,7 +245,9 @@ test_that("getIbdRecHist converts recHist & pedigree to ibdRecHist correctly", {
   expect[[7]][[2]][[2]][13, 1:2] = c(8L, 149L)  
   expect[[7]][[2]][[2]][14, 1:2] = c(7L, 150L)  
   expect[[7]][[2]][[2]][15, 1:2] = c(5L, 151L)  
-  result = AlphaSimR:::getIbdRecHist(recHist, pedigree, 2, 300)$ibdRecHist
+  result = AlphaSimR:::getIbdRecHist(recHist     = recHist,
+                                     pedigree    = pedigree,
+                                     nLociPerChr = c(300, 300))$ibdRecHist
   for (ind in 1:7) {
     for (chr in 1:2) {
       for (par in 1:2) {
@@ -255,4 +258,3 @@ test_that("getIbdRecHist converts recHist & pedigree to ibdRecHist correctly", {
     }
   }
 })
-  
