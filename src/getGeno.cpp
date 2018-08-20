@@ -158,6 +158,48 @@ Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::IntegerMatrix & pedigree,
   return output;
 }
 
+// Returns IBD haplotype data in a matrix of nInd*2 by nLoci
+// [[Rcpp::export]]
+Rcpp::IntegerMatrix getIbdHaplo2(const Rcpp::List          & ibdRecHist,
+                                 const Rcpp::IntegerVector & individuals,
+                                 const Rcpp::IntegerVector & nLociPerChr) {
+  int nIndSet = individuals.size();
+  int nChr = nLociPerChr.size();
+  int nLoc = sum(nLociPerChr);
+  Rcpp::IntegerMatrix output(nIndSet * 2, nLoc);
+  for (int indSet = 0; indSet < nIndSet; ++indSet) {
+    // std::cout << indSet + 1 << "\n";
+    Rcpp::List ibdRecHistInd = ibdRecHist(individuals(indSet) - 1);
+    for (int par = 0; par < 2; ++par) {
+      int chrOrigin = 0;
+      for (int chr = 0; chr < nChr; ++chr) {
+        if (nLociPerChr(chr) > 0) {
+          Rcpp::List ibdRecHistIndChr = ibdRecHistInd(chr);
+          Rcpp::IntegerMatrix ibdRecHistIndChrPar = ibdRecHistIndChr(par);
+          int nSeg = ibdRecHistIndChrPar.nrow();
+          // std::cout << chr + 1 << " " << par + 1 << " " << nSeg << "\n";
+          for (int seg = 0; seg < nSeg; ++seg) {
+            int source = ibdRecHistIndChrPar(seg, 0);
+            int start = chrOrigin + ibdRecHistIndChrPar(seg, 1);
+            int stop;
+            if (seg < (nSeg - 1)) {
+              stop = chrOrigin + ibdRecHistIndChrPar(seg + 1, 1) - 1;
+            } else {
+              stop = chrOrigin + nLociPerChr[chr];
+            }
+            // std::cout << start << " " << stop << "\n";
+            for (int loc = start - 1; loc < stop; ++loc) {
+              output(2 * indSet + par, loc) = source;
+            }
+          }
+        }
+        chrOrigin = chrOrigin + nLociPerChr(chr);
+      }
+    }
+  }
+  return output;
+}
+
 // [[Rcpp::export]]
 void writeGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
                const arma::ivec& lociPerChr,

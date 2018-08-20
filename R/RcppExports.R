@@ -49,6 +49,10 @@ getIbdHaplo <- function(pedigree, recHist, lociPerChr) {
     .Call(`_AlphaSimR_getIbdHaplo`, pedigree, recHist, lociPerChr)
 }
 
+getIbdHaplo2 <- function(ibdRecHist, individuals, nLociPerChr) {
+    .Call(`_AlphaSimR_getIbdHaplo2`, ibdRecHist, individuals, nLociPerChr)
+}
+
 writeGeno <- function(geno, lociPerChr, lociLoc, filePath) {
     invisible(.Call(`_AlphaSimR_writeGeno`, geno, lociPerChr, lociLoc, filePath))
 }
