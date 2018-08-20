@@ -151,28 +151,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // getIbdHaplo
-Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::IntegerMatrix& pedigree, const Rcpp::List& recHist, const Rcpp::IntegerVector& lociPerChr);
-RcppExport SEXP _AlphaSimR_getIbdHaplo(SEXP pedigreeSEXP, SEXP recHistSEXP, SEXP lociPerChrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type pedigree(pedigreeSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type recHist(recHistSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type lociPerChr(lociPerChrSEXP);
-    rcpp_result_gen = Rcpp::wrap(getIbdHaplo(pedigree, recHist, lociPerChr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// getIbdHaplo2
-Rcpp::IntegerMatrix getIbdHaplo2(const Rcpp::List& ibdRecHist, const Rcpp::IntegerVector& individuals, const Rcpp::IntegerVector& nLociPerChr);
-RcppExport SEXP _AlphaSimR_getIbdHaplo2(SEXP ibdRecHistSEXP, SEXP individualsSEXP, SEXP nLociPerChrSEXP) {
+Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::List& ibdRecHist, const Rcpp::IntegerVector& individuals, const Rcpp::IntegerVector& nLociPerChr);
+RcppExport SEXP _AlphaSimR_getIbdHaplo(SEXP ibdRecHistSEXP, SEXP individualsSEXP, SEXP nLociPerChrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ibdRecHist(ibdRecHistSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type individuals(individualsSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type nLociPerChr(nLociPerChrSEXP);
-    rcpp_result_gen = Rcpp::wrap(getIbdHaplo2(ibdRecHist, individuals, nLociPerChr));
+    rcpp_result_gen = Rcpp::wrap(getIbdHaplo(ibdRecHist, individuals, nLociPerChr));
     return rcpp_result_gen;
 END_RCPP
 }

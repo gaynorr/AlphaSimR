@@ -270,9 +270,9 @@ test_that("pullIbdHaplo2 gets correct IBD haplotypes", {
   ibdRecHist = AlphaSimR:::getIbdRecHist(recHist     = recHist,
                                          pedigree    = pedigree,
                                          nLociPerChr = nLociPerChr)$ibdRecHist
-  output = AlphaSimR:::getIbdHaplo2(ibdRecHist  = ibdRecHist,
-                                    individuals = 1L:nrow(pedigree),
-                                    nLociPerChr = nLociPerChr)
+  output = AlphaSimR:::getIbdHaplo(ibdRecHist  = ibdRecHist,
+                                   individuals = 1L:nrow(pedigree),
+                                   nLociPerChr = nLociPerChr)
   expect = matrix(data = 0L, nrow = 14, ncol = 600)
   # ind 1
   expect[1, ] = 1L
@@ -464,9 +464,9 @@ test_that("pullIbdHaplo2 gets correct IBD haplotypes", {
                    info = paste0("ind 7, chr 2, gamete 2"))
   
   # Test subsetting
-  output = AlphaSimR:::getIbdHaplo2(ibdRecHist  = ibdRecHist,
-                                    individuals = 7L,
-                                    nLociPerChr = nLociPerChr)
+  output = AlphaSimR:::getIbdHaplo(ibdRecHist  = ibdRecHist,
+                                   individuals = 7L,
+                                   nLociPerChr = nLociPerChr)
   # ind 7 - chr 1, paternal
   expect_identical(object = output[1, 1:300],
                    expected = expect[13, 1:300],

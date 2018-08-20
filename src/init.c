@@ -31,7 +31,6 @@ extern SEXP _AlphaSimR_getGv(SEXP, SEXP);
 extern SEXP _AlphaSimR_getHaplo(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getHybridGv(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getIbdHaplo(SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_getIbdHaplo2(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getIbdRecHist(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getOneHaplo(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_MaCS(SEXP, SEXP);
@@ -74,7 +73,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getHaplo",          (DL_FUNC) &_AlphaSimR_getHaplo,           3},
     {"_AlphaSimR_getHybridGv",       (DL_FUNC) &_AlphaSimR_getHybridGv,        5},
     {"_AlphaSimR_getIbdHaplo",       (DL_FUNC) &_AlphaSimR_getIbdHaplo,        3},
-    {"_AlphaSimR_getIbdHaplo2",      (DL_FUNC) &_AlphaSimR_getIbdHaplo2,       3},
     {"_AlphaSimR_getIbdRecHist",     (DL_FUNC) &_AlphaSimR_getIbdRecHist,      3},
     {"_AlphaSimR_getOneHaplo",       (DL_FUNC) &_AlphaSimR_getOneHaplo,        4},
     {"_AlphaSimR_MaCS",              (DL_FUNC) &_AlphaSimR_MaCS,               2},

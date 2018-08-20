@@ -108,61 +108,9 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
 
 // Returns IBD haplotype data in a matrix of nInd*2 by nLoci
 // [[Rcpp::export]]
-Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::IntegerMatrix & pedigree,
-                                const Rcpp::List          & recHist,
-                                const Rcpp::IntegerVector & lociPerChr) {
-  int nInd = pedigree.nrow();
-  int nChr = lociPerChr.size();
-  int nLoc = sum(lociPerChr);
-  int pId;
-  Rcpp::IntegerMatrix output(nInd * 2, nLoc);
-  Rcpp::IntegerVector gametes(nLoc); // all gametes passed from a parent to an individual
-  for (int ind = 0; ind < nInd; ++ind) {
-    // std::cout << ind + 1 << " " << pedigree(ind, 0) << " " << pedigree(ind, 1) << "\n";
-    Rcpp::List recHistInd = recHist[ind];
-    for (int par = 0; par < 2; ++par) {
-      pId = pedigree(ind, par); // note AlphaSimR has mother/father as the first/second parent
-      if (pId == 0) {
-        gametes = Rcpp::rep(2 * ind + par + 1, nLoc); // first gamete is maternal, second is paternal
-      } else {
-        int chrOrigin = 0;
-        for (int chr = 0; chr < nChr; ++chr) {
-          if (lociPerChr[chr] > 0) {
-            Rcpp::List recHistIndChr = recHistInd[chr];
-            Rcpp::IntegerMatrix recHistIndChrPar = recHistIndChr[par];
-            int nSeg = recHistIndChrPar.nrow();
-            // std::cout << chr + 1 << " " << par + 1 << " " << nSeg << "\n";
-            for (int seg = 0; seg < nSeg; ++seg) {
-              int source = recHistIndChrPar(seg, 0);
-              int start = chrOrigin + recHistIndChrPar(seg, 1);
-              int stop;
-              if (seg < (nSeg - 1)) {
-                stop = chrOrigin + recHistIndChrPar(seg + 1, 1) - 1;
-              } else {
-                stop = chrOrigin + lociPerChr[chr];
-              }
-              // std::cout << start << " " << stop << "\n";
-              for (int loc = start - 1; loc < stop; ++loc) {
-                // note pId    is 1:n, hence (pid    - 1)
-                // note source is 1:2, hence (source - 1)
-                gametes[loc] = output(2 * (pId - 1) + (source - 1), loc);
-              }
-            }
-          }
-          chrOrigin = chrOrigin + lociPerChr[chr];
-        }
-      }
-      output(2 * ind + par, Rcpp::_) = gametes;
-    }
-  }
-  return output;
-}
-
-// Returns IBD haplotype data in a matrix of nInd*2 by nLoci
-// [[Rcpp::export]]
-Rcpp::IntegerMatrix getIbdHaplo2(const Rcpp::List          & ibdRecHist,
-                                 const Rcpp::IntegerVector & individuals,
-                                 const Rcpp::IntegerVector & nLociPerChr) {
+Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::List          & ibdRecHist,
+                                const Rcpp::IntegerVector & individuals,
+                                const Rcpp::IntegerVector & nLociPerChr) {
   int nIndSet = individuals.size();
   int nChr = nLociPerChr.size();
   int nLoc = sum(nLociPerChr);
