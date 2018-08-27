@@ -2,7 +2,7 @@
 title: "Traits in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: rmarkdown::html_vignette
 bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Traits}

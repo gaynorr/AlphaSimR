@@ -1,8 +1,8 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 0.6.1
-Date: 2018-3-9
+Version: 0.7.0
+Date: 2018-6-13
 Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre"),person("Gregor","Gorjanc",role="ctb"),person("David","Wilson",role="ctb"),person("Daniel","Money",role="ctb"),person("John","Hickey",role="ctb"))
 Description: This package contains classes and functions for simulating plant and animal breeding programs.
 License: MIT + file LICENSE
@@ -12,7 +12,7 @@ LazyData: true
 Depends: R (>= 3.3.0), methods, R6
 Imports: Rcpp (>= 0.12.7), RcppArmadillo (>= 0.7.500.0.0)
 LinkingTo: Rcpp, RcppArmadillo, BH
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true

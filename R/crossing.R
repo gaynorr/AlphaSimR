@@ -8,15 +8,12 @@
 #' @param crossPlan a matrix with two column representing 
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-makeCross = function(pop,crossPlan,rawPop=FALSE,
-                     simParam=NULL){
+makeCross = function(pop,crossPlan,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -32,8 +29,8 @@ makeCross = function(pop,crossPlan,rawPop=FALSE,
   }
   tmp = cross2(pop@geno,crossPlan[,1],
               pop@geno,crossPlan[,2],
-              simParam$genMaps,
-              simParam$recombRatio,
+              simParam$femaleMap,
+              simParam$maleMap,
               simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -41,7 +38,6 @@ makeCross = function(pop,crossPlan,rawPop=FALSE,
              ploidy=pop@ploidy,
              nLoci=pop@nLoci,
              geno=tmp$geno)
-  if(rawPop) return(rPop)
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
@@ -63,17 +59,15 @@ makeCross = function(pop,crossPlan,rawPop=FALSE,
 #' @param balance if using gender, this option will balance the number 
 #' of progeny per parent
 #' @param parents an optional vector of indices for allowable parents
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param ignoreGender should gender be ignored
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
                      balance=TRUE,parents=NULL,
-                     rawPop=FALSE,ignoreGender=FALSE,
+                     ignoreGender=FALSE,
                      simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -116,8 +110,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
                       rep(crossPlan[,2],each=nProgeny))
   }
-  return(makeCross(pop=pop,crossPlan=crossPlan,
-                   rawPop=rawPop,simParam=simParam))
+  return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))
 }
 
 #' @title Select and randomly cross
@@ -188,8 +181,7 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
   
   return(randCross(pop=pop,nCrosses=nCrosses,nProgeny=nProgeny,
                    balance=balance,parents=parents,
-                   rawPop=FALSE,ignoreGender=FALSE,
-                   simParam=simParam))
+                   ignoreGender=FALSE,simParam=simParam))
 }
 
 #' @title Make designed crosses
@@ -203,15 +195,12 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' @param crossPlan a matrix with two column representing 
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
-makeCross2 = function(females,males,crossPlan,
-                      rawPop=FALSE,simParam=NULL){
+makeCross2 = function(females,males,crossPlan,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -227,8 +216,8 @@ makeCross2 = function(females,males,crossPlan,
   }
   tmp=cross2(females@geno,crossPlan[,1],
              males@geno,crossPlan[,2],
-             simParam$genMaps,
-             simParam$recombRatio,
+             simParam$femaleMap,
+             simParam$maleMap,
              simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -236,7 +225,6 @@ makeCross2 = function(females,males,crossPlan,
              ploidy=females@ploidy,
              nLoci=females@nLoci,
              geno=tmp$geno)
-  if(rawPop) return(rPop)
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
@@ -263,18 +251,16 @@ makeCross2 = function(females,males,crossPlan,
 #' female parents
 #' @param maleParents an optional vector of indices for allowable 
 #' male parents
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param ignoreGender should gender be ignored
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
                       balance=TRUE,femaleParents=NULL,
-                      maleParents=NULL,rawPop=FALSE,
-                      ignoreGender=FALSE,simParam=NULL){
+                      maleParents=NULL,ignoreGender=FALSE,
+                      simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -326,8 +312,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
                       rep(crossPlan[,2],each=nProgeny))
   }
   return(makeCross2(females=females,males=males,
-                    crossPlan=crossPlan,
-                    rawPop=rawPop,simParam=simParam))
+                    crossPlan=crossPlan,simParam=simParam))
 }
 
 #' @title Self individuals
@@ -339,15 +324,12 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
 #' @param parents an optional vector of indices for allowable parents
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-self = function(pop,nProgeny=1,parents=NULL,
-                rawPop=FALSE,simParam=NULL){
+self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -363,8 +345,8 @@ self = function(pop,nProgeny=1,parents=NULL,
   crossPlan = cbind(crossPlan,crossPlan)
   tmp = cross2(pop@geno,crossPlan[,1],
               pop@geno,crossPlan[,2],
-              simParam$genMaps,
-              simParam$recombRatio,
+              simParam$femaleMap,
+              simParam$maleMap,
               simParam$isTrackRec)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -372,7 +354,6 @@ self = function(pop,nProgeny=1,parents=NULL,
              ploidy=pop@ploidy,
              nLoci=pop@nLoci,
              geno=tmp$geno)
-  if(rawPop) return(rPop)
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
@@ -393,33 +374,33 @@ self = function(pop,nProgeny=1,parents=NULL,
 #' @param nDH total number of DH lines per individual
 #' @param useFemale should female recombination rates be used. 
 #' This parameter has no effect if, recombRatio=1.
-#' @param rawPop should a \code{\link{RawPop-class}} be returned
 #' @param simParam an object of 'SimParam' class
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}
 #' 
 #' @export
-makeDH = function(pop,nDH=1,useFemale=TRUE,
-                  rawPop=FALSE,simParam=NULL){
+makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   if(pop@ploidy!=2){
     stop("Only works with diploids")
   }
-  tmp = createDH2(pop@geno,nDH,
-                 simParam$genMaps,
-                 simParam$recombRatio,
-                 useFemale,
-                 simParam$isTrackRec)
+  if(useFemale){
+    tmp = createDH2(pop@geno,nDH,
+                    simParam$femaleMap,
+                    simParam$isTrackRec)
+  }else{
+    tmp = createDH2(pop@geno,nDH,
+                    simParam$maleMap,
+                    simParam$isTrackRec)
+  }
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nDH),
              nChr=pop@nChr,
              ploidy=pop@ploidy,
              nLoci=pop@nLoci,
              geno=tmp$geno)
-  if(rawPop) return(rPop)
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }

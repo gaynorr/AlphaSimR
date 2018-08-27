@@ -4,8 +4,9 @@
 \alias{setPhenoGCA}
 \title{Set GCA as phenotype}
 \usage{
-setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, p = 0.5,
-  inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE, simParam = NULL)
+setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1,
+  p = 0.5, inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -31,7 +32,7 @@ parameter determines the maximum number of hybrids created
 at one time. Smaller values reduce RAM usage, but may take 
 more time.}
 
-\item{onlyPheno}{should only the phenotype be returned}
+\item{onlyPheno}{should only the phenotype be returned, see return}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

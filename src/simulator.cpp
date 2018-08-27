@@ -323,7 +323,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
         }
         pConfig->dGeneConvRatio = atof(arguments[iCurrentArg][1].data());
         pConfig->iGeneConvTract = atoi(arguments[iCurrentArg][2].data());
-        if (pConfig->dGeneConvRatio<0||pConfig->iGeneConvTract<0){
+        if (pConfig->dGeneConvRatio<0){
           Rcpp::Rcerr<<"The gene conversion parameters must be positive\n";
           Rcpp::stop("Argument error");
         }
@@ -485,7 +485,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
         }else{
           popId = atoi( arguments[iCurrentArg][1].data() ) -1;
           popSize = atof( arguments[iCurrentArg][2].data() );
-          if (popId>pConfig->iTotalPops||popId<0){
+          if (popId>pConfig->iTotalPops){
             Rcpp::Rcerr<<"Invalid pop ID"<<endl;
             Rcpp::stop("Argument error");
           }
@@ -508,7 +508,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
         }else{
           popId = atoi( arguments[iCurrentArg][1].data() ) -1;
           dDefaultGrowthAlpha = atof( arguments[iCurrentArg][2].data() );
-          if (popId>pConfig->iTotalPops||popId<0){
+          if (popId>pConfig->iTotalPops){
             Rcpp::Rcerr<<"Invalid pop ID"<<endl;
             Rcpp::stop("Argument error");
           }
@@ -587,8 +587,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
             wrapper = EventPtr(new GenericEvent(
               Event::GLOBAL_POPGROWTH,dTime,
               g));
-            Rcpp::Rcerr<<"Global growth rate is "<<
-              g<<endl;
+            //Rcpp::Rcerr<<"Global growth rate is "<<
+            //  g<<endl;
           }
           break;
         case 'M': // global migration rate
@@ -602,8 +602,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
             wrapper = EventPtr(new GenericEvent(
               Event::GLOBAL_MIGRATIONRATE,dTime,
               atof(arguments[iCurrentArg][2].data())));
-            Rcpp::Rcerr<<"Global migration rate is "<<
-              atof( arguments[iCurrentArg][2].data() )<<endl;
+            //Rcpp::Rcerr<<"Global migration rate is "<<
+            //  atof( arguments[iCurrentArg][2].data() )<<endl;
           }
           break;
         case 'n' :  // subpopulation size
@@ -616,8 +616,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
             wrapper = EventPtr(new PopSizeChangeEvent(
               Event::POPSIZE,dTime,atoi( arguments[iCurrentArg][2].data() ) -1,
               atof( arguments[iCurrentArg][3].data() )));
-            Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
-              ", pop size is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
+            //Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
+            //  ", pop size is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
           }
           break;
         case 'g' :  // subpopulation growth
@@ -630,8 +630,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
             wrapper = EventPtr(new PopSizeChangeEvent(
               Event::GROWTH,dTime,atoi( arguments[iCurrentArg][2].data() ) -1,
               atof( arguments[iCurrentArg][3].data() )));
-            Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
-              ", pop growth rate is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
+            //Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
+            //  ", pop growth rate is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
           }
           break;
         case 's' :  // split
@@ -651,8 +651,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
             }
             wrapper = EventPtr(new PopSizeChangeEvent(
               Event::POPSPLIT,dTime,iPop1,dProportion));
-            Rcpp::Rcerr<<"Population "<<arguments[iCurrentArg][2]<<
-              " splits at proportion "<<dProportion<<endl;
+            //Rcpp::Rcerr<<"Population "<<arguments[iCurrentArg][2]<<
+            //  " splits at proportion "<<dProportion<<endl;
           }
           break;
         case 'j':   // move lineages from pop1 to pop2
@@ -723,7 +723,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
                                  MigrationRateMatrixEvent(
                                    Event::MIGRATION_MATRIX_RATE,dTime,
                                    dMigrationMatrix));
-            Rcpp::Rcerr<<"Full migration matrix provided by the user\n";
+            //Rcpp::Rcerr<<"Full migration matrix provided by the user\n";
             
           }else{
             // the -em t i j x option specify just
@@ -734,7 +734,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
               Rcpp::stop("Argument error");
             }else{
               //iType = Event::MIGRATION_RATE;
-              Rcpp::Rcerr<<"Mig rate of source pop "<<arguments[iCurrentArg][2] <<" to dest pop "<<arguments[iCurrentArg][3]<<" set to "<<arguments[iCurrentArg][4]<<".\n";
+              //Rcpp::Rcerr<<"Mig rate of source pop "<<arguments[iCurrentArg][2] <<" to dest pop "<<arguments[iCurrentArg][3]<<" set to "<<arguments[iCurrentArg][4]<<".\n";
               wrapper = EventPtr(new MigrationRateEvent(
                 Event::MIGRATION_RATE,dTime,
                 atoi( arguments[iCurrentArg][2].data() ) -1,
@@ -764,8 +764,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
     Rcpp::Rcerr<<"Warning: the gene conversion tract (-c 2nd parameter) cannot be "<<
       "longer than the length of sequence (-h parameter) to retain. ";
     pConfig->dBasesToTrack=2.0*pConfig->iGeneConvTract;
-    Rcpp::Rcerr<<"The -h parameter is now revised to the recommend value of 2*tractlen = "
-        <<pConfig->dBasesToTrack<<endl;
+    //Rcpp::Rcerr<<"The -h parameter is now revised to the recommend value of 2*tractlen = "
+    //    <<pConfig->dBasesToTrack<<endl;
   }
   
   

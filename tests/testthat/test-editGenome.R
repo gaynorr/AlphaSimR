@@ -2,7 +2,7 @@ context("editGenome")
 
 test_that("editGenome",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   pop = newPop(founderPop,simParam=SP)

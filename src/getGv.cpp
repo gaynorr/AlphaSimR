@@ -88,4 +88,3 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop){
                             Rcpp::Named("genicVarA")=genicVarA,
                             Rcpp::Named("genicVarD")=genicVarD);
 }
-

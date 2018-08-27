@@ -12,8 +12,7 @@ chromosome.}
 Can be a single value or a vector values for each 
 chromosome.}
 
-\item{snpQtlOverlap}{should SNP and QTL loci be allowed 
-to overlap.}
+\item{overlap}{should SNP and QTL sites be allowed to overlap.}
 
 \item{minSnpFreq}{minimum allowable frequency for SNP loci. 
 No minimum SNP frequency is used if value is NULL.}
@@ -23,7 +22,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Sets restrictions on which segregating sites 
-can serve and SNP and/or QTL loci.
+can serve as SNP and/or QTL.
 }
 \section{Usage}{
  SP$restrSegSites(maxQtl = 0, maxSnp = 0, 

@@ -1,4 +1,4 @@
-#' @title Merge multiple populations
+#' @title Merge list of populations
 #' 
 #' @description Rapidly merges a list of populations into a
 #' single population
@@ -41,6 +41,14 @@ mergePops = function(popList){
   father= do.call("c",
                   lapply(popList,
                          function(x) x@father))
+  #fixEff
+  fixEff= do.call("c",
+                  lapply(popList,
+                         function(x) x@fixEff))
+  #reps
+  reps= do.call("c",
+                lapply(popList,
+                       function(x) x@reps))
   #gender
   gender = do.call("c",
                    lapply(popList,
@@ -64,9 +72,9 @@ mergePops = function(popList){
                            function(x) ncol(x@ebv)))
   if(all(ebv==ebv[1])){
     ebv = do.call("rbind",lapply(popList,
-                                 function(x) x@pheno))
+                                 function(x) x@ebv))
   }else{
-    ebv = matrix(NA_real_,nrow=nInd,ncol=0)
+    ebv = matrix(NA_real_,nrow=sum(nInd),ncol=0)
   }
   #gxe
   if(nTraits>=1){
@@ -94,6 +102,8 @@ mergePops = function(popList){
              id=id,
              mother=mother,
              father=father,
+             fixEff=fixEff,
+             reps=reps,
              nTraits=nTraits,
              gv=gv,
              gxe=gxe,

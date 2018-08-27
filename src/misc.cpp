@@ -134,13 +134,13 @@ arma::uword mapCol(arma::uword k, arma::uword n){
 // Returns an integer vector of length n with values ranging from 0 to N-1
 // From: https://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
 // Reportedly from: Algorithm 3.4.2S of Knuth's book Seminumeric Algorithms
-arma::Col<arma::uword> sampleInt(arma::uword n, arma::uword N){
+arma::uvec sampleInt(arma::uword n, arma::uword N){
   arma::uword t = 0;
   arma::uword m = 0;
-  Rcpp::NumericVector u(1);
-  arma::Col<arma::uword> samples(n);
+  arma::vec u(1);
+  arma::uvec samples(n);
   while(m<n){
-    u = Rcpp::runif(1);
+    u.randu();
     if(double(N-t)*u(0) >= double(n-m)){
       ++t;
     }else{
@@ -162,23 +162,23 @@ arma::Col<arma::uword> sampleInt(arma::uword n, arma::uword N){
 // Values in column 1 range from 1 to nLevel1
 // Values in column 2 range from 1 to nLevel2
 // [[Rcpp::export]]
-arma::Mat<arma::uword> sampAllComb(arma::uword nLevel1, arma::uword nLevel2, 
-                                   arma::uword n){
+arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2, 
+                       arma::uword n){
   arma::uword N = nLevel1*nLevel2;
   arma::uword fullComb = 0;
   while(n>N){
     n -= N;
     ++fullComb;
   }
-  arma::Col<arma::uword> samples = sampleInt(n,N);
+  arma::uvec samples = sampleInt(n,N);
   // Calculate selected combinations
-  arma::Mat<arma::uword> output(n,2);
+  arma::umat output(n,2);
   for(arma::uword  i=0; i<n; ++i){
     output(i,0) = samples(i)/nLevel2;
     output(i,1) = samples(i)%nLevel2;
   }
   if(fullComb>0){
-    arma::Mat<arma::uword> tmp(N*fullComb,2);
+    arma::umat tmp(N*fullComb,2);
     arma::uword i;
     for(arma::uword j=0; j<(N*fullComb); ++j){
       i = j%N;
@@ -200,22 +200,22 @@ arma::Mat<arma::uword> sampAllComb(arma::uword nLevel1, arma::uword nLevel2,
 // Returns an integer matrix with the sampled levels for each combination
 // Returned values range from 1 to nLevel
 // [[Rcpp::export]]
-arma::Mat<arma::uword> sampHalfDialComb(arma::uword nLevel, arma::uword n){
+arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
   arma::uword N = nLevel*(nLevel-1)/2;
   arma::uword fullComb = 0;
   while(n>N){
     n -= N;
     ++fullComb;
   }
-  arma::Col<arma::uword> samples = sampleInt(n,N);
+  arma::uvec samples = sampleInt(n,N);
   // Calculate selected combinations
-  arma::Mat<arma::uword> output(n,2);
+  arma::umat output(n,2);
   for(arma::uword i=0; i<n; ++i){
     output(i,0) = mapRow(samples(i),nLevel);
     output(i,1) = mapCol(samples(i),nLevel);
   }
   if(fullComb>0){
-    arma::Mat<arma::uword> tmp(N*fullComb,2);
+    arma::umat tmp(N*fullComb,2);
     arma::uword i;
     for(arma::uword j=0; j<(N*fullComb); ++j){
       i = j%N;
@@ -232,4 +232,17 @@ arma::Mat<arma::uword> sampHalfDialComb(arma::uword nLevel, arma::uword n){
 // [[Rcpp::export]]
 arma::mat calcCoef(arma::mat& X, arma::mat& Y){
   return arma::solve(X,Y);
+}
+
+// Knuth's algorithm for sampling from a Poisson distribution
+int samplePoisson(double lambda){
+  double p=1,L=exp(-lambda);
+  int k=0;
+  arma::vec u(1);
+  do{
+    k++;
+    u.randu();
+    p *= u(0);
+  }while(p>L);
+  return k-1;
 }

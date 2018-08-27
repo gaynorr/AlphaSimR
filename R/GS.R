@@ -1,177 +1,48 @@
-#' @title Write data records
-#'
-#' @description
-#' Saves a population's phenotypic and marker data to a directory.
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param dir path to a directory for saving output
-#' @param snpChip which SNP chip genotype to save. If useQtl=TRUE, this
-#' value will indicate which trait's QTL genotype to save. A value of
-#' 0 will skip writing a snpChip.
-#' @param useQtl should QTL genotype be written instead of SNP chip
-#' genotypes.
-#' @param reps number of reps for phenotypes. This values is used for modelling
-#' heterogenous error variance in genomic selection models. Leave value as 1
-#' unless using reps for phenotypes.
-#' @param fixEff an integer indicating levels of fixed effect. Leave
-#' value as 1 if not using different levels of fixed effects.
-#' @param includeHaplo should markers be seperated by female and male
-#' haplotypes.
-#' @param append if true, new records are added to any existing records.
-#' If false, any existing records are deleted before writing new records.
-#' Note that this will delete all files in the 'dir' directory.
-#' @param simParam an object of \code{\link{SimParam}}
-#'
-#' @export
-writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,reps=1,fixEff=1,
-                        includeHaplo=FALSE,append=TRUE,simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
-  dir = normalizePath(dir, mustWork=TRUE)
-  if(!append){
-    #Delete any existing files
-    tmp = list.files(dir,full.names=TRUE)
-    if(length(tmp)>0){
-      unlink(tmp,recursive=TRUE)
-    }
-  }
-  if(snpChip==0){
-    nMarkers = 0
-    markerType = "NULL"
-  }else{
-    if(useQtl){
-      nMarkers = simParam$traits[[snpChip]]@nLoci
-      markerType = paste("QTL",snpChip,sep="_")
-    }else{
-      nMarkers = simParam$snpChips[[snpChip]]@nLoci
-      markerType = paste("SNP",snpChip,sep="_")
-    }
-  }
-  #Check that the marker set isn't being changed
-  nMarkerPath = file.path(dir,"nMarkers.txt")
-  if(file.exists(nMarkerPath)){
-    nMarkersDir = scan(nMarkerPath,integer(),quiet=TRUE)
-    stopifnot(nMarkersDir==nMarkers)
-  }else{
-    writeLines(as.character(nMarkers),nMarkerPath)
-  }
-  markerTypePath = file.path(dir,"markerType.txt")
-  if(file.exists(markerTypePath)){
-    markerTypeDir = scan(markerTypePath,character(),quiet=TRUE)
-    stopifnot(markerTypeDir==markerType)
-  }else{
-    writeLines(markerType,markerTypePath)
-  }
-  #Write info.txt
-  info = data.frame(id=pop@id,mother=pop@mother,father=pop@father,
-                    reps=rep(reps,pop@nInd),fixEff=rep(fixEff,pop@nInd),
-                    stringsAsFactors=FALSE)
-  filePath = file.path(dir,"info.txt")
-  if(file.exists(filePath)){
-    write.table(info,filePath,append=TRUE,col.names=FALSE,
-                row.names=FALSE,quote=FALSE)
-  }else{
-    write.table(info,filePath,row.names=FALSE,quote=FALSE)
-  }
-  #Write gv.txt
-  write.table(pop@gv,file.path(dir,"gv.txt"),append=TRUE,
-              col.names=FALSE,row.names=FALSE)
-  #Write pheno.txt
-  write.table(pop@pheno,file.path(dir,"pheno.txt"),append=TRUE,
-              col.names=FALSE,row.names=FALSE)
-  #Write genotype.txt, unless snpChip=0
-  if(snpChip!=0){
-    if(useQtl){
-      writeGeno(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
-                simParam$traits[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"))
-      if(includeHaplo){
-        writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
-                      simParam$traits[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"))
-        writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
-                      simParam$traits[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"))
-      }
-    }else{
-      writeGeno(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
-                simParam$snpChips[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"))
-      if(includeHaplo){
-        writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
-                      simParam$snpChips[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"))
-        writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
-                      simParam$snpChips[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"))
-      }
-    }
-  }
-}
-
 #' @title RR-BLUP Model
 #'
 #' @description
-#' Fits a typical RR-BLUP model for genomic predictions.
+#' Fits an RR-BLUP model for genomic predictions.
 #'
-#' @param dir path to a directory with output from \code{\link{writeRecords}}
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv})
-#' or phenotypes (\code{pheno}, default)
-#' @param skip number of older records to skip
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
 #'
 #' @export
-RRBLUP = function(dir, traits=1, use="pheno", 
-                  skip=0, maxIter=1000, simParam=NULL){
+RRBLUP = function(pop, traits=1, use="pheno", snpChip=1, 
+                  useQtl=FALSE, maxIter=1000L, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  dir = normalizePath(dir, mustWork=TRUE)
-  #Read and calculate basic information
-  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
-                          comment.char="",stringsAsFactors=FALSE)
-  if(skip>0) markerInfo = markerInfo[-(1:skip),]
-  nInd = nrow(markerInfo)
-  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
-  #Set trait/traits for genomic selection
-  use = tolower(use)
-  if(use == "gv"){
-    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else if(use == "pheno"){
-    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
-  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
-  if(is.function(traits)){
-    y = apply(y,1,traits)
-    y = as.matrix(y)
-  }else{
-    y = y[,traits,drop=FALSE]
-  }
-  if(skip>0) y=y[-(1:skip),,drop=FALSE]
   #Fit model
-  fixEff = as.integer(factor(markerInfo$fixEff))
   if(ncol(y)>1){
-    ans = callRRBLUP_MV(y,fixEff,markerInfo$reps,
-                        file.path(dir,"genotype.txt"),nMarkers,
-                        skip,maxIter)
+    ans = callRRBLUP_MV(y,fixEff,pop@reps,pop@geno,lociPerChr,
+                        lociLoc, maxIter)
   }else{
-    ans = callRRBLUP(y,fixEff,markerInfo$reps,
-                     file.path(dir,"genotype.txt"),nMarkers,
-                     skip)
-  }
-  tmp = unlist(strsplit(markerType,"_"))
-  if(tmp[1]=="SNP"){
-    markers = simParam$snpChips[[as.integer(tmp[2])]]
-  }else{
-    markers = simParam$traits[[as.integer(tmp[2])]]
+    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc)
   }
   markerEff=ans$u
   if(is.null(ans[["iter"]])){
@@ -180,9 +51,9 @@ RRBLUP = function(dir, traits=1, use="pheno",
     iter = ans$iter
   }
   output = new("RRsol",
-               nLoci=markers@nLoci,
-               lociPerChr=markers@lociPerChr,
-               lociLoc=markers@lociLoc,
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
                markerEff=markerEff,
                fixEff=ans$beta,
                Vu=as.matrix(ans$Vu),
@@ -192,61 +63,177 @@ RRBLUP = function(dir, traits=1, use="pheno",
   return(output)
 }
 
+#' @title RR-BLUP Model 2
+#'
+#' @description
+#' Fits an RR-BLUP model for genomic predictions. This implementation is 
+#' meant for situations where \code{\link{RRBLUP}} is too slow. Note that 
+#' RRBLUP2 is only faster in certain situations, see details below. Most 
+#' users should use \code{\link{RRBLUP}}.
+#' 
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model or a
+#' function of the traits returning a single value. Unlike \code{\link{RRBLUP}}, 
+#' only univariate models are supported.
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations. 
+#' @param Vu marker effect variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param useEM use EM to solve variance components. If false, 
+#' The initial values are considered true.
+#' @param tol tolerance for EM algorithm convergence
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
+#' 
+#' @details 
+#' The RRBLUP2 function works best when the number of markers is not 
+#' too large. This is because it solves the RR-BLUP problem by setting 
+#' up and solving Henderson's mixed model equations. Solving these equations 
+#' involves a square matrix with dimensions equal to the number of fixed 
+#' effects plus the number of random effects (markers). Whereas the \code{\link{RRBLUP}} 
+#' function solves the RR-BLUP problem using the EMMA approach. This approach involves 
+#' a square matrix with dimensions equal to the number of phenotypic records. This means 
+#' that the RRBLUP2 function uses less memory than RRBLUP when the number of markers 
+#' is approximately equal to or smaller than the number of phenotypic records. 
+#' 
+#' The RRBLUP2 function is not recommend for cases where the variance components are 
+#' unknown. This is uses the EM algorithm to solve for unknown variance components, 
+#' which is generally considerably slower than the EMMA approach of \code{\link{RRBLUP}}. 
+#' The number of iterations for the EM algorith is set by maxIter. The default value 
+#' is typically too small for convergence. When the algorithm fails to converage a 
+#' warning is displayed, but results are given for the last iteration. These results may 
+#' be "good enough". However we make no claim to this effect, because we can not generalize 
+#' to all possible use cases.
+#' 
+#' The RRBLUP2 function can quickly solve the mixed model equations without estimating variance 
+#' components. The variance components are set by defining Vu and Ve. Estimation of components 
+#' is suppressed by setting useEM to false. This may be useful if the model is being retrained 
+#' multiple times during the simulation. You could run \code{\link{RRBLUP}} function the first 
+#' time the model is trained, and then use the variance components from this output for all 
+#' future runs with the RRBLUP2 functions. Again, we can make no claim to the general robustness 
+#' of this approach.
+#' 
+#' @export
+RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1, 
+                   useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL, 
+                   useEM=TRUE, tol=1e-6, simParam=NULL, ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
+  }else{
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
+  }
+  # Sort out Vu and Ve
+  if(is.function(traits)){
+    if(is.null(Vu)){
+      Vu = var(y)/nLoci
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    if(is.null(Vu)){
+      Vu = 2*simParam$varA[traits]/nLoci
+      if(is.na(Vu)){
+        Vu = var(y)/nLoci
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  #Fit model
+  ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
+                    lociLoc,Vu,Ve,tol,maxIter,useEM)
+  if(is.null(ans[["iter"]])){
+    iter = 0
+  }else{
+    iter = ans$iter
+  }
+  output = new("RRsol",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               markerEff=ans$u,
+               fixEff=ans$beta,
+               Vu=as.matrix(ans$Vu),
+               Ve=as.matrix(ans$Ve),
+               LL=numeric(),
+               iter=iter)
+  return(output)
+}
+
+
 #' @title RR-BLUP Model with Dominance
 #'
 #' @description
 #' Fits an RR-BLUP model for genomic predictions that includes 
 #' dominance effects.
 #'
-#' @param dir path to a directory with output from \code{\link{writeRecords}}
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv})
-#' or phenotypes (\code{pheno}, default)
-#' @param skip number of older records to skip
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param useHetCov should the model include a covariate 
 #' for heterozygosity.
-#' @param maxIter maximum number of iterations.
+#' @param maxIter maximum number of iterations. Only used 
+#' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
 #'
 #' @export
-RRBLUP_D = function(dir, traits=1, use="pheno", 
-                    skip=0, useHetCov=TRUE, maxIter=40,
-                    simParam=NULL){
+RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1, 
+                    useQtl=FALSE, useHetCov=TRUE, maxIter=40L, 
+                    simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  dir = normalizePath(dir, mustWork=TRUE)
-  #Read and calculate basic information
-  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
-                          comment.char="",stringsAsFactors=FALSE)
-  if(skip>0) markerInfo = markerInfo[-(1:skip),]
-  nInd = nrow(markerInfo)
-  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
-  #Set trait/traits for genomic selection
-  use = tolower(use)
-  if(use == "gv"){
-    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else if(use == "pheno"){
-    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
-  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
-  if(is.function(traits)){
-    y = apply(y,1,traits)
-    y = as.matrix(y)
-  }else{
-    y = y[,traits,drop=FALSE]
-  }
-  if(skip>0) y=y[-(1:skip),,drop=FALSE]
-  stopifnot(ncol(y)==1)
   #Fit model
-  fixEff = as.integer(factor(markerInfo$fixEff))
-  ans = callRRBLUP_D(y,fixEff,markerInfo$reps,
-                     file.path(dir,"genotype.txt"),nMarkers,
-                     skip, maxIter, useHetCov)
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
+                     lociLoc,maxIter,useHetCov)
   p = t(ans$p)
   q = 1-p
   ans = ans$ans
@@ -257,21 +244,15 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
     stopifnot(length(fixEff)>1)
     hetCov = fixEff[length(fixEff)]
     fixEff = matrix(fixEff[-length(fixEff)])
-    alpha = a+(q-p)*(d+hetCov/nMarkers)
+    alpha = a+(q-p)*(d+hetCov/nLoci)
   }else{
     hetCov = 0
     alpha = a+(q-p)*d
   }
-  tmp = unlist(strsplit(markerType,"_"))
-  if(tmp[1]=="SNP"){
-    markers = simParam$snpChips[[as.integer(tmp[2])]]
-  }else{
-    markers = simParam$traits[[as.integer(tmp[2])]]
-  }
   output = new("RRDsol",
-               nLoci=markers@nLoci,
-               lociPerChr=markers@lociPerChr,
-               lociLoc=markers@lociLoc,
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
                markerEff=alpha,
                addEff=a,
                domEff=d,
@@ -293,63 +274,48 @@ RRBLUP_D = function(dir, traits=1, use="pheno",
 #' in single cross hybrids. Can also predict performance of specific 
 #' single cross hybrids.
 #'
-#' @param dir path to a directory with output from \code{\link{writeRecords}}
-#' @param traits an integer indicating the trait or traits to model, or a
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv})
-#' or phenotypes (\code{pheno}, default)
-#' @param skip number of older records to skip
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
 #'
 #' @export
-RRBLUP_GCA = function(dir, traits=1, use="pheno",
-                      skip=0, maxIter=40, simParam=NULL){
+RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1, 
+                      useQtl=FALSE, maxIter=40L, simParam=NULL, 
+                      ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  dir = normalizePath(dir, mustWork=TRUE)
-  #Read and calculate basic information
-  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
-                          comment.char="",stringsAsFactors=FALSE)
-  if(skip>0) markerInfo = markerInfo[-(1:skip),]
-  nInd = nrow(markerInfo)
-  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
-  #Set trait/traits for genomic selection
-  use = tolower(use)
-  if(use == "gv"){
-    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else if(use == "pheno"){
-    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
-  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
-  if(is.function(traits)){
-    y = apply(y,1,traits)
-    y = as.matrix(y)
-  }else{
-    y = y[,traits,drop=FALSE]
-  }
-  if(skip>0) y=y[-(1:skip),,drop=FALSE]
-  stopifnot(ncol(y)==1)
   #Fit model
-  fixEff = as.integer(factor(markerInfo$fixEff))
-  ans = callRRBLUP_GCA(y,fixEff,markerInfo$reps,
-                       file.path(dir,"haplotype1.txt"),
-                       file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip,maxIter)
-  tmp = unlist(strsplit(markerType,"_"))
-  if(tmp[1]=="SNP"){
-    markers = simParam$snpChips[[as.integer(tmp[2])]]
-  }else{
-    markers = simParam$traits[[as.integer(tmp[2])]]
-  }
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
+                       lociPerChr,lociLoc,maxIter)
   output = new("GCAsol",
-               nLoci=markers@nLoci,
-               lociPerChr=markers@lociPerChr,
-               lociLoc=markers@lociLoc,
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
                femaleEff=ans$u[[1]],
                maleEff=ans$u[[2]],
                fixEff=ans$beta,
@@ -367,58 +333,48 @@ RRBLUP_GCA = function(dir, traits=1, use="pheno",
 #' Note that we have not seen any consistent benefit of this model over 
 #' \code{\link{RRBLUP_GCA}}.
 #'
-#' @param dir path to a directory with output from \code{\link{writeRecords}}
-#' @param traits an integer indicating the trait or traits to model, or a
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model, or a
 #' function of the traits returning a single value.
-#' @param use train model using genetic value (\code{gv})
-#' or phenotypes (\code{pheno}, default)
-#' @param skip number of older records to skip
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations for convergence.
 #' @param useHetCov should the model include a covariate 
 #' for heterozygosity.
-#' @param maxIter maximum number of iterations for convergence.
 #' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
 #' RRBLUP_SCA gives a variance component of zero
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
 #'
 #' @export
-RRBLUP_SCA = function(dir, traits=1, use="pheno",
-                      skip=0, useHetCov=TRUE, maxIter=40, 
-                      onFailGCA=TRUE, simParam=NULL){
+RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
+                      useQtl=FALSE, maxIter=40L, useHetCov=FALSE, 
+                      onFailGCA=TRUE, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  dir = normalizePath(dir, mustWork=TRUE)
-  #Read and calculate basic information
-  markerInfo = read.table(file.path(dir,"info.txt"),header=TRUE,
-                          comment.char="",stringsAsFactors=FALSE)
-  if(skip>0) markerInfo = markerInfo[-(1:skip),]
-  nInd = nrow(markerInfo)
-  nMarkers = scan(file.path(dir,"nMarkers.txt"),integer(),quiet=TRUE)
-  markerType = scan(file.path(dir,"markerType.txt"),character(),quiet=TRUE)
-  #Set trait/traits for genomic selection
-  use = tolower(use)
-  if(use == "gv"){
-    y = scan(file.path(dir,"gv.txt"),numeric(),quiet=TRUE)
-  }else if(use == "pheno"){
-    y = scan(file.path(dir,"pheno.txt"),numeric(),quiet=TRUE)
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
   }else{
-    stop(paste0("Use=",use," is not an option"))
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
-  y = matrix(y,nrow=nInd+skip,ncol=length(y)/(nInd+skip),byrow=TRUE)
-  if(is.function(traits)){
-    y = apply(y,1,traits)
-    y = as.matrix(y)
-  }else{
-    y = y[,traits,drop=FALSE]
-  }
-  if(skip>0) y=y[-(1:skip),,drop=FALSE]
-  stopifnot(ncol(y)==1)
   #Fit model
-  fixEff = as.integer(factor(markerInfo$fixEff))
-  ans = callRRBLUP_SCA(y,fixEff,markerInfo$reps,
-                       file.path(dir,"haplotype1.txt"),
-                       file.path(dir,"haplotype2.txt"),
-                       nMarkers,skip,maxIter,useHetCov)
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
+                       lociPerChr,lociLoc,maxIter,useHetCov)
   p1 = t(ans$p1)
   q1 = 1-p1
   p2 = t(ans$p2)
@@ -432,30 +388,24 @@ RRBLUP_SCA = function(dir, traits=1, use="pheno",
     stopifnot(length(fixEff)>1)
     hetCov = fixEff[length(fixEff)]
     fixEff = matrix(fixEff[-length(fixEff)])
-    alpha1 = a1+(q2-p2)*(d+hetCov/nMarkers)
-    alpha2 = a2+(q1-p1)*(d+hetCov/nMarkers)
+    alpha1 = a1+(q2-p2)*(d+hetCov/nLoci)
+    alpha2 = a2+(q1-p1)*(d+hetCov/nLoci)
   }else{
     hetCov = 0
     alpha1 = a1+(q2-p2)*d
     alpha2 = a2+(q1-p1)*d
   }
-  tmp = unlist(strsplit(markerType,"_"))
-  if(tmp[1]=="SNP"){
-    markers = simParam$snpChips[[as.integer(tmp[2])]]
-  }else{
-    markers = simParam$traits[[as.integer(tmp[2])]]
-  }
   if(onFailGCA & any(ans$Vu<1e-10)){
     warning("using RRBLUP_GCA due to zero variance components")
-    output = RRBLUP_GCA(dir=dir, traits=traits, use=use,
-                        skip=skip, maxIter=maxIter, 
-                        simParam=simParam)
+    output = RRBLUP_GCA(pop=pop, traits=traits, use=use, snpChip=snpChip, 
+                        useQtl=useQtl, maxIter=maxIter, simParam=simParam, 
+                        ...)
     return(output)
   }
   output = new("SCAsol",
-               nLoci=markers@nLoci,
-               lociPerChr=markers@lociPerChr,
-               lociLoc=markers@lociLoc,
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
                femaleEff=alpha1,
                maleEff=alpha2,
                a1=ans$u[[1]],

@@ -4,13 +4,13 @@
 #' Creates a new \code{\link{MapPop-class}} from user supplied 
 #' genetic maps and haplotypes.
 #' 
-#' @param genMaps a list of genetic maps
+#' @param genMap a list of genetic maps
 #' @param haplotypes a list of matrices or data.frames that 
 #' can be coerced to matrices. See details.
 #' @param inbred are individuals fully inbred
 #' 
 #' @details
-#' Each item of genMaps must be a vector of ordered genetic lengths in 
+#' Each item of genMap must be a vector of ordered genetic lengths in 
 #' Morgans. The first value must be zero. The length of the vector 
 #' determines the number of segregating sites on the chromosome.
 #' 
@@ -23,7 +23,7 @@
 #' @examples 
 #' # Create genetic map for two chromosomes, each 1 Morgan long
 #' # Each chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11),
+#' genMap = list(seq(0,1,length.out=11),
 #'                seq(0,1,length.out=11))
 #'                
 #' # Create haplotypes for 10 outbred individuals
@@ -33,11 +33,11 @@
 #' chr2 = matrix(chr2,nrow=20,ncol=11)
 #' haplotypes = list(chr1,chr2)
 #' 
-#' founderPop = newMapPop(genMaps=genMaps,haplotypes=haplotypes)
+#' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
 #' 
 #' @export
-newMapPop = function(genMaps,haplotypes,inbred=FALSE){
-  stopifnot(length(genMaps)==length(haplotypes))
+newMapPop = function(genMap,haplotypes,inbred=FALSE){
+  stopifnot(length(genMap)==length(haplotypes))
   ploidy = 2 #The only ploidy level currently supported
   nRow = lapply(haplotypes,nrow)
   nRow = unlist(nRow)
@@ -59,13 +59,13 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
   }
   nCol = lapply(haplotypes,ncol)
   nCol = unlist(nCol)
-  segSites = lapply(genMaps,length)
+  segSites = lapply(genMap,length)
   segSites = unlist(segSites)
   if(!all.equal(nCol,segSites)){
-    stop("Number of segregating sites in haplotypes and genMaps don't match")
+    stop("Number of segregating sites in haplotypes and genMap don't match")
   }
-  output = vector("list",length(genMaps))
-  for(chr in 1:length(genMaps)){
+  output = vector("list",length(genMap))
+  for(chr in 1:length(genMap)){
     geno = packHaplo(as.matrix(haplotypes[[chr]]),
                      ploidy=ploidy,inbred=inbred)
     output[[chr]] = new("MapPop",
@@ -74,7 +74,7 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
                         ploidy=as.integer(ploidy),
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(genMaps[chr]))
+                        genMap=as.matrix(genMap[chr]))
   }
   output = do.call("c",output)
   return(output)
@@ -83,14 +83,15 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
 #' @title Haplotype tracking population
 #' 
 #' @description
-#' Creates a population for tracking haplotypes.
+#' Creates a population contain haplotypes numbered for 
+#' identity be descent tracking.
 #'
-#' @param genMaps a list of genetic maps
+#' @param genMap a list of genetic maps
 #' @param nInd number of individuals
 #' @param inbred should individuals be fully inbred
 #' 
 #' @details
-#' Each item of genMaps must be a vector of ordered genetic lengths in 
+#' Each item of genMap must be a vector of ordered genetic lengths in 
 #' Morgans. The first value must be zero. The length of the vector 
 #' determines the number of segregating sites on the chromosome.
 #' 
@@ -100,20 +101,20 @@ newMapPop = function(genMaps,haplotypes,inbred=FALSE){
 #' @examples
 #' # Create genetic map for a single chromosome with 1 Morgan
 #' # Chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMaps=genMaps,nInd=10)
+#' genMap = list(seq(0,1,length.out=11))
+#' founderPop = trackHaploPop(genMap=genMap,nInd=10)
 #' 
 #' @export
-trackHaploPop = function(genMaps,nInd,inbred=FALSE){
-  stopifnot(is.list(genMaps))
+trackHaploPop = function(genMap,nInd,inbred=FALSE){
+  stopifnot(is.list(genMap))
   if(inbred){
     stopifnot(nInd<=128)
   }else{
     stopifnot(nInd<=256)
   }
   nInd = as.integer(nInd)
-  nChr = length(genMaps)
-  nLoci = unlist(lapply(genMaps,length))
+  nChr = length(genMap)
+  nLoci = unlist(lapply(genMap,length))
   geno = vector("list",nChr)
   for(i in 1:nChr){
     tmpGeno = as.raw(0:(2*nInd-1))
@@ -134,26 +135,32 @@ trackHaploPop = function(genMaps,nInd,inbred=FALSE){
   }
   output = new("MapPop",nInd=nInd,nChr=nChr,ploidy=2L,
                nLoci=nLoci,geno=as.matrix(geno),
-               genMaps=as.matrix(genMaps))
+               genMap=as.matrix(genMap))
   return(output)
 }
 
-#' @title Create founder genotypes using MaCS
+#' @title Create founder haplotypes using MaCS
 #'
-#' @description Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
+#' @description Uses the MaCS software to produce founder haplotypes.
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
-#' @param segSites number of segregating sites to keep per chromosome
+#' @param segSites number of segregating sites to keep per chromosome. A 
+#' value of NULL results in all sites being retained.
 #' @param inbred should founder individuals be inbred
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
 #' @param manualCommand user provided MaCS options. For advanced users only.
-#' @param manualGenLen user provided genLen option for use with manual command.  For advanced users only.
+#' @param manualGenLen user provided genetic length. This must be supplied if using 
+#' manualCommand. If not using manualCommand, this value will replace the predefined 
+#' genetic length for the species. However, this the genetic length is only used by 
+#' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
+#' For advanced users only.
+#' @param suppressMessages should messages on status be suppressed
 #' 
 #' @details
-#' The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
-#' PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
+#' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
+#' and EUROPEAN. 
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #' 
@@ -163,63 +170,48 @@ trackHaploPop = function(genMaps,nInd,inbred=FALSE){
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
-                   split=NULL,manualCommand=NULL,manualGenLen=NULL){
-  ploidy = 2 #The only ploidy level currently supported
-  if(length(segSites)==1){
+runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
+                   split=NULL,manualCommand=NULL,manualGenLen=NULL,
+                   suppressMessages=FALSE){
+  nInd = as.integer(nInd)
+  ploidy = 2L #The only ploidy level currently supported
+  if(is.null(segSites)){
+    segSites = rep(0,nChr)
+  }else if(length(segSites)==1){
     segSites = rep(segSites,nChr)
   }
-  if(inbred){
-    popSize = nInd
-  }else{
-    popSize = ploidy*nInd
-  }
+  popSize = ifelse(inbred,nInd,ploidy*nInd)
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
     command = paste(popSize,manualCommand,"-s",sample.int(1e8,1))
     genLen = manualGenLen
   }else{
     species = toupper(species)
-    if(species=="WHEAT"){ #WHEAT----
+    if(species=="GENERIC"){ #GENERIC----
+      genLen = 1.0
+      Ne = 100
+      speciesParams = "1E8 -t 1E-5 -r 4E-6"
+      speciesHist = "-eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0"
+    }else if(species=="CATTLE"){ #CATTLE----
+      genLen = 1.0
+      Ne = 90
+      speciesParams = "1E8 -t 9E-6 -r 3.6E-6"
+      speciesHist = "-eN 0.011 1.33 -eN 0.019 2.78 -eN 0.036 3.89 -eN 0.053 11.11 -eN 0.069 16.67 -eN 0.431 22.22 -eN 1.264 27.78 -eN 1.819 38.89 -eN 4.875 77.78 -eN 6.542 111.11 -eN 9.319 188.89 -eN 92.097 688.89 -eN 2592.097 688.89"
+    }else if(species=="WHEAT"){ #WHEAT----
       genLen = 1.43
       Ne = 50
-      speciesParams = "800000000 -t 0.40E-06 -r 0.36E-06"
+      speciesParams = "8E8 -t 4E-7 -r 3.6E-7"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 1.00 40 -eN 2.00 60 -eN 3.00 80 -eN 4.00 100 -eN 5.00 120 -eN 10.00 140 -eN 20.00 160 -eN 30.00 180 -eN 40.00 200 -eN 50.00 240 -eN 100.00 320 -eN 200.00 400 -eN 300.00 480 -eN 400.00 560 -eN 500.00 640"
     }else if(species=="MAIZE"){ #MAIZE----
       genLen = 2.0
       Ne = 100
-      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
-      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100"
-    }else if(species=="MAIZELANDRACE"){ #MAIZELANDRACE----
-      genLen = 2.0
-      Ne = 100
-      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
-      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100 -eN 6.00 120 -eN 7.00 140 -eN 8.00 160 -eN 9.00 180 -eN 10.00 200 -eN 12.50 400 -eN 15.00 600 -eN 17.50 800 -eN 20.00 1000 -eN 22.50 1200 -eN 25.00 1400 -eN 27.50 1600 -eN 30.00 2000"
-    }else if(species=="CATTLE"){ #CATTLE----
-      genLen = 1.0
-      Ne = 100
-      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
-      speciesHist = "-eN 0.06 2.0 -eN 0.13 3.0 -eN 0.25 5.0 -eN 0.50 7.0 -eN 0.75 9.0 -eN 1.00 11.0 -eN 1.25 12.5 -eN 1.50 13.0 -eN 1.75 13.5 -eN 2.00 14.0 -eN 2.25 14.5 -eN 2.50 15.0 -eN 5.00 20.0 -eN 7.50 25.0 -eN 10.00 30.0 -eN 12.50 35.0 -eN 15.00 40.0 -eN 17.50 45.0 -eN 20.00 50.0 -eN 22.50 55.0 -eN 25.00 60.0 -eN 50.00 70.0 -eN 100.00 80.0 -eN 150.00 90.0 -eN 200.00 100.0 -eN 250.00 120.0 -eN 500.00 200.0 -eN 1000.00 400.0 -eN 1500.00 600.0 -eN 2000.00 800.0 -eN 2500.00 1000.0"
-    }else if(species=="PIG"){ #PIG----
-      genLen = 1.71
-      Ne = 100
-      speciesParams = "675000000 -t 0.95E-06 -r 0.10E-05"
-      speciesHist = "-eN 25.00 100.0 -eN 50.00 200.0 -eN 75.00 300.0 -eN 100.00 400.0 -eN 125.00 500.0 -eN 150.00 600.0 -eN 175.00 700.0 -eN 200.00 800.0 -eN 225.00 900.0 -eN 250.00 1000.0 -eN 275.00 2000.0 -eN 300.00 3000.0 -eN 325.00 4000.0 -eN 350.00 5000.0 -eN 375.00 6000.0 -eN 400.00 7000.0 -eN 425.00 8000.0 -eN 450.00 9000.0 -eN 475.00 10000.0"
-    }else if(species=="CHICKEN"){ #CHICKEN----
-      genLen = 0.84
-      Ne = 70
-      speciesParams = "300000000 -t 0.23E-05 -r 0.78E-06"
-      speciesHist = "-eN 0.18 0.71 -eN 0.36 1.43 -eN 0.54 2.14 -eN 0.71 2.86 -eN 0.89 3.57 -eN 1.07 4.29 -eN 1.25 5.00 -eN 1.43 5.71"
-    }else if(species=="RABBIT"){ #RABBIT----
-      genLen = 1.36
-      Ne = 100
-      speciesParams = "159000000 -t 0.44E-05 -r 0.34E-05"
-      speciesHist = "-eN 0.05 1.25 -eN 0.08 1.50 -eN 0.10 1.75 -eN 0.13 2.00 -eN 0.15 2.25 -eN 0.18 2.50 -eN 0.20 2.75 -eN 0.23 3.00 -eN 0.25 3.25 -eN 0.50 4.00 -eN 1.00 5.00 -eN 1.50 6.00 -eN 2.00 7.00 -eN 2.50 8.00 -eN 3.00 90.00 -eN 3.50 10.00 -eN 4.00 11.00 -eN 4.50 12.00 -eN 5.00 1000.00"
-    }else if(species=="TEST"){ #TEST----
-      genLen = 1.0
-      Ne = 100
-      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
-      speciesHist = ""
+      speciesParams = "2E8 -t 5E-6 -r 4E-6"
+      speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100" 
+    }else if(species=="EUROPEAN"){ #EUROPEAN----
+      genLen = 1.3
+      Ne = 512000
+      speciesParams = "1.3E8 -t 0.0483328 -r 0.02054849"
+      speciesHist = "-G 1.0195 -eG 0.0001000977 1.0031 -eN 0.0004492188 0.002015625 -eN 0.000449707 0.003634766"
     }else{
       stop(paste("No rules for species",species))
     }
@@ -233,34 +225,43 @@ runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
     }
     command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
   }
+  if(!is.null(manualGenLen)){
+    genLen = manualGenLen
+  }
   output = vector("list",nChr)
   for(chr in 1:nChr){
-    cat("Making chomosome",chr,"of",nChr,"\n")
+    if(!suppressMessages){
+      cat("Making chomosome",chr,"of",nChr,"\n")
+    }
     macsOut = MaCS(command,segSites[chr])
     genMap = c(macsOut$genMap)
     genMap = genLen*(genMap-min(genMap))
     geno = packHaplo(macsOut$haplo,ploidy=ploidy,
                      inbred=inbred)
     output[[chr]] = new("MapPop",
-                        nInd=as.integer(nInd),
+                        nInd=nInd,
                         nChr=1L,
-                        ploidy=as.integer(ploidy),
-                        nLoci=as.integer(segSites[chr]),
+                        ploidy=ploidy,
+                        nLoci=dim(geno)[1],
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(list(genMap)))
+                        genMap=as.matrix(list(genMap)))
   }
   output = do.call("c",output)
-  cat("Done\n")
+  if(!suppressMessages){
+    cat("Done\n")
+  }
   return(output)
 }
 
 #' @title Alternative wrapper for MaCS
 #'
 #' @description 
-#' A wrapper function for \code{\link{runMacs}}. This wrapper 
-#' is an alternative to directly using manualCommand in 
-#' \code{\link{runMacs}}. It automatically creates an appropriate 
-#' manualCommand based on user supplied variables.
+#' A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
+#' to be easier to use than supply custom comands to manualCommand in 
+#' \code{\link{runMacs}}. It effectively automates the creation of an 
+#' appropriate manualCommand using user supplied variables, but only deals  
+#' with a subset of the possibilities. The defaults were chosen to match 
+#' species="GENERIC" in \code{\link{runMacs}}.
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
@@ -274,34 +275,57 @@ runMacs = function(nInd,nChr,segSites,inbred=FALSE,species="TEST",
 #' @param histGen number of generations ago for effective 
 #' population sizes given in histNe
 #' @param inbred should founder individuals be inbred
+#' @param split an optional historic population split in terms of generations ago
+#' @param returnCommand should the command passed to manualCommand in 
+#' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
+#' the command is returned instead.
+#' @param suppressMessages should messages on status be suppressed
 #'
-#' @return an object of \code{\link{MapPop-class}}
+#' @return an object of \code{\link{MapPop-class}} or if 
+#' returnCommand is true a string giving the MaCS command passed 
+#' the manualCommand argument of \code{\link{runMacs}}.
 #' 
 #' @examples 
 #' # Creates a populations of 10 outbred individuals
 #' # Their genome consists of 1 chromosome and 100 segregating sites
-#' # The command is equivalent to using species="TEST" in runMacs
+#' # The command is equivalent to using species="GENERIC" in runMacs
 #' founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs2 = function(nInd,nChr,segSites,Ne=100,
+runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
-                    histNe=NULL,histGen=NULL,
-                    inbred=FALSE){
+                    histNe=c(500,1500,6000,12000,100000),
+                    histGen=c(100,1000,10000,100000,1000000),
+                    inbred=FALSE,split=NULL,returnCommand=FALSE,
+                    suppressMessages=FALSE){
   stopifnot(length(histNe)==length(histGen))
-  command = paste(bp,"-t",4*Ne*mutRate,
-                  "-r",4*Ne*genLen/bp)
+  speciesParams = paste(bp,"-t",4*Ne*mutRate,
+                        "-r",4*Ne*genLen/bp)
+  speciesHist = ""
   if(length(histNe)>0){
     histNe = histNe/Ne
     histGen = histGen/(4*Ne)
     for(i in 1:length(histNe)){
-      command = paste(command,"-eN",
+      speciesHist = paste(speciesHist,"-eN",
                       histGen[i],histNe[i])
     }
   }
+  if(is.null(split)){
+    command = paste(speciesParams,speciesHist)
+  }else{
+    popSize = ifelse(inbred,nInd,2*nInd)
+    command = paste(speciesParams,
+                    paste("-I 2",popSize%/%2,popSize%/%2),
+                    speciesHist,
+                    paste("-ej",split/(4*Ne)+0.000001,"2 1"))
+  }
+  if(returnCommand){
+    return(command)
+  }
   return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
                  inbred=inbred,species="TEST",split=NULL,
-                 manualCommand=command,manualGenLen=genLen))
+                 manualCommand=command,manualGenLen=genLen,
+                 suppressMessages=suppressMessages))
 }
 
 #' @title Sample haplotypes from a MapPop
@@ -310,9 +334,9 @@ runMacs2 = function(nInd,nChr,segSites,Ne=100,
 #' Creates a new \code{\link{MapPop-class}} from an existing 
 #' \code{\link{MapPop-class}} by randomly sampling haplotypes.
 #' 
-#' @param nInd the number of individuals to create
 #' @param mapPop the \code{\link{MapPop-class}} used to 
 #' sample haplotypes
+#' @param nInd the number of individuals to create
 #' @param inbred should new individuals be fully inbred
 #' @param replace should haplotypes be sampled with replacement
 #' 
@@ -321,12 +345,12 @@ runMacs2 = function(nInd,nChr,segSites,Ne=100,
 #' @examples 
 #' # Create genetic map for a single chromosome with 1 Morgan
 #' # Chromosome contains 11 equally spaced segregating sites
-#' genMaps = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMaps=genMaps,nInd=2,inbred=TRUE)
+#' genMap = list(seq(0,1,length.out=11))
+#' founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export
-sampleHaplo = function(nInd,mapPop,inbred=FALSE,replace=TRUE){
+sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
   nHaplo = mapPop@nInd*mapPop@ploidy
   if(inbred){
     nSamp = nInd
@@ -365,7 +389,7 @@ sampleHaplo = function(nInd,mapPop,inbred=FALSE,replace=TRUE){
                         ploidy=mapPop@ploidy,
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
-                        genMaps=as.matrix(mapPop@genMaps[chr]))
+                        genMap=as.matrix(mapPop@genMap[chr]))
   }
   output = do.call("c",output)
   return(output)

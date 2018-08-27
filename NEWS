@@ -1,3 +1,30 @@
+Changes in version 0.7.0
+
+  New features
+    -added default runMacs option to return all segSites
+    -added ability to specify seperate male and female genetic maps
+    -pullGeno and pullHaplo functions can now specifiy chromosomes
+    -added RRBLUP2 for special GS cases
+    -improved speed by replacing Rcpp random number generators
+    -changed available MaCS species
+    -$MAJOR CHANGE$ GS functions now use populations directly
+    
+  Bug fixes
+    -fixed population subsetting checks to prevent invalid selections
+    -fixed slow calcGCA
+    -fixed error in addTraitAG preventing multiple traits
+    -fixed bug with mergePops when merging ebv
+    -fixed bug in setVarE when using H2 and multiple traits
+
+Changes in version 0.6.1
+
+  New features
+    -selectFam now handles half-sib families
+    -selectWithinFam now handles half-sib families
+    
+  Bug fixes
+    -Removed restriction on varE=NULL in setPhenoGCA
+
 Changes in version 0.6.0
 
   New features

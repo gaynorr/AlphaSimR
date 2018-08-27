@@ -12,9 +12,9 @@ extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, d
                        long long int* LIWORK, long long int* INFO);
 
 // Replacement for Armadillo's eig_sym
-// Fixes an error with decompisition of large matrices on Eddie
+// Fixes an error with decompisition of large matrices
 // If calcVec = false, eigvec is not used
-// It would be better to template this function
+// It would be better to template this function in the future
 int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
            bool calcVec = true){
   char JOBZ;
@@ -68,34 +68,6 @@ Rcpp::List objREML(double param, Rcpp::List args){
   value += sum(log(lambda+param));
   return Rcpp::List::create(Rcpp::Named("objective") = value,
                             Rcpp::Named("output") = 0);
-}
-
-arma::mat readMat(std::string fileName, int rows, int cols,
-                  char sep=' ', int skipRows=0, int skipCols=0){
-  arma::mat output(rows,cols);
-  std::ifstream file(fileName.c_str());
-  std::string line;
-  //Skip rows
-  for(arma::uword i=0; i<skipRows; ++i){
-    std::getline(file,line);
-  }
-  //Read rows
-  for(arma::uword i=0; i<rows; ++i){
-    std::getline(file,line);
-    std::stringstream lineStream(line);
-    std::string cell;
-    //Skip columns
-    for(arma::uword j=0; j<skipCols; ++j){
-      std::getline(lineStream,cell,sep);
-    }
-    //Read columns
-    for(arma::uword j=0; j<cols; ++j){
-      std::getline(lineStream,cell,sep);
-      output(i,j) = std::atof(cell.c_str());
-    }
-  }
-  file.close();
-  return output;
 }
 
 // Produces a sum to zero design matrix with an intercept
@@ -188,9 +160,59 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("LL")=ll);
 }
 
+Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
+                          const arma::mat& M, double Vu, double Ve, 
+                          double tol, int maxIter,
+                          bool useEM){
+  double lambda = Ve/Vu;
+  double delta=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
+  arma::mat RHS(q+m,q+m),LHS(q+m,1),Rvec(q+m,1);
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M.t()*Y;
+  arma::mat RHSinv = pinv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    delta = Ve/Vu-lambda;
+    while(fabs(delta)>tol){
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta;
+      lambda += delta;
+      RHSinv = pinv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      delta = Ve/Vu-lambda;
+    }
+  }
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=LHS.rows(arma::span(q,q+m-1)),
+                            Rcpp::Named("iter")=iter);
+}
+
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
-                         const arma::mat& M, double tol=1e-6,
-                         int maxIter=1000){
+                         const arma::mat& M, int maxIter=1000, 
+                         double tol=1e-6){
   int n = Y.n_rows;
   int m = Y.n_cols;
   arma::vec eigval(n);
@@ -363,10 +385,10 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
-                         std::string genoTrain, int nMarker, int skip){
-  int n = y.n_rows;
+                      arma::field<arma::Cube<unsigned char> >& geno, 
+                      arma::ivec& lociPerChr, arma::uvec lociLoc){
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -375,12 +397,28 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
+Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
+                       arma::field<arma::Cube<unsigned char> >& geno, 
+                       arma::ivec& lociPerChr, arma::uvec lociLoc,
+                       double Vu, double Ve, double tol, int maxIter, 
+                       bool useEM){
+  arma::mat X = makeX(x);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(M,reps);
+  return solveRRBLUP_EM(y, X, M, Vu, Ve, 
+                        tol, maxIter, useEM);
+}
+
+// Called by RRBLUP function
+// [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
-                        std::string genoTrain, int nMarker, int skip,
+                        arma::field<arma::Cube<unsigned char> >& geno, 
+                        arma::ivec& lociPerChr, arma::uvec lociLoc,
                         int maxIter, bool useHetCov){
-  int n = y.n_rows;
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoTrain,n,nMarker,' ',skip,1);
+  Mlist(0) = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
   arma::mat X;
@@ -402,11 +440,11 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
-                            std::string genoTrain, int nMarker, 
-                            int skip, int maxIter){
-  int n = Y.n_rows;
+                         arma::field<arma::Cube<unsigned char> >& geno, 
+                         arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                         int maxIter){
   arma::mat X = makeX(x);
-  arma::mat M = readMat(genoTrain,n,nMarker,' ',skip,1);
+  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
   sweepReps(Y,reps);
   sweepReps(X,reps);
   sweepReps(M,reps);
@@ -416,14 +454,13 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip, int maxIter){
-  int n = y.n_rows;
+                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          arma::ivec& lociPerChr, arma::uvec lociLoc, int maxIter){
   arma::mat X = makeX(x);
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
+  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
   Mlist(0) = Mlist(0)*2;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
+  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
   Mlist(1) = Mlist(1)*2;
   sweepReps(y, reps);
   sweepReps(X, reps);
@@ -435,15 +472,14 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 // Called by RRBLUP_SCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
-                          std::string genoFemale, std::string genoMale,
-                          int nMarker, int skip, int maxIter,
-                          bool useHetCov){
-  int n = y.n_rows;
+                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                          int maxIter, bool useHetCov){
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = readMat(genoFemale,n,nMarker,' ',skip,1);
-  arma::rowvec p1 = mean(Mlist(0),0)/2.0;
-  Mlist(1) = readMat(genoMale,n,nMarker,' ',skip,1);
-  arma::rowvec p2 = mean(Mlist(1),0)/2.0;
+  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
+  arma::rowvec p1 = mean(Mlist(0),0);
+  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
+  arma::rowvec p2 = mean(Mlist(1),0);
   Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
   Mlist(0) = Mlist(0)*2;
   Mlist(1) = Mlist(1)*2;
@@ -464,4 +500,5 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
     Rcpp::Named("p2")=p2
   );
 }
+
 

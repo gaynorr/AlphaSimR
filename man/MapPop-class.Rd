@@ -34,6 +34,6 @@ for creating initial populations and setting traits in the
 \section{Slots}{
 
 \describe{
-\item{\code{genMaps}}{"matrix" of chromsome genetic maps}
+\item{\code{genMap}}{"matrix" of chromsome genetic maps}
 }}
 

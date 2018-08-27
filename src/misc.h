@@ -1,6 +1,7 @@
 #ifndef MISC_H
 #define MISC_H
 
-arma::Col<arma::uword> sampleInt(arma::uword n, arma::uword N);
+arma::uvec sampleInt(arma::uword n, arma::uword N);
+int samplePoisson(double lambda);
 
 #endif

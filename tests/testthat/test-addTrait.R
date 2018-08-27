@@ -2,7 +2,7 @@ context("addTrait")
 
 test_that("addTraitA",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   pop = newPop(founderPop,simParam=SP)
@@ -20,7 +20,7 @@ test_that("addTraitA",{
 
 test_that("addTraitAD",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitAD(nQtlPerChr=1,mean=0,var=1,meanDD=1)
   pop = newPop(founderPop,simParam=SP)
@@ -39,7 +39,7 @@ test_that("addTraitAD",{
 
 test_that("addTraitAG",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitAG(nQtlPerChr=1,mean=0,var=1,varEnv=1,varGxE=1)
   pop = newPop(founderPop,simParam=SP)
@@ -60,7 +60,7 @@ test_that("addTraitAG",{
 
 test_that("addTraitADG",{
   genMap = list(c(0))
-  founderPop = trackHaploPop(genMaps=genMap,nInd=2,inbred=TRUE)
+  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitADG(nQtlPerChr=1,mean=0,var=1,meanDD=1,varEnv=1,varGxE=1)
   pop = newPop(founderPop,simParam=SP)

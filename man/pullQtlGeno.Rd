@@ -4,13 +4,16 @@
 \alias{pullQtlGeno}
 \title{Pull QTL genotype}
 \usage{
-pullQtlGeno(pop, trait = 1, simParam = NULL)
+pullQtlGeno(pop, trait = 1, chr = NULL, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{trait}{an integer. Indicates which trait's
 QTL genotypes to retrieve.}
+
+\item{chr}{a vector of chromosomes to retrieve. If NULL,
+all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

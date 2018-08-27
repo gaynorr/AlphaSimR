@@ -1,3 +1,4 @@
+#Adds random error to a matrix of genetic values
 addError = function(gv,varE,reps=1){
   nTraits = ncol(gv)
   nInd = nrow(gv)
@@ -30,35 +31,8 @@ addError = function(gv,varE,reps=1){
   return(pheno)
 }
 
-#' @title Calculate phenotypes
-#' 
-#' @description 
-#' Calculates phenotypes for all traits by adding random error 
-#' from a multivariate normal distribution. This function is called 
-#' by \code{\link{setPheno}}.
-#' 
-#' @param pop an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
-#' @param varE error variances for phenotype. A vector of length 
-#' nTraits for independent error or a square matrix of dimensions 
-#' nTraits for correlated errors. If NULL, value in simParam is used.
-#' @param reps number of replications for phenotype. See details.
-#' @param p the p-value for the environmental covariate 
-#' used by GxE traits.
-#' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' @details
-#' The reps parameter is for convient representation of replicated data. 
-#' It is intended to represent replicated yield trials in plant 
-#' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number of plots per entry. The resulting phenotype 
-#' represents entry means.
-#' 
-#' @return Returns a matrix of nInd by nTrait phenotypes
-#' 
-#' @export
-calcPheno = function(pop,varE=NULL,reps=1,p=0.5,
-                     simParam=NULL){
+#See setPheno documentation
+calcPheno = function(pop,varE,reps,p,simParam){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -94,8 +68,11 @@ calcPheno = function(pop,varE=NULL,reps=1,p=0.5,
 #' nTraits for independent error or a square matrix of dimensions 
 #' nTraits for correlated errors. If NULL, value in simParam is used.
 #' @param reps number of replications for phenotype. See details.
+#' @param fixEff fixed effect to assign to the population. Used 
+#' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
 #' used by GxE traits.
+#' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
@@ -106,15 +83,23 @@ calcPheno = function(pop,varE=NULL,reps=1,p=0.5,
 #' represents entry means.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' \code{\link{HybridPop-class}} if onlyPheno=FALSE, if 
+#' onlyPheno=TRUE a matrix is returned
 #' 
 #' @export
-setPheno = function(pop,varE=NULL,reps=1,p=0.5,simParam=NULL){
+setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=0.5,
+                    onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  pop@pheno = calcPheno(pop=pop,varE=varE,reps=reps,p=p,
+  pheno = calcPheno(pop=pop,varE=varE,reps=reps,p=p,
                         simParam=simParam)
-  validObject(pop)
+  if(onlyPheno){
+    return(pheno)
+  }
+  pop@pheno = pheno
+  if(is(pop,"Pop")){
+    pop@fixEff = rep(as.integer(fixEff),pop@nInd)
+  }
   return(pop)
 }

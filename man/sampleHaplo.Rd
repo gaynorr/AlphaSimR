@@ -4,13 +4,13 @@
 \alias{sampleHaplo}
 \title{Sample haplotypes from a MapPop}
 \usage{
-sampleHaplo(nInd, mapPop, inbred = FALSE, replace = TRUE)
+sampleHaplo(mapPop, nInd, inbred = FALSE, replace = TRUE)
 }
 \arguments{
-\item{nInd}{the number of individuals to create}
-
 \item{mapPop}{the \code{\link{MapPop-class}} used to 
 sample haplotypes}
+
+\item{nInd}{the number of individuals to create}
 
 \item{inbred}{should new individuals be fully inbred}
 
@@ -26,8 +26,8 @@ Creates a new \code{\link{MapPop-class}} from an existing
 \examples{
 # Create genetic map for a single chromosome with 1 Morgan
 # Chromosome contains 11 equally spaced segregating sites
-genMaps = list(seq(0,1,length.out=11))
-founderPop = trackHaploPop(genMaps=genMaps,nInd=2,inbred=TRUE)
+genMap = list(seq(0,1,length.out=11))
+founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
 founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 
 }

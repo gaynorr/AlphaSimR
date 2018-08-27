@@ -2,7 +2,7 @@
 % Please edit documentation in R/mergePops.R
 \name{mergePops}
 \alias{mergePops}
-\title{Merge multiple populations}
+\title{Merge list of populations}
 \usage{
 mergePops(popList)
 }

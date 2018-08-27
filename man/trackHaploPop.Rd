@@ -4,20 +4,21 @@
 \alias{trackHaploPop}
 \title{Haplotype tracking population}
 \usage{
-trackHaploPop(genMaps, nInd, inbred = FALSE)
+trackHaploPop(genMap, nInd, inbred = FALSE)
 }
 \arguments{
-\item{genMaps}{a list of genetic maps}
+\item{genMap}{a list of genetic maps}
 
 \item{nInd}{number of individuals}
 
 \item{inbred}{should individuals be fully inbred}
 }
 \description{
-Creates a population for tracking haplotypes.
+Creates a population contain haplotypes numbered for 
+identity be descent tracking.
 }
 \details{
-Each item of genMaps must be a vector of ordered genetic lengths in 
+Each item of genMap must be a vector of ordered genetic lengths in 
 Morgans. The first value must be zero. The length of the vector 
 determines the number of segregating sites on the chromosome.
 
@@ -27,7 +28,7 @@ If inbred=FALSE, the value of nInd must be less than or equal to
 \examples{
 # Create genetic map for a single chromosome with 1 Morgan
 # Chromosome contains 11 equally spaced segregating sites
-genMaps = list(seq(0,1,length.out=11))
-founderPop = trackHaploPop(genMaps=genMaps,nInd=10)
+genMap = list(seq(0,1,length.out=11))
+founderPop = trackHaploPop(genMap=genMap,nInd=10)
 
 }

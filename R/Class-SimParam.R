@@ -3,7 +3,7 @@
 #' 
 #' @description 
 #' Container for global simulation parameters. Saving this object 
-#' as SIMPARAM will allow it to be accessed by function defaults.
+#' as SP will allow it to be accessed by function defaults.
 #' 
 #' @field ploidy ploidy level of species
 #' @field nChr number of chromosomes
@@ -11,7 +11,13 @@
 #' @field nSnpChips number of SNP chips
 #' @field segSites segregating sites per chromosome
 #' @field gender is gender used for mating
-#' @field genMaps "matrix" of chromsome genetic maps
+#' @field genMap "matrix" of chromsome genetic maps
+#' @field femaleMap "matrix" of chromsome genetic maps for 
+#' females
+#' @field maleMap "matrix" of chromsome genetic maps for 
+#' males
+#' @field sepMap are there seperate genetic maps for 
+#' males and females
 #' @field recombRatio ratio of genetic recombination in 
 #' females relative to male
 #' @field traits list of trait
@@ -39,7 +45,9 @@ SimParam = R6Class(
     .nSnpChips="integer",
     .segSites="integer",
     .gender="character",
-    .genMaps="matrix",
+    .femaleMap="matrix",
+    .maleMap="matrix",
+    .sepMap="logical",
     .recombRatio="numeric",
     .traits="list",
     .snpChips="list",
@@ -98,18 +106,45 @@ SimParam = R6Class(
         stop("`$gender` is read only",call.=FALSE)
       }
     },
-    genMaps=function(value){
+    sepMap=function(value){
       if(missing(value)){
-        private$.genMaps
+        private$.sepMap
       }else{
-        stop("`$genMaps` is read only",call.=FALSE)
+        stop("`$sepMap` is read only",call.=FALSE)
       }
     },
-    recombRatio=function(value){
+    genMap=function(value){
       if(missing(value)){
-        private$.recombRatio
+        if(private$.sepMap){
+          genMap = vector("list",private$.nChr)
+          for(i in 1:private$.nChr){
+            genMap[[i]] = (private$.femaleMap[[i]]+
+              private$.maleMap[[i]])/2
+          }
+          as.matrix(genMap)
+        }else{
+          private$.femaleMap
+        }
       }else{
-        stop("`$recombRatio` is read only",call.=FALSE)
+        stop("`$genMap` is read only",call.=FALSE)
+      }
+    },
+    femaleMap=function(value){
+      if(missing(value)){
+        private$.femaleMap
+      }else{
+        stop("`$femaleMap` is read only",call.=FALSE)
+      }
+    },
+    maleMap=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleMap
+        }else{
+          private$.femaleMap
+        }
+      }else{
+        stop("`$maleMap` is read only",call.=FALSE)
       }
     },
     traits=function(value){
@@ -236,8 +271,9 @@ SimParam$set(
     private$.nSnpChips = 0L
     private$.segSites = founderPop@nLoci
     private$.gender = "no"
-    private$.genMaps = founderPop@genMaps
-    private$.recombRatio = 1
+    private$.femaleMap = founderPop@genMap
+    private$.maleMap = NULL
+    private$.sepMap = FALSE
     private$.traits = list()
     private$.snpChips = list()
     private$.potQtl = lapply(
@@ -275,12 +311,14 @@ SimParam$set(
 SimParam$set(
   "private",
   ".addTrait",
-  function(lociMap,varA=NA_real_,varG=NA_real_){
+  function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
+    stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
+              length(varA)==1,length(varG)==1,length(varE)==1)
     private$.nTraits = private$.nTraits+1L
     private$.traits[[private$.nTraits]] = lociMap
     private$.varA[private$.nTraits] = varA
     private$.varG[private$.nTraits] = varG
-    private$.varE[private$.nTraits] = NA_real_
+    private$.varE[private$.nTraits] = varE
     invisible(self)
   }
 )
@@ -396,7 +434,7 @@ SimParam$set(
 #' @title Restrict segregating sites
 #'
 #' @description Sets restrictions on which segregating sites 
-#' can serve and SNP and/or QTL loci.
+#' can serve as SNP and/or QTL.
 #' 
 #' @section Usage: SP$restrSegSites(maxQtl = 0, maxSnp = 0, 
 #' snpQtlOverlap = FALSE, minSnpFreq = NULL, force = FALSE)
@@ -407,8 +445,7 @@ SimParam$set(
 #' @param maxSnp the maximum number of segSites for SNPs. 
 #' Can be a single value or a vector values for each 
 #' chromosome.
-#' @param snpQtlOverlap should SNP and QTL loci be allowed 
-#' to overlap.
+#' @param overlap should SNP and QTL sites be allowed to overlap.
 #' @param minSnpFreq minimum allowable frequency for SNP loci. 
 #' No minimum SNP frequency is used if value is NULL.
 #' @param force should the check for a running simulation be 
@@ -420,7 +457,7 @@ NULL
 SimParam$set(
   "public",
   "restrSegSites",
-  function(maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
+  function(maxQtl=0,maxSnp=0,overlap=FALSE,
            minSnpFreq=NULL, force=FALSE){
     if(!force){
       private$.isRunning()
@@ -436,7 +473,7 @@ SimParam$set(
     potSnp = list()
     potQtl = list()
     for(chr in 1:private$.nChr){
-      if(snpQtlOverlap){
+      if(overlap){
         stopifnot(private$.segSites[chr]>=maxSnp[chr],
                   private$.segSites[chr]>=maxQtl[chr])
         if(is.null(minSnpFreq)){
@@ -474,6 +511,66 @@ SimParam$set(
     }
     private$.potSnp = potSnp
     private$.potQtl = potQtl
+    invisible(self)
+  }
+)
+
+#' @title Restrict SNP sites
+#'
+#' @description Sets restrictions on which segregating sites 
+#' can serve as SNPs.
+#' 
+#' @section Usage: SP$restrSnpSites(chr=NULL, site=NULL, force = FALSE)
+#' 
+#' @param chr a vector of chromosome postions for eligible 
+#' SNPs
+#' @param site a vector of eligible segregating sites within 
+#' chromosomes
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_restrSnpSites
+NULL
+# restrSnpSites ----
+SimParam$set(
+  "public",
+  "restrSnpSites",
+  function(chr=NULL, site=NULL, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    #DO SOMETHING
+    private$.potSnp
+    invisible(self)
+  }
+)
+
+#' @title Restrict QTL sites
+#'
+#' @description Sets restrictions on which segregating sites 
+#' can serve as QTL.
+#' 
+#' @section Usage: SP$restrQtlSites(chr = NULL, site = NULL, force = FALSE)
+#' 
+#' @param chr a vector of chromosome postions for eligible 
+#' QTL
+#' @param site a vector of eligible segregating sites within 
+#' chromosomes
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @name SimParam_restrQtlSites
+NULL
+# restrQtlSites ----
+SimParam$set(
+  "public",
+  "restrQtlSites",
+  function(chr=NULL, site=NULL, force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    #DO SOMETHING
+    private$.potQtl
     invisible(self)
   }
 )
@@ -530,24 +627,39 @@ SimParam$set(
 #' and a value of 0.5 specifies half as much recombination in 
 #' females.
 #' 
-#' @section Usage: SP$setRecombRatio(ratio, force = FALSE)
+#' @section Usage: SP$setRecRatio(ratio, force = FALSE)
 #' 
 #' @param ratio any value greater than 0
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
-#' @name SimParam_setRecombRatio
+#' @name SimParam_setRecRatio
 NULL
-# setRecombRatio ----
+# setRecRatio ----
 SimParam$set(
   "public",
-  "setRecombRatio",
+  "setRecRatio",
   function(ratio, force=FALSE){
     if(!force){
       private$.isRunning()
     }
     stopifnot(ratio>0)
-    private$.recombRatio = ratio
+    genMap = self$genMap
+    private$.sepMap = TRUE
+    feSc = 2/(1/ratio+1)
+    maSc = 2/(ratio+1)
+    private$.femaleMap = as.matrix(
+      lapply(genMap,
+             function(x){
+               feSc*x
+             })
+    )
+    private$.maleMap = as.matrix(
+      lapply(genMap,
+             function(x){
+               maSc*x
+             })
+    )
     invisible(self)
   }
 )
@@ -586,7 +698,7 @@ SimParam$set(
     }else if(!is.null(H2)){
       stopifnot(length(H2)==private$.nTraits)
       varE = numeric(private$.nTraits)
-      for(i in 1:length(h2)){
+      for(i in 1:length(H2)){
         tmp = private$.varG[i]/H2[i]-private$.varG[i]
         varE[i] = tmp
       }
@@ -607,23 +719,24 @@ SimParam$set(
 #' error variances. You must call \code{\link{SimParam_setVarE}} 
 #' first to define the default error variances.
 #' 
-#' @section Usage: SP$setCorrVarE(corr)
+#' @section Usage: SP$setCorE(corE)
 #' 
-#' @param corr a correlation matrix for the error variances
+#' @param corE a correlation matrix for the error variances
 #' 
-#' @name SimParam_setCorrVarE
+#' @name SimParam_setCorE
 NULL
-# setCorrVarE ----
+# setCorE ----
 SimParam$set(
   "public",
-  "setCorrVarE",
-  function(corr){
-    stopifnot(isSymmetric(corr),
-              nrow(corr)==private$.nTraits)
+  "setCorE",
+  function(corE){
+    stopifnot(isSymmetric(corE),
+              nrow(corE)==private$.nTraits,
+              length(private$.varE)==private$.nTraits)
     varE = diag(sqrt(private$.varE),
                 nrow=private$.nTraits,
                 ncol=private$.nTraits)
-    varE = varE%*%corr%*%varE
+    varE = varE%*%corE%*%varE
     private$.varE = varE
     invisible(self)
   }
@@ -866,13 +979,13 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated additive effects.
 #' 
-#' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corr = NULL, 
+#' @section Usage: SP$addTraitA(nQtlPerChr, mean = 0, var = 1, corA = NULL, 
 #' gamma = FALSE, shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param corr a matrix of correlations between additive effects
+#' @param corA a matrix of correlations between additive effects
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape the shape parameter for the gamma distribution
 #' @param force should the check for a running simulation be 
@@ -884,7 +997,7 @@ NULL
 SimParam$set(
   "public",
   "addTraitA",
-  function(nQtlPerChr,mean=0,var=1,corr=NULL,
+  function(nQtlPerChr,mean=0,var=1,corA=NULL,
            gamma=FALSE,shape=1,force=FALSE){
     if(!force){
       private$.isRunning()
@@ -892,13 +1005,13 @@ SimParam$set(
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
-    if(is.null(corr)) corr=diag(nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
     stopifnot(length(mean)==length(var),
-              isSymmetric(corr),
-              length(mean)==nrow(corr))
+              isSymmetric(corA),
+              length(mean)==nrow(corA))
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                        corr=corr,gamma=gamma,shape=shape)
+                        corr=corA,gamma=gamma,shape=shape)
     geno = getGeno(private$.founderPop@geno,
                    qtlLoci@lociPerChr,
                    qtlLoci@lociLoc)
@@ -1024,10 +1137,10 @@ SimParam$set(
     stopifnot(length(mean)==length(var),
               isSymmetric(corA),
               isSymmetric(corGxE),
-              length(meanG)==nrow(corA),
-              length(meanG)==nrow(corGxE),
-              length(meanG)==length(varGxE),
-              length(meanG)==length(varEnv))
+              length(mean)==nrow(corA),
+              length(mean)==nrow(corGxE),
+              length(mean)==length(varGxE),
+              length(mean)==length(varEnv))
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corA,gamma=gamma,shape=shape)
@@ -1229,15 +1342,16 @@ SimParam$set(
 #' @description 
 #' Add a new trait to the simulation.
 #' 
-#' @section Usage: SP$manAddTrait(lociMap, varA = NULL, varG = NULL, 
-#' force = FALSE)
+#' @section Usage: SP$manAddTrait(lociMap, varA = NA_real_, varG = NA_real_, 
+#' varE = NA_real_, force = FALSE)
 #' 
 #' @param lociMap a new object descended from 
 #' \code{\link{LociMap-class}}
-#' @param varA a new value for varA in the base population. 
-#' @param varG a new value for varG in the base population. 
+#' @param varA the value for varA in the base population, optional
+#' @param varG the value for varG in the base population, optional
+#' @param varE default error variance for phenotype, optional
 #' @param force should the check for a running simulation be 
-#' ignored. Only set to TRUE if you know what you are doing.
+#' ignored. Only set to TRUE if you know what you are doing
 #' 
 #' @name SimParam_manAddTrait
 NULL
@@ -1245,14 +1359,13 @@ NULL
 SimParam$set(
   "public",
   "manAddTrait",
-  function(lociMap,varA=NULL,varG=NULL,force=FALSE){
+  function(lociMap,varA=NA_real_,varG=NA_real_,
+           varE=NA_real_,force=FALSE){
     if(!force){
       private$.isRunning()
     }
-    private$.nTraits = private$.nTraits+1L
-    private$.varA[private$.nTraits] = varA
-    private$.varG[private$.nTraits] = varG
-    private$.traits[[private$.nTraits]] = lociMap
+    stopifnot(is(lociMap,"LociMap"))
+    private$.addTrait(lociMap,varA,varG,varE)
     invisible(self)
   }
 )
@@ -1418,29 +1531,89 @@ SimParam$set(
   }
 )
 
-#' @title Switch genetic maps
+#' @title Switch genetic map
 #' 
 #' @description 
-#' Replaces existing genetic maps.
+#' Replaces existing genetic map.
 #' 
-#' @section Usage: SP$switchGenMaps(genMaps)
+#' @section Usage: SP$switchGenMap(genMap)
 #' 
-#' @param genMaps a list of length nChr containing 
+#' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
 #' 
-#' @name SimParam_switchGenMaps
+#' @name SimParam_switchGenMap
 NULL
-# switchGenMaps ----
+# switchGenMap ----
 SimParam$set(
   "public",
-  "switchGenMaps",
-  function(genMaps){
-    stopifnot(length(genMaps)==private$.nChr)
-    tmp = do.call("c",lapply(genMaps,length))
+  "switchGenMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
-    private$.genMaps = genMaps
+    private$.sepMap = FALSE
+    private$.femaleMap = genMap
+    private$.maleMap = NULL
     invisible(self)
   }
 )
 
+#' @title Switch female genetic map
+#' 
+#' @description 
+#' Replaces existing female genetic map.
+#' 
+#' @section Usage: SP$switchFemaleMap(genMap)
+#' 
+#' @param genMap a list of length nChr containing 
+#' numeric vectors for the position of each segregating 
+#' site on a chromosome.
+#' 
+#' @name SimParam_switchFemaleMap
+NULL
+# switchFemaleMap ----
+SimParam$set(
+  "public",
+  "switchFemaleMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
+    stopifnot(all(tmp==private$.segSites))
+    if(private$.sepMap){
+      private$.femaleMap = genMap
+    }else{
+      private$.sepMap = TRUE
+      private$.maleMap = private$.femaleMap
+      private$.femaleMap = genMap
+    }
+    invisible(self)
+  }
+)
+
+#' @title Switch male genetic map
+#' 
+#' @description 
+#' Replaces existing male genetic map.
+#' 
+#' @section Usage: SP$switchMaleMap(genMap)
+#' 
+#' @param genMap a list of length nChr containing 
+#' numeric vectors for the position of each segregating 
+#' site on a chromosome.
+#' 
+#' @name SimParam_switchMaleMap
+NULL
+# switchMaleMap ----
+SimParam$set(
+  "public",
+  "switchMaleMap",
+  function(genMap){
+    stopifnot(length(genMap)==private$.nChr)
+    tmp = do.call("c",lapply(genMap,length))
+    stopifnot(all(tmp==private$.segSites))
+    private$.sepMap = TRUE
+    private$.maleMap = genMap
+    invisible(self)
+  }
+)

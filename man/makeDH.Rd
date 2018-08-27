@@ -4,7 +4,7 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH = 1, useFemale = TRUE, rawPop = FALSE, simParam = NULL)
+makeDH(pop, nDH = 1, useFemale = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
@@ -14,13 +14,10 @@ makeDH(pop, nDH = 1, useFemale = TRUE, rawPop = FALSE, simParam = NULL)
 \item{useFemale}{should female recombination rates be used. 
 This parameter has no effect if, recombRatio=1.}
 
-\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
-
 \item{simParam}{an object of 'SimParam' class}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
-\code{\link{RawPop-class}}
+Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Creates DH lines from each individual in a population. 

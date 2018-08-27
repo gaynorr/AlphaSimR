@@ -2,17 +2,19 @@
 % Please edit documentation in R/founderPop.R
 \name{runMacs}
 \alias{runMacs}
-\title{Create founder genotypes using MaCS}
+\title{Create founder haplotypes using MaCS}
 \usage{
-runMacs(nInd, nChr, segSites, inbred = FALSE, species = "TEST",
-  split = NULL, manualCommand = NULL, manualGenLen = NULL)
+runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
+  species = "GENERIC", split = NULL, manualCommand = NULL,
+  manualGenLen = NULL, suppressMessages = FALSE)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
 
 \item{nChr}{number of chromosomes to simulate}
 
-\item{segSites}{number of segregating sites to keep per chromosome}
+\item{segSites}{number of segregating sites to keep per chromosome. A 
+value of NULL results in all sites being retained.}
 
 \item{inbred}{should founder individuals be inbred}
 
@@ -22,17 +24,23 @@ runMacs(nInd, nChr, segSites, inbred = FALSE, species = "TEST",
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 
-\item{manualGenLen}{user provided genLen option for use with manual command.  For advanced users only.}
+\item{manualGenLen}{user provided genetic length. This must be supplied if using 
+manualCommand. If not using manualCommand, this value will replace the predefined 
+genetic length for the species. However, this the genetic length is only used by 
+AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
+For advanced users only.}
+
+\item{suppressMessages}{should messages on status be suppressed}
 }
 \value{
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
+Uses the MaCS software to produce founder haplotypes.
 }
 \details{
-The current species histories are included: WHEAT, MAIZE, MAIZELANDRACE, CATTLE, 
-PIG, CHICKEN, RABBIT and TEST. TEST uses MaCS's default history.
+The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
+and EUROPEAN.
 }
 \examples{
 # Creates a populations of 10 outbred individuals

@@ -82,7 +82,7 @@ hybridCross = function(females,males,crossPlan="testcross",
   }
   
   #Return HybridPop-class
-  gv = pheno = matrix(NA_real_,nrow=length(id),
+  gv = matrix(NA_real_,nrow=length(id),
                       ncol=simParam$nTraits)
   gxe = vector("list",simParam$nTraits)
   i = 0L
@@ -95,7 +95,11 @@ hybridCross = function(females,males,crossPlan="testcross",
       gxe[[i]] = tmp[[2]]
     }
   }
-  
+  if(simParam$nTraits>0){
+    pheno = addError(gv,simParam$varE)
+  }else{
+    pheno = gv
+  }
   output = new("HybridPop",
                nInd=length(id),
                id=id,
@@ -132,45 +136,71 @@ calcGCA = function(pop,use="pheno"){
                   levels=unique(pop@mother))
   male = factor(pop@father,
                 levels=unique(pop@father))
+  #Check for balance
+  if(nlevels(female)==1 | nlevels(male)==1){
+    balanced = TRUE
+  }else{
+    tmp = table(female,male)
+    if(all(tmp==tmp[1])){
+      balanced = TRUE
+    }else{
+      balanced = FALSE
+    }
+  }
   sca = paste(as.character(female),as.character(male),sep="_")
   sca = factor(sca,levels=unique(sca))
   # Female GCA
-  if(length(unique(female))==1){
+  if(nlevels(female)==1){
     GCAf = matrix(colMeans(y),nrow=1)
   }else{
-    if(length(unique(male))==1){
+    if(nlevels(male)==1){
       GCAf = y
     }else{
-      X = model.matrix(~female+male-1,contrasts=list(male="contr.sum"))
-      GCAf = calcCoef(X,y)[1:length(unique(female)),,drop=FALSE]
+      if(balanced){
+        #Calculate simple means
+        tmp = aggregate(y~female,FUN=mean)
+        GCAf = unname(as.matrix(tmp[,-1,drop=F]))
+      }else{
+        #Calculate population marginal means
+        X = model.matrix(~female+male-1,contrasts=list(male="contr.sum"))
+        GCAf = calcCoef(X,y)[1:nlevels(female),,drop=FALSE]
+      }
     }
   }
-  GCAf = data.frame(as.character(unique(female)),
-                    GCAf,stringsAsFactors=FALSE)
+  GCAf = data.frame(levels(female),GCAf,
+                    stringsAsFactors=FALSE)
   names(GCAf) = c("id",paste0("Trait",1:pop@nTraits))
   # Male GCA
-  if(length(unique(male))==1){
+  if(nlevels(male)==1){
     GCAm = matrix(colMeans(y),nrow=1)
   }else{
-    if(length(unique(female))==1){
+    if(nlevels(female)==1){
       GCAm = y
     }else{
-      X = model.matrix(~male+female-1,contrasts=list(female="contr.sum"))
-      GCAm = calcCoef(X,y)[1:length(unique(male)),,drop=FALSE]
+      if(balanced){
+        #Calculate simple means
+        tmp = aggregate(y~male,FUN=mean)
+        GCAm = unname(as.matrix(tmp[,-1,drop=F]))
+      }else{
+        #Calculate population marginal means
+        X = model.matrix(~male+female-1,contrasts=list(female="contr.sum"))
+        GCAm = calcCoef(X,y)[1:nlevels(male),,drop=FALSE]
+      }
     }
   }
-  GCAm = data.frame(as.character(unique(male)),
-                    GCAm,stringsAsFactors=FALSE)
+  GCAm = data.frame(levels(male),GCAm,
+                    stringsAsFactors=FALSE)
   names(GCAm) = c("id",paste0("Trait",1:pop@nTraits))
   # SCA
-  if(length(unique(sca))==1){
+  if(nlevels(sca)==pop@nInd){
     SCA = y
   }else{
-    X = model.matrix(~sca-1)
-    SCA = calcCoef(X,y)
+    #Calculate simple means
+    tmp = aggregate(y~sca,FUN=mean)
+    SCA = unname(as.matrix(tmp[,-1,drop=F]))
   }
-  SCA = data.frame(as.character(unique(sca)),
-                   SCA,stringsAsFactors=FALSE)
+  SCA = data.frame(levels(sca),SCA,
+                   stringsAsFactors=FALSE)
   names(SCA) = c("id",paste0("Trait",1:pop@nTraits))
   return(list(GCAf=GCAf,
               GCAm=GCAm,
@@ -198,7 +228,7 @@ calcGCA = function(pop,use="pheno"){
 #' parameter determines the maximum number of hybrids created 
 #' at one time. Smaller values reduce RAM usage, but may take 
 #' more time.
-#' @param onlyPheno should only the phenotype be returned
+#' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
@@ -218,17 +248,39 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(any(duplicated(pop@id))){
+    stop("This function does not work with duplicate IDs")
+  }
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
+  #Make hybrids
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
                     returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
+  #Get response
   if(use=="pheno"){
-    tmp = setPheno(tmp,varE=varE,p=p,reps=reps,simParam=simParam)
+    y = setPheno(tmp,varE=varE,p=p,reps=reps,
+                 onlyPheno=TRUE,simParam=simParam)
+  }else if(use=="gv"){
+    y = tmp@gv
+  }else{
+    stop(paste0("use=",use," is not a valid option"))
   }
-  tmp = calcGCA(pop=tmp,use=use)
+  #
+  female = factor(tmp@mother,levels=unique(tmp@mother))
+  if(nlevels(female)==1){
+    GCAf = matrix(colMeans(y),nrow=1)
+  }else{
+    if(testers@nInd==1){
+      GCAf = y
+    }else{
+        #Calculate simple means
+        tmp = aggregate(y~female,FUN=mean)
+        GCAf = unname(as.matrix(tmp[,-1,drop=F]))
+    }
+  }
   if(onlyPheno){
-    return(as.matrix(tmp$GCAf[,-1]))
+    return(GCAf)
   }
-  pop@pheno = as.matrix(tmp$GCAf[,-1])
+  pop@pheno = GCAf
   return(pop)
 }

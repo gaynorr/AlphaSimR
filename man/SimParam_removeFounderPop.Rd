@@ -2,7 +2,6 @@
 % Please edit documentation in R/Class-SimParam.R
 \name{SimParam_removeFounderPop}
 \alias{SimParam_removeFounderPop}
-\alias{SimParam_removeFounderPop}
 \title{Switch founder population}
 \description{
 Switches the founder population in the founderPop 

@@ -10,7 +10,7 @@ SimParam
 }
 \description{
 Container for global simulation parameters. Saving this object 
-as SIMPARAM will allow it to be accessed by function defaults.
+as SP will allow it to be accessed by function defaults.
 }
 \section{Fields}{
 
@@ -27,7 +27,16 @@ as SIMPARAM will allow it to be accessed by function defaults.
 
 \item{\code{gender}}{is gender used for mating}
 
-\item{\code{genMaps}}{"matrix" of chromsome genetic maps}
+\item{\code{genMap}}{"matrix" of chromsome genetic maps}
+
+\item{\code{femaleMap}}{"matrix" of chromsome genetic maps for 
+females}
+
+\item{\code{maleMap}}{"matrix" of chromsome genetic maps for 
+males}
+
+\item{\code{sepMap}}{are there seperate genetic maps for 
+males and females}
 
 \item{\code{recombRatio}}{ratio of genetic recombination in 
 females relative to male}
