@@ -220,6 +220,8 @@ calcGCA = function(pop,use="pheno"){
 #' of length nTraits for independent error or a square matrix of 
 #' dimensions nTraits for correlated errors.
 #' @param reps number of replications for phenotype. See details.
+#' @param fixEff fixed effect to assign to the population. Used 
+#' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
@@ -243,7 +245,7 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       p=0.5,inbred=FALSE,chunkSize=10000,
+                       fixEff=1L,p=0.5,inbred=FALSE,chunkSize=10000,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -282,5 +284,6 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
     return(GCAf)
   }
   pop@pheno = GCAf
+  pop@fixEff = rep(as.integer(fixEff),pop@nInd)
   return(pop)
 }
