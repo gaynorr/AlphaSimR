@@ -419,3 +419,110 @@ pullSegSiteHaplo = function(pop, haplo="all",
   colnames(output) = paste("SITE",1:ncol(output),sep="_")
   return(output)
 }
+
+#' @title Pull Identity By Descent (IBD) haplotypes
+#' 
+#' @description 
+#' Retrieves Identity By Descent (IBD) haplotype data
+#'
+#' @param pop an object of \code{\link{Pop-class}} or 
+#' \code{\link{RawPop-class}}. If NULL, haplotypes for the whole
+#' ancestral pedigree are retreived. Otherwise, haplotypes just for
+#' the \code{pop} individuals are retreived. In both cases the base
+#' population is controlled by \code{pedigree}.
+#' @param chr a vector of chromosomes to retrieve. If NULL, 
+#' all chromosomes are retrieved.
+#' @param snpChip an integer. Indicates which SNP array loci
+#' are retrieved. If NULL, all sites are retrieved.
+#' @param pedigree a matrix with ancestral pedigree to set a base
+#' population. It should be of the same form as \code{simParam$pedigree} 
+#' (see \code{\link{SimParam_setTrackPed}}), i.e., two columns (mother
+#' and father) and the same number of rows as \code{simParam$pedigree}.
+#' Base population can be set by setting parents as 0. If NULL, pedigree
+#' from \code{\link{SimParam}} is taken.
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a matrix of haplotypes with Identity By Descent
+#' (IBD) coding of locus alleles. The matrix colnames reflect whether
+#' all segregagting loci (sites) are retreived or only SNP array loci.
+#' @export
+pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
+  
+  # ---- Setup -----
+  
+  if (is.null(simParam)) {
+    simParam = get(x = "SP", envir = .GlobalEnv)
+  }
+  if (simParam$ploidy != 2L) {
+    stop("pullIbdHaplo() works (currently) only with diploids!")
+  }
+  if (!simParam$isTrackRec) {
+    stop("To use pullIbdHaplo(), simParam must hold ancestral recombination data! See ?SimParam_setTrackRec")
+  }
+  if (is.null(pedigree) & !simParam$isTrackPed) {
+    stop("To use pullIbdHaplo() with pedigree = NULL, simParam must hold ancestral pedigree data! See ?SimParam_setTrackPed")
+  }
+  lociLoc = c(sapply(X = simParam$segSites, FUN = function(x) 1L:x))
+  lociPerChr = simParam$segSites
+  if (is.null(chr)) {
+    chr = 1L:simParam$nChr
+  } else {
+    tmp = selectLoci(chr = chr, inLociPerChr = lociPerChr, inLociLoc = lociLoc)
+    lociLoc = tmp$lociLoc
+    lociPerChr = tmp$lociPerChr
+  }
+  if (is.null(pedigree)) {
+    pedigree = simParam$pedigree
+  } else {
+    if (nrow(pedigree) != length(simParam$recHist)) {
+      stop("pedigree must have the same number of rows as simParam$recHist!")
+    }
+  }
+  
+  # ---- Get IBD recombinations -----
+  
+  ibdRecHist = getIbdRecHist(recHist     = simParam$recHist,
+                             pedigree    = pedigree,
+                             nLociPerChr = lociPerChr)$ibdRecHist
+
+  # ---- Get IBD haplotypes -----
+  
+  if (!is.null(pop)) {
+    nInd = pop@nInd
+    individuals = as.integer(pop@id)
+  } else {
+    nInd = nrow(pedigree)
+    individuals = 1L:nInd
+  }
+  output = getIbdHaplo(ibdRecHist  = ibdRecHist,
+                       individuals = individuals,
+                       nLociPerChr = lociPerChr)
+  rownames(output) = paste(rep(x = individuals,        each  = simParam$ploidy),
+                           rep(x = 1L:simParam$ploidy, times = nInd), sep = "_")
+  
+  # ---- Subset loci -----
+  
+  if (!is.null(snpChip)) {
+    Sel = integer(length = sum(simParam$snpChips[[snpChip]]@lociPerChr[chr]))
+    ArrayEnd = 0L
+    ChrStart = 0L
+    for (Chr in chr) {
+      # Chr = 1L
+      # Chr = 2L
+      Tmp = selectLoci(chr = Chr,
+                       inLociPerChr = simParam$snpChips[[snpChip]]@lociPerChr,
+                       inLociLoc    = simParam$snpChips[[snpChip]]@lociLoc)
+      ArrayStart = ArrayEnd + 1L
+      ArrayEnd   = ArrayStart + Tmp$lociPerChr[Chr] - 1L
+      # cat(ArrayStart, ArrayEnd, "\n")
+      Sel[ArrayStart:ArrayEnd] = ChrStart + Tmp$lociLoc
+      ChrStart = ChrStart + lociPerChr[Chr]
+    }
+    output = output[, Sel]
+    colnames(output) = paste("SNP",  1L:ncol(output), sep = "_")
+  } else {
+    colnames(output) = paste("SITE", 1L:ncol(output), sep = "_")
+  }
+  
+  return(output)
+}

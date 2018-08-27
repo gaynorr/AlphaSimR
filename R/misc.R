@@ -275,3 +275,71 @@ var2cor = function(var){
   tmp = diag(1/sqrt(diag(var)))
   return(tmp%*%var%*%tmp)
 }
+
+#' @title Writes a Pop-class as PLINK files
+#' 
+#' @description
+#' Writes a Pop-class as PLINK PED and MAP files
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param baseName a character. Basename of PED and MAP files.
+#' @param trait an integer. Which phenotype trait should be used.
+#' @param snpChip an integer. Which SNP array should be used.
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param chromLength an integer. The size of chromosomes in base
+#' pairs; assuming all chromosomes are of the same size.
+#'
+#' @export
+writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
+                      chromLength = 10L^8) {
+  if (is.null(simParam)) {
+    simParam = get(x = "SP", envir = .GlobalEnv)
+  }
+  if (simParam$ploidy != 2L) {
+    stop("writePlink() works only with diploids!")
+  }  
+  
+  # ---- Map ----
+  
+  # This assumes equal number of markers per chromosome!
+  map = data.frame(chr = rep(x = 1L:simParam$nChr,
+                             each = simParam$snpChips[[snpChip]]@lociPerChr[1L]),
+                   loc = paste0("SNP_", 1L:simParam$snpChips[[snpChip]]@nLoci),
+                   posGenetic = 0L,
+                   pos = simParam$snpChips[[snpChip]]@lociLoc)
+  for (chr in 1L:simParam$nChr) {
+    # chr = 1
+    sel = map$chr == chr
+    map$posGenetic[sel] = simParam$genMap[[chr]][map$pos[sel]]
+  }
+  map$pos = round(map$posGenetic * chromLength)
+  write.table(x = map, file = paste0(baseName, ".map"),
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
+  
+  # ---- Ped ----
+  
+  # First the FAM format, which covers the first 6 columns of the PED format
+  fam = data.frame(family = rep(x = 1L, times = pop@nInd),
+                   id     = as.integer(pop@id),
+                   father = as.integer(pop@father),
+                   mother = as.integer(pop@mother),
+                   gender = 0L,
+                   pheno  = 0)
+  if (!any(pop@gender == "")) {
+    fam$gender = (pop@gender == "F") + 1L
+  }
+  if (!anyNA(pop@pheno[, trait])) {
+    fam$pheno = pop@pheno[, trait]
+  }
+  
+  # Select loci on the SNP array
+  tmp = selectLoci(chr          = 1L:simParam$nChr,
+                   inLociPerChr = simParam$snpChips[[snpChip]]@lociPerChr,
+                   inLociLoc    = simParam$snpChips[[snpChip]]@lociLoc)
+  # Add loci alleles to fam and write to file directly from C++
+  writePlinkPed(fam        = fam,
+                geno       = pop@geno,
+                lociPerChr = tmp$lociPerChr,
+                lociLoc    = tmp$lociLoc,
+                file       = paste0(baseName, ".ped"))
+}
