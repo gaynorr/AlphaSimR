@@ -5,8 +5,8 @@
 \title{Select families}
 \usage{
 selectFam(pop, nFam, trait = 1, use = "pheno", gender = "B",
-  famType = "B", selectTop = TRUE, returnPop = TRUE, simParam = NULL,
-  ...)
+  famType = "B", selectTop = TRUE, returnPop = TRUE,
+  simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

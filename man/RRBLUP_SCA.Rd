@@ -4,9 +4,9 @@
 \alias{RRBLUP_SCA}
 \title{RR-BLUP SCA Model}
 \usage{
-RRBLUP_SCA(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
-  maxIter = 40L, useHetCov = FALSE, onFailGCA = TRUE, simParam = NULL,
-  ...)
+RRBLUP_SCA(pop, traits = 1, use = "pheno", snpChip = 1,
+  useQtl = FALSE, maxIter = 40L, useHetCov = FALSE,
+  onFailGCA = TRUE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

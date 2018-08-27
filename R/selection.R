@@ -316,6 +316,5 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
             sample(male[!male==female[x]],nSeeds-nSelf[x],replace=TRUE)))
   })
   crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
-  return(makeCross(pop=pop,crossPlan=crossPlan,
-                   rawPop=FALSE,simParam=simParam))
+  return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))
 }

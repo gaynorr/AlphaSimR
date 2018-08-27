@@ -12,9 +12,9 @@ extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, d
                        long long int* LIWORK, long long int* INFO);
 
 // Replacement for Armadillo's eig_sym
-// Fixes an error with decompisition of large matrices on Eddie
+// Fixes an error with decompisition of large matrices
 // If calcVec = false, eigvec is not used
-// It would be better to template this function
+// It would be better to template this function in the future
 int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
            bool calcVec = true){
   char JOBZ;

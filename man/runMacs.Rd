@@ -2,7 +2,7 @@
 % Please edit documentation in R/founderPop.R
 \name{runMacs}
 \alias{runMacs}
-\title{Create founder genotypes using MaCS}
+\title{Create founder haplotypes using MaCS}
 \usage{
 runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
   species = "GENERIC", split = NULL, manualCommand = NULL,
@@ -36,7 +36,7 @@ For advanced users only.}
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
+Uses the MaCS software to produce founder haplotypes.
 }
 \details{
 The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  

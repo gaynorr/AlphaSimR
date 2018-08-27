@@ -12,8 +12,7 @@ chromosome.}
 Can be a single value or a vector values for each 
 chromosome.}
 
-\item{snpQtlOverlap}{should SNP and QTL loci be allowed 
-to overlap.}
+\item{overlap}{should SNP and QTL sites be allowed to overlap.}
 
 \item{minSnpFreq}{minimum allowable frequency for SNP loci. 
 No minimum SNP frequency is used if value is NULL.}

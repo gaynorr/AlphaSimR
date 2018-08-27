@@ -4,8 +4,8 @@
 \alias{randCross}
 \title{Make random crosses}
 \usage{
-randCross(pop, nCrosses, nProgeny = 1, balance = TRUE, parents = NULL,
-  rawPop = FALSE, ignoreGender = FALSE, simParam = NULL)
+randCross(pop, nCrosses, nProgeny = 1, balance = TRUE,
+  parents = NULL, ignoreGender = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -19,15 +19,12 @@ of progeny per parent}
 
 \item{parents}{an optional vector of indices for allowable parents}
 
-\item{rawPop}{should a \code{\link{RawPop-class}} be returned}
-
 \item{ignoreGender}{should gender be ignored}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
-\code{\link{RawPop-class}}
+Returns an object of \code{\link{Pop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross}} that randomly 

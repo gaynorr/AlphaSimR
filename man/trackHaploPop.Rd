@@ -14,7 +14,8 @@ trackHaploPop(genMap, nInd, inbred = FALSE)
 \item{inbred}{should individuals be fully inbred}
 }
 \description{
-Creates a population for tracking haplotypes.
+Creates a population contain haplotypes numbered for 
+identity be descent tracking.
 }
 \details{
 Each item of genMap must be a vector of ordered genetic lengths in 

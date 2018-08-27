@@ -4,13 +4,13 @@
 \alias{sampleHaplo}
 \title{Sample haplotypes from a MapPop}
 \usage{
-sampleHaplo(nInd, mapPop, inbred = FALSE, replace = TRUE)
+sampleHaplo(mapPop, nInd, inbred = FALSE, replace = TRUE)
 }
 \arguments{
-\item{nInd}{the number of individuals to create}
-
 \item{mapPop}{the \code{\link{MapPop-class}} used to 
 sample haplotypes}
+
+\item{nInd}{the number of individuals to create}
 
 \item{inbred}{should new individuals be fully inbred}
 

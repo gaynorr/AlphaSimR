@@ -14,6 +14,7 @@ Changes in version 0.7.0
     -fixed slow calcGCA
     -fixed error in addTraitAG preventing multiple traits
     -fixed bug with mergePops when merging ebv
+    -fixed bug in setVarE when using H2 and multiple traits
 
 Changes in version 0.6.1
 

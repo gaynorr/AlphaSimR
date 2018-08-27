@@ -4,8 +4,9 @@
 \alias{setPhenoGCA}
 \title{Set GCA as phenotype}
 \usage{
-setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1, p = 0.5,
-  inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE, simParam = NULL)
+setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1,
+  p = 0.5, inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

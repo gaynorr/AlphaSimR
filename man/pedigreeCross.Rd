@@ -4,8 +4,8 @@
 \alias{pedigreeCross}
 \title{Pedigree cross}
 \usage{
-pedigreeCross(founderPop, id, mother, father, maxCycle = 100, DH = NULL,
-  useFemale = TRUE, simParam = NULL)
+pedigreeCross(founderPop, id, mother, father, maxCycle = 100,
+  DH = NULL, useFemale = TRUE, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{a \code{\link{Pop-class}}}

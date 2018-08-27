@@ -4,8 +4,9 @@
 \alias{RRBLUP_D}
 \title{RR-BLUP Model with Dominance}
 \usage{
-RRBLUP_D(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
-  useHetCov = TRUE, maxIter = 40L, simParam = NULL, ...)
+RRBLUP_D(pop, traits = 1, use = "pheno", snpChip = 1,
+  useQtl = FALSE, useHetCov = TRUE, maxIter = 40L, simParam = NULL,
+  ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

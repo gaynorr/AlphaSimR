@@ -83,7 +83,8 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE){
 #' @title Haplotype tracking population
 #' 
 #' @description
-#' Creates a population for tracking haplotypes.
+#' Creates a population contain haplotypes numbered for 
+#' identity be descent tracking.
 #'
 #' @param genMap a list of genetic maps
 #' @param nInd number of individuals
@@ -138,9 +139,9 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
   return(output)
 }
 
-#' @title Create founder genotypes using MaCS
+#' @title Create founder haplotypes using MaCS
 #'
-#' @description Uses an external programs MaCS and AlphaFormatter to produce initial founder genotypes.
+#' @description Uses the MaCS software to produce founder haplotypes.
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
@@ -189,27 +190,27 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
     if(species=="GENERIC"){ #GENERIC----
       genLen = 1.0
       Ne = 100
-      speciesParams = "100000000 -t 0.10E-04 -r 0.40E-05"
-      speciesHist = "-eN 0.25 5.0 -eN 1.25 12.5 -eN 2.50 15.0 -eN 12.50 35.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0"
+      speciesParams = "1E8 -t 1E-5 -r 4E-6"
+      speciesHist = "-eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0"
     }else if(species=="CATTLE"){ #CATTLE----
       genLen = 1.0
       Ne = 90
-      speciesParams = "100000000 -t 9e-6 -r 3.6e-06"
+      speciesParams = "1E8 -t 9E-6 -r 3.6E-6"
       speciesHist = "-eN 0.011 1.33 -eN 0.019 2.78 -eN 0.036 3.89 -eN 0.053 11.11 -eN 0.069 16.67 -eN 0.431 22.22 -eN 1.264 27.78 -eN 1.819 38.89 -eN 4.875 77.78 -eN 6.542 111.11 -eN 9.319 188.89 -eN 92.097 688.89 -eN 2592.097 688.89"
     }else if(species=="WHEAT"){ #WHEAT----
       genLen = 1.43
       Ne = 50
-      speciesParams = "800000000 -t 0.40E-06 -r 0.36E-06"
+      speciesParams = "8E8 -t 4E-7 -r 3.6E-7"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 1.00 40 -eN 2.00 60 -eN 3.00 80 -eN 4.00 100 -eN 5.00 120 -eN 10.00 140 -eN 20.00 160 -eN 30.00 180 -eN 40.00 200 -eN 50.00 240 -eN 100.00 320 -eN 200.00 400 -eN 300.00 480 -eN 400.00 560 -eN 500.00 640"
     }else if(species=="MAIZE"){ #MAIZE----
       genLen = 2.0
       Ne = 100
-      speciesParams = "200000000 -t 0.50E-05 -r 0.40E-05"
+      speciesParams = "2E8 -t 5E-6 -r 4E-6"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100" 
     }else if(species=="EUROPEAN"){ #EUROPEAN----
       genLen = 1.3
       Ne = 512000
-      speciesParams = "1.3e8 -t 0.0483328 -r 0.02054849"
+      speciesParams = "1.3E8 -t 0.0483328 -r 0.02054849"
       speciesHist = "-G 1.0195 -eG 0.0001000977 1.0031 -eN 0.0004492188 0.002015625 -eN 0.000449707 0.003634766"
     }else{
       stop(paste("No rules for species",species))
@@ -293,8 +294,8 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @export
 runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
-                    histNe=c(500,1250,1500,3500,6000,12000,100000),
-                    histGen=c(100,500,1000,5000,10000,100000,1000000),
+                    histNe=c(500,1500,6000,12000,100000),
+                    histGen=c(100,1000,10000,100000,1000000),
                     inbred=FALSE,split=NULL,returnCommand=FALSE,
                     suppressMessages=FALSE){
   stopifnot(length(histNe)==length(histGen))
@@ -333,9 +334,9 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' Creates a new \code{\link{MapPop-class}} from an existing 
 #' \code{\link{MapPop-class}} by randomly sampling haplotypes.
 #' 
-#' @param nInd the number of individuals to create
 #' @param mapPop the \code{\link{MapPop-class}} used to 
 #' sample haplotypes
+#' @param nInd the number of individuals to create
 #' @param inbred should new individuals be fully inbred
 #' @param replace should haplotypes be sampled with replacement
 #' 
@@ -349,7 +350,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export
-sampleHaplo = function(nInd,mapPop,inbred=FALSE,replace=TRUE){
+sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
   nHaplo = mapPop@nInd*mapPop@ploidy
   if(inbred){
     nSamp = nInd

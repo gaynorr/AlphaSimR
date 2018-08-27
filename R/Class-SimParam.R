@@ -445,8 +445,7 @@ SimParam$set(
 #' @param maxSnp the maximum number of segSites for SNPs. 
 #' Can be a single value or a vector values for each 
 #' chromosome.
-#' @param snpQtlOverlap should SNP and QTL loci be allowed 
-#' to overlap.
+#' @param overlap should SNP and QTL sites be allowed to overlap.
 #' @param minSnpFreq minimum allowable frequency for SNP loci. 
 #' No minimum SNP frequency is used if value is NULL.
 #' @param force should the check for a running simulation be 
@@ -458,7 +457,7 @@ NULL
 SimParam$set(
   "public",
   "restrSegSites",
-  function(maxQtl=0,maxSnp=0,snpQtlOverlap=FALSE,
+  function(maxQtl=0,maxSnp=0,overlap=FALSE,
            minSnpFreq=NULL, force=FALSE){
     if(!force){
       private$.isRunning()
@@ -474,7 +473,7 @@ SimParam$set(
     potSnp = list()
     potQtl = list()
     for(chr in 1:private$.nChr){
-      if(snpQtlOverlap){
+      if(overlap){
         stopifnot(private$.segSites[chr]>=maxSnp[chr],
                   private$.segSites[chr]>=maxQtl[chr])
         if(is.null(minSnpFreq)){
@@ -699,7 +698,7 @@ SimParam$set(
     }else if(!is.null(H2)){
       stopifnot(length(H2)==private$.nTraits)
       varE = numeric(private$.nTraits)
-      for(i in 1:length(h2)){
+      for(i in 1:length(H2)){
         tmp = private$.varG[i]/H2[i]-private$.varG[i]
         varE[i] = tmp
       }
