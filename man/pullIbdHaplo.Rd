@@ -4,8 +4,8 @@
 \alias{pullIbdHaplo}
 \title{Pull Identity By Descent (IBD) haplotypes}
 \usage{
-pullIbdHaplo(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
-  simParam = NULL)
+pullIbdHaplo(pop = NULL, chr = NULL, snpChip = NULL,
+  pedigree = NULL, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 

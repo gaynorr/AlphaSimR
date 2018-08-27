@@ -8,6 +8,8 @@ Changes in version 0.7.0
     -improved speed by replacing Rcpp random number generators
     -changed available MaCS species
     -$MAJOR CHANGE$ GS functions now use populations directly
+    -added pullIbdHaplo
+    -add writePlink
     
   Bug fixes
     -fixed population subsetting checks to prevent invalid selections
