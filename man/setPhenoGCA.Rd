@@ -5,8 +5,8 @@
 \title{Set GCA as phenotype}
 \usage{
 setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1,
-  p = 0.5, inbred = FALSE, chunkSize = 10000, onlyPheno = FALSE,
-  simParam = NULL)
+  fixEff = 1L, p = 0.5, inbred = FALSE, chunkSize = 10000,
+  onlyPheno = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -20,6 +20,9 @@ of length nTraits for independent error or a square matrix of
 dimensions nTraits for correlated errors.}
 
 \item{reps}{number of replications for phenotype. See details.}
+
+\item{fixEff}{fixed effect to assign to the population. Used 
+by genomic selection models only.}
 
 \item{p}{the p-value for the environmental covariate}
 
