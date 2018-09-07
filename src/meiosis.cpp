@@ -193,7 +193,6 @@ Rcpp::List cross2(
   int nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
-  arma::Mat<int> histMat;
   RecHist hist;
   if(trackRec){
     hist.setSize(nInd,nChr,2);
@@ -203,6 +202,7 @@ Rcpp::List cross2(
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){
+    arma::Mat<int> histMat;
     int segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     //Loop through individuals
