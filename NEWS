@@ -1,5 +1,8 @@
 Changes in version 0.7.2
 
+  New features
+    -added GxE traits with zero environmental variance
+    
   Improvements
     -faster trait scaling
     -faster calculation of genetic values

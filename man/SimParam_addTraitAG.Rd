@@ -10,9 +10,9 @@
 
 \item{var}{a vector of desired genetic variances for one or more traits}
 
-\item{varEnv}{a vector of environmental variances for one or more traits}
-
 \item{varGxE}{a vector of total genotype-by-environment variances for the traits}
+
+\item{varEnv}{a vector of environmental variances for one or more traits}
 
 \item{corA}{a matrix of correlations between additive effects}
 
@@ -28,7 +28,7 @@ If simulating more than one trait, all traits will be pleiotrophic
 with correlated effects.
 }
 \section{Usage}{
- SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
-varGxE = 1e-6, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
+ SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+varEnv = 0, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
 }
 

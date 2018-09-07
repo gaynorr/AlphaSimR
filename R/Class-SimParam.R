@@ -1103,14 +1103,14 @@ SimParam$set(
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated effects.
 #' 
-#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
-#' varGxE = 1e-6, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
+#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+#' varEnv = 0, corA = NULL, corGxE = NULL, gamma = FALSE, shape = 1)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param varEnv a vector of environmental variances for one or more traits
 #' @param varGxE a vector of total genotype-by-environment variances for the traits
+#' @param varEnv a vector of environmental variances for one or more traits
 #' @param corA a matrix of correlations between additive effects
 #' @param corGxE a matrix of correlations between GxE effects
 #' @param gamma should a gamma distribution be used instead of normal
@@ -1122,13 +1122,13 @@ NULL
 SimParam$set(
   "public",
   "addTraitAG",
-  function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
-           varGxE=1e-6,corA=NULL,corGxE=NULL,gamma=FALSE,
-           shape=1){
+  function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
+           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1){
     private$.isRunning()
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
+    if(length(varEnv)==1) varEnv = rep(varEnv,nTraits)
     if(is.null(corA)) corA=diag(nTraits)
     if(is.null(corGxE)) corGxE=diag(nTraits)
     stopifnot(length(mean)==length(var),
@@ -1148,15 +1148,26 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitA(geno,addEff[,i],var[i])
-      targetVar = varGxE[i]/varEnv[i]
-      tmpG = tuneTraitA(geno,gxeEff[,i],targetVar)
-      trait = new("TraitAG",
-                  qtlLoci,
-                  addEff=addEff[,i]*tmp$scale,
-                  intercept=mean[i]-tmp$intercept,
-                  gxeEff = gxeEff[,i]*tmpG$scale,
-                  gxeInt = 1-tmpG$intercept,
-                  envVar = varEnv[i])
+      if(varEnv[i]==0){
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i])
+        trait = new("TraitAG",
+                    qtlLoci,
+                    addEff=addEff[,i]*tmp$scale,
+                    intercept=mean[i]-tmp$intercept,
+                    gxeEff = gxeEff[,i]*tmpG$scale,
+                    gxeInt = 0-tmpG$intercept,
+                    envVar = 1)
+      }else{
+        tmpG = tuneTraitA(geno,gxeEff[,i],
+                          varGxE[i]/varEnv[i])
+        trait = new("TraitAG",
+                    qtlLoci,
+                    addEff=addEff[,i]*tmp$scale,
+                    intercept=mean[i]-tmp$intercept,
+                    gxeEff = gxeEff[,i]*tmpG$scale,
+                    gxeInt = 1-tmpG$intercept,
+                    envVar = varEnv[i])
+      }
       private$.addTrait(trait,var[i],var[i])
     }
     invisible(self)
@@ -1168,16 +1179,16 @@ SimParam$set(
 #' @description 
 #' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
 #' 
-#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
-#' varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
+#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+#' varEnv = 0, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
 #' corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, force = FALSE)
 #' 
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
 #' value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param varEnv a vector of environmental variances for one or more traits
 #' @param varGxE a vector of total genotype-by-environment variances for the traits
+#' @param varEnv a vector of environmental variances for one or more traits
 #' @param meanDD mean dominance degree
 #' @param varDD variance of dominance degree
 #' @param corA a matrix of correlations between additive effects
@@ -1205,6 +1216,7 @@ SimParam$set(
     nTraits = length(mean)
     if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
     if(length(varDD)==1) varDD = rep(varDD,nTraits)
+    if(length(varEnv)==1) varEnv = rep(varEnv,nTraits)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
     if(is.null(corA)) corA=diag(nTraits)
@@ -1231,16 +1243,27 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA)
-      targetVar = varGxE[i]/varEnv[i]
-      tmpG = tuneTraitA(geno,gxeEff[,i],targetVar)
-      trait = new("TraitADG",
-                  qtlLoci,
-                  addEff=addEff[,i]*tmp$scale,
-                  domEff=domEff[,i]*tmp$scale,
-                  intercept=mean[i]-tmp$intercept,
-                  gxeEff = gxeEff[,i]*tmpG$scale,
-                  gxeInt = 1-tmpG$intercept,
-                  envVar = varEnv[i])
+      if(varEnv[i]==0){
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i])
+        trait = new("TraitADG",
+                    qtlLoci,
+                    addEff=addEff[,i]*tmp$scale,
+                    domEff=domEff[,i]*tmp$scale,
+                    intercept=mean[i]-tmp$intercept,
+                    gxeEff = gxeEff[,i]*tmpG$scale,
+                    gxeInt = 0-tmpG$intercept,
+                    envVar = 1)
+      }else{
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i])
+        trait = new("TraitADG",
+                    qtlLoci,
+                    addEff=addEff[,i]*tmp$scale,
+                    domEff=domEff[,i]*tmp$scale,
+                    intercept=mean[i]-tmp$intercept,
+                    gxeEff = gxeEff[,i]*tmpG$scale,
+                    gxeInt = 1-tmpG$intercept,
+                    envVar = varEnv[i])
+      }
       private$.addTrait(trait,tmp$varA,tmp$varG)
     }
     invisible(self)
