@@ -1,15 +1,22 @@
 // solveUVM and solveMVM are based on R/EMMREML functions
 // solveMKM is based on the mmer function in R/sommer
 #include "alphasimr.h"
-#include <iostream>
-#include <string>
 
-// Note: Fortran compiler appends '_' to subroutine name
-// See http://www.netlib.org/lapack/explore-html/ for description of args
-extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
-                       double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
-                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
-                       long long int* LIWORK, long long int* INFO);
+#ifdef ARMA_USE_LAPACK
+
+#if !defined(ARMA_BLAS_CAPITALS)
+#define arma_dsyevr dsyevr
+#else
+#define arma_dsyevr DSYEVR
+#endif
+
+extern "C"
+void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
+                  double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
+                  long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
+                  long long int* LIWORK, long long int* INFO);
+#endif
+
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices
@@ -46,7 +53,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   long long int LIWORK = -1; // To be calculated
   long long int INFO = 0;
   // Calculate LWORK and LIWORK
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);
   LWORK = (long long int) tmpWORK;
   LIWORK = tmpIWORK;
@@ -54,7 +61,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   arma::vec WORK(LWORK);
   arma::Col<long long int> IWORK(LIWORK);
   // Perform decomposition
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
   return INFO; // Return error code
 }

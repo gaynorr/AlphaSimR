@@ -1017,13 +1017,11 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitA(geno,addEff[,i],var[i])
-      intercept = tmp$output$intercept
-      addEff[,i] = addEff[,i]*tmp$parameter
       trait = new("TraitA",
                   qtlLoci,
-                  addEff=addEff[,i],
-                  intercept=mean[i]-intercept)
-      private$.addTrait(trait,tmp$output$varA,tmp$output$varG)
+                  addEff=addEff[,i]*tmp$scale,
+                  intercept=mean[i]-tmp$intercept)
+      private$.addTrait(trait,var[i],var[i])
     }
     invisible(self)
   }
@@ -1067,6 +1065,8 @@ SimParam$set(
       private$.isRunning()
     }
     nTraits = length(mean)
+    if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
+    if(length(varDD)==1) varDD = rep(varDD,nTraits)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
     if(is.null(corA)) corA=diag(nTraits)
@@ -1085,15 +1085,12 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA)
-      intercept = tmp$output$intercept
-      addEff[,i] = addEff[,i]*tmp$parameter
-      domEff[,i] = domEff[,i]*tmp$parameter
       trait = new("TraitAD",
                   qtlLoci,
-                  addEff=addEff[,i],
-                  domEff=domEff[,i],
-                  intercept=mean[i]-intercept)
-      private$.addTrait(trait,tmp$output$varA,tmp$output$varG)
+                  addEff=addEff[,i]*tmp$scale,
+                  domEff=domEff[,i]*tmp$scale,
+                  intercept=mean[i]-tmp$intercept)
+      private$.addTrait(trait,tmp$varA,tmp$varG)
     }
     invisible(self)
   }
@@ -1151,20 +1148,16 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitA(geno,addEff[,i],var[i])
-      intercept = tmp$output$intercept
-      addEff[,i] = addEff[,i]*tmp$parameter
       targetVar = varGxE[i]/varEnv[i]
-      tmp = tuneTraitA(geno,gxeEff[,i],targetVar)
-      gxeEff[,i] = gxeEff[,i]*tmp$parameter
-      gxeInt = tmp$output$intercept
+      tmpG = tuneTraitA(geno,gxeEff[,i],targetVar)
       trait = new("TraitAG",
                   qtlLoci,
-                  addEff=addEff[,i],
-                  intercept=mean[i]-intercept,
-                  gxeEff = gxeEff[,i],
-                  gxeInt = 1-gxeInt,
+                  addEff=addEff[,i]*tmp$scale,
+                  intercept=mean[i]-tmp$intercept,
+                  gxeEff = gxeEff[,i]*tmpG$scale,
+                  gxeInt = 1-tmpG$intercept,
                   envVar = varEnv[i])
-      private$.addTrait(trait,tmp$output$varA,tmp$output$varG)
+      private$.addTrait(trait,var[i],var[i])
     }
     invisible(self)
   }
@@ -1210,6 +1203,8 @@ SimParam$set(
       private$.isRunning()
     }
     nTraits = length(mean)
+    if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
+    if(length(varDD)==1) varDD = rep(varDD,nTraits)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
     if(is.null(corA)) corA=diag(nTraits)
@@ -1223,8 +1218,7 @@ SimParam$set(
               nrow(corGxE)==nTraits,
               nrow(corDD)==nTraits,
               length(varGxE)==nTraits,
-              length(varEnv)==nTraits,
-              length(varDD)==nTraits)
+              length(varEnv)==nTraits)
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corA,gamma=gamma,shape=shape)
@@ -1237,22 +1231,17 @@ SimParam$set(
                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA)
-      intercept = tmp$output$intercept
-      addEff[,i] = addEff[,i]*tmp$parameter
-      domEff[,i] = domEff[,i]*tmp$parameter
       targetVar = varGxE[i]/varEnv[i]
-      tmp = tuneTraitA(geno,gxeEff[,i],targetVar)
-      gxeEff[,i] = gxeEff[,i]*tmp$parameter
-      gxeInt = tmp$output$intercept
+      tmpG = tuneTraitA(geno,gxeEff[,i],targetVar)
       trait = new("TraitADG",
                   qtlLoci,
-                  addEff=addEff[,i],
-                  domEff=domEff[,i],
-                  intercept=mean[i]-intercept,
-                  gxeEff = gxeEff[,i],
-                  gxeInt = 1-gxeInt,
+                  addEff=addEff[,i]*tmp$scale,
+                  domEff=domEff[,i]*tmp$scale,
+                  intercept=mean[i]-tmp$intercept,
+                  gxeEff = gxeEff[,i]*tmpG$scale,
+                  gxeInt = 1-tmpG$intercept,
                   envVar = varEnv[i])
-      private$.addTrait(trait,tmp$output$varA,tmp$output$varG)
+      private$.addTrait(trait,tmp$varA,tmp$varG)
     }
     invisible(self)
   }

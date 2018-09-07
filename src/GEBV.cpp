@@ -10,7 +10,13 @@ arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   geno = getGeno(pop.slot("geno"), 
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
-  return arma::conv_to<arma::mat>::from(geno)*a;
+  arma::mat output(geno.n_rows,a.n_cols,arma::fill::zeros);
+  for(arma::uword j=0; j<geno.n_cols; ++j){
+    for(arma::uword i=0; i<geno.n_rows; ++i){
+      output.row(i) += geno(i,j)*a.row(j);
+    }
+  }
+  return output;
 }
 
 // Retrieves GEGVs for RRDsol
@@ -23,10 +29,19 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop){
   geno = getGeno(pop.slot("geno"), 
                  RRsol.slot("lociPerChr"),
                  RRsol.slot("lociLoc"));
-  arma::Mat<unsigned char> genoD = getDomGeno(geno);
-  arma::mat het = mean(arma::conv_to<arma::mat>::from(genoD),1);
-  return arma::conv_to<arma::mat>::from(geno)*a+
-    arma::conv_to<arma::mat>::from(genoD)*d+het*b;
+  arma::mat output(geno.n_rows,a.n_cols,arma::fill::zeros);
+  arma::vec het(geno.n_rows,arma::fill::zeros);
+  double dGeno;
+  for(arma::uword j=0; j<geno.n_cols; ++j){
+    for(arma::uword i=0; i<geno.n_rows; ++i){
+      dGeno = double(1-abs(int(geno(i,j))-1));
+      output.row(i) += geno(i,j)*a.row(j)+dGeno*d.row(j);
+      het(i) += dGeno;
+    }
+  }
+  het = het/geno.n_cols;
+  output += het*b;
+  return output;
 }
 
 
@@ -43,7 +58,13 @@ arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
   geno = getGeno(pop.slot("geno"), 
                  sol.slot("lociPerChr"),
                  sol.slot("lociLoc"));
-  return arma::conv_to<arma::mat>::from(geno)*a;
+  arma::mat output(geno.n_rows,a.n_cols,arma::fill::zeros);
+  for(arma::uword j=0; j<geno.n_cols; ++j){
+    for(arma::uword i=0; i<geno.n_rows; ++i){
+      output.row(i) += geno(i,j)*a.row(j);
+    }
+  }
+  return output;
 }
 
 // [[Rcpp::export]]
@@ -59,8 +80,13 @@ arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
                       sol.slot("lociPerChr"),
                       sol.slot("lociLoc"), 
                       2);
-  return 2*(arma::conv_to<arma::mat>::from(geno1)*a1+
-            arma::conv_to<arma::mat>::from(geno2)*a2);
+  arma::mat output(geno1.n_rows,a1.n_cols,arma::fill::zeros);
+  for(arma::uword j=0; j<geno1.n_cols; ++j){
+    for(arma::uword i=0; i<geno1.n_rows; ++i){
+      output.row(i) += geno1(i,j)*a1.row(j)+geno2(i,j)*a2.row(j);
+    }
+  }
+  return 2*output;
 }
 
 // [[Rcpp::export]]
@@ -78,9 +104,17 @@ arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop){
                       sol.slot("lociPerChr"),
                       sol.slot("lociLoc"), 
                       2);
-  genoD = getDomGeno(geno1+geno2);
-  arma::mat het = mean(arma::conv_to<arma::mat>::from(genoD),1);
-  return 2*(arma::conv_to<arma::mat>::from(geno1)*a1+
-            arma::conv_to<arma::mat>::from(geno2)*a2)+
-            arma::conv_to<arma::mat>::from(genoD)*d+het*b;
+  arma::mat output(geno1.n_rows,a1.n_cols,arma::fill::zeros);
+  arma::vec het(geno1.n_rows,arma::fill::zeros);
+  double dGeno;
+  for(arma::uword j=0; j<geno1.n_cols; ++j){
+    for(arma::uword i=0; i<geno1.n_rows; ++i){
+      dGeno = double(1-abs(int(geno1(i,j)+geno2(i,j))-1));
+      output.row(i) += geno1(i,j)*a1.row(j)+geno2(i,j)*a2.row(j)+dGeno*d.row(j);
+      het(i) += dGeno;
+    }
+  }
+  het = het/geno1.n_cols;
+  output += het*b;
+  return output;
 }

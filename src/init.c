@@ -25,7 +25,6 @@ extern SEXP _AlphaSimR_gebvRR(SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvGCA(SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvRRD(SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvSCA(SEXP, SEXP);
-extern SEXP _AlphaSimR_getDomGeno(SEXP);
 extern SEXP _AlphaSimR_getGeno(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getGv(SEXP, SEXP);
 extern SEXP _AlphaSimR_getHaplo(SEXP, SEXP, SEXP);
@@ -67,7 +66,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_gegvGCA",           (DL_FUNC) &_AlphaSimR_gegvGCA,            2},
     {"_AlphaSimR_gegvRRD",           (DL_FUNC) &_AlphaSimR_gegvRRD,            2},
     {"_AlphaSimR_gegvSCA",           (DL_FUNC) &_AlphaSimR_gegvSCA,            2},
-    {"_AlphaSimR_getDomGeno",        (DL_FUNC) &_AlphaSimR_getDomGeno,         1},
     {"_AlphaSimR_getGeno",           (DL_FUNC) &_AlphaSimR_getGeno,            3},
     {"_AlphaSimR_getGv",             (DL_FUNC) &_AlphaSimR_getGv,              2},
     {"_AlphaSimR_getHaplo",          (DL_FUNC) &_AlphaSimR_getHaplo,           3},

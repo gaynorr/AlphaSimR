@@ -2,62 +2,21 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
-//Objective function for tuning TraitA
-Rcpp::List traitAObj(double tuneValue, Rcpp::List args){
-  arma::Mat<unsigned char> geno = args["geno"];
-  arma::vec addEff = args["addEff"];
-  double varG = args["varG"];
-  arma::vec gv = geno*(addEff*tuneValue);
-  double intercept = arma::mean(gv);
-  double obsVar = arma::var(gv,1); //Population variance
-  Rcpp::List output;
-  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept,
-                              Rcpp::Named("varA")=obsVar,
-                              Rcpp::Named("varG")=obsVar);
-  return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVar),
-                            Rcpp::Named("output")=output);
-}
-
-//Objective function for tuning TraitD
-Rcpp::List traitADObj(double tuneValue, Rcpp::List args){
-  arma::Mat<unsigned char> geno = args["geno"];
-  arma::Mat<unsigned char> domGeno = args["domGeno"];
-  arma::vec addEff = args["addEff"];
-  arma::vec domEff = args["domEff"];
-  arma::vec p = args["p"];
-  double varG = args["varG"];
-  bool useVarA = args["useVarA"];
-  arma::vec gv = arma::conv_to<arma::mat>::from(geno)*(addEff*tuneValue)+
-    arma::conv_to<arma::mat>::from(domGeno)*(domEff*tuneValue);
-  double intercept = arma::mean(gv);
-  double obsVarG= arma::var(gv,1);
-  arma::vec alpha = (addEff*tuneValue)+(domEff*tuneValue)%(1-2*p);
-  arma::vec bv = geno*alpha;
-  double obsVarA = arma::var(bv,1);
-  Rcpp::List output;
-  output = Rcpp::List::create(Rcpp::Named("intercept")=intercept,
-                              Rcpp::Named("varA")=obsVarA,
-                              Rcpp::Named("varG")=obsVarG);
-  if(useVarA){
-    return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVarA),
-                              Rcpp::Named("output")=output);
-  }else{
-    return Rcpp::List::create(Rcpp::Named("objective")=fabs(varG-obsVarG),
-                              Rcpp::Named("output")=output);
-  }
-}
-
 //Tunes TraitA for desired varG
 // [[Rcpp::export]]
 Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno,
                       arma::vec& addEff,
                       double varG){
-  return optimize(*traitAObj,
-                  Rcpp::List::create(Rcpp::Named("geno")=geno,
-                                     Rcpp::Named("addEff")=addEff,
-                                     Rcpp::Named("varG")=varG),
-                                     1e-10,
-                                     1e3);
+  arma::vec gv(geno.n_rows,arma::fill::zeros);
+  for(arma::uword j=0; j<geno.n_cols; ++j){
+    for(arma::uword i=0; i<geno.n_rows; ++i){
+      gv(i) += geno(i,j)*addEff(j);
+    }
+  }
+  double scale = sqrt(varG)/stddev(gv,1);
+  double intercept = mean(gv*scale);
+  return Rcpp::List::create(Rcpp::Named("scale")=scale,
+                            Rcpp::Named("intercept")=intercept);
 }
 
 //Tunes TraitAD for desired varG (or varA), tuneTraitA used for inbreds
@@ -67,15 +26,34 @@ Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
                       arma::vec& domEff,
                       double varG, 
                       bool useVarA){
-  arma::vec p = (arma::mean(arma::conv_to<arma::mat>::from(geno),0)/2.0).t();
-  return optimize(*traitADObj,
-                  Rcpp::List::create(Rcpp::Named("geno")=geno,
-                                     Rcpp::Named("domGeno")=getDomGeno(geno),
-                                     Rcpp::Named("addEff")=addEff,
-                                     Rcpp::Named("domEff")=domEff,
-                                     Rcpp::Named("varG")=varG,
-                                     Rcpp::Named("useVarA")=useVarA,
-                                     Rcpp::Named("p")=p),
-                                     1e-10,
-                                     1e3);
+    
+  arma::vec p(geno.n_cols);
+  for(arma::uword i=0; i<geno.n_cols; ++i){
+    p(i) = mean(arma::conv_to<arma::vec>::from(geno.col(i)))/2;
+  }
+  arma::vec alpha = addEff+domEff%(1-2*p);
+  arma::vec gv(geno.n_rows,arma::fill::zeros), bv(geno.n_rows,arma::fill::zeros);
+  for(arma::uword j=0; j<geno.n_cols; ++j){
+    for(arma::uword i=0; i<geno.n_rows; ++i){
+      gv(i) += geno(i,j)*addEff(j)+(1-abs(int(geno(i,j))-1))*domEff(j);
+      bv(i) += geno(i,j)*alpha(j);
+    }
+  }
+  double scale, obsVarG, obsVarA, intercept;
+  if(useVarA){
+    scale = sqrt(varG)/stddev(bv,1);
+    obsVarA = varG;
+    gv *= scale;
+    intercept = mean(gv);
+    obsVarG = arma::var(gv,1);
+  }else{
+    scale = sqrt(varG)/stddev(gv,1);
+    obsVarG = varG;
+    intercept = mean(gv*scale);
+    obsVarA = arma::var(bv*scale,1);
+  }
+  return Rcpp::List::create(Rcpp::Named("scale")=scale,
+                            Rcpp::Named("intercept")=intercept,
+                            Rcpp::Named("varA")=obsVarA,
+                            Rcpp::Named("varG")=obsVarG);
 }

@@ -1378,16 +1378,9 @@ void GraphBuilder::build(){
   int iHistoryMax = 0;
   do{
     if (iGraphIteration==0){
-#ifdef DIAG
-      Rcpp::Rcerr<<endl<<"Graph Builder begin"<<endl;
-#endif
       NodePtr dummy1;
       EventPtr dummy2;
-      double current=clock();
       this->traverseEvents(false,dummy1,dummy2);
-#ifdef DIAG
-      Rcpp::Rcerr<<"Time for build prior tree: "<<(clock()-current)<<" seconds\n";
-#endif
     }else{
       // at this point decide whether we invoke a plain x-over
       // or a new gene conversion event

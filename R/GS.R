@@ -346,8 +346,6 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param maxIter maximum number of iterations for convergence.
 #' @param useHetCov should the model include a covariate 
 #' for heterozygosity.
-#' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
-#' RRBLUP_SCA gives a variance component of zero
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -355,7 +353,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
                       useQtl=FALSE, maxIter=40L, useHetCov=FALSE, 
-                      onFailGCA=TRUE, simParam=NULL, ...){
+                      simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -394,13 +392,6 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
     hetCov = 0
     alpha1 = a1+(q2-p2)*d
     alpha2 = a2+(q1-p1)*d
-  }
-  if(onFailGCA & any(ans$Vu<1e-10)){
-    warning("using RRBLUP_GCA due to zero variance components")
-    output = RRBLUP_GCA(pop=pop, traits=traits, use=use, snpChip=snpChip, 
-                        useQtl=useQtl, maxIter=maxIter, simParam=simParam, 
-                        ...)
-    return(output)
   }
   output = new("SCAsol",
                nLoci=nLoci,

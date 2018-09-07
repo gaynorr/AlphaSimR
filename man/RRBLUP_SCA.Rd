@@ -6,7 +6,7 @@
 \usage{
 RRBLUP_SCA(pop, traits = 1, use = "pheno", snpChip = 1,
   useQtl = FALSE, maxIter = 40L, useHetCov = FALSE,
-  onFailGCA = TRUE, simParam = NULL, ...)
+  simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
@@ -28,9 +28,6 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{useHetCov}{should the model include a covariate 
 for heterozygosity.}
-
-\item{onFailGCA}{if true, \code{\link{RRBLUP_GCA}} is used if 
-RRBLUP_SCA gives a variance component of zero}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

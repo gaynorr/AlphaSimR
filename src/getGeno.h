@@ -5,8 +5,6 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
                                  const arma::ivec& lociPerChr,
                                  arma::uvec lociLoc);
 
-arma::Mat<unsigned char> getDomGeno(arma::Mat<unsigned char> geno);
-
 arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 
                                      const arma::ivec& lociPerChr,
                                      arma::uvec lociLoc, int haplo);

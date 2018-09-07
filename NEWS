@@ -1,3 +1,10 @@
+Changes in version 0.7.2
+
+  Improvements
+    -faster trait scaling
+    -faster calculation of genetic values
+    -dsyevr now called via arma_fortran
+
 Changes in version 0.7.1
   
   Bug fixes
