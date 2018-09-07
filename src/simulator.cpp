@@ -834,7 +834,7 @@ void Simulator::runFromAlphaSimRParams(int sampleSize, float sequenceLength, dou
   pConfig->iTotalPops = 1;
     
   double dDefaultMigrationRate = 0.0;
-  double dDefaultPopSize = 1.0;
+  //double dDefaultPopSize = 1.0;
   
   for (unsigned int i = 0; i < pConfig->iTotalPops; ++i) {
     vector<double> newRow;
