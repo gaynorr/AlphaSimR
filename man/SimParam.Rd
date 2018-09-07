@@ -66,6 +66,8 @@ females relative to male}
 \item{\code{varE}}{default error variance}
 
 \item{\code{founderPop}}{the founder population used for scaling traits}
+
+\item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
 }}
 
 \keyword{datasets}

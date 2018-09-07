@@ -19,7 +19,7 @@ extern SEXP _AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, 
 extern SEXP _AlphaSimR_callRRBLUP2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_convToImat(SEXP);
 extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvGCA(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvRR(SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvGCA(SEXP, SEXP);
@@ -60,7 +60,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_callRRBLUP2",       (DL_FUNC) &_AlphaSimR_callRRBLUP2,       11},
     {"_AlphaSimR_convToImat",        (DL_FUNC) &_AlphaSimR_convToImat,         1},
     {"_AlphaSimR_createDH2",         (DL_FUNC) &_AlphaSimR_createDH2,          4},
-    {"_AlphaSimR_cross2",            (DL_FUNC) &_AlphaSimR_cross2,             7},
+    {"_AlphaSimR_cross2",            (DL_FUNC) &_AlphaSimR_cross2,             8},
     {"_AlphaSimR_gebvGCA",           (DL_FUNC) &_AlphaSimR_gebvGCA,            3},
     {"_AlphaSimR_gebvRR",            (DL_FUNC) &_AlphaSimR_gebvRR,             2},
     {"_AlphaSimR_gegvGCA",           (DL_FUNC) &_AlphaSimR_gegvGCA,            2},

@@ -33,11 +33,12 @@
 #' @field varG total genetic variance in founderPop
 #' @field varE default error variance
 #' @field founderPop the founder population used for scaling traits
+#' @field nThreads number of threads used on platforms with OpenMP support
 #'
 #' @export
 SimParam = R6Class(
   "SimParam",
-  public = list(),
+  public = list(nThreads="integer"),
   private = list(
     .ploidy="integer",
     .nChr="integer",
@@ -290,6 +291,7 @@ SimParam$set(
     private$.varG = numeric()
     private$.varE = numeric()
     private$.founderPop = founderPop
+    self$nThreads = 1L
     invisible(self)
   }
 )

@@ -7,6 +7,8 @@ Changes in version 0.7.2
     -faster trait scaling
     -faster calculation of genetic values
     -dsyevr now called via arma_fortran
+    -added OpenMP support
+    -parallelized cross2
 
 Changes in version 0.7.1
   
@@ -24,7 +26,7 @@ Changes in version 0.7.0
     -changed available MaCS species
     -$MAJOR CHANGE$ GS functions now use populations directly
     -added pullIbdHaplo
-    -add writePlink
+    -added writePlink
     
   Bug fixes
     -fixed population subsetting checks to prevent invalid selections

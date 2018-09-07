@@ -186,7 +186,7 @@ Rcpp::List cross2(
     arma::uvec father,
     const arma::field<arma::vec>& femaleMap,
     const arma::field<arma::vec>& maleMap,
-    bool trackRec){
+    bool trackRec, int nThreads=1){
   mother -= 1; // R to C++
   father -= 1; // R to C++
   int nChr = motherGeno.n_elem;
@@ -199,6 +199,9 @@ Rcpp::List cross2(
     hist.setSize(nInd,nChr,2);
   }
   //Loop through chromosomes
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
   for(arma::uword chr=0; chr<nChr; ++chr){
     int segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);

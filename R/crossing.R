@@ -31,7 +31,8 @@ makeCross = function(pop,crossPlan,simParam=NULL){
               pop@geno,crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
-              simParam$isTrackRec)
+              simParam$isTrackRec,
+              simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -218,7 +219,8 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
              males@geno,crossPlan[,2],
              simParam$femaleMap,
              simParam$maleMap,
-             simParam$isTrackRec)
+             simParam$isTrackRec,
+             simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=females@nChr,
