@@ -357,7 +357,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(iter > 1 & fabs(deltaLlik) < tol*10){
+    if((iter>1)&(fabs(deltaLlik)<tol*10)){
       break;
     }
     if(max(abs(qvec)) < tol){

@@ -2691,28 +2691,28 @@ if test "${GXX}" = yes; then
 $as_echo_n "checking g++ version is sufficient... " >&6; }
     gxx_version=$(${CXX} -v 2>&1 | awk '/^.*g.. version/ {print $3}')
     case ${gxx_version} in
-        1.*|2.*|3.*|4.0.*|4.1.*|4.2.*|4.3.*|4.4.*|4.5.*|4.6.*|4.7.0|4.7.1)
-             { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    1.*|2.*|3.*|4.0.*|4.1.*|4.2.*|4.3.*|4.4.*|4.5.*|4.6.*|4.7.0|4.7.1)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-             { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Must use g++ version 4.7.2 or greater" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Must use g++ version 4.7.2 or greater" >&5
 $as_echo "$as_me: WARNING: Must use g++ version 4.7.2 or greater" >&2;}
-             as_fn_error $? "Use a different compiler" "$LINENO" 5
-        ;;
-        4.7.*|4.8.*|4.9.*|5.0*|5.1*|5.2*|5.3*)
-             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, but no OpenMP" >&5
+        as_fn_error $? "Use a different compiler" "$LINENO" 5
+    ;;
+    4.7.*|4.8.*|4.9.*|5.0*|5.1*|5.2*|5.3*)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, but no OpenMP" >&5
 $as_echo "yes, but no OpenMP" >&6; }
-             use_openmp="no"
-        ;;
-        5.4*|5.5*|5.6*|5.7*|5.8*|5.9*|6.*|7.*|8.*|9.*|10.*)
-             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, with OpenMP" >&5
+        use_openmp="no"
+    ;;
+    5.4*|5.5*|5.6*|5.7*|5.8*|5.9*|6.*|7.*|8.*|9.*|10.*)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, with OpenMP" >&5
 $as_echo "yes, with OpenMP" >&6; }
-             use_openmp="yes"
-        ;;
-        *)
-             { $as_echo "$as_me:${as_lineno-$LINENO}: result: not g++" >&5
+        use_openmp="yes"
+    ;;
+    *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: not g++" >&5
 $as_echo "not g++" >&6; }
-             use_openmp="no"
-        ;;
+        use_openmp="no"
+    ;;
     esac
 fi
 
@@ -2726,7 +2726,6 @@ if test x"${RSysinfoName}" == x"Darwin"; then
 $as_echo "yes" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for macOS Apple compiler" >&5
 $as_echo_n "checking for macOS Apple compiler... " >&6; }
-
     apple_compiler=$($CXX --version 2>&1 | grep -i -c -e 'apple llvm')
 
     if test x"${apple_compiler}" == x"1"; then
@@ -2742,27 +2741,27 @@ $as_echo "no" >&6; }
 $as_echo_n "checking for clang compiler... " >&6; }
         clang_compiler=$($CXX --version 2>&1 | grep -i -c -e 'clang ')
 
-        if test x"${clang_compiler}" == x"1"; then
+    if test x"${clang_compiler}" == x"1"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenMP compatible" >&5
+$as_echo_n "checking for OpenMP compatible... " >&6; }
+        clang_version=$(${CXX} -v 2>&1 | awk '/^.*clang version/ {print $3}')
+
+        case ${clang_version} in
+            4.*|5.*|6.*|7.*|8.*)
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenMP compatible" >&5
-$as_echo_n "checking for OpenMP compatible... " >&6; }
-            clang_version=$(${CXX} -v 2>&1 | awk '/^.*clang version/ {print $3}')
-
-            case ${clang_version} in
-                4.*|5.*|6.*|7.*|8.*)
-                    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-                    use_openmp="yes"
-                ;;
-                *)
-                    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+            use_openmp="yes"
+        ;;
+        *)
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-                    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenMP unavailable" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenMP unavailable" >&5
 $as_echo "$as_me: WARNING: OpenMP unavailable" >&2;}
-                    use_openmp="no"
-                ;;
-            esac
+            use_openmp="no"
+        ;;
+        esac
         else
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -2772,14 +2771,13 @@ $as_echo "$as_me: WARNING: unsupported macOS build" >&2;}
     fi
 fi
 
-
-openmp_flag=""
-if test x"${use_openmp}" == x"yes"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenMP" >&5
+        openmp_flag=""
+    if test x"${use_openmp}" == x"yes"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenMP" >&5
 $as_echo_n "checking for OpenMP... " >&6; }
-    ## if R has -fopenmp we should be good
-    allldflags=$(${R_HOME}/bin/R CMD config --ldflags)
-    hasOpenMP=$(echo ${allldflags} | grep -- -fopenmp)
+        ## if R has -fopenmp we should be good
+        allldflags=$(${R_HOME}/bin/R CMD config --ldflags)
+        hasOpenMP=$(echo ${allldflags} | grep -- -fopenmp)
     if test x"${hasOpenMP}" == x""; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -3948,5 +3946,4 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
 
