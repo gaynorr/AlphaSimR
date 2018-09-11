@@ -6,7 +6,7 @@
 \usage{
 runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
   species = "GENERIC", split = NULL, manualCommand = NULL,
-  manualGenLen = NULL, suppressMessages = FALSE)
+  manualGenLen = NULL, nThreads = 1)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -30,7 +30,7 @@ genetic length for the species. However, this the genetic length is only used by
 AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 For advanced users only.}
 
-\item{suppressMessages}{should messages on status be suppressed}
+\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel}
 }
 \value{
 an object of \code{\link{MapPop-class}}

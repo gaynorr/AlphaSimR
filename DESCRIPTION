@@ -2,9 +2,9 @@ Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
 Version: 0.7.2
-Date: 2018-9-7
-Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre"),person("Gregor","Gorjanc",role="ctb"),person("David","Wilson",role="ctb"),person("Daniel","Money",role="ctb"),person("John","Hickey",role="ctb"))
-Description: This package contains classes and functions for simulating plant and animal breeding programs.
+Date: 2018-9-12
+Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre",comment = c(ORCID = "0000-0003-0558-6656")),person("Gregor","Gorjanc",role="ctb"),person("David","Wilson",role="ctb"),person("Daniel","Money",role="ctb"),person("John","Hickey",role="ctb"))
+Description: Performs stochastic simulation of plant and animal breeding programs. Simulations model organisms to the sequence level.
 License: MIT + file LICENSE
 URL: https://bitbucket.org/hickeyjohnteam/alphasimr
 Encoding: UTF-8

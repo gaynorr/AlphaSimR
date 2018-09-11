@@ -14,13 +14,14 @@ The AlphaSimR package provides a set of tools for simulating plant and animal br
 
 This vignette will provide you with a brief introduction to how AlphaSimR simulations are structured, point out the functions you are most likely to use, and conclude with a brief example simulation. More detailed information on specific aspects of AlphaSimR can be found in additional vignettes and the help documentation for AlphaSimR functions. There are also vignettes for examples of simulating more complicated breeding programs.
 
-Most AlphaSimR simulations consist of three steps:
+Most AlphaSimR simulations consist of four steps:
 
-1. Create Founder Haplotypes
-2. Set Simulation Parameters
-3. Simulate the Breeding Program
+1. Creating Founder Haplotypes
+2. Setting Simulation Parameters
+3. Modeling the Breeding Program
+4. Examining the Results
 
-## Create Founder Haplotypes
+## Creating Founder Haplotypes
 
 The first step of an AlphaSimR simulation is to create a set of founder haplotypes. These haplotypes will represent your organism's genome and determine the genetic variability in your organism. The founder haplotypes will eventually be used to generate founder individuals. These founder individuals will in turn will be use to derive all subsequent individuals in your simulation. There are two primary functions for generating founder haplotypes in AlphaSimR: `newMapPop`, which takes externally generated haplotypes; and `runMacs`, which internally generates haplotypes. 
 
@@ -50,7 +51,7 @@ There are many additional functions that you may wish to use to modify `SP`. The
 
   Once you have finished modifying `SP`, you are ready to start the process of simulating your breeding. You should not modify `SP` once you start this process, because doing so can result in undesired side effects. In fact, you will be prevented from using most functions for modifying `SP` at this point and they will return the following error, "lastId doesn't equal 0, you must run resetPed to proceed". There are some exceptions to this rule, but because they rarely occur I will not discuss them here.
 
-## Model the Breeding Program
+## Modeling the Breeding Program
 
 There is no single way to simulate breeding programs in AlphaSimR. This means you can come up with multiple ways to simulate the same breeding program. This is not to say that all ways are equally good. Some ways are clearly better than others with respect to computational performance. The point is that you need not write your simulation in only one way. This is an intentional element of AlphaSimR's design, because it gives you the freedom structure your simulations in a way that works best for you and the breeding program you are trying to simulate. This is what makes AlphaSimR so powerful for modeling complicated breeding programs. For this reason, I will not present a single way of performing breeding program simulation but present instead some of the functions you can use in your simulations. But before I do this, you need to know about the `Pop-class`.
 
@@ -64,30 +65,24 @@ Most functions in AlphaSimR use a `Pop-class` as an argument and many functions 
 
 After you have created one `Pop-class`
 
-
-
-### Selection
-
-### Mating
-
-The main objects in an AlphaSimR simulation are `Pop-class` objects. These objects represent a population that contains one or more individuals. Many AlphaSimR functions use a `Pop-class` object as an argument and return a `Pop-class` object as a result.
-
-To create your first `Pop-class` object use the function `newPop`. This function should only be called after you have finished all of the above steps. 
+### Useful functions
 
 Listed below are some functions for carrying out operations on populations.
 
-* Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`, `pullSegSiteHaplo`
+* Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`, `pullSegSiteGeno`, `pullSegSiteHaplo`
 
-* Viewing summary data: `meanG`, `meanP`, `varG`, `varP`, `genParam`
+* Viewing summary data: `meanG`, `meanP`, `varA`, `varD`, `varG`, `varP`, `genicVarA`, `genicVarD`, `genicVarG`, `genParam`
 
-* Setting phenotypes: `setPheno`, `calcPheno`, `setPhenoGCA`
+* Setting phenotypes: `setPheno`, `setPhenoGCA`
 
-* Making selections: `selectInd`, `selectFam`, `selectWithinFam`
+* Making selections: `selectInd`, `selectFam`, `selectWithinFam`, `selectCross`
 
-* Crossing: `makeCross`, `randCross`, `makeCross2`, `randCross2`,
-`self`, `makeDH`
+* Crossing: `makeCross`, `randCross`, `makeCross2`, `randCross2`, `hybridCross`, `self`, `makeDH`
 
-* Genomic selection: `writeRecords`, `setEBV`
+* Genomic selection: `RRBLUP`, `setEBV`
+
+## Examining the Results
+
 
 ## Example Breeding Program
 
@@ -100,9 +95,7 @@ library(AlphaSimR)
 
 # Simulating founder haplotyes for a population of 1000 individuals
 # Each individual has 10 chromosomes, each with 1000 segregating sites
-# Using species="TEST" to make this example faster
-# Jenko et al. used parameters matching species="CATTLE"
-# Chromosomes simulated using the "TEST" species have a 1 Morgan length
+# Chromosomes have a 1 Morgan genetic length
 founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
 
 ### Set Simulation Parameters
@@ -110,8 +103,8 @@ founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
 SP = SimParam$new(founderPop)
 
 # Adding an additive trait with 1000 QTL/chromosome
-# Initial population mean and variance are set to 0 and 1, respectively
-SP$addTraitA(nQtlPerChr=1000, mean=0, var=1)
+# Initial population mean and variance are left as the default values of 0 and 1, respectively
+SP$addTraitA(nQtlPerChr=1000)
 
 # Setting the simulation to use gender
 # Gender is assigned systematically as male, female, male, ...

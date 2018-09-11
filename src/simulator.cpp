@@ -892,7 +892,7 @@ Simulator::~Simulator() {
   delete pConfig;
 }
 
-
+// AlphaSimR specific functions
 
 vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   vector<std::string> words;
@@ -930,50 +930,98 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List MaCS(Rcpp::String args, arma::uword maxSites=0){
-  
-  // Run MaCS
-  vector<AlphaSimRReturn> macsOutput;
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
+                bool inbred, arma::uword ploidy, int nThreads){
+  //Check input
   string t = args;
   if (t == "") {
     Rcpp::stop("error");
   }
-  macsOutput = runFromAlphaSimR(args);
-  if(macsOutput.empty()){
-    Rcpp::stop("Macs has failed to run.");
-  }
-  // Check MaCS output
-  arma::uword nSites, nHap;
-  arma::Mat<unsigned char> haplo;
-  arma::vec genMap;
-  nSites = macsOutput.size();
-  nHap = macsOutput[0].haplotypes.size();
   
-  // Create output for R
-  if(maxSites>0){ //Restrict number of sites
-    if(nSites<maxSites){
-      Rcpp::stop("Not enough segregating sites generated");
+  // Output objects
+  arma::uword nChr = maxSites.n_elem;
+  arma::field<arma::Cube<unsigned char> > geno(nChr);
+  arma::field<arma::vec > genMap(nChr);
+  
+  //Loop through chromosomes
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword chr=0; chr<nChr; chr++){
+    arma::Cube<unsigned char> chrGeno;
+    arma::uword nSites, nHap, nInd;
+    vector<AlphaSimRReturn> macsOutput;
+    macsOutput = runFromAlphaSimR(args);
+    if(macsOutput.empty()){
+      Rcpp::stop("Macs has failed to run.");
     }
-    haplo.set_size(nHap,maxSites);
-    genMap.set_size(maxSites);
-    arma::Col<arma::uword> selSites;
-    selSites = sampleInt(maxSites,nSites); //Samples sites
-    for(arma::uword i=0; i<selSites.n_elem; i++){
-      for(arma::uword j=0; j<nHap; j++){
-        haplo.col(i).row(j) = macsOutput[selSites(i)].haplotypes[j];
+    nSites = macsOutput.size();
+    nHap = macsOutput[0].haplotypes.size();
+    if(inbred){
+      nInd = nHap;
+    }else{
+      nInd = nHap/ploidy;
+    }
+    if(maxSites(chr)>0){
+      if(nSites<maxSites(chr)){
+        Rcpp::stop("Not enough segregating sites generated");
       }
-      genMap(i) = macsOutput[selSites(i)].length;
-    }
-  }else{ // Return all sites
-    haplo.set_size(nHap,nSites);
-    genMap.set_size(nSites);
-    for(arma::uword i=0; i<nSites; i++){
-      for(arma::uword j=0; j<nHap; j++){
-        haplo.col(i).row(j) = macsOutput[i].haplotypes[j];
+      geno(chr).set_size(maxSites(chr),ploidy,nInd);
+      genMap(chr).set_size(maxSites(chr));
+      // Sample sites
+      arma::uvec selSites = sampleInt(maxSites(chr),nSites);
+      //Fill map with selected sites
+      for(arma::uword site=0; site<maxSites(chr); site++){
+        genMap(chr).at(site) = macsOutput[selSites(site)].length;
       }
-      genMap(i) = macsOutput[i].length;
+      //Fill map with selected sites
+      if(inbred){
+        for(arma::uword hap=0; hap<nHap; hap++){
+          for(arma::uword site=0; site<maxSites(chr); site++){
+            geno(chr).slice(hap).row(site).fill(macsOutput[selSites(site)].haplotypes[hap]);
+          }
+        }
+      }else{
+        arma::uword grp=0, ind=0;
+        for(arma::uword hap=0; hap<nHap; hap++){
+          for(arma::uword site=0; site<maxSites(chr); site++){
+            geno(chr).slice(ind).col(grp).row(site) = 
+              macsOutput[selSites(site)].haplotypes[hap];
+          }
+          ++grp;
+          ind += grp/ploidy;
+          grp = grp%ploidy;
+        }
+      }
+    }else{
+      geno(chr).set_size(nSites,ploidy,nInd);
+      genMap(chr).set_size(nSites);
+      //Fill map with all sites
+      for(arma::uword site=0; site<nSites; site++){
+        genMap(chr).at(site) = macsOutput[site].length;
+      }
+      //Fill geno with all sites
+      if(inbred){
+        for(arma::uword hap=0; hap<nHap; hap++){
+          for(arma::uword site=0; site<nSites; site++){
+            geno(chr).slice(hap).row(site).fill(macsOutput[site].haplotypes[hap]);
+          }
+        }
+      }else{
+        arma::uword grp=0, ind=0;
+        for(arma::uword hap=0; hap<nHap; hap++){
+          for(arma::uword site=0; site<nSites; site++){
+            geno(chr).slice(ind).col(grp).row(site) = 
+              macsOutput[site].haplotypes[hap];
+          }
+          ++grp;
+          ind += grp/ploidy;
+          grp = grp%ploidy;
+        }
+      }
     }
+    
   }
-  return Rcpp::List::create(Rcpp::Named("haplo")=haplo,
+  return Rcpp::List::create(Rcpp::Named("geno")=geno,
                             Rcpp::Named("genMap")=genMap);
 }
