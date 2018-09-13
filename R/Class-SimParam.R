@@ -1390,7 +1390,7 @@ SimParam$set(
 #' Linearly scales all traits to achieve desired 
 #' values of means and variances.
 #' 
-#' @section Usage: SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 1e-6, 
+#' @section Usage: SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 0, 
 #' varGxE = 1e-6, useVarA = TRUE)
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
@@ -1410,7 +1410,7 @@ NULL
 SimParam$set(
   "public",
   "rescaleTraits",
-  function(pop,mean=0,var=1,varEnv=1e-6,
+  function(pop,mean=0,var=1,varEnv=0,
            varGxE=1e-6,useVarA=TRUE){
     isGxe = sapply(private$.traits,function(x){
       class(x)%in%c("TraitAG","TraitADG")
@@ -1432,18 +1432,25 @@ SimParam$set(
                      trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
         tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],useVarA)
-        trait@domEff = trait@domEff*tmp$parameter
+        trait@domEff = trait@domEff*tmp$scale
       }else{
         tmp = tuneTraitA(geno,trait@addEff,var[i])
       }
-      trait@addEff = trait@addEff*tmp$parameter
-      trait@intercept = mean[i]-tmp$output$intercept
+      trait@addEff = trait@addEff*tmp$scale
+      trait@intercept = mean[i]-tmp$intercept
       if(class(trait)%in%c("TraitAG","TraitADG")){
-        targetVar = varGxE[i]/varEnv[i]
-        tmp = tuneTraitA(geno,trait@gxeEff,targetVar)
-        trait@gxeEff = trait@gxeEff*tmp$parameter
-        trait@gxeInt = 1-tmp$output$intercept
-        trait@envVar = varEnv[i]
+        if(varEnv[i]==0){
+          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i])
+          trait@gxeEff = trait@gxeEff*tmpG$scale
+          trait@gxeInt = 0-tmpG$intercept
+          trait@envVar = 1
+        }else{
+          tmpG = tuneTraitA(geno,trait@gxeEff,
+                            varGxE[i]/varEnv[i])
+          trait@gxeEff = trait@gxeEff*tmpG$scale
+          trait@gxeInt = 1-tmpG$intercept
+          trait@envVar = varEnv[i]
+        }
       }
       private$.traits[[i]] = trait
     }
@@ -1464,7 +1471,7 @@ SimParam$set(
 #' 
 #' @section Usage: SP$switchFounderPop(founderPop)
 #' 
-#' @name SimParam_removeFounderPop
+#' @name SimParam_switchFounderPop
 NULL
 # switchFounderPop ----
 SimParam$set(
