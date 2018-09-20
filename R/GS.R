@@ -430,12 +430,16 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' genetic values. Otherwise, you get estimated breeding 
 #' values that depend on the population's allele frequency.
 #' @param append should EBVs be appended to existing EBVs
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
 setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
-                  append=FALSE){
+                  append=FALSE, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   if(class(solution)=="RRsol"){
     ebv = gebvRR(solution, pop)
   }else if(class(solution)=="RRDsol"){

@@ -21,7 +21,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       if(class(pop)=="HybridPop"){
         stop("Use='bv' is not a valid option for HybridPop")
       }
-      response = genParam(pop,TRUE,simParam=simParam)$bv
+      response = genParam(pop,simParam=simParam)$bv
       response = trait(response,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
@@ -37,7 +37,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       if(class(pop)=="HybridPop"){
         stop("Use='bv' is not a valid option for HybridPop")
       }
-      response = genParam(pop,TRUE,simParam=simParam)$bv[,trait,drop=FALSE]
+      response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }

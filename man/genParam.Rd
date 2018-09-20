@@ -4,13 +4,10 @@
 \alias{genParam}
 \title{Sumarize genetic parameters}
 \usage{
-genParam(pop, indValues = FALSE, simParam = NULL)
+genParam(pop, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
-
-\item{indValues}{should breeding values, dominance deviations 
-and allele subsitution effects be returned}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
@@ -22,9 +19,9 @@ and allele subsitution effects be returned}
 \item{genicVarA}{an nTrait vector of additive genic variances}
 \item{genicVarD}{an nTrait vector of dominance genic variances}
 \item{genicVarG}{an nTrait vector of total genic variances}
+\item{mu}{an nTrait vector of trait means}
 \item{bv}{an nInd by nTrait matrix of breeding values with dimensions nInd by nTraits}
 \item{dd}{an nInd by nTrait matrix of dominance deviations with dimensions nInd by nTraits}
-\item{alpha}{an nTrait list of allele subsitution effects}
 }
 }
 \description{

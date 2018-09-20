@@ -349,7 +349,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
               pop@geno,crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
-              simParam$isTrackRec)
+              simParam$isTrackRec,
+              simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -391,11 +392,13 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(useFemale){
     tmp = createDH2(pop@geno,nDH,
                     simParam$femaleMap,
-                    simParam$isTrackRec)
+                    simParam$isTrackRec,
+                    simParam$nThreads)
   }else{
     tmp = createDH2(pop@geno,nDH,
                     simParam$maleMap,
-                    simParam$isTrackRec)
+                    simParam$isTrackRec,
+                    simParam$nThreads)
   }
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nDH),

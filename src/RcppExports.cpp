@@ -7,63 +7,68 @@
 using namespace Rcpp;
 
 // gebvRR
-arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gebvRR(SEXP RRsolSEXP, SEXP popSEXP) {
+arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_gebvRR(SEXP RRsolSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type RRsol(RRsolSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvRR(RRsol, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gebvRR(RRsol, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // gegvRRD
-arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gegvRRD(SEXP RRsolSEXP, SEXP popSEXP) {
+arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_gegvRRD(SEXP RRsolSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type RRsol(RRsolSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvRRD(RRsol, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gegvRRD(RRsol, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // gebvGCA
-arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, bool female);
-RcppExport SEXP _AlphaSimR_gebvGCA(SEXP solSEXP, SEXP popSEXP, SEXP femaleSEXP) {
+arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, bool female, int nThreads);
+RcppExport SEXP _AlphaSimR_gebvGCA(SEXP solSEXP, SEXP popSEXP, SEXP femaleSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
     Rcpp::traits::input_parameter< bool >::type female(femaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvGCA(sol, pop, female));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gebvGCA(sol, pop, female, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // gegvGCA
-arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gegvGCA(SEXP solSEXP, SEXP popSEXP) {
+arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_gegvGCA(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvGCA(sol, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gegvGCA(sol, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // gegvSCA
-arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_gegvSCA(SEXP solSEXP, SEXP popSEXP) {
+arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_gegvSCA(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvSCA(sol, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gegvSCA(sol, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -219,6 +224,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getGenoT
+arma::Mat<unsigned char> getGenoT(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc);
+RcppExport SEXP _AlphaSimR_getGenoT(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    rcpp_result_gen = Rcpp::wrap(getGenoT(geno, lociPerChr, lociLoc));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getHaplo
 arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc);
 RcppExport SEXP _AlphaSimR_getHaplo(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
@@ -243,6 +261,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
     Rcpp::traits::input_parameter< int >::type haplo(haploSEXP);
     rcpp_result_gen = Rcpp::wrap(getOneHaplo(geno, lociPerChr, lociLoc, haplo));
+    return rcpp_result_gen;
+END_RCPP
+}
+// getOneHaploT
+arma::Mat<unsigned char> getOneHaploT(const arma::field<arma::Cube<unsigned char> >& geno, const arma::ivec& lociPerChr, arma::uvec lociLoc, int haplo);
+RcppExport SEXP _AlphaSimR_getOneHaploT(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP haploSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< int >::type haplo(haploSEXP);
+    rcpp_result_gen = Rcpp::wrap(getOneHaploT(geno, lociPerChr, lociLoc, haplo));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -287,32 +319,34 @@ BEGIN_RCPP
 END_RCPP
 }
 // getGv
-arma::field<arma::vec> getGv(const Rcpp::S4& trait, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_getGv(SEXP traitSEXP, SEXP popSEXP) {
+arma::field<arma::vec> getGv(const Rcpp::S4& trait, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_getGv(SEXP traitSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type trait(traitSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(getGv(trait, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getGv(trait, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // calcGenParam
-Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop);
-RcppExport SEXP _AlphaSimR_calcGenParam(SEXP traitSEXP, SEXP popSEXP) {
+Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_calcGenParam(SEXP traitSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type trait(traitSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcGenParam(trait, pop));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGenParam(trait, pop, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // getHybridGv
-arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait, const Rcpp::S4& motherGeno, arma::uvec& mother, const Rcpp::S4& fatherGeno, arma::uvec& father);
-RcppExport SEXP _AlphaSimR_getHybridGv(SEXP traitSEXP, SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP) {
+arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait, const Rcpp::S4& motherGeno, arma::uvec& mother, const Rcpp::S4& fatherGeno, arma::uvec& father, int nThreads);
+RcppExport SEXP _AlphaSimR_getHybridGv(SEXP traitSEXP, SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -321,7 +355,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec& >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type fatherGeno(fatherGenoSEXP);
     Rcpp::traits::input_parameter< arma::uvec& >::type father(fatherSEXP);
-    rcpp_result_gen = Rcpp::wrap(getHybridGv(trait, motherGeno, mother, fatherGeno, father));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getHybridGv(trait, motherGeno, mother, fatherGeno, father, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -344,8 +379,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // createDH2
-Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMap, bool trackRec);
-RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP trackRecSEXP) {
+Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, int nDH, const arma::field<arma::vec>& genMap, bool trackRec, int nThreads);
+RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP trackRecSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -353,7 +388,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nDH(nDHSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
-    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMap, trackRec));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMap, trackRec, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -522,21 +558,22 @@ BEGIN_RCPP
 END_RCPP
 }
 // tuneTraitA
-Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno, arma::vec& addEff, double varG);
-RcppExport SEXP _AlphaSimR_tuneTraitA(SEXP genoSEXP, SEXP addEffSEXP, SEXP varGSEXP) {
+Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno, arma::vec& addEff, double varG, int nThreads);
+RcppExport SEXP _AlphaSimR_tuneTraitA(SEXP genoSEXP, SEXP addEffSEXP, SEXP varGSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::Mat<unsigned char>& >::type geno(genoSEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type addEff(addEffSEXP);
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
-    rcpp_result_gen = Rcpp::wrap(tuneTraitA(geno, addEff, varG));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(tuneTraitA(geno, addEff, varG, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // tuneTraitAD
-Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG, bool useVarA);
-RcppExport SEXP _AlphaSimR_tuneTraitAD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP, SEXP useVarASEXP) {
+Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG, bool useVarA, int nThreads);
+RcppExport SEXP _AlphaSimR_tuneTraitAD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP, SEXP useVarASEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -545,7 +582,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type domEff(domEffSEXP);
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
     Rcpp::traits::input_parameter< bool >::type useVarA(useVarASEXP);
-    rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG, useVarA));
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG, useVarA, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }

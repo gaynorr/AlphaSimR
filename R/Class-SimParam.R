@@ -33,6 +33,7 @@
 #' @field varG total genetic variance in founderPop
 #' @field varE default error variance
 #' @field founderPop the founder population used for scaling traits
+
 #' @field nThreads number of threads used on platforms with OpenMP support
 #'
 #' @export
@@ -1014,11 +1015,11 @@ SimParam$set(
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corA,gamma=gamma,shape=shape)
-    geno = getGeno(private$.founderPop@geno,
-                   qtlLoci@lociPerChr,
-                   qtlLoci@lociLoc)
+    geno = getGenoT(private$.founderPop@geno,
+                    qtlLoci@lociPerChr,
+                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i])
+      tmp = tuneTraitA(geno,addEff[,i],var[i],self$nThreads)
       trait = new("TraitA",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1082,11 +1083,12 @@ SimParam$set(
                         corr=corA,gamma=gamma,shape=shape)
     domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
                         corDD=corDD,meanDD=meanDD,varDD=varDD)
-    geno = getGeno(private$.founderPop@geno,
-                   qtlLoci@lociPerChr,
-                   qtlLoci@lociLoc)
+    geno = getGenoT(private$.founderPop@geno,
+                    qtlLoci@lociPerChr,
+                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA)
+      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],
+                        useVarA,self$nThreads)
       trait = new("TraitAD",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1145,13 +1147,15 @@ SimParam$set(
                         corr=corA,gamma=gamma,shape=shape)
     gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corGxE,gamma=FALSE,shape=NULL)
-    geno = getGeno(private$.founderPop@geno,
-                   qtlLoci@lociPerChr,
-                   qtlLoci@lociLoc)
+    geno = getGenoT(private$.founderPop@geno,
+                    qtlLoci@lociPerChr,
+                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i])
+      tmp = tuneTraitA(geno,addEff[,i],var[i],
+                       self$nThreads)
       if(varEnv[i]==0){
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i])
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
+                          self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1161,7 +1165,8 @@ SimParam$set(
                     envVar = 1)
       }else{
         tmpG = tuneTraitA(geno,gxeEff[,i],
-                          varGxE[i]/varEnv[i])
+                          varGxE[i]/varEnv[i],
+                          self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1240,13 +1245,15 @@ SimParam$set(
                         corDD=corDD,meanDD=meanDD,varDD=varDD)
     gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corGxE,gamma=FALSE,shape=NULL)
-    geno = getGeno(private$.founderPop@geno,
-                   qtlLoci@lociPerChr,
-                   qtlLoci@lociLoc)
+    geno = getGenoT(private$.founderPop@geno,
+                    qtlLoci@lociPerChr,
+                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA)
+      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA,
+                        self$nThreads)
       if(varEnv[i]==0){
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i])
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
+                          self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1256,7 +1263,8 @@ SimParam$set(
                     gxeInt = 0-tmpG$intercept,
                     envVar = 1)
       }else{
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i])
+        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i],
+                          self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1427,9 +1435,9 @@ SimParam$set(
     
     for(i in 1:private$.nTraits){
       trait = private$.traits[[i]]
-      geno = getGeno(pop@geno,
-                     trait@lociPerChr,
-                     trait@lociLoc)
+      geno = getGenoT(pop@geno,
+                      trait@lociPerChr,
+                      trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
         tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],useVarA)
         trait@domEff = trait@domEff*tmp$scale

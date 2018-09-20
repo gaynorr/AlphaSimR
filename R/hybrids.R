@@ -1,17 +1,19 @@
 #A wrapper for calling getHybridGv
 #This function uses chunking to reduce RAM usage
 getHybridGvByChunk = function(trait,females,femaleParents,
-                              males,maleParents,chunkSize){
+                              males,maleParents,chunkSize, 
+                              nThreads){
   nOut = length(femaleParents)
   if(nOut<=chunkSize){
-    output = getHybridGv(trait,females,femaleParents,males,maleParents)
+    output = getHybridGv(trait,females,femaleParents,males,maleParents,
+                         nThreads)
   }else{
     Chunks = split(1:nOut,ceiling(seq_along(1:nOut)/chunkSize))
     output = list()
     output[[1]] = matrix(NA_real_,nrow=nOut,ncol=1)
     for(chunk in Chunks){
       tmp = getHybridGv(trait,females,femaleParents[chunk],
-                        males,maleParents[chunk])
+                        males,maleParents[chunk],nThreads)
       output[[1]][chunk,] = tmp[[1]]
       if(length(tmp)==2){
         if(length(output)==2){
@@ -89,7 +91,8 @@ hybridCross = function(females,males,crossPlan="testcross",
   for(trait in simParam$traits){
     i = i+1L
     tmp = getHybridGvByChunk(trait=trait,females=females,femaleParents=crossPlan[,1],
-                             males=males,maleParents=crossPlan[,2],chunkSize=chunkSize)
+                             males=males,maleParents=crossPlan[,2],chunkSize=chunkSize,
+                             nThreads=simParam$nThreads)
     gv[,i] = tmp[[1]]
     if(length(tmp)==2){
       gxe[[i]] = tmp[[2]]

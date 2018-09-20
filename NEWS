@@ -1,4 +1,4 @@
-Changes in version 0.7.2
+Changes in version 0.8.0
 
   New features
     -added GxE traits with zero environmental variance
@@ -8,6 +8,8 @@ Changes in version 0.7.2
     -added OpenMP support
     -parallelized cross2
     -parallelized runMacs
+    -parallelized calculation of genetic values
+    -variance calculations now account for inbreeding
     
   Bug fixes
     -fixes for male selection in selectOP

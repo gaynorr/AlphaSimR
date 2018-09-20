@@ -4,7 +4,8 @@
 \alias{setEBV}
 \title{Set EBV}
 \usage{
-setEBV(pop, solution, gender = NULL, useGV = FALSE, append = FALSE)
+setEBV(pop, solution, gender = NULL, useGV = FALSE, append = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -23,6 +24,8 @@ genetic values. Otherwise, you get estimated breeding
 values that depend on the population's allele frequency.}
 
 \item{append}{should EBVs be appended to existing EBVs}
+
+\item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

@@ -1,6 +1,5 @@
 ---
-title: "A Brief Introduction to AlphaSimR"
-author: "Chris Gaynor"
+title: "Introduction to AlphaSimR"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 bibliography: bibliography.bib
@@ -10,136 +9,152 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The AlphaSimR package provides a set of tools for simulating plant and animal breeding programs in the R software environment. It is a successor to the AlphaSim program for breeding program simulation [@AlphaSim]. Compared to AlphaSim, AlphaSimR offers more capability to simulate complex plant and animal breeding program designs. This capability is made possible by splitting the components of a breeding program simulation into a series of functions. Users of AlphaSimR are thus free to combine these functions in nearly endless combinations to simulate virtually any breeding program. Users can also extend the functionality of AlphaSimR using native R code and/or by interfacing with other R packages or external software.
+AlphaSimR is the successor to the AlphaSim software for breeding program simulation [@AlphaSim]. It combines the features of its predecessor with the R software environment to create a flexible and easy-to-use software platform for simulating complex plant and animal breeding programs.
 
-This vignette will provide you with a brief introduction to how AlphaSimR simulations are structured, point out the functions you are most likely to use, and conclude with a brief example simulation. More detailed information on specific aspects of AlphaSimR can be found in additional vignettes and the help documentation for AlphaSimR functions. There are also vignettes for examples of simulating more complicated breeding programs.
+There is no definitive way to construct a simulation in AlphaSimR. This is an intentional design aspect of AlphaSimR, because it frees the user from the constraints of predefined simulation structures. However, most simulations will follow a general structure consisting of these four steps:
 
-Most AlphaSimR simulations consist of four steps:
+1. Create Founder Haplotypes
+2. Set Simulation Parameters
+3. Model the Breeding Program
+4. Examine the Results
 
-1. Creating Founder Haplotypes
-2. Setting Simulation Parameters
-3. Modeling the Breeding Program
-4. Examining the Results
-
-## Creating Founder Haplotypes
-
-The first step of an AlphaSimR simulation is to create a set of founder haplotypes. These haplotypes will represent your organism's genome and determine the genetic variability in your organism. The founder haplotypes will eventually be used to generate founder individuals. These founder individuals will in turn will be use to derive all subsequent individuals in your simulation. There are two primary functions for generating founder haplotypes in AlphaSimR: `newMapPop`, which takes externally generated haplotypes; and `runMacs`, which internally generates haplotypes. 
-
-My preferred method for creating haplotypes is to use `runMacs`. The `runMacs` function is a wrapper for the MaCS software [@MaCS]. The MaCS software is a coalescent simulation program that is distributed within the AlphaSimR package. The `runMacs` function uses MaCS to simulate genomes according to specific models of population history under a neutral mutation and drift model. You can supply the population history yourself, but it is much simpler to rely on one of the predefined population histories. The predefined population histories were chosen to represent species such as wheat, maize, cattle and pigs. 
-
-No matter which function is used to create founder haplotypes, the resulting output will be an object of `MapPop-class`. There are several functions that can be used on `MapPop-class` objects to extract individuals, combine chromosomes or simulate matings. These functions allow you to develop simulations that model scenarios such as one where populations are split into separate breeds or heterotic pools, or where organisms have chromosomes with different population histories. However, most users won't need these functions. They will be satisfied with the `MapPop-class` object they have and move directly on to the next step.
-
-## Set Simulation Parameters
-
-The second step of an AlphaSimR simulation is to define global parameters that will be used throughout the simulation. These global parameters will reside in a special object of class `SimParam`. The `SimParam` class makes use of reference classes from the R6 package. This is notable, because it means that `SimParam` behaves slightly differently from other objects that an R user more commonly encounters. However, it is not necessary to understand the nuances of these differences. Just remember that the `SimParam` class is special.
-
-To start the process of setting global parameters, you need to first create a new `SimParam` object. This is accomplished with the line `SimParam$new(founderPop)`, where `founderPop` is the name of a `MapPop-class` created in the previous step. It is strongly recommended that you save the output of this function as `SP`, so your complete command would be `SP = SimParam$new(founderPop)`. I recommend saving your output as `SP`, because many AlphaSimR functions require a `SimParam` class as an argument. To prevent you from having to specify this argument every time, we have set `SP` as a kind of default value. The actual default value is `NULL` to conform to CRAN restrictions, but if the value is kept as `NULL`, these functions will search your global environment for an object called `SP` and use it instead. Thus if you save your `SimParam` output as `SP` you can ignore the argument called "simParam" in many functions.
-
-After you create `SP`, you'll likely want to modify it to set specific simulation parameters. To modify `SP`, you use functions that work on `SP` directly. The general form for calling these functions is `SP$function(...)`, where `function` is the name of the function you want to use and `...` are the arguments for the function. You do not need to save output of these functions with `=` or `<-`, because they modify `SP` directly.
-
-The most common modification to `SP` is to add traits. The functions for adding traits follow the form `addTrait_`, where `_` is `A`, `AD`, `AG` or `ADG`. The letters A, D, and G refer to the types of genetic effects these traits model: additive (A), dominance (D), and genotype-by-environment (G). We refer to this method of classifying traits as the ADG scheme. Information on the theoretical basis of the ADG scheme and details of its implementation in AlphaSimR are provided in another vignette, so I will not go into these topics here. However, I will point out that the `addTrait_` functions all contain arguments for specifying the trait's mean and variance. When AlphaSimR adds these traits it scales their genetic effects to obtain an exact value for this mean and variance in a founder population. This founder population comes from the `MapPop-class` you use to initialize `SP`.
-
-The `addTrait_` functions can be used create simulations with multiple traits. This can be accomplished in two ways and you can combine both ways in one simulation. The first way is to call the `addTrait_` functions multiple times. Each time a new trait is added. This method allows you to combine traits of different types and different numbers of QTL, but it does not allow you to define genetic correlations between the traits. Adding genetically correlated traits is done in a single call to one of the `addTrait_` functions. Adding multiple traits in this way requires all traits to are pleiotropic and have the same type.
-
-There are many additional functions that you may wish to use to modify `SP`. The most commonly used ones are listed below. You should see the help documentation for each function to learn about their arguments and the specifics of how they work. These functions are listed in the help documentation as `SimParam_function`. This means that you can use the command `?SimParam_function` to view the help documentation in R. For example, if you wanted to view the help document for `addTraitA` you would enter `?SimParam_addTraitA`.
-
-* `restrSegSites`, restricts eligible segregating sites for SNPs and QTL
-* `addSnpChip`, chooses segregating sites to serve as SNPs
-* `setGender`, defines how gender is used in the simulation
-* `setVarE`, sets a default error variance for phenotypes
-* `setTrackPed`, sets tracking of the pedigree
-
-  Once you have finished modifying `SP`, you are ready to start the process of simulating your breeding. You should not modify `SP` once you start this process, because doing so can result in undesired side effects. In fact, you will be prevented from using most functions for modifying `SP` at this point and they will return the following error, "lastId doesn't equal 0, you must run resetPed to proceed". There are some exceptions to this rule, but because they rarely occur I will not discuss them here.
-
-## Modeling the Breeding Program
-
-There is no single way to simulate breeding programs in AlphaSimR. This means you can come up with multiple ways to simulate the same breeding program. This is not to say that all ways are equally good. Some ways are clearly better than others with respect to computational performance. The point is that you need not write your simulation in only one way. This is an intentional element of AlphaSimR's design, because it gives you the freedom structure your simulations in a way that works best for you and the breeding program you are trying to simulate. This is what makes AlphaSimR so powerful for modeling complicated breeding programs. For this reason, I will not present a single way of performing breeding program simulation but present instead some of the functions you can use in your simulations. But before I do this, you need to know about the `Pop-class`.
-
-The `Pop-class` is one of the most important classes in AlphaSimR. It represents a population of individuals, so its elements are individuals. Just like a vector in R you can extract these elements using `[]` and you can combine elements using `c()`. This means you can form a new `Pop-class` from a subset of another `Pop-class` and/or by combining more than one `Pop-class`. Also like a vector in R, there are functions for producing summary information about a `Pop-class`. The most complete summary function is the `summary` function. This function returns a list of summary statistics for the number of individuals, the mean of all traits, and different types of genetic variance for all traits. Each element of the list returned by `summary` has a corresponding function that calculates only this value for a population. These functions are often more convenient than `summary` when you only need one value.
-
-The first step you will take to simulate a breeding program is probably going to be creating a `Pop-class`. The most common way to create the first `Pop-class` is to use the `MapPop-class` created by `runMacs`. This is accomplished by using the `newPop` function. Assuming you used the same `MapPop-class` to initialize `SP`, you will be creating the founder population used to scale traits in the previous step. 
-
-After creating one `Pop-class`, your next goal is probably to create another `Pop-class`. This is because this is what a breeding program does. They take a population of individuals and then do something to that population to obtain a new and improved population of individuals. The "do something" portion of this process varies greatly to between breeding programs, 
-
-Most functions in AlphaSimR use a `Pop-class` as an argument and many functions will return a `Pop-class`.
-
-After you have created one `Pop-class`
-
-### Useful functions
-
-Listed below are some functions for carrying out operations on populations.
-
-* Viewing genotypes: `pullSnpGeno`, `pullSnpHaplo`, `pullQtlGeno`, `pullQtlHaplo`, `pullSegSiteGeno`, `pullSegSiteHaplo`
-
-* Viewing summary data: `meanG`, `meanP`, `varA`, `varD`, `varG`, `varP`, `genicVarA`, `genicVarD`, `genicVarG`, `genParam`
-
-* Setting phenotypes: `setPheno`, `setPhenoGCA`
-
-* Making selections: `selectInd`, `selectFam`, `selectWithinFam`, `selectCross`
-
-* Crossing: `makeCross`, `randCross`, `makeCross2`, `randCross2`, `hybridCross`, `self`, `makeDH`
-
-* Genomic selection: `RRBLUP`, `setEBV`
-
-## Examining the Results
-
+The easiest way to learn how AlphaSimR works is to learn about these steps. The easiest way to learn about these steps is to look at an example simulation, so this vignette will introduce AlphaSimR using a small example simulation. This vignette will begin with a description of the breeding program being simulated in this example and continue with a description for how to model each of the above steps for the example breeding program. Included in the descriptions is the code used in the example breeding program simulation. The vignette concludes with the full code for the simulation, including the resulting output.
 
 ## Example Breeding Program
 
-In this section I provide a small example of AlphaSimR in action. The example is based on the "historical breeding" portion of the simulation performed in Jenko et al. [-@Jenko15].
+The example breeding program presented in this vignette is based on the "historical breeding" portion of the simulation performed by Jenko et al. [-@Jenko15]. The simulation models 20 discrete generations of selection in a simplified animal breeding program. Each generation consists of 1000 animals, of which 500 are male and 500 are female. In each generation the best 25 males are selected on the basis of their genetic value for a single polygenic trait. The selected males are then mated to the females to produce 1000 replacement animals for the next generation.
+
+## Create Founder Haplotypes
+
+The first step in the simulation is to create a set of founder haplotypes. These founder haplotypes will form the genomes of the animals in the first generation of the simulation. Thus, we need to create enough haplotypes to form 1000 animals. We also want to model each animal as having 10 chromosome pairs with 1000 segregating sites per chromosome to serve as QTL controlling the trait under selection. To create the necessary haplotypes, we will use the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program distributed with AlphaSimR [@MaCS]. The appropriate `runMacs` call for meeting the previously described conditions is given below.
 
 ```{r eval=FALSE}
-library(AlphaSimR)
-
-### Create Founder Haplotypes
-
-# Simulating founder haplotyes for a population of 1000 individuals
-# Each individual has 10 chromosomes, each with 1000 segregating sites
-# Chromosomes have a 1 Morgan genetic length
 founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
-
-### Set Simulation Parameters
-
-SP = SimParam$new(founderPop)
-
-# Adding an additive trait with 1000 QTL/chromosome
-# Initial population mean and variance are left as the default values of 0 and 1, respectively
-SP$addTraitA(nQtlPerChr=1000)
-
-# Setting the simulation to use gender
-# Gender is assigned systematically as male, female, male, ...
-SP$setGender("yes_sys")
-
-### Model the Breeding Program
-
-# Creating the initial population
-pop = newPop(founderPop)
-
-# Simulating 20 cycles of breeding
-# All females and the 25 best male are selected each cycle based on genetic values
-# The selected individuals are randomly mated to form 1000 new individuals
-
-# Creating variables for tracking the change of mean and variance
-popMean = popVar = numeric(20)
-
-for(cycle in 1:20){
-  # Performing selection and mating
-  pop = selectCross(pop=pop, nFemale=500, nMale=25, use="gv", nCrosses=1000)
-  
-  # Recording the mean genetic value of the new population
-  popMean[cycle] = meanG(pop)
-  
-  # Recording the genetic variance of the new population
-  popVar[cycle] = varG(pop)
-}
-
-# Plotting results
-
-plot(popMean,type="l",xlab="Cycle",ylab="Mean GV")
-plot(popVar,type="l",xlab="Cycle",ylab="Genetic Variance")
-
-
 ```
 
+## Set Simulation Parameters
+
+The second step in the simulation is to define the global simulation parameters. We will do this in three small steps. The first of these steps is to initialize an object containing the simulation parameters. The object is initialized with the founder haplotypes created above and the code for doing this is given below.
+
+```{r eval=FALSE}
+SP = SimParam$new(founderPop)
+```
+
+Note that the output of this function is an object of class `SimParam` and that we have called it `SP`. We recommend always saving your output as `SP`. This is because many AlphaSimR functions take an argument called "simParam" and they have a default value of `NULL` for this argument. If you leave this value as `NULL`, the functions will search your global environment for an object called `SP` and use it as the function's argument. Thus, if you save your `SimParam` output as `SP`, you won't have to specify a value for "simParam" arguments.
+
+Our next step is to define the trait used for selection. We do this below by adding an additive trait controlled by 1000 QTL per chromosome.
+
+```{r eval=FALSE}
+SP$addTraitA(nQtlPerChr=1000)
+```
+
+The final step is to define how gender is determined. We define gender as systematically determined in the code below. This means populations with an even number of animals will always have equal numbers of males and females.
+
+```{r eval=FALSE}
+SP$setGender("yes_sys")
+```
+
+## Model the Breeding Program
+
+We are now ready to start modeling the breeding program. When you do this, you need to think about what data you'd like to collect. Here we want to measure the change in both mean and variance over time. We will put this data in a `data.frame` so that it's easy to plot with `ggplot` later.
+
+```{r eval=FALSE}
+output = data.frame(cycle=0:20,
+                    mean=numeric(21),
+                    var=numeric(21))
+```
+
+We now need to generate the initial population of animals. This step will take the haplotypes from `founderPop` and the information in `SP` to create an object of `Pop-class`. A `Pop-class` object represents a population of individuals and is one of the most important units in AlphaSimR. This is because many functions will use such objects as an argument. Note that the `Pop-class` can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. You won't be doing any of this here, but these functions are useful if you want to perform a task in AlphaSimR that doesn't have a built in function.
+This is one of the features that makes AlphaSimR flexible.
+
+```{r eval=FALSE}
+pop = newPop(founderPop)
+```
+
+Now we want to start recording the mean and variance in the population by filling in the values for cycle zero.
+
+```{r eval=FALSE}
+output$mean[1] = meanG(pop)
+output$var[1] = varG(pop)
+```
+
+The next step is to model the 20 cycles of selection and mating. AlphaSimR has a host of functions for selection and mating. Here we will use the function `selectCross` that selects a number of males and females and mates them. The easiest way to do this is by writing a loop in R. In this loop, we overwrite `pop` in each cycle, because this is the most efficient use of memory and we have no need for saving each population.
+
+```{r eval=FALSE}
+for(cycle in 1:20){
+  pop = selectCross(pop=pop, nFemale=500, nMale=25,
+                    use="gv", nCrosses=1000)
+  
+  output$mean[cycle+1] = meanG(pop)
+  output$var[cycle+1] = varG(pop)
+}
+```
+
+## Examine the Results
+
+This section provides code for creating plots for both the mean and variance using the `ggplot2`. This task can also be done with `plot` function in R if you don't want to use `ggplot2`.
+
+```{r eval=FALSE}
+ggplot(output,aes(x=cycle,y=mean))+
+  geom_line()+
+  theme_bw()+
+  xlab("Breeding Cycle")+
+  ylab("Genetic Gain")
+
+ggplot(output,aes(x=cycle,y=var))+
+  geom_line()+
+  theme_bw()+
+  xlab("Breeding Cycle")+
+  ylab("Genetic Variance")+
+  expand_limits(y=0)
+```
+
+
+## Full Code
+
+```{r}
+library(ggplot2)
+library(AlphaSimR)
+
+# Create Founder Haplotypes
+founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
+
+# Set Simulation Parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(nQtlPerChr=1000)
+SP$setGender("yes_sys")
+
+# Model the Breeding Program
+output = data.frame(cycle=0:20,
+                    mean=numeric(21),
+                    var=numeric(21))
+
+pop = newPop(founderPop)
+
+output$mean[1] = meanG(pop)
+output$var[1] = varG(pop)
+
+for(cycle in 1:20){
+  pop = selectCross(pop=pop, nFemale=500, nMale=25,
+                    use="gv", nCrosses=1000)
+  
+  output$mean[cycle+1] = meanG(pop)
+  output$var[cycle+1] = varG(pop)
+}
+
+# Examine the Results
+ggplot(output, aes(x=cycle, y=mean))+
+  geom_line()+
+  theme_bw()+
+  xlab("Breeding Cycle")+
+  ylab("Genetic Gain")
+
+ggplot(output, aes(x=cycle, y=var))+
+  geom_line()+
+  theme_bw()+
+  xlab("Breeding Cycle")+
+  ylab("Genetic Variance")+
+  expand_limits(y=0)
+```
 
 # References

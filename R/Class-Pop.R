@@ -378,7 +378,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
               ncol=simParam$nTraits)
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],rawPop)
+      tmp = getGv(simParam$traits[[i]],rawPop,simParam$nThreads)
       gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         gxe[[i]] = tmp[[2]]
