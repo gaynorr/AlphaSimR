@@ -1,7 +1,11 @@
 context("addTrait")
 
-genMap = list(c(0))
-founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
+#Population with 2 individuals, 1 chromosome and 1 QTL
+#Population is fully inbred and p=q=0.5
+founderPop = newMapPop(list(c(0)),
+                       list(matrix(c(1,1,0,0),
+                                   nrow=4,ncol=1)))
+
 
 test_that("addTraitA",{
   SP = SimParam$new(founderPop=founderPop)
@@ -11,12 +15,13 @@ test_that("addTraitA",{
   expect_equal(abs(SP$traits[[1]]@intercept),1,tolerance=1e-6)
   expect_equal(SP$varA,1,tolerance=1e-6)
   expect_equal(SP$varG,1,tolerance=1e-6)
-  expect_equal(c(varA(pop,simParam=SP)),1,tolerance=1e-6)
-  expect_equal(c(varD(pop,simParam=SP)),0,tolerance=1e-6)
-  expect_equal(c(varG(pop)),1,tolerance=1e-6)
-  expect_equal(genicVarA(pop,simParam=SP),0.5,tolerance=1e-6)
-  expect_equal(genicVarD(pop,simParam=SP),0,tolerance=1e-6)
-  expect_equal(genicVarG(pop,simParam=SP),0.5,tolerance=1e-6)
+  ans = genParam(pop,simParam=SP)
+  expect_equal(c(ans$varA),1,tolerance=1e-6)
+  expect_equal(c(ans$varD),0,tolerance=1e-6)
+  expect_equal(c(ans$varG),1,tolerance=1e-6)
+  expect_equal(ans$genicVarA,1,tolerance=1e-6)
+  expect_equal(ans$genicVarD,0,tolerance=1e-6)
+  expect_equal(ans$genicVarG,1,tolerance=1e-6)
 })
 
 test_that("addTraitAD",{
@@ -28,12 +33,13 @@ test_that("addTraitAD",{
   expect_equal(abs(SP$traits[[1]]@intercept),1,tolerance=1e-6)
   expect_equal(SP$varA,1,tolerance=1e-6)
   expect_equal(SP$varG,1,tolerance=1e-6)
-  expect_equal(c(varA(pop,simParam=SP)),1,tolerance=1e-6)
-  expect_equal(c(varD(pop,simParam=SP)),0,tolerance=1e-6)
-  expect_equal(c(varG(pop)),1,tolerance=1e-6)
-  expect_equal(genicVarA(pop,simParam=SP),0.5,tolerance=1e-6)
-  expect_equal(genicVarD(pop,simParam=SP),0.25,tolerance=1e-6)
-  expect_equal(genicVarG(pop,simParam=SP),0.75,tolerance=1e-6)
+  ans = genParam(pop,simParam=SP)
+  expect_equal(c(ans$varA),1,tolerance=1e-6)
+  expect_equal(c(ans$varD),0,tolerance=1e-6)
+  expect_equal(c(ans$varG),1,tolerance=1e-6)
+  expect_equal(ans$genicVarA,1,tolerance=1e-6)
+  expect_equal(ans$genicVarD,0,tolerance=1e-6)
+  expect_equal(ans$genicVarG,1,tolerance=1e-6)
 })
 
 test_that("addTraitAG",{
@@ -45,14 +51,6 @@ test_that("addTraitAG",{
   expect_equal(SP$traits[[1]]@envVar,1,tolerance=1e-6)
   expect_equal(abs(SP$traits[[1]]@gxeInt-1),1,tolerance=1e-6)
   expect_equal(abs(SP$traits[[1]]@intercept),1,tolerance=1e-6)
-  expect_equal(SP$varA,1,tolerance=1e-6)
-  expect_equal(SP$varG,1,tolerance=1e-6)
-  expect_equal(c(varA(pop,simParam=SP)),1,tolerance=1e-6)
-  expect_equal(c(varD(pop,simParam=SP)),0,tolerance=1e-6)
-  expect_equal(c(varG(pop)),1,tolerance=1e-6)
-  expect_equal(genicVarA(pop,simParam=SP),0.5,tolerance=1e-6)
-  expect_equal(genicVarD(pop,simParam=SP),0,tolerance=1e-6)
-  expect_equal(genicVarG(pop,simParam=SP),0.5,tolerance=1e-6)
 })
 
 test_that("addTraitADG",{
@@ -65,12 +63,4 @@ test_that("addTraitADG",{
   expect_equal(SP$traits[[1]]@envVar,1,tolerance=1e-6)
   expect_equal(abs(SP$traits[[1]]@gxeInt-1),1,tolerance=1e-6)
   expect_equal(abs(SP$traits[[1]]@intercept),1,tolerance=1e-6)
-  expect_equal(SP$varA,1,tolerance=1e-6)
-  expect_equal(SP$varG,1,tolerance=1e-6)
-  expect_equal(c(varA(pop,simParam=SP)),1,tolerance=1e-6)
-  expect_equal(c(varD(pop,simParam=SP)),0,tolerance=1e-6)
-  expect_equal(c(varG(pop)),1,tolerance=1e-6)
-  expect_equal(genicVarA(pop,simParam=SP),0.5,tolerance=1e-6)
-  expect_equal(genicVarD(pop,simParam=SP),0.25,tolerance=1e-6)
-  expect_equal(genicVarG(pop,simParam=SP),0.75,tolerance=1e-6)
 })
