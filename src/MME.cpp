@@ -101,8 +101,8 @@ arma::mat makeX(arma::uvec& x){
 // Produces a genotype design matrix
 // z is an indicator vector matching y to individuals in G
 // nGeno is the number of genotypes in the G matrix
-arma::mat makeZ(arma::uvec& z, int nGeno){
-  int nTrain = z.n_elem;
+arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
+  arma::uword nTrain = z.n_elem;
   arma::mat Z(nTrain,nGeno,arma::fill::zeros);
   for(arma::uword i=0; i<nTrain; ++i){
     Z(i,z(i)) = 1;
@@ -121,8 +121,8 @@ void sweepReps(arma::mat& X, arma::vec reps){
 
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
-  int n = y.n_rows;
-  int q = X.n_cols;
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
 
@@ -220,8 +220,8 @@ Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000, 
                          double tol=1e-6){
-  int n = Y.n_rows;
-  int m = Y.n_cols;
+  arma::uword n = Y.n_rows;
+  arma::uword m = Y.n_cols;
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, M*M.t());
@@ -291,9 +291,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
                          int maxIter=40){
   double tol = 1e-4;
-  int k = Mlist.n_elem;
-  int n = y.n_rows;
-  int q = X.n_cols;
+  arma::uword k = Mlist.n_elem;
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
   double df = double(n)-double(q);
   arma::field<arma::mat> V(k);
   for(arma::uword i=0; i<k; ++i){
@@ -301,7 +301,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   }
   arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
   arma::vec qvec(k+1), sigma(k+1);
-  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  double rss, ldet, llik, llik0=0, deltaLlik, taper, 
   value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);

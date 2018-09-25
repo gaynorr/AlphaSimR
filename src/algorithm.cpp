@@ -993,10 +993,10 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           }
         }else{
           if (bAboveOrigin){
-            migrantPops.push_back(reinterpret_cast<int &&>(iOriginPop));
+            migrantPops.push_back(int(iOriginPop));
           }
           // In any case a candidate migrant is the new coal line
-          migrantPops.push_back(reinterpret_cast<int &&>(iRequestedPop));
+          migrantPops.push_back(int(iRequestedPop));
         }
         int iTotalChrom = migrantPops.size();
         int migrant=-1,i=0;

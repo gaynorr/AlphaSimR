@@ -913,7 +913,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   subOption.emplace_back(words[1]);
   arguments.push_back(subOption);
   subOption.clear();
-  for (int i=2;i<words.size();++i){
+  for (unsigned int i=2;i<words.size();++i){
     subOption.emplace_back(words[i]);
     if (i==words.size()-1 || (words[i+1][0]=='-' && words[i+1][1]>=65)){
       arguments.push_back(subOption);

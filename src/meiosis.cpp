@@ -60,21 +60,20 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // Returns -1 if value is smaller than the values of x
 // Returns last element if value is greater than values of x
 // Set left to the smallest value of the interval to search
-int intervalSearch(arma::vec x, double value, int left=0){
+arma::uword intervalSearch(arma::vec x, double value, arma::uword left=0){
   // Check if crossover is before beginning
   if(x[left]>value){
-    // Return error
-    return -1;
+    Rcpp::stop("intervalSearch searching in impossible interval");
   }
-  int end = x.n_elem-1;
+  arma::uword end = x.n_elem-1;
   // Check if crossover is at or past end
   if(x[end]<=value){
     return end;
   }
   // Perform search
-  int right = end;
+  arma::uword right = end;
   while((right-left)>1){ // Interval can be decreased
-    int middle = (left + right) / 2;
+    arma::uword middle = (left + right) / 2;
     if (x[middle] == value){
       left = middle;
       // Check if at the end of the vector
@@ -102,11 +101,11 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
                                   const arma::Col<unsigned char>& chr2,
                                   const arma::vec& genMap, 
                                   arma::Mat<int>& hist, bool trackRec){
-  int nSites = chr1.n_elem;
+  arma::uword nSites = chr1.n_elem;
   double genLen = genMap(nSites-1);
   arma::Col<unsigned char> gamete(nSites);
   // Sample number of chromosomes
-  int nCO = samplePoisson(genLen);
+  arma::uword nCO = samplePoisson(genLen);
   // Randomly pick starting chromosome
   arma::uword readChr = sampleInt(1,2)(0);
   // Track starting chromosome
@@ -128,8 +127,8 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
     arma::vec posCO(nCO,arma::fill::randu);
     posCO = posCO*genLen;
     posCO = arma::sort(posCO);
-    int startPos = 0;
-    int endPos;
+    arma::uword startPos = 0;
+    arma::uword endPos;
     if(readChr){
       gamete(0) = chr2(0);
     }else{
@@ -190,8 +189,8 @@ Rcpp::List cross2(
     bool trackRec, int nThreads){
   mother -= 1; // R to C++
   father -= 1; // R to C++
-  int nChr = motherGeno.n_elem;
-  int nInd = mother.n_elem;
+  arma::uword nChr = motherGeno.n_elem;
+  arma::uword nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   RecHist hist;
@@ -204,7 +203,7 @@ Rcpp::List cross2(
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){
     arma::Mat<int> histMat;
-    int segSites = motherGeno(chr).n_rows;
+    arma::uword segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
@@ -238,10 +237,10 @@ Rcpp::List cross2(
 // [[Rcpp::export]]
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
-    int nDH, const arma::field<arma::vec>& genMap, 
+    arma::uword nDH, const arma::field<arma::vec>& genMap, 
     bool trackRec, int nThreads){
-  int nChr = geno.n_elem;
-  int nInd = geno(0).n_slices;
+  arma::uword nChr = geno.n_elem;
+  arma::uword nInd = geno(0).n_slices;
   //Output data
   arma::field<arma::Cube<unsigned char> > output(nChr);
   RecHist hist;
@@ -253,7 +252,7 @@ Rcpp::List createDH2(
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
     arma::Mat<int> histMat;
-    int segSites = geno(chr).n_rows;
+    arma::uword segSites = geno(chr).n_rows;
     arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop
@@ -286,17 +285,17 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                          const Rcpp::IntegerVector & nLociPerChr) {
   // This is an utterly complicated function! There has to be a neater way to do this. Gregor
   RecHist ibdRecHist;
-  int nInd = pedigree.nrow();
-  int nChr = nLociPerChr.size();
+  arma::uword nInd = pedigree.nrow();
+  arma::uword nChr = nLociPerChr.size();
   ibdRecHist.setSize(nInd, nChr, 2);
-  for (int ind = 0; ind < nInd; ++ind) {
+  for (arma::uword ind = 0; ind < nInd; ++ind) {
     Rcpp::List recHistInd = recHist(ind);
     // std::cout << "Ind " << ind + 1 << "\n";
-    for (int par = 0; par < 2; ++par) {
+    for (arma::uword par = 0; par < 2; ++par) {
       int pId = pedigree(ind, par);
       // std::cout << "Par " << par + 1 << " pId " << pId << "\n";
       if (pId == 0) { // Individual is     a founder --> set founder gamete code
-        for (int chr = 0; chr < nChr; ++chr) {
+        for (arma::uword chr = 0; chr < nChr; ++chr) {
           if (0 < nLociPerChr(chr)) {
             arma::Mat<int> recHistIndChrPar;
             recHistIndChrPar.set_size(1, 2);
@@ -310,7 +309,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
       } else {        // Individual is not a founder --> get founder gamete code & recombinations
         pId -= 1; // R to C++ indexing
         Rcpp::List recHistPar = recHist(pId);
-        for (int chr = 0; chr < nChr; ++chr) {
+        for (arma::uword chr = 0; chr < nChr; ++chr) {
           if (0 < nLociPerChr(chr)) {
             Rcpp::List recHistIndChr = recHistInd(chr);
             arma::Mat<int> recHistIndChrPar = recHistIndChr(par);
@@ -319,7 +318,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
             // std::cout << recHistIndChrPar << "\n";
             // std::cout << nRecSegInd << "\n";
             if (recHistPar.size() == 0) { // Parent is     a founder and has no recHist info --> get founder gamete codes and put them onto individual recombinations
-              for (int recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
+              for (arma::uword recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
                 int source = recHistIndChrPar(recSegInd, 0) - 1;
                 recHistIndChrPar(recSegInd, 0) = ibdRecHist.getHist(pId, chr, source)(0, 0);
               }
@@ -342,7 +341,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
               arma::uvec ibdRecSegPar(2);
               int nIbdSegInd;
               arma::Mat<int> ibdRecHistIndChrPar;
-              for (int run = 0; run < 2; ++run) {
+              for (arma::uword run = 0; run < 2; ++run) {
                 if (run == 0) {
                   // std::cout << "Count the segments\n";
                 } else {
@@ -352,7 +351,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                 ibdRecSegPar(0) = 0;
                 ibdRecSegPar(1) = 0;
                 nIbdSegInd = 0;
-                for (int recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
+                for (arma::uword recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
                   int source = recHistIndChrPar(recSegInd, 0) - 1;
                   int startInd = recHistIndChrPar(recSegInd, 1);
                   int stopInd;

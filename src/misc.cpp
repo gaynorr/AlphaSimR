@@ -26,7 +26,7 @@ arma::mat popVar(const arma::mat& X) {
 arma::field<arma::Cube<unsigned char> > mergeGeno(
     const arma::field<arma::Cube<unsigned char> >& x, 
     const arma::field<arma::Cube<unsigned char> >& y){
-  int nChr = x.n_elem;
+  arma::uword nChr = x.n_elem;
   arma::field<arma::Cube<unsigned char> > z(nChr);
   for(arma::uword i=0; i<nChr; ++i){
     z(i) = arma::join_slices(x(i),y(i));
@@ -86,7 +86,7 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
 // Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]
 arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
-  int ploidy = geno.n_cols;
+  arma::uword ploidy = geno.n_cols;
   arma::Mat<unsigned char> tmp = arma::sum(geno,1);
   arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
                                 1)/ploidy;
@@ -235,9 +235,9 @@ arma::mat calcCoef(arma::mat& X, arma::mat& Y){
 }
 
 // Knuth's algorithm for sampling from a Poisson distribution
-int samplePoisson(double lambda){
+arma::uword samplePoisson(double lambda){
   double p=1,L=exp(-lambda);
-  int k=0;
+  arma::uword k=0;
   arma::vec u(1);
   do{
     k++;
