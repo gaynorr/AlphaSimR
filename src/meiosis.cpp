@@ -313,7 +313,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
           if (0 < nLociPerChr(chr)) {
             Rcpp::List recHistIndChr = recHistInd(chr);
             arma::Mat<int> recHistIndChrPar = recHistIndChr(par);
-            int nRecSegInd = recHistIndChrPar.n_rows;
+            arma::uword nRecSegInd = recHistIndChrPar.n_rows;
             // std::cout << "Chr " << chr + 1 << " Par " << par + 1 << "\n";
             // std::cout << recHistIndChrPar << "\n";
             // std::cout << nRecSegInd << "\n";
