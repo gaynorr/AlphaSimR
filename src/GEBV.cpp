@@ -106,10 +106,9 @@ arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
 // [[Rcpp::export]]
 arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop, 
                   int nThreads){
-  arma::mat a1 = sol.slot("a1");
-  arma::mat a2 = sol.slot("a2");
+  arma::mat a1 = sol.slot("femaleEff");
+  arma::mat a2 = sol.slot("maleEff");
   arma::mat d = sol.slot("d");
-  double b = sol.slot("hetCov");
   arma::Mat<unsigned char> geno1,geno2,genoD;
   geno1 = getOneHaploT(pop.slot("geno"), 
                        sol.slot("lociPerChr"),
@@ -120,7 +119,6 @@ arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
                        sol.slot("lociLoc"), 
                        2);
   arma::mat output(geno1.n_cols,a1.n_cols,arma::fill::zeros);
-  arma::vec het(geno1.n_cols,arma::fill::zeros);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -128,10 +126,7 @@ arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop,
     for(arma::uword j=0; j<geno1.n_rows; ++j){
       double dGeno = double(1-abs(int(geno1(j,i)+geno2(j,i))-1));
       output.row(i) += geno1(j,i)*a1.row(j)+geno2(j,i)*a2.row(j)+dGeno*d.row(j);
-      het(i) += dGeno;
     }
   }
-  het = het/geno1.n_rows;
-  output += het*b;
   return output;
 }

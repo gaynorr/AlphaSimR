@@ -423,24 +423,31 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
                         arma::ivec& lociPerChr, arma::uvec lociLoc,
-                        int maxIter, bool useHetCov){
+                        int maxIter){
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
-  arma::mat X;
-  if(useHetCov){
-    X = join_rows(makeX(x),mean(Mlist(1),1));
-  }else{
-    X = makeX(x);
+  arma::rowvec p = mean(Mlist(0),0)/2.0;
+  arma::rowvec het = mean(Mlist(1),0);
+  arma::rowvec F(p.n_elem);
+  for(arma::uword i=0; i<p.n_cols; i++){
+    if((p(i)>0.999999999) | (p(i)<0.000000001)){
+      // Marker is fixed, F is undefined
+      F(i) = 0;
+    }else{
+      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+    }
   }
+  arma::mat X;
+  X = join_rows(makeX(x),mean(Mlist(1),1));
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(Mlist(0),reps);
   sweepReps(Mlist(1),reps);
   return Rcpp::List::create(
     Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
-    Rcpp::Named("p")=p
+    Rcpp::Named("p")=p,
+    Rcpp::Named("F")=F
   );
 }
 
@@ -481,30 +488,21 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
                           arma::ivec& lociPerChr, arma::uvec lociLoc, 
-                          int maxIter, bool useHetCov){
+                          int maxIter){
   arma::field<arma::mat> Mlist(3);
   Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
-  arma::rowvec p1 = mean(Mlist(0),0);
   Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
-  arma::rowvec p2 = mean(Mlist(1),0);
   Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
   Mlist(0) = Mlist(0)*2;
   Mlist(1) = Mlist(1)*2;
-  arma::mat X;
-  if(useHetCov){
-    X = join_rows(makeX(x),mean(Mlist(2),1));
-  }else{
-    X = makeX(x);
-  }
+  arma::mat X = makeX(x);
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   sweepReps(Mlist(2), reps);
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
-    Rcpp::Named("p1")=p1,
-    Rcpp::Named("p2")=p2
+    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter)
   );
 }
 

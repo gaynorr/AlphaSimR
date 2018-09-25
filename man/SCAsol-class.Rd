@@ -11,12 +11,6 @@ to contain estimated effects from \code{\link{RRBLUP_SCA}}
 \section{Slots}{
 
 \describe{
-\item{\code{a1}}{additive effect for females}
-
-\item{\code{a2}}{additive effect for males}
-
 \item{\code{d}}{dominance effect}
-
-\item{\code{hetCov}}{heterozygosity covariate}
 }}
 

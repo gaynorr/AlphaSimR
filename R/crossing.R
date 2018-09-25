@@ -79,6 +79,9 @@ randCross = function(pop,nCrosses,nProgeny=1,
     parents = as.integer(parents)
   }
   n = length(parents)
+  if(n<=1){
+    stop("The population must contain more than 1 individual")
+  }
   if(simParam$gender=="no" | ignoreGender){
     crossPlan = sampHalfDialComb(n, nCrosses)
     crossPlan[,1] = parents[crossPlan[,1]]

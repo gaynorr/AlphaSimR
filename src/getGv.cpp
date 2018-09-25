@@ -90,12 +90,14 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
   double intercept = trait.slot("intercept");
   arma::vec bv(nInd,arma::fill::zeros);
   arma::vec dd(nInd,arma::fill::zeros);
+  arma::vec gv_a(nInd,arma::fill::zeros);
+  arma::vec gv_d(nInd,arma::fill::zeros);
   arma::Mat<unsigned char> geno;
   geno = getGeno(pop.slot("geno"), 
                  trait.slot("lociPerChr"),
                  trait.slot("lociLoc"));
   arma::vec p(nLoci), q(nLoci), alpha(nLoci), mu(nLoci);
-  arma::vec F(nLoci,arma::fill::zeros);
+  arma::vec F(nLoci), inbreeding(nLoci), isSeg(nLoci);
   arma::mat ddMat(3,nLoci);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -110,12 +112,14 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
     // 1-observed(het)/expect(het)
     if((p(i)>0.999999999) | (p(i)<0.000000001)){
       // Locus is fixed, no viable regression
+      isSeg(i) = 0;
       F(i) = 0;
       alpha(i) = 0;
       ddMat(0,i) = 0;
       ddMat(1,i) = 0;
       ddMat(2,i) = 0;
     }else{
+      isSeg(i) = 1;
       F(i) = 1-(genoFreq(1)/accu(genoFreq))/(2*p(i)*q(i));
       if(F(i)<-0.999999999){
         // Only heterozygotes, no viable regression
@@ -129,14 +133,16 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
         alpha(i) = a(i)+d(i)*(q(i)-p(i))*fFrac;
         // -2q(q+pF)(1-F)/(1+F)d
         ddMat(2,i) = -2*q(i)*(q(i)+p(i)*F(i))*fFrac*d(i);
-        // (1-(p^2+q^2)(1-F)/(1+F)+2pqF(F-1)/(1+F))d
-        ddMat(1,i) = (1-(p(i)*p(i)+q(i)*q(i))*fFrac+2*p(i)*q(i)*F(i)*(F(i)-1)/(1+F(i)))*d(i);
+        // (1-(1-2pq)(1-F)/(1+F)+2pqF(F-1)/(1+F))d
+        ddMat(1,i) = (1-(1-2*p(i)*q(i))*fFrac+2*p(i)*q(i)*F(i)*(F(i)-1)/(1+F(i)))*d(i);
         // -2p(p+qF)(1-F)/(1+F)d
         ddMat(0,i) = -2*p(i)*(p(i)+q(i)*F(i))*fFrac*d(i);
       }
     }
     // 2pa+2pqd(1-F)
     mu(i) = 2*a(i)*p(i)+2*p(i)*q(i)*d(i)*(1-F(i));
+    // 2pqdF
+    inbreeding(i) = 2*p(i)*q(i)*d(i)*F(i);
   }
   arma::inplace_trans(geno);
 #ifdef _OPENMP
@@ -146,16 +152,24 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
     for(int j=0; j<nLoci; ++j){
       bv(i) += (double(geno(j,i))-2*p(j))*alpha(j);
       dd(i) += ddMat(geno(j,i),j);
+      gv_a(i) += geno(j,i)*a(j);
+      gv_d(i) += (1-abs(int(geno(j,i))-1))*d(j);
     }
   }
-  intercept += accu(mu);
   // 2pq(1+F)alpha^2
   double genicVarA = 2.0*accu(p%q%arma::square(alpha)%(1+F));
   // 4pq(1-F)/(1+F)(p+Fq)(q+Fp)d^2
+  
+  
   double genicVarD = 4.0*accu(p%q%(1-F)/(1+F)%(p+F%q)%(q+F%p)%arma::square(d));
   return Rcpp::List::create(Rcpp::Named("bv")=bv,
                             Rcpp::Named("dd")=dd,
                             Rcpp::Named("genicVarA")=genicVarA,
                             Rcpp::Named("genicVarD")=genicVarD,
-                            Rcpp::Named("mu")=intercept);
+                            Rcpp::Named("mu")=accu(mu)+intercept,
+                            Rcpp::Named("F")=accu(F)/accu(isSeg),
+                            Rcpp::Named("inbreeding")=accu(inbreeding),
+                            Rcpp::Named("gv_a")=gv_a,
+                            Rcpp::Named("gv_d")=gv_d,
+                            Rcpp::Named("gv_mu")=intercept);
 }
