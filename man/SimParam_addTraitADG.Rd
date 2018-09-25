@@ -11,9 +11,9 @@ value or nChr values.}
 
 \item{var}{a vector of desired genetic variances for one or more traits}
 
-\item{varEnv}{a vector of environmental variances for one or more traits}
-
 \item{varGxE}{a vector of total genotype-by-environment variances for the traits}
+
+\item{varEnv}{a vector of environmental variances for one or more traits}
 
 \item{meanDD}{mean dominance degree}
 
@@ -38,8 +38,8 @@ ignored. Only set to TRUE if you know what you are doing.}
 Randomly assigns eligble QTLs for a trait with dominance and GxE.
 }
 \section{Usage}{
- SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varEnv = 1e-6, 
-varGxE = 1e-6, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
+ SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+varEnv = 0, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
 corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, force = FALSE)
 }
 

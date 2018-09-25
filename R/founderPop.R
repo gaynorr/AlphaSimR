@@ -156,7 +156,7 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' genetic length for the species. However, this the genetic length is only used by 
 #' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 #' For advanced users only.
-#' @param suppressMessages should messages on status be suppressed
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
 #' 
 #' @details
 #' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
@@ -172,13 +172,14 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' @export
 runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
                    split=NULL,manualCommand=NULL,manualGenLen=NULL,
-                   suppressMessages=FALSE){
+                   nThreads=1){
   nInd = as.integer(nInd)
+  nChr = as.integer(nChr)
   ploidy = 2L #The only ploidy level currently supported
   if(is.null(segSites)){
-    segSites = rep(0,nChr)
-  }else if(length(segSites)==1){
-    segSites = rep(segSites,nChr)
+    segSites = rep(0L,nChr)
+  }else if(length(segSites)==1L){
+    segSites = rep(as.integer(segSites),nChr)
   }
   popSize = ifelse(inbred,nInd,ploidy*nInd)
   if(!is.null(manualCommand)){
@@ -229,27 +230,20 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
     genLen = manualGenLen
   }
   output = vector("list",nChr)
-  for(chr in 1:nChr){
-    if(!suppressMessages){
-      cat("Making chomosome",chr,"of",nChr,"\n")
-    }
-    macsOut = MaCS(command,segSites[chr])
-    genMap = c(macsOut$genMap)
-    genMap = genLen*(genMap-min(genMap))
-    geno = packHaplo(macsOut$haplo,ploidy=ploidy,
-                     inbred=inbred)
-    output[[chr]] = new("MapPop",
-                        nInd=nInd,
-                        nChr=1L,
-                        ploidy=ploidy,
-                        nLoci=dim(geno)[1],
-                        geno=as.matrix(list(geno)),
-                        genMap=as.matrix(list(genMap)))
-  }
-  output = do.call("c",output)
-  if(!suppressMessages){
-    cat("Done\n")
-  }
+  macsOut = MaCS(command,segSites,inbred,
+                 ploidy,nThreads)
+  nLoci = sapply(macsOut$genMap,length)
+  genMap = lapply(macsOut$genMap,function(x){
+    genLen*(c(x)-min(x))
+  })
+  genMap=as.matrix(genMap)
+  output = new("MapPop",
+               nInd=nInd,
+               nChr=nChr,
+               ploidy=ploidy,
+               nLoci=nLoci,
+               geno=macsOut$geno,
+               genMap=genMap)
   return(output)
 }
 
@@ -279,7 +273,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @param returnCommand should the command passed to manualCommand in 
 #' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
 #' the command is returned instead.
-#' @param suppressMessages should messages on status be suppressed
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
 #'
 #' @return an object of \code{\link{MapPop-class}} or if 
 #' returnCommand is true a string giving the MaCS command passed 
@@ -297,7 +291,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     histNe=c(500,1500,6000,12000,100000),
                     histGen=c(100,1000,10000,100000,1000000),
                     inbred=FALSE,split=NULL,returnCommand=FALSE,
-                    suppressMessages=FALSE){
+                    nThreads=1L){
   stopifnot(length(histNe)==length(histGen))
   speciesParams = paste(bp,"-t",4*Ne*mutRate,
                         "-r",4*Ne*genLen/bp)
@@ -325,7 +319,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
   return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
                  inbred=inbred,species="TEST",split=NULL,
                  manualCommand=command,manualGenLen=genLen,
-                 suppressMessages=suppressMessages))
+                 nThreads=nThreads))
 }
 
 #' @title Sample haplotypes from a MapPop

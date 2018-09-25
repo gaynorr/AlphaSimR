@@ -203,8 +203,6 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip. 
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param useHetCov should the model include a covariate 
-#' for heterozygosity.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -213,8 +211,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1, 
-                    useQtl=FALSE, useHetCov=TRUE, maxIter=40L, 
-                    simParam=NULL, ...){
+                    useQtl=FALSE, maxIter=40L, simParam=NULL, 
+                    ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -233,22 +231,20 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                     lociLoc,maxIter,useHetCov)
+                     lociLoc,maxIter)
   p = t(ans$p)
   q = 1-p
+  fixCoef = ans$F
+  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
+  nMarker = nLoci-sum(fixed) #Number of segregating markers
   ans = ans$ans
   fixEff=ans$beta
   a = ans$u[[1]]
   d = ans$u[[2]]
-  if(useHetCov){
-    stopifnot(length(fixEff)>1)
-    hetCov = fixEff[length(fixEff)]
-    fixEff = matrix(fixEff[-length(fixEff)])
-    alpha = a+(q-p)*(d+hetCov/nLoci)
-  }else{
-    hetCov = 0
-    alpha = a+(q-p)*d
-  }
+  hetCov = fixEff[length(fixEff)]
+  fixEff = matrix(fixEff[-length(fixEff)])
+  alpha = a+(q-p)*(d+hetCov/nMarker)*(1-fixCoef)/(1+fixCoef)
+  alpha[fixed] = 0 #Remove fixed markers (without this step they get mean d)
   output = new("RRDsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -344,18 +340,13 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
-#' @param useHetCov should the model include a covariate 
-#' for heterozygosity.
-#' @param onFailGCA if true, \code{\link{RRBLUP_GCA}} is used if 
-#' RRBLUP_SCA gives a variance component of zero
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
-                      useQtl=FALSE, maxIter=40L, useHetCov=FALSE, 
-                      onFailGCA=TRUE, simParam=NULL, ...){
+                      useQtl=FALSE, maxIter=40L, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -374,45 +365,16 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter,useHetCov)
-  p1 = t(ans$p1)
-  q1 = 1-p1
-  p2 = t(ans$p2)
-  q2 = 1-p2
+                       lociPerChr,lociLoc,maxIter)
   ans = ans$ans
-  fixEff=ans$beta
-  a1 = ans$u[[1]]
-  a2 = ans$u[[2]]
-  d = ans$u[[3]]
-  if(useHetCov){
-    stopifnot(length(fixEff)>1)
-    hetCov = fixEff[length(fixEff)]
-    fixEff = matrix(fixEff[-length(fixEff)])
-    alpha1 = a1+(q2-p2)*(d+hetCov/nLoci)
-    alpha2 = a2+(q1-p1)*(d+hetCov/nLoci)
-  }else{
-    hetCov = 0
-    alpha1 = a1+(q2-p2)*d
-    alpha2 = a2+(q1-p1)*d
-  }
-  if(onFailGCA & any(ans$Vu<1e-10)){
-    warning("using RRBLUP_GCA due to zero variance components")
-    output = RRBLUP_GCA(pop=pop, traits=traits, use=use, snpChip=snpChip, 
-                        useQtl=useQtl, maxIter=maxIter, simParam=simParam, 
-                        ...)
-    return(output)
-  }
   output = new("SCAsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=alpha1,
-               maleEff=alpha2,
-               a1=ans$u[[1]],
-               a2=ans$u[[2]],
+               femaleEff=ans$u[[1]],
+               maleEff=ans$u[[2]],
                d=ans$u[[3]],
-               hetCov=hetCov,
-               fixEff=fixEff,
+               fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
                LL=ans$LL,
@@ -439,37 +401,41 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' genetic values. Otherwise, you get estimated breeding 
 #' values that depend on the population's allele frequency.
 #' @param append should EBVs be appended to existing EBVs
+#' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @export
 setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
-                  append=FALSE){
+                  append=FALSE, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   if(class(solution)=="RRsol"){
-    ebv = gebvRR(solution, pop)
+    ebv = gebvRR(solution, pop, simParam$nThreads)
   }else if(class(solution)=="RRDsol"){
     if(useGV){
-      ebv = gegvRRD(solution, pop)
+      ebv = gegvRRD(solution, pop, simParam$nThreads)
     }else{
-      ebv = gebvRR(solution, pop)
+      ebv = gebvRR(solution, pop, simParam$nThreads)
     }
   }else{
     if(is.null(gender)){
       if(class(solution)=="GCAsol"){
-        ebv = gegvGCA(solution, pop)
+        ebv = gegvGCA(solution, pop, simParam$nThreads)
       }else{
-        ebv = gegvSCA(solution, pop)
+        ebv = gegvSCA(solution, pop, simParam$nThreads)
       }
     }else if(toupper(gender)=="FEMALE"){
-      ebv = gebvGCA(solution, pop, TRUE)
+      ebv = gebvGCA(solution, pop, TRUE, simParam$nThreads)
     }else if(toupper(gender)=="MALE"){
-      ebv = gebvGCA(solution, pop, FALSE)
+      ebv = gebvGCA(solution, pop, FALSE, simParam$nThreads)
     }else{
       stop(paste0("gender=",gender," is not a valid option"))
     }
   }
   if(append){
-    pop@ebv = cbind(pop@ebv,ebv)
+    pop@ebv = cbind(pop@ebv,ebv, simParam$nThreads)
   }else{
     pop@ebv = ebv
   }

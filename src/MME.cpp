@@ -1,15 +1,22 @@
 // solveUVM and solveMVM are based on R/EMMREML functions
 // solveMKM is based on the mmer function in R/sommer
 #include "alphasimr.h"
-#include <iostream>
-#include <string>
 
-// Note: Fortran compiler appends '_' to subroutine name
-// See http://www.netlib.org/lapack/explore-html/ for description of args
-extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
-                       double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
-                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
-                       long long int* LIWORK, long long int* INFO);
+#ifdef ARMA_USE_LAPACK
+
+#if !defined(ARMA_BLAS_CAPITALS)
+#define arma_dsyevr dsyevr
+#else
+#define arma_dsyevr DSYEVR
+#endif
+
+extern "C"
+void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
+                  double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
+                  long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
+                  long long int* LIWORK, long long int* INFO);
+#endif
+
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices
@@ -46,7 +53,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   long long int LIWORK = -1; // To be calculated
   long long int INFO = 0;
   // Calculate LWORK and LIWORK
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);
   LWORK = (long long int) tmpWORK;
   LIWORK = tmpIWORK;
@@ -54,7 +61,7 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   arma::vec WORK(LWORK);
   arma::Col<long long int> IWORK(LIWORK);
   // Perform decomposition
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
   return INFO; // Return error code
 }
@@ -94,8 +101,8 @@ arma::mat makeX(arma::uvec& x){
 // Produces a genotype design matrix
 // z is an indicator vector matching y to individuals in G
 // nGeno is the number of genotypes in the G matrix
-arma::mat makeZ(arma::uvec& z, int nGeno){
-  int nTrain = z.n_elem;
+arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
+  arma::uword nTrain = z.n_elem;
   arma::mat Z(nTrain,nGeno,arma::fill::zeros);
   for(arma::uword i=0; i<nTrain; ++i){
     Z(i,z(i)) = 1;
@@ -114,8 +121,8 @@ void sweepReps(arma::mat& X, arma::vec reps){
 
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
-  int n = y.n_rows;
-  int q = X.n_cols;
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
 
@@ -213,8 +220,8 @@ Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000, 
                          double tol=1e-6){
-  int n = Y.n_rows;
-  int m = Y.n_cols;
+  arma::uword n = Y.n_rows;
+  arma::uword m = Y.n_cols;
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, M*M.t());
@@ -284,9 +291,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
                          int maxIter=40){
   double tol = 1e-4;
-  int k = Mlist.n_elem;
-  int n = y.n_rows;
-  int q = X.n_cols;
+  arma::uword k = Mlist.n_elem;
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
   double df = double(n)-double(q);
   arma::field<arma::mat> V(k);
   for(arma::uword i=0; i<k; ++i){
@@ -294,7 +301,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   }
   arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
   arma::vec qvec(k+1), sigma(k+1);
-  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  double rss, ldet, llik, llik0=0, deltaLlik, taper, 
   value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);
@@ -350,7 +357,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
     while(sigma.min() < -(1e-6)){
       sigma(sigma.index_min()) = -(1e-6);
     }
-    if(iter > 1 & fabs(deltaLlik) < tol*10){
+    if((iter>1)&(fabs(deltaLlik)<tol*10)){
       break;
     }
     if(max(abs(qvec)) < tol){
@@ -416,24 +423,31 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
                         arma::ivec& lociPerChr, arma::uvec lociLoc,
-                        int maxIter, bool useHetCov){
+                        int maxIter){
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  arma::rowvec p = mean(Mlist(0),0)/2.0;
   Mlist(1) = 1-abs(Mlist(0)-1);
-  arma::mat X;
-  if(useHetCov){
-    X = join_rows(makeX(x),mean(Mlist(1),1));
-  }else{
-    X = makeX(x);
+  arma::rowvec p = mean(Mlist(0),0)/2.0;
+  arma::rowvec het = mean(Mlist(1),0);
+  arma::rowvec F(p.n_elem);
+  for(arma::uword i=0; i<p.n_cols; i++){
+    if((p(i)>0.999999999) | (p(i)<0.000000001)){
+      // Marker is fixed, F is undefined
+      F(i) = 0;
+    }else{
+      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+    }
   }
+  arma::mat X;
+  X = join_rows(makeX(x),mean(Mlist(1),1));
   sweepReps(y,reps);
   sweepReps(X,reps);
   sweepReps(Mlist(0),reps);
   sweepReps(Mlist(1),reps);
   return Rcpp::List::create(
     Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
-    Rcpp::Named("p")=p
+    Rcpp::Named("p")=p,
+    Rcpp::Named("F")=F
   );
 }
 
@@ -474,30 +488,21 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
                           arma::ivec& lociPerChr, arma::uvec lociLoc, 
-                          int maxIter, bool useHetCov){
+                          int maxIter){
   arma::field<arma::mat> Mlist(3);
   Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
-  arma::rowvec p1 = mean(Mlist(0),0);
   Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
-  arma::rowvec p2 = mean(Mlist(1),0);
   Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
   Mlist(0) = Mlist(0)*2;
   Mlist(1) = Mlist(1)*2;
-  arma::mat X;
-  if(useHetCov){
-    X = join_rows(makeX(x),mean(Mlist(2),1));
-  }else{
-    X = makeX(x);
-  }
+  arma::mat X = makeX(x);
   sweepReps(y, reps);
   sweepReps(X, reps);
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   sweepReps(Mlist(2), reps);
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
-    Rcpp::Named("p1")=p1,
-    Rcpp::Named("p2")=p2
+    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter)
   );
 }
 

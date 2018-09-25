@@ -295,33 +295,15 @@ setValidity("GCAsol",function(object){
 #' @description Extends \code{\link{GCAsol-class}} 
 #' to contain estimated effects from \code{\link{RRBLUP_SCA}}
 #' 
-#' @slot a1 additive effect for females
-#' @slot a2 additive effect for males
 #' @slot d dominance effect
-#' @slot hetCov heterozygosity covariate
 #'
 #' @export
 setClass("SCAsol",
-         slots=c(a1="matrix",
-                 a2="matrix",
-                 d="matrix",
-                 hetCov="numeric"),
+         slots=c(d="matrix"),
          contains="GCAsol")
 
 setValidity("SCAsol",function(object){
   errors = character()
-  if(!is.numeric(object@a1)){
-    errors = c(errors,"!is.numeric(a1)")
-  }
-  if(object@nLoci!=nrow(object@a1)){
-    errors = c(errors,"nLoci!=nrow(a1)")
-  }
-  if(!is.numeric(object@a2)){
-    errors = c(errors,"!is.numeric(a2)")
-  }
-  if(object@nLoci!=nrow(object@a2)){
-    errors = c(errors,"nLoci!=nrow(a2)")
-  }
   if(!is.numeric(object@d)){
     errors = c(errors,"!is.numeric(d)")
   }

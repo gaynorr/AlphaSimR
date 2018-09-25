@@ -31,7 +31,8 @@ makeCross = function(pop,crossPlan,simParam=NULL){
               pop@geno,crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
-              simParam$isTrackRec)
+              simParam$isTrackRec,
+              simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -78,6 +79,9 @@ randCross = function(pop,nCrosses,nProgeny=1,
     parents = as.integer(parents)
   }
   n = length(parents)
+  if(n<=1){
+    stop("The population must contain more than 1 individual")
+  }
   if(simParam$gender=="no" | ignoreGender){
     crossPlan = sampHalfDialComb(n, nCrosses)
     crossPlan[,1] = parents[crossPlan[,1]]
@@ -218,7 +222,8 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
              males@geno,crossPlan[,2],
              simParam$femaleMap,
              simParam$maleMap,
-             simParam$isTrackRec)
+             simParam$isTrackRec,
+             simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=females@nChr,
@@ -347,7 +352,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
               pop@geno,crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
-              simParam$isTrackRec)
+              simParam$isTrackRec,
+              simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -389,11 +395,13 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(useFemale){
     tmp = createDH2(pop@geno,nDH,
                     simParam$femaleMap,
-                    simParam$isTrackRec)
+                    simParam$isTrackRec,
+                    simParam$nThreads)
   }else{
     tmp = createDH2(pop@geno,nDH,
                     simParam$maleMap,
-                    simParam$isTrackRec)
+                    simParam$isTrackRec,
+                    simParam$nThreads)
   }
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nDH),

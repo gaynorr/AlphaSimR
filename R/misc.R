@@ -90,7 +90,7 @@ editGenome = function(pop,ind,chr,segSites,allele,
                   ncol=simParam$nTraits)
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],pop)
+      tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
       pop@gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         pop@gxe[[i]] = tmp[[2]]

@@ -21,7 +21,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       if(class(pop)=="HybridPop"){
         stop("Use='bv' is not a valid option for HybridPop")
       }
-      response = genParam(pop,TRUE,simParam=simParam)$bv
+      response = genParam(pop,simParam=simParam)$bv
       response = trait(response,...)
     }else{
       stop(paste0("Use=",use," is not an option"))
@@ -37,7 +37,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       if(class(pop)=="HybridPop"){
         stop("Use='bv' is not a valid option for HybridPop")
       }
-      response = genParam(pop,TRUE,simParam=simParam)$bv[,trait,drop=FALSE]
+      response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
     }else{
       stop(paste0("Use=",use," is not an option"))
     }
@@ -308,12 +308,20 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   if(pollenControl){
     male = female
   }else{
-    male = 1:nInd
+    male = 1:pop@nInd
   }
   crossPlan = lapply(1:nInd,function(x){
-    cbind(rep(female[x],nSeeds),
-          c(rep(female[x],nSelf[x]),
-            sample(male[!male==female[x]],nSeeds-nSelf[x],replace=TRUE)))
+    male = male[!male==female[x]]
+    if(length(male)==1){
+      #Account for "convenience" feature of sample when length = 1
+      cbind(rep(female[x],nSeeds),
+            c(rep(female[x],nSelf[x]),
+              rep(male,nSeeds-nSelf[x])))
+    }else{
+      cbind(rep(female[x],nSeeds),
+            c(rep(female[x],nSelf[x]),
+              sample(male,nSeeds-nSelf[x],replace=TRUE)))
+    }
   })
   crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
   return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))

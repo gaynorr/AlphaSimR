@@ -4,13 +4,10 @@
 \alias{genParam}
 \title{Sumarize genetic parameters}
 \usage{
-genParam(pop, indValues = FALSE, simParam = NULL)
+genParam(pop, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
-
-\item{indValues}{should breeding values, dominance deviations 
-and allele subsitution effects be returned}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
@@ -22,9 +19,14 @@ and allele subsitution effects be returned}
 \item{genicVarA}{an nTrait vector of additive genic variances}
 \item{genicVarD}{an nTrait vector of dominance genic variances}
 \item{genicVarG}{an nTrait vector of total genic variances}
-\item{bv}{an nInd by nTrait matrix of breeding values with dimensions nInd by nTraits}
-\item{dd}{an nInd by nTrait matrix of dominance deviations with dimensions nInd by nTraits}
-\item{alpha}{an nTrait list of allele subsitution effects}
+\item{aveF}{an nTrait vector of the average inbreeding coefficient over all QTL}
+\item{inbreeding}{an nTrait vector for the depression of mean due to inbreeding}
+\item{mu}{an nTrait vector of trait means}
+\item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
+\item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
+\item{gv_mu}{an nTrait vector of trait means for genotype with all zeros}
+\item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
+\item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 }
 }
 \description{

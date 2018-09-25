@@ -1,8 +1,9 @@
 context("crossing")
 
+genMap = list(c(0))
+founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
+
 test_that("makeCross",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -24,8 +25,6 @@ test_that("makeCross",{
 })
 
 test_that("makeCross2",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -47,8 +46,6 @@ test_that("makeCross2",{
 })
 
 test_that("randCross",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -63,8 +60,6 @@ test_that("randCross",{
 })
 
 test_that("randCross2",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -79,8 +74,6 @@ test_that("randCross2",{
 })
 
 test_that("self",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -95,8 +88,6 @@ test_that("self",{
 })
 
 test_that("makeDH",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -111,8 +102,6 @@ test_that("makeDH",{
 })
 
 test_that("selectCross",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
@@ -123,4 +112,16 @@ test_that("selectCross",{
   expect_equal(meanG(pop1),0,tolerance=1e-6)
   expect_equal(SP$pedigree[-(1:2),1L],c(2L,2L))
   expect_equal(SP$pedigree[-(1:2),2L],c(1L,1L))
+})
+
+test_that("selectOP",{
+  SP = SimParam$new(founderPop=founderPop)
+  SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
+  SP$setTrackPed(TRUE)
+  pop = newPop(founderPop,simParam=SP)
+  pop1 = selectOP(pop=pop,nInd=1,nSeeds=2,use="gv",simParam=SP)
+  expect_equal(SP$lastId,4L)
+  expect_equal(meanG(pop1),0,tolerance=1e-6)
+  tmp = abs(SP$pedigree[-(1:2),1L]-SP$pedigree[-(1:2),2L])
+  expect_equal(tmp,c(1L,1L))
 })

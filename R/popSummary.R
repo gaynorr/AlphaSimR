@@ -49,8 +49,6 @@ varP = function(pop){
 #' for an object of \code{\link{Pop-class}}
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param indValues should breeding values, dominance deviations 
-#' and allele subsitution effects be returned
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return
@@ -61,13 +59,18 @@ varP = function(pop){
 #' \item{genicVarA}{an nTrait vector of additive genic variances}
 #' \item{genicVarD}{an nTrait vector of dominance genic variances}
 #' \item{genicVarG}{an nTrait vector of total genic variances}
-#' \item{bv}{an nInd by nTrait matrix of breeding values with dimensions nInd by nTraits}
-#' \item{dd}{an nInd by nTrait matrix of dominance deviations with dimensions nInd by nTraits}
-#' \item{alpha}{an nTrait list of allele subsitution effects}
+#' \item{aveF}{an nTrait vector of the average inbreeding coefficient over all QTL}
+#' \item{inbreeding}{an nTrait vector for the depression of mean due to inbreeding}
+#' \item{mu}{an nTrait vector of trait means}
+#' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
+#' \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
+#' \item{gv_mu}{an nTrait vector of trait means for genotype with all zeros}
+#' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
+#' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 #' }
 #' 
 #' @export
-genParam = function(pop,indValues=FALSE,simParam=NULL){
+genParam = function(pop,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -76,28 +79,41 @@ genParam = function(pop,indValues=FALSE,simParam=NULL){
   dd=NULL
   genicVarA=NULL
   genicVarD=NULL
-  alpha=list()
+  mu=NULL
+  aveF=NULL
+  inbreeding=NULL
+  gv_a=NULL
+  gv_d=NULL
+  gv_mu=NULL
   #Loop through bv and dd calculations
   for(i in 1:simParam$nTraits){
     trait = simParam$traits[[i]]
-    tmp = calcGenParam(trait,pop)
+    tmp = calcGenParam(trait,pop,simParam$nThreads)
     genicVarA = c(genicVarA,tmp$genicVarA)
     genicVarD = c(genicVarD,tmp$genicVarD)
     bv = cbind(bv,tmp$bv)
     dd = cbind(dd,tmp$dd)
-    alpha[[i]] = tmp$alpha
+    mu = c(mu,tmp$mu)
+    aveF = c(aveF,tmp$F)
+    inbreeding = c(inbreeding,tmp$inbreeding)
+    gv_a = cbind(gv_a,tmp$gv_a)
+    gv_d = cbind(gv_d,tmp$gv_d)
+    gv_mu = c(gv_mu,tmp$gv_mu)
   }
   output = list(varA=popVar(bv),
                 varD=popVar(dd),
                 varG=varG(pop),
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
-                genicVarG=genicVarA+genicVarD)
-  if(indValues){
-    output$bv = bv
-    output$dd = dd
-    output$alpha = alpha
-  }
+                genicVarG=genicVarA+genicVarD,
+                aveF=aveF,
+                inbreeding=inbreeding,
+                mu=mu,
+                bv=bv,
+                dd=dd,
+                gv_mu=gv_mu,
+                gv_a=gv_a,
+                gv_d=gv_d)
   return(output)
 }
 
@@ -110,7 +126,7 @@ genParam = function(pop,indValues=FALSE,simParam=NULL){
 #' 
 #' @export
 varA = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$varA
+  genParam(pop,simParam=simParam)$varA
 }
 
 #' @title Dominance variance
@@ -122,7 +138,7 @@ varA = function(pop,simParam=NULL){
 #' 
 #' @export
 varD = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$varD
+  genParam(pop,simParam=simParam)$varD
 }
 
 #' @title Breeding value
@@ -134,7 +150,7 @@ varD = function(pop,simParam=NULL){
 #' 
 #' @export
 bv = function(pop,simParam=NULL){
-  genParam(pop,TRUE,simParam=simParam)$bv
+  genParam(pop,simParam=simParam)$bv
 }
 
 #' @title Dominance deviations
@@ -146,7 +162,7 @@ bv = function(pop,simParam=NULL){
 #' 
 #' @export
 dd = function(pop,simParam=NULL){
-  genParam(pop,TRUE,simParam=simParam)$dd
+  genParam(pop,simParam=simParam)$dd
 }
 
 #' @title Additive genic variance
@@ -158,7 +174,7 @@ dd = function(pop,simParam=NULL){
 #' 
 #' @export
 genicVarA = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$genicVarA
+  genParam(pop,simParam=simParam)$genicVarA
 }
 
 #' @title Dominance genic variance
@@ -170,7 +186,7 @@ genicVarA = function(pop,simParam=NULL){
 #' 
 #' @export
 genicVarD = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$genicVarD
+  genParam(pop,simParam=simParam)$genicVarD
 }
 
 #' @title Total genic variance
@@ -182,7 +198,7 @@ genicVarD = function(pop,simParam=NULL){
 #' 
 #' @export
 genicVarG = function(pop,simParam=NULL){
-  genParam(pop,FALSE,simParam=simParam)$genicVarG
+  genParam(pop,simParam=simParam)$genicVarG
 }
 
 #' @title Genetic value
