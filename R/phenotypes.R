@@ -100,6 +100,7 @@ setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=0.5,
   pop@pheno = pheno
   if(is(pop,"Pop")){
     pop@fixEff = rep(as.integer(fixEff),pop@nInd)
+    pop@reps = rep(as.numeric(reps),pop@nInd)
   }
   return(pop)
 }

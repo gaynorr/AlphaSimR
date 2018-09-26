@@ -1,3 +1,8 @@
+Changes in version 0.8.1
+
+  Bug fixes
+    -setPheno now passes the number of reps to populations
+
 Changes in version 0.8.0
 
   New features
