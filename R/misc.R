@@ -5,6 +5,9 @@
 #' 
 #' @param p the proportion of individuals selected
 #' 
+#' @examples 
+#' selInt(0.1)
+#' 
 #' @export
 selInt = function(p){
   return(dnorm(qnorm(1-p))/p)
@@ -22,6 +25,13 @@ selInt = function(p){
 #' 
 #' @return a vector of weight for calculating index values
 #' 
+#' @examples
+#' G = 1.5*diag(2)-0.5
+#' E = diag(2)
+#' P = G+E
+#' wt = c(1,1)
+#' smithHazel(wt, G, P)
+#' 
 #' @export
 smithHazel = function(econWt,varG,varP){
   return(solve(varP)%*%varG%*%econWt)
@@ -38,6 +48,29 @@ smithHazel = function(econWt,varG,varP){
 #' @param Y a matrix of trait values
 #' @param b a vector of weights
 #' @param scale should Y be scaled and centered
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' #Model two genetically correlated traits
+#' G = 1.5*diag(2)-0.5 #Genetic correlation matrix
+#' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=G)
+#' SP$setVarE(h2=c(0.5,0.5))
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Calculate Smith-Hazel weights
+#' econWt = c(1, 1)
+#' b = smithHazel(econWt, varG(pop), varP(pop))
+#' 
+#' #Selection 2 best individuals using Smith-Hazel index
+#' #selIndex is used as a trait
+#' pop2 = selectInd(pop, nInd=2, trait=selIndex, 
+#'                  simParam=SP, b=b)
 #' 
 #' @export
 selIndex = function(Y,b,scale=FALSE){
@@ -64,6 +97,22 @@ selIndex = function(Y,b,scale=FALSE){
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Change individual 1 to homozygous for the 1 allele 
+#' #at locus 1, chromosome 1
+#' pop2 = editGenome(pop, ind=1, chr=1, segSites=1, 
+#'                   allele=1, simParam=SP)
 #' 
 #' @export
 editGenome = function(pop,ind,chr,segSites,allele,
@@ -117,6 +166,20 @@ editGenome = function(pop,ind,chr,segSites,allele,
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Change up to 10 loci for individual 1 
+#' pop2 = editGenomeTopQtl(pop, ind=1, nQtl=10, simParam=SP)
+#'                   
 #' @export
 editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam = NULL) {
   if (is.null(simParam)) {
@@ -143,7 +206,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
     QtlGeno = pullQtlGeno(pop=pop[ind],trait=trait,simParam=simParam)
     
     QtlEff = simParam$traits[[trait]]@addEff
-    ret = vector(mode = "list", length = 2)
+    ret = vector(mode = "list", length = 4)
     ret[[1]] = ret[[2]] = ret[[3]] = ret[[4]] = rep(NA, times = nQtl)
     QtlEffRank = order(abs(QtlEff), decreasing = TRUE)
     nQtlInd = 0
@@ -151,6 +214,14 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
     
     while (nQtlInd < nQtl) {
       Qtl = Qtl + 1
+      if(Qtl>ncol(QtlGeno)){
+        ret[[1]] = ret[[1]][1:nQtlInd]
+        ret[[2]] = ret[[2]][1:nQtlInd]
+        ret[[3]] = ret[[3]][1:nQtlInd]
+        ret[[4]] = ret[[4]][1:nQtlInd]
+        nQtl = nQtlInd
+        break()
+      }
       QtlGenoLoc = QtlGeno[QtlEffRank[Qtl]]
       if (QtlEff[QtlEffRank[Qtl]] > 0) {
         if (QtlGenoLoc < 2) {
@@ -218,6 +289,23 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 #' trait
 #' 
 #' @return Returns a numeric value
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Determine usefulness of population 
+#' usefulness(pop, simParam=SP)
+#' 
+#' #Should be equivalent to GV of best individual
+#' max(gv(pop))
 #' 
 #' @export
 usefulness = function(pop,trait=1,use="gv",p=0.1,

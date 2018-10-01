@@ -58,3 +58,19 @@ of intermediate populations created. This reduces RAM usage
 and simplifies code writing. Note that this wrapper does not 
 provide the full functionality of either function.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+SP$setVarE(h2=0.5)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Select 4 individuals and make 8 crosses
+pop2 = selectCross(pop, nInd=4, nCrosses=8, simParam=SP)
+
+}

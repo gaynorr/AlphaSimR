@@ -86,6 +86,20 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' \code{\link{HybridPop-class}} if onlyPheno=FALSE, if 
 #' onlyPheno=TRUE a matrix is returned
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Add phenotype with error variance of 1
+#' pop = setPheno(pop, varE=1)
+#' 
 #' @export
 setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=0.5,
                     onlyPheno=FALSE,simParam=NULL){

@@ -28,3 +28,18 @@ Edits the top QTL (with the largest additive effect) to a homozygous
 state for the allele increasing. Only nonfixed QTL are edited The gv slot is
 recalculated to reflect the any changes due to editing, but other slots remain the same.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Change up to 10 loci for individual 1 
+pop2 = editGenomeTopQtl(pop, ind=1, nQtl=10, simParam=SP)
+                  
+}

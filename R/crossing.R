@@ -11,6 +11,20 @@
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Cross individual 1 with individual 10
+#' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' pop2 = makeCross(pop, crossPlan, simParam=SP)
 #'
 #' @export
 makeCross = function(pop,crossPlan,simParam=NULL){
@@ -64,6 +78,19 @@ makeCross = function(pop,crossPlan,simParam=NULL){
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Make 10 crosses
+#' pop2 = randCross(pop, 10, simParam=SP)
 #' 
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
@@ -156,6 +183,21 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Select 4 individuals and make 8 crosses
+#' pop2 = selectCross(pop, nInd=4, nCrosses=8, simParam=SP)
+#' 
 #' @export
 selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
                        nProgeny=1,trait=1,use="pheno",selectTop=TRUE,
@@ -203,6 +245,20 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Cross individual 1 with individual 10
+#' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
+#' 
 #' @export
 makeCross2 = function(females,males,crossPlan,simParam=NULL){
   if(is.null(simParam)){
@@ -260,6 +316,19 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Make 10 crosses
+#' pop2 = randCross2(pop, pop, 10, simParam=SP)
 #' 
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
@@ -333,6 +402,19 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Self pollinate each individual
+#' pop2 = self(pop, simParam=SP)
+#' 
 #' @export
 self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
   if(is.null(simParam)){
@@ -383,6 +465,19 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
 #' @param simParam an object of 'SimParam' class
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Create 1 DH for each individual
+#' pop2 = makeDH(pop, simParam=SP)
 #' 
 #' @export
 makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
@@ -445,6 +540,22 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
 #' 
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Pedigree for a biparental cross with 7 generations of selfing
+#' id = 1:10
+#' mother = c(0,0,1,3:9)
+#' father = c(0,0,2,3:9)
+#' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #' 
 #' @export
 pedigreeCross = function(founderPop,id,mother,father, 

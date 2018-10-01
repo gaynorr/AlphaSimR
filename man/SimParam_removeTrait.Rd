@@ -16,3 +16,16 @@ Removes designated trait(s).
  SP$removeTrait(traits, force = FALSE)
 }
 
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+SP$nTraits
+SP$removeTrait(1)
+SP$nTraits
+
+
+}

@@ -21,3 +21,12 @@ if it is turned on.
  SP$setTrackPed(isTrackPed, force = FALSE)
 }
 
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$setTrackPed(TRUE)
+
+}

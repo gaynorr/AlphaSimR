@@ -22,3 +22,17 @@ Returns an object of \code{\link{Pop-class}}
 Creates selfed progeny from each individual in a 
 population. Only works when gender is "no".
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Self pollinate each individual
+pop2 = self(pop, simParam=SP)
+
+}

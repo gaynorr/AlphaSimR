@@ -19,6 +19,26 @@
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1, 
                   useQtl=FALSE, maxIter=1000L, simParam=NULL, ...){
@@ -123,6 +143,26 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' future runs with the RRBLUP2 functions. Again, we can make no claim to the general robustness 
 #' of this approach.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP2(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1, 
                    useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL, 
@@ -209,6 +249,26 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_D(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1, 
                     useQtl=FALSE, maxIter=40L, simParam=NULL, 
@@ -232,9 +292,9 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
                      lociLoc,maxIter)
-  p = t(ans$p)
+  p = c(ans$p)
   q = 1-p
-  fixCoef = ans$F
+  fixCoef = c(ans$F)
   fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
   nMarker = nLoci-sum(fixed) #Number of segregating markers
   ans = ans$ans
@@ -285,6 +345,26 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_GCA(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1, 
                       useQtl=FALSE, maxIter=40L, simParam=NULL, 
@@ -344,6 +424,26 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_SCA(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
                       useQtl=FALSE, maxIter=40L, simParam=NULL, ...){
@@ -405,6 +505,26 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
 #' @export
 setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
                   append=FALSE, simParam=NULL){
@@ -456,6 +576,9 @@ setEBV = function(pop, solution, gender=NULL, useGV=FALSE,
 #'
 #' @return Returns an estimate for the required gigabytes of RAM
 #'
+#' @examples 
+#' RRBLUPMemUse(nInd=1000, nMarker=5000)
+#' 
 #' @export
 RRBLUPMemUse = function(nInd,nMarker,model="REG"){
   y = nInd

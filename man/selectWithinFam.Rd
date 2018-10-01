@@ -50,3 +50,22 @@ Selects a subset of nInd individuals from each
 full-sib family within a population. Will return all individuals 
 from a full-sib family if it has less than or equal to nInd individuals.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+SP$setVarE(h2=0.5)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Create 3 biparental families with 10 progeny
+pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
+
+#Select best individual per family
+pop3 = selectWithinFam(pop2, 1, simParam=SP)
+
+}

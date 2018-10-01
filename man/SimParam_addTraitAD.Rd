@@ -39,3 +39,12 @@ varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE,
 shape = 1, force = FALSE)
 }
 
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitAD(10, meanDD=0.5)
+
+}

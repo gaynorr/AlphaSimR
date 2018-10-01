@@ -17,3 +17,12 @@ Randomly assigns eligble SNPs to a SNP chip
  SP$addSnpChip(nSnpPerChr, force = FALSE)
 }
 
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addSnpChip(10)
+
+}

@@ -1,7 +1,13 @@
 Changes in version 0.8.1
 
   Bug fixes
-    -setPheno now passes the number of reps to populations
+    -setPheno (not setPhenoGCA) passes the number of reps to populations
+    -fixed bug in editGenomeTopQtl
+    -fixed bug in RRBLUP_D
+    -fixed bug in resetPop
+    -fixed bug in SimParam_rescaleTraits
+    -removed unimplemented SimParam_restrSnpSites and SimParam_restrQtlSites
+    -add error message for no traits in calcGCA
 
 Changes in version 0.8.0
 

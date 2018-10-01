@@ -34,3 +34,17 @@ should only be used if the parents were created using the \code{\link{makeDH}}
 function or \code{\link{newPop}} using inbred founders. The id for 
 new individuals is [mother_id]_[father_id]
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Make crosses for full diallele
+pop2 = hybridCross(pop, pop, simParam=SP)
+
+}

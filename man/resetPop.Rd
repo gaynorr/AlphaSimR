@@ -18,3 +18,19 @@ an object of \code{\link{Pop-class}}
 Recalculates a population's genetic values and 
 resets phenotypes and EBVs.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Rescale to set mean to 1
+SP$rescaleTraits(pop,mean=1)
+pop = resetPop(pop, simParam=SP)
+
+}

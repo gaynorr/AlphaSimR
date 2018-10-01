@@ -17,3 +17,20 @@ that come from a portion the pedigree that is being reset.
  SP$resetPed(lastId = 0L)
 }
 
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+pop@id # 1:10
+
+#Create another population after reseting pedigree
+SP$resetPed()
+pop2 = newPop(founderPop, simParam=SP)
+pop2@id # 1:10
+
+}
