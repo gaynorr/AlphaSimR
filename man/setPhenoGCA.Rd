@@ -54,3 +54,18 @@ breeding programs. In this case, varE is set to the plot error and
 reps is set to the number plots per entry. The resulting phenotype 
 would reflect the mean of all replications.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Set phenotype to average per
+pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
+
+}

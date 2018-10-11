@@ -35,3 +35,15 @@ Creates a new \code{\link{Pop-class}} from an object of
 The function is intended for creating initial populations from 
 'FOUNDERPOP' created by \code{\link{runMacs}}.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+}

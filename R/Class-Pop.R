@@ -343,6 +343,17 @@ setMethod("c",
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
 #' @export
 newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                   origF=NULL,isDH=FALSE,simParam=NULL){
@@ -430,6 +441,21 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
 #'
 #' @return an object of \code{\link{Pop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Rescale to set mean to 1
+#' SP$rescaleTraits(pop,mean=1)
+#' pop = resetPop(pop, simParam=SP)
+#' 
 #' @export
 resetPop = function(pop,simParam=NULL){
   if(is.null(simParam)){
@@ -449,7 +475,7 @@ resetPop = function(pop,simParam=NULL){
   pop@reps = rep(1,pop@nInd) 
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],pop)
+      tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
       pop@gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         pop@gxe[[i]] = tmp[[2]]

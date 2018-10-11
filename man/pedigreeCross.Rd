@@ -37,3 +37,20 @@ rates be used. This parameter has no effect if, recombRatio=1.}
 Creates a \code{\link{Pop-class}} from a generic 
 pedigree and a set of founder individuals.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Pedigree for a biparental cross with 7 generations of selfing
+id = 1:10
+mother = c(0,0,1,3:9)
+father = c(0,0,2,3:9)
+pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
+
+}

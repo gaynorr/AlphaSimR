@@ -16,3 +16,16 @@ Returns a \code{\link{Pop-class}}
 Rapidly merges a list of populations into a
 single population
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create a list of populations and merge list
+pop = newPop(founderPop, simParam=SP)
+popList = list(pop, pop)
+pop2 = mergePops(popList)
+
+}

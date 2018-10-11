@@ -51,6 +51,19 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' more time.
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Make crosses for full diallele
+#' pop2 = hybridCross(pop, pop, simParam=SP)
+#' 
 #' @export
 hybridCross = function(females,males,crossPlan="testcross",
                        returnHybridPop=FALSE,chunkSize=10000,
@@ -126,6 +139,21 @@ hybridCross = function(females,males,crossPlan="testcross",
 #' \code{\link{HybridPop-class}}
 #' @param use true genetic value "gv" or phenotypes "pheno" (default)
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Make crosses for full diallele
+#' pop2 = hybridCross(pop, pop, simParam=SP)
+#' GCA = calcGCA(pop2, use="gv")
+#' 
 #' @export
 calcGCA = function(pop,use="pheno"){
   if(use=="pheno"){
@@ -134,6 +162,9 @@ calcGCA = function(pop,use="pheno"){
     y = pop@gv
   }else{
     stop(paste0("use=",use," is not a valid option"))
+  }
+  if(ncol(y)==0){
+    stop(paste("No values for",use))
   }
   female = factor(pop@mother,
                   levels=unique(pop@mother))
@@ -246,6 +277,20 @@ calcGCA = function(pop,use="pheno"){
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' a matrix if onlyPheno=TRUE
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Set phenotype to average per
+#' pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
+#' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                        fixEff=1L,p=0.5,inbred=FALSE,chunkSize=10000,
@@ -270,7 +315,9 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   }else{
     stop(paste0("use=",use," is not a valid option"))
   }
-  #
+  if(ncol(y)==0){
+    stop(paste("No values for",use))
+  }
   female = factor(tmp@mother,levels=unique(tmp@mother))
   if(nlevels(female)==1){
     GCAf = matrix(colMeans(y),nrow=1)

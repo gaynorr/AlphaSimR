@@ -388,3 +388,41 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
   output = do.call("c",output)
   return(output)
 }
+
+#' @title Quick founder haplotype simulation
+#'
+#' @description Rapidly simulates founder haplotypes by randomly 
+#' sampling 0s and 1s. This is equivalent to having all loci with 
+#' allele frequency 0.5 and being in linkage equilibrium.
+#' 
+#' @param nInd number of individuals to simulate
+#' @param nChr number of chromosomes to simulate
+#' @param segSites number of segregating sites per chromosome
+#' @param genLen genetic length of chromosomes
+#' @param inbred should founder individuals be inbred
+#'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
+#' @examples 
+#' # Creates a populations of 10 outbred individuals
+#' # Their genome consists of 1 chromosome and 100 segregating sites
+#' founderPop = quickHaplo(nInd=10,nChr=1,segSites=100)
+#' 
+#' @export
+quickHaplo = function(nInd,nChr,segSites,genLen=1,inbred=FALSE){
+  if(inbred){
+    nHap = nInd
+  }else{
+    nHap = 2*nInd
+  }
+  if(length(segSites)==1) segSites = rep(segSites,nChr)
+  if(length(genLen)==1) genLen = rep(genLen,nChr)
+  genMap = vector("list",nChr)
+  haplotypes = vector("list",nChr)
+  for(i in 1:nChr){
+    genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
+    haplotypes[[i]] = matrix(sample(0:1,nHap*segSites[i],replace=TRUE),
+                             nrow=nHap, ncol=segSites[i])
+  }
+  return(newMapPop(genMap,haplotypes,inbred))
+}

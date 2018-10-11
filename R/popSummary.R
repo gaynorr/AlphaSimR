@@ -4,6 +4,19 @@
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' meanG(pop)
+#' 
 #' @export
 meanG = function(pop){
   colMeans(pop@gv)
@@ -14,6 +27,19 @@ meanG = function(pop){
 #' @description Returns the mean phenotypic values for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' meanP(pop)
 #' 
 #' @export
 meanP = function(pop){
@@ -26,6 +52,19 @@ meanP = function(pop){
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varG(pop)
+#' 
 #' @export
 varG = function(pop){
   popVar(pop@gv)
@@ -36,6 +75,19 @@ varG = function(pop){
 #' @description Returns phenotypic variance for all traits
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varP(pop)
 #' 
 #' @export
 varP = function(pop){
@@ -68,6 +120,19 @@ varP = function(pop){
 #' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 #' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 #' }
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' ans = genParam(pop, simParam=SP)
 #' 
 #' @export
 genParam = function(pop,simParam=NULL){
@@ -124,6 +189,19 @@ genParam = function(pop,simParam=NULL){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varA(pop, simParam=SP)
+#' 
 #' @export
 varA = function(pop,simParam=NULL){
   genParam(pop,simParam=simParam)$varA
@@ -135,6 +213,19 @@ varA = function(pop,simParam=NULL){
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varD(pop, simParam=SP)
 #' 
 #' @export
 varD = function(pop,simParam=NULL){
@@ -148,6 +239,19 @@ varD = function(pop,simParam=NULL){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' bv(pop, simParam=SP)
+#' 
 #' @export
 bv = function(pop,simParam=NULL){
   genParam(pop,simParam=simParam)$bv
@@ -159,6 +263,19 @@ bv = function(pop,simParam=NULL){
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' dd(pop, simParam=SP)
 #' 
 #' @export
 dd = function(pop,simParam=NULL){
@@ -172,6 +289,19 @@ dd = function(pop,simParam=NULL){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' genicVarA(pop, simParam=SP)
+#' 
 #' @export
 genicVarA = function(pop,simParam=NULL){
   genParam(pop,simParam=simParam)$genicVarA
@@ -183,6 +313,19 @@ genicVarA = function(pop,simParam=NULL){
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' genicVarD(pop, simParam=SP)
 #' 
 #' @export
 genicVarD = function(pop,simParam=NULL){
@@ -196,6 +339,19 @@ genicVarD = function(pop,simParam=NULL){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' genicVarG(pop, simParam=SP)
+#'
 #' @export
 genicVarG = function(pop,simParam=NULL){
   genParam(pop,simParam=simParam)$genicVarG
@@ -206,6 +362,19 @@ genicVarG = function(pop,simParam=NULL){
 #' @description A wrapper for accessing the gv slot
 #' 
 #' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' gv(pop)
 #' 
 #' @export
 gv = function(pop){
@@ -218,6 +387,19 @@ gv = function(pop){
 #' 
 #' @param pop a \code{\link{Pop-class}} or similar object
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pheno(pop)
+#' 
 #' @export
 pheno = function(pop){
   pop@pheno
@@ -229,6 +411,20 @@ pheno = function(pop){
 #' 
 #' @param pop a \code{\link{Pop-class}} or similar object
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop@ebv = matrix(rnorm(pop@nInd), nrow=pop@nInd, ncol=1)
+#' ebv(pop)
+#' 
 #' @export
 ebv = function(pop){
   pop@ebv
@@ -239,6 +435,19 @@ ebv = function(pop){
 #' @description A wrapper for accessing the nInd slot
 #' 
 #' @param pop a \code{\link{Pop-class}} or similar object
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' nInd(pop)
 #' 
 #' @export
 nInd = function(pop){

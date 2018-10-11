@@ -36,3 +36,24 @@ females and males. Useful for predicting GCA of parents
 in single cross hybrids. Can also predict performance of specific 
 single cross hybrids.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+SP$setVarE(h2=0.5)
+SP$addSnpChip(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Run GS model and set EBV
+ans = RRBLUP_GCA(pop, simParam=SP)
+pop = setEBV(pop, ans, simParam=SP)
+
+#Evaluate accuracy
+cor(gv(pop), ebv(pop))
+
+}

@@ -12,3 +12,7 @@ selInt(p)
 \description{
 Calculates the standardized selection intensity
 }
+\examples{
+selInt(0.1)
+
+}

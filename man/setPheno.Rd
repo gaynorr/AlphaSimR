@@ -43,3 +43,18 @@ breeding programs. In this case, varE is set to the plot error and
 reps is set to the number of plots per entry. The resulting phenotype 
 represents entry means.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Add phenotype with error variance of 1
+pop = setPheno(pop, varE=1)
+
+}

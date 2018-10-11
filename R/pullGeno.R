@@ -37,6 +37,20 @@ selectLoci = function(chr,inLociPerChr,inLociLoc){
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP genotypes.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullSnpGeno(pop, simParam=SP)
+#' 
 #' @export
 pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   if(is.null(simParam)){
@@ -65,7 +79,9 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
 #' chip to use
 #' @param missing What value to use for missing
 #' @param simParam an object of \code{\link{SimParam}}
+#' 
 #' @return Returns a matrix of SNP genotypes.
+#' 
 #' @export
 pullMultipleSnpGeno = function(pop, chips,
                                missing=9, simParam=NULL) {
@@ -120,6 +136,20 @@ pullMultipleSnpGeno = function(pop, chips,
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of QTL genotypes.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullQtlGeno(pop, simParam=SP)
+#' 
 #' @export
 pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
   if(is.null(simParam)){
@@ -151,6 +181,20 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of genotypes
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullSegSiteGeno(pop, simParam=SP)
+#' 
 #' @export
 pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
   if(class(pop)=="MapPop"){
@@ -190,6 +234,20 @@ pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP haplotypes.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullSnpHaplo(pop, simParam=SP)
+#' 
 #' @export
 pullSnpHaplo = function(pop, snpChip=1, haplo="all",
                         chr=NULL, simParam=NULL){
@@ -240,6 +298,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP haplotypes.
+#' 
 #' @export
 pullMultipleSnpHaplo = function(pop, chips, haplo="all",
                                 missing=9, simParam=NULL){
@@ -322,6 +381,20 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of QTL haplotypes.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullQtlHaplo(pop, simParam=SP)
+#' 
 #' @export
 pullQtlHaplo = function(pop, trait=1, haplo="all",
                         chr=NULL, simParam=NULL){
@@ -373,6 +446,20 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of haplotypes
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullSegSiteHaplo(pop, simParam=SP)
+#' 
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all",
                             chr=NULL, simParam=NULL){
@@ -445,6 +532,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' @return Returns a matrix of haplotypes with Identity By Descent
 #' (IBD) coding of locus alleles. The matrix colnames reflect whether
 #' all segregagting loci (sites) are retreived or only SNP array loci.
+#' 
 #' @export
 pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
   

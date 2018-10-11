@@ -22,3 +22,7 @@ Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
 and its related functions for a given training population size. 
 Note that this functions may underestimate total usage.
 }
+\examples{
+RRBLUPMemUse(nInd=1000, nMarker=5000)
+
+}

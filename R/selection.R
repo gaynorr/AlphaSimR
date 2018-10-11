@@ -105,6 +105,21 @@ getFam = function(pop,famType){
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Select best 5
+#' pop2 = selectInd(pop, 5, simParam=SP)
+#' 
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
                      selectTop=TRUE,returnPop=TRUE,
@@ -160,6 +175,24 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Create 3 biparental families with 10 progeny
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
+#' 
+#' #Select best 2 families
+#' pop3 = selectFam(pop2, 2, simParam=SP)
 #' 
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
@@ -228,6 +261,24 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Create 3 biparental families with 10 progeny
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
+#' 
+#' #Select best individual per family
+#' pop3 = selectWithinFam(pop2, 1, simParam=SP)
+#' 
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
@@ -292,6 +343,22 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' trait
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Create new population by selecting the best 3 plant
+#' #Assuming 50% selfing in plants and 10 seeds per plant
+#' pop2 = selectOP(pop, nInd=3, nSeeds=10, probSelf=0.5, simParam=SP)
 #' 
 #' @export
 selectOP = function(pop,nInd,nSeeds,probSelf=0,

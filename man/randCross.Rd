@@ -30,3 +30,17 @@ Returns an object of \code{\link{Pop-class}}
 A wrapper for \code{\link{makeCross}} that randomly 
 selects parental combinations for all possible combinantions.
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+
+#Make 10 crosses
+pop2 = randCross(pop, 10, simParam=SP)
+
+}

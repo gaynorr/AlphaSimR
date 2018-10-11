@@ -259,6 +259,13 @@ SimParam = R6Class(
 #' 
 #' @param founderPop an object of \code{\link{MapPop-class}}
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
 #' @name SimParam_new
 NULL
 # new ----
@@ -353,6 +360,14 @@ SimParam$set(
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$setTrackPed(TRUE)
+#' 
 #' @name SimParam_setTrackPed
 NULL
 # setTrackPed ----
@@ -387,6 +402,14 @@ SimParam$set(
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$setTrackRec(TRUE)
+#' 
 #' @name SimParam_setTrackRec
 NULL
 # setTrackRec ----
@@ -417,6 +440,22 @@ SimParam$set(
 #' @param lastId last ID to include in pedigree
 #' 
 #' @section Usage: SP$resetPed(lastId = 0L)
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop@id # 1:10
+#' 
+#' #Create another population after reseting pedigree
+#' SP$resetPed()
+#' pop2 = newPop(founderPop, simParam=SP)
+#' pop2@id # 1:10
 #' 
 #' @name SimParam_resetPed
 NULL
@@ -453,6 +492,14 @@ SimParam$set(
 #' No minimum SNP frequency is used if value is NULL.
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$restrSegSites(maxQtl=5, maxSnp=5)
 #' 
 #' @name SimParam_restrSegSites
 NULL
@@ -518,66 +565,6 @@ SimParam$set(
   }
 )
 
-#' @title Restrict SNP sites
-#'
-#' @description Sets restrictions on which segregating sites 
-#' can serve as SNPs.
-#' 
-#' @section Usage: SP$restrSnpSites(chr=NULL, site=NULL, force = FALSE)
-#' 
-#' @param chr a vector of chromosome postions for eligible 
-#' SNPs
-#' @param site a vector of eligible segregating sites within 
-#' chromosomes
-#' @param force should the check for a running simulation be 
-#' ignored. Only set to TRUE if you know what you are doing.
-#' 
-#' @name SimParam_restrSnpSites
-NULL
-# restrSnpSites ----
-SimParam$set(
-  "public",
-  "restrSnpSites",
-  function(chr=NULL, site=NULL, force=FALSE){
-    if(!force){
-      private$.isRunning()
-    }
-    #DO SOMETHING
-    private$.potSnp
-    invisible(self)
-  }
-)
-
-#' @title Restrict QTL sites
-#'
-#' @description Sets restrictions on which segregating sites 
-#' can serve as QTL.
-#' 
-#' @section Usage: SP$restrQtlSites(chr = NULL, site = NULL, force = FALSE)
-#' 
-#' @param chr a vector of chromosome postions for eligible 
-#' QTL
-#' @param site a vector of eligible segregating sites within 
-#' chromosomes
-#' @param force should the check for a running simulation be 
-#' ignored. Only set to TRUE if you know what you are doing.
-#' 
-#' @name SimParam_restrQtlSites
-NULL
-# restrQtlSites ----
-SimParam$set(
-  "public",
-  "restrQtlSites",
-  function(chr=NULL, site=NULL, force=FALSE){
-    if(!force){
-      private$.isRunning()
-    }
-    #DO SOMETHING
-    private$.potQtl
-    invisible(self)
-  }
-)
-
 #' @title Set gender in simulation
 #'
 #' @description Changes how gender is used in the simulation. 
@@ -595,6 +582,14 @@ SimParam$set(
 #' "yes_rand"
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$setGender("yes_sys")
 #' 
 #' @name SimParam_setGender
 NULL
@@ -635,6 +630,14 @@ SimParam$set(
 #' @param ratio any value greater than 0
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$setRecRatio(2) #Twice as much recombination in females
 #' 
 #' @name SimParam_setRecRatio
 NULL
@@ -677,6 +680,15 @@ SimParam$set(
 #' @param h2 a vector of desired narrow-sense heritabilities
 #' @param H2 a vector of desired broad-sense heritabilities
 #' @param varE a vector of error variances
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
 #' 
 #' @name SimParam_setVarE
 NULL
@@ -726,6 +738,17 @@ SimParam$set(
 #' 
 #' @param corE a correlation matrix for the error variances
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
+#' SP$setVarE(varE=c(1,1))
+#' E = 0.5*diag(2)+0.5 #Positively correlated error
+#' SP$setCorE(E)
+#' 
 #' @name SimParam_setCorE
 NULL
 # setCorE ----
@@ -757,6 +780,14 @@ SimParam$set(
 #' Can be a single value or nChr values.
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addSnpChip(10)
 #' 
 #' @name SimParam_addSnpChip
 NULL
@@ -853,6 +884,17 @@ SimParam$set(
 #' @param chips a vector of SNP chips to remove
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addSnpChip(10)
+#' SP$nSnpChips
+#' SP$removeSnpChip(1)
+#' SP$nSnpChips
 #' 
 #' @name SimParam_removeSnpChip
 NULL
@@ -994,6 +1036,14 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
 #' @name SimParam_addTraitA
 NULL
 # addTraitA ----
@@ -1055,6 +1105,14 @@ SimParam$set(
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #'  
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' 
 #' @name SimParam_addTraitAD
 NULL
 # addTraitAD ----
@@ -1119,6 +1177,14 @@ SimParam$set(
 #' @param corGxE a matrix of correlations between GxE effects
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape the shape parameter for the gamma distribution
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAG(10, varGxE=2)
 #' 
 #' @name SimParam_addTraitAG
 NULL
@@ -1207,6 +1273,14 @@ SimParam$set(
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #'  
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
+#' 
 #' @name SimParam_addTraitADG
 NULL
 # addTraitADG ----
@@ -1291,6 +1365,18 @@ SimParam$set(
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #'  
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$nTraits
+#' SP$removeTrait(1)
+#' SP$nTraits
+#' 
+#' 
 #' @name SimParam_removeTrait
 NULL
 # removeTrait ----
@@ -1412,6 +1498,24 @@ SimParam$set(
 #' You must run \code{\link{resetPop}} on existing 
 #' populations to obtain the new trait values.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' meanG(pop)
+#' 
+#' #Change mean to 1
+#' SP$rescaleTraits(pop, mean=1)
+#' #Run resetPop for chage to take effect
+#' pop = resetPop(pop, simParam=SP) 
+#' meanG(pop)
+#' 
 #' @name SimParam_rescaleTraits
 NULL
 # rescaleTraits ----
@@ -1439,22 +1543,24 @@ SimParam$set(
                       trait@lociPerChr,
                       trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
-        tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],useVarA)
+        tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],
+                          useVarA,self$nThreads)
         trait@domEff = trait@domEff*tmp$scale
       }else{
-        tmp = tuneTraitA(geno,trait@addEff,var[i])
+        tmp = tuneTraitA(geno,trait@addEff,var[i],self$nThreads)
       }
       trait@addEff = trait@addEff*tmp$scale
       trait@intercept = mean[i]-tmp$intercept
       if(class(trait)%in%c("TraitAG","TraitADG")){
         if(varEnv[i]==0){
-          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i])
+          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i],
+                            self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 0-tmpG$intercept
           trait@envVar = 1
         }else{
-          tmpG = tuneTraitA(geno,trait@gxeEff,
-                            varGxE[i]/varEnv[i])
+          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i]/varEnv[i],
+                            self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 1-tmpG$intercept
           trait@envVar = varEnv[i]
