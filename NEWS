@@ -1,3 +1,8 @@
+Changes in version 0.8.2
+
+  Bug fixes
+    -fixed ambiguous overloading in optimize.cpp
+
 Changes in version 0.8.1
 
   Bug fixes
