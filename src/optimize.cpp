@@ -19,11 +19,11 @@ List optimize(List (*objective)(double, List), List args, double l,
               double u, int maxIter=1000, bool maximize=false, 
               bool evalU=false, bool evalL=false, double eps=1.0e-9){
   double MACHEPS_SQRT = sqrt(2.2204460492503131e-016);
-  double c = (3-sqrt(5))/2;
+  double c = (3.0-std::sqrt(double(5.0)))/2.0;
   double x = l+c*(u-l);
   double v = x;
   double w = x;
-  double e = 0;
+  double e = 0.0;
   double lInt = l;
   double uInt = u;
   List fOut = objective(x, args);

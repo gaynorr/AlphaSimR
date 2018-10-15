@@ -387,3 +387,11 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                 lociLoc    = tmp$lociLoc,
                 file       = paste0(baseName, ".ped"))
 }
+
+#Create rotation matrix for sampling random deviates
+#Uses SVD method for stability
+rotMat = function(X){
+  ans = svd(X)
+  u = t(ans$u)*sqrt(pmax(ans$d,0))
+  return(t(ans$v%*%u))
+}

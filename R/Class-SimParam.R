@@ -997,7 +997,7 @@ SimParam$set(
 
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%chol(corr)
+                  ncol=nTraits)%*%rotMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
       x = (pnorm(addEff[,i])-0.5)*2
@@ -1010,7 +1010,7 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
 sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
                       meanDD,varDD){
   domEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%chol(corDD)
+                  ncol=nTraits)%*%rotMat(corDD)
   domEff = sweep(domEff,2,sqrt(varDD),"*")
   domEff = sweep(domEff,2,meanDD,"+")
   domEff = abs(addEff)*domEff

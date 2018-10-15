@@ -5,16 +5,8 @@ addError = function(gv,varE,reps=1){
   if(is.matrix(varE)){
     stopifnot(isSymmetric(varE),
               ncol(varE)==nTraits)
-    if(any(diag(varE)==0)){
-      zeros = which(diag(varE)==0)
-      diag(varE)[zeros] = 1
-      error = matrix(rnorm(nInd*nTraits),
-                     ncol=nTraits)%*%chol(varE)
-      error[,zeros] = 0
-    }else{
-      error = matrix(rnorm(nInd*nTraits),
-                     ncol=nTraits)%*%chol(varE)
-    }
+    error = matrix(rnorm(nInd*nTraits),
+                   ncol=nTraits)%*%rotMat(varE)
   }else{
     stopifnot(length(varE)==nTraits)
     error = lapply(varE,function(x){
