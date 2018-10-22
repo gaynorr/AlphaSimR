@@ -6,7 +6,7 @@ using namespace Rcpp;
  *   objective takes a double and a List as arguments
  *   optimization is for the double
  *   the returned list includes "objective" and list of additional output
- * args is a list which is passed to the objective
+ * args is a list which is passed to the objective function
  * l is the lower bound of optimization
  * u is the upper bound of optimization
  * maxIter is the maximum number of iterations
