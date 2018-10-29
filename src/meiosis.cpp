@@ -245,7 +245,7 @@ Rcpp::List createDH2(
   arma::field<arma::Cube<unsigned char> > output(nChr);
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd,nChr,2);
+    hist.setSize(nInd*nDH,nChr,2);
   }
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -263,7 +263,7 @@ Rcpp::List createDH2(
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){
-            hist.addHist(histMat,ind,chr,j);
+            hist.addHist(histMat,i+ind*nDH,chr,j);
           }
         } //End ploidy loop
       } //End nDH loop
