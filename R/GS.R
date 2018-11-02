@@ -109,7 +109,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param Ve error variance. If value is NULL, a 
 #' reasonable starting point is chosen automatically.
 #' @param useEM use EM to solve variance components. If false, 
-#' The initial values are considered true.
+#' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
@@ -208,11 +208,6 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
                     lociLoc,Vu,Ve,tol,maxIter,useEM)
-  if(is.null(ans[["iter"]])){
-    iter = 0
-  }else{
-    iter = ans$iter
-  }
   output = new("RRsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -222,7 +217,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                Vu=as.matrix(ans$Vu),
                Ve=as.matrix(ans$Ve),
                LL=numeric(),
-               iter=iter)
+               iter=ans$iter)
   return(output)
 }
 
@@ -398,6 +393,130 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                Vu=ans$Vu,
                Ve=ans$Ve,
                LL=ans$LL,
+               iter=ans$iter)
+  return(output)
+}
+
+#' @title RR-BLUP GCA Model 2
+#'
+#' @description
+#' Fits an RR-BLUP model that estimates seperate marker effects for
+#' females and males. This implementation is meant for situations where 
+#' \code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2 
+#' is only faster in certain situations. Most users should use 
+#' \code{\link{RRBLUP_GCA}}.
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model, or a
+#' function of the traits returning a single value.
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations for convergence.
+#' @param VuF marker effect variance for females. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param VuM marker effect variance for males. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param useEM use EM to solve variance components. If false, 
+#' the initial values are considered true.
+#' @param tol tolerance for EM algorithm convergence
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
+#'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_GCA2(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
+#' @export
+RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1, 
+                       useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL, 
+                       Ve=NULL, useEM=TRUE, tol=1e-6, simParam=NULL, 
+                       ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
+  }else{
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
+  }
+  # Sort out VuF, VuM and Ve
+  if(is.function(traits)){
+    if(is.null(VuF)){
+      VuF = var(y)/nLoci
+    }
+    if(is.null(VuM)){
+      VuM = var(y)/nLoci
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    if(is.null(VuF)){
+      VuF = 2*simParam$varA[traits]/nLoci
+      if(is.na(VuF)){
+        VuF = var(y)/nLoci
+      }
+    }
+    if(is.null(VuM)){
+      VuM = 2*simParam$varA[traits]/nLoci
+      if(is.na(VuM)){
+        VuM = var(y)/nLoci
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  #Fit model
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_GCA2(y,fixEff,pop@reps,pop@geno,
+                        lociPerChr,lociLoc,maxIter,
+                        VuF,VuM,Ve,tol,useEM)
+  output = new("GCAsol",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               femaleEff=ans$u[,1,drop=FALSE],
+               maleEff=ans$u[,2,drop=FALSE],
+               fixEff=ans$beta,
+               Vu=ans$Vu,
+               Ve=as.matrix(ans$Ve),
+               LL=numeric(),
                iter=ans$iter)
   return(output)
 }

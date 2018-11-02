@@ -34,7 +34,7 @@ reasonable starting point is chosen automatically.}
 reasonable starting point is chosen automatically.}
 
 \item{useEM}{use EM to solve variance components. If false, 
-The initial values are considered true.}
+the initial values are considered true.}
 
 \item{tol}{tolerance for EM algorithm convergence}
 

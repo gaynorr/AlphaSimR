@@ -1,7 +1,10 @@
 Changes in version 0.8.3
 
+  New features
+    -added RRBLUP_GCA2
+  
   Bug fixes
-    -fixed recombination tracking bug in createDH2s
+    -fixed recombination tracking bug in createDH2
 
 Changes in version 0.8.2
 

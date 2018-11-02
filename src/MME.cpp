@@ -167,56 +167,6 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("LL")=ll);
 }
 
-Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
-                          const arma::mat& M, double Vu, double Ve, 
-                          double tol, int maxIter,
-                          bool useEM){
-  double lambda = Ve/Vu;
-  double delta=0;
-  int iter=0;
-  arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
-  arma::mat RHS(q+m,q+m),LHS(q+m,1),Rvec(q+m,1);
-  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
-  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M;
-  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M.t()*X;
-  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M.t()*M;
-  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda;
-  Rvec(arma::span(0,q-1),0) = X.t()*Y;
-  Rvec(arma::span(q,q+m-1),0) = M.t()*Y;
-  arma::mat RHSinv = pinv(RHS);
-  LHS = RHSinv*Rvec;
-  if(useEM){
-    Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
-    Vu = as_scalar(
-      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
-        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
-    )/m;
-    delta = Ve/Vu-lambda;
-    while(fabs(delta)>tol){
-      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta;
-      lambda += delta;
-      RHSinv = pinv(RHS);
-      LHS = RHSinv*Rvec;
-      iter++;
-      if(iter>=maxIter){
-        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
-        break;
-      }
-      Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
-      Vu = as_scalar(
-        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
-          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
-      )/m;
-      delta = Ve/Vu-lambda;
-    }
-  }
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
-                            Rcpp::Named("u")=LHS.rows(arma::span(q,q+m-1)),
-                            Rcpp::Named("iter")=iter);
-}
-
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000, 
                          double tol=1e-6){
@@ -389,6 +339,143 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
+//Uses EM algorithm to solve a mixed model with 1 random effect
+Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
+                          const arma::mat& M, double Vu, double Ve, 
+                          double tol, int maxIter,
+                          bool useEM){
+  double lambda = Ve/Vu;
+  double delta=0,VeN=0,VuN=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
+  arma::mat RHS(q+m,q+m),LHS(q+m,1),Rvec(q+m,1);
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M.t()*Y;
+  arma::mat RHSinv = inv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    VuN = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    delta = VeN/VuN-lambda;
+    while(fabs(delta)>tol){
+      Ve = VeN;
+      Vu = VuN;
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta;
+      lambda += delta;
+      RHSinv = inv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      VuN = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      delta = VeN/VuN-lambda;
+    }
+  }
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=LHS.rows(arma::span(q,q+m-1)),
+                            Rcpp::Named("iter")=iter);
+}
+
+//Uses EM algorithm to solve a mixed model with 2 random effects
+Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
+                           const arma::mat& M1, const arma::mat& M2, 
+                           double Vu1, double Vu2, double Ve, 
+                           double tol, int maxIter, bool useEM){
+  double lambda1 = Ve/Vu1;
+  double lambda2 = Ve/Vu2;
+  double delta1=0,delta2=0,VeN=0,Vu1N=0,Vu2N=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
+  arma::mat RHS(q+2*m,q+2*m),LHS(q+2*m,1),Rvec(q+2*m,1);
+  // Top row
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M1;
+  RHS(arma::span(0,q-1),arma::span(q+m,q+2*m-1)) = X.t()*M2;
+  // Second row
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M1.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M1.t()*M1;
+  RHS(arma::span(q,q+m-1),arma::span(q+m,q+2*m-1)) = M1.t()*M2;
+  // Third row
+  RHS(arma::span(q+m,q+2*m-1),arma::span(0,q-1)) = M2.t()*X;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q,q+m-1)) = M2.t()*M1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)) = M2.t()*M2;
+  // Add to diagonal
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += lambda2;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
+  Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
+  arma::mat RHSinv = inv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu1N = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    Vu2N = as_scalar(
+      LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+    )/m;
+    delta1 = VeN/Vu1N-lambda1;
+    delta2 = VeN/Vu2N-lambda2;
+    while((fabs(delta1)>tol) || (fabs(delta2)>tol)){
+      Ve = VeN;
+      Vu1 = Vu1N;
+      Vu2 = Vu2N;
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta1;
+      RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += delta2;
+      lambda1 += delta1;
+      lambda2 += delta2;
+      RHSinv = inv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu1N = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      Vu2N = as_scalar(
+        LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+      )/m;
+      delta1 = VeN/Vu1N-lambda1;
+      delta2 = VeN/Vu2N-lambda2;
+    }
+  }
+  arma::vec Vu(2);
+  Vu(0) = Vu1;
+  Vu(1) = Vu2;
+  arma::mat u(m,2);
+  u.col(0) = LHS.rows(arma::span(q,q+m-1));
+  u.col(1) = LHS.rows(arma::span(q+m,q+2*m-1));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("iter")=iter);
+}
+
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
@@ -481,6 +568,25 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(0), reps);
   sweepReps(Mlist(1), reps);
   return solveRRBLUPMK(y,X,Mlist,maxIter);
+}
+
+// Called by RRBLUP_GCA2 function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, arma::vec reps,
+                           arma::field<arma::Cube<unsigned char> >& geno, 
+                           arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                           int maxIter, double Vu1, double Vu2, double Ve, 
+                           double tol, bool useEM){
+  arma::mat X = makeX(x);
+  arma::mat M1 = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
+  M1 = M1*2;
+  arma::mat M2 = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
+  M2 = M2*2;
+  sweepReps(y, reps);
+  sweepReps(X, reps);
+  sweepReps(M1, reps);
+  sweepReps(M2, reps);
+  return solveRRBLUP_EM2(y,X,M1,M2,Vu1,Vu2,Ve,tol,maxIter,useEM);
 }
 
 // Called by RRBLUP_SCA function
