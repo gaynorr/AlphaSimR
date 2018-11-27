@@ -729,5 +729,5 @@ RRBLUPMemUse = function(nInd,nMarker,model="REG"){
   objects = objects[objects!="model"]
   bytes = sapply(objects,function(x) get(x))
   bytes = 8*sum(bytes)
-  return(bytes*1e-9) #GB
+  return(bytes/1073741824) #GB
 }

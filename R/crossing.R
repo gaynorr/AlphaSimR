@@ -306,7 +306,7 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
 #' @param males an object of \code{\link{Pop-class}} for male parents.
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param balance if using gender, this option will balance the number 
+#' @param balance this option will balance the number 
 #' of progeny per parent
 #' @param femaleParents an optional vector of indices for allowable 
 #' female parents
@@ -349,12 +349,9 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
   }else{
     maleParents = as.integer(maleParents)
   }
-  nF = length(femaleParents)
-  nM = length(maleParents)
   if(simParam$gender=="no" | ignoreGender){
-      crossPlan = sampAllComb(nF,nM,nCrosses)
-      crossPlan[,1] = femaleParents[crossPlan[,1]]
-      crossPlan[,2] = maleParents[crossPlan[,2]]
+    female = 1:females@nInd
+    male = 1:males@nInd
   }else{
     female = which(females@gender=="F" & 
                      (1:females@nInd)%in%femaleParents)
@@ -366,20 +363,20 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     if(length(male)==0){
       stop("population doesn't contain any males")
     }
-    if(balance){
-      female = female[sample.int(length(female),length(female))]
-      female = rep(female,length.out=nCrosses)
-      male = male[sample.int(length(male),length(male))]
-      male = rep(male,length.out=nCrosses)
-      male = male[sample.int(nCrosses,nCrosses)]
-      crossPlan = cbind(female,male)
-    }else{
-      crossPlan = sampAllComb(length(female),
-                              length(male),
-                              nCrosses)
-      crossPlan[,1] = female[crossPlan[,1]]
-      crossPlan[,2] = male[crossPlan[,2]]
-    }
+  }
+  if(balance){
+    female = female[sample.int(length(female),length(female))]
+    female = rep(female,length.out=nCrosses)
+    male = male[sample.int(length(male),length(male))]
+    male = rep(male,length.out=nCrosses)
+    male = male[sample.int(nCrosses,nCrosses)]
+    crossPlan = cbind(female,male)
+  }else{
+    crossPlan = sampAllComb(length(female),
+                            length(male),
+                            nCrosses)
+    crossPlan[,1] = female[crossPlan[,1]]
+    crossPlan[,2] = male[crossPlan[,2]]
   }
   if(nProgeny>1){
     crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),

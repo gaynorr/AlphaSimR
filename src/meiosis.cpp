@@ -60,7 +60,7 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // Returns -1 if value is smaller than the values of x
 // Returns last element if value is greater than values of x
 // Set left to the smallest value of the interval to search
-arma::uword intervalSearch(arma::vec x, double value, arma::uword left=0){
+arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0){
   // Check if crossover is before beginning
   if(x[left]>value){
     Rcpp::stop("intervalSearch searching in impossible interval");

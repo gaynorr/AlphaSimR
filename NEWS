@@ -2,6 +2,7 @@ Changes in version 0.8.3
 
   New features
     -added RRBLUP_GCA2
+    -randCross2 can now "balance" crossing when not using gender
   
   Bug fixes
     -fixed recombination tracking bug in createDH2
