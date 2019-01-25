@@ -35,5 +35,7 @@ for creating initial populations and setting traits in the
 
 \describe{
 \item{\code{genMap}}{"matrix" of chromsome genetic maps}
+
+\item{\code{centromere}}{vector of centromere positions}
 }}
 

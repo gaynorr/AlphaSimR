@@ -6,8 +6,23 @@
 // [[Rcpp::export]]
 Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno,
                       arma::vec& addEff,
-                      double varG, int nThreads){
-  arma::vec gv  = calcGvA(geno, addEff, 0, nThreads);
+                      double varG, 
+                      int ploidy, 
+                      int nThreads){
+  arma::vec gv(geno.n_cols, arma::fill::zeros);
+  double dP = double(ploidy);
+  arma::vec x(ploidy+1); // Genotype dossage
+  for(arma::uword i=0; i<x.n_elem; ++i)
+    x(i) = double(i);
+  arma::vec xa = (x-dP/2.0)*(2.0/dP);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<geno.n_cols; ++i){
+    for(arma::uword j=0; j<geno.n_rows; ++j){
+      gv(i) += xa(geno(j,i))*addEff(j);
+    }
+  }
   double scale = sqrt(varG)/stddev(gv,1);
   double intercept = mean(gv*scale);
   return Rcpp::List::create(Rcpp::Named("scale")=scale,
@@ -20,51 +35,54 @@ Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
                       arma::vec& addEff,
                       arma::vec& domEff,
                       double varG, 
-                      bool useVarA, 
+                      bool useVarA,
+                      int ploidy, 
                       int nThreads){
-  int nLoci = geno.n_rows;
-  int nInd = geno.n_cols;
-  arma::vec p(nLoci), q(nLoci), alpha(nLoci);
+  double scale, obsVarG, obsVarA, intercept; //Output
+  arma::uword nLoci = geno.n_rows;
+  arma::uword nInd = geno.n_cols;
+  double dP = double(ploidy);
+  arma::vec x(ploidy+1); // Genotype dossage
+  for(arma::uword i=0; i<x.n_elem; ++i)
+    x(i) = double(i);
+  arma::vec xa = (x-dP/2.0)*(2.0/dP);
+  arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
+  arma::vec genoMu(nLoci), alpha(nLoci);
   arma::vec gv(nInd,arma::fill::zeros), bv(nInd,arma::fill::zeros);
   arma::Mat<unsigned char> genoT = geno.t();
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(int i=0; i<nLoci; ++i){
-    arma::vec genoFreq(3,arma::fill::zeros);
-    for(int j=0; j<nInd; ++j){
-      genoFreq(genoT(j,i)) += 1;
+  for(arma::uword i=0; i<genoT.n_cols; ++i){
+    arma::vec freq(ploidy+1,arma::fill::zeros);
+    arma::vec gvLoc(ploidy+1);
+    double gvMu;
+    for(arma::uword j=0; j<genoT.n_rows; ++j){
+      freq(genoT(j,i)) += 1;
     }
-    p(i) = (genoFreq(2)+0.5*genoFreq(1))/accu(genoFreq);
-    q(i) = 1-p(i);
-    // 1-observed(het)/expect(het)
-    if((p(i)>0.999999999) | (p(i)<0.000000001)){
-      // Locus is fixed, no viable regression
-      alpha(i) = 0;
-    }else{
-      double F = 1-(genoFreq(1)/accu(genoFreq))/(2*p(i)*q(i));
-      if(F<-0.999999999){
-        // Only heterozygotes, no viable regression
-        alpha(i) = 0;
-      }else{
-        // a+d(q-p)(1-F)/(1+F)
-        alpha(i) = addEff(i)+domEff(i)*(q(i)-p(i))*(1-F)/(1+F);
-      }
-    }
+    freq = freq/accu(freq);
+    genoMu(i) = accu(freq%x);
+    gvLoc = xa*addEff(i)+xd*domEff(i);
+    gvMu = accu(freq%gvLoc);
+    
+    alpha(i) = accu(freq%(gvLoc-gvMu)%(x-genoMu(i)))/
+      accu(freq%(x-genoMu(i))%(x-genoMu(i)));
   }
+
+  // Account for divide by zero
+  alpha.replace(arma::datum::inf,0.0);
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword i=0; i<geno.n_cols; ++i){
     for(arma::uword j=0; j<geno.n_rows; ++j){
-      gv(i) += geno(j,i)*addEff(j)+(1-abs(int(geno(j,i))-1))*domEff(j);
-      bv(i) += (double(geno(j,i))-2*p(j))*alpha(j);
+      gv(i) += xa(geno(j,i))*addEff(j)+xd(geno(j,i))*domEff(j);
+      bv(i) += (double(geno(j,i))-genoMu(j))*alpha(j);
     }
   }
   
-  double scale, obsVarG, obsVarA, intercept;
   if(useVarA){
     scale = sqrt(varG)/stddev(bv,1);
     obsVarA = varG;

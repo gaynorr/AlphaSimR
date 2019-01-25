@@ -7,7 +7,8 @@ public:
     arma::field< //chromosome
       arma::field< //ploidy
         arma::Mat<int> > > > hist; //(chr, site)
-  void setSize(arma::uword nInd, arma::uword nChr, 
+  void setSize(arma::uword nInd, 
+               arma::uword nChr, 
                arma::uword ploidy);
   void addHist(arma::Mat<int>& input, 
                arma::uword nInd, 
@@ -18,8 +19,9 @@ public:
                          arma::uword par);
 };
 
-void RecHist::setSize(arma::uword nInd, arma::uword nChr, 
-                 arma::uword ploidy=2){
+void RecHist::setSize(arma::uword nInd, 
+                      arma::uword nChr, 
+                      arma::uword ploidy=2){
   hist.set_size(nInd);
   for(arma::uword i=0; i<nInd; ++i){
     hist(i).set_size(nChr);
@@ -178,50 +180,139 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
 // femaleMap: chromosome genetic maps
 // maleMap: chromosome genetic maps
 // trackRec: track recombination
+// motherPloidy: ploidy level of mother 
+// fatherPloidy: ploidy level of father
+// quadProb: probability of quadrivalent formation
+// nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
-Rcpp::List cross2(
+Rcpp::List cross(
     const arma::field<arma::Cube<unsigned char> >& motherGeno, 
     arma::uvec mother,
     const arma::field<arma::Cube<unsigned char> >& fatherGeno, 
     arma::uvec father,
     const arma::field<arma::vec>& femaleMap,
     const arma::field<arma::vec>& maleMap,
-    bool trackRec, int nThreads){
+    bool trackRec,
+    arma::uword motherPloidy,
+    arma::uword fatherPloidy,
+    double quadProb,
+    int nThreads){
   mother -= 1; // R to C++
   father -= 1; // R to C++
+  arma::uword ploidy = (motherPloidy+fatherPloidy)/2;
   arma::uword nChr = motherGeno.n_elem;
   arma::uword nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd,nChr,2);
+    hist.setSize(nInd,nChr,ploidy);
   }
   //Loop through chromosomes
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){
+    arma::vec u(1);
     arma::Mat<int> histMat;
+    arma::uvec xm(motherPloidy); // Indicator for mother chromosomes
+    arma::uvec xf(fatherPloidy); // Indicator for father chromosomes
+    arma::uword progenyChr;
     arma::uword segSites = motherGeno(chr).n_rows;
-    arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
+    arma::Cube<unsigned char> tmpGeno(segSites,ploidy,nInd);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
+      progenyChr=0;
+      xm = sampleInt(motherPloidy,motherPloidy);
       //Female gamete
-      tmpGeno.slice(ind).col(0) = 
-        bivalent(motherGeno(chr).slice(mother(ind)).col(0),
-                 motherGeno(chr).slice(mother(ind)).col(1),
-                 femaleMap(chr),histMat,trackRec);
-      if(trackRec){
-        hist.addHist(histMat,ind,chr,0);
+      for(arma::uword x=0; x<motherPloidy; x+=4){
+        if((motherPloidy-x)>2){
+          u.randu();
+          if(u(0)>quadProb){
+            //Bivalent 1
+            tmpGeno.slice(ind).col(progenyChr) = 
+              bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
+                       motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
+                       femaleMap(chr),histMat,trackRec);
+            if(trackRec){
+              histMat.col(0).replace(1,int(xm(x))+1);
+              histMat.col(0).replace(2,int(xm(x+1))+1);
+              hist.addHist(histMat,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+            //Bivalent 2
+            tmpGeno.slice(ind).col(progenyChr) = 
+            bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
+                     motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
+                     femaleMap(chr),histMat,trackRec);
+            if(trackRec){
+              histMat.col(0).replace(1,int(xm(x+2))+1);
+              histMat.col(0).replace(2,int(xm(x+3))+1);
+              hist.addHist(histMat,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+          }else{
+            //Quadrivalent
+          }
+        }else{
+          //Bivalent
+          tmpGeno.slice(ind).col(progenyChr) = 
+            bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
+                     motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
+                     femaleMap(chr),histMat,trackRec);
+          if(trackRec){
+            histMat.col(0).replace(1,int(xm(x))+1);
+            histMat.col(0).replace(2,int(xm(x+1))+1);
+            hist.addHist(histMat,ind,chr,progenyChr);
+          }
+          ++progenyChr;
+        }
       }
+      
       //Male gamete
-      tmpGeno.slice(ind).col(1) = 
-        bivalent(fatherGeno(chr).slice(father(ind)).col(0),
-                 fatherGeno(chr).slice(father(ind)).col(1),
-                 maleMap(chr),histMat,trackRec);
-      if(trackRec){
-        hist.addHist(histMat,ind,chr,1);
+      xf = sampleInt(fatherPloidy,fatherPloidy);
+      for(arma::uword x=0; x<fatherPloidy; x+=4){
+        if((fatherPloidy-x)>2){
+          u.randu();
+          if(u(0)>quadProb){
+            //Bivalent 1
+            tmpGeno.slice(ind).col(progenyChr) = 
+              bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
+                       fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
+                       maleMap(chr),histMat,trackRec);
+            if(trackRec){
+              histMat.col(0).replace(1,int(xf(x))+1);
+              histMat.col(0).replace(2,int(xf(x+1))+1);
+              hist.addHist(histMat,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+            //Bivalent 2
+            tmpGeno.slice(ind).col(progenyChr) = 
+            bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
+                     fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
+                     maleMap(chr),histMat,trackRec);
+            if(trackRec){
+              histMat.col(0).replace(1,int(xf(x+2))+1);
+              histMat.col(0).replace(2,int(xf(x+3))+1);
+              hist.addHist(histMat,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+          }else{
+            //Quadrivalent
+          }
+        }else{
+          //Bivalent
+          tmpGeno.slice(ind).col(progenyChr) = 
+            bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
+                     fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
+                     maleMap(chr),histMat,trackRec);
+          if(trackRec){
+            histMat.col(0).replace(1,int(xf(x))+1);
+            histMat.col(0).replace(2,int(xf(x+1))+1);
+            hist.addHist(histMat,ind,chr,progenyChr);
+          }
+          ++progenyChr;
+        }
       }
     } //End individual loop
     geno(chr) = tmpGeno;

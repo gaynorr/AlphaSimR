@@ -8,6 +8,7 @@
 #' @param haplotypes a list of matrices or data.frames that 
 #' can be coerced to matrices. See details.
 #' @param inbred are individuals fully inbred
+#' @param ploidy ploidy level of organism
 #' 
 #' @details
 #' Each item of genMap must be a vector of ordered genetic lengths in 
@@ -36,11 +37,12 @@
 #' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
 #' 
 #' @export
-newMapPop = function(genMap,haplotypes,inbred=FALSE){
+newMapPop = function(genMap,haplotypes,inbred=FALSE,
+                     ploidy=2L){
   stopifnot(length(genMap)==length(haplotypes))
-  ploidy = 2 #The only ploidy level currently supported
   nRow = lapply(haplotypes,nrow)
   nRow = unlist(nRow)
+  ploidy = as.integer(ploidy)
   if(length(nRow)>1L){
     if(any(nRow[1]!=nRow)){
       stop("Number of rows must be equal in haplotypes")
@@ -50,12 +52,10 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE){
   if(inbred){
     nInd = nRow
   }else{
-    if(ploidy==2L){
-      if(nRow%%2 == 1L){
-        stop("Number of haplotypes must be divisible by 2")
-      }
-      nInd = nRow/2
+    if(nRow%%ploidy != 0L){
+      stop("Number of haplotypes must be divisible by ploidy")
     }
+    nInd = nRow/ploidy
   }
   nCol = lapply(haplotypes,ncol)
   nCol = unlist(nCol)
@@ -71,10 +71,11 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE){
     output[[chr]] = new("MapPop",
                         nInd=as.integer(nInd),
                         nChr=1L,
-                        ploidy=as.integer(ploidy),
+                        ploidy=ploidy,
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(genMap[chr]))
+                        genMap=as.matrix(genMap[chr]),
+                        centromere=max(genMap[[chr]])/2)
   }
   output = do.call("c",output)
   return(output)
@@ -89,6 +90,7 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE){
 #' @param genMap a list of genetic maps
 #' @param nInd number of individuals
 #' @param inbred should individuals be fully inbred
+#' @param ploidy ploidy level of organism
 #' 
 #' @details
 #' Each item of genMap must be a vector of ordered genetic lengths in 
@@ -105,27 +107,28 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE){
 #' founderPop = trackHaploPop(genMap=genMap,nInd=10)
 #' 
 #' @export
-trackHaploPop = function(genMap,nInd,inbred=FALSE){
+trackHaploPop = function(genMap,nInd,inbred=FALSE,
+                         ploidy=2L){
   stopifnot(is.list(genMap))
+  ploidy = as.integer(ploidy)
   if(inbred){
-    stopifnot(nInd<=128)
-  }else{
     stopifnot(nInd<=256)
+  }else{
+    stopifnot(nInd<=(256/ploidy))
   }
   nInd = as.integer(nInd)
   nChr = length(genMap)
   nLoci = unlist(lapply(genMap,length))
   geno = vector("list",nChr)
   for(i in 1:nChr){
-    tmpGeno = as.raw(0:(2*nInd-1))
-    tmpGeno = array(raw(),dim=c(nLoci[i],2L,nInd))
+    tmpGeno = array(raw(),dim=c(nLoci[i],ploidy,nInd))
     tmp=-1
     for(j in 1:nInd){
       if(inbred){
         tmp=tmp+1
         tmpGeno[,1:2,j] = as.raw(tmp)
       }else{
-        for(k in 1:2){
+        for(k in 1:ploidy){
           tmp=tmp+1
           tmpGeno[,k,j] = as.raw(tmp)
         } 
@@ -133,9 +136,10 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
     }
     geno[[i]] = tmpGeno
   }
-  output = new("MapPop",nInd=nInd,nChr=nChr,ploidy=2L,
+  output = new("MapPop",nInd=nInd,nChr=nChr,ploidy=ploidy,
                nLoci=nLoci,geno=as.matrix(geno),
-               genMap=as.matrix(genMap))
+               genMap=as.matrix(genMap),
+               centromere=sapply(genMap,max)/2)
   return(output)
 }
 
@@ -150,6 +154,7 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' @param inbred should founder individuals be inbred
 #' @param species species history to simulate. See details.
 #' @param split an optional historic population split in terms of generations ago.
+#' @param ploidy ploidy level of organism
 #' @param manualCommand user provided MaCS options. For advanced users only.
 #' @param manualGenLen user provided genetic length. This must be supplied if using 
 #' manualCommand. If not using manualCommand, this value will replace the predefined 
@@ -171,11 +176,11 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE){
 #' 
 #' @export
 runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
-                   split=NULL,manualCommand=NULL,manualGenLen=NULL,
+                   split=NULL,ploidy=2L,manualCommand=NULL,manualGenLen=NULL,
                    nThreads=1){
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
-  ploidy = 2L #The only ploidy level currently supported
+  ploidy = as.integer(ploidy)
   if(is.null(segSites)){
     segSites = rep(0L,nChr)
   }else if(length(segSites)==1L){
@@ -243,7 +248,8 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
                ploidy=ploidy,
                nLoci=nLoci,
                geno=macsOut$geno,
-               genMap=genMap)
+               genMap=genMap,
+               centromere=sapply(genMap,max)/2)
   return(output)
 }
 
@@ -270,6 +276,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' population sizes given in histNe
 #' @param inbred should founder individuals be inbred
 #' @param split an optional historic population split in terms of generations ago
+#' @param ploidy ploidy level of organism
 #' @param returnCommand should the command passed to manualCommand in 
 #' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
 #' the command is returned instead.
@@ -290,7 +297,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
                     histNe=c(500,1500,6000,12000,100000),
                     histGen=c(100,1000,10000,100000,1000000),
-                    inbred=FALSE,split=NULL,returnCommand=FALSE,
+                    inbred=FALSE,split=NULL,ploidy=2L,returnCommand=FALSE,
                     nThreads=1L){
   stopifnot(length(histNe)==length(histGen))
   speciesParams = paste(bp,"-t",4*Ne*mutRate,
@@ -307,7 +314,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
   if(is.null(split)){
     command = paste(speciesParams,speciesHist)
   }else{
-    popSize = ifelse(inbred,nInd,2*nInd)
+    popSize = ifelse(inbred,nInd,ploidy*nInd)
     command = paste(speciesParams,
                     paste("-I 2",popSize%/%2,popSize%/%2),
                     speciesHist,
@@ -318,8 +325,8 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
   }
   return(runMacs(nInd=nInd,nChr=nChr,segSites=segSites,
                  inbred=inbred,species="TEST",split=NULL,
-                 manualCommand=command,manualGenLen=genLen,
-                 nThreads=nThreads))
+                 ploidy=ploidy,manualCommand=command,
+                 manualGenLen=genLen,nThreads=nThreads))
 }
 
 #' @title Sample haplotypes from a MapPop
@@ -383,7 +390,8 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
                         ploidy=mapPop@ploidy,
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(mapPop@genMap[chr]))
+                        genMap=as.matrix(mapPop@genMap[chr]),
+                        centromere=mapPop@centromere[chr])
   }
   output = do.call("c",output)
   return(output)
@@ -399,6 +407,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
 #' @param nChr number of chromosomes to simulate
 #' @param segSites number of segregating sites per chromosome
 #' @param genLen genetic length of chromosomes
+#' @param ploidy ploidy level of organism
 #' @param inbred should founder individuals be inbred
 #'
 #' @return an object of \code{\link{MapPop-class}}
@@ -409,11 +418,12 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
 #' founderPop = quickHaplo(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-quickHaplo = function(nInd,nChr,segSites,genLen=1,inbred=FALSE){
+quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
+  ploidy = as.integer(ploidy)
   if(inbred){
     nHap = nInd
   }else{
-    nHap = 2*nInd
+    nHap = ploidy*nInd
   }
   if(length(segSites)==1) segSites = rep(segSites,nChr)
   if(length(genLen)==1) genLen = rep(genLen,nChr)
@@ -424,5 +434,5 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,inbred=FALSE){
     haplotypes[[i]] = matrix(sample(0:1,nHap*segSites[i],replace=TRUE),
                              nrow=nHap, ncol=segSites[i])
   }
-  return(newMapPop(genMap,haplotypes,inbred))
+  return(newMapPop(genMap,haplotypes,inbred,ploidy))
 }

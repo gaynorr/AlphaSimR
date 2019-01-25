@@ -4,7 +4,8 @@
 \alias{quickHaplo}
 \title{Quick founder haplotype simulation}
 \usage{
-quickHaplo(nInd, nChr, segSites, genLen = 1, inbred = FALSE)
+quickHaplo(nInd, nChr, segSites, genLen = 1, ploidy = 2L,
+  inbred = FALSE)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -14,6 +15,8 @@ quickHaplo(nInd, nChr, segSites, genLen = 1, inbred = FALSE)
 \item{segSites}{number of segregating sites per chromosome}
 
 \item{genLen}{genetic length of chromosomes}
+
+\item{ploidy}{ploidy level of organism}
 
 \item{inbred}{should founder individuals be inbred}
 }

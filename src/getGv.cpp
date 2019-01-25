@@ -46,29 +46,82 @@ arma::field<arma::vec> getGv(const Rcpp::S4& trait,
   arma::field<arma::vec> output;
   bool hasD = trait.hasSlot("domEff");
   bool hasGxe = trait.hasSlot("gxeEff");
+  arma::uword nChr = pop.slot("nChr");
+  arma::uword nInd = pop.slot("nInd");
+  arma::uword ploidy = pop.slot("ploidy");
+  double dP = double(ploidy);
+  const arma::field<arma::Cube<unsigned char> >& geno = pop.slot("geno");
+  const arma::ivec& lociPerChr = trait.slot("lociPerChr");
+  arma::uvec lociLoc = trait.slot("lociLoc");
+  arma::vec a,d,g;
+  a = Rcpp::as<arma::vec>(trait.slot("addEff"));
+  if(hasD){
+    d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+  }
+  arma::mat gv(nInd,nChr),gxe;
+  gv.fill(double(trait.slot("intercept"))/double(nChr));
   if(hasGxe){
+    g = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
     output.set_size(2);
+    output(0).set_size(nInd);
+    output(1).set_size(nInd);
+    gxe.set_size(nInd,nChr);
+    gxe.fill(double(trait.slot("gxeInt"))/double(nChr));
   }else{
     output.set_size(1);
+    output(0).set_size(nInd);
   }
-  arma::Mat<unsigned char> geno;
-  geno = getGenoT(pop.slot("geno"), 
-                  trait.slot("lociPerChr"),
-                  trait.slot("lociLoc"));
-  arma::vec a = trait.slot("addEff");
-  double intercept = trait.slot("intercept");
-  if(hasD){
-    arma::vec d = trait.slot("domEff");
-    output(0) = calcGvAD(geno, a, d, intercept, nThreads);
-  }else{
-    output(0) = calcGvA(geno, a, intercept, nThreads);
+  arma::vec x(ploidy+1); // Genotype dossage
+  for(arma::uword i=0; i<x.n_elem; ++i)
+    x(i) = double(i);
+  arma::vec xa = (x-dP/2.0)*(2.0/dP);
+  arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
+  
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<nChr; ++i){
+    if(lociPerChr(i)>0){ //Check for QTL
+      arma::uword loc1=0,loc2;
+      loc2 = arma::sum(lociPerChr(arma::span(0,i)))-1;
+      if(i==0){
+        loc1 = 0;
+      }else{
+        loc1 = arma::sum(lociPerChr(arma::span(0,i-1)));
+      }
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2))-1;
+      arma::Mat<unsigned char> tmpGeno;
+      tmpGeno = arma::sum(geno(i),1);
+      tmpGeno = tmpGeno.rows(chrLociLoc).t();
+      arma::vec eff(ploidy+1),gEff(ploidy+1);
+      for(arma::uword j=loc1; j<(loc2+1); ++j){
+        // Calculate genetic values
+        eff = xa*a(j);
+        if(hasD){
+          eff += xd*d(j);
+        }
+        if(hasGxe){
+          gEff = xa*g(j);
+        }
+        for(arma::uword k=0; k<nInd; ++k){
+          gv(k,i) += eff(tmpGeno(k,j-loc1));
+          if(hasGxe){
+            gxe(k,i) += gEff(tmpGeno(k,j-loc1));
+          }
+        }
+      }
+    }
   }
+  output(0) = sum(gv,1);
   if(hasGxe){
-    arma::vec g = trait.slot("gxeEff");
-    double gxeInt = trait.slot("gxeInt");
-    output(1) = calcGvA(geno, g, gxeInt, nThreads);
+    output(1) = sum(gxe,1);
   }
   return output;
+}
+
+double choose(double n, double k){ // n choose k
+  if(k==0) return 1;
+  return (n*choose(n-1,k-1))/k;
 }
 
 // A calculates breeding values and dominance deviations and genic
@@ -78,9 +131,17 @@ arma::field<arma::vec> getGv(const Rcpp::S4& trait,
 // [[Rcpp::export]]
 Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
                         int nThreads){
-  int nInd = pop.slot("nInd");
+  //Information from pop
+  arma::uword nInd = pop.slot("nInd");
+  arma::uword nChr  = pop.slot("nChr");
+  arma::uword ploidy = pop.slot("ploidy");
+  double dP = double(ploidy);
+  const arma::field<arma::Cube<unsigned char> >& geno = pop.slot("geno");
+  //Information from trait
+  const arma::ivec& lociPerChr = trait.slot("lociPerChr");
+  arma::uvec lociLoc = trait.slot("lociLoc");
   arma::vec a = trait.slot("addEff");
-  int nLoci = a.n_elem;
+  arma::uword nLoci = a.n_elem;
   arma::vec d(nLoci);
   if(trait.hasSlot("domEff")){
     d = Rcpp::as<arma::vec>(trait.slot("domEff"));
@@ -88,88 +149,104 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
     d.zeros();
   }
   double intercept = trait.slot("intercept");
-  arma::vec bv(nInd,arma::fill::zeros);
-  arma::vec dd(nInd,arma::fill::zeros);
-  arma::vec gv_a(nInd,arma::fill::zeros);
-  arma::vec gv_d(nInd,arma::fill::zeros);
-  arma::Mat<unsigned char> geno;
-  geno = getGeno(pop.slot("geno"), 
-                 trait.slot("lociPerChr"),
-                 trait.slot("lociLoc"));
-  arma::vec p(nLoci), q(nLoci), alpha(nLoci), mu(nLoci);
-  arma::vec F(nLoci), inbreeding(nLoci), isSeg(nLoci);
-  arma::mat ddMat(3,nLoci);
+  arma::mat bvMat(nInd,nChr,arma::fill::zeros); // "Breeding value"
+  arma::mat ddMat(nInd,nChr,arma::fill::zeros); // Dominance deviation
+  arma::mat gv_a(nInd,nChr,arma::fill::zeros); // Genetic value due to a
+  arma::mat gv_d(nInd,nChr,arma::fill::zeros); // Genetic value due to d
+  arma::vec genicA(nChr,arma::fill::zeros); // No LD
+  arma::vec genicA2(nChr,arma::fill::zeros); // No LD and HWE
+  arma::vec genicD(nChr,arma::fill::zeros); // No LD
+  arma::vec genicD2(nChr,arma::fill::zeros); // No LD and HWE
+  arma::vec mu(nChr,arma::fill::zeros); // Observed mean
+  arma::vec eMu(nChr,arma::fill::zeros); // Expected mean with HWE
+  arma::vec x(ploidy+1); // Genotype dossage
+  for(arma::uword i=0; i<x.n_elem; ++i)
+    x(i) = double(i);
+  arma::vec xa = (x-dP/2.0)*(2.0/dP);
+  arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
+  
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(int i=0; i<nLoci; ++i){
-    arma::vec genoFreq(3,arma::fill::zeros);
-    for(int j=0; j<nInd; ++j){
-      genoFreq(geno(j,i)) += 1;
-    }
-    p(i) = (genoFreq(2)+0.5*genoFreq(1))/accu(genoFreq);
-    q(i) = 1-p(i);
-    // 1-observed(het)/expect(het)
-    if((p(i)>0.999999999) | (p(i)<0.000000001)){
-      // Locus is fixed, no viable regression
-      isSeg(i) = 0;
-      F(i) = 0;
-      alpha(i) = 0;
-      ddMat(0,i) = 0;
-      ddMat(1,i) = 0;
-      ddMat(2,i) = 0;
-    }else{
-      isSeg(i) = 1;
-      F(i) = 1-(genoFreq(1)/accu(genoFreq))/(2*p(i)*q(i));
-      if(F(i)<-0.999999999){
-        // Only heterozygotes, no viable regression
-        alpha(i) = 0;
-        ddMat(0,i) = 0;
-        ddMat(1,i) = 0;
-        ddMat(2,i) = 0;
+  for(arma::uword i=0; i<nChr; ++i){
+    if(lociPerChr(i)>0){ //Check for QTL
+      arma::uword loc1=0,loc2;
+      loc2 = arma::sum(lociPerChr(arma::span(0,i)))-1;
+      if(i==0){
+        loc1 = 0;
       }else{
-        double fFrac = (1-F(i))/(1+F(i));
-        // a+d(q-p)(1-F)/(1+F)
-        alpha(i) = a(i)+d(i)*(q(i)-p(i))*fFrac;
-        // -2q(q+pF)(1-F)/(1+F)d
-        ddMat(2,i) = -2*q(i)*(q(i)+p(i)*F(i))*fFrac*d(i);
-        // (1-(1-2pq)(1-F)/(1+F)+2pqF(F-1)/(1+F))d
-        ddMat(1,i) = (1-(1-2*p(i)*q(i))*fFrac+2*p(i)*q(i)*F(i)*(F(i)-1)/(1+F(i)))*d(i);
-        // -2p(p+qF)(1-F)/(1+F)d
-        ddMat(0,i) = -2*p(i)*(p(i)+q(i)*F(i))*fFrac*d(i);
+        loc1 = arma::sum(lociPerChr(arma::span(0,i-1)));
+      }
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2))-1;
+      arma::Mat<unsigned char> tmpGeno;
+      tmpGeno = arma::sum(geno(i),1);
+      tmpGeno = tmpGeno.rows(chrLociLoc).t();
+      arma::vec freq(ploidy+1), freqE(ploidy+1); // Genotype frequencies, observed and HWE
+      arma::vec aEff(ploidy+1), dEff(ploidy+1), eff(ploidy+1); // Genetic values, additive and dominance
+      arma::vec bv(ploidy+1), dd(ploidy+1), gv(ploidy+1); // Statistical values, additive and dominance
+      arma::vec bvE(ploidy+1), ddE(ploidy+1); //Expected for random mating
+      double gvMu, gvEMu, genoMu, p, q, dK, alpha, alphaE;
+      for(arma::uword j=loc1; j<(loc2+1); ++j){
+        // Calculate genotype and allele frequencies
+        freq.zeros();
+        for(arma::uword k=0; k<nInd; ++k){
+          freq(tmpGeno(k,j-loc1)) += 1;
+        }
+        freq = freq/accu(freq);
+        genoMu = accu(freq%x);
+        p = genoMu/dP;
+        q = 1-p;
+        
+        // Set effects, means and expected frequencies
+        aEff = xa*a(j);
+        dEff = xd*d(j);
+        gv = aEff+dEff;
+        gvMu = accu(freq%gv);
+        mu(i) += gvMu;
+        freqE.zeros();
+        for(arma::uword k=0; k<(ploidy+1); ++k){
+          dK = double(k);
+          freqE(k) = choose(dP,dK)*std::pow(p,dK)*std::pow(q,dP-dK);
+        }
+        alpha = accu(freq%(gv-gvMu)%(x-genoMu))/
+          accu(freq%(x-genoMu)%(x-genoMu));
+        if(isinf(alpha)) alpha=0; //Check for divide by zero
+        alphaE = accu(freqE%(gv-gvMu)%(x-genoMu))/
+          accu(freqE%(x-genoMu)%(x-genoMu)); //Check for divide by zero
+        if(isinf(alphaE)) alphaE=0;
+        gvEMu =  accu(freqE%gv);
+        eMu(i) += gvEMu;
+        bv = (x-genoMu)*alpha; //Breeding values
+        bvE = (x-genoMu)*alphaE; //Random mating breeding value
+        dd = gv-bv-gvMu; //Dominance deviations (lack of fit)
+        ddE = gv-bvE-gvEMu; //Random mating dominance deviation
+        
+        // Set genic variances
+        genicA(i) += accu(freq%bv%bv);
+        genicA2(i) += accu(freqE%bvE%bvE);
+        genicD(i) += accu(freq%dd%dd);
+        genicD2(i) += accu(freqE%ddE%ddE);
+        
+        // Set values for individuals
+        for(arma::uword k=0; k<nInd; ++k){
+          gv_a(k,i) += aEff(tmpGeno(k,j-loc1));
+          gv_d(k,i) += dEff(tmpGeno(k,j-loc1));
+          bvMat(k,i) += bv(tmpGeno(k,j-loc1));
+          ddMat(k,i) += dd(tmpGeno(k,j-loc1));
+        }
       }
     }
-    // 2pa+2pqd(1-F)
-    mu(i) = 2*a(i)*p(i)+2*p(i)*q(i)*d(i)*(1-F(i));
-    // 2pqdF
-    inbreeding(i) = 2*p(i)*q(i)*d(i)*F(i);
   }
-  arma::inplace_trans(geno);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-  for(int i=0; i<nInd; ++i){
-    for(int j=0; j<nLoci; ++j){
-      bv(i) += (double(geno(j,i))-2*p(j))*alpha(j);
-      dd(i) += ddMat(geno(j,i),j);
-      gv_a(i) += geno(j,i)*a(j);
-      gv_d(i) += (1-abs(int(geno(j,i))-1))*d(j);
-    }
-  }
-  // 2pq(1+F)alpha^2
-  double genicVarA = 2.0*accu(p%q%arma::square(alpha)%(1+F));
-  // 4pq(1-F)/(1+F)(p+Fq)(q+Fp)d^2
-  
-  
-  double genicVarD = 4.0*accu(p%q%(1-F)/(1+F)%(p+F%q)%(q+F%p)%arma::square(d));
-  return Rcpp::List::create(Rcpp::Named("bv")=bv,
-                            Rcpp::Named("dd")=dd,
-                            Rcpp::Named("genicVarA")=genicVarA,
-                            Rcpp::Named("genicVarD")=genicVarD,
+
+  return Rcpp::List::create(Rcpp::Named("bv")=sum(bvMat,1),
+                            Rcpp::Named("dd")=sum(ddMat,1),
+                            Rcpp::Named("genicVarA")=accu(genicA),
+                            Rcpp::Named("genicVarD")=accu(genicD),
+                            Rcpp::Named("genicVarA2")=accu(genicA2),
+                            Rcpp::Named("genicVarD2")=accu(genicD2),
                             Rcpp::Named("mu")=accu(mu)+intercept,
-                            Rcpp::Named("F")=accu(F)/accu(isSeg),
-                            Rcpp::Named("inbreeding")=accu(inbreeding),
-                            Rcpp::Named("gv_a")=gv_a,
-                            Rcpp::Named("gv_d")=gv_d,
+                            Rcpp::Named("inbreeding")=accu(eMu)-accu(mu),
+                            Rcpp::Named("gv_a")=sum(gv_a,1),
+                            Rcpp::Named("gv_d")=sum(gv_d,1),
                             Rcpp::Named("gv_mu")=intercept);
 }

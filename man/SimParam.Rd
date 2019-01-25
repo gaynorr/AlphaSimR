@@ -15,8 +15,6 @@ as SP will allow it to be accessed by function defaults.
 \section{Fields}{
 
 \describe{
-\item{\code{ploidy}}{ploidy level of species}
-
 \item{\code{nChr}}{number of chromosomes}
 
 \item{\code{nTraits}}{number of traits}
@@ -66,6 +64,8 @@ females relative to male}
 \item{\code{varE}}{default error variance}
 
 \item{\code{founderPop}}{the founder population used for scaling traits}
+
+\item{\code{quadProb}}{the probability of quadrivalent formation}
 
 \item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
 }}

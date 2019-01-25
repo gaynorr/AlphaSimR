@@ -101,8 +101,8 @@ getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father, nThreads)
     .Call(`_AlphaSimR_getHybridGv`, trait, motherGeno, mother, fatherGeno, father, nThreads)
 }
 
-cross2 <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, nThreads) {
-    .Call(`_AlphaSimR_cross2`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, nThreads)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads)
 }
 
 createDH2 <- function(geno, nDH, genMap, trackRec, nThreads) {
@@ -174,11 +174,11 @@ MaCS <- function(args, maxSites, inbred, ploidy, nThreads) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads)
 }
 
-tuneTraitA <- function(geno, addEff, varG, nThreads) {
-    .Call(`_AlphaSimR_tuneTraitA`, geno, addEff, varG, nThreads)
+tuneTraitA <- function(geno, addEff, varG, ploidy, nThreads) {
+    .Call(`_AlphaSimR_tuneTraitA`, geno, addEff, varG, ploidy, nThreads)
 }
 
-tuneTraitAD <- function(geno, addEff, domEff, varG, useVarA, nThreads) {
-    .Call(`_AlphaSimR_tuneTraitAD`, geno, addEff, domEff, varG, useVarA, nThreads)
+tuneTraitAD <- function(geno, addEff, domEff, varG, useVarA, ploidy, nThreads) {
+    .Call(`_AlphaSimR_tuneTraitAD`, geno, addEff, domEff, varG, useVarA, ploidy, nThreads)
 }
 

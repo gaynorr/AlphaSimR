@@ -17,7 +17,9 @@ to contain estimated effects from \code{\link{RRBLUP_GCA}}
 
 \item{\code{fixEff}}{Estimates for fixed effects}
 
-\item{\code{Vu}}{Estimated marker variances}
+\item{\code{Vu}}{Estimated marker variances in order: 
+female effects, male effects and SCA effects 
+(\code{\link{SCAsol-class}} only)}
 
 \item{\code{Ve}}{Estimated error variance}
 

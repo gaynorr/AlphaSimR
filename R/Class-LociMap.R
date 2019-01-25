@@ -249,7 +249,9 @@ setValidity("RRDsol",function(object){
 #' @slot femaleEff marker GCA for "female" pool
 #' @slot maleEff marker GCA for "male" pool
 #' @slot fixEff Estimates for fixed effects
-#' @slot Vu Estimated marker variances
+#' @slot Vu Estimated marker variances in order: 
+#' female effects, male effects and SCA effects 
+#' (\code{\link{SCAsol-class}} only)
 #' @slot Ve Estimated error variance
 #' @slot LL Log-likelihood
 #' @slot iter Number of iterations for convergence

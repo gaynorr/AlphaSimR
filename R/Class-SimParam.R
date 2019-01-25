@@ -5,7 +5,6 @@
 #' Container for global simulation parameters. Saving this object 
 #' as SP will allow it to be accessed by function defaults.
 #' 
-#' @field ploidy ploidy level of species
 #' @field nChr number of chromosomes
 #' @field nTraits number of traits
 #' @field nSnpChips number of SNP chips
@@ -33,15 +32,15 @@
 #' @field varG total genetic variance in founderPop
 #' @field varE default error variance
 #' @field founderPop the founder population used for scaling traits
-
+#' @field quadProb the probability of quadrivalent formation
 #' @field nThreads number of threads used on platforms with OpenMP support
 #'
 #' @export
 SimParam = R6Class(
   "SimParam",
-  public = list(nThreads="integer"),
+  public = list(nThreads="integer",
+                quadProb="numeric"),
   private = list(
-    .ploidy="integer",
     .nChr="integer",
     .nTraits="integer",
     .nSnpChips="integer",
@@ -66,13 +65,6 @@ SimParam = R6Class(
     .founderPop="MapPop"
   ),
   active = list(
-    ploidy=function(value){
-      if(missing(value)){
-        private$.ploidy
-      }else{
-        stop("`$ploidy` is read only",call.=FALSE)
-      }
-    },
     nChr=function(value){
       if(missing(value)){
         private$.nChr
@@ -274,7 +266,6 @@ SimParam$set(
   "initialize",
   function(founderPop){
     stopifnot(class(founderPop)=="MapPop")
-    private$.ploidy = founderPop@ploidy
     private$.nChr = founderPop@nChr
     private$.nTraits = 0L
     private$.nSnpChips = 0L
@@ -300,6 +291,7 @@ SimParam$set(
     private$.varE = numeric()
     private$.founderPop = founderPop
     self$nThreads = 1L
+    self$quadProb = 0
     invisible(self)
   }
 )
@@ -1069,7 +1061,7 @@ SimParam$set(
                     qtlLoci@lociPerChr,
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i],self$nThreads)
+      tmp = tuneTraitA(geno,addEff[,i],var[i],private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitA",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1146,7 +1138,7 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],
-                        useVarA,self$nThreads)
+                        useVarA,private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitAD",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1218,10 +1210,10 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitA(geno,addEff[,i],var[i],
-                       self$nThreads)
+                       private$.founderPop@ploidy,self$nThreads)
       if(varEnv[i]==0){
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1232,7 +1224,7 @@ SimParam$set(
       }else{
         tmpG = tuneTraitA(geno,gxeEff[,i],
                           varGxE[i]/varEnv[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1324,10 +1316,10 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA,
-                        self$nThreads)
+                        private$.founderPop@ploidy,self$nThreads)
       if(varEnv[i]==0){
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1338,7 +1330,7 @@ SimParam$set(
                     envVar = 1)
       }else{
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1544,23 +1536,23 @@ SimParam$set(
                       trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
         tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],
-                          useVarA,self$nThreads)
+                          useVarA,private$.founderPop@ploidy,self$nThreads)
         trait@domEff = trait@domEff*tmp$scale
       }else{
-        tmp = tuneTraitA(geno,trait@addEff,var[i],self$nThreads)
+        tmp = tuneTraitA(geno,trait@addEff,var[i],private$.founderPop@ploidy,self$nThreads)
       }
       trait@addEff = trait@addEff*tmp$scale
       trait@intercept = mean[i]-tmp$intercept
       if(class(trait)%in%c("TraitAG","TraitADG")){
         if(varEnv[i]==0){
           tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i],
-                            self$nThreads)
+                            private$.founderPop@ploidy,self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 0-tmpG$intercept
           trait@envVar = 1
         }else{
           tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i]/varEnv[i],
-                            self$nThreads)
+                            private$.founderPop@ploidy,self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 1-tmpG$intercept
           trait@envVar = varEnv[i]

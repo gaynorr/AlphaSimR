@@ -674,7 +674,7 @@ setEBV = function(pop, solution, gender=NULL, useGV=FALSE,
     }
   }
   if(append){
-    pop@ebv = cbind(pop@ebv,ebv, simParam$nThreads)
+    pop@ebv = cbind(pop@ebv,ebv)
   }else{
     pop@ebv = ebv
   }

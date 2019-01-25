@@ -71,7 +71,7 @@ hybridCross = function(females,males,crossPlan="testcross",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(simParam$ploidy!=2){
+  if(females@ploidy!=2 | males@ploidy!=2){
     stop("Only works with diploids")
   }
   #crossPlan for test cross

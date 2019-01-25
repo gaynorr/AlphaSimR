@@ -380,9 +380,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cross2
-Rcpp::List cross2(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, int nThreads);
-RcppExport SEXP _AlphaSimR_cross2(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP nThreadsSEXP) {
+// cross
+Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, double quadProb, int nThreads);
+RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -393,8 +393,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type femaleMap(femaleMapSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type maleMap(maleMapSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type motherPloidy(motherPloidySEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type fatherPloidy(fatherPloidySEXP);
+    Rcpp::traits::input_parameter< double >::type quadProb(quadProbSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross2(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, nThreads));
+    rcpp_result_gen = Rcpp::wrap(cross(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -578,22 +581,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // tuneTraitA
-Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno, arma::vec& addEff, double varG, int nThreads);
-RcppExport SEXP _AlphaSimR_tuneTraitA(SEXP genoSEXP, SEXP addEffSEXP, SEXP varGSEXP, SEXP nThreadsSEXP) {
+Rcpp::List tuneTraitA(arma::Mat<unsigned char>& geno, arma::vec& addEff, double varG, int ploidy, int nThreads);
+RcppExport SEXP _AlphaSimR_tuneTraitA(SEXP genoSEXP, SEXP addEffSEXP, SEXP varGSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::Mat<unsigned char>& >::type geno(genoSEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type addEff(addEffSEXP);
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tuneTraitA(geno, addEff, varG, nThreads));
+    rcpp_result_gen = Rcpp::wrap(tuneTraitA(geno, addEff, varG, ploidy, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // tuneTraitAD
-Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG, bool useVarA, int nThreads);
-RcppExport SEXP _AlphaSimR_tuneTraitAD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP, SEXP useVarASEXP, SEXP nThreadsSEXP) {
+Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno, arma::vec& addEff, arma::vec& domEff, double varG, bool useVarA, int ploidy, int nThreads);
+RcppExport SEXP _AlphaSimR_tuneTraitAD(SEXP genoSEXP, SEXP addEffSEXP, SEXP domEffSEXP, SEXP varGSEXP, SEXP useVarASEXP, SEXP ploidySEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -602,8 +606,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type domEff(domEffSEXP);
     Rcpp::traits::input_parameter< double >::type varG(varGSEXP);
     Rcpp::traits::input_parameter< bool >::type useVarA(useVarASEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG, useVarA, nThreads));
+    rcpp_result_gen = Rcpp::wrap(tuneTraitAD(geno, addEff, domEff, varG, useVarA, ploidy, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }

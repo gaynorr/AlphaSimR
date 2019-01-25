@@ -31,8 +31,8 @@ makeCross = function(pop,crossPlan,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(pop@ploidy!=2){
-    stop("Only works with diploids")
+  if(pop@ploidy%%2L != 0L){
+    stop("You can not cross aneuploids")
   }
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],pop@id),
@@ -41,11 +41,16 @@ makeCross = function(pop,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
-  tmp = cross2(pop@geno,crossPlan[,1],
-              pop@geno,crossPlan[,2],
+  tmp = cross(pop@geno,
+              crossPlan[,1],
+              pop@geno,
+              crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
               simParam$isTrackRec,
+              pop@ploidy,
+              pop@ploidy,
+              simParam$quadProb,
               simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -264,8 +269,9 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(females@ploidy!=2){
-    stop("Only works with diploids")
+  if((females@ploidy%%2L != 0L) | 
+     (males@ploidy%%2L != 0L)){
+    stop("You can not cross aneuploids")
   }
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],females@id),
@@ -274,12 +280,17 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
-  tmp=cross2(females@geno,crossPlan[,1],
-             males@geno,crossPlan[,2],
-             simParam$femaleMap,
-             simParam$maleMap,
-             simParam$isTrackRec,
-             simParam$nThreads)
+  tmp=cross(females@geno,
+            crossPlan[,1],
+            males@geno,
+            crossPlan[,2],
+            simParam$femaleMap,
+            simParam$maleMap,
+            simParam$isTrackRec,
+            females@ploidy,
+            males@ploidy,
+            simParam$quadProb,
+            simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=females@nChr,
@@ -422,16 +433,21 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
   }else{
     parents = as.integer(parents)
   }
-  if(pop@ploidy!=2){
-    stop("Only works with diploids")
+  if(pop@ploidy%%2L != 0L){
+    stop("You can not self aneuploids")
   }
   crossPlan = rep(parents,each=nProgeny)
   crossPlan = cbind(crossPlan,crossPlan)
-  tmp = cross2(pop@geno,crossPlan[,1],
-              pop@geno,crossPlan[,2],
+  tmp = cross(pop@geno,
+              crossPlan[,1],
+              pop@geno,
+              crossPlan[,2],
               simParam$femaleMap,
               simParam$maleMap,
               simParam$isTrackRec,
+              pop@ploidy,
+              pop@ploidy,
+              simParam$quadProb,
               simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),

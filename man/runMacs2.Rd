@@ -7,7 +7,7 @@
 runMacs2(nInd, nChr = 1, segSites = NULL, Ne = 100, bp = 1e+08,
   genLen = 1, mutRate = 2.5e-08, histNe = c(500, 1500, 6000, 12000,
   1e+05), histGen = c(100, 1000, 10000, 1e+05, 1e+06), inbred = FALSE,
-  split = NULL, returnCommand = FALSE, nThreads = 1L)
+  split = NULL, ploidy = 2L, returnCommand = FALSE, nThreads = 1L)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -33,6 +33,8 @@ population sizes given in histNe}
 \item{inbred}{should founder individuals be inbred}
 
 \item{split}{an optional historic population split in terms of generations ago}
+
+\item{ploidy}{ploidy level of organism}
 
 \item{returnCommand}{should the command passed to manualCommand in 
 \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
