@@ -1,40 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
-// Calculates genetic values for a trait with only additive effects
-arma::vec calcGvA(const arma::Mat<unsigned char>& geno,
-                  const arma::vec& a, double intercept, 
-                  int nThreads){
-  arma::vec output(geno.n_cols);
-  output.fill(intercept);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-  for(arma::uword i=0; i<geno.n_cols; ++i){
-    for(arma::uword j=0; j<geno.n_rows; ++j){
-      output(i) += geno(j,i)*a(j);
-    }
-  }
-  return output;
-}
-
-// Calculates genetic values for a trait with additive and dominance effects
-arma::vec calcGvAD(const arma::Mat<unsigned char>& geno,
-                   const arma::vec& a, const arma::vec& d,
-                   double intercept, int nThreads){
-  arma::vec output(geno.n_cols);
-  output.fill(intercept);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-  for(arma::uword i=0; i<geno.n_cols; ++i){
-    for(arma::uword j=0; j<geno.n_rows; ++j){
-      output(i) += geno(j,i)*a(j)+(1-abs(int(geno(j,i))-1))*d(j);
-    }
-  }
-  return output;
-}
-
 // Calculates genetic values for a trait
 // Returns output in a list with length 1 or 2
 //   The first item contains genetic values
@@ -119,15 +85,10 @@ arma::field<arma::vec> getGv(const Rcpp::S4& trait,
   return output;
 }
 
-double choose(double n, double k){ // n choose k
-  if(k==0) return 1;
-  return (n*choose(n-1,k-1))/k;
-}
-
-// A calculates breeding values and dominance deviations and genic
+// Calculates breeding values, dominance deviations and genic
 // variances. Additive and dominance genetic variances are calculated
-// from breeding values and dominance deviations. Formulat accounts 
-// for inbreeding in the population. Only works for ploidy=2.
+// from breeding values and dominance deviations. Formula accounts 
+// for inbreeding in the population.
 // [[Rcpp::export]]
 Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
                         int nThreads){
@@ -210,10 +171,13 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
         }
         alpha = accu(freq%(gv-gvMu)%(x-genoMu))/
           accu(freq%(x-genoMu)%(x-genoMu));
-        if(isinf(alpha)) alpha=0; //Check for divide by zero
         alphaE = accu(freqE%(gv-gvMu)%(x-genoMu))/
-          accu(freqE%(x-genoMu)%(x-genoMu)); //Check for divide by zero
-        if(isinf(alphaE)) alphaE=0;
+          accu(freqE%(x-genoMu)%(x-genoMu)); 
+        
+        //Check for divide by zero
+        if(isinf(alpha) | isnan(alpha)) alpha=0;
+        if(isinf(alphaE) | isnan(alphaE)) alphaE=0;
+        
         gvEMu =  accu(freqE%gv);
         eMu(i) += gvEMu;
         bv = (x-genoMu)*alpha; //Breeding values

@@ -97,12 +97,12 @@ calcGenParam <- function(trait, pop, nThreads) {
     .Call(`_AlphaSimR_calcGenParam`, trait, pop, nThreads)
 }
 
-getHybridGv <- function(trait, motherGeno, mother, fatherGeno, father, nThreads) {
-    .Call(`_AlphaSimR_getHybridGv`, trait, motherGeno, mother, fatherGeno, father, nThreads)
+getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThreads) {
+    .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, motherCentromere, fatherCentromere, quadProb, nThreads)
 }
 
 createDH2 <- function(geno, nDH, genMap, trackRec, nThreads) {

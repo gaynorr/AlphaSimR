@@ -50,6 +50,8 @@ makeCross = function(pop,crossPlan,simParam=NULL){
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$femaleCentromere,
+              simParam$maleCentromere,
               simParam$quadProb,
               simParam$nThreads)
   rPop = new("RawPop",
@@ -289,12 +291,14 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
             simParam$isTrackRec,
             females@ploidy,
             males@ploidy,
+            simParam$femaleCentromere,
+            simParam$maleCentromere,
             simParam$quadProb,
             simParam$nThreads)
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=females@nChr,
-             ploidy=females@ploidy,
+             ploidy=as.integer((females@ploidy+males@ploidy)/2),
              nLoci=females@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
@@ -447,6 +451,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$femaleCentromere,
+              simParam$maleCentromere,
               simParam$quadProb,
               simParam$nThreads)
   rPop = new("RawPop",

@@ -365,24 +365,24 @@ BEGIN_RCPP
 END_RCPP
 }
 // getHybridGv
-arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait, const Rcpp::S4& motherGeno, arma::uvec& mother, const Rcpp::S4& fatherGeno, arma::uvec& father, int nThreads);
-RcppExport SEXP _AlphaSimR_getHybridGv(SEXP traitSEXP, SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP nThreadsSEXP) {
+arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait, const Rcpp::S4& females, arma::uvec femaleParents, const Rcpp::S4& males, arma::uvec maleParents, int nThreads);
+RcppExport SEXP _AlphaSimR_getHybridGv(SEXP traitSEXP, SEXP femalesSEXP, SEXP femaleParentsSEXP, SEXP malesSEXP, SEXP maleParentsSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type trait(traitSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type motherGeno(motherGenoSEXP);
-    Rcpp::traits::input_parameter< arma::uvec& >::type mother(motherSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type fatherGeno(fatherGenoSEXP);
-    Rcpp::traits::input_parameter< arma::uvec& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type females(femalesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type femaleParents(femaleParentsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type males(malesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type maleParents(maleParentsSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(getHybridGv(trait, motherGeno, mother, fatherGeno, father, nThreads));
+    rcpp_result_gen = Rcpp::wrap(getHybridGv(trait, females, femaleParents, males, maleParents, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // cross
-Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, double quadProb, int nThreads);
-RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
+Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, const arma::vec& motherCentromere, const arma::vec& fatherCentromere, double quadProb, int nThreads);
+RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP motherCentromereSEXP, SEXP fatherCentromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -395,9 +395,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type motherPloidy(motherPloidySEXP);
     Rcpp::traits::input_parameter< arma::uword >::type fatherPloidy(fatherPloidySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type motherCentromere(motherCentromereSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type fatherCentromere(fatherCentromereSEXP);
     Rcpp::traits::input_parameter< double >::type quadProb(quadProbSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, quadProb, nThreads));
+    rcpp_result_gen = Rcpp::wrap(cross(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, motherCentromere, fatherCentromere, quadProb, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }

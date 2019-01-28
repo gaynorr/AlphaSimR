@@ -71,7 +71,7 @@ Rcpp::List tuneTraitAD(arma::Mat<unsigned char>& geno,
   }
 
   // Account for divide by zero
-  alpha.replace(arma::datum::inf,0.0);
+  alpha.elem(find_nonfinite(alpha)).zeros();
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)

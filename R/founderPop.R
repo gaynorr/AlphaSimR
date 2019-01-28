@@ -339,6 +339,8 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' sample haplotypes
 #' @param nInd the number of individuals to create
 #' @param inbred should new individuals be fully inbred
+#' @param ploidy new ploidy level for organism. If NULL, 
+#' the ploidy level of the mapPop is used.
 #' @param replace should haplotypes be sampled with replacement
 #' 
 #' @return an object of \code{\link{MapPop-class}}
@@ -351,26 +353,28 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export
-sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
+sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
+  if(is.null(ploidy)) ploidy = mapPop@ploidy
   nHaplo = mapPop@nInd*mapPop@ploidy
   if(inbred){
     nSamp = nInd
   }else{
-    nSamp = nInd*mapPop@ploidy
+    nSamp = nInd*ploidy
   }
+  if(!replace) stopifnot(nHaplo>=nSamp)
   output = vector("list",mapPop@nChr)
   for(chr in 1:mapPop@nChr){
     haplo = sample.int(nHaplo,nSamp,replace=replace)
     geno = array(data=as.raw(0),
                  dim=c(mapPop@nLoci[chr],
-                       mapPop@ploidy,nInd))
+                       ploidy,nInd))
     outHap = 1L 
     outInd = 1L
     for(i in 1:length(haplo)){
       inHap = (haplo[i]-1L)%%mapPop@ploidy + 1L
       inInd = (haplo[i]-1L)%/%mapPop@ploidy + 1L
       if(inbred){
-        for(outHap in 1:mapPop@ploidy){
+        for(outHap in 1:ploidy){
           geno[,outHap,outInd] = 
             mapPop@geno[[chr]][,inHap,inInd]
         }
@@ -378,7 +382,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
       }else{
         geno[,outHap,outInd] = 
           mapPop@geno[[chr]][,inHap,inInd]
-        outHap = outHap%%mapPop@ploidy+1L
+        outHap = outHap%%ploidy+1L
         if(outHap==1L){
           outInd = outInd+1L
         }
@@ -387,7 +391,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,replace=TRUE){
     output[[chr]] = new("MapPop",
                         nInd=as.integer(nInd),
                         nChr=1L,
-                        ploidy=mapPop@ploidy,
+                        ploidy=as.integer(ploidy),
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
                         genMap=as.matrix(mapPop@genMap[chr]),

@@ -36,6 +36,12 @@ males}
 \item{\code{sepMap}}{are there seperate genetic maps for 
 males and females}
 
+\item{\code{femaleCentromere}}{position of centromere on female 
+genetic map}
+
+\item{\code{maleCentromere}}{position of centromere on male 
+genetic map}
+
 \item{\code{recombRatio}}{ratio of genetic recombination in 
 females relative to male}
 

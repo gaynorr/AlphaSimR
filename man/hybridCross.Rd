@@ -5,7 +5,7 @@
 \title{Hybrid crossing}
 \usage{
 hybridCross(females, males, crossPlan = "testcross",
-  returnHybridPop = FALSE, chunkSize = 10000, simParam = NULL)
+  returnHybridPop = FALSE, simParam = NULL)
 }
 \arguments{
 \item{females}{female population, an object of \code{\link{Pop-class}}}
@@ -18,11 +18,6 @@ or a matrix with two columns for designed crosses}
 \item{returnHybridPop}{should results be returned as 
 \code{\link{HybridPop-class}}. If false returns results as 
 \code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
-
-\item{chunkSize}{when using returnHybridPop=TRUE, this 
-parameter determines the maximum number of hybrids created 
-at one time. Smaller values reduce RAM usage, but may take 
-more time.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

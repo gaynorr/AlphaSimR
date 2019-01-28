@@ -1,33 +1,3 @@
-#A wrapper for calling getHybridGv
-#This function uses chunking to reduce RAM usage
-getHybridGvByChunk = function(trait,females,femaleParents,
-                              males,maleParents,chunkSize, 
-                              nThreads){
-  nOut = length(femaleParents)
-  if(nOut<=chunkSize){
-    output = getHybridGv(trait,females,femaleParents,males,maleParents,
-                         nThreads)
-  }else{
-    Chunks = split(1:nOut,ceiling(seq_along(1:nOut)/chunkSize))
-    output = list()
-    output[[1]] = matrix(NA_real_,nrow=nOut,ncol=1)
-    for(chunk in Chunks){
-      tmp = getHybridGv(trait,females,femaleParents[chunk],
-                        males,maleParents[chunk],nThreads)
-      output[[1]][chunk,] = tmp[[1]]
-      if(length(tmp)==2){
-        if(length(output)==2){
-          output[[2]] = c(output[[2]],tmp[[2]])
-        }else{
-          output[[2]] = tmp[[2]]
-        }
-      }
-    }
-  }
-  return(output)
-}
-
-
 #' @title Hybrid crossing
 #' 
 #' @description 
@@ -45,10 +15,6 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' @param returnHybridPop should results be returned as 
 #' \code{\link{HybridPop-class}}. If false returns results as 
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
-#' @param chunkSize when using returnHybridPop=TRUE, this 
-#' parameter determines the maximum number of hybrids created 
-#' at one time. Smaller values reduce RAM usage, but may take 
-#' more time.
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @examples 
@@ -65,14 +31,16 @@ getHybridGvByChunk = function(trait,females,femaleParents,
 #' pop2 = hybridCross(pop, pop, simParam=SP)
 #' 
 #' @export
-hybridCross = function(females,males,crossPlan="testcross",
-                       returnHybridPop=FALSE,chunkSize=10000,
+hybridCross = function(females, males,
+                       crossPlan="testcross",
+                       returnHybridPop=FALSE,
                        simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(females@ploidy!=2 | males@ploidy!=2){
-    stop("Only works with diploids")
+  if((females@ploidy%%2L != 0L) | 
+     (males@ploidy%%2L != 0L)){
+    stop("You can not cross aneuploids")
   }
   #crossPlan for test cross
   if(length(crossPlan)==1){
@@ -87,25 +55,30 @@ hybridCross = function(females,males,crossPlan="testcross",
   #Set id
   femaleParents = females@id[crossPlan[,1]]
   maleParents = males@id[crossPlan[,2]]
-  id = paste(femaleParents,maleParents,sep="_")
+  id = paste(femaleParents, maleParents, sep="_")
   
   #Return Pop-class
   if(!returnHybridPop){
-    return(makeCross2(females=females,males=males,
+    return(makeCross2(females=females,
+                      males=males,
                       crossPlan=crossPlan,
                       simParam=simParam))
   }
   
   #Return HybridPop-class
-  gv = matrix(NA_real_,nrow=length(id),
-                      ncol=simParam$nTraits)
+  gv = matrix(NA_real_,
+              nrow=length(id),
+              ncol=simParam$nTraits)
   gxe = vector("list",simParam$nTraits)
   i = 0L
   for(trait in simParam$traits){
     i = i+1L
-    tmp = getHybridGvByChunk(trait=trait,females=females,femaleParents=crossPlan[,1],
-                             males=males,maleParents=crossPlan[,2],chunkSize=chunkSize,
-                             nThreads=simParam$nThreads)
+    tmp = getHybridGv(trait=trait,
+                      females=females,
+                      femaleParents=crossPlan[,1],
+                      males=males,
+                      maleParents=crossPlan[,2],
+                      nThreads=simParam$nThreads)
     gv[,i] = tmp[[1]]
     if(length(tmp)==2){
       gxe[[i]] = tmp[[2]]
@@ -260,10 +233,6 @@ calcGCA = function(pop,use="pheno"){
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
-#' @param chunkSize when using inbred=TRUE, this 
-#' parameter determines the maximum number of hybrids created 
-#' at one time. Smaller values reduce RAM usage, but may take 
-#' more time.
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
@@ -293,7 +262,7 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       fixEff=1L,p=0.5,inbred=FALSE,chunkSize=10000,
+                       fixEff=1L,p=0.5,inbred=FALSE,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -305,7 +274,7 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
   use = tolower(use)
   #Make hybrids
   tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
-                    returnHybridPop=inbred,chunkSize=chunkSize,simParam=simParam)
+                    returnHybridPop=inbred,simParam=simParam)
   #Get response
   if(use=="pheno"){
     y = setPheno(tmp,varE=varE,p=p,reps=reps,

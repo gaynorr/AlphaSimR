@@ -5,8 +5,8 @@
 \title{Set GCA as phenotype}
 \usage{
 setPhenoGCA(pop, testers, use = "pheno", varE = NULL, reps = 1,
-  fixEff = 1L, p = 0.5, inbred = FALSE, chunkSize = 10000,
-  onlyPheno = FALSE, simParam = NULL)
+  fixEff = 1L, p = 0.5, inbred = FALSE, onlyPheno = FALSE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -29,11 +29,6 @@ by genomic selection models only.}
 \item{inbred}{are both pop and testers fully inbred. They are only 
 fully inbred if created by \code{\link{newPop}} using inbred founders 
 or by the \code{\link{makeDH}} function}
-
-\item{chunkSize}{when using inbred=TRUE, this 
-parameter determines the maximum number of hybrids created 
-at one time. Smaller values reduce RAM usage, but may take 
-more time.}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
 

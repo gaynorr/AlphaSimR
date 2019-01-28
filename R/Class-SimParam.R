@@ -17,6 +17,10 @@
 #' males
 #' @field sepMap are there seperate genetic maps for 
 #' males and females
+#' @field femaleCentromere position of centromere on female 
+#' genetic map
+#' @field maleCentromere position of centromere on male 
+#' genetic map
 #' @field recombRatio ratio of genetic recombination in 
 #' females relative to male
 #' @field traits list of trait
@@ -49,6 +53,8 @@ SimParam = R6Class(
     .femaleMap="matrix",
     .maleMap="matrix",
     .sepMap="logical",
+    .femaleCentromere="numeric",
+    .maleCentromere="numeric",
     .recombRatio="numeric",
     .traits="list",
     .snpChips="list",
@@ -139,6 +145,35 @@ SimParam = R6Class(
         }
       }else{
         stop("`$maleMap` is read only",call.=FALSE)
+      }
+    },
+    centromere=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          (private$.femaleCentromere+private$.maleCentromere)/2
+        }else{
+          private$.femaleCentromere
+        }
+      }else{
+        stop("`$centromere` is read only",call.=FALSE)
+      }
+    },
+    femaleCentromere=function(value){
+      if(missing(value)){
+        private$.femaleCentromere
+      }else{
+        stop("`$femaleCentromere` is read only",call.=FALSE)
+      }
+    },
+    maleCentromere=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleCentromere
+        }else{
+          private$.femaleCentromere
+        }
+      }else{
+        stop("`$maleCentromere` is read only",call.=FALSE)
       }
     },
     traits=function(value){
@@ -274,6 +309,8 @@ SimParam$set(
     private$.femaleMap = founderPop@genMap
     private$.maleMap = NULL
     private$.sepMap = FALSE
+    private$.femaleCentromere = founderPop@centromere
+    private$.maleCentromere = NULL
     private$.traits = list()
     private$.snpChips = list()
     private$.potQtl = lapply(
@@ -652,12 +689,14 @@ SimParam$set(
                feSc*x
              })
     )
+    private$.femaleCentromere = feSc*private$.femaleCentromere
     private$.maleMap = as.matrix(
       lapply(genMap,
              function(x){
                maSc*x
              })
     )
+    private$.maleCentromere = maSc*private$.maleCentromere
     invisible(self)
   }
 )
@@ -1668,6 +1707,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchGenMap
 NULL
@@ -1675,13 +1717,19 @@ NULL
 SimParam$set(
   "public",
   "switchGenMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     private$.sepMap = FALSE
     private$.femaleMap = genMap
     private$.maleMap = NULL
+    private$.femaleCentromere = centromere
+    private$.maleCentromere = NULL
     invisible(self)
   }
 )
@@ -1696,6 +1744,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchFemaleMap
 NULL
@@ -1703,16 +1754,23 @@ NULL
 SimParam$set(
   "public",
   "switchFemaleMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     if(private$.sepMap){
       private$.femaleMap = genMap
+      private$.femaleCentromere = centromere
     }else{
       private$.sepMap = TRUE
       private$.maleMap = private$.femaleMap
       private$.femaleMap = genMap
+      private$.maleCentromere = private$.femaleCentromere
+      private$.femaleCentromere = centromere
     }
     invisible(self)
   }
@@ -1728,6 +1786,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchMaleMap
 NULL
@@ -1735,12 +1796,17 @@ NULL
 SimParam$set(
   "public",
   "switchMaleMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     private$.sepMap = TRUE
     private$.maleMap = genMap
+    private$.maleCentromere = centromere
     invisible(self)
   }
 )

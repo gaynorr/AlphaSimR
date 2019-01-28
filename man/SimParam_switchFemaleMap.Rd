@@ -7,6 +7,10 @@
 \item{genMap}{a list of length nChr containing 
 numeric vectors for the position of each segregating 
 site on a chromosome.}
+
+\item{centromere}{a numeric vector of centromere 
+positions. If NULL, the centromere are assumed to 
+be metacentric.}
 }
 \description{
 Replaces existing female genetic map.

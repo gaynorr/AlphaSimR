@@ -246,3 +246,9 @@ arma::uword samplePoisson(double lambda){
   }while(p>L);
   return k-1;
 }
+
+// n choose k recursive formula
+double choose(double n, double k){ 
+  if(k==0) return 1;
+  return (n*choose(n-1,k-1))/k;
+}

@@ -195,6 +195,8 @@ Rcpp::List cross(
     bool trackRec,
     arma::uword motherPloidy,
     arma::uword fatherPloidy,
+    const arma::vec& motherCentromere,
+    const arma::vec& fatherCentromere,
     double quadProb,
     int nThreads){
   mother -= 1; // R to C++
@@ -216,14 +218,18 @@ Rcpp::List cross(
     arma::vec u(1);
     arma::Mat<int> histMat;
     arma::uvec xm(motherPloidy); // Indicator for mother chromosomes
+    for(arma::uword i=0; i<motherPloidy; ++i)
+      xm(i) = i;
     arma::uvec xf(fatherPloidy); // Indicator for father chromosomes
+    for(arma::uword i=0; i<fatherPloidy; ++i)
+      xf(i) = i;
     arma::uword progenyChr;
     arma::uword segSites = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(segSites,ploidy,nInd);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       progenyChr=0;
-      xm = sampleInt(motherPloidy,motherPloidy);
+      xm = shuffle(xm);
       //Female gamete
       for(arma::uword x=0; x<motherPloidy; x+=4){
         if((motherPloidy-x)>2){
@@ -235,8 +241,9 @@ Rcpp::List cross(
                        motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                        femaleMap(chr),histMat,trackRec);
             if(trackRec){
-              histMat.col(0).replace(1,int(xm(x))+1);
-              histMat.col(0).replace(2,int(xm(x+1))+1);
+              histMat.col(0) *= 100; //To avoid conflicts
+              histMat.col(0).replace(100,int(xm(x))+1);
+              histMat.col(0).replace(200,int(xm(x+1))+1);
               hist.addHist(histMat,ind,chr,progenyChr);
             }
             ++progenyChr;
@@ -246,8 +253,9 @@ Rcpp::List cross(
                      motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                      femaleMap(chr),histMat,trackRec);
             if(trackRec){
-              histMat.col(0).replace(1,int(xm(x+2))+1);
-              histMat.col(0).replace(2,int(xm(x+3))+1);
+              histMat.col(0) *= 100; //To avoid conflicts
+              histMat.col(0).replace(100,int(xm(x+2))+1);
+              histMat.col(0).replace(200,int(xm(x+3))+1);
               hist.addHist(histMat,ind,chr,progenyChr);
             }
             ++progenyChr;
@@ -261,8 +269,9 @@ Rcpp::List cross(
                      motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                      femaleMap(chr),histMat,trackRec);
           if(trackRec){
-            histMat.col(0).replace(1,int(xm(x))+1);
-            histMat.col(0).replace(2,int(xm(x+1))+1);
+            histMat.col(0) *= 100; //To avoid conflicts
+            histMat.col(0).replace(100,int(xm(x))+1);
+            histMat.col(0).replace(200,int(xm(x+1))+1);
             hist.addHist(histMat,ind,chr,progenyChr);
           }
           ++progenyChr;
@@ -270,7 +279,7 @@ Rcpp::List cross(
       }
       
       //Male gamete
-      xf = sampleInt(fatherPloidy,fatherPloidy);
+      xf = shuffle(xf);
       for(arma::uword x=0; x<fatherPloidy; x+=4){
         if((fatherPloidy-x)>2){
           u.randu();
@@ -281,8 +290,9 @@ Rcpp::List cross(
                        fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                        maleMap(chr),histMat,trackRec);
             if(trackRec){
-              histMat.col(0).replace(1,int(xf(x))+1);
-              histMat.col(0).replace(2,int(xf(x+1))+1);
+              histMat.col(0) *= 100; //To avoid conflicts
+              histMat.col(0).replace(100,int(xf(x))+1);
+              histMat.col(0).replace(200,int(xf(x+1))+1);
               hist.addHist(histMat,ind,chr,progenyChr);
             }
             ++progenyChr;
@@ -292,8 +302,9 @@ Rcpp::List cross(
                      fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                      maleMap(chr),histMat,trackRec);
             if(trackRec){
-              histMat.col(0).replace(1,int(xf(x+2))+1);
-              histMat.col(0).replace(2,int(xf(x+3))+1);
+              histMat.col(0) *= 100; //To avoid conflicts
+              histMat.col(0).replace(100,int(xf(x+2))+1);
+              histMat.col(0).replace(200,int(xf(x+3))+1);
               hist.addHist(histMat,ind,chr,progenyChr);
             }
             ++progenyChr;
@@ -307,8 +318,9 @@ Rcpp::List cross(
                      fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                      maleMap(chr),histMat,trackRec);
           if(trackRec){
-            histMat.col(0).replace(1,int(xf(x))+1);
-            histMat.col(0).replace(2,int(xf(x+1))+1);
+            histMat.col(0) *= 100; //To avoid conflicts
+            histMat.col(0).replace(100,int(xf(x))+1);
+            histMat.col(0).replace(200,int(xf(x+1))+1);
             hist.addHist(histMat,ind,chr,progenyChr);
           }
           ++progenyChr;
