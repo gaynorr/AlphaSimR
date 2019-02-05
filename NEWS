@@ -1,7 +1,7 @@
 Changes in version 0.9.0
 
   New features
-    -added support for polyploids
+    -added support for autopolyploids
     -added RRBLUP_GCA2
     -randCross2 can now "balance" crossing when not using gender
   

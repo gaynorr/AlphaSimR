@@ -159,12 +159,10 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::mat u = M.t()*(H*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
-  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ll);
+                            Rcpp::Named("u")=u);
 }
 
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
@@ -222,18 +220,10 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   arma::mat U = kron(arma::eye(M.n_cols,M.n_cols), Vu)*kron(M.t(),
                      arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
   U.reshape(m,U.n_elem/m);
-  //Log Likelihood calculation
-  arma::mat ll = -0.5*arma::vectorise(E).t()*HI*vectorise(E);
-  ll -= double(n*m)/2.0*log(2*PI);
-  double value;
-  double sign;
-  log_det(value, sign, kron(M*M.t(), Vu)+kron(arma::eye(n,n), Ve));
-  ll -= 0.5*value*sign;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=B.t(),
                             Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=arma::as_scalar(ll),
                             Rcpp::Named("iter")=iter);
 }
 
@@ -335,7 +325,6 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik,
                             Rcpp::Named("iter")=iter);
 }
 

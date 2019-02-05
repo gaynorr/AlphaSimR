@@ -78,7 +78,6 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=ans$beta,
                Vu=as.matrix(ans$Vu),
                Ve=as.matrix(ans$Ve),
-               LL=ans$LL,
                iter=iter)
   return(output)
 }
@@ -216,7 +215,6 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=ans$beta,
                Vu=as.matrix(ans$Vu),
                Ve=as.matrix(ans$Ve),
-               LL=numeric(),
                iter=ans$iter)
   return(output)
 }
@@ -311,7 +309,6 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=fixEff,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL,
                iter=ans$iter)
   return(output)
 }
@@ -392,7 +389,6 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL,
                iter=ans$iter)
   return(output)
 }
@@ -516,7 +512,6 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=as.matrix(ans$Ve),
-               LL=numeric(),
                iter=ans$iter)
   return(output)
 }
@@ -596,7 +591,6 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                fixEff=ans$beta,
                Vu=ans$Vu,
                Ve=ans$Ve,
-               LL=ans$LL,
                iter=ans$iter)
   return(output)
 }

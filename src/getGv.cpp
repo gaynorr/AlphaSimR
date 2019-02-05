@@ -175,8 +175,8 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop,
           accu(freqE%(x-genoMu)%(x-genoMu)); 
         
         //Check for divide by zero
-        if(isinf(alpha) | isnan(alpha)) alpha=0;
-        if(isinf(alphaE) | isnan(alphaE)) alphaE=0;
+        if(!std::isfinite(alpha)) alpha=0;
+        if(!std::isfinite(alphaE)) alphaE=0;
         
         gvEMu =  accu(freqE%gv);
         eMu(i) += gvEMu;
