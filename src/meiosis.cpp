@@ -93,8 +93,8 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
   lastChr = X(0,0);
   lastSite = X(0,1);
   for(arma::uword i=1; i<X.n_rows; ++i){
-    if(X(i,0)!=lastChr & 
-       X(i,1)!=lastSite){
+    if((X(i,0)!=lastChr) & 
+       (X(i,1)!=lastSite)){
       ++take(i);
       lastChr = X(i,0);
       lastSite = X(i,1);
