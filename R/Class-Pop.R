@@ -109,10 +109,12 @@ setMethod("c",
 #' @param ... aditional 'MapPop' objects
 #' 
 #' @slot genMap "matrix" of chromsome genetic maps
+#' @slot centromere vector of centromere positions
 #' 
 #' @export
 setClass("MapPop",
-         slots=c(genMap="matrix"),
+         slots=c(genMap="matrix",
+                 centromere="numeric"),
          contains="RawPop")
 
 setValidity("MapPop",function(object){

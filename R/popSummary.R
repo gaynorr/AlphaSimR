@@ -111,7 +111,9 @@ varP = function(pop){
 #' \item{genicVarA}{an nTrait vector of additive genic variances}
 #' \item{genicVarD}{an nTrait vector of dominance genic variances}
 #' \item{genicVarG}{an nTrait vector of total genic variances}
-#' \item{aveF}{an nTrait vector of the average inbreeding coefficient over all QTL}
+#' \item{randGenicVarA}{an nTrait vector of additive genic variances assuming random mating}
+#' \item{randGenicVarD}{an nTrait vector of dominance genic variances assuming random mating}
+#' \item{randGenicVarG}{an nTrait vector of total genic variances assuming random mating}
 #' \item{inbreeding}{an nTrait vector for the depression of mean due to inbreeding}
 #' \item{mu}{an nTrait vector of trait means}
 #' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
@@ -144,8 +146,9 @@ genParam = function(pop,simParam=NULL){
   dd=NULL
   genicVarA=NULL
   genicVarD=NULL
+  genicVarA2=NULL
+  genicVarD2=NULL
   mu=NULL
-  aveF=NULL
   inbreeding=NULL
   gv_a=NULL
   gv_d=NULL
@@ -156,10 +159,11 @@ genParam = function(pop,simParam=NULL){
     tmp = calcGenParam(trait,pop,simParam$nThreads)
     genicVarA = c(genicVarA,tmp$genicVarA)
     genicVarD = c(genicVarD,tmp$genicVarD)
+    genicVarA2 = c(genicVarA2,tmp$genicVarA2)
+    genicVarD2 = c(genicVarD2,tmp$genicVarD2)
     bv = cbind(bv,tmp$bv)
     dd = cbind(dd,tmp$dd)
     mu = c(mu,tmp$mu)
-    aveF = c(aveF,tmp$F)
     inbreeding = c(inbreeding,tmp$inbreeding)
     gv_a = cbind(gv_a,tmp$gv_a)
     gv_d = cbind(gv_d,tmp$gv_d)
@@ -171,7 +175,9 @@ genParam = function(pop,simParam=NULL){
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
                 genicVarG=genicVarA+genicVarD,
-                aveF=aveF,
+                randGenicVarA=genicVarA2,
+                randGenicVarD=genicVarD2,
+                randGenicVarG=genicVarA2+genicVarD2,
                 inbreeding=inbreeding,
                 mu=mu,
                 bv=bv,

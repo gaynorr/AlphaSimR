@@ -3,7 +3,6 @@
 
 #include <RcppArmadillo.h>
 #include "getGeno.h"
-#include "getGv.h"
 #include "optimize.h"
 #include "misc.h"
 #ifdef _OPENMP

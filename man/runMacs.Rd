@@ -5,8 +5,8 @@
 \title{Create founder haplotypes using MaCS}
 \usage{
 runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
-  species = "GENERIC", split = NULL, manualCommand = NULL,
-  manualGenLen = NULL, nThreads = 1)
+  species = "GENERIC", split = NULL, ploidy = 2L,
+  manualCommand = NULL, manualGenLen = NULL, nThreads = 1)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -21,6 +21,8 @@ value of NULL results in all sites being retained.}
 \item{species}{species history to simulate. See details.}
 
 \item{split}{an optional historic population split in terms of generations ago.}
+
+\item{ploidy}{ploidy level of organism}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 

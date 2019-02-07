@@ -4,7 +4,7 @@
 \alias{newMapPop}
 \title{New MapPop}
 \usage{
-newMapPop(genMap, haplotypes, inbred = FALSE)
+newMapPop(genMap, haplotypes, inbred = FALSE, ploidy = 2L)
 }
 \arguments{
 \item{genMap}{a list of genetic maps}
@@ -13,6 +13,8 @@ newMapPop(genMap, haplotypes, inbred = FALSE)
 can be coerced to matrices. See details.}
 
 \item{inbred}{are individuals fully inbred}
+
+\item{ploidy}{ploidy level of organism}
 }
 \value{
 an object of \code{\link{MapPop-class}}

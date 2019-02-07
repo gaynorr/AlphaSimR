@@ -5,7 +5,6 @@
 #' Container for global simulation parameters. Saving this object 
 #' as SP will allow it to be accessed by function defaults.
 #' 
-#' @field ploidy ploidy level of species
 #' @field nChr number of chromosomes
 #' @field nTraits number of traits
 #' @field nSnpChips number of SNP chips
@@ -18,6 +17,10 @@
 #' males
 #' @field sepMap are there seperate genetic maps for 
 #' males and females
+#' @field femaleCentromere position of centromere on female 
+#' genetic map
+#' @field maleCentromere position of centromere on male 
+#' genetic map
 #' @field recombRatio ratio of genetic recombination in 
 #' females relative to male
 #' @field traits list of trait
@@ -33,15 +36,15 @@
 #' @field varG total genetic variance in founderPop
 #' @field varE default error variance
 #' @field founderPop the founder population used for scaling traits
-
+#' @field quadProb the probability of quadrivalent formation
 #' @field nThreads number of threads used on platforms with OpenMP support
 #'
 #' @export
 SimParam = R6Class(
   "SimParam",
-  public = list(nThreads="integer"),
+  public = list(nThreads="integer",
+                quadProb="numeric"),
   private = list(
-    .ploidy="integer",
     .nChr="integer",
     .nTraits="integer",
     .nSnpChips="integer",
@@ -50,6 +53,8 @@ SimParam = R6Class(
     .femaleMap="matrix",
     .maleMap="matrix",
     .sepMap="logical",
+    .femaleCentromere="numeric",
+    .maleCentromere="numeric",
     .recombRatio="numeric",
     .traits="list",
     .snpChips="list",
@@ -66,13 +71,6 @@ SimParam = R6Class(
     .founderPop="MapPop"
   ),
   active = list(
-    ploidy=function(value){
-      if(missing(value)){
-        private$.ploidy
-      }else{
-        stop("`$ploidy` is read only",call.=FALSE)
-      }
-    },
     nChr=function(value){
       if(missing(value)){
         private$.nChr
@@ -147,6 +145,35 @@ SimParam = R6Class(
         }
       }else{
         stop("`$maleMap` is read only",call.=FALSE)
+      }
+    },
+    centromere=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          (private$.femaleCentromere+private$.maleCentromere)/2
+        }else{
+          private$.femaleCentromere
+        }
+      }else{
+        stop("`$centromere` is read only",call.=FALSE)
+      }
+    },
+    femaleCentromere=function(value){
+      if(missing(value)){
+        private$.femaleCentromere
+      }else{
+        stop("`$femaleCentromere` is read only",call.=FALSE)
+      }
+    },
+    maleCentromere=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleCentromere
+        }else{
+          private$.femaleCentromere
+        }
+      }else{
+        stop("`$maleCentromere` is read only",call.=FALSE)
       }
     },
     traits=function(value){
@@ -274,7 +301,6 @@ SimParam$set(
   "initialize",
   function(founderPop){
     stopifnot(class(founderPop)=="MapPop")
-    private$.ploidy = founderPop@ploidy
     private$.nChr = founderPop@nChr
     private$.nTraits = 0L
     private$.nSnpChips = 0L
@@ -283,6 +309,8 @@ SimParam$set(
     private$.femaleMap = founderPop@genMap
     private$.maleMap = NULL
     private$.sepMap = FALSE
+    private$.femaleCentromere = founderPop@centromere
+    private$.maleCentromere = NULL
     private$.traits = list()
     private$.snpChips = list()
     private$.potQtl = lapply(
@@ -300,6 +328,7 @@ SimParam$set(
     private$.varE = numeric()
     private$.founderPop = founderPop
     self$nThreads = 1L
+    self$quadProb = 0
     invisible(self)
   }
 )
@@ -660,12 +689,14 @@ SimParam$set(
                feSc*x
              })
     )
+    private$.femaleCentromere = feSc*private$.femaleCentromere
     private$.maleMap = as.matrix(
       lapply(genMap,
              function(x){
                maSc*x
              })
     )
+    private$.maleCentromere = maSc*private$.maleCentromere
     invisible(self)
   }
 )
@@ -1069,7 +1100,7 @@ SimParam$set(
                     qtlLoci@lociPerChr,
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i],self$nThreads)
+      tmp = tuneTraitA(geno,addEff[,i],var[i],private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitA",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1146,7 +1177,7 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],
-                        useVarA,self$nThreads)
+                        useVarA,private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitAD",
                   qtlLoci,
                   addEff=addEff[,i]*tmp$scale,
@@ -1218,10 +1249,10 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitA(geno,addEff[,i],var[i],
-                       self$nThreads)
+                       private$.founderPop@ploidy,self$nThreads)
       if(varEnv[i]==0){
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1232,7 +1263,7 @@ SimParam$set(
       }else{
         tmpG = tuneTraitA(geno,gxeEff[,i],
                           varGxE[i]/varEnv[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitAG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1324,10 +1355,10 @@ SimParam$set(
                     qtlLoci@lociLoc)
     for(i in 1:nTraits){
       tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA,
-                        self$nThreads)
+                        private$.founderPop@ploidy,self$nThreads)
       if(varEnv[i]==0){
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1338,7 +1369,7 @@ SimParam$set(
                     envVar = 1)
       }else{
         tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i],
-                          self$nThreads)
+                          private$.founderPop@ploidy,self$nThreads)
         trait = new("TraitADG",
                     qtlLoci,
                     addEff=addEff[,i]*tmp$scale,
@@ -1544,23 +1575,23 @@ SimParam$set(
                       trait@lociLoc)
       if(class(trait)%in%c("TraitAD","TraitADG")){
         tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],
-                          useVarA,self$nThreads)
+                          useVarA,private$.founderPop@ploidy,self$nThreads)
         trait@domEff = trait@domEff*tmp$scale
       }else{
-        tmp = tuneTraitA(geno,trait@addEff,var[i],self$nThreads)
+        tmp = tuneTraitA(geno,trait@addEff,var[i],private$.founderPop@ploidy,self$nThreads)
       }
       trait@addEff = trait@addEff*tmp$scale
       trait@intercept = mean[i]-tmp$intercept
       if(class(trait)%in%c("TraitAG","TraitADG")){
         if(varEnv[i]==0){
           tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i],
-                            self$nThreads)
+                            private$.founderPop@ploidy,self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 0-tmpG$intercept
           trait@envVar = 1
         }else{
           tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i]/varEnv[i],
-                            self$nThreads)
+                            private$.founderPop@ploidy,self$nThreads)
           trait@gxeEff = trait@gxeEff*tmpG$scale
           trait@gxeInt = 1-tmpG$intercept
           trait@envVar = varEnv[i]
@@ -1676,6 +1707,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchGenMap
 NULL
@@ -1683,13 +1717,19 @@ NULL
 SimParam$set(
   "public",
   "switchGenMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     private$.sepMap = FALSE
     private$.femaleMap = genMap
     private$.maleMap = NULL
+    private$.femaleCentromere = centromere
+    private$.maleCentromere = NULL
     invisible(self)
   }
 )
@@ -1704,6 +1744,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchFemaleMap
 NULL
@@ -1711,16 +1754,23 @@ NULL
 SimParam$set(
   "public",
   "switchFemaleMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     if(private$.sepMap){
       private$.femaleMap = genMap
+      private$.femaleCentromere = centromere
     }else{
       private$.sepMap = TRUE
       private$.maleMap = private$.femaleMap
       private$.femaleMap = genMap
+      private$.maleCentromere = private$.femaleCentromere
+      private$.femaleCentromere = centromere
     }
     invisible(self)
   }
@@ -1736,6 +1786,9 @@ SimParam$set(
 #' @param genMap a list of length nChr containing 
 #' numeric vectors for the position of each segregating 
 #' site on a chromosome.
+#' @param centromere a numeric vector of centromere 
+#' positions. If NULL, the centromere are assumed to 
+#' be metacentric.
 #' 
 #' @name SimParam_switchMaleMap
 NULL
@@ -1743,12 +1796,17 @@ NULL
 SimParam$set(
   "public",
   "switchMaleMap",
-  function(genMap){
-    stopifnot(length(genMap)==private$.nChr)
+  function(genMap, centromere=NULL){
+    if(is.null(centromere)){
+      centromere=sapply(genMap,max)/2
+    }
+    stopifnot(length(genMap)==private$.nChr,
+              centromere<=sapply(genMap,max))
     tmp = do.call("c",lapply(genMap,length))
     stopifnot(all(tmp==private$.segSites))
     private$.sepMap = TRUE
     private$.maleMap = genMap
+    private$.maleCentromere = centromere
     invisible(self)
   }
 )

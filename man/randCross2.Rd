@@ -17,7 +17,7 @@ randCross2(females, males, nCrosses, nProgeny = 1, balance = TRUE,
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{balance}{if using gender, this option will balance the number 
+\item{balance}{this option will balance the number 
 of progeny per parent}
 
 \item{femaleParents}{an optional vector of indices for allowable 

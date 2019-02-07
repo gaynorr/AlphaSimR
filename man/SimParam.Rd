@@ -15,8 +15,6 @@ as SP will allow it to be accessed by function defaults.
 \section{Fields}{
 
 \describe{
-\item{\code{ploidy}}{ploidy level of species}
-
 \item{\code{nChr}}{number of chromosomes}
 
 \item{\code{nTraits}}{number of traits}
@@ -37,6 +35,12 @@ males}
 
 \item{\code{sepMap}}{are there seperate genetic maps for 
 males and females}
+
+\item{\code{femaleCentromere}}{position of centromere on female 
+genetic map}
+
+\item{\code{maleCentromere}}{position of centromere on male 
+genetic map}
 
 \item{\code{recombRatio}}{ratio of genetic recombination in 
 females relative to male}
@@ -66,6 +70,8 @@ females relative to male}
 \item{\code{varE}}{default error variance}
 
 \item{\code{founderPop}}{the founder population used for scaling traits}
+
+\item{\code{quadProb}}{the probability of quadrivalent formation}
 
 \item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
 }}

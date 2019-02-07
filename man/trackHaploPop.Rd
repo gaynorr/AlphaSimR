@@ -4,7 +4,7 @@
 \alias{trackHaploPop}
 \title{Haplotype tracking population}
 \usage{
-trackHaploPop(genMap, nInd, inbred = FALSE)
+trackHaploPop(genMap, nInd, inbred = FALSE, ploidy = 2L)
 }
 \arguments{
 \item{genMap}{a list of genetic maps}
@@ -12,6 +12,8 @@ trackHaploPop(genMap, nInd, inbred = FALSE)
 \item{nInd}{number of individuals}
 
 \item{inbred}{should individuals be fully inbred}
+
+\item{ploidy}{ploidy level of organism}
 }
 \description{
 Creates a population contain haplotypes numbered for 

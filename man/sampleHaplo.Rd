@@ -4,7 +4,8 @@
 \alias{sampleHaplo}
 \title{Sample haplotypes from a MapPop}
 \usage{
-sampleHaplo(mapPop, nInd, inbred = FALSE, replace = TRUE)
+sampleHaplo(mapPop, nInd, inbred = FALSE, ploidy = NULL,
+  replace = TRUE)
 }
 \arguments{
 \item{mapPop}{the \code{\link{MapPop-class}} used to 
@@ -13,6 +14,9 @@ sample haplotypes}
 \item{nInd}{the number of individuals to create}
 
 \item{inbred}{should new individuals be fully inbred}
+
+\item{ploidy}{new ploidy level for organism. If NULL, 
+the ploidy level of the mapPop is used.}
 
 \item{replace}{should haplotypes be sampled with replacement}
 }

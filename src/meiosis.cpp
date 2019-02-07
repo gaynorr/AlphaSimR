@@ -7,7 +7,8 @@ public:
     arma::field< //chromosome
       arma::field< //ploidy
         arma::Mat<int> > > > hist; //(chr, site)
-  void setSize(arma::uword nInd, arma::uword nChr, 
+  void setSize(arma::uword nInd, 
+               arma::uword nChr, 
                arma::uword ploidy);
   void addHist(arma::Mat<int>& input, 
                arma::uword nInd, 
@@ -18,8 +19,9 @@ public:
                          arma::uword par);
 };
 
-void RecHist::setSize(arma::uword nInd, arma::uword nChr, 
-                 arma::uword ploidy=2){
+void RecHist::setSize(arma::uword nInd, 
+                      arma::uword nChr, 
+                      arma::uword ploidy=2){
   hist.set_size(nInd);
   for(arma::uword i=0; i<nInd; ++i){
     hist(i).set_size(nChr);
@@ -33,20 +35,7 @@ void RecHist::addHist(arma::Mat<int>& input,
              arma::uword nInd, 
              arma::uword chrGroup,
              arma::uword chrInd){
-  // Eliminate rows with no information
-  arma::uvec take = find(input.col(0)>0);
-  // Eliminate rows where chomosome doesn't change
-  arma::uvec takeTake(take.n_elem,arma::fill::zeros);
-  takeTake(0) = 1; // First row has starting chromosome
-  int lastChr = input(0,0);
-  for(arma::uword i=1; i<take.n_elem; ++i){
-   if(lastChr!=input(take(i),0)){
-     lastChr = input(take(i),0);
-     takeTake(i) = 1;
-   }
-  }
-  take = take(find(takeTake>0));
-  hist(nInd)(chrGroup)(chrInd) = input.rows(take);
+  hist(nInd)(chrGroup)(chrInd) = input;
 }
 
 arma::Mat<int> RecHist::getHist(arma::uword ind, 
@@ -60,7 +49,7 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // Returns -1 if value is smaller than the values of x
 // Returns last element if value is greater than values of x
 // Set left to the smallest value of the interval to search
-arma::uword intervalSearch(arma::vec x, double value, arma::uword left=0){
+arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0){
   // Check if crossover is before beginning
   if(x[left]>value){
     Rcpp::stop("intervalSearch searching in impossible interval");
@@ -96,78 +85,458 @@ arma::uword intervalSearch(arma::vec x, double value, arma::uword left=0){
   return left;
 }
 
-//Simulates a gamete using a count-location model for recombination, ploidy=2
-arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
-                                  const arma::Col<unsigned char>& chr2,
-                                  const arma::vec& genMap, 
-                                  arma::Mat<int>& hist, bool trackRec){
-  arma::uword nSites = chr1.n_elem;
-  double genLen = genMap(nSites-1);
-  arma::Col<unsigned char> gamete(nSites);
-  // Sample number of chromosomes
-  arma::uword nCO = samplePoisson(genLen);
-  // Randomly pick starting chromosome
-  arma::uword readChr = sampleInt(1,2)(0);
-  // Track starting chromosome
-  if(trackRec){
-    hist.set_size(nCO+2,2);
-    hist.fill(0);
-    hist(0,0) = readChr+1;
-    hist(0,1) = 1;
+// Removes hidden double crossover from recombination map
+arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
+  arma::Col<int> take(X.n_rows,arma::fill::zeros);
+  ++take(0);
+  int lastChr, lastSite;
+  lastChr = X(0,0);
+  lastSite = X(0,1);
+  for(arma::uword i=1; i<X.n_rows; ++i){
+    if((X(i,0)!=lastChr) & 
+       (X(i,1)!=lastSite)){
+      ++take(i);
+      lastChr = X(i,0);
+      lastSite = X(i,1);
+    }
   }
+  return X.rows(find(take>0));
+}
+
+// Finds recombination map for a bivalent pair
+arma::Mat<int> findBivalentCO(const arma::vec& genMap){
+  arma::uword startPos=0, endPos, readChr=0, nCO;
+  double genLen = genMap(genMap.n_elem-1);
+  
+  // Determine number of crossovers
+  nCO = samplePoisson(genLen);
+  arma::Mat<int> output(nCO+1,2);
   if(nCO==0){
-    // No CO
-    if(readChr){
-      gamete = chr2;
-    }else{
-      gamete = chr1;
+    output.ones();
+    return output;
+  }
+  
+  // Determine crossover sites
+  arma::vec posCO(nCO,arma::fill::randu);
+  posCO = arma::sort(posCO);
+  posCO *= genLen;
+  
+  // Find crossover sites on map
+  output.row(0).ones();
+  for(arma::uword i=0; i<nCO; ++i){
+    ++readChr;
+    readChr = readChr%2;
+    endPos = intervalSearch(genMap,posCO(i),startPos);
+    output(i+1,0) = readChr+1;
+    output(i+1,1) = endPos+2;
+    startPos = endPos;
+  }
+  
+  return removeDoubleCO(output);
+}
+
+// Finds recombination map for cross type quadrivalent
+// Chromosome pairing in the head: 1:2 and 3:4
+// Chromosome pairing in the tail: 1:4 and 2:3
+// chr is the selected chromosome (1-4)
+// exchange is the exchange point between chromosomes 
+arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
+                                   double exchange, //0-genLen
+                                   double centromere, //0-genLen
+                                   const arma::vec& genMap){ //Ordered values 0-genLen, length nSites
+  arma::uvec relPosCO(3,arma::fill::zeros), pairChr1(2), pairChr2(2);
+  arma::uword startPos=0, endPos, readChr=0, nCO_1, nCO;
+  double genLen = genMap(genMap.n_elem-1);
+  
+  // Determine number of crossovers
+  nCO = samplePoisson(genLen);
+  arma::Mat<int> output(nCO+1,2);
+  if(nCO==0){
+    output(0,0) = chr;
+    output(0,1) = 1;
+    return output;
+  }
+  
+  // Determine crossover sites
+  arma::vec posCO(nCO,arma::fill::randu);
+  posCO = arma::sort(posCO);
+  posCO *= genLen;
+  
+  //Find starting chromosome pair and number of CO prior to exchange
+  //Find second chromosome pair and number of CO after exchange
+  if(centromere<exchange){ //Centromere in head
+    for(arma::uword i=0; i<nCO; ++i){
+      if(posCO(i)<centromere){
+        ++relPosCO(0);
+      }else if(posCO(i)<exchange){
+        ++relPosCO(1);
+      }else{
+        ++relPosCO(2);
+      }
+    }
+    nCO_1 = relPosCO(0) + relPosCO(1);
+    switch(chr){
+    case 1:
+      if(relPosCO(0)%2 == 0){
+        pairChr1(0) = 1;
+        pairChr1(1) = 2;
+      }else{
+        pairChr1(0) = 2;
+        pairChr1(1) = 1;
+      }
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 1;
+        pairChr2(1) = 4;
+      }else{
+        pairChr2(0) = 2;
+        pairChr2(1) = 3;
+      }
+      break; 
+    case 2:
+      if(relPosCO(0)%2 == 0){
+        pairChr1(0) = 2;
+        pairChr1(1) = 1;
+      }else{
+        pairChr1(0) = 1;
+        pairChr1(1) = 2;
+      }
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 2;
+        pairChr2(1) = 3;
+      }else{
+        pairChr2(0) = 1;
+        pairChr2(1) = 4;
+      }
+      break; 
+    case 3:
+      if(relPosCO(0)%2 == 0){
+        pairChr1(0) = 3;
+        pairChr1(1) = 4;
+      }else{
+        pairChr1(0) = 4;
+        pairChr1(1) = 3;
+      }
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 3;
+        pairChr2(1) = 2;
+      }else{
+        pairChr2(0) = 4;
+        pairChr2(1) = 1;
+      }
+      break; 
+    case 4:
+      if(relPosCO(0)%2 == 0){
+        pairChr1(0) = 4;
+        pairChr1(1) = 3;
+      }else{
+        pairChr1(0) = 3;
+        pairChr1(1) = 4;
+      }
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 4;
+        pairChr2(1) = 1;
+      }else{
+        pairChr2(0) = 3;
+        pairChr2(1) = 2;
+      }
+    }
+  }else{ //Centromere in tail
+    for(arma::uword i=0; i<nCO; ++i){
+      if(posCO(i)<exchange){
+        ++relPosCO(0);
+      }else if(posCO(i)<centromere){
+        ++relPosCO(1);
+      }else{
+        ++relPosCO(2);
+      }
+    }
+    nCO_1 = relPosCO(0);
+    switch(chr){
+    case 1:
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 1;
+        pairChr2(1) = 4;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 1;
+          pairChr1(1) = 2;
+        }else{
+          pairChr1(0) = 2;
+          pairChr1(1) = 1;
+        }
+      }else{
+        pairChr2(0) = 4;
+        pairChr2(1) = 1;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 4;
+          pairChr1(1) = 3;
+        }else{
+          pairChr1(0) = 3;
+          pairChr1(1) = 4;
+        }
+      }
+      break; 
+    case 2:
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 2;
+        pairChr2(1) = 3;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 2;
+          pairChr1(1) = 1;
+        }else{
+          pairChr1(0) = 1;
+          pairChr1(1) = 2;
+        }
+      }else{
+        pairChr2(0) = 3;
+        pairChr2(1) = 2;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 3;
+          pairChr1(1) = 4;
+        }else{
+          pairChr1(0) = 4;
+          pairChr1(1) = 3;
+        }
+      }
+      break; 
+    case 3:
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 3;
+        pairChr2(1) = 2;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 3;
+          pairChr1(1) = 4;
+        }else{
+          pairChr1(0) = 4;
+          pairChr1(1) = 3;
+        }
+      }else{
+        pairChr2(0) = 2;
+        pairChr2(1) = 3;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 2;
+          pairChr1(1) = 1;
+        }else{
+          pairChr1(0) = 1;
+          pairChr1(1) = 2;
+        }
+      }
+      break; 
+    case 4:
+      if(relPosCO(1)%2 == 0){
+        pairChr2(0) = 4;
+        pairChr2(1) = 1;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 4;
+          pairChr1(1) = 3;
+        }else{
+          pairChr1(0) = 3;
+          pairChr1(1) = 4;
+        }
+      }else{
+        pairChr2(0) = 1;
+        pairChr2(1) = 4;
+        if(relPosCO(0)%2 == 0){
+          pairChr1(0) = 1;
+          pairChr1(1) = 2;
+        }else{
+          pairChr1(0) = 2;
+          pairChr1(1) = 1;
+        }
+      }
+    }
+  }
+  
+  // Find crossover sites on map
+  output(0,0) = pairChr1(0);
+  output(0,1) = 1;
+  
+  for(arma::uword i=0; i<nCO_1; ++i){
+    ++readChr;
+    readChr = readChr%2;
+    endPos = intervalSearch(genMap,posCO(i),startPos);
+    output(i+1,0) = pairChr1(readChr);
+    output(i+1,1) = endPos+2;
+    startPos = endPos;
+  }
+  readChr = 0;
+  for(arma::uword i=nCO_1; i<nCO; ++i){
+    ++readChr;
+    readChr = readChr%2;
+    endPos = intervalSearch(genMap,posCO(i),startPos);
+    output(i+1,0) = pairChr2(readChr);
+    output(i+1,1) = endPos+2;
+    startPos = endPos;
+  }
+  return removeDoubleCO(output);
+}
+
+//Simulates a gamete using a count-location model for recombination
+void bivalent(const arma::Col<unsigned char>& chr1,
+              const arma::Col<unsigned char>& chr2,
+              const arma::vec& genMap,
+              arma::Col<unsigned char>& output,
+              arma::Mat<int>& hist){
+  hist = findBivalentCO(genMap);
+  if(hist.n_rows==1){
+    output = chr1;
+  }else{
+    arma::uword nSites = chr1.n_elem;
+    for(arma::uword i=0; i<(hist.n_rows-1); ++i){
+      switch(hist(i,0)){
+      case 1:
+        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
+          chr1(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+        break; 
+      case 2:
+        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
+          chr2(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+      }
+    }
+    switch(hist(hist.n_rows-1,0)){
+    case 1:
+      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
+        chr1(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 2:
+      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
+        chr2(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+    }
+  }
+}
+
+//Simulates a gamete using a count-location model for recombination
+void quadrivalent(const arma::Col<unsigned char>& chr1,
+                  const arma::Col<unsigned char>& chr2,
+                  const arma::Col<unsigned char>& chr3,
+                  const arma::Col<unsigned char>& chr4,
+                  const arma::vec& genMap,
+                  double centromere,
+                  arma::Col<unsigned char>& output1,
+                  arma::Col<unsigned char>& output2,
+                  arma::Mat<int>& hist1,
+                  arma::Mat<int>& hist2){
+  arma::uword nSites = chr1.n_elem;
+  
+  //Find exchange point
+  double genLen = genMap(genMap.n_elem-1);
+  arma::vec exchange(1,arma::fill::randu);
+  exchange *= genLen;
+  
+  //Sample chromosomes
+  arma::uvec selChr = sampleInt(2,4);
+  ++selChr; //1-4 coding
+  
+  //Resolve first gamete
+  hist1 = findQuadrivalentCO(selChr(0), exchange(0),
+                             centromere, genMap);
+  if(hist1.n_rows==1){
+    switch(hist1(0,0)){
+    case 1:
+      output1 = chr1;
+      break;
+    case 2:
+      output1 = chr2;
+      break;
+    case 3:
+      output1 = chr3;
+      break;
+    case 4:
+      output1 = chr4;
     }
   }else{
-    // COs present, Create CO locations
-    arma::vec posCO(nCO,arma::fill::randu);
-    posCO = posCO*genLen;
-    posCO = arma::sort(posCO);
-    arma::uword startPos = 0;
-    arma::uword endPos;
-    if(readChr){
-      gamete(0) = chr2(0);
-    }else{
-      gamete(0) = chr1(0);
+    for(arma::uword i=0; i<(hist1.n_rows-1); ++i){
+      switch(hist1(i,0)){
+      case 1:
+        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
+          chr1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+        break; 
+      case 2:
+        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
+          chr2(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+        break; 
+      case 3:
+        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
+          chr3(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+        break; 
+      case 4:
+        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
+          chr4(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+      }
     }
-    for(arma::uword i=0; i<nCO; ++i){
-      endPos = intervalSearch(genMap,posCO[i],startPos);
-      // Fill gamete
-      if(endPos>startPos){ // Check for double crossovers
-        // Fill in segSites
-        if(readChr){
-          gamete(arma::span(startPos+1,endPos)) = chr2(arma::span(startPos+1,endPos));
-        }else{
-          gamete(arma::span(startPos+1,endPos)) = chr1(arma::span(startPos+1,endPos));
-        }
-        if(trackRec){
-          hist(i+1,0) = readChr+1;
-          hist(i+1,1) = startPos+2;
-        }
-      }
-      startPos = endPos;
-      // Switch chromosome
-      ++readChr;
-      readChr = readChr%2;
-    }
-    // Fill in last segSites if needed
-    if(endPos<(nSites-1)){
-      if(readChr){
-        gamete(arma::span(endPos+1,nSites-1)) = chr2(arma::span(endPos+1,nSites-1));
-      }else{
-        gamete(arma::span(endPos+1,nSites-1)) = chr1(arma::span(endPos+1,nSites-1));
-      }
-      if(trackRec){
-        hist(nCO+1,0) = readChr+1;
-        hist(nCO+1,1) = endPos+2;
-      }
+    switch(hist1(hist1.n_rows-1,0)){
+    case 1:
+      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
+        chr1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 2:
+      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
+        chr2(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 3:
+      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
+        chr3(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 4:
+      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
+        chr4(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
     }
   }
-  return gamete;
+  
+  //Resolve second gamete
+  hist2 = findQuadrivalentCO(selChr(1), exchange(0),
+                             centromere, genMap);
+  if(hist2.n_rows==1){
+    switch(hist2(0,0)){
+    case 1:
+      output2 = chr1;
+      break;
+    case 2:
+      output2 = chr2;
+      break;
+    case 3:
+      output2 = chr3;
+      break;
+    case 4:
+      output2 = chr4;
+    }
+  }else{
+    for(arma::uword i=0; i<(hist2.n_rows-1); ++i){
+      switch(hist2(i,0)){
+      case 1:
+        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
+          chr1(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        break; 
+      case 2:
+        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
+          chr2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        break; 
+      case 3:
+        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
+          chr3(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        break; 
+      case 4:
+        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
+          chr4(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+      }
+    }
+    switch(hist2(hist2.n_rows-1,0)){
+    case 1:
+      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
+        chr1(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 2:
+      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
+        chr2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 3:
+      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
+        chr3(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      break; 
+    case 4:
+      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
+        chr4(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+    }
+  }
 }
 
 // Makes crosses between diploid individuals.
@@ -178,50 +547,210 @@ arma::Col<unsigned char> bivalent(const arma::Col<unsigned char>& chr1,
 // femaleMap: chromosome genetic maps
 // maleMap: chromosome genetic maps
 // trackRec: track recombination
+// motherPloidy: ploidy level of mother 
+// fatherPloidy: ploidy level of father
+// quadProb: probability of quadrivalent formation
+// nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
-Rcpp::List cross2(
+Rcpp::List cross(
     const arma::field<arma::Cube<unsigned char> >& motherGeno, 
     arma::uvec mother,
     const arma::field<arma::Cube<unsigned char> >& fatherGeno, 
     arma::uvec father,
     const arma::field<arma::vec>& femaleMap,
     const arma::field<arma::vec>& maleMap,
-    bool trackRec, int nThreads){
+    bool trackRec,
+    arma::uword motherPloidy,
+    arma::uword fatherPloidy,
+    const arma::vec& motherCentromere,
+    const arma::vec& fatherCentromere,
+    double quadProb,
+    int nThreads){
   mother -= 1; // R to C++
   father -= 1; // R to C++
+  arma::uword ploidy = (motherPloidy+fatherPloidy)/2;
   arma::uword nChr = motherGeno.n_elem;
   arma::uword nInd = mother.n_elem;
   //Output data
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd,nChr,2);
+    hist.setSize(nInd,nChr,ploidy);
   }
   //Loop through chromosomes
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){
-    arma::Mat<int> histMat;
+    arma::vec u(1);
+    arma::Mat<int> hist1, hist2;
+    arma::uvec xm(motherPloidy); // Indicator for mother chromosomes
+    for(arma::uword i=0; i<motherPloidy; ++i)
+      xm(i) = i;
+    arma::uvec xf(fatherPloidy); // Indicator for father chromosomes
+    for(arma::uword i=0; i<fatherPloidy; ++i)
+      xf(i) = i;
+    arma::uword progenyChr;
     arma::uword segSites = motherGeno(chr).n_rows;
-    arma::Cube<unsigned char> tmpGeno(segSites,2,nInd);
+    arma::Cube<unsigned char> tmpGeno(segSites,ploidy,nInd);
+    arma::Col<unsigned char> gamete1(segSites), gamete2(segSites);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
+      progenyChr=0;
+      xm = shuffle(xm);
       //Female gamete
-      tmpGeno.slice(ind).col(0) = 
-        bivalent(motherGeno(chr).slice(mother(ind)).col(0),
-                 motherGeno(chr).slice(mother(ind)).col(1),
-                 femaleMap(chr),histMat,trackRec);
-      if(trackRec){
-        hist.addHist(histMat,ind,chr,0);
+      for(arma::uword x=0; x<motherPloidy; x+=4){
+        if((motherPloidy-x)>2){
+          u.randu();
+          if(u(0)>quadProb){
+            //Bivalent 1
+            bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
+                     motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
+                     femaleMap(chr),
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xm(x))+1);
+              hist1.col(0).replace(200,int(xm(x+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+            //Bivalent 2
+            bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
+                     motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
+                     femaleMap(chr),
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xm(x+2))+1);
+              hist1.col(0).replace(200,int(xm(x+3))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+          }else{
+            //Quadrivalent
+            quadrivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
+                         motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
+                         motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
+                         motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
+                         femaleMap(chr),
+                         motherCentromere(chr),
+                         gamete1,
+                         gamete2,
+                         hist1,
+                         hist2);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xm(x))+1);
+              hist1.col(0).replace(200,int(xm(x+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+              hist2.col(0) *= 100; //To avoid conflicts
+              hist2.col(0).replace(100,int(xm(x+2))+1);
+              hist2.col(0).replace(200,int(xm(x+3))+1);
+              hist.addHist(hist2,ind,chr,progenyChr+1);
+            }
+            progenyChr += 2;
+          }
+        }else{
+          //Bivalent
+          bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
+                   motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
+                   femaleMap(chr),
+                   gamete1,
+                   hist1);
+          tmpGeno.slice(ind).col(progenyChr) = gamete1;
+          if(trackRec){
+            hist1.col(0) *= 100; //To avoid conflicts
+            hist1.col(0).replace(100,int(xm(x))+1);
+            hist1.col(0).replace(200,int(xm(x+1))+1);
+            hist.addHist(hist1,ind,chr,progenyChr);
+          }
+          ++progenyChr;
+        }
       }
+      
       //Male gamete
-      tmpGeno.slice(ind).col(1) = 
-        bivalent(fatherGeno(chr).slice(father(ind)).col(0),
-                 fatherGeno(chr).slice(father(ind)).col(1),
-                 maleMap(chr),histMat,trackRec);
-      if(trackRec){
-        hist.addHist(histMat,ind,chr,1);
+      xf = shuffle(xf);
+      for(arma::uword x=0; x<fatherPloidy; x+=4){
+        if((fatherPloidy-x)>2){
+          u.randu();
+          if(u(0)>quadProb){
+            //Bivalent 1
+            bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
+                     fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
+                     maleMap(chr),
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xf(x))+1);
+              hist1.col(0).replace(200,int(xf(x+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+            //Bivalent 2
+            bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
+                     fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
+                     maleMap(chr),
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xf(x+2))+1);
+              hist1.col(0).replace(200,int(xf(x+3))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+          }else{
+            //Quadrivalent
+            quadrivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
+                         fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
+                         fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
+                         fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
+                         maleMap(chr),
+                         fatherCentromere(chr),
+                         gamete1,
+                         gamete2,
+                         hist1,
+                         hist2);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(xf(x))+1);
+              hist1.col(0).replace(200,int(xf(x+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+              hist2.col(0) *= 100; //To avoid conflicts
+              hist2.col(0).replace(100,int(xf(x+2))+1);
+              hist2.col(0).replace(200,int(xf(x+3))+1);
+              hist.addHist(hist2,ind,chr,progenyChr+1);
+            }
+            progenyChr += 2;
+          }
+        }else{
+          //Bivalent
+          bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
+                   fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
+                   maleMap(chr),
+                   gamete1,
+                   hist1);
+          tmpGeno.slice(ind).col(progenyChr) = gamete1;
+          if(trackRec){
+            hist1.col(0) *= 100; //To avoid conflicts
+            hist1.col(0).replace(100,int(xf(x))+1);
+            hist1.col(0).replace(200,int(xf(x+1))+1);
+            hist.addHist(hist1,ind,chr,progenyChr);
+          }
+          ++progenyChr;
+        }
       }
     } //End individual loop
     geno(chr) = tmpGeno;
@@ -245,7 +774,7 @@ Rcpp::List createDH2(
   arma::field<arma::Cube<unsigned char> > output(nChr);
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd,nChr,2);
+    hist.setSize(nInd*nDH,nChr,2);
   }
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -254,16 +783,23 @@ Rcpp::List createDH2(
     arma::Mat<int> histMat;
     arma::uword segSites = geno(chr).n_rows;
     arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
+    arma::Col<unsigned char> gamete(segSites);
+    arma::uvec x = {0,1};
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop
-        arma::Col<unsigned char> gamete = 
-          bivalent(geno(chr).slice(ind).col(0),
-                   geno(chr).slice(ind).col(1),
-                   genMap(chr),histMat,trackRec);
+        x = shuffle(x);
+        bivalent(geno(chr).slice(ind).col(x(0)),
+                 geno(chr).slice(ind).col(x(1)),
+                 genMap(chr),
+                 gamete,
+                 histMat);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){
-            hist.addHist(histMat,ind,chr,j);
+            if(x(0)==1){
+              histMat.col(0).transform([](int val){return val%2+1;});
+            }
+            hist.addHist(histMat,i+ind*nDH,chr,j);
           }
         } //End ploidy loop
       } //End nDH loop
@@ -290,10 +826,8 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
   ibdRecHist.setSize(nInd, nChr, 2);
   for (arma::uword ind = 0; ind < nInd; ++ind) {
     Rcpp::List recHistInd = recHist(ind);
-    // std::cout << "Ind " << ind + 1 << "\n";
     for (arma::uword par = 0; par < 2; ++par) {
       int pId = pedigree(ind, par);
-      // std::cout << "Par " << par + 1 << " pId " << pId << "\n";
       if (pId == 0) { // Individual is     a founder --> set founder gamete code
         for (arma::uword chr = 0; chr < nChr; ++chr) {
           if (0 < nLociPerChr(chr)) {
@@ -302,8 +836,6 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
             recHistIndChrPar(0, 0) = 2 * (ind + 1) - 1 + par;
             recHistIndChrPar(0, 1) = 1;
             ibdRecHist.addHist(recHistIndChrPar, ind, chr, par);
-            // std::cout << "Chr " << chr + 1 << " Par " << par + 1 << "\n";
-            // std::cout << recHistIndChrPar << "\n"; 
           }
         }
       } else {        // Individual is not a founder --> get founder gamete code & recombinations
@@ -314,16 +846,12 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
             Rcpp::List recHistIndChr = recHistInd(chr);
             arma::Mat<int> recHistIndChrPar = recHistIndChr(par);
             arma::uword nRecSegInd = recHistIndChrPar.n_rows;
-            // std::cout << "Chr " << chr + 1 << " Par " << par + 1 << "\n";
-            // std::cout << recHistIndChrPar << "\n";
-            // std::cout << nRecSegInd << "\n";
             if (recHistPar.size() == 0) { // Parent is     a founder and has no recHist info --> get founder gamete codes and put them onto individual recombinations
               for (arma::uword recSegInd = 0; recSegInd < nRecSegInd; ++recSegInd) {
                 int source = recHistIndChrPar(recSegInd, 0) - 1;
                 recHistIndChrPar(recSegInd, 0) = ibdRecHist.getHist(pId, chr, source)(0, 0);
               }
               ibdRecHist.addHist(recHistIndChrPar, ind, chr, par);
-              // std::cout << recHistIndChrPar << "\n";
             } else {                      // Parent is not a founder and has    recHist info --> parse and combine parent and individual recombinations
               // Parent's all ancestral recombinations
               arma::Mat<int> ibdRecHistParChrPar1 = ibdRecHist.getHist(pId, chr, 0);
@@ -334,18 +862,13 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
               arma::uvec nIbdRecSegParChrPar(2);
               nIbdRecSegParChrPar(0) = ibdRecHistParChrPar(0).n_rows;
               nIbdRecSegParChrPar(1) = ibdRecHistParChrPar(1).n_rows;
-              // std::cout << "ibdRecHistParChrPar1: " << ibdRecHistParChrPar1 << "\n";
-              // std::cout << "ibdRecHistParChrPar2: " << ibdRecHistParChrPar2 << "\n";
               
               // Find and advance the ancestral recombinations in line with the recent (parent-progeny) recombinations
               arma::uvec ibdRecSegPar(2);
               int nIbdSegInd;
               arma::Mat<int> ibdRecHistIndChrPar;
               for (arma::uword run = 0; run < 2; ++run) {
-                if (run == 0) {
-                  // std::cout << "Count the segments\n";
-                } else {
-                  // std::cout << "Store the segments\n";
+                if (run != 0) {
                   ibdRecHistIndChrPar.set_size(nIbdSegInd, 2);
                 }
                 ibdRecSegPar(0) = 0;
@@ -360,11 +883,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                   } else {
                     stopInd = recHistIndChrPar(recSegInd + 1, 1) - 1;
                   }
-                  // std::cout << "\n"
-                  //           << "SegInd "     << recSegInd + 1
-                  //           << " startInd: " << startInd
-                  //           << " stopInd: "  << stopInd
-                  //           << " source: "   << source + 1 << "\n";
+
                   bool loop = true;
                   while (loop & (ibdRecSegPar(source) < nIbdRecSegParChrPar(source))) {
                     int sourcePar = ibdRecHistParChrPar(source)(ibdRecSegPar(source), 0);
@@ -375,10 +894,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                     } else {
                       stopPar = ibdRecHistParChrPar(source)(ibdRecSegPar(source) + 1, 1) - 1;
                     }
-                    // std::cout << " ibdRecSegPar: "  << ibdRecSegPar(source) + 1
-                    //           << " startPar: "      << startPar
-                    //           << " stopPar: "       << stopPar
-                    //           << " sourcePar: "     << sourcePar;
+
                     if (startInd <= stopPar) {
                       if (stopInd >= startPar) {
                         int startIbd = std::max(startInd, startPar);
@@ -387,9 +903,7 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                           ibdRecHistIndChrPar(nIbdSegInd, 1) = startIbd;
                         }
                         nIbdSegInd += 1;
-                        // std::cout << "  --> nIbdSegInd: "  << nIbdSegInd
-                        //           << " sourcePar: "        << sourcePar
-                        //           << " start: "            << startIbd;
+
                         if (stopInd <= stopPar) {
                           loop = false;
                         }
@@ -402,12 +916,9 @@ Rcpp::List getIbdRecHist(const Rcpp::List          & recHist,
                     } else {
                       ibdRecSegPar(source) += 1;
                     }
-                    // std::cout << "\n";
                   }
                 }
-                // std::cout << "nIbdSegInd: " << nIbdSegInd << "\n\n";
               }
-              // std::cout << ibdRecHistIndChrPar << "\n";
               ibdRecHist.addHist(ibdRecHistIndChrPar, ind, chr, par);
             }
           }

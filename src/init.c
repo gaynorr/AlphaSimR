@@ -14,12 +14,13 @@ extern SEXP _AlphaSimR_calcGenParam(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_D(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_callRRBLUP_GCA2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_convToImat(SEXP);
 extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_cross2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_cross(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvGCA(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gebvRR(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_gegvGCA(SEXP, SEXP, SEXP);
@@ -42,8 +43,8 @@ extern SEXP _AlphaSimR_packHaplo(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_popVar(SEXP);
 extern SEXP _AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_sampHalfDialComb(SEXP, SEXP);
-extern SEXP _AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeGeno(SEXP, SEXP, SEXP, SEXP);
@@ -57,12 +58,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_callRRBLUP",        (DL_FUNC) &_AlphaSimR_callRRBLUP,         6},
     {"_AlphaSimR_callRRBLUP_D",      (DL_FUNC) &_AlphaSimR_callRRBLUP_D,       7},
     {"_AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA,     7},
+    {"_AlphaSimR_callRRBLUP_GCA2",   (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA2,   12},
     {"_AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &_AlphaSimR_callRRBLUP_MV,      7},
     {"_AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA,     7},
     {"_AlphaSimR_callRRBLUP2",       (DL_FUNC) &_AlphaSimR_callRRBLUP2,       11},
     {"_AlphaSimR_convToImat",        (DL_FUNC) &_AlphaSimR_convToImat,         1},
     {"_AlphaSimR_createDH2",         (DL_FUNC) &_AlphaSimR_createDH2,          5},
-    {"_AlphaSimR_cross2",            (DL_FUNC) &_AlphaSimR_cross2,             8},
+    {"_AlphaSimR_cross",             (DL_FUNC) &_AlphaSimR_cross,             13},
     {"_AlphaSimR_gebvGCA",           (DL_FUNC) &_AlphaSimR_gebvGCA,            4},
     {"_AlphaSimR_gebvRR",            (DL_FUNC) &_AlphaSimR_gebvRR,             3},
     {"_AlphaSimR_gegvGCA",           (DL_FUNC) &_AlphaSimR_gegvGCA,            3},
@@ -85,8 +87,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_popVar",            (DL_FUNC) &_AlphaSimR_popVar,             1},
     {"_AlphaSimR_sampAllComb",       (DL_FUNC) &_AlphaSimR_sampAllComb,        3},
     {"_AlphaSimR_sampHalfDialComb",  (DL_FUNC) &_AlphaSimR_sampHalfDialComb,   2},
-    {"_AlphaSimR_tuneTraitA",        (DL_FUNC) &_AlphaSimR_tuneTraitA,         4},
-    {"_AlphaSimR_tuneTraitAD",       (DL_FUNC) &_AlphaSimR_tuneTraitAD,        6},
+    {"_AlphaSimR_tuneTraitA",        (DL_FUNC) &_AlphaSimR_tuneTraitA,         5},
+    {"_AlphaSimR_tuneTraitAD",       (DL_FUNC) &_AlphaSimR_tuneTraitAD,        7},
     {"_AlphaSimR_writeASGenotypes",  (DL_FUNC) &_AlphaSimR_writeASGenotypes,   7},
     {"_AlphaSimR_writeASHaplotypes", (DL_FUNC) &_AlphaSimR_writeASHaplotypes,  7},
     {"_AlphaSimR_writeGeno",         (DL_FUNC) &_AlphaSimR_writeGeno,          4},

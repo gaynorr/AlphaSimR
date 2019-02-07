@@ -1,7 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
-
 // Retrieves GEBVs for RRsol
 // [[Rcpp::export]]
 arma::mat gebvRR(const Rcpp::S4& RRsol, const Rcpp::S4& pop, 
