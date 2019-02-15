@@ -252,3 +252,11 @@ double choose(double n, double k){
   if(k==0) return 1;
   return (n*choose(n-1,k-1))/k;
 }
+
+// [[Rcpp::export]]
+int getNumThreads(){
+#ifdef _OPENMP
+  return omp_get_max_threads();
+#endif
+  return 1;
+}

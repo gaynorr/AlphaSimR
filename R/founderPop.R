@@ -161,7 +161,8 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE,
 #' genetic length for the species. However, this the genetic length is only used by 
 #' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 #' For advanced users only.
-#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+#' If the value is NULL, the number of threads is automatically detected.
 #' 
 #' @details
 #' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
@@ -177,7 +178,10 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE,
 #' @export
 runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
                    split=NULL,ploidy=2L,manualCommand=NULL,manualGenLen=NULL,
-                   nThreads=1){
+                   nThreads=NULL){
+  if(is.null(nThreads)){
+    nThreads = getNumThreads()
+  }
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
@@ -280,7 +284,8 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @param returnCommand should the command passed to manualCommand in 
 #' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
 #' the command is returned instead.
-#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+#' If the value is NULL, the number of threads is automatically detected.
 #'
 #' @return an object of \code{\link{MapPop-class}} or if 
 #' returnCommand is true a string giving the MaCS command passed 
@@ -298,7 +303,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     histNe=c(500,1500,6000,12000,100000),
                     histGen=c(100,1000,10000,100000,1000000),
                     inbred=FALSE,split=NULL,ploidy=2L,returnCommand=FALSE,
-                    nThreads=1L){
+                    nThreads=NULL){
   stopifnot(length(histNe)==length(histGen))
   speciesParams = paste(bp,"-t",4*Ne*mutRate,
                         "-r",4*Ne*genLen/bp)

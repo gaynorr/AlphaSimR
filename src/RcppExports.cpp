@@ -540,6 +540,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getNumThreads
+int getNumThreads();
+RcppExport SEXP _AlphaSimR_getNumThreads() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(getNumThreads());
+    return rcpp_result_gen;
+END_RCPP
+}
 // packHaplo
 arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo, arma::uword ploidy, bool inbred);
 RcppExport SEXP _AlphaSimR_packHaplo(SEXP haploSEXP, SEXP ploidySEXP, SEXP inbredSEXP) {

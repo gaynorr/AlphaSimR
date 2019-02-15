@@ -162,6 +162,10 @@ calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
+getNumThreads <- function() {
+    .Call(`_AlphaSimR_getNumThreads`)
+}
+
 packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }

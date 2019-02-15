@@ -327,7 +327,7 @@ SimParam$set(
     private$.varG = numeric()
     private$.varE = numeric()
     private$.founderPop = founderPop
-    self$nThreads = 1L
+    self$nThreads = getNumThreads()
     self$quadProb = 0
     invisible(self)
   }
