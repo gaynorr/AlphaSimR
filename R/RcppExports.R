@@ -33,6 +33,10 @@ callRRBLUP_D <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
     .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, geno, lociPerChr, lociLoc, maxIter)
 }
 
+callRRBLUP_D2 <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM) {
+    .Call(`_AlphaSimR_callRRBLUP_D2`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM)
+}
+
 callRRBLUP_MV <- function(Y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
     .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, reps, geno, lociPerChr, lociLoc, maxIter)
 }

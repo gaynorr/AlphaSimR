@@ -74,6 +74,8 @@ females relative to male}
 \item{\code{quadProb}}{the probability of quadrivalent formation}
 
 \item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
+
+\item{\code{version}}{the version of AlphaSimR used to generate this object}
 }}
 
 \keyword{datasets}

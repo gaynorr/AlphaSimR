@@ -193,7 +193,6 @@ setValidity("RRsol",function(object){
 #' @slot markerEff GEBVs for markers
 #' @slot addEff additive effects
 #' @slot domEff dominance effects
-#' @slot hetCov heterozygosity covariate
 #' @slot fixEff Estimates for fixed effects
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
@@ -205,7 +204,6 @@ setClass("RRDsol",
          slots=c(markerEff="matrix",
                  addEff="matrix",
                  domEff="matrix",
-                 hetCov="numeric",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",

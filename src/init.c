@@ -13,6 +13,7 @@ extern SEXP _AlphaSimR_calcCoef(SEXP, SEXP);
 extern SEXP _AlphaSimR_calcGenParam(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_D(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_callRRBLUP_D2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_GCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_GCA2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -58,6 +59,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcGenParam",      (DL_FUNC) &_AlphaSimR_calcGenParam,       3},
     {"_AlphaSimR_callRRBLUP",        (DL_FUNC) &_AlphaSimR_callRRBLUP,         6},
     {"_AlphaSimR_callRRBLUP_D",      (DL_FUNC) &_AlphaSimR_callRRBLUP_D,       7},
+    {"_AlphaSimR_callRRBLUP_D2",     (DL_FUNC) &_AlphaSimR_callRRBLUP_D2,     12},
     {"_AlphaSimR_callRRBLUP_GCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA,     7},
     {"_AlphaSimR_callRRBLUP_GCA2",   (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA2,   12},
     {"_AlphaSimR_callRRBLUP_MV",     (DL_FUNC) &_AlphaSimR_callRRBLUP_MV,      7},

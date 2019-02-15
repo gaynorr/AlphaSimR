@@ -126,6 +126,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// callRRBLUP_D2
+Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps, arma::field<arma::Cube<unsigned char> >& geno, arma::ivec& lociPerChr, arma::uvec lociLoc, int maxIter, double Va, double Vd, double Ve, double tol, bool useEM);
+RcppExport SEXP _AlphaSimR_callRRBLUP_D2(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP maxIterSEXP, SEXP VaSEXP, SEXP VdSEXP, SEXP VeSEXP, SEXP tolSEXP, SEXP useEMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< double >::type Va(VaSEXP);
+    Rcpp::traits::input_parameter< double >::type Vd(VdSEXP);
+    Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< bool >::type useEM(useEMSEXP);
+    rcpp_result_gen = Rcpp::wrap(callRRBLUP_D2(y, x, reps, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM));
+    return rcpp_result_gen;
+END_RCPP
+}
 // callRRBLUP_MV
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps, arma::field<arma::Cube<unsigned char> >& geno, arma::ivec& lociPerChr, arma::uvec lociLoc, int maxIter);
 RcppExport SEXP _AlphaSimR_callRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP maxIterSEXP) {

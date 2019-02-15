@@ -38,6 +38,7 @@
 #' @field founderPop the founder population used for scaling traits
 #' @field quadProb the probability of quadrivalent formation
 #' @field nThreads number of threads used on platforms with OpenMP support
+#' @field version the version of AlphaSimR used to generate this object
 #'
 #' @export
 SimParam = R6Class(
@@ -68,7 +69,8 @@ SimParam = R6Class(
     .varA="numeric",
     .varG="numeric",
     .varE="numeric",
-    .founderPop="MapPop"
+    .founderPop="MapPop",
+    .version="character"
   ),
   active = list(
     nChr=function(value){
@@ -266,6 +268,13 @@ SimParam = R6Class(
       }else{
         stop("`$founderPop` is read only",call.=FALSE)
       }
+    },
+    version=function(value){
+      if(missing(value)){
+        private$.version
+      }else{
+        stop("`$version` is read only",call.=FALSE)
+      }
     }
   ),
   cloneable=FALSE
@@ -329,6 +338,7 @@ SimParam$set(
     private$.founderPop = founderPop
     self$nThreads = getNumThreads()
     self$quadProb = 0
+    private$.version = packageDescription("AlphaSimR")$Version 
     invisible(self)
   }
 )

@@ -494,7 +494,7 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
                         tol, maxIter, useEM);
 }
 
-// Called by RRBLUP function
+// Called by RRBLUP_D function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
@@ -522,6 +522,39 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(1),reps);
   return Rcpp::List::create(
     Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
+    Rcpp::Named("p")=p,
+    Rcpp::Named("F")=F
+  );
+}
+
+// Called by RRBLUP_D2 function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
+                         arma::field<arma::Cube<unsigned char> >& geno, 
+                         arma::ivec& lociPerChr, arma::uvec lociLoc,
+                         int maxIter, double Va, double Vd, double Ve, 
+                         double tol, bool useEM){
+  arma::mat Ma = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
+  arma::mat Md = 1-abs(Ma-1);
+  arma::rowvec p = mean(Ma,0)/2.0;
+  arma::rowvec het = mean(Md,0);
+  arma::rowvec F(p.n_elem);
+  for(arma::uword i=0; i<p.n_cols; i++){
+    if((p(i)>0.999999999) | (p(i)<0.000000001)){
+      // Marker is fixed, F is undefined
+      F(i) = 0;
+    }else{
+      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+    }
+  }
+  arma::mat X;
+  X = join_rows(makeX(x),mean(Md,1));
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Ma,reps);
+  sweepReps(Md,reps);
+  return Rcpp::List::create(
+    Rcpp::Named("ans")=solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM),
     Rcpp::Named("p")=p,
     Rcpp::Named("F")=F
   );
