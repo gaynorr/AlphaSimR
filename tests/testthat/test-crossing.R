@@ -1,6 +1,8 @@
 context("crossing")
 
-founderPop = trackHaploPop(genMap=list(c(0)),nInd=2,inbred=TRUE)
+founderPop = newMapPop(list(c(0)),
+                       list(matrix(c(1,1,0,0),
+                                   nrow=4,ncol=1)))
 
 test_that("makeCross",{
   SP = SimParam$new(founderPop=founderPop)

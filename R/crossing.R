@@ -41,6 +41,10 @@ makeCross = function(pop,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
+  if((max(crossPlan)>nInd(pop)) |
+     (min(crossPlan)<1L)){
+    stop("Invalid crossPlan")
+  }
   tmp = cross(pop@geno,
               crossPlan[,1],
               pop@geno,
@@ -281,6 +285,11 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
     if(any(is.na(crossPlan))){
       stop("Failed to match supplied IDs")
     }
+  }
+  if((max(crossPlan[,1])>nInd(females)) | 
+     (max(crossPlan[,2])>nInd(males)) |
+     (min(crossPlan)<1L)){
+    stop("Invalid crossPlan")
   }
   tmp=cross(females@geno,
             crossPlan[,1],

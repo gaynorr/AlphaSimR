@@ -4,9 +4,12 @@ Changes in version 0.9.1
     -Max number of threads automatically detected
     -added RRBLUP_D2
     -added version tracking to SimParam
+    -removed trackHaploPop (superceded by pullIbdHaplo)
   
   Bug fixes
     -fixed faulting double crossover logic
+    -fixed broken writePlink
+    -fixed broken pullIbdHaplo
 
 Changes in version 0.9.0
 

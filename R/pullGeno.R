@@ -533,6 +533,20 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' (IBD) coding of locus alleles. The matrix colnames reflect whether
 #' all segregagting loci (sites) are retreived or only SNP array loci.
 #' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#' SP$setTrackRec(TRUE)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pullIbdHaplo(pop, simParam=SP)
+#' 
 #' @export
 pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
   
@@ -541,7 +555,7 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
   if (is.null(simParam)) {
     simParam = get(x = "SP", envir = .GlobalEnv)
   }
-  if (simParam$ploidy != 2L) {
+  if (pop@ploidy != 2L) {
     stop("pullIbdHaplo() works (currently) only with diploids!")
   }
   if (!simParam$isTrackRec) {
@@ -585,8 +599,8 @@ pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL,
   output = getIbdHaplo(ibdRecHist  = ibdRecHist,
                        individuals = individuals,
                        nLociPerChr = lociPerChr)
-  rownames(output) = paste(rep(x = individuals,        each  = simParam$ploidy),
-                           rep(x = 1L:simParam$ploidy, times = nInd), sep = "_")
+  rownames(output) = paste(rep(x = individuals,        each  = pop@ploidy),
+                           rep(x = 1L:pop@ploidy, times = nInd), sep = "_")
   
   # ---- Subset loci -----
   

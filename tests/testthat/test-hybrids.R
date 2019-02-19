@@ -1,8 +1,10 @@
 context("hybrids")
 
+founderPop = newMapPop(list(c(0)),
+                       list(matrix(c(1,1,0,0),
+                                   nrow=4,ncol=1)))
+
 test_that("hybridCross",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   pop = newPop(founderPop,simParam=SP)
@@ -27,8 +29,6 @@ test_that("hybridCross",{
 })
 
 test_that("calcGCA",{
-  genMap = list(c(0))
-  founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
   SP = SimParam$new(founderPop=founderPop)
   SP$addTraitA(nQtlPerChr=1,mean=c(0,0),var=c(1,1))
   SP$setVarE(varE=c(1,1))

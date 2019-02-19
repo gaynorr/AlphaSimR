@@ -339,7 +339,7 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
   if (is.null(simParam)) {
     simParam = get(x = "SP", envir = .GlobalEnv)
   }
-  if (simParam$ploidy != 2L) {
+  if (pop@ploidy != 2L) {
     stop("writePlink() works only with diploids!")
   }  
   

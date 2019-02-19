@@ -19,7 +19,7 @@
 #' 
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
