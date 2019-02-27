@@ -362,6 +362,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
   lastId = simParam$lastId
   id = (1:rawPop@nInd) + lastId
   lastId = max(id)

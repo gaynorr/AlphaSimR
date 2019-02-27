@@ -23,7 +23,7 @@
 #  }
 
 ## ----eval=FALSE----------------------------------------------------------
-#  plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value")
+#  plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 
 ## ------------------------------------------------------------------------
 library(AlphaSimR)
@@ -45,5 +45,5 @@ for(generation in 1:20){
 }
 
 # Examining the Results
-plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value")
+plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 

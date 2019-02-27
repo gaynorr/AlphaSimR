@@ -226,7 +226,7 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' If the value is NULL, the number of threads is automatically detected.
 #'
 #' @return an object of \code{\link{MapPop-class}} or if 
-#' returnCommand is true a string giving the MaCS command passed 
+#' returnCommand is true a string giving the MaCS command passed to  
 #' the manualCommand argument of \code{\link{runMacs}}.
 #' 
 #' @examples 

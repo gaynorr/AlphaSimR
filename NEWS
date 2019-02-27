@@ -5,9 +5,10 @@ Changes in version 0.9.1
     -added RRBLUP_D2
     -added version tracking to SimParam
     -removed trackHaploPop (superceded by pullIbdHaplo)
+    -added fastRRBLUP
   
   Bug fixes
-    -fixed faulting double crossover logic
+    -fixed faulty double crossover logic
     -fixed broken writePlink
     -fixed broken pullIbdHaplo
 

@@ -21,6 +21,10 @@ gegvSCA <- function(sol, pop, nThreads) {
     .Call(`_AlphaSimR_gegvSCA`, sol, pop, nThreads)
 }
 
+callFastRRBLUP <- function(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter)
+}
+
 callRRBLUP <- function(y, x, reps, geno, lociPerChr, lociLoc) {
     .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, geno, lociPerChr, lociLoc)
 }

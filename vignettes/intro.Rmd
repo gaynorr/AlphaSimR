@@ -91,7 +91,7 @@ for(generation in 1:20){
 The last step to a simulation is examining the results. In this example there is only one result: a vector of population means for each generation. To examine this result, the code below will produce a basic line plot.
 
 ```{r eval=FALSE}
-plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value")
+plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 ```
 
 
@@ -117,7 +117,7 @@ for(generation in 1:20){
 }
 
 # Examining the Results
-plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value")
+plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 ```
 
 # References

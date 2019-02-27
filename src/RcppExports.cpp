@@ -72,6 +72,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// callFastRRBLUP
+Rcpp::List callFastRRBLUP(arma::vec y, arma::field<arma::Cube<unsigned char> >& geno, arma::ivec& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, int maxIter);
+RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::ivec& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< double >::type Vu(VuSEXP);
+    Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter));
+    return rcpp_result_gen;
+END_RCPP
+}
 // callRRBLUP
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps, arma::field<arma::Cube<unsigned char> >& geno, arma::ivec& lociPerChr, arma::uvec lociLoc);
 RcppExport SEXP _AlphaSimR_callRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP repsSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP) {
