@@ -22,7 +22,7 @@ The easiest way to learn how to use AlphaSimR is to learn about these steps. The
 
 ## Example Breeding Program
 
-A breeding program based on the "historical breeding" portion of the Jenko et al. simulation will be used as an example [-@Jenko15]. This example simulation models 20 discrete generations of selection in a simplified animal breeding program. The discrete generations consist of 1000 animals, of which 500 are male and 500 are female. In each generation, the best 25 males are selected on the basis of their genetic value for a single polygenic trait and mated to the females to produce 1000 replacement animals. The quantitative trait is modeled as being controlled by 10,000 QTL. These QTL are equally split across 10 chromosome groups so that there are 1,000 QTL per chromosome. The mean genetic value of all individuals in a generation is recorded to construct a plot for the genetic gain per generation.
+A simplified animal breeding program modeling 20 discrete generations of selection. Each generation consists of 1000 animals, of which 500 are male and 500 are female. In each generation, the best 25 males are selected on the basis of their genetic value for a single polygenic trait and mated to the females to produce 1000 replacement animals. The quantitative trait under selection is modeled as being controlled by 10,000 QTL. These QTL are equally split across 10 chromosome groups so that there are 1,000 QTL per chromosome. The mean genetic value of all individuals in a generation is recorded to construct a plot for the genetic gain per generation.
 
 ## Creating Founder Haplotypes
 
@@ -32,7 +32,7 @@ The first step in the simulation is creating a set of founder haplotypes. The fo
 founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
 ```
 
-The code above uses the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. In the above code no population demographic history is explicitly declared, so `runMacs` uses the default “GENERIC” history. The “GENERIC” history is the same history used by Jenko et al. to model cattle [-@Jenko15]. The `runMacs` function allows the user to specify one of several other predefined histories or supply their own history. The available histories are listed in the `runMacs` help document.
+The code above uses the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. In the above code no population demographic history is explicitly declared, so `runMacs` uses the default “GENERIC” history. The `runMacs` function allows the user to specify one of several other predefined histories or supply their own history. The available histories are listed in the `runMacs` help document.
 
 The `runMacs` function is not the only way to create founder haplotypes in AlphaSimR. There are actually a few functions, but the most likely second choice is `newMapPop`. This function imports user supplied haplotypes; allowing the user to use their own means for generating haplotypes or import real marker data. 
 
@@ -51,6 +51,8 @@ The next line of code defines the quantitative trait used for selection. As ment
 ```{r eval=FALSE}
 SP$addTraitA(nQtlPerChr=1000)
 ```
+
+The 'A' at the end of `SP$addTraitA` indicates that the trait's QTL only have additive effects. All traits in AlphaSimR will include additive effects. Traits may also include any combination of three additional types of effects: dominance ("D"), epistasis ("E"), and genotype-by-environment ("G"). A specific combination of trait effects is requested by using a function with the appropriate letter ending. For example, a trait with additive and epistasis effects can be requested using `SP$addTraitAE`. The following trait types are currently offered: "A", "AD", "AE", "AG", "ADE", "ADG", "AEG", and "ADEG".
 
 The final line of code defines how gender is determined in the simulation. Gender will be systematically assigned (i.e. male, female, male, ...). Systematic assignment is used to ensure that there is always equal numbers of males and females.
 
@@ -77,7 +79,9 @@ In this example a plot of the generation mean over time is desired. All that is 
 genMean = meanG(pop)
 ```
 
-The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. To model multiple generation of selection, the function call is placed in a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and decreases avoids needless duplication of code. In this loop “pop” is overwritten in each generation. This is done because it is more efficient from a memory usage perspective and there is no need to retain older populations in this simulation. The code for the loop is given below.
+The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two seperate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively. 
+
+To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include: giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with `c()`. The code for the loop is given below.
 
 ```{r eval=FALSE}
 for(generation in 1:20){
