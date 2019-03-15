@@ -1,3 +1,111 @@
+#' @title Fast RR-BLUP
+#'
+#' @description
+#' Solves an RR-BLUP model for genomic predictions given known variance 
+#' components. This implementation is meant as a fast and low memory 
+#' alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike 
+#' the those functions, the fastRRBLUP does not fit fixed effects (other 
+#' than the intercept) or account for unequal replication. 
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model or a
+#' function of the traits returning a single value. Only univariate models 
+#' are supported.
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations. 
+#' @param Vu marker effect variance. If value is NULL, a 
+#' reasonable value is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable value is chosen automatically.
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = fastRRBLUP(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
+#' @export
+fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1, 
+                      useQtl=FALSE, maxIter=1000, Vu=NULL, Ve=NULL, 
+                      simParam=NULL, ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  #fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
+  }else{
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
+  }
+  # Sort out Vu and Ve
+  if(is.function(traits)){
+    if(is.null(Vu)){
+      Vu = var(y)/nLoci
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    if(is.null(Vu)){
+      Vu = 2*simParam$varA[traits]/nLoci
+      if(is.na(Vu)){
+        Vu = var(y)/nLoci
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  #Fit model
+  ans = callFastRRBLUP(y,pop@geno,lociPerChr,
+                       lociLoc,Vu,Ve,maxIter)
+  output = new("RRsol",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               markerEff=ans$u,
+               fixEff=as.matrix(ans$beta),
+               Vu=as.matrix(Vu),
+               Ve=as.matrix(Ve),
+               iter=0)
+  return(output)
+}
+
+
+
 #' @title RR-BLUP Model
 #'
 #' @description
@@ -219,7 +327,6 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   return(output)
 }
 
-
 #' @title RR-BLUP Model with Dominance
 #'
 #' @description
@@ -293,11 +400,10 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   ans = ans$ans
   fixEff=ans$beta
   a = ans$u[[1]]
-  d = ans$u[[2]]
-  hetCov = fixEff[length(fixEff)]
+  d = ans$u[[2]] + fixEff[length(fixEff)]/nMarker
+  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
   fixEff = matrix(fixEff[-length(fixEff)])
-  alpha = a+(q-p)*(d+hetCov/nMarker)*(1-fixCoef)/(1+fixCoef)
-  alpha[fixed] = 0 #Remove fixed markers (without this step they get mean d)
+  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
   output = new("RRDsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -305,7 +411,6 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                markerEff=alpha,
                addEff=a,
                domEff=d,
-               hetCov=hetCov,
                fixEff=fixEff,
                Vu=ans$Vu,
                Ve=ans$Ve,
@@ -313,6 +418,142 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   return(output)
 }
 
+
+#' @title RR-BLUP with Dominance Model 2
+#'
+#' @description
+#' Fits an RR-BLUP model for genomic predictions that includes 
+#' dominance effects. This implementation is meant for situations where 
+#' \code{\link{RRBLUP_D}} is too slow. Note that RRBLUP_D2 
+#' is only faster in certain situations. Most users should use 
+#' \code{\link{RRBLUP_D}}.
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model, or a
+#' function of the traits returning a single value.
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations. Only used 
+#' when number of traits is greater than 1.
+#' @param Va marker effect variance for additive effects. If value is NULL, 
+#' a reasonable starting point is chosen automatically.
+#' @param Vd marker effect variance for dominance effects. If value is NULL, 
+#' a reasonable starting point is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param useEM use EM to solve variance components. If false, 
+#' the initial values are considered true.
+#' @param tol tolerance for EM algorithm convergence
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
+#'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_D2(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
+#' @export
+RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1, 
+                     useQtl=FALSE, maxIter=10, Va=NULL, Vd=NULL, 
+                     Ve=NULL, useEM=TRUE, tol=1e-6, simParam=NULL, 
+                     ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
+  }else{
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
+  }
+  # Sort out Va, Vd and Ve
+  if(is.function(traits)){
+    if(is.null(Va)){
+      Va = var(y)/nLoci
+    }
+    if(is.null(Vd)){
+      Vd = var(y)/nLoci
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    if(is.null(Va)){
+      Va = 2*simParam$varA[traits]/nLoci
+      if(is.na(Va)){
+        Va = var(y)/nLoci
+      }
+    }
+    if(is.null(Vd)){
+      Vd = 2*simParam$varA[traits]/nLoci
+      if(is.na(Vd)){
+        Vd = var(y)/nLoci
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  #Fit model
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
+                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM)
+  p = c(ans$p)
+  q = 1-p
+  fixCoef = c(ans$F)
+  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
+  nMarker = nLoci-sum(fixed) #Number of segregating markers
+  ans = ans$ans
+  fixEff=ans$beta
+  a = ans$u[,1,drop=FALSE]
+  d = ans$u[,2,drop=FALSE] + fixEff[length(fixEff)]/nMarker
+  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
+  fixEff = matrix(fixEff[-length(fixEff)])
+  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
+  output = new("RRDsol",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               markerEff=alpha,
+               addEff=a,
+               domEff=d,
+               fixEff=fixEff,
+               Vu=ans$Vu,
+               Ve=as.matrix(ans$Ve),
+               iter=ans$iter)
+  return(output)
+}
 
 #' @title RR-BLUP GCA Model
 #'

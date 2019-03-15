@@ -81,68 +81,6 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
   return(output)
 }
 
-#' @title Haplotype tracking population
-#' 
-#' @description
-#' Creates a population contain haplotypes numbered for 
-#' identity be descent tracking.
-#'
-#' @param genMap a list of genetic maps
-#' @param nInd number of individuals
-#' @param inbred should individuals be fully inbred
-#' @param ploidy ploidy level of organism
-#' 
-#' @details
-#' Each item of genMap must be a vector of ordered genetic lengths in 
-#' Morgans. The first value must be zero. The length of the vector 
-#' determines the number of segregating sites on the chromosome.
-#' 
-#' If inbred=FALSE, the value of nInd must be less than or equal to 
-#' 128. Otherwise, it must be less than or equal to 256.
-#' 
-#' @examples
-#' # Create genetic map for a single chromosome with 1 Morgan
-#' # Chromosome contains 11 equally spaced segregating sites
-#' genMap = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMap=genMap,nInd=10)
-#' 
-#' @export
-trackHaploPop = function(genMap,nInd,inbred=FALSE,
-                         ploidy=2L){
-  stopifnot(is.list(genMap))
-  ploidy = as.integer(ploidy)
-  if(inbred){
-    stopifnot(nInd<=256)
-  }else{
-    stopifnot(nInd<=(256/ploidy))
-  }
-  nInd = as.integer(nInd)
-  nChr = length(genMap)
-  nLoci = unlist(lapply(genMap,length))
-  geno = vector("list",nChr)
-  for(i in 1:nChr){
-    tmpGeno = array(raw(),dim=c(nLoci[i],ploidy,nInd))
-    tmp=-1
-    for(j in 1:nInd){
-      if(inbred){
-        tmp=tmp+1
-        tmpGeno[,1:2,j] = as.raw(tmp)
-      }else{
-        for(k in 1:ploidy){
-          tmp=tmp+1
-          tmpGeno[,k,j] = as.raw(tmp)
-        } 
-      }
-    }
-    geno[[i]] = tmpGeno
-  }
-  output = new("MapPop",nInd=nInd,nChr=nChr,ploidy=ploidy,
-               nLoci=nLoci,geno=as.matrix(geno),
-               genMap=as.matrix(genMap),
-               centromere=sapply(genMap,max)/2)
-  return(output)
-}
-
 #' @title Create founder haplotypes using MaCS
 #'
 #' @description Uses the MaCS software to produce founder haplotypes.
@@ -161,7 +99,8 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE,
 #' genetic length for the species. However, this the genetic length is only used by 
 #' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 #' For advanced users only.
-#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+#' If the value is NULL, the number of threads is automatically detected.
 #' 
 #' @details
 #' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
@@ -177,7 +116,10 @@ trackHaploPop = function(genMap,nInd,inbred=FALSE,
 #' @export
 runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
                    split=NULL,ploidy=2L,manualCommand=NULL,manualGenLen=NULL,
-                   nThreads=1){
+                   nThreads=NULL){
+  if(is.null(nThreads)){
+    nThreads = getNumThreads()
+  }
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
@@ -280,10 +222,11 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
 #' @param returnCommand should the command passed to manualCommand in 
 #' \code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
 #' the command is returned instead.
-#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel
+#' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+#' If the value is NULL, the number of threads is automatically detected.
 #'
 #' @return an object of \code{\link{MapPop-class}} or if 
-#' returnCommand is true a string giving the MaCS command passed 
+#' returnCommand is true a string giving the MaCS command passed to  
 #' the manualCommand argument of \code{\link{runMacs}}.
 #' 
 #' @examples 
@@ -298,7 +241,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     histNe=c(500,1500,6000,12000,100000),
                     histGen=c(100,1000,10000,100000,1000000),
                     inbred=FALSE,split=NULL,ploidy=2L,returnCommand=FALSE,
-                    nThreads=1L){
+                    nThreads=NULL){
   stopifnot(length(histNe)==length(histGen))
   speciesParams = paste(bp,"-t",4*Ne*mutRate,
                         "-r",4*Ne*genLen/bp)
@@ -346,10 +289,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' @return an object of \code{\link{MapPop-class}}
 #' 
 #' @examples 
-#' # Create genetic map for a single chromosome with 1 Morgan
-#' # Chromosome contains 11 equally spaced segregating sites
-#' genMap = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
+#' founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export

@@ -37,3 +37,18 @@ all segregagting loci (sites) are retreived or only SNP array loci.
 \description{
 Retrieves Identity By Descent (IBD) haplotype data
 }
+\examples{
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+SP$addSnpChip(5)
+SP$setTrackRec(TRUE)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+pullIbdHaplo(pop, simParam=SP)
+
+}

@@ -32,8 +32,8 @@ mergePops = function(popList){
   #ploidy
   ploidy = do.call("c",lapply(popList,
                               function(x) x@ploidy))
-  stopifnot(all(ploidy==2L))
-  ploidy = 2L
+  stopifnot(all(ploidy==ploidy[1]))
+  ploidy = ploidy[1]
   #nLoci
   nLoci = do.call("c",lapply(popList,
                              function(x){

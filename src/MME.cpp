@@ -329,14 +329,24 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 }
 
 //Uses EM algorithm to solve a mixed model with 1 random effect
-Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
-                          const arma::mat& M, double Vu, double Ve, 
+Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
+                          arma::mat& M, double Vu, double Ve, 
                           double tol, int maxIter,
                           bool useEM){
   double lambda = Ve/Vu;
   double delta=0,VeN=0,VuN=0;
   int iter=0;
   arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
+  if(!useEM & (n<m)){
+    arma::mat Vinv = inv_sympd(M*M.t()*Vu+arma::eye(n,n)*Ve);
+    arma::mat beta = solve(X.t()*Vinv*X, X.t()*Vinv*Y);
+    arma::mat u = M.t()*Vinv*(Y-X*beta)*Vu;
+    return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                              Rcpp::Named("Ve")=Ve,
+                              Rcpp::Named("beta")=beta,
+                              Rcpp::Named("u")=u,
+                              Rcpp::Named("iter")=iter);
+  }
   arma::mat RHS(q+m,q+m),LHS(q+m,1),Rvec(q+m,1);
   RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
   RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M;
@@ -391,6 +401,21 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
   double delta1=0,delta2=0,VeN=0,Vu1N=0,Vu2N=0;
   int iter=0;
   arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
+  if(!useEM & (n<(2*m))){
+    arma::mat Vinv = inv_sympd(M1*M1.t()*Vu1+M2*M2.t()*Vu2+arma::eye(n,n)*Ve);
+    arma::mat beta = solve(X.t()*Vinv*X, X.t()*Vinv*Y);
+    arma::mat u(m,2);
+    u.col(0) = M1.t()*Vinv*(Y-X*beta)*Vu1;
+    u.col(1) = M2.t()*Vinv*(Y-X*beta)*Vu2;
+    arma::vec Vu(2);
+    Vu(0) = Vu1;
+    Vu(1) = Vu2;
+    return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                              Rcpp::Named("Ve")=Ve,
+                              Rcpp::Named("beta")=beta,
+                              Rcpp::Named("u")=u,
+                              Rcpp::Named("iter")=iter);
+  }
   arma::mat RHS(q+2*m,q+2*m),LHS(q+2*m,1),Rvec(q+2*m,1);
   // Top row
   RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
@@ -465,6 +490,70 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
+// Called by fastRRBLUP function
+// An implementation of the Gauss-Seidel method for solving 
+// mixed model equations for an RR-BLUP model
+// [[Rcpp::export]]
+Rcpp::List callFastRRBLUP(arma::vec y,
+                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          arma::ivec& lociPerChr, arma::uvec lociLoc,
+                          double Vu, double Ve, int maxIter){
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc);
+  arma::vec Md(y.n_rows);
+  arma::rowvec Mdr(M.n_cols);
+  arma::rowvec p2(M.n_cols);
+  arma::vec X(y.n_rows);
+  double lhs, rhs, eps, beta=0, solOld;
+  arma::rowvec XpX(M.n_cols);
+  for(arma::uword i=0; i<M.n_cols; ++i){
+    Md = arma::conv_to<arma::vec>::from(M.col(i));
+    p2(i) = mean(Md);
+    Md -= p2(i);
+    XpX(i) = accu(Md%Md)/Ve;
+  }
+  double lambda = 1/Vu;
+  arma::vec u(M.n_cols);
+  u.fill(1e-6);
+  arma::vec e = y;
+  double OpO = M.n_rows/Ve;
+  arma::uvec order = arma::regspace<arma::uvec>(0,M.n_cols-1);
+  arma::uword k;
+  for(arma::uword iter=0; iter<maxIter; ++iter){
+    e += beta;
+    rhs = accu(e)/Ve;
+    beta = rhs/OpO;
+    e -= beta;
+    eps=0;
+    order = shuffle(order);
+    for(arma::uword i=0; i<M.n_cols; ++i){
+      k = order(i);
+      Md = arma::conv_to<arma::vec>::from(M.col(k));
+      Md -= p2(k);
+      e += Md*u(k);
+      lhs = XpX(k)+lambda;
+      rhs = accu(Md%e/Ve);
+      solOld = u(k);
+      u(k) = rhs/lhs;
+      e -= Md*u(k);
+      eps += pow((u(k)-solOld),2);
+    }
+    if(iter%200 ==0){
+      for(arma::uword i=0; i<M.n_rows; ++i){
+        Mdr = arma::conv_to<arma::rowvec>::from(M.row(k));
+        Mdr -= p2;
+        X(i) = as_scalar(Mdr*u);
+      }
+      e = y-X-beta;
+    }
+    if(eps<1e-8){
+      break;
+    }
+  }
+  beta -= as_scalar(p2*u);
+  return Rcpp::List::create(Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u);
+}
+
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
@@ -494,7 +583,7 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
                         tol, maxIter, useEM);
 }
 
-// Called by RRBLUP function
+// Called by RRBLUP_D function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
@@ -522,6 +611,39 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   sweepReps(Mlist(1),reps);
   return Rcpp::List::create(
     Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
+    Rcpp::Named("p")=p,
+    Rcpp::Named("F")=F
+  );
+}
+
+// Called by RRBLUP_D2 function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
+                         arma::field<arma::Cube<unsigned char> >& geno, 
+                         arma::ivec& lociPerChr, arma::uvec lociLoc,
+                         int maxIter, double Va, double Vd, double Ve, 
+                         double tol, bool useEM){
+  arma::mat Ma = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
+  arma::mat Md = 1-abs(Ma-1);
+  arma::rowvec p = mean(Ma,0)/2.0;
+  arma::rowvec het = mean(Md,0);
+  arma::rowvec F(p.n_elem);
+  for(arma::uword i=0; i<p.n_cols; i++){
+    if((p(i)>0.999999999) | (p(i)<0.000000001)){
+      // Marker is fixed, F is undefined
+      F(i) = 0;
+    }else{
+      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+    }
+  }
+  arma::mat X;
+  X = join_rows(makeX(x),mean(Md,1));
+  sweepReps(y,reps);
+  sweepReps(X,reps);
+  sweepReps(Ma,reps);
+  sweepReps(Md,reps);
+  return Rcpp::List::create(
+    Rcpp::Named("ans")=solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM),
     Rcpp::Named("p")=p,
     Rcpp::Named("F")=F
   );

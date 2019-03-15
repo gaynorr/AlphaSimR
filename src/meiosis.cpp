@@ -85,19 +85,32 @@ arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0
   return left;
 }
 
-// Removes hidden double crossover from recombination map
+// Removes hidden crossovers from recombination map
+// Assumes first row is always site 1 and no other row
+// will have a value of 1. This logic is based on 
+// the implementation of intervalSearch.
 arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
-  arma::Col<int> take(X.n_rows,arma::fill::zeros);
-  ++take(0);
-  int lastChr, lastSite;
-  lastChr = X(0,0);
-  lastSite = X(0,1);
+  if(X.n_rows<3){
+    return X;
+  }
+  // Initially assume all rows are useful
+  arma::Col<int> take(X.n_rows,arma::fill::ones);
+  // Remove unobserved crossovers (site doesn't change)
+  // Works backwards, because the last crossover is observed
+  for(arma::uword i=(X.n_rows-2); i>0; --i){
+    if(X(i,1) == X(i+1,1)){
+      take(i) = 0;
+    }
+  }
+  // Remove redundant records (chromosome doesn't change)
+  int lastChr = X(0,0);
   for(arma::uword i=1; i<X.n_rows; ++i){
-    if((X(i,0)!=lastChr) & 
-       (X(i,1)!=lastSite)){
-      ++take(i);
-      lastChr = X(i,0);
-      lastSite = X(i,1);
+    if(take(i) == 1){
+      if(X(i,0) == lastChr){
+        take(i) = 0;
+      }else{
+        lastChr = X(i,0);
+      }
     }
   }
   return X.rows(find(take>0));
@@ -175,8 +188,8 @@ arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
       }
     }
     nCO_1 = relPosCO(0) + relPosCO(1);
-    switch(chr){
-    case 1:
+    switch(chr){ // Identity of selected centromere
+    case 1: 
       if(relPosCO(0)%2 == 0){
         pairChr1(0) = 1;
         pairChr1(1) = 2;
@@ -251,7 +264,7 @@ arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
       }
     }
     nCO_1 = relPosCO(0);
-    switch(chr){
+    switch(chr){ // Identity of selected centromere
     case 1:
       if(relPosCO(1)%2 == 0){
         pairChr2(0) = 1;

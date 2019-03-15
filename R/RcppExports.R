@@ -21,6 +21,10 @@ gegvSCA <- function(sol, pop, nThreads) {
     .Call(`_AlphaSimR_gegvSCA`, sol, pop, nThreads)
 }
 
+callFastRRBLUP <- function(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter)
+}
+
 callRRBLUP <- function(y, x, reps, geno, lociPerChr, lociLoc) {
     .Call(`_AlphaSimR_callRRBLUP`, y, x, reps, geno, lociPerChr, lociLoc)
 }
@@ -31,6 +35,10 @@ callRRBLUP2 <- function(y, x, reps, geno, lociPerChr, lociLoc, Vu, Ve, tol, maxI
 
 callRRBLUP_D <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
     .Call(`_AlphaSimR_callRRBLUP_D`, y, x, reps, geno, lociPerChr, lociLoc, maxIter)
+}
+
+callRRBLUP_D2 <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM) {
+    .Call(`_AlphaSimR_callRRBLUP_D2`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM)
 }
 
 callRRBLUP_MV <- function(Y, x, reps, geno, lociPerChr, lociLoc, maxIter) {
@@ -55,6 +63,10 @@ writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missin
 
 writeASHaplotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
     invisible(.Call(`_AlphaSimR_writeASHaplotypes`, g, locations, allLocations, snpchips, names, missing, fname))
+}
+
+calcGenParam <- function(trait, pop, nThreads) {
+    .Call(`_AlphaSimR_calcGenParam`, trait, pop, nThreads)
 }
 
 getGeno <- function(geno, lociPerChr, lociLoc) {
@@ -91,10 +103,6 @@ writeOneHaplo <- function(geno, lociPerChr, lociLoc, haplo, filePath) {
 
 getGv <- function(trait, pop, nThreads) {
     .Call(`_AlphaSimR_getGv`, trait, pop, nThreads)
-}
-
-calcGenParam <- function(trait, pop, nThreads) {
-    .Call(`_AlphaSimR_calcGenParam`, trait, pop, nThreads)
 }
 
 getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThreads) {
@@ -162,6 +170,10 @@ calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
+getNumThreads <- function() {
+    .Call(`_AlphaSimR_getNumThreads`)
+}
+
 packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
@@ -172,13 +184,5 @@ writePlinkPed <- function(fam, geno, lociPerChr, lociLoc, file) {
 
 MaCS <- function(args, maxSites, inbred, ploidy, nThreads) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads)
-}
-
-tuneTraitA <- function(geno, addEff, varG, ploidy, nThreads) {
-    .Call(`_AlphaSimR_tuneTraitA`, geno, addEff, varG, ploidy, nThreads)
-}
-
-tuneTraitAD <- function(geno, addEff, domEff, varG, useVarA, ploidy, nThreads) {
-    .Call(`_AlphaSimR_tuneTraitAD`, geno, addEff, domEff, varG, useVarA, ploidy, nThreads)
 }
 

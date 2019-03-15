@@ -10,7 +10,8 @@ calcGCA(pop, use = "pheno")
 \item{pop}{an object of \code{\link{Pop-class}} or 
 \code{\link{HybridPop-class}}}
 
-\item{use}{true genetic value "gv" or phenotypes "pheno" (default)}
+\item{use}{tabulate either genetic values "gv", estimated
+breeding values "ebv", or phenotypes "pheno"}
 }
 \description{
 Calculate general combining ability of test crosses. Intended for 

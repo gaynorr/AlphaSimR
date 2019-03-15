@@ -6,7 +6,7 @@
 \usage{
 runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
   species = "GENERIC", split = NULL, ploidy = 2L,
-  manualCommand = NULL, manualGenLen = NULL, nThreads = 1)
+  manualCommand = NULL, manualGenLen = NULL, nThreads = NULL)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}
@@ -32,7 +32,8 @@ genetic length for the species. However, this the genetic length is only used by
 AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
 For advanced users only.}
 
-\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel}
+\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+If the value is NULL, the number of threads is automatically detected.}
 }
 \value{
 an object of \code{\link{MapPop-class}}

@@ -1,6 +1,6 @@
 #' @useDynLib AlphaSimR, .registration = TRUE
 #' @import Rcpp
-#' @importFrom methods new validObject is
+#' @importFrom methods new validObject is .hasSlot
 #' @importFrom stats aggregate rnorm qnorm var
 #' @importFrom stats coef dnorm lm pnorm qgamma
 #' @importFrom stats model.matrix rbinom

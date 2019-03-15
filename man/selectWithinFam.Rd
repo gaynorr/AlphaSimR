@@ -6,7 +6,7 @@
 \usage{
 selectWithinFam(pop, nInd, trait = 1, use = "pheno", gender = "B",
   famType = "B", selectTop = TRUE, returnPop = TRUE,
-  simParam = NULL, ...)
+  candidates = NULL, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 
@@ -35,6 +35,8 @@ Selects lowest values if false.}
 \item{returnPop}{should results be returned as a 
 \code{\link{Pop-class}}. If FALSE, only the index of selected 
 individuals is returned.}
+
+\item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

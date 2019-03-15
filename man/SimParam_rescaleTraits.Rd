@@ -4,8 +4,6 @@
 \alias{SimParam_rescaleTraits}
 \title{Rescale traits}
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}}}
-
 \item{mean}{a vector of new trait means}
 
 \item{var}{a vector of new trait variances}
@@ -18,15 +16,18 @@
 }
 \description{
 Linearly scales all traits to achieve desired 
-values of means and variances.
+values of means and variances in the founder population.
 }
 \note{
-You must run \code{\link{resetPop}} on existing 
-populations to obtain the new trait values.
+By default the founder population is the population used to 
+initalize the SimParam object. This population can be changed using 
+the switchFounderPop function in the SimParam object 
+(see \code{\link{SimParam_switchFounderPop}}). You must run 
+\code{\link{resetPop}} on existing populations to obtain the new trait values.
 }
 \section{Usage}{
- SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 0, 
-varGxE = 1e-6, useVarA = TRUE)
+ SP$rescaleTraits(mean = 0, var = 1, relAA = 1e-6,
+varEnv = 0, varGxE = 1e-6, useVarA = TRUE)
 }
 
 \examples{
@@ -42,8 +43,8 @@ pop = newPop(founderPop, simParam=SP)
 meanG(pop)
 
 #Change mean to 1
-SP$rescaleTraits(pop, mean=1)
-#Run resetPop for chage to take effect
+SP$rescaleTraits(mean=1)
+#Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP) 
 meanG(pop)
 

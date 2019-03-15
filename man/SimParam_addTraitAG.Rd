@@ -21,6 +21,9 @@
 \item{gamma}{should a gamma distribution be used instead of normal}
 
 \item{shape}{the shape parameter for the gamma distribution}
+
+\item{force}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing.}
 }
 \description{
 Randomly assigns eligble QTLs for one ore more additive GxE traits. 

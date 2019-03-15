@@ -41,6 +41,10 @@ makeCross = function(pop,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
+  if((max(crossPlan)>nInd(pop)) |
+     (min(crossPlan)<1L)){
+    stop("Invalid crossPlan")
+  }
   tmp = cross(pop@geno,
               crossPlan[,1],
               pop@geno,
@@ -282,6 +286,11 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
+  if((max(crossPlan[,1])>nInd(females)) | 
+     (max(crossPlan[,2])>nInd(males)) |
+     (min(crossPlan)<1L)){
+    stop("Invalid crossPlan")
+  }
   tmp=cross(females@geno,
             crossPlan[,1],
             males@geno,
@@ -365,8 +374,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     maleParents = as.integer(maleParents)
   }
   if(simParam$gender=="no" | ignoreGender){
-    female = 1:females@nInd
-    male = 1:males@nInd
+    female = femaleParents
+    male = maleParents
   }else{
     female = which(females@gender=="F" & 
                      (1:females@nInd)%in%femaleParents)

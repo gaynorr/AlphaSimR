@@ -28,13 +28,11 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop,
                   int nThreads){
   arma::mat a = RRsol.slot("addEff");
   arma::mat d = RRsol.slot("domEff");
-  double b = RRsol.slot("hetCov");
   arma::Mat<unsigned char> geno;
   geno = getGenoT(pop.slot("geno"), 
                   RRsol.slot("lociPerChr"),
                   RRsol.slot("lociLoc"));
   arma::mat output(geno.n_cols,a.n_cols,arma::fill::zeros);
-  arma::vec het(geno.n_cols,arma::fill::zeros);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -42,11 +40,8 @@ arma::mat gegvRRD(const Rcpp::S4& RRsol, const Rcpp::S4& pop,
     for(arma::uword j=0; j<geno.n_rows; ++j){
       double dGeno = double(1-abs(int(geno(j,i))-1));
       output.row(i) += geno(j,i)*a.row(j)+dGeno*d.row(j);
-      het(i) += dGeno;
     }
   }
-  het = het/geno.n_rows;
-  output += het*b;
   return output;
 }
 

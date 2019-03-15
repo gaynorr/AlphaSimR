@@ -19,7 +19,7 @@
 #' 
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -110,7 +110,8 @@ hybridCross = function(females, males,
 #' 
 #' @param pop an object of \code{\link{Pop-class}} or 
 #' \code{\link{HybridPop-class}}
-#' @param use true genetic value "gv" or phenotypes "pheno" (default)
+#' @param use tabulate either genetic values "gv", estimated
+#' breeding values "ebv", or phenotypes "pheno"
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -133,6 +134,8 @@ calcGCA = function(pop,use="pheno"){
     y = pop@pheno
   }else if(use=="gv"){
     y = pop@gv
+  }else if(use=="ebv"){
+    y = pop@ebv
   }else{
     stop(paste0("use=",use," is not a valid option"))
   }

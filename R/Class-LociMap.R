@@ -58,6 +58,34 @@ setValidity("TraitA",function(object){
   }
 })
 
+#TraitAE----
+#' @title Additive and epistatic trait
+#' 
+#' @description Extends \code{\link{TraitA-class}} 
+#' to add epistasis
+#' 
+#' @slot epiEff epistatic effects
+#'
+#' @export
+setClass("TraitAE",
+         slots=c(epiEff="matrix"),
+         contains="TraitA")
+
+setValidity("TraitAE",function(object){
+  errors = character()
+  if(object@nLoci!=(2*nrow(object@epiEff))){
+    errors = c(errors,"nLoci!=2*nrow(epiEff)")
+  }
+  if(ncol(object@epiEff)!=3){
+    errors = c(errors,"ncol(epiEff)!=3")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
 #TraitAD----
 #' @title Additive and dominance trait
 #' 
@@ -75,6 +103,34 @@ setValidity("TraitAD",function(object){
   errors = character()
   if(object@nLoci!=length(object@domEff)){
     errors = c(errors,"nLoci!=length(domEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#TraitADE----
+#' @title Additive, dominance, and epistatic trait
+#' 
+#' @description Extends \code{\link{TraitAD-class}} 
+#' to add epistasis
+#' 
+#' @slot epiEff epistatic effects
+#'
+#' @export
+setClass("TraitADE",
+         slots=c(epiEff="matrix"),
+         contains="TraitAD")
+
+setValidity("TraitADE",function(object){
+  errors = character()
+  if(object@nLoci!=(2*nrow(object@epiEff))){
+    errors = c(errors,"nLoci!=2*nrow(epiEff)")
+  }
+  if(ncol(object@epiEff)!=3){
+    errors = c(errors,"ncol(epiEff)!=3")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -112,6 +168,35 @@ setValidity("TraitAG",function(object){
   }
 })
 
+#TraitAEG----
+#' @title Additive, epistasis and GxE trait
+#' 
+#' @description Extends \code{\link{TraitAE-class}} 
+#' to add GxE effects
+#' 
+#' @slot gxeEff GxE effects
+#' @slot gxeInt GxE intercept
+#' @slot envVar Environmental variance
+#'
+#' @export
+setClass("TraitAEG",
+         slots=c(gxeEff="numeric",
+                 gxeInt="numeric",
+                 envVar="numeric"),
+         contains="TraitAE")
+
+setValidity("TraitAEG",function(object){
+  errors = character()
+  if(object@nLoci!=length(object@gxeEff)){
+    errors = c(errors,"nLoci!=length(gxeEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
 #TraitADG----
 #' @title Additive, dominance and GxE trait
 #' 
@@ -130,6 +215,35 @@ setClass("TraitADG",
          contains="TraitAD")
 
 setValidity("TraitADG",function(object){
+  errors = character()
+  if(object@nLoci!=length(object@gxeEff)){
+    errors = c(errors,"nLoci!=length(gxeEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#TraitADEG----
+#' @title Additive, dominance, epistasis, and GxE trait
+#' 
+#' @description Extends \code{\link{TraitADE-class}} 
+#' to add GxE effects
+#' 
+#' @slot gxeEff GxE effects
+#' @slot gxeInt GxE intercept
+#' @slot envVar Environmental variance
+#'
+#' @export
+setClass("TraitADEG",
+         slots=c(gxeEff="numeric",
+                 gxeInt="numeric",
+                 envVar="numeric"),
+         contains="TraitADE")
+
+setValidity("TraitADEG",function(object){
   errors = character()
   if(object@nLoci!=length(object@gxeEff)){
     errors = c(errors,"nLoci!=length(gxeEff)")
@@ -193,7 +307,6 @@ setValidity("RRsol",function(object){
 #' @slot markerEff GEBVs for markers
 #' @slot addEff additive effects
 #' @slot domEff dominance effects
-#' @slot hetCov heterozygosity covariate
 #' @slot fixEff Estimates for fixed effects
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
@@ -205,7 +318,6 @@ setClass("RRDsol",
          slots=c(markerEff="matrix",
                  addEff="matrix",
                  domEff="matrix",
-                 hetCov="numeric",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
