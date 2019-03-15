@@ -5,7 +5,8 @@
 \title{Select open pollinating plants}
 \usage{
 selectOP(pop, nInd, nSeeds, probSelf = 0, pollenControl = FALSE,
-  trait = 1, use = "pheno", selectTop = TRUE, simParam = NULL, ...)
+  trait = 1, use = "pheno", selectTop = TRUE, candidates = NULL,
+  simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -28,6 +29,8 @@ or randomly "rand"}
 
 \item{selectTop}{selects highest values if true. 
 Selects lowest values if false.}
+
+\item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

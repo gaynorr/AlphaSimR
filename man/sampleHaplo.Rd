@@ -28,10 +28,7 @@ Creates a new \code{\link{MapPop-class}} from an existing
 \code{\link{MapPop-class}} by randomly sampling haplotypes.
 }
 \examples{
-# Create genetic map for a single chromosome with 1 Morgan
-# Chromosome contains 11 equally spaced segregating sites
-genMap = list(seq(0,1,length.out=11))
-founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
+founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
 founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 
 }

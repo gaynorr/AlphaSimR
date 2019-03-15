@@ -15,20 +15,26 @@ genParam(pop, simParam = NULL)
 \describe{
 \item{varA}{an nTrait by nTrait matrix of additive genetic variances}
 \item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
+\item{varAA}{an nTrait by nTrait matrix of additive-by-additive genetic variances}
 \item{varG}{an nTrait by nTrait matrix of total genetic variances}
 \item{genicVarA}{an nTrait vector of additive genic variances}
 \item{genicVarD}{an nTrait vector of dominance genic variances}
+\item{genicVarAA}{an nTrait vector of additive-by-additive genic variances}
 \item{genicVarG}{an nTrait vector of total genic variances}
 \item{randGenicVarA}{an nTrait vector of additive genic variances assuming random mating}
 \item{randGenicVarD}{an nTrait vector of dominance genic variances assuming random mating}
+\item{randGenicVarAA}{an nTrait vector of additive-by-additive genic variances assuming random mating}
 \item{randGenicVarG}{an nTrait vector of total genic variances assuming random mating}
-\item{inbreeding}{an nTrait vector for the depression of mean due to inbreeding}
 \item{mu}{an nTrait vector of trait means}
+\item{mu_HWE}{an nTrait vector of expected trait means under Hardy-Weinberg equilibrium}
+\item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
 \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
+\item{aa}{a matrix of additive-by-additive deviations with dimensions nInd by nTraits}
 \item{gv_mu}{an nTrait vector of trait means for genotype with all zeros}
 \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
+\item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
 }
 }
 \description{

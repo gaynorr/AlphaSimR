@@ -25,6 +25,145 @@ selectLoci = function(chr,inLociPerChr,inLociLoc){
               lociLoc=outLociLoc))
 }
 
+#' @title Get SNP genetic map
+#' 
+#' @description Retrieves the genetic map for a 
+#' given SNP chip.
+#' 
+#' @param snpChip an integer. Indicates which SNP
+#' chip's map to retrieve.
+#' @param gender determines which gender specific map 
+#' is returned. Options are "A" for average map, "F" 
+#' for female map, and "M" for male map. All options are 
+#' equivalent if not using gender specific maps.
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a data.frame for the SNP map.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addSnpChip(5)
+#' 
+#' #Pull SNP map
+#' getSnpMap(snpChip=1, simParam=SP)
+#' 
+#' @export
+getSnpMap = function(snpChip=1, gender="A", simParam=NULL){
+  
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  
+  #Extract genetic map and SNP positions
+  if(gender=="A"){
+    genMap = simParam$genMap
+  }else if(gender=="F"){
+    genMap = simParam$femaleMap
+  }else if(gender=="M"){
+    genMap = simParam$maleMap
+  }else{
+    stop(paste("gender =",gender,"is not a valid option"))
+  }
+  snp = simParam$snpChips[[snpChip]] #SNP positions
+  
+  #Create a list of SNP postions on the genetic map
+  #Each list element corresponds to a chromosome
+  snpMap = lapply(1:simParam$nChr, function(x){
+    if(snp@lociPerChr[x]==0){
+      #No SNPs on chromosome
+      return(NULL)
+    }else{
+      if(x==1){
+        #First chromosome, start at position 1
+        take = 1:snp@lociPerChr[x]
+      }else{
+        #All other chromosomes
+        take = (sum(snp@lociPerChr[1:(x-1)])+1):sum(snp@lociPerChr[1:x])
+      }
+      return(genMap[[x]][snp@lociLoc[take]])
+    }
+  })
+  
+  #Create a data.frame with SNP postions on genetic map
+  output = data.frame(id=1:snp@nLoci,
+                      chr=rep(1:simParam$nChr,snp@lociPerChr),
+                      pos=do.call("c",snpMap))
+  return(output)
+}
+
+#' @title Get QTL genetic map
+#' 
+#' @description Retrieves the genetic map for the 
+#' QTL of a given trait.
+#' 
+#' @param trait an integer for the 
+#' @param gender determines which gender specific map 
+#' is returned. Options are "A" for average map, "F" 
+#' for female map, and "M" for male map. All options are 
+#' equivalent if not using gender specific maps.
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a data.frame for the SNP map.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(5)
+#' 
+#' #Pull SNP map
+#' getQtlMap(trait=1, simParam=SP)
+#' 
+#' @export
+getQtlMap = function(trait=1, gender="A", simParam=NULL){
+  
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  
+  #Extract genetic map and SNP positions
+  if(gender=="A"){
+    genMap = simParam$genMap
+  }else if(gender=="F"){
+    genMap = simParam$femaleMap
+  }else if(gender=="M"){
+    genMap = simParam$maleMap
+  }else{
+    stop(paste("gender =",gender,"is not a valid option"))
+  }
+  qtl = simParam$traits[[trait]] #QTL positions
+  
+  #Create a list of QTL postions on the genetic map
+  #Each list element corresponds to a chromosome
+  qtlMap = lapply(1:simParam$nChr, function(x){
+    if(qtl@lociPerChr[x]==0){
+      #No QTL on chromosome
+      return(NULL)
+    }else{
+      if(x==1){
+        #First chromosome, start at position 1
+        take = 1:qtl@lociPerChr[x]
+      }else{
+        #All other chromosomes
+        take = (sum(qtl@lociPerChr[1:(x-1)])+1):sum(qtl@lociPerChr[1:x])
+      }
+      return(genMap[[x]][qtl@lociLoc[take]])
+    }
+  })
+  
+  #Create a data.frame with QTL postions on genetic map
+  output = data.frame(id=1:qtl@nLoci,
+                      chr=rep(1:simParam$nChr,qtl@lociPerChr),
+                      pos=do.call("c",qtlMap))
+  return(output)
+}
+
 #' @title Pull SNP genotype
 #'
 #' @description Retrieves SNP genotype data

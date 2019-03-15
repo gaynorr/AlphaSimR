@@ -25,12 +25,12 @@ as SP will allow it to be accessed by function defaults.
 
 \item{\code{gender}}{is gender used for mating}
 
-\item{\code{genMap}}{"matrix" of chromsome genetic maps}
+\item{\code{genMap}}{"matrix" of chromosome genetic maps}
 
-\item{\code{femaleMap}}{"matrix" of chromsome genetic maps for 
+\item{\code{femaleMap}}{"matrix" of chromosome genetic maps for 
 females}
 
-\item{\code{maleMap}}{"matrix" of chromsome genetic maps for 
+\item{\code{maleMap}}{"matrix" of chromosome genetic maps for 
 males}
 
 \item{\code{sepMap}}{are there seperate genetic maps for 

@@ -1,6 +1,7 @@
-Changes in version 0.9.1
+Changes in version 0.10.0
   
   New features
+    -added traits with epistasis
     -Max number of threads automatically detected
     -added RRBLUP_D2
     -added version tracking to SimParam
@@ -11,6 +12,7 @@ Changes in version 0.9.1
     -fixed faulty double crossover logic
     -fixed broken writePlink
     -fixed broken pullIbdHaplo
+    -mergePops no longer assumes diploidy
 
 Changes in version 0.9.0
 

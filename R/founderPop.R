@@ -289,10 +289,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' @return an object of \code{\link{MapPop-class}}
 #' 
 #' @examples 
-#' # Create genetic map for a single chromosome with 1 Morgan
-#' # Chromosome contains 11 equally spaced segregating sites
-#' genMap = list(seq(0,1,length.out=11))
-#' founderPop = trackHaploPop(genMap=genMap,nInd=2,inbred=TRUE)
+#' founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
 #' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
 #' 
 #' @export

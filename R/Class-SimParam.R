@@ -10,10 +10,10 @@
 #' @field nSnpChips number of SNP chips
 #' @field segSites segregating sites per chromosome
 #' @field gender is gender used for mating
-#' @field genMap "matrix" of chromsome genetic maps
-#' @field femaleMap "matrix" of chromsome genetic maps for 
+#' @field genMap "matrix" of chromosome genetic maps
+#' @field femaleMap "matrix" of chromosome genetic maps for 
 #' females
-#' @field maleMap "matrix" of chromsome genetic maps for 
+#' @field maleMap "matrix" of chromosome genetic maps for 
 #' males
 #' @field sepMap are there seperate genetic maps for 
 #' males and females
@@ -121,7 +121,7 @@ SimParam = R6Class(
           genMap = vector("list",private$.nChr)
           for(i in 1:private$.nChr){
             genMap[[i]] = (private$.femaleMap[[i]]+
-              private$.maleMap[[i]])/2
+                             private$.maleMap[[i]])/2
           }
           as.matrix(genMap)
         }else{
@@ -276,8 +276,7 @@ SimParam = R6Class(
         stop("`$version` is read only",call.=FALSE)
       }
     }
-  ),
-  cloneable=FALSE
+  )
 )
 
 #' @title Create new simulation
@@ -1015,9 +1014,6 @@ SimParam$set(
   "private",
   ".pickQtlLoci",
   function(nQtlPerChr){
-    if(length(nQtlPerChr)==1){
-      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
-    }
     stopifnot(length(nQtlPerChr)==private$.nChr)
     stopifnot(sapply(private$.potQtl,length)>=nQtlPerChr)
     lociLoc = lapply(1:private$.nChr,function(x){
@@ -1058,10 +1054,23 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
   return(domEff)
 }
 
+sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
+  epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
+                  ncol=nTraits)%*%rotMat(corr)
+  if(any(gamma)){
+    for(i in which(gamma)){
+      x = (pnorm(epiEff[,i])-0.5)*2
+      epiEff[,i] = sign(x)*qgamma(abs(x),shape=shape)
+    }
+  }
+  epiEff = sweep(epiEff,2,sqrt(relVar),"*")
+  return(epiEff)
+}
+
 #' @title Add additive traits
 #' 
 #' @description 
-#' Randomly assigns eligble QTLs for one ore more additive traits. 
+#' Randomly assigns eligble QTLs for one or more additive traits. 
 #' If simulating more than one trait, all traits will be pleiotrophic 
 #' with correlated additive effects.
 #' 
@@ -1096,6 +1105,9 @@ SimParam$set(
     if(!force){
       private$.isRunning()
     }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
@@ -1106,15 +1118,16 @@ SimParam$set(
     qtlLoci = private$.pickQtlLoci(nQtlPerChr)
     addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corA,gamma=gamma,shape=shape)
-    geno = getGenoT(private$.founderPop@geno,
-                    qtlLoci@lociPerChr,
-                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i],private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitA",
                   qtlLoci,
-                  addEff=addEff[,i]*tmp$scale,
-                  intercept=mean[i]-tmp$intercept)
+                  addEff=addEff[,i],
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      trait@addEff = trait@addEff*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
       private$.addTrait(trait,var[i],var[i])
     }
     invisible(self)
@@ -1126,7 +1139,7 @@ SimParam$set(
 #' @description 
 #' Randomly assigns eligble QTLs for one or more traits with dominance. 
 #' If simulating more than one trait, all traits will be pleiotrophic 
-#' with correlated additive effects.
+#' with correlated effects.
 #' 
 #' @section Usage: SP$addTraitAD(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
 #' varDD = 0, corA = NULL, corDD = NULL, useVarA = TRUE, gamma = FALSE, 
@@ -1166,6 +1179,9 @@ SimParam$set(
     if(!force){
       private$.isRunning()
     }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
     nTraits = length(mean)
     if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
     if(length(varDD)==1) varDD = rep(varDD,nTraits)
@@ -1182,18 +1198,27 @@ SimParam$set(
                         corr=corA,gamma=gamma,shape=shape)
     domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
                         corDD=corDD,meanDD=meanDD,varDD=varDD)
-    geno = getGenoT(private$.founderPop@geno,
-                    qtlLoci@lociPerChr,
-                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],
-                        useVarA,private$.founderPop@ploidy,self$nThreads)
       trait = new("TraitAD",
                   qtlLoci,
-                  addEff=addEff[,i]*tmp$scale,
-                  domEff=domEff[,i]*tmp$scale,
-                  intercept=mean[i]-tmp$intercept)
-      private$.addTrait(trait,tmp$varA,tmp$varG)
+                  addEff=addEff[,i],
+                  domEff=domEff[,i],
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@domEff = trait@domEff*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
     }
     invisible(self)
   }
@@ -1218,6 +1243,8 @@ SimParam$set(
 #' @param corGxE a matrix of correlations between GxE effects
 #' @param gamma should a gamma distribution be used instead of normal
 #' @param shape the shape parameter for the gamma distribution
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -1234,8 +1261,14 @@ SimParam$set(
   "public",
   "addTraitAG",
   function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
-           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1){
-    private$.isRunning()
+           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
+           force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
     nTraits = length(mean)
     if(length(gamma)==1) gamma = rep(gamma,nTraits)
     if(length(shape)==1) shape = rep(shape,nTraits)
@@ -1254,34 +1287,40 @@ SimParam$set(
                         corr=corA,gamma=gamma,shape=shape)
     gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corGxE,gamma=FALSE,shape=NULL)
-    geno = getGenoT(private$.founderPop@geno,
-                    qtlLoci@lociPerChr,
-                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitA(geno,addEff[,i],var[i],
-                       private$.founderPop@ploidy,self$nThreads)
+      trait = new("TraitA",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      trait@addEff = trait@addEff*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      
+      # GxE component
+      traitG = new("TraitA",
+                   qtlLoci,
+                   addEff=gxeEff[,i],
+                   intercept=0)
+      tmpG = calcGenParam(traitG, private$.founderPop, 
+                          self$nThreads)
       if(varEnv[i]==0){
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          private$.founderPop@ploidy,self$nThreads)
+        scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
         trait = new("TraitAG",
-                    qtlLoci,
-                    addEff=addEff[,i]*tmp$scale,
-                    intercept=mean[i]-tmp$intercept,
-                    gxeEff = gxeEff[,i]*tmpG$scale,
-                    gxeInt = 0-tmpG$intercept,
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 0-mean(tmpG$gv*scaleG),
                     envVar = 1)
       }else{
-        tmpG = tuneTraitA(geno,gxeEff[,i],
-                          varGxE[i]/varEnv[i],
-                          private$.founderPop@ploidy,self$nThreads)
+        scaleG = sqrt(varGxE[i]/varEnv[i])/sqrt(popVar(tmpG$gv)[1])
         trait = new("TraitAG",
-                    qtlLoci,
-                    addEff=addEff[,i]*tmp$scale,
-                    intercept=mean[i]-tmp$intercept,
-                    gxeEff = gxeEff[,i]*tmpG$scale,
-                    gxeInt = 1-tmpG$intercept,
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 1-mean(tmpG$gv*scaleG),
                     envVar = varEnv[i])
       }
+      
       private$.addTrait(trait,var[i],var[i])
     }
     invisible(self)
@@ -1293,7 +1332,7 @@ SimParam$set(
 #' @description 
 #' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
 #' 
-#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+#' @section Usage: SP$addTraitADG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
 #' varEnv = 0, meanDD = 0, varDD = 0, corA = NULL, corDD = NULL, 
 #' corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, force = FALSE)
 #' 
@@ -1335,6 +1374,9 @@ SimParam$set(
     if(!force){
       private$.isRunning()
     }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
     nTraits = length(mean)
     if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
     if(length(varDD)==1) varDD = rep(varDD,nTraits)
@@ -1360,36 +1402,522 @@ SimParam$set(
                         corDD=corDD,meanDD=meanDD,varDD=varDD)
     gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                         corr=corGxE,gamma=FALSE,shape=NULL)
-    geno = getGenoT(private$.founderPop@geno,
-                    qtlLoci@lociPerChr,
-                    qtlLoci@lociLoc)
     for(i in 1:nTraits){
-      tmp = tuneTraitAD(geno,addEff[,i],domEff[,i],var[i],useVarA,
-                        private$.founderPop@ploidy,self$nThreads)
+      trait = new("TraitAD",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  domEff=domEff[,i],
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@domEff = trait@domEff*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      
+      # GxE component
+      traitG = new("TraitA",
+                   qtlLoci,
+                   addEff=gxeEff[,i],
+                   intercept=0)
+      tmpG = calcGenParam(traitG, private$.founderPop, 
+                          self$nThreads)
       if(varEnv[i]==0){
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i],
-                          private$.founderPop@ploidy,self$nThreads)
+        scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
         trait = new("TraitADG",
-                    qtlLoci,
-                    addEff=addEff[,i]*tmp$scale,
-                    domEff=domEff[,i]*tmp$scale,
-                    intercept=mean[i]-tmp$intercept,
-                    gxeEff = gxeEff[,i]*tmpG$scale,
-                    gxeInt = 0-tmpG$intercept,
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 0-mean(tmpG$gv*scaleG),
                     envVar = 1)
       }else{
-        tmpG = tuneTraitA(geno,gxeEff[,i],varGxE[i]/varEnv[i],
-                          private$.founderPop@ploidy,self$nThreads)
+        scaleG = sqrt(varGxE[i]/varEnv[i])/sqrt(popVar(tmpG$gv)[1])
         trait = new("TraitADG",
-                    qtlLoci,
-                    addEff=addEff[,i]*tmp$scale,
-                    domEff=domEff[,i]*tmp$scale,
-                    intercept=mean[i]-tmp$intercept,
-                    gxeEff = gxeEff[,i]*tmpG$scale,
-                    gxeInt = 1-tmpG$intercept,
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 1-mean(tmpG$gv*scaleG),
                     envVar = varEnv[i])
       }
-      private$.addTrait(trait,tmp$varA,tmp$varG)
+      
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
+    }
+    invisible(self)
+  }
+)
+
+#' @title Add additive and epistasis traits
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for one or more additive and epistasis 
+#' traits. If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated additive effects.
+#' 
+#' @section Usage: SP$addTraitAA(nQtlPerChr, mean = 0, var = 1, relAA = 0, corA = NULL, 
+#' corAA = NULL, gamma = FALSE, shape = 1, force = FALSE)
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param mean a vector of desired mean genetic values for one or more traits
+#' @param var a vector of desired genetic variances for one or more traits
+#' @param relAA the relative variance of additive-by-additive effects compared 
+#' to the additive effects
+#' @param corA a matrix of correlations between additive effects
+#' @param corAA a matrix of correlations between additive-by-additive effects
+#' @param useVarA tune according to additive genetic variance if true. If 
+#' FALSE, tuning is performed according to total genetic variance.
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape the shape parameter for the gamma distribution
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAE(10)
+#' 
+#' @name SimParam_addTraitAE
+NULL
+# addTraitAE ----
+SimParam$set(
+  "public",
+  "addTraitAE",
+  function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
+           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
+    nTraits = length(mean)
+    relAA = relAA*4
+    if(length(gamma)==1) gamma = rep(gamma,nTraits)
+    if(length(shape)==1) shape = rep(shape,nTraits)
+    if(length(relAA)==1) relAA = rep(relAA,nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
+    if(is.null(corAA)) corAA=diag(nTraits)
+    stopifnot(length(mean)==length(var),
+              isSymmetric(corA),
+              isSymmetric(corAA),
+              length(relAA)==length(mean),
+              length(mean)==nrow(corA),
+              (sum(nQtlPerChr)%%2L)==0L)
+    qtlLoci = private$.pickQtlLoci(nQtlPerChr)
+    addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape)
+    epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape,
+                        relVar=relAA)
+    E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
+    for(i in 1:nTraits){
+      trait = new("TraitAE",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  epiEff=cbind(E,epiEff[,i]),
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@epiEff[,3] = trait@epiEff[,3]*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
+    }
+    invisible(self)
+  }
+)
+
+#' @title Add additive, dominance and epistasis traits
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for one or more traits with dominance and 
+#' epistasis. If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated effects.
+#' 
+#' @section Usage: SP$addTraitADE(nQtlPerChr, mean = 0, var = 1, meanDD = 0, 
+#' varDD = 0, relAA = 0, corA = NULL, corDD = NULL, corAA = NULL, useVarA = TRUE, 
+#' gamma = FALSE, shape = 1, force = FALSE)
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param mean a vector of desired mean genetic values for one or more traits
+#' @param var a vector of desired genetic variances for one or more traits
+#' @param meanDD mean dominance degree
+#' @param varDD variance of dominance degree
+#' @param relAA the relative variance of additive-by-additive effects compared 
+#' to the additive effects
+#' @param corA a matrix of correlations between additive effects
+#' @param corDD a matrix of correlations between dominance degrees
+#' @param corAA a matrix of correlations between additive-by-additive effects
+#' @param useVarA tune according to additive genetic variance if true. If 
+#' FALSE, tuning is performed according to total genetic variance.
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape the shape parameter for the gamma distribution
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#'  
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADE(10)
+#' 
+#' @name SimParam_addTraitADE
+NULL
+# addTraitADE ----
+SimParam$set(
+  "public",
+  "addTraitADE",
+  function(nQtlPerChr,mean=0,var=1,meanDD=0,
+           varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
+           useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
+    nTraits = length(mean)
+    relAA = relAA*4
+    if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
+    if(length(varDD)==1) varDD = rep(varDD,nTraits)
+    if(length(gamma)==1) gamma = rep(gamma,nTraits)
+    if(length(shape)==1) shape = rep(shape,nTraits)
+    if(length(relAA)==1) relAA = rep(relAA,nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
+    if(is.null(corDD)) corDD=diag(nTraits)
+    if(is.null(corAA)) corAA=diag(nTraits)
+    stopifnot(length(mean)==length(var),
+              isSymmetric(corA),
+              isSymmetric(corDD),
+              length(mean)==nrow(corA),
+              length(mean)==nrow(corAA),
+              length(mean)==nrow(corDD),
+              length(relAA)==length(mean),
+              (sum(nQtlPerChr)%%2L)==0L)
+    qtlLoci = private$.pickQtlLoci(nQtlPerChr)
+    addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape)
+    domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
+                        corDD=corDD,meanDD=meanDD,varDD=varDD)
+    epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape,
+                        relVar=relAA)
+    E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
+    for(i in 1:nTraits){
+      trait = new("TraitADE",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  domEff=domEff[,i],
+                  epiEff=cbind(E,epiEff[,i]),
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@domEff = trait@domEff*scale
+      trait@epiEff[,3] = trait@epiEff[,3]*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
+    }
+    invisible(self)
+  }
+)
+
+#' @title Add additive and epistasis GxE traits
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for one or more additive and epistasis 
+#' GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
+#' with correlated effects.
+#' 
+#' @section Usage: SP$addTraitAG(nQtlPerChr, mean = 0, var = 1, relAA = 0, varGxE = 1e-6, 
+#' varEnv = 0, corA = NULL, corAA = NULL, corGxE = NULL, useVarA = TRUE, gamma = FALSE, 
+#' shape = 1)
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+#' @param mean a vector of desired mean genetic values for one or more traits
+#' @param var a vector of desired genetic variances for one or more traits
+#' @param relAA the relative variance of additive-by-additive effects compared 
+#' to the additive effects
+#' @param varGxE a vector of total genotype-by-environment variances for the traits
+#' @param varEnv a vector of environmental variances for one or more traits
+#' @param corA a matrix of correlations between additive effects
+#' @param corAA a matrix of correlations between additive-by-additive effects
+#' @param corGxE a matrix of correlations between GxE effects
+#' @param useVarA tune according to additive genetic variance if true. If 
+#' FALSE, tuning is performed according to total genetic variance.
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape the shape parameter for the gamma distribution
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAEG(10, varGxE=2)
+#' 
+#' @name SimParam_addTraitAEG
+NULL
+# addTraitAEG ----
+SimParam$set(
+  "public",
+  "addTraitAEG",
+  function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
+           corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
+           shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
+    nTraits = length(mean)
+    relAA = relAA*4
+    if(length(gamma)==1) gamma = rep(gamma,nTraits)
+    if(length(shape)==1) shape = rep(shape,nTraits)
+    if(length(relAA)==1) relAA = rep(relAA,nTraits)
+    if(length(varEnv)==1) varEnv = rep(varEnv,nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
+    if(is.null(corAA)) corAA=diag(nTraits)
+    if(is.null(corGxE)) corGxE=diag(nTraits)
+    stopifnot(length(mean)==length(var),
+              length(relAA)==length(mean),
+              isSymmetric(corA),
+              isSymmetric(corGxE),
+              isSymmetric(corAA),
+              length(mean)==nrow(corA),
+              length(mean)==nrow(corAA),
+              length(mean)==nrow(corGxE),
+              length(mean)==length(varGxE),
+              length(mean)==length(varEnv),
+              (sum(nQtlPerChr)%%2L)==0L)
+    qtlLoci = private$.pickQtlLoci(nQtlPerChr)
+    addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape)
+    epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape,
+                        relVar=relAA)
+    E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
+    gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corGxE,gamma=FALSE,shape=NULL)
+    for(i in 1:nTraits){
+      trait = new("TraitAE",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  epiEff=cbind(E,epiEff[,i]),
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@epiEff[,3] = trait@epiEff[,3]*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      
+      # GxE component
+      traitG = new("TraitA",
+                   qtlLoci,
+                   addEff=gxeEff[,i],
+                   intercept=0)
+      tmpG = calcGenParam(traitG, private$.founderPop, 
+                          self$nThreads)
+      if(varEnv[i]==0){
+        scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
+        trait = new("TraitAEG",
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 0-mean(tmpG$gv*scaleG),
+                    envVar = 1)
+      }else{
+        scaleG = sqrt(varGxE[i]/varEnv[i])/sqrt(popVar(tmpG$gv)[1])
+        trait = new("TraitAEG",
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 1-mean(tmpG$gv*scaleG),
+                    envVar = varEnv[i])
+      }
+      
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
+    }
+    invisible(self)
+  }
+)
+
+#' @title Add an additive, dominance, and epistasis GxE trait
+#' 
+#' @description 
+#' Randomly assigns eligble QTLs for a trait with dominance, 
+#' epistasis and GxE. 
+#' 
+#' @section Usage: SP$addTraitADEG(nQtlPerChr, mean = 0, var = 1, varGxE = 1e-6, 
+#' varEnv = 0, meanDD = 0, varDD = 0, relAA = 0, corA = NULL, corDD = NULL, 
+#' corAA = NULL, corGxE = NULL, useVarA = TRUE, gamma = FALSE, shape = 1, 
+#' force = FALSE)
+#' 
+#' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
+#' value or nChr values.
+#' @param mean a vector of desired mean genetic values for one or more traits
+#' @param var a vector of desired genetic variances for one or more traits
+#' @param varGxE a vector of total genotype-by-environment variances for the traits
+#' @param varEnv a vector of environmental variances for one or more traits
+#' @param meanDD mean dominance degree
+#' @param varDD variance of dominance degree
+#' @param relAA the relative variance of additive-by-additive effects compared 
+#' to the additive effects
+#' @param corA a matrix of correlations between additive effects
+#' @param corDD a matrix of correlations between dominance degrees
+#' @param corAA a matrix of correlations between additive-by-additive effects
+#' @param corGxE a matrix of correlations between GxE effects
+#' @param useVarA tune according to additive genetic variance if true
+#' @param gamma should a gamma distribution be used instead of normal
+#' @param shape the shape parameter for the gamma distribution
+#' @param force should the check for a running simulation be 
+#' ignored. Only set to TRUE if you know what you are doing.
+#'  
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
+#' 
+#' @name SimParam_addTraitADEG
+NULL
+# addTraitADEG ----
+SimParam$set(
+  "public",
+  "addTraitADEG",
+  function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
+           varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
+           corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
+           gamma=FALSE,shape=1,force=FALSE){
+    if(!force){
+      private$.isRunning()
+    }
+    if(length(nQtlPerChr)==1){
+      nQtlPerChr = rep(nQtlPerChr,private$.nChr)
+    }
+    nTraits = length(mean)
+    relAA = relAA*4
+    if(length(meanDD)==1) meanDD = rep(meanDD,nTraits)
+    if(length(varDD)==1) varDD = rep(varDD,nTraits)
+    if(length(relAA)==1) relAA = rep(relAA,nTraits)
+    if(length(varEnv)==1) varEnv = rep(varEnv,nTraits)
+    if(length(gamma)==1) gamma = rep(gamma,nTraits)
+    if(length(shape)==1) shape = rep(shape,nTraits)
+    if(is.null(corA)) corA=diag(nTraits)
+    if(is.null(corDD)) corDD=diag(nTraits)
+    if(is.null(corGxE)) corGxE=diag(nTraits)
+    if(is.null(corAA)) corAA=diag(nTraits)
+    stopifnot(length(mean)==length(var),
+              isSymmetric(corA),
+              isSymmetric(corDD),
+              isSymmetric(corGxE),
+              isSymmetric(corAA),
+              nrow(corA)==nTraits,
+              nrow(corGxE)==nTraits,
+              nrow(corDD)==nTraits,
+              nrow(corAA)==nTraits,
+              length(varGxE)==nTraits,
+              length(varEnv)==nTraits,
+              length(relAA)==length(mean),
+              (sum(nQtlPerChr)%%2L)==0L)
+    qtlLoci = private$.pickQtlLoci(nQtlPerChr)
+    addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape)
+    domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
+                        corDD=corDD,meanDD=meanDD,varDD=varDD)
+    epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corA,gamma=gamma,shape=shape,
+                        relVar=relAA)
+    E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
+    gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                        corr=corGxE,gamma=FALSE,shape=NULL)
+    for(i in 1:nTraits){
+      trait = new("TraitADE",
+                  qtlLoci,
+                  addEff=addEff[,i],
+                  domEff=domEff[,i],
+                  epiEff=cbind(E,epiEff[,i]),
+                  intercept=0)
+      tmp = calcGenParam(trait, private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+      }else{
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+      }
+      trait@addEff = trait@addEff*scale
+      trait@domEff = trait@domEff*scale
+      trait@epiEff[,3] = trait@epiEff[,3]*scale
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      
+      # GxE component
+      traitG = new("TraitA",
+                   qtlLoci,
+                   addEff=gxeEff[,i],
+                   intercept=0)
+      tmpG = calcGenParam(traitG, private$.founderPop, 
+                          self$nThreads)
+      if(varEnv[i]==0){
+        scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
+        trait = new("TraitADEG",
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 0-mean(tmpG$gv*scaleG),
+                    envVar = 1)
+      }else{
+        scaleG = sqrt(varGxE[i]/varEnv[i])/sqrt(popVar(tmpG$gv)[1])
+        trait = new("TraitADEG",
+                    trait,
+                    gxeEff = gxeEff[,i]*scaleG,
+                    gxeInt = 1-mean(tmpG$gv*scaleG),
+                    envVar = varEnv[i])
+      }
+      
+      if(useVarA){
+        private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+      }else{
+        private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+      }
     }
     invisible(self)
   }
@@ -1523,12 +2051,11 @@ SimParam$set(
 #' 
 #' @description
 #' Linearly scales all traits to achieve desired 
-#' values of means and variances.
+#' values of means and variances in the founder population. 
 #' 
-#' @section Usage: SP$rescaleTraits(pop, mean = 0, var = 1, varEnv = 0, 
-#' varGxE = 1e-6, useVarA = TRUE)
+#' @section Usage: SP$rescaleTraits(mean = 0, var = 1, relAA = 1e-6,
+#' varEnv = 0, varGxE = 1e-6, useVarA = TRUE)
 #' 
-#' @param pop an object of \code{\link{Pop-class}}
 #' @param mean a vector of new trait means
 #' @param var a vector of new trait variances
 #' @param varEnv a vector of new environmental variances
@@ -1536,8 +2063,11 @@ SimParam$set(
 #' @param useVarA tune according to additive genetic variance if true
 #'
 #' @note
-#' You must run \code{\link{resetPop}} on existing 
-#' populations to obtain the new trait values.
+#' By default the founder population is the population used to 
+#' initalize the SimParam object. This population can be changed using 
+#' the switchFounderPop function in the SimParam object 
+#' (see \code{\link{SimParam_switchFounderPop}}). You must run 
+#' \code{\link{resetPop}} on existing populations to obtain the new trait values. 
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -1552,8 +2082,8 @@ SimParam$set(
 #' meanG(pop)
 #' 
 #' #Change mean to 1
-#' SP$rescaleTraits(pop, mean=1)
-#' #Run resetPop for chage to take effect
+#' SP$rescaleTraits(mean=1)
+#' #Run resetPop for change to take effect
 #' pop = resetPop(pop, simParam=SP) 
 #' meanG(pop)
 #' 
@@ -1563,50 +2093,57 @@ NULL
 SimParam$set(
   "public",
   "rescaleTraits",
-  function(pop,mean=0,var=1,varEnv=0,
+  function(mean=0,var=1,varEnv=0,
            varGxE=1e-6,useVarA=TRUE){
-    isGxe = sapply(private$.traits,function(x){
-      class(x)%in%c("TraitAG","TraitADG")
-    })
-    if(any(isGxe)){
-      stopifnot(length(mean)==private$.nTraits,
-                length(var)==private$.nTraits,
-                length(varEnv)==private$.nTraits,
-                length(varGxE)==private$.nTraits)
-    }else{
-      stopifnot(length(mean)==private$.nTraits,
-                length(var)==private$.nTraits)
-    }
-    
+    stopifnot(length(mean)==private$.nTraits,
+              length(var)==private$.nTraits,
+              length(varEnv)==private$.nTraits,
+              length(varGxE)==private$.nTraits)
     for(i in 1:private$.nTraits){
       trait = private$.traits[[i]]
-      geno = getGenoT(pop@geno,
-                      trait@lociPerChr,
-                      trait@lociLoc)
-      if(class(trait)%in%c("TraitAD","TraitADG")){
-        tmp = tuneTraitAD(geno,trait@addEff,trait@domEff,var[i],
-                          useVarA,private$.founderPop@ploidy,self$nThreads)
-        trait@domEff = trait@domEff*tmp$scale
+      trait@intercept = 0
+      tmp = calcGenParam(trait,
+                         private$.founderPop, 
+                         self$nThreads)
+      if(useVarA){
+        scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
       }else{
-        tmp = tuneTraitA(geno,trait@addEff,var[i],private$.founderPop@ploidy,self$nThreads)
+        scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
       }
-      trait@addEff = trait@addEff*tmp$scale
-      trait@intercept = mean[i]-tmp$intercept
-      if(class(trait)%in%c("TraitAG","TraitADG")){
+      trait@addEff = trait@addEff*scale
+      if(.hasSlot(trait,"domEff")){
+        trait@domEff = trait@domEff*scale
+      }
+      if(.hasSlot(trait,"epiEff")){
+        trait@epiEff[,3] = trait@epiEff[,3]*scale
+      }
+      trait@intercept = mean[i]-mean(tmp$gv*scale)
+      
+      if(.hasSlot(trait,"gxeEff")){
+        traitG = new("TraitA",
+                     nLoci = trait@nLoci,
+                     lociPerChr = trait@lociPerChr,
+                     lociLoc = trait@lociLoc,
+                     addEff = trait@gxeEff,
+                     intercept = 0)
+        tmpG = calcGenParam(traitG,
+                            private$.founderPop, 
+                            self$nThreads)
+        
         if(varEnv[i]==0){
-          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i],
-                            private$.founderPop@ploidy,self$nThreads)
-          trait@gxeEff = trait@gxeEff*tmpG$scale
-          trait@gxeInt = 0-tmpG$intercept
+          scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
+          trait@gxeEff = trait@gxeEff*scaleG
+          trait@gxeInt = 0-mean(tmpG$gv*scaleG)
           trait@envVar = 1
         }else{
-          tmpG = tuneTraitA(geno,trait@gxeEff,varGxE[i]/varEnv[i],
-                            private$.founderPop@ploidy,self$nThreads)
-          trait@gxeEff = trait@gxeEff*tmpG$scale
-          trait@gxeInt = 1-tmpG$intercept
+          scaleG = sqrt(varGxE[i]/varEnv[i])/sqrt(popVar(tmpG$gv)[1])
+          trait@gxeEff = trait@gxeEff*scaleG
+          trait@gxeInt = 1-mean(tmpG$gv*scaleG)
           trait@envVar = varEnv[i]
         }
       }
+      private$.varA[i] = popVar(tmp$bv*scale)[1]
+      private$.varG[i] = popVar(tmp$gv*scale)[1]
       private$.traits[[i]] = trait
     }
     invisible(self)

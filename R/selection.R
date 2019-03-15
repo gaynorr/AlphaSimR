@@ -98,6 +98,7 @@ getFam = function(pop,famType){
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
+#' @param candidates an optional vector of eligible selection candidates. 
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -123,11 +124,14 @@ getFam = function(pop,famType){
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
                      selectTop=TRUE,returnPop=TRUE,
-                     simParam=NULL,...){
+                     candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  if(!is.null(candidates)){
+    eligible = eligible[eligible%in%candidates]
+  }
   if(length(eligible)<nInd){
     stop("Not enough suitable candidates, check request value and gender")
   }
@@ -169,6 +173,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
+#' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -197,11 +202,14 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
-                     simParam=NULL,...){
+                     candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  if(!is.null(candidates)){
+    eligible = eligible[eligible%in%candidates]
+  }
   allFam = getFam(pop=pop,famType=famType)
   availFam = allFam[eligible]
   if(nFam>length(unique(availFam))){
@@ -254,6 +262,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @param returnPop should results be returned as a 
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected 
 #' individuals is returned.
+#' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -282,11 +291,14 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
-                           simParam=NULL,...){
+                           candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  if(!is.null(candidates)){
+    eligible = eligible[eligible%in%candidates]
+  }
   families = getFam(pop=pop,famType=famType)
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
@@ -338,6 +350,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' or randomly "rand"
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
+#' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
@@ -364,13 +377,14 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
 selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
-                    simParam=NULL,...){
+                    candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
                      use=use,gender="B",selectTop=selectTop,
-                     returnPop=FALSE,simParam=simParam,...)
+                     returnPop=FALSE,candidates=candidates,
+                     simParam=simParam,...)
   nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)
   if(pollenControl){
     male = female

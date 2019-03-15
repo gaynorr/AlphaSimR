@@ -456,7 +456,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
 #' pop = newPop(founderPop, simParam=SP)
 #' 
 #' #Rescale to set mean to 1
-#' SP$rescaleTraits(pop,mean=1)
+#' SP$rescaleTraits(mean=1)
 #' pop = resetPop(pop, simParam=SP)
 #' 
 #' @export

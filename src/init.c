@@ -46,8 +46,6 @@ extern SEXP _AlphaSimR_packHaplo(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_popVar(SEXP);
 extern SEXP _AlphaSimR_sampAllComb(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_sampHalfDialComb(SEXP, SEXP);
-extern SEXP _AlphaSimR_tuneTraitA(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_tuneTraitAD(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeGeno(SEXP, SEXP, SEXP, SEXP);
@@ -93,8 +91,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_popVar",            (DL_FUNC) &_AlphaSimR_popVar,             1},
     {"_AlphaSimR_sampAllComb",       (DL_FUNC) &_AlphaSimR_sampAllComb,        3},
     {"_AlphaSimR_sampHalfDialComb",  (DL_FUNC) &_AlphaSimR_sampHalfDialComb,   2},
-    {"_AlphaSimR_tuneTraitA",        (DL_FUNC) &_AlphaSimR_tuneTraitA,         5},
-    {"_AlphaSimR_tuneTraitAD",       (DL_FUNC) &_AlphaSimR_tuneTraitAD,        7},
     {"_AlphaSimR_writeASGenotypes",  (DL_FUNC) &_AlphaSimR_writeASGenotypes,   7},
     {"_AlphaSimR_writeASHaplotypes", (DL_FUNC) &_AlphaSimR_writeASHaplotypes,  7},
     {"_AlphaSimR_writeGeno",         (DL_FUNC) &_AlphaSimR_writeGeno,          4},

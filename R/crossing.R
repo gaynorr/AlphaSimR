@@ -374,8 +374,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     maleParents = as.integer(maleParents)
   }
   if(simParam$gender=="no" | ignoreGender){
-    female = 1:females@nInd
-    male = 1:males@nInd
+    female = femaleParents
+    male = maleParents
   }else{
     female = which(females@gender=="F" & 
                      (1:females@nInd)%in%femaleParents)
