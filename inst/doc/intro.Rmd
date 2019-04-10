@@ -1,8 +1,9 @@
 ---
 title: "Introduction to AlphaSimR"
-date: "`r Sys.Date()`"
+author: "Chris Gaynor"
+date: "March 27, 2019"
 output: rmarkdown::html_vignette
-bibliography: bibliography.bib
+bibliography: AlphaSimR.bib
 vignette: >
   %\VignetteIndexEntry{Introduction}
   %\VignetteEngine{knitr::rmarkdown}

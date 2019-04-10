@@ -419,6 +419,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
 #' @param parents an optional vector of indices for allowable parents
+#' @param keepParents should previous parents be used for mother and 
+#' father. 
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -437,7 +439,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' pop2 = self(pop, simParam=SP)
 #' 
 #' @export
-self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
+self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
+                simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -473,12 +476,19 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
-  return(newPop(rawPop=rPop,
-                mother=rep(pop@id,each=nProgeny),
-                father=rep(pop@id,each=nProgeny),
-                origM=rep(pop@mother,each=nProgeny),
-                origF=rep(pop@father,each=nProgeny),
-                simParam=simParam))
+  if(keepParents){
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nProgeny),
+                  father=rep(pop@id,each=nProgeny),
+                  origM=rep(pop@mother,each=nProgeny),
+                  origF=rep(pop@father,each=nProgeny),
+                  simParam=simParam))
+  }else{
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nProgeny),
+                  father=rep(pop@id,each=nProgeny),
+                  simParam=simParam))
+  }
 }
 
 #' @title Generates DH lines
@@ -490,6 +500,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
 #' @param nDH total number of DH lines per individual
 #' @param useFemale should female recombination rates be used. 
 #' This parameter has no effect if, recombRatio=1.
+#' @param keepParents should previous parents be used for mother and 
+#' father. 
 #' @param simParam an object of 'SimParam' class
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -508,7 +520,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
 #' pop2 = makeDH(pop, simParam=SP)
 #' 
 #' @export
-makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
+makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
+                  simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -535,13 +548,21 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
-  return(newPop(rawPop=rPop,
-                mother=rep(pop@id,each=nDH),
-                father=rep(pop@id,each=nDH),
-                origM=rep(pop@mother,each=nDH),
-                origF=rep(pop@father,each=nDH),
-                isDH=TRUE,
-                simParam=simParam))
+  if(keepParents){
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nDH),
+                  father=rep(pop@id,each=nDH),
+                  origM=rep(pop@mother,each=nDH),
+                  origF=rep(pop@father,each=nDH),
+                  isDH=TRUE,
+                  simParam=simParam))
+  }else{
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nDH),
+                  father=rep(pop@id,each=nDH),
+                  isDH=TRUE,
+                  simParam=simParam))
+  }
 }
 
 #' @title Pedigree cross

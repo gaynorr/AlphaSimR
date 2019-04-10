@@ -19,8 +19,8 @@ value or nChr values.}
 
 \item{varDD}{variance of dominance degree}
 
-\item{relAA}{the relative variance of additive-by-additive effects compared 
-to the additive effects}
+\item{relAA}{the relative value of additive-by-additive variance compared 
+to additive variance in a diploid organism with allele frequency 0.5}
 
 \item{corA}{a matrix of correlations between additive effects}
 

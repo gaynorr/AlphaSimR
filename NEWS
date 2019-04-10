@@ -1,3 +1,11 @@
+Changes in version 0.10.1
+  
+  New features
+    -added keepParents option to makeDH and self
+    
+  Bug fixes
+    -fixed bug returning top individual when selecting 0
+
 Changes in version 0.10.0
   
   New features

@@ -132,25 +132,45 @@ arma::uword mapCol(arma::uword k, arma::uword n){
 // n number of integers to return
 // N number of integers to sample from
 // Returns an integer vector of length n with values ranging from 0 to N-1
-// From: https://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
-// Reportedly from: Algorithm 3.4.2S of Knuth's book Seminumeric Algorithms
+// Uses Jeffrey Scott Vitter's method A for big numbers
+// Uses Rcpp::sample for small numbers
 arma::uvec sampleInt(arma::uword n, arma::uword N){
-  arma::uword t = 0;
-  arma::uword m = 0;
-  arma::vec u(1);
-  arma::uvec samples(n);
-  while(m<n){
-    u.randu();
-    if(double(N-t)*u(0) >= double(n-m)){
-      ++t;
-    }else{
-      samples(m) = t;
-      ++t;
-      ++m;
-    }
+  arma::uvec output(n);
+  if(n==0){
+    return output;
   }
-  return samples;
+  // Use Rcpp::sample if N is a viable signed integer
+  if(N <= 2147483647){
+    output = Rcpp::as<arma::uvec>(Rcpp::sample(int(N),int(n)));
+    output = sort(output);
+    return output-1; //R to C++
+  }
+  
+  // Use method A
+  double top = double(N-n);
+  arma::vec u(1);
+  arma::uword S;
+  double q;
+  
+  while(n >= 2){
+    u.randu();
+    S = 0;
+    q = top/double(N);
+    while(q > u(0)){
+      ++S;
+      --top;
+      --N;
+      q = (q*top)/double(N);
+    }
+    output(n-1) = S+1;
+    --N;
+    --n;
+  }
+  u.randu();
+  output(0) = floor(u(0)*N);
+  return cumsum(output);
 }
+
 
 // Samples random pairs without replacement from all possible combinations
 // nLevel1 = number of levels for the first column

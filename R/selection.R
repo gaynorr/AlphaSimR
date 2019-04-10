@@ -143,9 +143,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
   if(returnPop){
-    return(pop[take[1:nInd]])
+    return(pop[take[0:nInd]])
   }else{
-    return(take[1:nInd])
+    return(take[0:nInd])
   }
 }
 
@@ -226,7 +226,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
   famMeans = aggregate(response,list(families=availFam),mean)
   response = famMeans$x
   #Select families
-  bestFam = order(response,decreasing=selectTop)[1:nFam]
+  bestFam = order(response,decreasing=selectTop)[0:nFam]
   bestFam = famMeans$families[bestFam]
   take = which(allFam%in%bestFam)
   take = take[take%in%eligible]
@@ -315,7 +315,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
       warn <<- TRUE
       return(index)
     }else{
-      return(index[1:nInd])
+      return(index[0:nInd])
     }
   }
   take = unlist(sapply(unique(families),selInFam))

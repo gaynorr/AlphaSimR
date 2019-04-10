@@ -1465,8 +1465,8 @@ SimParam$set(
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param relAA the relative variance of additive-by-additive effects compared 
-#' to the additive effects
+#' @param relAA the relative value of additive-by-additive variance compared 
+#' to additive variance in a diploid organism with allele frequency 0.5
 #' @param corA a matrix of correlations between additive effects
 #' @param corAA a matrix of correlations between additive-by-additive effects
 #' @param useVarA tune according to additive genetic variance if true. If 
@@ -1560,8 +1560,8 @@ SimParam$set(
 #' @param var a vector of desired genetic variances for one or more traits
 #' @param meanDD mean dominance degree
 #' @param varDD variance of dominance degree
-#' @param relAA the relative variance of additive-by-additive effects compared 
-#' to the additive effects
+#' @param relAA the relative value of additive-by-additive variance compared 
+#' to additive variance in a diploid organism with allele frequency 0.5
 #' @param corA a matrix of correlations between additive effects
 #' @param corDD a matrix of correlations between dominance degrees
 #' @param corAA a matrix of correlations between additive-by-additive effects
@@ -1664,8 +1664,8 @@ SimParam$set(
 #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
 #' @param mean a vector of desired mean genetic values for one or more traits
 #' @param var a vector of desired genetic variances for one or more traits
-#' @param relAA the relative variance of additive-by-additive effects compared 
-#' to the additive effects
+#' @param relAA the relative value of additive-by-additive variance compared 
+#' to additive variance in a diploid organism with allele frequency 0.5
 #' @param varGxE a vector of total genotype-by-environment variances for the traits
 #' @param varEnv a vector of environmental variances for one or more traits
 #' @param corA a matrix of correlations between additive effects
@@ -1799,8 +1799,8 @@ SimParam$set(
 #' @param varEnv a vector of environmental variances for one or more traits
 #' @param meanDD mean dominance degree
 #' @param varDD variance of dominance degree
-#' @param relAA the relative variance of additive-by-additive effects compared 
-#' to the additive effects
+#' @param relAA the relative value of additive-by-additive variance compared 
+#' to additive variance in a diploid organism with allele frequency 0.5
 #' @param corA a matrix of correlations between additive effects
 #' @param corDD a matrix of correlations between dominance degrees
 #' @param corAA a matrix of correlations between additive-by-additive effects

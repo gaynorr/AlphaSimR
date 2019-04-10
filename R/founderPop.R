@@ -364,19 +364,35 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
 #' @export
 quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
   ploidy = as.integer(ploidy)
-  if(inbred){
-    nHap = nInd
-  }else{
-    nHap = ploidy*nInd
-  }
+  nInd = as.integer(nInd)
+  nChr = as.integer(nChr)
+  segSites = as.integer(segSites)
   if(length(segSites)==1) segSites = rep(segSites,nChr)
   if(length(genLen)==1) genLen = rep(genLen,nChr)
+  centromere = genLen/2
+  
   genMap = vector("list",nChr)
-  haplotypes = vector("list",nChr)
+  geno = vector("list",nChr)
   for(i in 1:nChr){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
-    haplotypes[[i]] = matrix(sample(0:1,nHap*segSites[i],replace=TRUE),
-                             nrow=nHap, ncol=segSites[i])
+    geno[[i]] = array(sample(as.raw(0:1),
+                             nInd*ploidy*segSites[i],
+                             replace=TRUE),
+                      dim = c(segSites[i],ploidy,nInd))
+    if(inbred){
+      if(ploidy>1){
+        for(j in 2:ploidy){
+          geno[[i]][,j,] = geno[[i]][,1,]
+        }
+      }
+    }
   }
-  return(newMapPop(genMap,haplotypes,inbred,ploidy))
+  return(new("MapPop",
+             nInd=nInd,
+             nChr=nChr,
+             ploidy=ploidy,
+             nLoci=segSites,
+             geno=as.matrix(geno),
+             genMap=as.matrix(genMap),
+             centromere=centromere))
 }

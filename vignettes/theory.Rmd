@@ -1,0 +1,158 @@
+---
+title: "Theory in AlphaSimR"
+author: "Chris Gaynor"
+date: "April 9, 2019"
+output: 
+  rmarkdown::pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+tables: true
+bibliography: AlphaSimR.bib
+vignette: >
+  %\VignetteIndexEntry{Theory}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+\pagebreak
+
+# Introduction
+
+This document explains the theoretical basis for several models implemented within AlphaSimR. The article consists of the following four sections: biological trait model, statistical trait model, meiosis model, and genomic selection models. The biological trait model section is concerned with how an individual's genotype becomes a genetic value, which ultimately becomes a phenotype. The statistical trait model section covers the partitioning of a population's total genetic variance into variance components. The meiosis model section deals with genetic recombination. And the final section provides a brief overview of the genomic selection models available in AlphaSimR.
+
+\pagebreak
+
+# Biological Trait Model
+
+The biological trait model is the model used to convert an individual's genotype to a genetic value. The genetic value then becomes a phenotype by adding some amount of random error. 
+
+There are some notable differences between how AlphaSimR models traits compared t 
+
+Traits in AlphaSimR are classified by the biolgical effects they model using the **ADEG** framework. Under this framework, each trait is assigned a name consisting of one or more letters. The letters come from the name **ADEG**, which correspond to the biological effects. The biological effects are: **A**dditive, **D**ominance, **E**pistatic and **G**enotype-by-environment. For example, a trait with only additive effects is called an **A** trait and a trait with both additive and dominance effects is called an **AD** trait. The following traits are modeled in AlphaSimR: **A**, **AD**, **AE**, **AG**, **ADE**, **ADG**, **AEG**, and **ADEG**.
+
+The most complex trait in AlphaSimR is an **ADEG** trait, because it includes all possible biological effects. The equation below represents how genetic values are calculated for this trait:
+
+\begin{equation}
+GV(x, w) = 
+\mu + 
+A(x) +
+D(x) +
+E(x) +
+G(x, w)
+\end{equation}
+
+where $GV$ represents an individual’s genetic value, $x$ represents a vector of QTL genotype dosages and $w$ represents an environmental covariate. The right-hand side of the equation consists of a constant value ($\mu$) and four functions, each corresponding to one of the biological effects. Those equations simply lack the respective functions for the missing biological effects. Each of the biological effects functions are shown in separate subsections below with an explanation of the effects they model.
+
+## Dosage Scaling
+
+Before discussing the functions for biological effects in equation (1), it is worthwhile to expand on the concept of genotype dosage. First, consider that AlphaSimR models all loci as biallelic with alleles “0” and “1”. The raw genotype dosage in AlphaSimR is simply defined as the number of copies of the “1” allele at a locus. This is notable, because the range for raw genotype dosage depends on the ploidy level of an organism. For example, the range for a diploid is 0 to 2, but the range for an autotetraploid is 0 to 4. 
+
+AlphaSimR uses scaled genotype dosages in its biological model to account for simulations with different levels of ploidy. The primary reason for using scaled dosages is to unify user inputs and make direct comparisons between simulations with different ploidy level easier. The effect of using scaled dosages is to hypothesize that an individual's genetic value depends on the relative ratio of alleles and is independent of the ploidy level. There is some evidence supporting this hypothesis in species where it can be tested, but only for some traits as there are traits that clearly violate the hypothesis [@Gallais]. This means that users should use care when drawing conclusions from simulations based on this hypothesis.
+
+There are two types of scaled genotype dosages in AlphaSimR: additive and dominance. The scaled additive genotype dosage ($x_A$) is shown in equation (2). This equation linearly scales relative dosage to set the values for opposing homozygotes to -1 and 1. 
+
+\begin{equation}
+x_A = \big( x - \tfrac{ploidy}{2} \big) \big( \tfrac{2}{ploidy} \big)
+\end{equation}
+
+The scaled dominance genotype dosage ($x_D$) is shown in equation (3). This equation uses non-linear scaling to fit the value for both opposing homozygotes to 0 and middlemost heterozygote to 1. The middlemost heterozygote is the genotype with an equal ratio of "0" and "1" alleles. For a diploid organism, the scaled dominance genotype dosage is the same as the classic parameterization for dominance. For an autopolyploid organism, the scaled dominance genotype dosage is consistent with digenic dominance (discussed later).
+
+\begin{equation}
+x_D = x \big( ploidy - x \big) \big( \tfrac{2}{ploidy} \big)^2
+\end{equation}
+
+Table 1 provides an example of the raw and scaled genotype dosages for both a diploid and an autotetraploid organism. The diploid and tetraploid columns represent the range of raw genotype dosages for those organisms. The additive and dominance columns represent the scaled genotype dosages. The table shows how the 0, 1 and 2 genotypes of a diploid are respectively scaled to be equivalent to the 0, 2 and 4 genotypes of an autotetraploid.
+
+\begin{table}[h]
+\centering
+\caption{Raw and scaled genotype dosages.}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+Diploid & Tetraploid & Additive & Dominance \\ \midrule
+0 & 0 & $-1$ & $0$ \\
+ & 1 & $-1/2$ & $3/4$ \\
+1 & 2 & $0$ & $1$ \\
+ & 3 & $1/2$ & $3/4$ \\
+2 & 4 & $1$ & $0$ \\ \bottomrule
+\end{tabular}
+\end{table}
+
+## Additive Effects
+
+All traits in AlphaSimR include additive effects. 
+
+\begin{equation}
+A(x) = \sum a x_A
+\end{equation}
+
+## Dominance Effects
+
+\begin{equation}
+D(x) = \sum d x_D
+\end{equation}
+
+## Epistatic Effects
+
+\begin{equation}
+E(x) = \sum e x_{A_1} x_{A_2}
+\end{equation}
+
+## Genotype-by-Environment Effects
+
+\begin{equation}
+G(x, w) = w \big(\mu_G + \sum g x_A \big)
+\end{equation}
+
+\pagebreak
+ 
+# Statistical Trait Model
+
+\begin{equation}
+V_G = 
+V_A + 
+V_D + 
+V_I
+\end{equation}
+
+\begin{equation}
+GV = \overline{GV} + BV + DD + AA
+\end{equation}
+
+\begin{equation}
+\sum BV = \sum DD = \sum AA = 0
+\end{equation}
+
+## Variance Component Decomposition
+
+## Breeding Values
+
+## Dominance Deviations
+
+## Epistatic Deviations
+
+## Genetic vs Genic Variance
+
+\pagebreak
+
+# Meiosis Model
+
+## Bivalent Pairing
+
+## Quadrivalent Pairing
+
+\pagebreak
+
+# Genomic Selection Models
+
+## RR-BLUP Model
+
+## Dominance Model 
+
+## GCA Model
+
+## SCA Model
+
+\pagebreak
+
+# References

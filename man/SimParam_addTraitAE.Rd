@@ -10,8 +10,8 @@
 
 \item{var}{a vector of desired genetic variances for one or more traits}
 
-\item{relAA}{the relative variance of additive-by-additive effects compared 
-to the additive effects}
+\item{relAA}{the relative value of additive-by-additive variance compared 
+to additive variance in a diploid organism with allele frequency 0.5}
 
 \item{corA}{a matrix of correlations between additive effects}
 

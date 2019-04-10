@@ -4,7 +4,8 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH = 1, useFemale = TRUE, simParam = NULL)
+makeDH(pop, nDH = 1, useFemale = TRUE, keepParents = TRUE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
@@ -13,6 +14,9 @@ makeDH(pop, nDH = 1, useFemale = TRUE, simParam = NULL)
 
 \item{useFemale}{should female recombination rates be used. 
 This parameter has no effect if, recombRatio=1.}
+
+\item{keepParents}{should previous parents be used for mother and 
+father.}
 
 \item{simParam}{an object of 'SimParam' class}
 }
