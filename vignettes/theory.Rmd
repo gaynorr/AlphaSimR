@@ -19,19 +19,17 @@ vignette: >
 
 # Introduction
 
-This document explains the theoretical basis for several models implemented within AlphaSimR. The article consists of the following four sections: biological trait model, statistical trait model, meiosis model, and genomic selection models. The biological trait model section is concerned with how an individual's genotype becomes a genetic value, which ultimately becomes a phenotype. The statistical trait model section covers the partitioning of a population's total genetic variance into variance components. The meiosis model section deals with genetic recombination. And the final section provides a brief overview of the genomic selection models available in AlphaSimR.
+This document describes several of the biological and statistical models implemented in AlphaSimR. The document consists of four sections: biological trait model, statistical trait model, meiosis model, and genomic selection models. The section on the biological trait model describes how an individual's genotype becomes a genetic value. The statistical trait model section covers the partitioning of a population's total genetic variance into variance components. The meiosis model deals with genetic recombination. The final section provides a brief overview of the genomic selection models available in AlphaSimR.
 
 \pagebreak
 
 # Biological Trait Model
 
-The biological trait model is the model used to convert an individual's genotype to a genetic value. The genetic value then becomes a phenotype by adding some amount of random error. 
+The biological trait model used in AlphaSimR for the most part matches classical models used in quantitative genetics. Thus, anyone who has taken a course in quantitative genetics should be familar with most aspects of the model. I will assume here that the reader is such a person and focus on aspects of AlphaSimR's model that either don't fit the classical models or are not obvious with only knowledge of these models. There are primarily three such aspects: the method for classifying traits, the use of genotype dosage scaling, the scaling of effects to achieving user specified variances, and the modeling of genotype-by-environment effects.
 
-There are some notable differences between how AlphaSimR models traits compared t 
+Traits in AlphaSimR are classified by the biological effects they model using the **ADEG** framework. Under this framework, each trait is assigned a name consisting of one or more letters. The letters come from the name **ADEG**, which correspond to the biological effects. The biological effects are: **A**dditive, **D**ominance, **E**pistatic and **G**enotype-by-environment. For example, a trait with only additive effects is called an **A** trait and a trait with both additive and dominance effects is called an **AD** trait. The following traits are modeled in AlphaSimR: **A**, **AD**, **AE**, **AG**, **ADE**, **ADG**, **AEG**, and **ADEG**.
 
-Traits in AlphaSimR are classified by the biolgical effects they model using the **ADEG** framework. Under this framework, each trait is assigned a name consisting of one or more letters. The letters come from the name **ADEG**, which correspond to the biological effects. The biological effects are: **A**dditive, **D**ominance, **E**pistatic and **G**enotype-by-environment. For example, a trait with only additive effects is called an **A** trait and a trait with both additive and dominance effects is called an **AD** trait. The following traits are modeled in AlphaSimR: **A**, **AD**, **AE**, **AG**, **ADE**, **ADG**, **AEG**, and **ADEG**.
-
-The most complex trait in AlphaSimR is an **ADEG** trait, because it includes all possible biological effects. The equation below represents how genetic values are calculated for this trait:
+The most complex trait in AlphaSimR is an **ADEG** trait, because it includes all possible biological effects. This trait can be represented with the equation below:
 
 \begin{equation}
 GV(x, w) = 
@@ -42,11 +40,12 @@ E(x) +
 G(x, w)
 \end{equation}
 
-where $GV$ represents an individual’s genetic value, $x$ represents a vector of QTL genotype dosages and $w$ represents an environmental covariate. The right-hand side of the equation consists of a constant value ($\mu$) and four functions, each corresponding to one of the biological effects. Those equations simply lack the respective functions for the missing biological effects. Each of the biological effects functions are shown in separate subsections below with an explanation of the effects they model.
+The left-hand side of this equation consists of the following terms: $GV$ which represents an individual’s genetic value, $x$ which represents a vector of QTL genotype dosages and $w$ which represents an environmental covariate. The right-hand side of the equation consists of a constant value ($\mu$) and four functions corresponding to each of the biological effects. Very similar equations can be used to represent each of the other trait types. These equations would simply lack the respective functions for the missing biological effects. 
+
 
 ## Dosage Scaling
 
-Before discussing the functions for biological effects in equation (1), it is worthwhile to expand on the concept of genotype dosage. First, consider that AlphaSimR models all loci as biallelic with alleles “0” and “1”. The raw genotype dosage in AlphaSimR is simply defined as the number of copies of the “1” allele at a locus. This is notable, because the range for raw genotype dosage depends on the ploidy level of an organism. For example, the range for a diploid is 0 to 2, but the range for an autotetraploid is 0 to 4. 
+All loci in AlphaSimR are biallelic with alleles "0" and "1", and raw genotype dosage at those loci is simply the number of copies of the “1” allele. This is notable, because the range for raw genotype dosage depends on an organism's ploidy level. For example, the range for a diploid is 0 to 2 and the range for an autotetraploid is 0 to 4. 
 
 AlphaSimR uses scaled genotype dosages in its biological model to account for simulations with different levels of ploidy. The primary reason for using scaled dosages is to unify user inputs and make direct comparisons between simulations with different ploidy level easier. The effect of using scaled dosages is to hypothesize that an individual's genetic value depends on the relative ratio of alleles and is independent of the ploidy level. There is some evidence supporting this hypothesis in species where it can be tested, but only for some traits as there are traits that clearly violate the hypothesis [@Gallais]. This means that users should use care when drawing conclusions from simulations based on this hypothesis.
 

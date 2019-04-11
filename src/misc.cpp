@@ -132,44 +132,84 @@ arma::uword mapCol(arma::uword k, arma::uword n){
 // n number of integers to return
 // N number of integers to sample from
 // Returns an integer vector of length n with values ranging from 0 to N-1
-// Uses Jeffrey Scott Vitter's method A for big numbers
-// Uses Rcpp::sample for small numbers
+// Uses Jeffrey Scott Vitter's Method D
 arma::uvec sampleInt(arma::uword n, arma::uword N){
-  arma::uvec output(n);
-  if(n==0){
+  arma::uvec output;
+  output.set_size(n);
+  if(n == 0){
     return output;
   }
-  // Use Rcpp::sample if N is a viable signed integer
-  if(N <= 2147483647){
-    output = Rcpp::as<arma::uvec>(Rcpp::sample(int(N),int(n)));
-    output = sort(output);
-    return output-1; //R to C++
-  }
-  
-  // Use method A
-  double top = double(N-n);
-  arma::vec u(1);
-  arma::uword S;
-  double q;
-  
-  while(n >= 2){
-    u.randu();
-    S = 0;
-    q = top/double(N);
-    while(q > u(0)){
-      ++S;
-      --top;
-      --N;
-      q = (q*top)/double(N);
+  double q, v, x, y1, y2;
+  arma::uword threshold = 13*n;
+  arma::uword S, limit, top, bottom;
+  arma::vec u(1,arma::fill::randu);
+  v = exp(log(u(0))/double(n));
+  q = double(N-n+1);
+  while((n>1) & (threshold<N)){
+    while(true){
+      while(true){
+        x = double(N)*(1-v);
+        S = floor(x);
+        if(double(S)<q){
+          break;
+        }
+        u.randu();
+        v = exp(log(u(0))/double(n));
+      }
+      u.randu();
+      y1 = exp(log(u(0)*double(N)/q)/double(n-1));
+      v = y1*(1-x/double(N))*(q/(q-double(S)));
+      if(v <= 1){
+        break;
+      }
+      y2 = 1;
+      top = N-1;
+      if((n-1) > S){
+        bottom = N-n;
+        limit = N-S;
+      }else{
+        bottom = N-S-1;
+        limit = N-n+1;
+      }
+      for(arma::uword i=N-1; i>=limit; --i)
+        y2 *= double(top)/double(bottom);
+      u.randu();
+      if((double(N)/(double(N)-x)) >= (y1*exp(log(y2)/double(n-1)))){
+        v = exp(log(u(0))/double(n-1));
+        break;
+      }
+      v = exp(log(u(0))/double(n));
     }
     output(n-1) = S+1;
-    --N;
+    N = N-S-1;
     --n;
+    q = double(N-n+1);
+    threshold -= 13;
   }
-  u.randu();
-  output(0) = floor(u(0)*N);
+  if(n > 1){
+    top = N-n;
+    while(n >= 2){
+      u.randu();
+      S = 0;
+      q = double(top)/double(N);
+      while(q > u(0)){
+        ++S;
+        --top;
+        --N;
+        q = (q*double(top))/double(N);
+      }
+      output(n-1) = S+1;
+      --N;
+      --n;
+    }
+    u.randu();
+    output(0) = floor(u(0)*N);
+  }else{
+    output(0) = floor(v*N);
+  }
   return cumsum(output);
 }
+
 
 
 // Samples random pairs without replacement from all possible combinations
