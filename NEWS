@@ -1,7 +1,9 @@
-Changes in version 0.10.1
+Changes in version 0.11.0
   
   New features
+    -genotype data now stored as bits (was bytes)
     -added keepParents option to makeDH and self
+    -added polyploid support to fastRRBLUP, RRBLUP, RRBLUP2, RRBLUP_D and RRBLUP_D2
     
   Bug fixes
     -fixed bug returning top individual when selecting 0

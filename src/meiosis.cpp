@@ -383,6 +383,60 @@ arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
   return removeDoubleCO(output);
 }
 
+void transferGeno(const arma::Col<unsigned char>& inChr,
+                  arma::Col<unsigned char>& outChr,
+                  int start,
+                  int stop){
+  start -= 1; // R to C++
+  stop -= 1; // R to C++
+  std::bitset<8> inBits, outBits;
+  int startByte = start / 8;
+  int stopByte = stop / 8;
+  int startBit = start % 8;
+  int stopBit = stop % 8;
+  // Transfer partial start
+  if(startBit != 0){
+    inBits = toBits(inChr(startByte));
+    outBits = toBits(outChr(startByte));
+    if(stopByte > startByte){
+      // Transferring more than this byte
+      for(int i=startBit; i<8; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+      startBit = 0;
+      ++startByte;
+    }else{
+      // Only transferring within this byte
+      for(int i=startBit; i<stopBit; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+      return;
+    }
+  }
+  // Transfer full bytes
+  if(stopByte > startByte){
+    outChr(arma::span(startByte,stopByte-1)) = 
+      inChr(arma::span(startByte,stopByte-1));
+    startByte = stopByte;
+  }
+  // Transfer partial stop
+  if(inChr.n_elem == startByte){
+    // End has been reached
+    return;
+  }else{
+    if(stopBit > startBit){
+      inBits = toBits(inChr(startByte));
+      outBits = toBits(outChr(startByte));
+      for(int i = startBit; i<stopBit; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+    }
+  }
+}
+
 //Simulates a gamete using a count-location model for recombination
 void bivalent(const arma::Col<unsigned char>& chr1,
               const arma::Col<unsigned char>& chr2,
@@ -393,26 +447,30 @@ void bivalent(const arma::Col<unsigned char>& chr1,
   if(hist.n_rows==1){
     output = chr1;
   }else{
-    arma::uword nSites = chr1.n_elem;
+    int nBins = chr1.n_elem;
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist.n_rows-1); ++i){
       switch(hist(i,0)){
-      case 1:
-        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
-          chr1(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+      case 1: //Chromosome 1
+        transferGeno(chr1, output, 
+                     hist(i,1), hist(i+1,1));
         break; 
-      case 2:
-        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
-          chr2(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+      case 2: //Chromosome 2
+        transferGeno(chr2, output, 
+                     hist(i,1), hist(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist(hist.n_rows-1,0)){
     case 1:
-      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr1, output, 
+                   hist(hist.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 2:
-      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr2, output, 
+                   hist(hist.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
 }
@@ -428,7 +486,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                   arma::Col<unsigned char>& output2,
                   arma::Mat<int>& hist1,
                   arma::Mat<int>& hist2){
-  arma::uword nSites = chr1.n_elem;
+  int nBins = chr1.n_elem;
   
   //Find exchange point
   double genLen = genMap(genMap.n_elem-1);
@@ -457,41 +515,47 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
       output1 = chr4;
     }
   }else{
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist1.n_rows-1); ++i){
       switch(hist1(i,0)){
       case 1:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr1, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;  
       case 2:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr2(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr2, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;   
       case 3:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr3(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr3, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;  
       case 4:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr4(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+        transferGeno(chr4, output1, 
+                     hist1(i,1), hist1(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist1(hist1.n_rows-1,0)){
     case 1:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr1, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 2:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr2, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 3:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr3(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr3, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 4:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr4(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr4, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
   
@@ -513,41 +577,47 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
       output2 = chr4;
     }
   }else{
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist2.n_rows-1); ++i){
       switch(hist2(i,0)){
       case 1:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr1(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
-        break; 
+        transferGeno(chr1, output2, 
+                     hist2(i,1), hist2(i+1,1));
+        break;  
       case 2:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        transferGeno(chr2, output2, 
+                     hist2(i,1), hist2(i+1,1));
         break; 
       case 3:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr3(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
-        break; 
+        transferGeno(chr3, output2, 
+                     hist2(i,1), hist2(i+1,1));
+        break;  
       case 4:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr4(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        transferGeno(chr4, output2, 
+                     hist2(i,1), hist2(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist2(hist2.n_rows-1,0)){
     case 1:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr1, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 2:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr2, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 3:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr3(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr3, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 4:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr4(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr4, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
 }
@@ -604,9 +674,9 @@ Rcpp::List cross(
     for(arma::uword i=0; i<fatherPloidy; ++i)
       xf(i) = i;
     arma::uword progenyChr;
-    arma::uword segSites = motherGeno(chr).n_rows;
-    arma::Cube<unsigned char> tmpGeno(segSites,ploidy,nInd);
-    arma::Col<unsigned char> gamete1(segSites), gamete2(segSites);
+    arma::uword nBins = motherGeno(chr).n_rows;
+    arma::Cube<unsigned char> tmpGeno(nBins,ploidy,nInd);
+    arma::Col<unsigned char> gamete1(nBins), gamete2(nBins);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       progenyChr=0;
@@ -794,9 +864,9 @@ Rcpp::List createDH2(
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
     arma::Mat<int> histMat;
-    arma::uword segSites = geno(chr).n_rows;
-    arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
-    arma::Col<unsigned char> gamete(segSites);
+    arma::uword nBins = geno(chr).n_rows;
+    arma::Cube<unsigned char> tmp(nBins,2,nInd*nDH);
+    arma::Col<unsigned char> gamete(nBins);
     arma::uvec x = {0,1};
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop

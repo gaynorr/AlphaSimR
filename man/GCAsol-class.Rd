@@ -23,8 +23,6 @@ female effects, male effects and SCA effects
 
 \item{\code{Ve}}{Estimated error variance}
 
-\item{\code{LL}}{Log-likelihood}
-
 \item{\code{iter}}{Number of iterations for convergence}
 }}
 

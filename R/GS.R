@@ -91,7 +91,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   }
   #Fit model
   ans = callFastRRBLUP(y,pop@geno,lociPerChr,
-                       lociLoc,Vu,Ve,maxIter)
+                       lociLoc,Vu,Ve,maxIter,
+                       simParam$nThreads)
   output = new("RRsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -168,9 +169,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                        lociLoc, maxIter)
+                        lociLoc, maxIter, simParam$nThreads)
   }else{
-    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc)
+    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc,
+                     simParam$nThreads)
   }
   markerEff=ans$u
   if(is.null(ans[["iter"]])){
@@ -183,7 +185,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                markerEff=markerEff,
-               fixEff=ans$beta,
+               fixEff=ans$beta[1,,drop=FALSE],
                Vu=as.matrix(ans$Vu),
                Ve=as.matrix(ans$Ve),
                iter=iter)
@@ -314,13 +316,13 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
   #Fit model
   ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                    lociLoc,Vu,Ve,tol,maxIter,useEM)
+                    lociLoc,Vu,Ve,tol,maxIter,useEM,simParam$nThreads)
   output = new("RRsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                markerEff=ans$u,
-               fixEff=ans$beta,
+               fixEff=ans$beta[1,,drop=FALSE],
                Vu=as.matrix(ans$Vu),
                Ve=as.matrix(ans$Ve),
                iter=ans$iter)
@@ -391,30 +393,18 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                     lociLoc,maxIter)
-  p = c(ans$p)
-  q = 1-p
-  fixCoef = c(ans$F)
-  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
-  nMarker = nLoci-sum(fixed) #Number of segregating markers
-  ans = ans$ans
-  fixEff=ans$beta
-  a = ans$u[[1]]
-  d = ans$u[[2]] + fixEff[length(fixEff)]/nMarker
-  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
-  fixEff = matrix(fixEff[-length(fixEff)])
-  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
+                     lociLoc,maxIter,simParam$nThreads)
   output = new("RRDsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               markerEff=alpha,
-               addEff=a,
-               domEff=d,
-               fixEff=fixEff,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+               markerEff=ans$alpha,
+               addEff=ans$ans$u[[1]],
+               domEff=ans$d,
+               fixEff=ans$ans$fixEff[1,,drop=FALSE],
+               Vu=ans$ans$Vu,
+               Ve=ans$ans$Ve,
+               iter=ans$ans$iter)
   return(output)
 }
 
@@ -528,30 +518,19 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM)
-  p = c(ans$p)
-  q = 1-p
-  fixCoef = c(ans$F)
-  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
-  nMarker = nLoci-sum(fixed) #Number of segregating markers
-  ans = ans$ans
-  fixEff=ans$beta
-  a = ans$u[,1,drop=FALSE]
-  d = ans$u[,2,drop=FALSE] + fixEff[length(fixEff)]/nMarker
-  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
-  fixEff = matrix(fixEff[-length(fixEff)])
-  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
+                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM,
+                      simParam$nThreads)
   output = new("RRDsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               markerEff=alpha,
-               addEff=a,
-               domEff=d,
-               fixEff=fixEff,
-               Vu=ans$Vu,
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+               markerEff=ans$alpha,
+               addEff=ans$ans$u[,1,drop=FALSE],
+               domEff=ans$d,
+               fixEff=ans$ans$fixEff[1,,drop=FALSE],
+               Vu=ans$ans$Vu,
+               Ve=as.matrix(ans$ans$Ve),
+               iter=ans$ans$iter)
   return(output)
 }
 
@@ -620,7 +599,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter)
+                       lociPerChr,lociLoc,maxIter,
+                       simParam$nThreads)
   output = new("GCAsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -743,7 +723,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA2(y,fixEff,pop@reps,pop@geno,
                         lociPerChr,lociLoc,maxIter,
-                        VuF,VuM,Ve,tol,useEM)
+                        VuF,VuM,Ve,tol,useEM,
+                        simParam$nThreads)
   output = new("GCAsol",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
@@ -820,7 +801,8 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter)
+                       lociPerChr,lociLoc,maxIter,
+                       simParam$nThreads)
   ans = ans$ans
   output = new("SCAsol",
                nLoci=nLoci,

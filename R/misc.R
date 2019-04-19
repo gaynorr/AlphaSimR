@@ -132,7 +132,19 @@ editGenome = function(pop,ind,chr,segSites,allele,
     sel = chr==selChr
     selSegSites = segSites[sel]
     selAllele = allele[sel]
-    pop@geno[[selChr]][selSegSites,,ind] = selAllele
+    for(selSite in selSegSites){
+      BYTE = (selSite-1L)%/%8L + 1L
+      BIT = (selSite-1L)%%8L + 1L
+      for(selInd in ind){
+        for(i in 1:pop@ploidy){
+          TMP = pop@geno[[selChr]][BYTE,i,selInd]
+          TMP = rawToBits(TMP)
+          TMP[BIT] = selAllele
+          TMP = packBits(TMP)
+          pop@geno[[selChr]][BYTE,i,selInd] = TMP
+        }
+      }
+    }
   }
   pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
@@ -266,7 +278,6 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
                      allele = targetQtl[[4]],
                      simParam = simParam)
   }
-  validObject(pop)
   return(pop)
 }
 

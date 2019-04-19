@@ -1,6 +1,15 @@
-// These function are called by R, but are not listed in the package namespace
+// These functions may be called by R, but are not listed in the package namespace
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
+
+std::bitset<8> toBits(unsigned char byte){
+  return std::bitset<8>(byte);
+}
+
+unsigned char toByte(std::bitset<8> bits){
+  return bits.to_ulong(); 
+}
+
 
 // Calculates population variance
 //' @title Population variance
@@ -38,14 +47,14 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
 // [[Rcpp::export]]
 arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
                                                       arma::uvec nInd,
-                                                      arma::uvec nLoci,
+                                                      arma::uvec nBin,
                                                       arma::uword ploidy){
-  arma::field<arma::Cube<unsigned char> > output(nLoci.n_elem);
+  arma::field<arma::Cube<unsigned char> > output(nBin.n_elem);
   arma::uword nTot = sum(nInd);
   arma::uword nPop = nInd.n_elem;
   // Allocate output
-  for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
-    output(chr).set_size(nLoci(chr),ploidy,nTot);
+  for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
+    output(chr).set_size(nBin(chr),ploidy,nTot);
   }
   // Add individual genotypes
   arma::uword startInd=0, endInd=0;
@@ -54,7 +63,7 @@ arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
       endInd += nInd(i)-1;
       Rcpp::S4 pop = popList[i];
       arma::field<arma::Cube<unsigned char> >geno = pop.slot("geno");
-      for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
+      for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
         output(chr).slices(startInd,endInd) = geno(chr);
       }
       startInd += nInd(i);
@@ -83,19 +92,23 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
 }
 
 // Calculates allele frequency on a single chromsome
-// Requires bi-allelic markers, but works for any ploidy
 // [[Rcpp::export]]
 arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
+  arma::field<arma::Cube<unsigned char> > genoList(1);
+  genoList(0) = geno;
+  arma::uword nLoci = geno.n_rows*8;
   arma::uword ploidy = geno.n_cols;
-  arma::Mat<unsigned char> tmp = arma::sum(geno,1);
+  arma::Col<int> lociPerChr(1);
+  lociPerChr(0) = nLoci;
+  arma::uvec lociLoc(nLoci);
+  for(arma::uword i=0; i<nLoci; ++i)
+    lociLoc(i) = i+1;
+  arma::Mat<unsigned char> tmp = getGeno(genoList,
+                                         lociPerChr,
+                                         lociLoc, 1);
   arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
                                 1)/ploidy;
   return output;
-}
-
-// [[Rcpp::export]]
-arma::Mat<int> convToImat(const arma::Mat<unsigned char>& X){
-  return arma::conv_to<arma::Mat<int> >::from(X);
 }
 
 // Linear index functions for upper triangle of a square
@@ -320,3 +333,4 @@ int getNumThreads(){
 #endif
   return 1;
 }
+

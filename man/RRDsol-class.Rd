@@ -6,7 +6,7 @@
 \title{RR-BLUP Solution with Dominance}
 \description{
 Extends \code{\link{LociMap-class}} 
-to contain estimated effects from \code{\link{RRBLUP}}
+to contain estimated effects from \code{\link{RRBLUP_D}}
 }
 \section{Slots}{
 
@@ -22,8 +22,6 @@ to contain estimated effects from \code{\link{RRBLUP}}
 \item{\code{Vu}}{Estimated marker variance}
 
 \item{\code{Ve}}{Estimated error variance}
-
-\item{\code{LL}}{Log-likelihood}
 
 \item{\code{iter}}{Number of iterations for convergence}
 }}

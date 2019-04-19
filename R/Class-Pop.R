@@ -35,7 +35,8 @@ setValidity("RawPop",function(object){
     errors = c(errors,"nChr!=length(nLoci)")
   }
   for(i in 1:object@nChr){
-    if(object@nLoci[i]!=dim(object@geno[[i]])[1]){
+    DIM1 = object@nLoci[i]%/%8L + (object@nLoci[i]%%8L > 0L)
+    if(DIM1!=dim(object@geno[[i]])[1]){
       errors = c(errors,
                  paste0("nLoci[",i,
                         "]!=dim(geno[[",i,

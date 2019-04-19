@@ -301,12 +301,13 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
   }else{
     nSamp = nInd*ploidy
   }
+  nBin = mapPop@nLoci%/%8L + (mapPop@nLoci%%8L > 0L)
   if(!replace) stopifnot(nHaplo>=nSamp)
   output = vector("list",mapPop@nChr)
   for(chr in 1:mapPop@nChr){
     haplo = sample.int(nHaplo,nSamp,replace=replace)
     geno = array(data=as.raw(0),
-                 dim=c(mapPop@nLoci[chr],
+                 dim=c(nBin[chr],
                        ploidy,nInd))
     outHap = 1L 
     outInd = 1L
@@ -369,16 +370,17 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
   segSites = as.integer(segSites)
   if(length(segSites)==1) segSites = rep(segSites,nChr)
   if(length(genLen)==1) genLen = rep(genLen,nChr)
+  nBins = segSites%/%8L + (segSites%%8L > 0L)
   centromere = genLen/2
   
   genMap = vector("list",nChr)
   geno = vector("list",nChr)
   for(i in 1:nChr){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
-    geno[[i]] = array(sample(as.raw(0:1),
-                             nInd*ploidy*segSites[i],
+    geno[[i]] = array(sample(as.raw(0:255),
+                             nInd*ploidy*nBins[i],
                              replace=TRUE),
-                      dim = c(segSites[i],ploidy,nInd))
+                      dim = c(nBins[i],ploidy,nInd))
     if(inbred){
       if(ploidy>1){
         for(j in 2:ploidy){

@@ -265,7 +265,6 @@ setValidity("TraitADEG",function(object){
 #' @slot fixEff Estimates for fixed effects
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
 #' @slot iter Number of iterations for convergence
 #'
 #' @export
@@ -274,7 +273,6 @@ setClass("RRsol",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
-                 LL="numeric",
                  iter="numeric"),
          contains="LociMap")
 
@@ -302,7 +300,7 @@ setValidity("RRsol",function(object){
 #' @title RR-BLUP Solution with Dominance
 #' 
 #' @description Extends \code{\link{LociMap-class}} 
-#' to contain estimated effects from \code{\link{RRBLUP}}
+#' to contain estimated effects from \code{\link{RRBLUP_D}}
 #' 
 #' @slot markerEff GEBVs for markers
 #' @slot addEff additive effects
@@ -310,7 +308,6 @@ setValidity("RRsol",function(object){
 #' @slot fixEff Estimates for fixed effects
 #' @slot Vu Estimated marker variance
 #' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
 #' @slot iter Number of iterations for convergence
 #'
 #' @export
@@ -321,7 +318,6 @@ setClass("RRDsol",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
-                 LL="numeric",
                  iter="numeric"),
          contains="LociMap")
 
@@ -365,7 +361,6 @@ setValidity("RRDsol",function(object){
 #' female effects, male effects and SCA effects 
 #' (\code{\link{SCAsol-class}} only)
 #' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
 #' @slot iter Number of iterations for convergence
 #'
 #' @export
@@ -375,7 +370,6 @@ setClass("GCAsol",
                  fixEff="matrix",
                  Vu="matrix",
                  Ve="matrix",
-                 LL="numeric",
                  iter="numeric"),
          contains="LociMap")
 
