@@ -18,7 +18,7 @@ vignette: >
 
 # Introduction
 
-This document describes the biological and statistical models implemented in AlphaSimR. The document consists of four sections: biological trait model, statistical trait model, meiosis model, and genomic selection models. The biological trait model section describes how an individual's genotype becomes a genetic value. The statistical trait model section describes the partitioning of a population's total genetic variance into variance components. The meiosis model section describes the method for simulating meiosis and genetic recombination. Finally, the genomic selection models section provides a brief overview for the genomic selection models available in AlphaSimR.
+This document describes biological and statistical models implemented in AlphaSimR. The document consists of four sections: biological trait model, statistical trait model, meiosis, and genomic selection. The biological trait model section describes how an individual's genotype becomes a genetic value. The statistical trait model section describes the partitioning of a population's total genetic variance into variance components. The meiosis section describes how genetic recombination is modeled. Finally, the genomic selection section provides a brief overview of the genomic selection models available in AlphaSimR.
 
 \pagebreak
 
@@ -55,7 +55,7 @@ There are two types of scaled genotype dosages in AlphaSimR: additive and domina
 x_A = \big( x - \tfrac{ploidy}{2} \big) \big( \tfrac{2}{ploidy} \big)
 \end{equation}
 
-The scaled dominance genotype dosage ($x_D$) is shown in equation (3). This equation uses non-linear scaling to fit the value for both opposing homozygotes to 0 and middlemost heterozygote to 0. The middlemost heterozygote is the genotype with an equal ratio of "0" and "1" alleles. For a diploid organism, the scaled dominance genotype dosage matches the classic parameterization for dominance. For autopolyploid organisms, the scaled dominance genotype dosage is consistent with digenic dominance (discussed later).
+The scaled dominance genotype dosage ($x_D$) is shown in equation (3). This equation uses non-linear scaling to fit the value for both opposing homozygotes to 0 and middlemost heterozygote to 1. The middlemost heterozygote is the genotype with an equal ratio of "0" and "1" alleles. For a diploid organism, the scaled dominance genotype dosage matches the classic parameterization for dominance. For autopolyploid organisms, the scaled dominance genotype dosage is consistent with digenic dominance (discussed later).
 
 \begin{equation}
 x_D = x \big( ploidy - x \big) \big( \tfrac{2}{ploidy} \big)^2
@@ -113,7 +113,7 @@ The rationale behind using dominance degrees is their intuitive biological inter
 
 Dominance effects become more complicated when discussing polyploid organisms. This is because polyploids have additional heterozygous genotypes. For example, an autotetraploid organism has two homozygous genotypes (0 and 4) and three heterozygous genotypes (1, 2 and 3). Each additional heterozygous genotype requires an additional dominance parameter to obtain a fully parameterized model. Several different parameterizations have been used used for polyploids and a full discussion of these parameterizations is outside the scope of this document. Interested readers should refer to Gallais's textbook for more details [-@Gallais]. 
 
-AlphaSimR deals with dominance in polyploids by sticking to the partially parameterized model given in equation (5). This model is equivalent to modeling digenic dominance with no higher order dominance terms. The rationale behind this approach is that a model with only digenic dominance will be a reasonable first-order approxiamation for partial dominance in highly polygenic traits.
+AlphaSimR deals with dominance in polyploids by sticking to the partially parameterized model given in equation (5). This model is equivalent to modeling digenic dominance with no higher order dominance terms. The rationale behind this approach is that a model with only digenic dominance will be a reasonable first-order approximation for partial dominance in highly polygenic traits.
 
 An unfortunate side effect of the dominance model in polyploids is that the previously described interpretation of dominance degrees breaks. Consider a single QTL with an additive effect of 1 and a dominance degree of 1. The genotypes and genetic values for the example for both a diploid and an autotetraploid organism are given below in Table 2. For the diploid organism, the heterozygous genotype is equivalent to the best homozygote, so a dominance degree of 1 indicates complete dominance. However, the autotetraploid organism has three heterozygous genotypes. The value of the middlemost heterozygous genotype is equivalent to the best homozygote, but it is not the heterozygous genotype with the highest value. The heterozygous genotype with the highest value is better than the best homozygote, so a dominance degree of 1 actually represents over-dominance in an autotetraploid. 
 
@@ -145,24 +145,55 @@ The sampling of epistatic effects is similar to the sampling of additive effects
 
 ## Genotype-by-Environment Effects
 
+AlphaSimR's model for genotype-by-environment effects was designed as a biological representation of Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic method for analyzing genotype-by-environment interactions [@FinlayWilkinson]. The method involves regressing the environment specific performance for a genotype onto the environmental mean for all genotypes. The resulting regression estimates two parameters, a slope and an intercept, that are used used to summarize an individual genotypes's genotype-by-environment interactions. The intercept represents a genotype's overall mean and the slope represents a genotype's linear response to the environmental mean. 
+
+
+
+
+ 
+
+
+It was realized later that this model has some similarities with the Finlay-Wilkinson regression approach for analyzing genotype-by-environment data.  
+
+
+This model shares many similarities with Finlay-Wilkinson regression, a classic method for analyzing
+
+
+originally conceived as having additive effects that varied according to an environmental covariate. It was later realized that the model 
+
+
+
+inspired by Finlay-Wilkinson regression [@FinlayWilkinson]. Finlay-Wilkinson regression was conceived as a method for analyzing data and not a model for biological effects. Thus, this section will first provide a brief overview of how Finlay-Wilkinson regression works before explaining how AlphaSimR's genotype-by-environment effects model works.
+
+
+
+
+
+Similarly to Finlay-Wilkinson regression, AlphaSimR models an individual's genotype-by-environment interaction with an intercept and a slope. The intercept represents the individual's performance in the target environment and the slope represents the individual's responsiveness to an environmental covariate.
+
 \begin{equation}
 G(x, w) = w \big(\mu_G + \sum g x_A \big)
 \end{equation}
 
-The function for genotype-by-environment effects is given above in equation (8). The items on the right-hand side of this equation are an environmental covariate ($w$) times the sum of a constant value ($\mu_G$) and the summation over all QTL for the product of the genotype-by-environment effects ($g$) and the scaled additive dosage ($x_A$). This function does not correspond to a classic quantitative genetics models, so its design requires a bit of explanation.
+The function for genotype-by-environment effects is given above in equation (8). The right-hand side of equation (8) is the product of an environmental covariate ($w$) and a value within parentheses. The value within parentheses is the sum of a constant value ($\mu_G$) and the summation for all QTL of the product of the genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). This function does not correspond to a classic model used in quantitative genetics, so an explanation of the logic behind this model is necessary.
 
-The genotype-by-environment model used in AlphaSimR is inspired by Finlay and Wilkinson's regression approach for analyzing data for genotype-by-environment interaction [@FinlayWilkinson]. In its simplest form, the approach summarizes individuals with two values: an intercept representing their mean performance and a slope representing their linear response to the environmental mean. The genotype-by-environmental model in AlphaSimR assumes this precise model. The environmental mean and slope come from equation (8). The intercept comes from everything else in equation (1).
+The intercept comes from all relevant functions in equation (1) except for the function for genotype-by-environment effects. The slope comes from equation (8). Specifically, the slope is the value within parentheses in equation (8). 
 
-The environmental covariate ($w$) in equation (8) is an environmental factor and everything else is in the equation is a genetic factor. The environmental covariate does not represent the environmental mean. The environmental mean is actually a population specific value and it is controlled by both environmental and genetic factors. The best way to understand what the environmental covariate is, is to understand its distribution.
+The environmental covariate ($w$) in equation (8) serves a role similar to the environmental mean in Finlay-Wilkinson regression. However, the environmental covariate is not the environmental mean. The environmental mean is actually a population specific parameter controlled by both environmental and genetic factors. 
 
-The environmental covariate is always sampled from a normal distribution with mean 0. The mean of this distribution represents the average environment or the target environment. This means that the value for the genotype-by-environment function is always 0 for the target environment, regardless of an individual's genotype. Except for phenotypes, AlphaSimR also always reports genetic values and variances for the target environment. This means that AlphaSimR does not include genotype-by-environment effects in these values and variances.
+The environmental covariate is a random value sampled from a normal distribution with mean 0. This means a value of 0 represents the average or target environment. This also means that the value of the genotype-by-environment function is always 0 for the target environment, regardless of an individual's genotype. Except for phenotypes, AlphaSimR also always reports genetic values and variances for the target environment. This means that AlphaSimR does not include genotype-by-environment effects in these values and variances.
 
-The variance of the environmental covariate depends on user supplied inputs.
+The variance for the environmental covariate equals the environmental variance, unless the environmental variance is set to zero. 
 
+### Alternative Interpretation
+
+The genotype-by-environment model in AlphaSimR originates from the model used by Gaynor _et al._ [-@gaynor_2017]. This model handled genotype-by-environment interactions by modeling QTL with additive effects that changed according to the environment. that were linearly dependent on an environmental covariate. The simularity between this model and Finlay-Wilkinson regression
+
+This model bears some resemblance to Finlay-Wilkinson regression, a method for analyzing data from multiple environments [@FinlayWilkinson]. The model implemented in AlphaSimR takes this resemblance even further so that it can be described as a biological model for Finlay-Wilkinson regression.
 
 ## Multiple Traits
 
-
+AlphaSimR can model multiple traits in a simulation. 
 
 \pagebreak
  
@@ -191,21 +222,45 @@ GV = \overline{GV} + BV + DD + AA
 
 \pagebreak
 
-# Meiosis Model
+# Meiosis
 
-
+## Polyploids
 
 \pagebreak
 
-# Genomic Selection Models
+# Genomic Selection
 
-## RR-BLUP Model
+## Mixed Model Solvers
 
-## Dominance Model 
+## RRBLUP
 
-## GCA Model
+\begin{equation}
+Y = X \beta + Z a + e
+\end{equation}
 
-## SCA Model
+## RRBLUP_D
+
+\begin{equation}
+Y = X \beta + h \mu_d + Z a + W d^* + e
+\end{equation}
+
+\begin{equation}
+d = \mu_d + d^*
+\end{equation}
+
+## RRBLUP_GCA
+
+\begin{equation}
+Y = X \beta + Z_f a_f + Z_m a_m + e
+\end{equation}
+
+## RRBLUP_SCA
+
+\begin{equation}
+Y = X \beta + h \mu_d + Z_f a_f + Z_m a_m + W d^* + e
+\end{equation}
+
+## fastRRBLUP
 
 \pagebreak
 

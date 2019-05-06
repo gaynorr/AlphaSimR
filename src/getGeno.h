@@ -5,6 +5,14 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
                                  const arma::Col<int>& lociPerChr,
                                  arma::uvec lociLoc, int nThreads);
 
+arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+                                         const arma::Col<int>& lociPerChr,
+                                         arma::uvec lociLoc, int nThreads);
+
+arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+                                         const arma::Col<int>& lociPerChr,
+                                         arma::uvec lociLoc, int nThreads);
+
 arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 
                                      const arma::Col<int>& lociPerChr,
                                      arma::uvec lociLoc, int haplo, int nThreads);

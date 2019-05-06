@@ -28,7 +28,6 @@ calcPheno = function(pop,varE,reps,p,simParam){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  validObject(pop)
   if(length(p)==1){
     p = rep(p,simParam$nTraits)
   }

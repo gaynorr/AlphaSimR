@@ -43,6 +43,78 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
   return output;
 }
 
+// [[Rcpp::export]]
+arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+                                         const arma::Col<int>& lociPerChr,
+                                         arma::uvec lociLoc, int nThreads){
+  // R to C++ index correction
+  lociLoc -= 1;
+  
+  arma::uword nInd = geno(0).n_slices;
+  arma::uword nChr = geno.n_elem;
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
+  int loc1;
+  int loc2 = -1;
+  for(arma::uword i=0; i<nChr; ++i){
+    if(lociPerChr(i)>0){
+      // Get loci locations
+      loc1 = loc2+1;
+      loc2 += lociPerChr(i);
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+      for(arma::uword ind=0; ind<nInd; ++ind){
+        std::bitset<8> workBits;
+        for(arma::uword p=0; p<ploidy/2; ++p){
+          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
+            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+            output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
+          }
+        }
+      }
+    }
+  }
+  return output;
+}
+
+// [[Rcpp::export]]
+arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+                                         const arma::Col<int>& lociPerChr,
+                                         arma::uvec lociLoc, int nThreads){
+  // R to C++ index correction
+  lociLoc -= 1;
+  
+  arma::uword nInd = geno(0).n_slices;
+  arma::uword nChr = geno.n_elem;
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
+  int loc1;
+  int loc2 = -1;
+  for(arma::uword i=0; i<nChr; ++i){
+    if(lociPerChr(i)>0){
+      // Get loci locations
+      loc1 = loc2+1;
+      loc2 += lociPerChr(i);
+      arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+      for(arma::uword ind=0; ind<nInd; ++ind){
+        std::bitset<8> workBits;
+        for(arma::uword p=ploidy/2; p<ploidy; ++p){
+          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
+            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+            output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
+          }
+        }
+      }
+    }
+  }
+  return output;
+}
+
 // Returns haplotype data in a matrix of nInd*ploidy by nLoci
 // [[Rcpp::export]]
 arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 

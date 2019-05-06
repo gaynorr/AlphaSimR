@@ -93,15 +93,25 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callFastRRBLUP(y,pop@geno,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
                        simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$mu))
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$u,
-               fixEff=as.matrix(ans$beta),
-               Vu=as.matrix(Vu),
-               Ve=as.matrix(Ve),
-               iter=0)
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(Vu),
+               Ve = as.matrix(Ve))
   return(output)
 }
 
@@ -175,20 +185,29 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                      simParam$nThreads)
   }
   markerEff=ans$u
-  if(is.null(ans[["iter"]])){
-    iter = 0
-  }else{
-    iter = ans$iter
+  bv = gv = vector("list",ncol(y))
+  for(i in 1:ncol(y)){
+    bv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=ans$alpha[,i],
+                  intercept=ans$beta[i])
+    gv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=ans$alpha[,i],
+                  intercept=ans$mu[i])
   }
+  
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=markerEff,
-               fixEff=ans$beta[1,,drop=FALSE],
-               Vu=as.matrix(ans$Vu),
-               Ve=as.matrix(ans$Ve),
-               iter=iter)
+               bv = bv,
+               gv = gv,
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -317,15 +336,25 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
                     lociLoc,Vu,Ve,tol,maxIter,useEM,simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$mu))
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$u,
-               fixEff=ans$beta[1,,drop=FALSE],
-               Vu=as.matrix(ans$Vu),
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -394,17 +423,26 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
                      lociLoc,maxIter,simParam$nThreads)
-  output = new("RRDsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$alpha,
-               addEff=ans$ans$u[[1]],
-               domEff=ans$d,
-               fixEff=ans$ans$fixEff[1,,drop=FALSE],
-               Vu=ans$ans$Vu,
-               Ve=ans$ans$Ve,
-               iter=ans$ans$iter)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitAD",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  output = new("RRsol",
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -520,17 +558,26 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
                       lociLoc,maxIter,Va,Vd,Ve,tol,useEM,
                       simParam$nThreads)
-  output = new("RRDsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$alpha,
-               addEff=ans$ans$u[,1,drop=FALSE],
-               domEff=ans$d,
-               fixEff=ans$ans$fixEff[1,,drop=FALSE],
-               Vu=ans$ans$Vu,
-               Ve=as.matrix(ans$ans$Ve),
-               iter=ans$ans$iter)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitAD",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  output = new("RRsol",
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -601,16 +648,32 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
                        lociPerChr,lociLoc,maxIter,
                        simParam$nThreads)
-  output = new("GCAsol",
+  gv = new("TraitA2",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha1),
+           addEffMale=c(ans$alpha2),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[[1]],
-               maleEff=ans$u[[2]],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -725,16 +788,32 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                         lociPerChr,lociLoc,maxIter,
                         VuF,VuM,Ve,tol,useEM,
                         simParam$nThreads)
-  output = new("GCAsol",
+  gv = new("TraitA2",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha1),
+           addEffMale=c(ans$alpha2),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[,1,drop=FALSE],
-               maleEff=ans$u[,2,drop=FALSE],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -803,42 +882,58 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
                        lociPerChr,lociLoc,maxIter,
                        simParam$nThreads)
-  ans = ans$ans
-  output = new("SCAsol",
+  gv = new("TraitA2D",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a1),
+           addEffMale=c(ans$a2),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[[1]],
-               maleEff=ans$u[[2]],
-               d=ans$u[[3]],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
 #' @title Set EBV
 #'
 #' @description
-#' Sets a population's EBV with genomic estimated
-#' values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}},
-#' or \code{\link{RRBLUP_SCA}}.
+#' Adds genomic estimated values to a populations's EBV 
+#' slot using output from a genomic selection functions. 
+#' The genomic estimated values can be either estimated 
+#' breeding values, estimated genetic values, or 
+#' estimated general combining values.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param solution an object of \code{\link{RRsol-class}},
-#' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either NULL, "male" or "female". If 
-#' solution is \code{\link{GCAsol-class}} or 
-#' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
-#' the corresponding pool
-#' @param useGV if model is \code{\link{RRDsol-class}}, 
-#' setting this parameter to TRUE will give use estimated 
-#' genetic values. Otherwise, you get estimated breeding 
-#' values that depend on the population's allele frequency.
-#' @param append should EBVs be appended to existing EBVs
+#' @param solution an object of \code{\link{RRsol-class}}
+#' @param value the genomic value to be estimated. Can be 
+#' either "gv", "bv", "female", or "male".
+#' @param targetPop does nothing. A place holder for future 
+#' functionality.
+#' @param append should estimated values be appended to 
+#' existing data in the EBV slot. If TRUE, a new column is 
+#' added. If FALSE, existing data is replaced with the 
+#' new estimates.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
+#' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @examples 
@@ -862,41 +957,67 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' cor(gv(pop), ebv(pop))
 #' 
 #' @export
-setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
+setEBV = function(pop, solution, value="gv", targetPop=NULL, 
                   append=FALSE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(solution)=="RRsol"){
-    ebv = gebvRR(solution, pop, simParam$nThreads)
-  }else if(class(solution)=="RRDsol"){
-    if(useGV){
-      ebv = gegvRRD(solution, pop, simParam$nThreads)
-    }else{
-      ebv = gebvRR(solution, pop, simParam$nThreads)
+  
+  nTraits = length(solution@gv)
+  
+  ebv = matrix(NA_real_,
+               nrow=pop@nInd,
+               ncol=nTraits)
+  
+  value = tolower(value)
+  
+  if(value=="gv"){
+    for(i in 1:nTraits){
+      tmp = getGv(solution@gv[[i]],pop,simParam$nThreads)
+      ebv[,i] = tmp[[1]]
     }
+  }else if(value=="bv"){
+    if(length(solution@bv)==0){
+      stop("This genomic selection model does not produce breeding value estimates.")
+    }
+    
+    for(i in 1:nTraits){
+      tmp = getGv(solution@bv[[i]],pop,simParam$nThreads)
+      ebv[,i] = tmp[[1]]
+    }
+  }else if(value=="female"){
+    if(length(solution@female)==0){
+      stop("This genomic selection model does not produce GCA estimates for females.")
+    }
+    
+    for(i in 1:nTraits){
+      tmp = getGv(solution@female[[i]],pop,simParam$nThreads)
+      ebv[,i] = tmp[[1]]
+    }
+  }else if(value=="male"){
+    if(length(solution@male)==0){
+      stop("This genomic selection model does not produce GCA estimates for males.")
+    }
+    
+    for(i in 1:nTraits){
+      tmp = getGv(solution@male[[i]],pop,simParam$nThreads)
+      ebv[,i] = tmp[[1]]
+    }
+  }else if(value=="gca"){
+    stop("value=='gca' has not been developed yet")
   }else{
-    if(is.null(gender)){
-      if(class(solution)=="GCAsol"){
-        ebv = gegvGCA(solution, pop, simParam$nThreads)
-      }else{
-        ebv = gegvSCA(solution, pop, simParam$nThreads)
-      }
-    }else if(toupper(gender)=="FEMALE"){
-      ebv = gebvGCA(solution, pop, TRUE, simParam$nThreads)
-    }else if(toupper(gender)=="MALE"){
-      ebv = gebvGCA(solution, pop, FALSE, simParam$nThreads)
-    }else{
-      stop(paste0("gender=",gender," is not a valid option"))
-    }
+    stop(paste0("value=",value," is not a valid option"))
   }
+  
   if(append){
     pop@ebv = cbind(pop@ebv,ebv)
   }else{
     pop@ebv = ebv
   }
+  
   return(pop)
 }
+
 
 #' @title RRBLUP Memory Usage
 #'

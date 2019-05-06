@@ -1,6 +1,69 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
+// Calculates genetic values for genomic predictions use parental origin
+arma::field<arma::vec> getGvA2(const Rcpp::S4& trait, 
+                               const Rcpp::S4& pop, 
+                               int nThreads){
+  arma::field<arma::vec> output;
+  bool hasD = trait.hasSlot("domEff");
+  arma::uword nInd = pop.slot("nInd");
+  arma::uword ploidy = pop.slot("ploidy");
+  double dP = double(ploidy);
+  const arma::Col<int>& lociPerChr = trait.slot("lociPerChr");
+  arma::uvec lociLoc = trait.slot("lociLoc");
+  arma::vec a1,a2,d;
+  a1 = Rcpp::as<arma::vec>(trait.slot("addEff"));
+  a2 = Rcpp::as<arma::vec>(trait.slot("addEffMale"));
+  if(hasD){
+    d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+  }
+  arma::mat gv(nInd,nThreads);
+  gv.fill(double(trait.slot("intercept"))/double(nThreads));
+  output.set_size(1);
+  output(0).set_size(nInd);
+  // Half ploidy for xa
+  arma::vec xa(ploidy/2+1);
+  for(arma::uword i=0; i<xa.n_elem; ++i)
+    xa(i) = (double(i)-dP/4.0)*(4.0/dP);
+  // Full ploidy level for xd
+  arma::vec xd(ploidy+1);
+  for(arma::uword i=0; i<xd.n_elem; ++i)
+    xd(i) = double(i)*(dP-double(i))*(2.0/dP)*(2.0/dP);
+  
+  
+  arma::Mat<unsigned char> maternalGeno = getMaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+                                                          lociPerChr, lociLoc, nThreads);
+  arma::Mat<unsigned char> paternalGeno = getPaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+                                                          lociPerChr, lociLoc, nThreads);
+  
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<a1.n_elem; ++i){
+    arma::uword tid;
+#ifdef _OPENMP
+    tid = omp_get_thread_num();
+#else
+    tid = 0;
+#endif
+    arma::vec aEff1,aEff2,dEff;
+    aEff1 = xa*a1(i);
+    aEff2 = xa*a2(i);
+    if(hasD){
+      dEff = xd*d(i);
+    }
+    for(arma::uword j=0; j<nInd; ++j){
+      gv(j,tid) += aEff1(maternalGeno(j,i)) + aEff2(paternalGeno(j,i));
+      if(hasD){
+        gv(j,tid) += dEff(maternalGeno(j,i)+paternalGeno(j,i));
+      }
+    }
+  }
+  output(0) = sum(gv,1);
+  return output;
+}
+
 // Calculates genetic values for traits with epistasis
 arma::field<arma::vec> getGvE(const Rcpp::S4& trait, 
                               const Rcpp::S4& pop, 
@@ -88,6 +151,10 @@ arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
 arma::field<arma::vec> getGv(const Rcpp::S4& trait, 
                              const Rcpp::S4& pop, 
                              int nThreads){
+  if(trait.hasSlot("addEffMale")){
+    // Genomic prediction
+    return getGvA2(trait, pop, nThreads);
+  }
   if(trait.hasSlot("epiEff")){
     return getGvE(trait, pop, nThreads);
   }

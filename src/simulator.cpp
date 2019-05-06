@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <bitset>
 #include <iostream>
 #include <sstream>
 #include <fstream>

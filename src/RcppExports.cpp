@@ -6,74 +6,8 @@
 
 using namespace Rcpp;
 
-// gebvRR
-arma::mat gebvRR(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
-RcppExport SEXP _AlphaSimR_gebvRR(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvRR(sol, pop, nThreads));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gegvRRD
-arma::mat gegvRRD(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
-RcppExport SEXP _AlphaSimR_gegvRRD(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvRRD(sol, pop, nThreads));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gebvGCA
-arma::mat gebvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, bool female, int nThreads);
-RcppExport SEXP _AlphaSimR_gebvGCA(SEXP solSEXP, SEXP popSEXP, SEXP femaleSEXP, SEXP nThreadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< bool >::type female(femaleSEXP);
-    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gebvGCA(sol, pop, female, nThreads));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gegvGCA
-arma::mat gegvGCA(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
-RcppExport SEXP _AlphaSimR_gegvGCA(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvGCA(sol, pop, nThreads));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gegvSCA
-arma::mat gegvSCA(const Rcpp::S4& sol, const Rcpp::S4& pop, int nThreads);
-RcppExport SEXP _AlphaSimR_gegvSCA(SEXP solSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type sol(solSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
-    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gegvSCA(sol, pop, nThreads));
-    return rcpp_result_gen;
-END_RCPP
-}
 // callFastRRBLUP
-Rcpp::List callFastRRBLUP(arma::vec y, arma::field<arma::Cube<unsigned char> >& geno, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, int maxIter, int nThreads);
+Rcpp::List callFastRRBLUP(arma::vec y, arma::field<arma::Cube<unsigned char> >& geno, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, arma::uword maxIter, int nThreads);
 RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -84,7 +18,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
     Rcpp::traits::input_parameter< double >::type Vu(VuSEXP);
     Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
-    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type maxIter(maxIterSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
     rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads));
     return rcpp_result_gen;
@@ -303,6 +237,34 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
     rcpp_result_gen = Rcpp::wrap(getGeno(geno, lociPerChr, lociLoc, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// getMaternalGeno
+arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, int nThreads);
+RcppExport SEXP _AlphaSimR_getMaternalGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::Col<int>& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getMaternalGeno(geno, lociPerChr, lociLoc, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// getPaternalGeno
+arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, int nThreads);
+RcppExport SEXP _AlphaSimR_getPaternalGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const arma::Col<int>& >::type lociPerChr(lociPerChrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getPaternalGeno(geno, lociPerChr, lociLoc, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
