@@ -30,7 +30,7 @@ A simplified animal breeding program modeling 20 discrete generations of selecti
 The first step in the simulation is creating a set of founder haplotypes. The founder haplotypes are used to form the genome and genotypes of animals in the first generation. The genotypes of their descendants are then derived from these haplotypes using simulated mating and genetic recombination. For this simulation, only a single line of code is needed to create the haplotypes, and it is given below.
 
 ```{r eval=FALSE}
-founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
+founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 ```
 
 The code above uses the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. In the above code no population demographic history is explicitly declared, so `runMacs` uses the default “GENERIC” history. The `runMacs` function allows the user to specify one of several other predefined histories or supply their own history. The available histories are listed in the `runMacs` help document.

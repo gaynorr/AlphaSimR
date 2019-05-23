@@ -145,39 +145,21 @@ The sampling of epistatic effects is similar to the sampling of additive effects
 
 ## Genotype-by-Environment Effects
 
-AlphaSimR's model for genotype-by-environment effects was designed as a biological representation of Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic method for analyzing genotype-by-environment interactions [@FinlayWilkinson]. The method involves regressing the environment specific performance for a genotype onto the environmental mean for all genotypes. The resulting regression estimates two parameters, a slope and an intercept, that are used used to summarize an individual genotypes's genotype-by-environment interactions. The intercept represents a genotype's overall mean and the slope represents a genotype's linear response to the environmental mean. 
-
-
-
-
- 
-
-
-It was realized later that this model has some similarities with the Finlay-Wilkinson regression approach for analyzing genotype-by-environment data.  
-
-
-This model shares many similarities with Finlay-Wilkinson regression, a classic method for analyzing
-
-
-originally conceived as having additive effects that varied according to an environmental covariate. It was later realized that the model 
-
-
-
-inspired by Finlay-Wilkinson regression [@FinlayWilkinson]. Finlay-Wilkinson regression was conceived as a method for analyzing data and not a model for biological effects. Thus, this section will first provide a brief overview of how Finlay-Wilkinson regression works before explaining how AlphaSimR's genotype-by-environment effects model works.
-
-
-
-
-
-Similarly to Finlay-Wilkinson regression, AlphaSimR models an individual's genotype-by-environment interaction with an intercept and a slope. The intercept represents the individual's performance in the target environment and the slope represents the individual's responsiveness to an environmental covariate.
-
 \begin{equation}
 G(x, w) = w \big(\mu_G + \sum g x_A \big)
 \end{equation}
 
-The function for genotype-by-environment effects is given above in equation (8). The right-hand side of equation (8) is the product of an environmental covariate ($w$) and a value within parentheses. The value within parentheses is the sum of a constant value ($\mu_G$) and the summation for all QTL of the product of the genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). This function does not correspond to a classic model used in quantitative genetics, so an explanation of the logic behind this model is necessary.
+The function for genotype-by-environment effects is given above in equation (9). Unlike the previously discussed effects, this function does not from a classic quantitative genetics model. 
 
-The intercept comes from all relevant functions in equation (1) except for the function for genotype-by-environment effects. The slope comes from equation (8). Specifically, the slope is the value within parentheses in equation (8). 
+AlphaSimR genotype-by-environment effects model is designed as a biological representation of Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic method for analyzing genotype-by-environment interactions [@FinlayWilkinson]. 
+
+Finlay-Wilkinson regression involves regressing a genotype's environment specific performance onto an environmental mean to estimate a slope and an intercept for that genotype. The intercept represents the genotype's overall mean and the slope represents the genotype's linear response to the environmental mean. Lack-of-fit in the regression can indicate non-linear response, but since AlphaSimR only models linear genotype-by-environment effects this can be ignored here.
+
+Similarly to Finlay-Wilkinson regression, AlphaSimR models an individual's genotype-by-environment interaction with an intercept and a slope. The intercept represents the individual's performance in the target environment and the slope represents the individual's responsiveness to an environmental covariate. The intercept comes from all terms in equation (1), except for the genotype-by-environment effects function ($G(x, w)$). The slope and the environmental covariate are modeled by the genotype-by-environment effects function.
+
+The right-hand side of equation (8) is the product of an environmental covariate ($w$) and an individual's genotype-by-environment slope. The genotype-by-environment slope is contained within parentheses, and it is the sum of a constant value ($\mu_G$) and the summation over all QTL for the product of the genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$).
+
+
 
 The environmental covariate ($w$) in equation (8) serves a role similar to the environmental mean in Finlay-Wilkinson regression. However, the environmental covariate is not the environmental mean. The environmental mean is actually a population specific parameter controlled by both environmental and genetic factors. 
 
@@ -241,7 +223,7 @@ Y = X \beta + Z a + e
 ## RRBLUP_D
 
 \begin{equation}
-Y = X \beta + h \mu_d + Z a + W d^* + e
+y = X \beta + Z a + (h \mu_d +W d^*)  + e
 \end{equation}
 
 \begin{equation}
@@ -251,16 +233,20 @@ d = \mu_d + d^*
 ## RRBLUP_GCA
 
 \begin{equation}
-Y = X \beta + Z_f a_f + Z_m a_m + e
+y = X \beta + Z_f a_f + Z_m a_m + e
 \end{equation}
 
 ## RRBLUP_SCA
 
 \begin{equation}
-Y = X \beta + h \mu_d + Z_f a_f + Z_m a_m + W d^* + e
+y = X \beta + Z_f a_f + Z_m a_m + (h \mu_d +W d^*) + e
 \end{equation}
 
 ## fastRRBLUP
+
+\begin{equation}
+y = 1 \beta + Z a + e
+\end{equation}
 
 \pagebreak
 

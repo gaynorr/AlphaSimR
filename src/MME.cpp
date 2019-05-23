@@ -490,6 +490,134 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
+//Uses EM algorithm to solve a mixed model with 3 random effects
+Rcpp::List solveRRBLUP_EM3(const arma::mat& Y, const arma::mat& X,
+                           const arma::mat& M1, const arma::mat& M2, 
+                           const arma::mat& M3, double Vu1, double Vu2, 
+                           double Vu3, double Ve, double tol, 
+                           int maxIter, bool useEM){
+  double lambda1 = Ve/Vu1;
+  double lambda2 = Ve/Vu2;
+  double lambda3 = Ve/Vu3;
+  double delta1=0,delta2=0,delta3=0,VeN=0,Vu1N=0,Vu2N=0,Vu3N=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
+  if(!useEM & (n<(3*m))){
+    arma::mat Vinv = inv_sympd(M1*M1.t()*Vu1+M2*M2.t()*Vu2+M3*M3.t()*Vu3+arma::eye(n,n)*Ve);
+    arma::mat beta = solve(X.t()*Vinv*X, X.t()*Vinv*Y);
+    arma::mat u(m,2);
+    u.col(0) = M1.t()*Vinv*(Y-X*beta)*Vu1;
+    u.col(1) = M2.t()*Vinv*(Y-X*beta)*Vu2;
+    u.col(2) = M3.t()*Vinv*(Y-X*beta)*Vu3;
+    arma::vec Vu(3);
+    Vu(0) = Vu1;
+    Vu(1) = Vu2;
+    Vu(2) = Vu3;
+    return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                              Rcpp::Named("Ve")=Ve,
+                              Rcpp::Named("beta")=beta,
+                              Rcpp::Named("u")=u,
+                              Rcpp::Named("iter")=iter);
+  }
+  arma::mat RHS(q+3*m,q+3*m),LHS(q+3*m,1),Rvec(q+3*m,1);
+  // Top row
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M1;
+  RHS(arma::span(0,q-1),arma::span(q+m,q+2*m-1)) = X.t()*M2;
+  RHS(arma::span(0,q-1),arma::span(q+2*m,q+3*m-1)) = X.t()*M3;
+  // Second row
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M1.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M1.t()*M1;
+  RHS(arma::span(q,q+m-1),arma::span(q+m,q+2*m-1)) = M1.t()*M2;
+  RHS(arma::span(q,q+m-1),arma::span(q+2*m,q+3*m-1)) = M1.t()*M3;
+  // Third row
+  RHS(arma::span(q+m,q+2*m-1),arma::span(0,q-1)) = M2.t()*X;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q,q+m-1)) = M2.t()*M1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)) = M2.t()*M2;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+2*m,q+3*m-1)) = M2.t()*M3;
+  // Fourth row
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(0,q-1)) = M3.t()*X;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q,q+m-1)) = M3.t()*M1;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+m,q+2*m-1)) = M3.t()*M2;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)) = M3.t()*M3;
+  // Add to diagonal
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += lambda2;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag() += lambda3;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
+  Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
+  Rvec(arma::span(q+2*m,q+3*m-1),0) = M3.t()*Y;
+  arma::mat RHSinv = inv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu1N = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    Vu2N = as_scalar(
+      LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+    )/m;
+    Vu3N = as_scalar(
+      LHS(arma::span(q+2*m,q+3*m-1),0).t()*LHS(arma::span(q+2*m,q+3*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag())
+    )/m;
+    delta1 = VeN/Vu1N-lambda1;
+    delta2 = VeN/Vu2N-lambda2;
+    delta3 = VeN/Vu3N-lambda3;
+    while((fabs(delta1)>tol) || (fabs(delta2)>tol) || (fabs(delta3)>tol)){
+      Ve = VeN;
+      Vu1 = Vu1N;
+      Vu2 = Vu2N;
+      Vu3 = Vu3N;
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta1;
+      RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += delta2;
+      RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag() += delta3;
+      lambda1 += delta1;
+      lambda2 += delta2;
+      lambda3 += delta3;
+      RHSinv = inv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu1N = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      Vu2N = as_scalar(
+        LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+      )/m;
+      Vu3N = as_scalar(
+        LHS(arma::span(q+2*m,q+3*m-1),0).t()*LHS(arma::span(q+2*m,q+3*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag())
+      )/m;
+      delta1 = VeN/Vu1N-lambda1;
+      delta2 = VeN/Vu2N-lambda2;
+      delta3 = VeN/Vu3N-lambda3;
+    }
+  }
+  arma::vec Vu(3);
+  Vu(0) = Vu1;
+  Vu(1) = Vu2;
+  Vu(2) = Vu3;
+  arma::mat u(m,3);
+  u.col(0) = LHS.rows(arma::span(q,q+m-1));
+  u.col(1) = LHS.rows(arma::span(q+m,q+2*m-1));
+  u.col(2) = LHS.rows(arma::span(q+2*m,q+3*m-1));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("iter")=iter);
+}
+
 // Called by fastRRBLUP function
 // An implementation of the Gauss-Seidel method for solving 
 // mixed model equations for an RR-BLUP model
@@ -994,4 +1122,124 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   );
 }
 
-
+// Called by RRBLUP_SCA2 function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
+                           arma::field<arma::Cube<unsigned char> >& geno, 
+                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                           int maxIter, double Vu1, double Vu2, double Vu3, 
+                           double Ve, double tol, bool useEM, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  arma::mat M2 = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  // Identify fixed markers
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,
+                                       lociLoc, nThreads);
+  arma::uword m = M.n_cols;
+  double n = double(y.n_rows);
+  arma::uvec fixed(m,arma::fill::ones);
+  arma::rowvec p12(m);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    p12(j) = accu(M1.col(j)%M2.col(j)+
+      M1.col(j)+M2.col(j)+1)/(4*n);
+    unsigned char firstGeno = M(0,j);
+    for(arma::uword i=1; i<M.n_rows; ++i){
+      if(firstGeno != M(i,j)){
+        fixed(j) = 0;
+        break;
+      }
+    }
+  }
+  
+  // Set dominance genotypes
+  arma::mat M3 = genoToGenoD(M,ploidy,nThreads);
+  M.reset();
+  
+  arma::rowvec Mmean1 = mean(M1);
+  arma::rowvec Mmean2 = mean(M2);
+  arma::rowvec Mmean12 = mean(M1%M2);
+  arma::mat X;
+  X = join_rows(makeX(x),mean(M3,1));
+  sweepReps(y, reps);
+  sweepReps(X, reps);
+  sweepReps(M1, reps);
+  sweepReps(M2, reps);
+  sweepReps(M3, reps);
+  
+  Rcpp::List ans = solveRRBLUP_EM3(y,X,M1,M2,M3,Vu1,Vu2,Vu3,Ve,tol,maxIter,useEM);
+  
+  // Clear memory
+  y.reset();
+  X.reset();
+  M1.reset();
+  M2.reset();
+  M3.reset();
+  
+  // Solve for average effect
+  
+  arma::rowvec p1 = (Mmean1+1)/2;
+  arma::rowvec p2 = (Mmean2+1)/2;
+  arma::rowvec intraD = p12-p1%p2;
+  arma::vec alpha1(m), alpha2(m), d(m);
+  arma::mat beta = ans["beta"];
+  double meanD = beta(beta.n_elem-1);
+  meanD = meanD/double(Mmean1.n_cols);
+  arma::mat u = ans["u"];
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<Mmean1.n_cols; ++i){
+    double gv1, gv0, gvMu, alpha, numer, denom;
+    if(fixed(i)==0){
+      d(i) = u(i,2) + meanD;
+      //alpha1
+      gv1 = (p2(i)+intraD(i)/p1(i))*(u(i,0)+u(i,1)) + 
+        ((1-p2(i))-intraD(i)/p1(i))*d(i);
+      gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i) + 
+        ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u(i,0)-u(i,1));
+      gvMu = p1(i)*gv1+(1-p1(i))*gv0;
+      numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
+      denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha1(i) = alpha;
+      //alpha2
+      gv1 = (p1(i)+intraD(i)/p2(i))*(u(i,0)+u(i,1)) + 
+        ((1-p1(i))-intraD(i)/p2(i))*d(i);
+      gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i) + 
+        ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u(i,0)-u(i,1));
+      gvMu = p2(i)*gv1+(1-p2(i))*gv0;
+      numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
+      denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha2(i) = alpha;
+    }else{
+      alpha1(i) = 0;
+      alpha2(i) = 0;
+      d(i) = 0;
+    }
+  }
+  
+  return Rcpp::List::create(
+    Rcpp::Named("alpha1")=alpha1,
+    Rcpp::Named("alpha2")=alpha2,
+    Rcpp::Named("beta1")=-as_scalar(Mmean1*alpha1),
+    Rcpp::Named("beta2")=-as_scalar(Mmean2*alpha2),
+    Rcpp::Named("a1")=u.col(0),
+    Rcpp::Named("a2")=u.col(1),
+    Rcpp::Named("d")=d,
+    Rcpp::Named("mu")=beta(0),
+    Rcpp::Named("Vu")=ans["Vu"],
+    Rcpp::Named("Ve")=ans["Ve"]
+  );
+}

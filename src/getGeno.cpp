@@ -31,9 +31,17 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
+        arma::uword currentByte, newByte;
         for(arma::uword p=0; p<ploidy; ++p){
-          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
-            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+          currentByte = chrLociLoc(0)/8;
+          workBits = toBits(geno(i)(currentByte,p,ind));
+          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
+          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
+            newByte = chrLociLoc(j)/8;
+            if(newByte != currentByte){
+              currentByte = newByte;
+              workBits = toBits(geno(i)(currentByte,p,ind));
+            }
             output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
           }
         }
@@ -67,9 +75,17 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
+        arma::uword currentByte, newByte;
         for(arma::uword p=0; p<ploidy/2; ++p){
-          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
-            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+          currentByte = chrLociLoc(0)/8;
+          workBits = toBits(geno(i)(currentByte,p,ind));
+          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
+          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
+            newByte = chrLociLoc(j)/8;
+            if(newByte != currentByte){
+              currentByte = newByte;
+              workBits = toBits(geno(i)(currentByte,p,ind));
+            }
             output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
           }
         }
@@ -103,9 +119,17 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
+        arma::uword currentByte, newByte;
         for(arma::uword p=ploidy/2; p<ploidy; ++p){
-          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
-            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+          currentByte = chrLociLoc(0)/8;
+          workBits = toBits(geno(i)(currentByte,p,ind));
+          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
+          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
+            newByte = chrLociLoc(j)/8;
+            if(newByte != currentByte){
+              currentByte = newByte;
+              workBits = toBits(geno(i)(currentByte,p,ind));
+            }
             output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
           }
         }
@@ -140,9 +164,17 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
+        arma::uword currentByte, newByte;
         for(arma::uword p=0; p<ploidy; ++p){
-          for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
-            workBits = toBits(geno(i)(chrLociLoc(j)/8,p,ind));
+          currentByte = chrLociLoc(0)/8;
+          workBits = toBits(geno(i)(currentByte,p,ind));
+          output(ind*ploidy+p,loc1) = (unsigned char) workBits[chrLociLoc(0)%8];
+          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
+            newByte = chrLociLoc(j)/8;
+            if(newByte != currentByte){
+              currentByte = newByte;
+              workBits = toBits(geno(i)(currentByte,p,ind));
+            }
             output(ind*ploidy+p,j+loc1) = (unsigned char) workBits[chrLociLoc(j)%8];
           }
         }
@@ -178,8 +210,16 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
-        for(arma::uword j=0; j<chrLociLoc.n_elem; ++j){
-          workBits = toBits(geno(i)(chrLociLoc(j)/8,haplo,ind));
+        arma::uword currentByte, newByte;
+        currentByte = chrLociLoc(0)/8;
+        workBits = toBits(geno(i)(currentByte,haplo,ind));
+        output(ind,loc1) = (unsigned char) workBits[chrLociLoc(0)%8];
+        for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
+          newByte = chrLociLoc(j)/8;
+          if(newByte != currentByte){
+            currentByte = newByte;
+            workBits = toBits(geno(i)(currentByte,haplo,ind));
+          }
           output(ind,j+loc1) = (unsigned char) workBits[chrLociLoc(j)%8];
         }
       }

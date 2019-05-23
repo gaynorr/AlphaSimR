@@ -37,6 +37,10 @@ callRRBLUP_SCA <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, nThre
     .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
+callRRBLUP_SCA2 <- function(y, x, reps, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA2`, y, x, reps, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads)
+}
+
 writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
     invisible(.Call(`_AlphaSimR_writeASGenotypes`, g, locations, allLocations, snpchips, names, missing, fname))
 }
