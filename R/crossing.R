@@ -54,6 +54,7 @@ makeCross = function(pop,crossPlan,simParam=NULL){
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$v,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
@@ -300,6 +301,7 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
             simParam$isTrackRec,
             females@ploidy,
             males@ploidy,
+            simParam$v,
             simParam$femaleCentromere,
             simParam$maleCentromere,
             simParam$quadProb,
@@ -463,6 +465,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$v,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
@@ -531,11 +534,13 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
   if(useFemale){
     tmp = createDH2(pop@geno,nDH,
                     simParam$femaleMap,
+                    simParam$v,
                     simParam$isTrackRec,
                     simParam$nThreads)
   }else{
     tmp = createDH2(pop@geno,nDH,
                     simParam$maleMap,
+                    simParam$v,
                     simParam$isTrackRec,
                     simParam$nThreads)
   }

@@ -21,8 +21,8 @@ extern SEXP _AlphaSimR_callRRBLUP_MV(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, S
 extern SEXP _AlphaSimR_callRRBLUP_SCA(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP_SCA2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_callRRBLUP2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_cross(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_createDH2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_cross(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getGeno(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getGv(SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getHaplo(SEXP, SEXP, SEXP, SEXP);
@@ -33,7 +33,7 @@ extern SEXP _AlphaSimR_getMaternalGeno(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getNumThreads();
 extern SEXP _AlphaSimR_getOneHaplo(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_getPaternalGeno(SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_MaCS(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_MaCS(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_mergeGeno(SEXP, SEXP);
 extern SEXP _AlphaSimR_mergeMultGeno(SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_mergeMultIntMat(SEXP, SEXP, SEXP);
@@ -61,8 +61,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_callRRBLUP_SCA",    (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA,     8},
     {"_AlphaSimR_callRRBLUP_SCA2",   (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA2,   14},
     {"_AlphaSimR_callRRBLUP2",       (DL_FUNC) &_AlphaSimR_callRRBLUP2,       12},
-    {"_AlphaSimR_createDH2",         (DL_FUNC) &_AlphaSimR_createDH2,          5},
-    {"_AlphaSimR_cross",             (DL_FUNC) &_AlphaSimR_cross,             13},
+    {"_AlphaSimR_createDH2",         (DL_FUNC) &_AlphaSimR_createDH2,          6},
+    {"_AlphaSimR_cross",             (DL_FUNC) &_AlphaSimR_cross,             14},
     {"_AlphaSimR_getGeno",           (DL_FUNC) &_AlphaSimR_getGeno,            4},
     {"_AlphaSimR_getGv",             (DL_FUNC) &_AlphaSimR_getGv,              3},
     {"_AlphaSimR_getHaplo",          (DL_FUNC) &_AlphaSimR_getHaplo,           4},
@@ -73,7 +73,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getNumThreads",     (DL_FUNC) &_AlphaSimR_getNumThreads,      0},
     {"_AlphaSimR_getOneHaplo",       (DL_FUNC) &_AlphaSimR_getOneHaplo,        5},
     {"_AlphaSimR_getPaternalGeno",   (DL_FUNC) &_AlphaSimR_getPaternalGeno,    4},
-    {"_AlphaSimR_MaCS",              (DL_FUNC) &_AlphaSimR_MaCS,               5},
+    {"_AlphaSimR_MaCS",              (DL_FUNC) &_AlphaSimR_MaCS,               6},
     {"_AlphaSimR_mergeGeno",         (DL_FUNC) &_AlphaSimR_mergeGeno,          2},
     {"_AlphaSimR_mergeMultGeno",     (DL_FUNC) &_AlphaSimR_mergeMultGeno,      4},
     {"_AlphaSimR_mergeMultIntMat",   (DL_FUNC) &_AlphaSimR_mergeMultIntMat,    3},

@@ -93,12 +93,12 @@ getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThre
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, motherCentromere, fatherCentromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, motherCentromere, fatherCentromere, quadProb, nThreads)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads)
 }
 
-createDH2 <- function(geno, nDH, genMap, trackRec, nThreads) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, trackRec, nThreads)
+createDH2 <- function(geno, nDH, genMap, v, trackRec, nThreads) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, trackRec, nThreads)
 }
 
 getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {
@@ -162,7 +162,7 @@ writePlinkPed <- function(fam, geno, lociPerChr, lociLoc, file) {
     invisible(.Call(`_AlphaSimR_writePlinkPed`, fam, geno, lociPerChr, lociLoc, file))
 }
 
-MaCS <- function(args, maxSites, inbred, ploidy, nThreads) {
-    .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads)
+MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {
+    .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed)
 }
 

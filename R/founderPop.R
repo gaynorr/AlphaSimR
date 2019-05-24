@@ -114,8 +114,8 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
-                   split=NULL,ploidy=2L,manualCommand=NULL,manualGenLen=NULL,
+runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
+                   split=NULL, ploidy=2L, manualCommand=NULL, manualGenLen=NULL,
                    nThreads=NULL){
   if(is.null(nThreads)){
     nThreads = getNumThreads()
@@ -123,15 +123,22 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
+  
+  # Note that the seed doesn't really control the random number seed, 
+  # because MaCS is called within an OpenMP loop.
+  seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
+  
   if(is.null(segSites)){
     segSites = rep(0L,nChr)
   }else if(length(segSites)==1L){
     segSites = rep(as.integer(segSites),nChr)
   }
+  
   popSize = ifelse(inbred,nInd,ploidy*nInd)
+  
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
-    command = paste(popSize,manualCommand,"-s",sample.int(1e8,1))
+    command = paste0(popSize," ",manualCommand," -s ")
     genLen = manualGenLen
   }else{
     species = toupper(species)
@@ -171,14 +178,13 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
       splitI = paste(" -I 2",popSize%/%2,popSize%/%2)
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
-    command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
+    command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ")
   }
   if(!is.null(manualGenLen)){
     genLen = manualGenLen
   }
-  output = vector("list",nChr)
-  macsOut = MaCS(command,segSites,inbred,
-                 ploidy,nThreads)
+  macsOut = MaCS(command, segSites, inbred, ploidy, 
+                 nThreads, seed)
   nLoci = sapply(macsOut$genMap,length)
   genMap = lapply(macsOut$genMap,function(x){
     genLen*(c(x)-min(x))

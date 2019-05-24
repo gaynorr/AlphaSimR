@@ -10,7 +10,6 @@ unsigned char toByte(std::bitset<8> bits){
   return bits.to_ulong(); 
 }
 
-
 // Calculates population variance
 //' @title Population variance
 //' 
@@ -140,7 +139,6 @@ arma::uword mapCol(arma::uword k, arma::uword n){
   return k+i+1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2;
 }
 
-
 // Randomly samples integers without replacement
 // n number of integers to return
 // N number of integers to sample from
@@ -222,8 +220,6 @@ arma::uvec sampleInt(arma::uword n, arma::uword N){
   }
   return cumsum(output);
 }
-
-
 
 // Samples random pairs without replacement from all possible combinations
 // nLevel1 = number of levels for the first column

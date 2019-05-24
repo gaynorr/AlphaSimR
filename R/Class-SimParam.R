@@ -36,6 +36,7 @@
 #' @field varG total genetic variance in founderPop
 #' @field varE default error variance
 #' @field founderPop the founder population used for scaling traits
+#' @field v the interference parameter for a gamma model of recombination
 #' @field quadProb the probability of quadrivalent formation
 #' @field nThreads number of threads used on platforms with OpenMP support
 #' @field version the version of AlphaSimR used to generate this object
@@ -43,8 +44,7 @@
 #' @export
 SimParam = R6Class(
   "SimParam",
-  public = list(nThreads="integer",
-                quadProb="numeric"),
+  public = list(nThreads="integer"),
   private = list(
     .nChr="integer",
     .nTraits="integer",
@@ -70,6 +70,8 @@ SimParam = R6Class(
     .varG="numeric",
     .varE="numeric",
     .founderPop="MapPop",
+    .v="numeric",
+    .quadProb="numeric",
     .version="character"
   ),
   active = list(
@@ -269,6 +271,20 @@ SimParam = R6Class(
         stop("`$founderPop` is read only",call.=FALSE)
       }
     },
+    v=function(value){
+      if(missing(value)){
+        private$.v
+      }else{
+        stop("`$v` is read only",call.=FALSE)
+      }
+    },
+    quadProb=function(value){
+      if(missing(value)){
+        private$.quadProb
+      }else{
+        stop("`$quadProb` is read only",call.=FALSE)
+      }
+    },
     version=function(value){
       if(missing(value)){
         private$.version
@@ -335,8 +351,9 @@ SimParam$set(
     private$.varG = numeric()
     private$.varE = numeric()
     private$.founderPop = founderPop
+    private$.v = 1
+    private$.quadProb = 2/3
     self$nThreads = getNumThreads()
-    self$quadProb = 0
     private$.version = packageDescription("AlphaSimR")$Version 
     invisible(self)
   }
@@ -653,19 +670,29 @@ SimParam$set(
   }
 )
 
-#' @title Set gender specific recombination
+#' @title Set meiosis parameters
 #'
-#' @description Defines a gender specific recombination ratio. 
-#' The ratio is defined as the amount of recombination in 
-#' females relative to male. Thus, a value of 1 (default) 
-#' specifies equal recombination rates in both males and females. 
-#' A value of 2 specifies twice as much recombination in females 
-#' and a value of 0.5 specifies half as much recombination in 
-#' females.
+#' @description Changes parameters defining the amount of crossover 
+#' interference, the gender specific recombination ratio, or the 
+#' probability of quadrivalent pairing in autopolyploids. Parameters 
+#' are only changed if specified by the user. The default values for the 
+#' parameters are indicated in descriptions below.
 #' 
-#' @section Usage: SP$setRecRatio(ratio, force = FALSE)
+#' @section Usage: SP$setMeiosis(v = NULL, ratio = NULL, quadProb = NULL, 
+#' force = FALSE)
 #' 
-#' @param ratio any value greater than 0
+#' @param v the crossover interference parameter for a gamma model of 
+#' recombination. A value of 1 indicates no crossover interference 
+#' (e.g. Haldane mapping function). A value of 2.65 approximates the 
+#' degree of crossover interference implied by the Kosambi mapping 
+#' function. (default is 1)
+#' @param ratio relative ratio of recombination in females compared to 
+#' males. A value of 2 indicate twice as much recombination in females 
+#' and a value of 1/2 would indicate half as much recombinations. The 
+#' value must be greater than 0. (default is 1)
+#' @param quadProb the probability of quadrivalent pairing in an 
+#' autopolyploid. A value of 2/3 equals the probability expected under 
+#' random pairing of telomeres in a tetraploid. (default is 0)
 #' @param force should the check for a running simulation be 
 #' ignored. Only set to TRUE if you know what you are doing.
 #' 
@@ -675,37 +702,47 @@ SimParam$set(
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$setRecRatio(2) #Twice as much recombination in females
+#' SP$setMeiosis(ratio=2) #Twice as much recombination in females
 #' 
-#' @name SimParam_setRecRatio
+#' @name SimParam_setMeiosis
 NULL
-# setRecRatio ----
+# setMeiosis ----
 SimParam$set(
   "public",
-  "setRecRatio",
-  function(ratio, force=FALSE){
+  "setMeiosis",
+  function(v=NULL, ratio=NULL, quadProb=NULL, force=FALSE){
     if(!force){
       private$.isRunning()
     }
-    stopifnot(ratio>0)
-    genMap = self$genMap
-    private$.sepMap = TRUE
-    feSc = 2/(1/ratio+1)
-    maSc = 2/(ratio+1)
-    private$.femaleMap = as.matrix(
-      lapply(genMap,
-             function(x){
-               feSc*x
-             })
-    )
-    private$.femaleCentromere = feSc*private$.femaleCentromere
-    private$.maleMap = as.matrix(
-      lapply(genMap,
-             function(x){
-               maSc*x
-             })
-    )
-    private$.maleCentromere = maSc*private$.maleCentromere
+    if(!is.null(v)){
+      stopifnot(v>0)
+      private$.v = v
+    }
+    if(!is.null(ratio)){
+      stopifnot(ratio>0)
+      genMap = self$genMap
+      private$.sepMap = TRUE
+      feSc = 2/(1/ratio+1)
+      maSc = 2/(ratio+1)
+      private$.femaleMap = as.matrix(
+        lapply(genMap,
+               function(x){
+                 feSc*x
+               })
+      )
+      private$.femaleCentromere = feSc*private$.femaleCentromere
+      private$.maleMap = as.matrix(
+        lapply(genMap,
+               function(x){
+                 maSc*x
+               })
+      )
+      private$.maleCentromere = maSc*private$.maleCentromere
+    }
+    if(!is.null(quadProb)){
+      stopifnot(quadProb>=0, quadProb<=1)
+      private$.quadProb = quadProb
+    }
     invisible(self)
   }
 )

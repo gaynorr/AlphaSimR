@@ -931,8 +931,8 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
-                bool inbred, arma::uword ploidy, int nThreads){
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, 
+                arma::uword ploidy, int nThreads, Rcpp::StringVector seed){
   //Check input
   string t = args;
   if (t == "") {
@@ -951,7 +951,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
   for(arma::uword chr=0; chr<nChr; chr++){
     // Run MaCS and check for valid output
     vector<AlphaSimRReturn> macsOutput;
-    macsOutput = runFromAlphaSimR(args);
+    macsOutput = runFromAlphaSimR(args+seed(chr));
     if(macsOutput.empty()){
       Rcpp::stop("Macs has failed to run.");
     }

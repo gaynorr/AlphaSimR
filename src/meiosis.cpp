@@ -44,6 +44,30 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
   return hist(ind)(chr)(par);
 }
 
+// Samples position of chiasmata following a gamma model
+arma::vec sampleChiasmata(double end, double v,
+                          double start=-10){
+  arma::uword n = 35;
+  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
+  output = cumsum(output)+start;
+  // Add additional values if less than 0
+  while(output(output.n_elem-1)<=0){
+    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
+    tmp = cumsum(tmp) + output(output.n_elem-1);
+    output = join_cols(output, tmp);
+  }
+  // Remove negative values
+  output = output(find(output>0));
+  // Add additional values if less than end
+  while(output(output.n_elem-1)<end){
+    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
+    tmp = cumsum(tmp) + output(output.n_elem-1);
+    output = join_cols(output, tmp);
+  }
+  // Return values between 0 and end
+  return output(find(output<end));
+}
+
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval
 // Returns -1 if value is smaller than the values of x
@@ -117,22 +141,28 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 }
 
 // Finds recombination map for a bivalent pair
-arma::Mat<int> findBivalentCO(const arma::vec& genMap){
+arma::Mat<int> findBivalentCO(const arma::vec& genMap, 
+                              double v){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  // Determine number of crossovers
-  nCO = samplePoisson(genLen);
+  // Find crossover positions
+  arma::vec posCO = sampleChiasmata(genLen, v);
+  if(posCO.n_elem==0){
+   arma::Mat<int> output(1,2,arma::fill::ones);
+   return output;
+  }
+  
+  // Thin crossovers
+  arma::vec thin(posCO.n_elem, arma::fill::randu);
+  posCO = posCO(find(thin>0.5));
+  nCO = posCO.n_elem;
+  
   arma::Mat<int> output(nCO+1,2);
   if(nCO==0){
     output.ones();
     return output;
   }
-  
-  // Determine crossover sites
-  arma::vec posCO(nCO,arma::fill::randu);
-  posCO = arma::sort(posCO);
-  posCO *= genLen;
   
   // Find crossover sites on map
   output.row(0).ones();
@@ -156,24 +186,30 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap){
 arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
                                    double exchange, //0-genLen
                                    double centromere, //0-genLen
-                                   const arma::vec& genMap){ //Ordered values 0-genLen, length nSites
+                                   const arma::vec& genMap, 
+                                   double v){ //Ordered values 0-genLen, length nSites
   arma::uvec relPosCO(3,arma::fill::zeros), pairChr1(2), pairChr2(2);
   arma::uword startPos=0, endPos, readChr=0, nCO_1, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  // Determine number of crossovers
-  nCO = samplePoisson(genLen);
+  // Find crossover positions
+  arma::vec posCO = sampleChiasmata(genLen, v);
+  if(posCO.n_elem==0){
+    arma::Mat<int> output(1,2,arma::fill::ones);
+    return output;
+  }
+  
+  // Thin crossovers
+  arma::vec thin(posCO.n_elem, arma::fill::randu);
+  posCO = posCO(find(thin>0.5));
+  nCO = posCO.n_elem;
+  
   arma::Mat<int> output(nCO+1,2);
   if(nCO==0){
     output(0,0) = chr;
     output(0,1) = 1;
     return output;
   }
-  
-  // Determine crossover sites
-  arma::vec posCO(nCO,arma::fill::randu);
-  posCO = arma::sort(posCO);
-  posCO *= genLen;
   
   //Find starting chromosome pair and number of CO prior to exchange
   //Find second chromosome pair and number of CO after exchange
@@ -441,9 +477,10 @@ void transferGeno(const arma::Col<unsigned char>& inChr,
 void bivalent(const arma::Col<unsigned char>& chr1,
               const arma::Col<unsigned char>& chr2,
               const arma::vec& genMap,
+              double v,
               arma::Col<unsigned char>& output,
               arma::Mat<int>& hist){
-  hist = findBivalentCO(genMap);
+  hist = findBivalentCO(genMap, v);
   if(hist.n_rows==1){
     output = chr1;
   }else{
@@ -481,6 +518,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                   const arma::Col<unsigned char>& chr3,
                   const arma::Col<unsigned char>& chr4,
                   const arma::vec& genMap,
+                  double v,
                   double centromere,
                   arma::Col<unsigned char>& output1,
                   arma::Col<unsigned char>& output2,
@@ -499,7 +537,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
   
   //Resolve first gamete
   hist1 = findQuadrivalentCO(selChr(0), exchange(0),
-                             centromere, genMap);
+                             centromere, genMap, v);
   if(hist1.n_rows==1){
     switch(hist1(0,0)){
     case 1:
@@ -561,7 +599,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
   
   //Resolve second gamete
   hist2 = findQuadrivalentCO(selChr(1), exchange(0),
-                             centromere, genMap);
+                             centromere, genMap, v);
   if(hist2.n_rows==1){
     switch(hist2(0,0)){
     case 1:
@@ -632,6 +670,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
 // trackRec: track recombination
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
+// v: interference paramater for gamma model
 // quadProb: probability of quadrivalent formation
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
@@ -645,6 +684,7 @@ Rcpp::List cross(
     bool trackRec,
     arma::uword motherPloidy,
     arma::uword fatherPloidy,
+    double v,
     const arma::vec& motherCentromere,
     const arma::vec& fatherCentromere,
     double quadProb,
@@ -690,6 +730,7 @@ Rcpp::List cross(
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                      femaleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -704,6 +745,7 @@ Rcpp::List cross(
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                      femaleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -721,6 +763,7 @@ Rcpp::List cross(
                          motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
                          motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                          femaleMap(chr),
+                         v,
                          motherCentromere(chr),
                          gamete1,
                          gamete2,
@@ -745,6 +788,7 @@ Rcpp::List cross(
           bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
                    motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                    femaleMap(chr),
+                   v,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -768,6 +812,7 @@ Rcpp::List cross(
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                      maleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -782,6 +827,7 @@ Rcpp::List cross(
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                      maleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -799,6 +845,7 @@ Rcpp::List cross(
                          fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
                          fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                          maleMap(chr),
+                         v,
                          fatherCentromere(chr),
                          gamete1,
                          gamete2,
@@ -823,6 +870,7 @@ Rcpp::List cross(
           bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
                    fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                    maleMap(chr),
+                   v,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -850,7 +898,7 @@ Rcpp::List cross(
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     arma::uword nDH, const arma::field<arma::vec>& genMap, 
-    bool trackRec, int nThreads){
+    double v, bool trackRec, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
   //Output data
@@ -874,6 +922,7 @@ Rcpp::List createDH2(
         bivalent(geno(chr).slice(ind).col(x(0)),
                  geno(chr).slice(ind).col(x(1)),
                  genMap(chr),
+                 v,
                  gamete,
                  histMat);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
