@@ -328,3 +328,38 @@ arma::mat genoToGenoD(const arma::Mat<unsigned char>& geno,
   }
   return output;
 }
+
+// Calculates genotype frequency for selected sites
+// Intended for use in setEBV with a targetPop
+// [[Rcpp::export]]
+arma::rowvec calcGenoFreq(const arma::field<arma::Cube<unsigned char> >& geno, 
+                          const arma::Col<int>& lociPerChr,
+                          arma::uvec lociLoc, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> tmp = getGeno(geno,
+                                         lociPerChr,
+                                         lociLoc, nThreads);
+  arma::rowvec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
+                                   0)/ploidy;
+  return output;
+}
+
+// Calculates allele frequency on a single chromsome
+// [[Rcpp::export]]
+arma::rowvec calcChrFreq(const arma::Cube<unsigned char>& geno){
+  arma::field<arma::Cube<unsigned char> > genoList(1);
+  genoList(0) = geno;
+  arma::uword nLoci = geno.n_rows*8;
+  arma::uword ploidy = geno.n_cols;
+  arma::Col<int> lociPerChr(1);
+  lociPerChr(0) = nLoci;
+  arma::uvec lociLoc(nLoci);
+  for(arma::uword i=0; i<nLoci; ++i)
+    lociLoc(i) = i+1;
+  arma::Mat<unsigned char> tmp = getGeno(genoList,
+                                         lociPerChr,
+                                         lociLoc, 1);
+  arma::rowvec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
+                                   0)/ploidy;
+  return output;
+}

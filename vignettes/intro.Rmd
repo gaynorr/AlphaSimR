@@ -1,7 +1,7 @@
 ---
 title: "Introduction to AlphaSimR"
 author: "Chris Gaynor"
-date: "March 27, 2019"
+date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 bibliography: AlphaSimR.bib
 vignette: >
@@ -33,9 +33,11 @@ The first step in the simulation is creating a set of founder haplotypes. The fo
 founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 ```
 
-The code above uses the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. In the above code no population demographic history is explicitly declared, so `runMacs` uses the default “GENERIC” history. The `runMacs` function allows the user to specify one of several other predefined histories or supply their own history. The available histories are listed in the `runMacs` help document.
+The code above uses the `quickHaplo` function to generate the initial haplotypes. The `quickHaplo` function generates haplotypes by randomly sampling 1s and 0s. This approach is equivalent to modeling a population in linkage and Hardy-Weinberg equillibrium with allele frequencies of 0.5. This approach is very rapid, but does not generate realistic haplotypes. This makes the approach great for protyping code, but ill suited for some types a simulations.
 
-The `runMacs` function is not the only way to create founder haplotypes in AlphaSimR. There are actually a few functions, but the most likely second choice is `newMapPop`. This function imports user supplied haplotypes; allowing the user to use their own means for generating haplotypes or import real marker data. 
+The preferred choice for simulating realistic haplotypes is to use the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. The `runMacs` function allows the user to specify one of several predefined population histories or supply their own population history. A list of currently available population histories can be found in the `runMacs` help document.
+
+An alternative choice for providing realistic initial haplotypes is to import them with the `newMapPop` function. This function allows the user to import their own haplotypes that can be generated in another software package or taken directly from real marker data. 
 
 ## Setting Simulation Parameters
 
@@ -102,11 +104,13 @@ plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 
 ## Full Code
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(AlphaSimR)
+```
 
+```{r}
 # Creating Founder Haplotypes
-founderPop = runMacs(nInd=1000, nChr=10, segSites=1000)
+founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 
 # Setting Simulation Parameters
 SP = SimParam$new(founderPop)

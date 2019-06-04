@@ -5,7 +5,8 @@
 \title{RR-BLUP SCA Model}
 \usage{
 RRBLUP_SCA(pop, traits = 1, use = "pheno", snpChip = 1,
-  useQtl = FALSE, maxIter = 40L, simParam = NULL, ...)
+  useQtl = FALSE, maxIter = 40L, useReps = FALSE, simParam = NULL,
+  ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
@@ -24,6 +25,9 @@ If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations for convergence.}
+
+\item{useReps}{should population's reps slot be used to model 
+heterogeneous error variance}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

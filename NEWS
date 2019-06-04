@@ -2,11 +2,12 @@ Changes in version 0.11.0
   
   New features
     -genotype data now stored as bits (was bytes)
-    -added keepParents option to makeDH and self
-    -added polyploid support to fastRRBLUP, RRBLUP, RRBLUP2, RRBLUP_D and RRBLUP_D2
-    -added RRBLUP_SCA2
-    -reworked setEBV
     -implemented a gamma model for crossover interference
+    -$MAJOR CHANGE$ rework of setEBV (breaks some scripts)
+    -GS models now handle polyploids
+    -added RRBLUP_SCA2
+    -heterogenous error variance is now an option that can be enabled in GS models (previously the default)
+    -added keepParents option to makeDH and self
     
   Bug fixes
     -fixed bug returning top individual when selecting 0

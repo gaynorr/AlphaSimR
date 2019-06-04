@@ -688,15 +688,17 @@ Rcpp::List callFastRRBLUP(arma::vec y,
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
                       arma::field<arma::Cube<unsigned char> >& geno, 
                       arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                      int nThreads){
+                      bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
   arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
   Rcpp::List ans = solveRRBLUP(y, X, M);
   arma::vec u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -713,15 +715,17 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
                        arma::field<arma::Cube<unsigned char> >& geno, 
                        arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                        double Vu, double Ve, double tol, int maxIter, 
-                       bool useEM, int nThreads){
+                       bool useEM, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
   arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
   Rcpp::List ans = solveRRBLUP_EM(y, X, M, Vu, Ve, 
                                   tol, maxIter, useEM);
   arma::vec u = ans["u"];
@@ -738,7 +742,7 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                        int maxIter, int nThreads){
+                        int maxIter, bool useReps, int nThreads){
   // Fit GS model
   arma::uword ploidy = geno(0).n_cols;
   arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
@@ -748,10 +752,12 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   Mlist(1) = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),mean(Mlist(1),1));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(Mlist(0),reps);
-  sweepReps(Mlist(1),reps);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(Mlist(0),reps);
+    sweepReps(Mlist(1),reps);
+  }
   Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
   
   // Clear memory
@@ -830,7 +836,7 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
                          arma::field<arma::Cube<unsigned char> >& geno, 
                          arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                          int maxIter, double Va, double Vd, double Ve, 
-                         double tol, bool useEM, int nThreads){
+                         double tol, bool useEM, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
   arma::mat Ma = genoToGenoA(M,ploidy,nThreads);
@@ -838,10 +844,12 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::mat Md = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),mean(Md,1));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(Ma,reps);
-  sweepReps(Md,reps);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(Ma,reps);
+    sweepReps(Md,reps);
+  }
   Rcpp::List ans = solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM);
   
   // Clear memory
@@ -920,15 +928,17 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                          arma::field<arma::Cube<unsigned char> >& geno, 
                          arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
-                         int maxIter, int nThreads){
+                         int maxIter, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
   arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
-  sweepReps(Y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
+  if(useReps){
+    sweepReps(Y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
   Rcpp::List ans = solveRRBLUPMV(Y, X, M, maxIter);
   arma::mat u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -944,7 +954,7 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
-                          int maxIter, int nThreads){
+                          int maxIter, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
@@ -954,10 +964,12 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean1 = mean(Mlist(0));
   arma::rowvec Mmean2 = mean(Mlist(1));
   arma::mat X = makeX(x);
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(Mlist(0), reps);
-  sweepReps(Mlist(1), reps);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(Mlist(0), reps);
+    sweepReps(Mlist(1), reps);
+  }
   Rcpp::List ans = solveRRBLUPMK(y,X,Mlist,maxIter);
   arma::field<arma::mat> u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -976,7 +988,7 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, arma::vec reps,
                            arma::field<arma::Cube<unsigned char> >& geno, 
                            arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
                            int maxIter, double Vu1, double Vu2, double Ve, 
-                           double tol, bool useEM, int nThreads){
+                           double tol, bool useEM, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
                                              nThreads),ploidy/2,nThreads);
@@ -985,10 +997,12 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean1 = mean(M1);
   arma::rowvec Mmean2 = mean(M2);
   arma::mat X = makeX(x);
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(M1, reps);
-  sweepReps(M2, reps);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(M1, reps);
+    sweepReps(M2, reps);
+  }
   Rcpp::List ans = solveRRBLUP_EM2(y,X,M1,M2,Vu1,Vu2,Ve,tol,maxIter,useEM);
   arma::mat u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -1007,7 +1021,7 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, arma::vec reps,
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
-                          int maxIter, int nThreads){
+                          int maxIter, bool useReps, int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::field<arma::mat> Mlist(3);
   Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
@@ -1045,11 +1059,13 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean12 = mean(Mlist(0)%Mlist(1));
   arma::mat X;
   X = join_rows(makeX(x),mean(Mlist(2),1));
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(Mlist(0), reps);
-  sweepReps(Mlist(1), reps);
-  sweepReps(Mlist(2), reps);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(Mlist(0), reps);
+    sweepReps(Mlist(1), reps);
+    sweepReps(Mlist(2), reps);
+  }
   
   Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
   
@@ -1128,7 +1144,8 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
                            arma::field<arma::Cube<unsigned char> >& geno, 
                            arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
                            int maxIter, double Vu1, double Vu2, double Vu3, 
-                           double Ve, double tol, bool useEM, int nThreads){
+                           double Ve, double tol, bool useEM, bool useReps, 
+                           int nThreads){
   arma::uword ploidy = geno(0).n_cols;
   arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
                                              nThreads),ploidy/2,nThreads);
@@ -1165,11 +1182,13 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean12 = mean(M1%M2);
   arma::mat X;
   X = join_rows(makeX(x),mean(M3,1));
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(M1, reps);
-  sweepReps(M2, reps);
-  sweepReps(M3, reps);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(M1, reps);
+    sweepReps(M2, reps);
+    sweepReps(M3, reps);
+  }
   
   Rcpp::List ans = solveRRBLUP_EM3(y,X,M1,M2,M3,Vu1,Vu2,Vu3,Ve,tol,maxIter,useEM);
   

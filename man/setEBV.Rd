@@ -15,8 +15,10 @@ setEBV(pop, solution, value = "gv", targetPop = NULL, append = FALSE,
 \item{value}{the genomic value to be estimated. Can be 
 either "gv", "bv", "female", or "male".}
 
-\item{targetPop}{does nothing. A place holder for future 
-functionality.}
+\item{targetPop}{an optional target population that can 
+be used when value is "bv", "female", or "male". When 
+supplied, the allele frequency in the targetPop is used 
+to set these values.}
 
 \item{append}{should estimated values be appended to 
 existing data in the EBV slot. If TRUE, a new column is 

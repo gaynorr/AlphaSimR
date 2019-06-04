@@ -45,26 +45,20 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 }
 
 // Samples position of chiasmata following a gamma model
-arma::vec sampleChiasmata(double end, double v,
+arma::vec sampleChiasmata(double end, double v=1,
                           double start=-10){
   arma::uword n = 35;
-  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
+  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v/2,1/v));
   output = cumsum(output)+start;
-  // Add additional values if less than 0
-  while(output(output.n_elem-1)<=0){
-    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
-    tmp = cumsum(tmp) + output(output.n_elem-1);
-    output = join_cols(output, tmp);
-  }
-  // Remove negative values
-  output = output(find(output>0));
   // Add additional values if less than end
   while(output(output.n_elem-1)<end){
-    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1/(2*v)));
+    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v/2,1/v));
     tmp = cumsum(tmp) + output(output.n_elem-1);
     output = join_cols(output, tmp);
   }
-  // Return values between 0 and end
+  // Remove values less than 0
+  output = output(find(output>0));
+  // Return values less than the end
   return output(find(output<end));
 }
 

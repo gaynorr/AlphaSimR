@@ -1,7 +1,7 @@
 ---
 title: "Theory in AlphaSimR"
 author: "Chris Gaynor"
-date: "April 19, 2019"
+date: "`r Sys.Date()`"
 output: 
   rmarkdown::pdf_document:
     toc: true
@@ -146,10 +146,26 @@ The sampling of epistatic effects is similar to the sampling of additive effects
 ## Genotype-by-Environment Effects
 
 \begin{equation}
-G(x, w) = w \big(\mu_G + \sum g x_A \big)
+G(x, w) = w b(x)
 \end{equation}
 
-The function for genotype-by-environment effects is given above in equation (9). Unlike the previously discussed effects, this function does not from a classic quantitative genetics model. 
+\begin{equation}
+b(x) = \mu_G + \sum g x_A
+\end{equation}
+
+
+The function for genotype-by-environment effects is given above in equation (9). The right-hand side of the equation contains two parts: an environmental covariate ($w$) and a genotype specific slope. The genotype specific slope includes all terms within the parenthesis on the right-hand side. These terms are a constant value ($\mu_G$) and a summation over all QTL for the product of a genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). 
+
+The following paragraphs explain how equation (9) models genotype-by-environment interactions. The approach taken to do this is to first explain the pieces of the model and then explain how those pieces come together. This involves first describing the sampling procedure for each variable in equation (9) and then explaining how those variables interact with each other to form a coherent model for genotype-by-environment interactions.
+
+
+
+
+
+Note that this summation is equivalent to the summation used for additive effects, so genotype specific slope is itself effectively an additive trait.
+
+
+Unlike the previously discussed effects, this function does not from a classic quantitative genetics model. 
 
 AlphaSimR genotype-by-environment effects model is designed as a biological representation of Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic method for analyzing genotype-by-environment interactions [@FinlayWilkinson]. 
 
@@ -167,9 +183,11 @@ The environmental covariate is a random value sampled from a normal distribution
 
 The variance for the environmental covariate equals the environmental variance, unless the environmental variance is set to zero. 
 
-### Alternative Interpretation
+### Inclusion of Environmental Variance
 
-The genotype-by-environment model in AlphaSimR originates from the model used by Gaynor _et al._ [-@gaynor_2017]. This model handled genotype-by-environment interactions by modeling QTL with additive effects that changed according to the environment. that were linearly dependent on an environmental covariate. The simularity between this model and Finlay-Wilkinson regression
+### Relationship to Other Models
+
+The genotype-by-environment model in AlphaSimR originates from the model used by Gaynor _et al._ [-@gaynor_2017]. This model handled genotype-by-environment interactions by modeling QTL with additive effects that changed according to the environment. that were linearly dependent on an environmental covariate. The similarity between this model and Finlay-Wilkinson regression
 
 This model bears some resemblance to Finlay-Wilkinson regression, a method for analyzing data from multiple environments [@FinlayWilkinson]. The model implemented in AlphaSimR takes this resemblance even further so that it can be described as a biological model for Finlay-Wilkinson regression.
 
@@ -206,7 +224,9 @@ GV = \overline{GV} + BV + DD + AA
 
 # Meiosis
 
-## Polyploids
+## Diploid
+
+## Polyploid
 
 \pagebreak
 

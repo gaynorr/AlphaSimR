@@ -90,26 +90,6 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
   return output;
 }
 
-// Calculates allele frequency on a single chromsome
-// [[Rcpp::export]]
-arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
-  arma::field<arma::Cube<unsigned char> > genoList(1);
-  genoList(0) = geno;
-  arma::uword nLoci = geno.n_rows*8;
-  arma::uword ploidy = geno.n_cols;
-  arma::Col<int> lociPerChr(1);
-  lociPerChr(0) = nLoci;
-  arma::uvec lociLoc(nLoci);
-  for(arma::uword i=0; i<nLoci; ++i)
-    lociLoc(i) = i+1;
-  arma::Mat<unsigned char> tmp = getGeno(genoList,
-                                         lociPerChr,
-                                         lociLoc, 1);
-  arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
-                                1)/ploidy;
-  return output;
-}
-
 // Linear index functions for upper triangle of a square
 // matrix without the diagonal
 // From: https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
