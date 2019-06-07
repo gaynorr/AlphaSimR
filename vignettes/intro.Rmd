@@ -33,7 +33,7 @@ The first step in the simulation is creating a set of founder haplotypes. The fo
 founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 ```
 
-The code above uses the `quickHaplo` function to generate the initial haplotypes. The `quickHaplo` function generates haplotypes by randomly sampling 1s and 0s. This approach is equivalent to modeling a population in linkage and Hardy-Weinberg equillibrium with allele frequencies of 0.5. This approach is very rapid, but does not generate realistic haplotypes. This makes the approach great for protyping code, but ill suited for some types a simulations.
+The code above uses the `quickHaplo` function to generate the initial haplotypes. The `quickHaplo` function generates haplotypes by randomly sampling 1s and 0s. This approach is equivalent to modeling a population in linkage and Hardy-Weinberg equilibrium with allele frequencies of 0.5. This approach is very rapid but does not generate realistic haplotypes. This makes the approach great for prototyping code, but ill-suited for some types of simulations.
 
 The preferred choice for simulating realistic haplotypes is to use the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. The `runMacs` function allows the user to specify one of several predefined population histories or supply their own population history. A list of currently available population histories can be found in the `runMacs` help document.
 
@@ -70,7 +70,7 @@ We are now ready to start modeling the breeding program. To begin, we need to ge
 ```{r eval=FALSE}
 pop = newPop(founderPop)
 ```
-A `Pop-class` object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations. 
+A `Pop-class` object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations. 
 
 Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in AlphaSimR that lacks a built-in function. However, the example breeding program presented here is easily modeled using built-in functions. 
 
@@ -82,9 +82,9 @@ In this example a plot of the generation mean over time is desired. All that is 
 genMean = meanG(pop)
 ```
 
-The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two seperate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively. 
+The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively. 
 
-To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include: giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with `c()`. The code for the loop is given below.
+To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with `c()`. The code for the loop is given below.
 
 ```{r eval=FALSE}
 for(generation in 1:20){

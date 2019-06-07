@@ -578,14 +578,16 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #'
 #' @param founderPop a \code{\link{Pop-class}}
 #' @param id a vector of unique identifiers for individuals 
-#' in the pedigree. The values of these ids are seperate from   
-#' the ids in the founderPop.
+#' in the pedigree. The values of these IDs are seperate from   
+#' the IDs in the founderPop if matchID=FALSE.
 #' @param mother a vector of identifiers for the mothers 
 #' of individuals in the pedigree. Must match one of the 
 #' elements in the id vector or they will be treated as unknown.
 #' @param father a vector of identifiers for the fathers 
 #' of individuals in the pedigree. Must match one of the 
 #' elements in the id vector or they will be treated as unknown.
+#' @param matchID indicates if the IDs in founderPop be matched to the 
+#' id argument. 
 #' @param maxCycle the maximum number of loops to make over the pedigree 
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
@@ -612,8 +614,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #' 
 #' @export
-pedigreeCross = function(founderPop,id,mother,father, 
-                         maxCycle=100,DH=NULL,useFemale=TRUE,
+pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
+                         maxCycle=100, DH=NULL, useFemale=TRUE,
                          simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -641,7 +643,12 @@ pedigreeCross = function(founderPop,id,mother,father,
   if(founderPop@nInd<nFounder){
     stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
   }
-  selFounder = sample.int(founderPop@nInd,nFounder)
+  if(!matchID){
+    #Randomize selected founders
+    selFounder = sample.int(founderPop@nInd,nFounder)
+  }else{
+    selFounder = 1:founderPop@nInd
+  }
   output = vector("list",length=length(id))
   # Sort pedigree
   genInd = rep(0,length(id))
@@ -689,18 +696,45 @@ pedigreeCross = function(founderPop,id,mother,father,
       if(genInd[i]==gen){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
           #Is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(id[i],founderPop@id)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = founderPop[selFounder[founderIndicator]]
         }else if(is.na(matchMother[i])){
           #Mother is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(mother[i],founderPop@id)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = makeCross2(founderPop[selFounder[founderIndicator]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
         }else if(is.na(matchFather[i])){
           #Father is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(father[i],founderPop@id)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    founderPop[selFounder[founderIndicator]],
                                    crossPlan=crossPlan,
@@ -721,6 +755,10 @@ pedigreeCross = function(founderPop,id,mother,father,
       }
     }
   }
-  return(mergePops(output))
+  output = mergePops(output)
+  output@id = id
+  output@mother = mother
+  output@father = father
+  return(output)
 }
 

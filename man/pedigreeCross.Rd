@@ -4,15 +4,15 @@
 \alias{pedigreeCross}
 \title{Pedigree cross}
 \usage{
-pedigreeCross(founderPop, id, mother, father, maxCycle = 100,
-  DH = NULL, useFemale = TRUE, simParam = NULL)
+pedigreeCross(founderPop, id, mother, father, matchID = FALSE,
+  maxCycle = 100, DH = NULL, useFemale = TRUE, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{a \code{\link{Pop-class}}}
 
 \item{id}{a vector of unique identifiers for individuals 
-in the pedigree. The values of these ids are seperate from   
-the ids in the founderPop.}
+in the pedigree. The values of these IDs are seperate from   
+the IDs in the founderPop if matchID=FALSE.}
 
 \item{mother}{a vector of identifiers for the mothers 
 of individuals in the pedigree. Must match one of the 
@@ -21,6 +21,9 @@ elements in the id vector or they will be treated as unknown.}
 \item{father}{a vector of identifiers for the fathers 
 of individuals in the pedigree. Must match one of the 
 elements in the id vector or they will be treated as unknown.}
+
+\item{matchID}{indicates if the IDs in founderPop be matched to the 
+id argument.}
 
 \item{maxCycle}{the maximum number of loops to make over the pedigree 
 to sort it.}

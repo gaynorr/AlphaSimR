@@ -39,7 +39,7 @@ E(x) +
 G(x, w)
 \end{equation}
 
-Equation (1) can be slightly modified to represent all traits in the **ADEG** framework. The left-hand side of the equation consists of the following terms: $GV$, which represents an individual’s genetic value; $x$, which represents a vector of QTL genotype dosages; and $w$, which represents an environmental covariate. The right-hand side of the equation consists of a constant value ($\mu$) and four functions. The constant value is used set the user specified trait mean in a founder population. The functions corresponding to each of the biological effects. Any other trait in the **ADEG** framework will lack one or more of the biological effects in equation (1). These can be represented with a modified version of equation (1) that lacks the corresponding functions for those biological effects.
+Equation (1) can be slightly modified to represent all traits in the **ADEG** framework. The left-hand side of the equation consists of the following terms: $GV$, which represents an individual’s genetic value; $x$, which represents a vector of QTL genotype dosages; and $w$, which represents an environmental covariate. The right-hand side of the equation consists of an intercept ($\mu$) and four functions. The intercept is used set the user specified trait mean in a founder population. The functions corresponding to each of the biological effects. Any other trait in the **ADEG** framework will lack one or more of the biological effects in equation (1). These can be represented with a modified version of equation (1) that lacks the corresponding functions for those biological effects.
 
 The discussion of the **ADEG** framework will continue below with explanation for each function in equation (1) following a discussion of genotype dosage scaling in AlphaSimR. Genotype dosage scaling is discussed first because it is applied within each of aforementioned functions. 
 
@@ -80,7 +80,7 @@ Diploid & Tetraploid & Additive & Dominance \\ \midrule
 ## Additive Effects
 
 \begin{equation}
-A(x) = \sum a x_A ,
+A(x) = \sum a x_A
 \end{equation}
 
 The function for additive effects is given above in equation (4). The right-hand side is a summation over all QTL for the product of the additive effect ($a$) and the scaled additive dosage ($x_A$). This equation is equivalent to parameterizations in classic quantitative trait models. The only unique aspect of additive effects in AlphaSimR is the sampling of those effects. 
@@ -137,9 +137,9 @@ Diploid Dosage & Tetraploid Dosage & Genetic Value \\ \midrule
 E(x) = \sum e x_{A_1} x_{A_2}
 \end{equation}
 
-The function for epistatic effects is given above in equation (7). The summation in this equation differs from the summation in equations (4) and (5). Here the summation is over pairs of QTL, because AlphaSimR models epistasis using pairs of epistatic loci. The number of pairs is always have the number of QTL and each QTL can only occur in a single pair. The remaining elements in the right-hand side of equation (7) are the epistatic effect ($e$), the scaled additive dosage for the first locus in the pair ($x_{A_1}$) and the scaled additive dosage for the second locus in the pair ($x_{A_2}$).
+The function for epistatic effects is given above in equation (7). The summation in the right-hand side is over pairs of QTL, because AlphaSimR uses a simplified model of epistasis that restricts epistatic interactions to non-overlapping pair of loci. Since epistatic loci are not allowed to overlap, the number of pairs is equal to half the number of QTL and each QTL only occurs in one pair. The remaining elements in the right-hand side of equation (7) are epistatic effects ($e$), the scaled additive dosage for the first locus in a pair ($x_{A_1}$) and the scaled additive dosage for the second locus in a pair ($x_{A_2}$).
 
-The epistatic model in equation (7) is somewhat constrained. The model only handles epistasis between pairs of loci and it only models additive-by-additive epistasis. The motivation behind using this constrained model is to maintain computational tractability with very large numbers of QTL. As with the dominance model, this model is considered a reasonable first-order approximation for a more complicated reality.
+The epistatic model in equation (7) is somewhat constrained. The model only allows epistasis between pairs of loci and it only models additive-by-additive epistasis. The motivation behind using this constrained model is to maintain computational tractability when using very large numbers of QTL. As with the dominance model, this model is considered a reasonable first-order approximation for a more complicated reality.
 
 The sampling of epistatic effects is similar to the sampling of additive effects with one additional user specified parameter for the relative ratio of the additive-by-additive epistatic variance. The relative ratio refers to the ratio between additive-by-additive epistatic variance and additive variance. The parameter is used to set variance of epistatic effects. Specifically, the variance of the effects is set to the valued expected to achieve the desired ration in a random mating population whose QTL are in linkage equilibrium and have allele frequency 0.5. Note that most simulated population will not meet these assumptions, so their observed ratio can differ significantly. The observed ratio will usually be much lower, because additive-by-additive epistatic variance is maximized at allele frequency 0.5.
 
@@ -153,47 +153,39 @@ G(x, w) = w b(x)
 b(x) = \mu_G + \sum g x_A
 \end{equation}
 
+The function for genotype-by-environment effects is given above in equations (8) and (9). The right-hand side of the equation (8) contains two parts: an environmental covariate ($w$) and a genotype specific slope ($b(x)$). The formula for the genotype specific slope is shown in equation (9).  The right-hand side of this equation includes a intercept value ($\mu_G$) and a summation over all QTL for the product of a genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). 
 
-The function for genotype-by-environment effects is given above in equation (9). The right-hand side of the equation contains two parts: an environmental covariate ($w$) and a genotype specific slope. The genotype specific slope includes all terms within the parenthesis on the right-hand side. These terms are a constant value ($\mu_G$) and a summation over all QTL for the product of a genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). 
+The following paragraphs will explain how the above equations model genotype-by-environment interactions. Initially, the explanation will cover a case where a population has genotype-by-environment interaction variance, but no environmental variance. This case is represented by the default arguments in AlphaSimR. Later, how the parameters are changed to model both genotype-by-environment interaction variance and environmental variance will be described.
 
-The following paragraphs explain how equation (9) models genotype-by-environment interactions. The approach taken to do this is to first explain the pieces of the model and then explain how those pieces come together. This involves first describing the sampling procedure for each variable in equation (9) and then explaining how those variables interact with each other to form a coherent model for genotype-by-environment interactions.
+To begin, a description of how the variables in the above equations are sampled is needed. This is because it is much easier to understand how the formulas come together to model genotype-by-environment interactions when it is understood what variables represent. 
 
+The environmental covariate ($w$) in equation (8) represents an environmental component of the genotype-by-environment interaction. The value of the environmental covariate is randomly sampled from a standard normal distribution. By definition, this means that the average value of the environmental covariate is zero and its variance is one. The average value of the environmental covariate is considered to be the target environment. Thus, the value for equation (8) in the target environment is always zero.
 
+The genotype specific slope in equation (9) represents the genetic component of the genotype-by-environment interaction. An astute reader will notice that this equation is very similar to the equation for an additive trait. Indeed, the genotype specific slope is really just an additive trait. The term $\mu_G$ serves a similar role to $\mu$ in equation (1) and the rest summation on the right-hand side of equation (9) is similar to the summation used for additive effects, right-hand side of equation (4). Just like for an additive trait, the values of the genotype specific slope are scaled to achieve a specific mean and variance in a founder population. In this case, the mean is set to zero and the variance is set to the user specified genotype-by-environment interaction variance.
 
+To understand how the environmental covariate and the genotype specific slope model genotype-by-environment interactions it helps to review the properties of these variables. The environmental covariate is just a random variable with a mean of zero and a variance of one. The genotype specific slope is also random variable, with regards to the founder population, that has a mean of zero and a variance equal to the genotype-by-environment variance. This means that equation (8) is just the product of two random variables. These random variables are independent, so the formula for the variance of this product is given in the equation below.
 
+\begin{equation}
+Var(w b) = E[w]^2 Var(b) + Var(w) E[b]^2 + Var(w) Var(b)
+\end{equation}
 
-Note that this summation is equivalent to the summation used for additive effects, so genotype specific slope is itself effectively an additive trait.
+Equation (10) above gives the variance for the product of $w$ and $b$ in equation (8). The term $Var()$ indicates the variance of a variable and the term $E[]$ indicates the expectation (mean) of a variable. In the founder population, the expectations for $w$ and $b$ are zero, so the first two terms in the right-hand side of the equation drop out. Equation (10) reduces to the product of the two variances. The variance of $w$ is one and the variance of $b$ equals the genotype-by-environment interaction variance, so the variance in equation (8) equals the genotype-by-environment interaction variance and is equivalent to the variance in the genotype specific slopes. It must be repeated that the above description is limited to the founder population. This is an important point, because the mean and variance for genotype specific slope can and will be different in other populations since it is under genetic control.
 
+### Including Environmental Variance
 
-Unlike the previously discussed effects, this function does not from a classic quantitative genetics model. 
+The previous description is limited to a founder population with genotype-by-environment interaction variance and no environmental variance. 
 
-AlphaSimR genotype-by-environment effects model is designed as a biological representation of Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic method for analyzing genotype-by-environment interactions [@FinlayWilkinson]. 
+### Equivalency to Other Models
 
-Finlay-Wilkinson regression involves regressing a genotype's environment specific performance onto an environmental mean to estimate a slope and an intercept for that genotype. The intercept represents the genotype's overall mean and the slope represents the genotype's linear response to the environmental mean. Lack-of-fit in the regression can indicate non-linear response, but since AlphaSimR only models linear genotype-by-environment effects this can be ignored here.
+### User Interaction
 
-Similarly to Finlay-Wilkinson regression, AlphaSimR models an individual's genotype-by-environment interaction with an intercept and a slope. The intercept represents the individual's performance in the target environment and the slope represents the individual's responsiveness to an environmental covariate. The intercept comes from all terms in equation (1), except for the genotype-by-environment effects function ($G(x, w)$). The slope and the environmental covariate are modeled by the genotype-by-environment effects function.
+AlphaSimR users do not directly observe nor set the value of the environmental covariate. Instead, they are responsible for indirectly setting its value by providing a randomly sampled p-value for each environment. AlphaSimR then uses this p-value to calculate the appropriate value of $w$ for any level of environmental variance. Users should note that p-values follow a uniform distribution over the range of zero to one, so p-values should be randomly generated using R's built-in `runif` function. A p-value of 0.5 always results in $w$ equalling zero and is equivalent to the target environment. A p-value of 0.5 is also the default value used in AlphaSimR functions, so if the user fails to provide a p-value they will recieve a phenotype for the target environment.
 
-The right-hand side of equation (8) is the product of an environmental covariate ($w$) and an individual's genotype-by-environment slope. The genotype-by-environment slope is contained within parentheses, and it is the sum of a constant value ($\mu_G$) and the summation over all QTL for the product of the genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$).
-
-
-
-The environmental covariate ($w$) in equation (8) serves a role similar to the environmental mean in Finlay-Wilkinson regression. However, the environmental covariate is not the environmental mean. The environmental mean is actually a population specific parameter controlled by both environmental and genetic factors. 
-
-The environmental covariate is a random value sampled from a normal distribution with mean 0. This means a value of 0 represents the average or target environment. This also means that the value of the genotype-by-environment function is always 0 for the target environment, regardless of an individual's genotype. Except for phenotypes, AlphaSimR also always reports genetic values and variances for the target environment. This means that AlphaSimR does not include genotype-by-environment effects in these values and variances.
-
-The variance for the environmental covariate equals the environmental variance, unless the environmental variance is set to zero. 
-
-### Inclusion of Environmental Variance
-
-### Relationship to Other Models
-
-The genotype-by-environment model in AlphaSimR originates from the model used by Gaynor _et al._ [-@gaynor_2017]. This model handled genotype-by-environment interactions by modeling QTL with additive effects that changed according to the environment. that were linearly dependent on an environmental covariate. The similarity between this model and Finlay-Wilkinson regression
-
-This model bears some resemblance to Finlay-Wilkinson regression, a method for analyzing data from multiple environments [@FinlayWilkinson]. The model implemented in AlphaSimR takes this resemblance even further so that it can be described as a biological model for Finlay-Wilkinson regression.
+Genetic values and genetic variances reported by AlphaSimR are always for the target environment. Since the target environment corresponds to $w$ equalling zero, equation (8) is effectively ignored in these calculations. Only the values for phenotypes and phenotypic variance will ever reflect a contribution from genotype-by-environment interaction.
 
 ## Multiple Traits
 
-AlphaSimR can model multiple traits in a simulation. 
+AlphaSimR can model multiple traits in a simulation.
 
 \pagebreak
  

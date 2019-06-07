@@ -1,13 +1,14 @@
 Changes in version 0.11.0
   
   New features
+    -$MAJOR CHANGE$ rework of setEBV (breaks some scripts)
     -genotype data now stored as bits (was bytes)
     -implemented a gamma model for crossover interference
-    -$MAJOR CHANGE$ rework of setEBV (breaks some scripts)
     -GS models now handle polyploids
     -added RRBLUP_SCA2
-    -heterogenous error variance is now an option that can be enabled in GS models (previously the default)
-    -added keepParents option to makeDH and self
+    -heterogenous error variance is now optional in GS models (defaults to homogeneous error)
+    -added keepParents option to makeDH and self (for modeling pedigree selection)
+    -improved gene drop functionality of pedigreeCross
     
   Bug fixes
     -fixed bug returning top individual when selecting 0
