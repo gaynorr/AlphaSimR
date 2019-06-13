@@ -48,7 +48,7 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // start, the position downstream to start the gamma process (should be a negative value)
 // end, the length of the interval used to sample
 // v, the interference parameter
-// n, the number of gamma deviates sampled at time (affects performance, not results)
+// n, the number of gamma deviates sampled at a time (affects performance, not results)
 arma::vec sampleChiasmata(double start, double end, double v, 
                           arma::uword n=15){
   // Sample deviates from a gamma distribution

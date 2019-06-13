@@ -18,13 +18,13 @@ vignette: >
 
 # Introduction
 
-This document describes biological and statistical models implemented in AlphaSimR. The document consists of four sections: biological trait model, statistical trait model, meiosis, and genomic selection. The biological trait model section describes how an individual's genotype becomes a genetic value. The statistical trait model section describes the partitioning of a population's total genetic variance into variance components. The meiosis section describes how genetic recombination is modeled. Finally, the genomic selection section provides a brief overview of the genomic selection models available in AlphaSimR.
+This document describes biological and statistical models implemented in AlphaSimR. The document consists of four sections: traits, variance components, meiosis, and genomic selection. The traits section describes how an individual's genotype becomes a genetic value which in turn becomes a phenotype. The variance components section describes the partitioning of a population's total genetic variance into variance components. The meiosis section describes how genetic recombination is modeled. Finally, the genomic selection section provides a brief overview of the genomic selection models available in AlphaSimR.
 
 \pagebreak
 
-# Biological Trait Model
+# Traits
 
-The biological trait model in AlphaSimR intentionally tries to match classic models from quantitative genetics. This means anyone who has taken a course in quantitative genetics should recognize many of the aspects of AlphaSimR's model. This section assumes the reader is such a person and focuses on aspects of AlphaSimR's model that may not be obvious or don't fit within a classic model. explain the system AlphaSimR uses to name and classify traits and how this system is implemented.
+The biological models for traits in AlphaSimR are based on classic models used in quantitative genetics. This means anyone with introductory knowledge in quantitative genetics should recognize most aspects of AlphaSimR's models. This section will assume the reader is such a person and focus on aspects of AlphaSimR's models that may not be obvious or don't fit within a classic model. This section begins with an explaination of the system AlphaSimR uses to name and classify traits and continues with a more detailed explanation of the implementation.
 
 Traits in AlphaSimR are classified according to the biological effects they model using the **ADEG** framework. Under this framework, each trait is assigned a name consisting of one or more letters. The letters come from the name **ADEG**, whose letters correspond to biological effects. The biological effects are: **A**dditive, **D**ominance, **E**pistatic and **G**enotype-by-environment. For example, a trait with only additive effects is called an **A** trait and a trait with both additive and dominance effects is called an **AD** trait. The following traits are modeled in AlphaSimR: **A**, **AD**, **AE**, **AG**, **ADE**, **ADG**, **AEG**, and **ADEG**.
 
@@ -155,13 +155,13 @@ b(x) = \mu_G + \sum g x_A
 
 The function for genotype-by-environment effects is given above in equations (8) and (9). The right-hand side of the equation (8) contains two parts: an environmental covariate ($w$) and a genotype specific slope ($b(x)$). The formula for the genotype specific slope is shown in equation (9).  The right-hand side of this equation includes a intercept value ($\mu_G$) and a summation over all QTL for the product of a genotype-by-environment effect ($g$) and the scaled additive dosage ($x_A$). 
 
-The following paragraphs will explain how the above equations model genotype-by-environment interactions. Initially, the explanation will cover a case where a population has genotype-by-environment interaction variance, but no environmental variance. This case is represented by the default arguments in AlphaSimR. Later, how the parameters are changed to model both genotype-by-environment interaction variance and environmental variance will be described.
+The following paragraphs explain how the above equations model genotype-by-environment interactions. Initially, the explanation will cover a case where a population has genotype-by-environment interaction variance, but no environmental variance. An explanation for how the parameters of these equations are changed to model both genotype-by-environment interaction variance and environmental variance is given in the next section.
 
 To begin, a description of how the variables in the above equations are sampled is needed. This is because it is much easier to understand how the formulas come together to model genotype-by-environment interactions when it is understood what variables represent. 
 
 The environmental covariate ($w$) in equation (8) represents an environmental component of the genotype-by-environment interaction. The value of the environmental covariate is randomly sampled from a standard normal distribution. By definition, this means that the average value of the environmental covariate is zero and its variance is one. The average value of the environmental covariate is considered to be the target environment. Thus, the value for equation (8) in the target environment is always zero.
 
-The genotype specific slope in equation (9) represents the genetic component of the genotype-by-environment interaction. An astute reader will notice that this equation is very similar to the equation for an additive trait. Indeed, the genotype specific slope is really just an additive trait. The term $\mu_G$ serves a similar role to $\mu$ in equation (1) and the rest summation on the right-hand side of equation (9) is similar to the summation used for additive effects, right-hand side of equation (4). Just like for an additive trait, the values of the genotype specific slope are scaled to achieve a specific mean and variance in a founder population. In this case, the mean is set to zero and the variance is set to the user specified genotype-by-environment interaction variance.
+The genotype specific slope in equation (9) represents the genetic component of the genotype-by-environment interaction. The astute reader will notice that this equation is very similar to the equation for an additive trait. Indeed, the genotype specific slope is really just an additive trait. The term $\mu_G$ serves a similar role to $\mu$ in equation (1) and the summation on the right-hand side of equation (9) is similar to the function for additive effects in equation (4). Also like an additive trait, effects for the genotype specific slope are scaled to achieve a specific mean and variance in the founder population. In this case, the mean is set to zero and the variance is set to the user specified genotype-by-environment interaction variance.
 
 To understand how the environmental covariate and the genotype specific slope model genotype-by-environment interactions it helps to review the properties of these variables. The environmental covariate is just a random variable with a mean of zero and a variance of one. The genotype specific slope is also random variable, with regards to the founder population, that has a mean of zero and a variance equal to the genotype-by-environment variance. This means that equation (8) is just the product of two random variables. These random variables are independent, so the formula for the variance of this product is given in the equation below.
 
@@ -171,46 +171,85 @@ Var(w b) = E[w]^2 Var(b) + Var(w) E[b]^2 + Var(w) Var(b)
 
 Equation (10) above gives the variance for the product of $w$ and $b$ in equation (8). The term $Var()$ indicates the variance of a variable and the term $E[]$ indicates the expectation (mean) of a variable. In the founder population, the expectations for $w$ and $b$ are zero, so the first two terms in the right-hand side of the equation drop out. Equation (10) reduces to the product of the two variances. The variance of $w$ is one and the variance of $b$ equals the genotype-by-environment interaction variance, so the variance in equation (8) equals the genotype-by-environment interaction variance and is equivalent to the variance in the genotype specific slopes. It must be repeated that the above description is limited to the founder population. This is an important point, because the mean and variance for genotype specific slope can and will be different in other populations since it is under genetic control.
 
-### Including Environmental Variance
+### Adding Environmental Variance
 
-The previous description is limited to a founder population with genotype-by-environment interaction variance and no environmental variance. 
+The genotype-by-environment effects model described above is altered to model a founder population with a non-zero environmental variance. All of the above equations remain relevant under the altered model and only the sampling distributions of the effects in the equations are changed. Specifically, the variance of environmental covariate is set to the environmental variance ($\sigma_E^2$) and the genotype specific slope is set to a different mean and variance. The mean of the genotype specific slope is set to one and the variance is set to the genotype-by-environment interaction variance divided by the environmental variance ($\tfrac{\sigma_{GE}^2}{\sigma_E^2}$).
 
-### Equivalency to Other Models
+The logic behind these modifications becomes clear with an examination of equation (10). The right-hand side of equation (10) contains three terms. The first term equals zero, because the environmental covariate has a mean of zero (_i.e._ $E[w] = 0$). The second term equals the environmental variance, because the mean for genotype specific slope equals one and the variance of the environmental covariate equals the environmental variance (_i.e._ $E[b] = 1$ and $Var(w) = \sigma_E^2$). Finally, the value of the last term equals the genotype-by-environment interaction variance (_i.e._ $Var(w) Var(b) = \sigma_E^2 \tfrac{\sigma_{GE}^2}{\sigma_E^2} = \sigma_{GE}^2$). 
+
+An examination of equation (10) also shows how both the environmental and genotype-by-environment interaction variances are populations specific parameters that are under genetic control. For example, a population with a higher average genotype specific slope will also have a higher value for the second term in equation (10). This population thus have a higher environmental variance even though the environment itself has not changed. Likewise, the amount of genotype-by-environment interaction variance depends on the variance for the genotype specific slope. 
+
+### Relationship to Finlay-Wilkinson Regression
+
+AlphaSimR's model for genotype-by-environment effects is effectively a biological model for Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic technique for analyzing genotype-by-environment interactions [@FinlayWilkinson]. In its simplest form, an individual's genotype-by-environment interaction is reduced to an intercept and a slope. The slope in Finlay-Wilkinson regression is roughly equivalent to genotype specific slope in equation (9). The intercept in Finlay-Wilkinson regression is roughly equivalent to the genetic value of an individual in the target environment. 
+
+Initially, the similarity between these two models was not intentional. The model used in AlphaSimR originates with the model used by Gaynor _et al._ [-@gaynor_2017]. This model treated each QTL's additive effect as random variable whose value depended on the value of an environmental covariate. That model is roughly equivalent to AlphaSimR's model when the founder population has zero environmental variance. The difference between the models is that AlphaSimR scales effects to exactly achieve a desired variance and the Gaynor _et al._ model randomly sampled effects so that the expectation of the sampled effects equaled the desired variance. It was only realized later that a slight change to the model, as described above, could introduce a specified amount of environmental variance and that those modifications would result in a model with properties matching those measured by Finlay-Wilkinson regression.
 
 ### User Interaction
 
-AlphaSimR users do not directly observe nor set the value of the environmental covariate. Instead, they are responsible for indirectly setting its value by providing a randomly sampled p-value for each environment. AlphaSimR then uses this p-value to calculate the appropriate value of $w$ for any level of environmental variance. Users should note that p-values follow a uniform distribution over the range of zero to one, so p-values should be randomly generated using R's built-in `runif` function. A p-value of 0.5 always results in $w$ equalling zero and is equivalent to the target environment. A p-value of 0.5 is also the default value used in AlphaSimR functions, so if the user fails to provide a p-value they will recieve a phenotype for the target environment.
+AlphaSimR users do not directly observe nor set the value of the environmental covariate. Instead, they are responsible for indirectly setting its value by providing a randomly sampled p-value for each environment. AlphaSimR then uses this p-value to calculate the appropriate value of $w$ for any level of environmental variance. Users should note that p-values follow a uniform distribution over the range of zero to one, so p-values should be randomly generated using R's built-in `runif` function. A p-value of 0.5 always results in $w$ equaling zero and is equivalent to the target environment. A p-value of 0.5 is also the default value used in AlphaSimR functions, so if the user fails to provide a p-value they will receive a phenotype for the target environment.
 
-Genetic values and genetic variances reported by AlphaSimR are always for the target environment. Since the target environment corresponds to $w$ equalling zero, equation (8) is effectively ignored in these calculations. Only the values for phenotypes and phenotypic variance will ever reflect a contribution from genotype-by-environment interaction.
-
-## Multiple Traits
-
-AlphaSimR can model multiple traits in a simulation.
+Genetic values and genetic variances reported by AlphaSimR are always for the target environment. Since the target environment corresponds to $w$ equaling zero, equation (8) is effectively ignored in these calculations. Only the values for phenotypes and phenotypic variance ever reflect a contribution from genotype-by-environment interaction.
 
 \pagebreak
  
-# Statistical Trait Model
+# Variance Components
+
+This section describes how AlphaSimR partitions a population’s total genetic variance into variance components. It will be assumed that the reader already has some familiarity with the concept of variance components. If not, the reader should first read an introduction to the topic which can be found any quantitative genetics textbook. The focus of this section is limited to the calculation of the variance components and the topic of their interpretation will not be discussed. For more information on interpreting variance components, the reader is again advised to consult a quantitative genetics textbook.
+
+The formulas provided in most textbooks for calculating variance components are not applicable to AlphaSimR. This is because those formulas often depend on assumptions that are not met in all simulations. Furthermore, AlphaSimR simulates a wide range of ploidy levels, but most equations only apply to diploids. 
+
+The solution to this problem is quite simple. AlphaSimR simply calculates variance components by directly applying the basic principles used to derive the textbook formulas. It’s likely that most readers aren’t very familiar with these principles, because introductory quantitative genetics courses spend little if any time explaining how the formulas are derived. Thus, the majority this section will be dedicated to outlining how these principles are used to perform the appropriate calculations. 
+
+## Calculation 
+
+The goal is to decompose a population’s total genetic variance ($V_G$) into additive variance ($V_A$), (digenic) dominance variance ($V_D$) and additive-by-additive epistatic variance ($V_{AA}$). Additional variance components occur in real populations, but only these three are considered because they represent all sources of genetic variation \footnote{Genotype-by-environment interactions are excluded from variance component calculations (See section 2.5.3)} modeled by the traits in AlphaSimR. The decomposition of total variance into variance components must be orthogonal (statistically independent) for a population in linkage equilibrium. This means that covariance between variance components will be zero and that total genetic variance will equal the sum of the variance components. However, nearly all populations will have some linkage disequilibrium, so covariance may not be zero. The full formula for the relationship between total variance and the variance components is thus given in the equation below.
 
 \begin{equation}
 V_G = 
 V_A + 
 V_D + 
-V_I
+V_{AA} + 
+2 COV_{A, D} + 
+2 COV_{A, AA} + 
+2 COV_{D, AA}
 \end{equation}
+
+The variances (and covariances) in equation (11) come from decomposing genetic values and taking the variance of the resulting components. This decomposition 
+
 
 \begin{equation}
 GV = \overline{GV} + BV + DD + AA
 \end{equation}
 
-## Variance Components
+### Genetic Values (GV)
 
-## Breeding Values
+\begin{equation}
+V_G = Var(GV)
+\end{equation}
 
-## Dominance Deviations
+### Breeding Values (BV)
 
-## Epistatic Deviations
+\begin{equation}
+V_A = Var(BV)
+\end{equation}
 
-## Genetic vs Genic Variance
+
+### Dominance Deviations (DD)
+
+\begin{equation}
+V_D = Var(DD)
+\end{equation}
+
+
+### Additive-by-additive Epistatic Deviations (AA)
+
+\begin{equation}
+V_{AA} = Var(AA)
+\end{equation}
+
+
+## Genetic and Genic Variance
 
 \pagebreak
 
@@ -224,7 +263,11 @@ GV = \overline{GV} + BV + DD + AA
 
 # Genomic Selection
 
-## Mixed Model Solvers
+## fastRRBLUP
+
+\begin{equation}
+y = 1 \beta + Z a + e
+\end{equation}
 
 ## RRBLUP
 
@@ -235,7 +278,7 @@ Y = X \beta + Z a + e
 ## RRBLUP_D
 
 \begin{equation}
-y = X \beta + Z a + (h \mu_d +W d^*)  + e
+y = X \beta + Z a + (h \mu_d + W d^*)  + e
 \end{equation}
 
 \begin{equation}
@@ -251,14 +294,11 @@ y = X \beta + Z_f a_f + Z_m a_m + e
 ## RRBLUP_SCA
 
 \begin{equation}
-y = X \beta + Z_f a_f + Z_m a_m + (h \mu_d +W d^*) + e
+y = X \beta + Z_f a_f + Z_m a_m + (h \mu_d + W d^*) + e
 \end{equation}
 
-## fastRRBLUP
+## Mixed Model Solvers
 
-\begin{equation}
-y = 1 \beta + Z a + e
-\end{equation}
 
 \pagebreak
 
