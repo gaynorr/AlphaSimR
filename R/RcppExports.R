@@ -142,6 +142,10 @@ mergeMultIntMat <- function(X, nRow, nCol) {
     .Call(`_AlphaSimR_mergeMultIntMat`, X, nRow, nCol)
 }
 
+sampleInt <- function(n, N) {
+    .Call(`_AlphaSimR_sampleInt`, n, N)
+}
+
 sampAllComb <- function(nLevel1, nLevel2, n) {
     .Call(`_AlphaSimR_sampAllComb`, nLevel1, nLevel2, n)
 }

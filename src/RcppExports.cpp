@@ -529,6 +529,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sampleInt
+arma::uvec sampleInt(arma::uword n, arma::uword N);
+RcppExport SEXP _AlphaSimR_sampleInt(SEXP nSEXP, SEXP NSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type n(nSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampleInt(n, N));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sampAllComb
 arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2, arma::uword n);
 RcppExport SEXP _AlphaSimR_sampAllComb(SEXP nLevel1SEXP, SEXP nLevel2SEXP, SEXP nSEXP) {

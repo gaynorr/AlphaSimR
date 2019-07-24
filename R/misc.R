@@ -406,3 +406,117 @@ rotMat = function(X){
   u = t(ans$u)*sqrt(pmax(ans$d,0))
   return(t(ans$v%*%u))
 }
+
+#' @title Add Random Mutations
+#' 
+#' @description
+#' Adds random mutations to individuals in a 
+#' population. Note that any existing phenotypes 
+#' or EBVs are kept. Thus, the user will need to run 
+#' \code{\link{setPheno}} and/or \code{\link{setEBV}} 
+#' to generate new phenotypes or EBVs that reflect 
+#' changes introduced by the new mutations.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param mutRate rate of new mutations
+#' @param returnPos should the positions of mutations be returned
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return an object of \code{\link{Pop-class}} if 
+#' returnPos=FALSE or a list containing a 
+#' \code{\link{Pop-class}} and a data.frame containing the 
+#' postions of mutations if returnPos=TRUE
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Introduce mutations
+#' pop = mutate(pop, simParam=SP)
+#' 
+#' @export
+mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
+  # This implementation is a place holder for future development
+  # The next implementation should be written in C++ for speed
+  
+  # Mutation history variable
+  IND=NULL; CHR=NULL; HAP=NULL; SITE=NULL
+  
+  # Number of haplotypes per chromosome
+  nHap = pop@nInd*pop@ploidy
+  
+  # Number of total sites
+  s = sum(pop@nLoci)
+  
+  # Number of mutations per haplotype
+  nMut = rbinom(nHap, s, mutRate)
+  
+  if(any(nMut>0L)){
+    for(take in which(nMut>0L)){
+      # Determine haplotype and individual
+      ind = (take-1L)%/%pop@ploidy + 1L
+      hap = (take-1L)%%pop@ploidy + 1L
+      
+      # Sample mutation sites
+      sites = sampleInt(nMut[take], s) + 1L
+      
+      # Resolve all mutations
+      chr = 1L
+      for(i in sites){
+        # Find chromosome
+        repeat{
+          if(i > sum(pop@nLoci[1L:chr])){
+            chr = chr + 1L
+          }else{
+            break
+          }
+        }
+        
+        # Find site
+        if(chr>1L){
+          site = i - sum(pop@nLoci[1L:(chr-1L)]) 
+        }else{
+          site = i
+        }
+        
+        # Create mutation
+        BYTE = (site-1L)%/%8L + 1L
+        BIT = (site-1L)%%8L + 1L
+        TMP = pop@geno[[chr]][BYTE,hap,ind]
+        TMP = rawToBits(TMP)
+        TMP[BIT] = ifelse(TMP[BIT], as.raw(0L), as.raw(1L))
+        TMP = packBits(TMP)
+        pop@geno[[chr]][BYTE,hap,ind] = TMP
+        
+        # Record results
+        if(returnPos){
+          IND = c(IND, ind)
+          CHR = c(CHR, chr)
+          HAP = c(HAP, hap)
+          SITE = c(SITE, site)
+        }
+      }
+    }
+    
+    # Reset population
+    PHENO = pop@pheno
+    EBV = pop@ebv
+    pop = resetPop(pop=pop, simParam=simParam)
+    pop@pheno = PHENO
+    pop@ebv = EBV
+  }
+  
+  # Return results
+  if(returnPos){
+    return(list(pop,data.frame(individual=IND,chromosome=CHR,haplotype=HAP,site=SITE)))
+  }else{
+    return(pop)
+  }
+}

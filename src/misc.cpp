@@ -124,6 +124,7 @@ arma::uword mapCol(arma::uword k, arma::uword n){
 // N number of integers to sample from
 // Returns an integer vector of length n with values ranging from 0 to N-1
 // Uses Jeffrey Scott Vitter's Method D
+// [[Rcpp::export]]
 arma::uvec sampleInt(arma::uword n, arma::uword N){
   arma::uvec output;
   output.set_size(n);

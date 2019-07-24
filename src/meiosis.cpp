@@ -1105,7 +1105,7 @@ Rcpp::List createDH2(
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){
-            if(x(0)==1){
+            if((x(0)==1) & (j==0)){
               histMat.col(0).transform([](int val){return val%2+1;});
             }
             hist.addHist(histMat,i+ind*nDH,chr,j);
