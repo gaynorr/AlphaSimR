@@ -5,18 +5,23 @@
 \alias{Pop-class}
 \alias{[,Pop-method}
 \alias{c,Pop-method}
+\alias{show,Pop-method}
 \title{Population}
 \usage{
 \S4method{[}{Pop}(x, i)
 
 \S4method{c}{Pop}(x, ...)
+
+\S4method{show}{Pop}(object)
 }
 \arguments{
-\item{x}{a 'Pop'}
+\item{x}{a 'Pop' object}
 
 \item{i}{index of individuals}
 
 \item{...}{additional 'Pop' objects}
+
+\item{object}{a 'Pop' object}
 }
 \description{
 Extends \code{\link{RawPop-class}} to add gender, genetic values, 
@@ -27,6 +32,8 @@ phenotypes, and pedigrees.
 \item \code{[}: Extract Pop by index or id
 
 \item \code{c}: Combine multiple Pops
+
+\item \code{show}: Show population summary
 }}
 
 \section{Slots}{

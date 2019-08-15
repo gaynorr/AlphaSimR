@@ -5,7 +5,8 @@
 #' @description 
 #' The raw population class contains only genotype data. 
 #' 
-#' @param x a 'RawPop'
+#' @param object a 'RawPop' object
+#' @param x a 'RawPop' object
 #' @param i index of individuals
 #' @param ... additional 'RawPop' objects
 #' 
@@ -72,7 +73,6 @@ setMethod("[",
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
-            validObject(x)
             return(x)
           }
 )
@@ -90,8 +90,21 @@ setMethod("c",
               x@nInd = x@nInd+y@nInd
               x@geno = mergeGeno(x@geno,y@geno)
             }
-            validObject(x)
             return(x)
+          }
+)
+
+#' @describeIn RawPop Show population summary
+setMethod("show",
+          signature(object = "RawPop"),
+          function (object){
+            cat("An object of class", 
+                classLabel(class(object)), "\n")
+            cat("Ploidy:", object@ploidy,"\n")
+            cat("Individuals:", object@nInd,"\n")
+            cat("Chromosomes:", object@nChr,"\n")
+            cat("Loci:", sum(object@nLoci),"\n")
+            invisible()
           }
 )
 
@@ -105,7 +118,7 @@ setMethod("c",
 #' for creating initial populations and setting traits in the 
 #' \code{\link{SimParam}}.
 #' 
-#' @param x a 'MapPop'
+#' @param x a 'MapPop' object
 #' @param i index of chromosomes
 #' @param ... aditional 'MapPop' objects
 #' 
@@ -166,7 +179,6 @@ setMethod("c",
               x@genMap = rbind(x@genMap,y@genMap)
               x@nLoci = c(x@nLoci,y@nLoci)
             }
-            validObject(x)
             return(x)
           }
 )
@@ -179,7 +191,8 @@ setMethod("c",
 #' Extends \code{\link{RawPop-class}} to add gender, genetic values, 
 #' phenotypes, and pedigrees.
 #' 
-#' @param x a 'Pop'
+#' @param object a 'Pop' object
+#' @param x a 'Pop' object
 #' @param i index of individuals
 #' @param ... additional 'Pop' objects
 #' 
@@ -309,7 +322,6 @@ setMethod("[",
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
-            validObject(x)
             return(x)
           }
 )
@@ -321,6 +333,21 @@ setMethod("c",
             # Uses mergePops for increased speed
             x = mergePops(c(list(x),list(...)))
             return(x)
+          }
+)
+
+#' @describeIn Pop Show population summary
+setMethod("show",
+          signature(object = "Pop"),
+          function (object){
+            cat("An object of class", 
+                classLabel(class(object)), "\n")
+            cat("Ploidy:", object@ploidy,"\n")
+            cat("Individuals:", object@nInd,"\n")
+            cat("Chromosomes:", object@nChr,"\n")
+            cat("Loci:", sum(object@nLoci),"\n")
+            cat("Traits:", object@nTraits,"\n")
+            invisible()
           }
 )
 
@@ -486,6 +513,5 @@ resetPop = function(pop,simParam=NULL){
       }
     }
   }
-  validObject(pop)
   return(pop)
 }

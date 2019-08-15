@@ -586,8 +586,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' @param father a vector of identifiers for the fathers 
 #' of individuals in the pedigree. Must match one of the 
 #' elements in the id vector or they will be treated as unknown.
-#' @param matchID indicates if the IDs in founderPop be matched to the 
-#' id argument. 
+#' @param matchID indicates if the IDs in founderPop should be 
+#' matched to the id argument. See details.
 #' @param maxCycle the maximum number of loops to make over the pedigree 
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
@@ -596,6 +596,13 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
 #' 
+#' @description 
+#' The way in which the user supplied pedigree is used depends on 
+#' the value of matchID. If matchID is TRUE, the IDs in the user 
+#' supplied pedigree are matched to the IDs in founderPop. If matchID 
+#' is FALSE, the IDs in the founderPop are not used. Instead, 
+#' founder individuals in the user supplied pedigree are randomly 
+#' sampled from founderPop.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -613,10 +620,19 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' father = c(0,0,2,3:9)
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #' 
+#' ### OPTIONAL additional step
+#' # Replace id, mother, and father for pop2 with those found
+#' # in the user supplied pedigree. Be aware that these values 
+#' # won't match AlphaSimR's internal pedigree, so be sure you 
+#' # know what you are doing.
+#' pop2@id = as.character(id)
+#' pop2@mother = as.character(mother)
+#' pop2@father = as.character(father)
+#' 
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
-                         maxCycle=100, DH=NULL, useFemale=TRUE,
-                         simParam=NULL){
+                         internalPed=TRUE, maxCycle=100, 
+                         DH=NULL, useFemale=TRUE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -756,9 +772,6 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     }
   }
   output = mergePops(output)
-  output@id = id
-  output@mother = mother
-  output@father = father
   return(output)
 }
 

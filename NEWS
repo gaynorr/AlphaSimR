@@ -7,10 +7,11 @@ Changes in version 0.11.0
     -added the mutate function to model random mutations
     -added a vignette explaining the biological model for traits
     -GS models now handle polyploids
-    -heterogenous error variance is now optional in GS models (defaults to homogeneous error)
-    -added keepParents option to makeDH and self (for modeling pedigree selection)
+    -heterogenous error variance is now optional in GS models (default is homogeneous error)
     -improved gene drop functionality of pedigreeCross
+    -added keepParents option to makeDH and self (indirectly extends selectFam and selectWithinFam)
     -added RRBLUP_SCA2
+    -set methods for the "show" function when applied to populations
     
   Bug fixes
     -fixed a bug returning the first individual when selecting 0

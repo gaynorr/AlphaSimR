@@ -122,8 +122,8 @@ varP = function(pop){
 #' \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 #' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
 #' \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
-#' \item{aa}{a matrix of additive-by-additive deviations with dimensions nInd by nTraits}
-#' \item{gv_mu}{an nTrait vector of trait means for genotype with all zeros}
+#' \item{aa}{a matrix of additive-by-additive epistatic deviations with dimensions nInd by nTraits}
+#' \item{gv_mu}{an nTrait vector of intercepts with dimensions nInd by nTraits}
 #' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 #' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 #' \item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
