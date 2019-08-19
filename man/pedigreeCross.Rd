@@ -5,8 +5,7 @@
 \title{Pedigree cross}
 \usage{
 pedigreeCross(founderPop, id, mother, father, matchID = FALSE,
-  internalPed = TRUE, maxCycle = 100, DH = NULL, useFemale = TRUE,
-  simParam = NULL)
+  maxCycle = 100, DH = NULL, useFemale = TRUE, simParam = NULL)
 }
 \arguments{
 \item{founderPop}{a \code{\link{Pop-class}}}

@@ -1,0 +1,17 @@
+---
+title: "Genomic Selection Models"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+tables: true
+bibliography: AlphaSimR.bib
+vignette: >
+  %\VignetteIndexEntry{GS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+# References
+

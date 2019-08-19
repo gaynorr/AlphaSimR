@@ -630,9 +630,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' pop2@father = as.character(father)
 #' 
 #' @export
-pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
-                         internalPed=TRUE, maxCycle=100, 
-                         DH=NULL, useFemale=TRUE, simParam=NULL){
+pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
+                         maxCycle=100, DH=NULL, useFemale=TRUE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
