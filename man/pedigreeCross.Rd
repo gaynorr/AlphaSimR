@@ -5,7 +5,8 @@
 \title{Pedigree cross}
 \usage{
 pedigreeCross(founderPop, id, mother, father, matchID = FALSE,
-  maxCycle = 100, DH = NULL, useFemale = TRUE, simParam = NULL)
+  founderNames = NULL, maxCycle = 100, DH = NULL, useFemale = TRUE,
+  simParam = NULL)
 }
 \arguments{
 \item{founderPop}{a \code{\link{Pop-class}}}
@@ -25,6 +26,9 @@ elements in the id vector or they will be treated as unknown.}
 \item{matchID}{indicates if the IDs in founderPop should be 
 matched to the id argument. See details.}
 
+\item{founderNames}{names for individuals in the founder population. 
+Must be provided when matchID=TRUE.}
+
 \item{maxCycle}{the maximum number of loops to make over the pedigree 
 to sort it.}
 
@@ -42,10 +46,9 @@ pedigree and a set of founder individuals.
 
 The way in which the user supplied pedigree is used depends on 
 the value of matchID. If matchID is TRUE, the IDs in the user 
-supplied pedigree are matched to the IDs in founderPop. If matchID 
-is FALSE, the IDs in the founderPop are not used. Instead, 
-founder individuals in the user supplied pedigree are randomly 
-sampled from founderPop.
+supplied pedigree are matched against founderNames. If matchID 
+is FALSE, founder individuals in the user supplied pedigree are 
+randomly sampled from founderPop.
 }
 \examples{
 #Create founder haplotypes
@@ -63,13 +66,5 @@ mother = c(0,0,1,3:9)
 father = c(0,0,2,3:9)
 pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
-### OPTIONAL additional step
-# Replace id, mother, and father for pop2 with those found
-# in the user supplied pedigree. Be aware that these values 
-# won't match AlphaSimR's internal pedigree, so be sure you 
-# know what you are doing.
-pop2@id = as.character(id)
-pop2@mother = as.character(mother)
-pop2@father = as.character(father)
 
 }

@@ -588,6 +588,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' elements in the id vector or they will be treated as unknown.
 #' @param matchID indicates if the IDs in founderPop should be 
 #' matched to the id argument. See details.
+#' @param founderNames names for individuals in the founder population. 
+#' Must be provided when matchID=TRUE.
 #' @param maxCycle the maximum number of loops to make over the pedigree 
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
@@ -599,10 +601,9 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' @description 
 #' The way in which the user supplied pedigree is used depends on 
 #' the value of matchID. If matchID is TRUE, the IDs in the user 
-#' supplied pedigree are matched to the IDs in founderPop. If matchID 
-#' is FALSE, the IDs in the founderPop are not used. Instead, 
-#' founder individuals in the user supplied pedigree are randomly 
-#' sampled from founderPop.
+#' supplied pedigree are matched against founderNames. If matchID 
+#' is FALSE, founder individuals in the user supplied pedigree are 
+#' randomly sampled from founderPop.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -620,18 +621,11 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
 #' father = c(0,0,2,3:9)
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #' 
-#' ### OPTIONAL additional step
-#' # Replace id, mother, and father for pop2 with those found
-#' # in the user supplied pedigree. Be aware that these values 
-#' # won't match AlphaSimR's internal pedigree, so be sure you 
-#' # know what you are doing.
-#' pop2@id = as.character(id)
-#' pop2@mother = as.character(mother)
-#' pop2@father = as.character(father)
 #' 
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
-                         maxCycle=100, DH=NULL, useFemale=TRUE, simParam=NULL){
+                         founderNames=NULL, maxCycle=100, DH=NULL, useFemale=TRUE, 
+                         simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -642,6 +636,10 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   id = as.character(id)
   mother = as.character(mother)
   father = as.character(father)
+  if(matchID){
+    founderNames = as.character(founderNames)
+    stopifnot(length(founderNames)==nInd(founderPop))
+  }
   if(is.null(DH)){
     DH = logical(length(id))
   }else{
@@ -716,7 +714,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
             founderIndicator = founderIndicator+1L
           }else{
             #Match founder
-            founderIndicator = match(id[i],founderPop@id)
+            founderIndicator = match(id[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
             }
@@ -729,7 +727,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
             founderIndicator = founderIndicator+1L
           }else{
             #Match founder
-            founderIndicator = match(mother[i],founderPop@id)
+            founderIndicator = match(mother[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
             }
@@ -738,6 +736,12 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }else if(is.na(matchFather[i])){
           #Father is a founder
           if(!matchID){
@@ -745,7 +749,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
             founderIndicator = founderIndicator+1L
           }else{
             #Match founder
-            founderIndicator = match(father[i],founderPop@id)
+            founderIndicator = match(father[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
             }
@@ -754,18 +758,24 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    founderPop[selFounder[founderIndicator]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }else{
           #Both parents are in the pedigree
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-        }
-        #Make the individual a DH?
-        if(DH[i]){
-          output[[i]] = makeDH(output[[i]],
-                               useFemale=useFemale,
-                               simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }
       }
     }

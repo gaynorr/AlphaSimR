@@ -342,14 +342,14 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
 #' @export
 pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
   if(class(pop)=="MapPop"){
-    allLoci = unlist(sapply(pop@nLoci, function(x) 1:x))
+    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
     }
-    allLoci = c(sapply(simParam$segSites, function(x) 1:x))
+    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
     nThreads = simParam$nThreads
   }
@@ -612,14 +612,14 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 pullSegSiteHaplo = function(pop, haplo="all",
                             chr=NULL, simParam=NULL){
   if(class(pop)=="MapPop"){
-    allLoci = unlist(sapply(pop@nLoci, function(x) 1:x))
+    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
     }
-    allLoci = c(sapply(simParam$segSites, function(x) 1:x))
+    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
     nThreads = simParam$nThreads
   }

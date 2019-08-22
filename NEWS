@@ -17,6 +17,7 @@ Changes in version 0.11.0
     -fixed a bug returning the first individual when selecting 0
     -fixed error in recombination track when using makeDH
     -fixed error causing epistatic effects to mask GxE effects
+    -fixed an error with pullSegSiteGeno and pullSegSiteHaplo with variable number of sites per chromosome
 
 Changes in version 0.10.0
   
