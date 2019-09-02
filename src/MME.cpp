@@ -294,8 +294,8 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       taper = 0.9;
     }
     sigma += taper*qvec;
-    while(sigma.min() < -(1e-6)){
-      sigma(sigma.index_min()) = -(1e-6);
+    while(sigma.min() < 9e-10){
+      sigma(sigma.index_min()) = 9e-10;
     }
     if((iter>1)&(fabs(deltaLlik)<tol*10)){
       break;
@@ -308,7 +308,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       break;
     }
   }
-  while(sigma.min() < 0.0){
+  while(sigma.min() < 1e-9){ 
     sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1), ee(n,1);
@@ -751,7 +751,7 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean = mean(Mlist(0));
   Mlist(1) = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
-  X = join_rows(makeX(x),mean(Mlist(1),1));
+  X = join_rows(makeX(x),sum(Mlist(1),1));
   if(useReps){
     sweepReps(y,reps);
     sweepReps(X,reps);
@@ -798,7 +798,6 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
   arma::vec alpha(M.n_cols), d(M.n_cols);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
-  meanD = meanD/double(M.n_cols);
   arma::field<arma::mat> u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -843,7 +842,7 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean = mean(Ma);
   arma::mat Md = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
-  X = join_rows(makeX(x),mean(Md,1));
+  X = join_rows(makeX(x),sum(Md,1));
   if(useReps){
     sweepReps(y,reps);
     sweepReps(X,reps);
@@ -891,7 +890,6 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::vec alpha(M.n_cols), d(M.n_cols);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
-  meanD = meanD/double(M.n_cols);
   arma::mat u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -1058,7 +1056,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean2 = mean(Mlist(1));
   arma::rowvec Mmean12 = mean(Mlist(0)%Mlist(1));
   arma::mat X;
-  X = join_rows(makeX(x),mean(Mlist(2),1));
+  X = join_rows(makeX(x),sum(Mlist(2),1));
   if(useReps){
     sweepReps(y, reps);
     sweepReps(X, reps);
@@ -1082,7 +1080,6 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
   arma::vec alpha1(m), alpha2(m), d(m);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
-  meanD = meanD/double(Mmean1.n_cols);
   arma::field<arma::mat> u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -1181,7 +1178,7 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::rowvec Mmean2 = mean(M2);
   arma::rowvec Mmean12 = mean(M1%M2);
   arma::mat X;
-  X = join_rows(makeX(x),mean(M3,1));
+  X = join_rows(makeX(x),sum(M3,1));
   if(useReps){
     sweepReps(y, reps);
     sweepReps(X, reps);
@@ -1207,7 +1204,6 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
   arma::vec alpha1(m), alpha2(m), d(m);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
-  meanD = meanD/double(Mmean1.n_cols);
   arma::mat u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
