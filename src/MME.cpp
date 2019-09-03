@@ -231,6 +231,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
                          int maxIter=40){
   double tol = 1e-4;
+  double minVC = sqrt(2.2204460492503131e-016);
   arma::uword k = Mlist.n_elem;
   arma::uword n = y.n_rows;
   arma::uword q = X.n_cols;
@@ -294,8 +295,8 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       taper = 0.9;
     }
     sigma += taper*qvec;
-    while(sigma.min() < 9e-10){
-      sigma(sigma.index_min()) = 9e-10;
+    while(sigma.min() < minVC){
+      sigma(sigma.index_min()) = minVC;
     }
     if((iter>1)&(fabs(deltaLlik)<tol*10)){
       break;
@@ -307,9 +308,6 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       Rf_warning("Reached maxIter without converging");
       break;
     }
-  }
-  while(sigma.min() < 1e-9){ 
-    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1), ee(n,1);
   arma::field<arma::mat> u(k);
