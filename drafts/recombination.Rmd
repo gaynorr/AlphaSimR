@@ -1,11 +1,11 @@
 ---
-title: "Meiosis in AlphaSimR"
+title: "Genetic Recombination in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 bibliography: AlphaSimR.bib
 vignette: >
-  %\VignetteIndexEntry{Meiosis}
+  %\VignetteIndexEntry{Recombination}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

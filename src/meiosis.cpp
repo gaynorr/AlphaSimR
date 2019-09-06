@@ -52,12 +52,12 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 arma::vec sampleChiasmata(double start, double end, double v, 
                           arma::uword n=15){
   // Sample deviates from a gamma distribution
-  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v/2,1/v));
+  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
   // Find locations on genetic map
   output = cumsum(output)+start;
   // Add additional values if max position less than end
   while(output(output.n_elem-1)<end){
-    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v/2,1/v));
+    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
     tmp = cumsum(tmp) + output(output.n_elem-1);
     output = join_cols(output, tmp);
   }
