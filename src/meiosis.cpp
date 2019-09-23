@@ -50,7 +50,7 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // v, the interference parameter
 // n, the number of gamma deviates sampled at a time (affects performance, not results)
 arma::vec sampleChiasmata(double start, double end, double v, 
-                          arma::uword n=15){
+                          arma::uword n=40){
   // Sample deviates from a gamma distribution
   arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
   // Find locations on genetic map
@@ -66,6 +66,69 @@ arma::vec sampleChiasmata(double start, double end, double v,
   // Return values less than the end
   return output(find(output<end));
 }
+
+arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
+                                           double v, arma::uword n1=40, arma::uword n2=8){
+  arma::field<arma::vec> output(4);
+  arma::vec u(1, arma::fill::randu);
+  
+  // Randomly set order of chromosome arms
+  arma::uvec arm = {0, 1, 2, 3};
+  arm = shuffle(arm);
+  double nearest, terminator, p;
+  
+  // First arm
+  output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,0.5/v));
+  output(arm(0)) = cumsum(output(arm(0))) + start;
+  if(arm(0)%2){ // Tail
+    terminator = end - exchange;
+  }else{ // Head
+    terminator = exchange;
+  }
+  while( output(arm(0))(output(arm(0)).n_elem-1) < terminator ){
+    arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    tmp = cumsum(tmp) + output(arm(0))(output(arm(0)).n_elem-1);
+    output(arm(0)) = join_cols(output(arm(0)), tmp);
+  }
+  output(arm(0)) = output(arm(0))(find(output(arm(0))<terminator));
+  nearest = terminator - output(arm(0))(output(arm(0)).n_elem-1);
+  output(arm(0)) = output(arm(0))(find(output(arm(0))>0));
+  if(arm(0)%2){ // Tail
+    output(arm(0)) = sort(end-output(arm(0)));
+  }
+  
+  // All other arms
+  for(arma::uword i=1; i<4; ++i){
+    output(arm(i)).set_size(1+n2);
+    p = R::pgamma(nearest, v, 0.5/v, 1, 0);
+    u.randu();
+    u(0) = u(0)*(1-p)+p;
+    output(arm(i))(0) = R::qgamma(u(0), v, 0.5/v, 1, 0) - nearest;
+    if(output(arm(i))(0) < nearest){
+      nearest = output(arm(i))(0);
+    }
+    output(arm(i))(arma::span(1,n2)) = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    output(arm(i)) = cumsum(output(arm(i)));
+    if(arm(i)%2){ // Tail
+      terminator = end - exchange;
+    }else{ // Head
+      terminator = exchange;
+    }
+    while( output(arm(i))(output(arm(i)).n_elem-1) < terminator ){
+      arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+      tmp = cumsum(tmp) + output(arm(i))(output(arm(i)).n_elem-1);
+      output(arm(i)) = join_cols(output(arm(i)), tmp);
+    }
+    output(arm(i)) = output(arm(i))(find(output(arm(i))<terminator));
+    if(arm(i)%2){ // Tail
+      output(arm(i)) += exchange;
+    }else{ // Head
+      output(arm(i)) = sort(exchange-output(arm(i)));
+    }
+  }
+  return output;
+}
+
 
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval
@@ -144,9 +207,9 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  // Choose a starting location 2-3 Morgans away
+  // Choose a starting location 9-10 Morgans away
   arma::vec u(1, arma::fill::randu);
-  double start = u(0)-3;
+  double start = u(0)-10;
   
   // Find crossover positions
   arma::vec posCO = sampleChiasmata(start, genLen, v);
@@ -199,43 +262,11 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   // Sample the exchange point
   arma::vec u(1, arma::fill::randu);
   double exchange = u(0)*genLen;
+  u.randu();
+  double start = u(0)-10;
   
   // Determine crossover postions
-  arma::field<arma::vec> posCO(4); // Each element is one arm
-  
-  // Arm 0 (1 and 2 heads)
-  u.randu();
-  double start = u(0)-3;
-  posCO(0) = sampleChiasmata(start, exchange, v);
-  
-  // Arm 2 (3 and 4 heads)
-  u.randu();
-  start = u(0)-3;
-  posCO(2) = sampleChiasmata(start, exchange, v);
-  
-  // Find CO nearest to exchange point
-  u.randu();
-  start = u(0)-3;
-  if(posCO(0).n_elem>0){
-    start = std::max(start, 
-                     posCO(0)(posCO(0).n_elem-1)-exchange);
-  }
-  if(posCO(2).n_elem>0){
-    start = std::max(start, 
-                     posCO(2)(posCO(2).n_elem-1)-exchange);
-  }
-  
-  // Arm 1
-  posCO(1) = sampleChiasmata(start, genLen-exchange, v);
-  if(posCO(1).n_elem>0){
-    posCO(1) += exchange;
-  }
-  
-  // Arm 3
-  posCO(3) = sampleChiasmata(start, genLen-exchange, v);
-  if(posCO(3).n_elem>0){
-    posCO(3) += exchange;
-  }
+  arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v);
   
   // Set chromatid configuration for chiasmata
   arma::field<arma::umat> chromatidPairs(4);
@@ -260,8 +291,6 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   maxCO *= 2;
   output(0).set_size(maxCO+1,2);
   output(1).set_size(maxCO+1,2);
-  output(0).zeros(); // For testing only
-  output(1).zeros(); // For testing only
   
   // Select centromeres (which chromosome and chromatid)
   arma::uvec chromosome(2, arma::fill::ones);

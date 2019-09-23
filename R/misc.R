@@ -146,19 +146,12 @@ editGenome = function(pop,ind,chr,segSites,allele,
       }
     }
   }
-  pop@gxe = vector("list",simParam$nTraits)
-  pop@gv = matrix(NA_real_,nrow=pop@nInd,
-                  ncol=simParam$nTraits)
-  if(simParam$nTraits>=1){
-    for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
-      pop@gv[,i] = tmp[[1]]
-      if(length(tmp)>1){
-        pop@gxe[[i]] = tmp[[2]]
-      }
-    }
-  }
-  validObject(pop)
+  # Reset population
+  PHENO = pop@pheno
+  EBV = pop@ebv
+  pop = resetPop(pop=pop, simParam=simParam)
+  pop@pheno = PHENO
+  pop@ebv = EBV
   return(pop)
 }
 
@@ -324,9 +317,9 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)
-  response = sort(response,decreasing=selectTop)
+  response = getResponse(pop=pop, trait=trait, use=use,
+                         simParam=simParam, ...)
+  response = sort(response, decreasing=selectTop)
   response = response[1:ceiling(p*length(response))]
   return(mean(response))
 }
@@ -443,9 +436,7 @@ rotMat = function(X){
 #' 
 #' @export
 mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
-  # This implementation is a place holder for future development
-  # The next implementation should be written in C++ for speed
-  
+
   # Mutation history variable
   IND=NULL; CHR=NULL; HAP=NULL; SITE=NULL
   

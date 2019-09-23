@@ -352,7 +352,7 @@ SimParam$set(
     private$.varE = numeric()
     private$.founderPop = founderPop
     private$.v = 1
-    private$.quadProb = 2/3
+    private$.quadProb = 0
     self$nThreads = getNumThreads()
     private$.version = packageDescription("AlphaSimR")$Version 
     invisible(self)
