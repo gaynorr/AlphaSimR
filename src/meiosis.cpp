@@ -44,6 +44,101 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
   return hist(ind)(chr)(par);
 }
 
+// Samples the locations for chiasmata via a gamma process
+// start, the position downstream to start the gamma process (should be a negative value)
+// end, the length of the interval used to sample
+// v, the interference parameter
+// n, the number of gamma deviates sampled at a time (affects performance, not results)
+arma::vec sampleChiasmata(double start, double end, double v, 
+                          arma::uword n=40){
+  // Sample deviates from a gamma distribution
+  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
+  // Find locations on genetic map
+  output = cumsum(output)+start;
+  // Add additional values if max position less than end
+  while(output(output.n_elem-1)<end){
+    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
+    tmp = cumsum(tmp) + output(output.n_elem-1);
+    output = join_cols(output, tmp);
+  }
+  // Remove values less than 0
+  output = output(find(output>0));
+  // Return values less than the end
+  return output(find(output<end));
+}
+
+// Samples the locations for chiasmata via a gamma process for a quadrivalent
+// CO interference is assumed to occur between all arms
+// The first arm is sampled at random
+// start, the position downstream to start the gamma process (should be a negative value)
+// exchange, the positions where chromosomes switch
+// end, the length of the interval used to sample
+// v, the interference parameter
+// n1, the number of gamma deviates sampled for the first arm 
+// n2, the number of gamma deviates sampled for all other arms
+arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
+                                           double v, arma::uword n1=40, arma::uword n2=8){
+  arma::field<arma::vec> output(4);
+  arma::vec u(1, arma::fill::randu);
+  
+  // Randomly set order of chromosome arms
+  arma::uvec arm = {0, 1, 2, 3};
+  arm = shuffle(arm);
+  double nearest, terminator, p;
+  
+  // First arm
+  output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,0.5/v));
+  output(arm(0)) = cumsum(output(arm(0))) + start;
+  if(arm(0)%2){ // Tail
+    terminator = end - exchange;
+  }else{ // Head
+    terminator = exchange;
+  }
+  while( output(arm(0))(output(arm(0)).n_elem-1) < terminator ){
+    arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    tmp = cumsum(tmp) + output(arm(0))(output(arm(0)).n_elem-1);
+    output(arm(0)) = join_cols(output(arm(0)), tmp);
+  }
+  output(arm(0)) = output(arm(0))(find(output(arm(0))<terminator));
+  nearest = terminator - output(arm(0))(output(arm(0)).n_elem-1);
+  output(arm(0)) = output(arm(0))(find(output(arm(0))>0));
+  if(arm(0)%2){ // Tail
+    output(arm(0)) = sort(end-output(arm(0)));
+  }
+  
+  // All other arms
+  for(arma::uword i=1; i<4; ++i){
+    output(arm(i)).set_size(1+n2);
+    p = R::pgamma(nearest, v, 0.5/v, 1, 0);
+    u.randu();
+    u(0) = u(0)*(1-p)+p;
+    output(arm(i))(0) = R::qgamma(u(0), v, 0.5/v, 1, 0) - nearest;
+    if(output(arm(i))(0) < nearest){
+      nearest = output(arm(i))(0);
+    }
+    output(arm(i))(arma::span(1,n2)) = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    output(arm(i)) = cumsum(output(arm(i)));
+    if(arm(i)%2){ // Tail
+      terminator = end - exchange;
+    }else{ // Head
+      terminator = exchange;
+    }
+    while( output(arm(i))(output(arm(i)).n_elem-1) < terminator ){
+      arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+      tmp = cumsum(tmp) + output(arm(i))(output(arm(i)).n_elem-1);
+      output(arm(i)) = join_cols(output(arm(i)), tmp);
+    }
+    output(arm(i)) = output(arm(i))(find(output(arm(i))<terminator));
+    if(arm(i)%2){ // Tail
+      output(arm(i)) += exchange;
+    }else{ // Head
+      output(arm(i)) = sort(exchange-output(arm(i)));
+    }
+  }
+  return output;
+}
+
+
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval
 // Returns -1 if value is smaller than the values of x
@@ -117,22 +212,31 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 }
 
 // Finds recombination map for a bivalent pair
-arma::Mat<int> findBivalentCO(const arma::vec& genMap){
+arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  // Determine number of crossovers
-  nCO = samplePoisson(genLen);
+  // Choose a starting location 9-10 Morgans away
+  arma::vec u(1, arma::fill::randu);
+  double start = u(0)-10;
+  
+  // Find crossover positions
+  arma::vec posCO = sampleChiasmata(start, genLen, v);
+  if(posCO.n_elem==0){
+    arma::Mat<int> output(1,2,arma::fill::ones);
+    return output;
+  }
+  
+  // Thin crossovers
+  arma::vec thin(posCO.n_elem, arma::fill::randu);
+  posCO = posCO(find(thin>0.5));
+  nCO = posCO.n_elem;
+  
   arma::Mat<int> output(nCO+1,2);
   if(nCO==0){
     output.ones();
     return output;
   }
-  
-  // Determine crossover sites
-  arma::vec posCO(nCO,arma::fill::randu);
-  posCO = arma::sort(posCO);
-  posCO *= genLen;
   
   // Find crossover sites on map
   output.row(0).ones();
@@ -148,271 +252,484 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap){
   return removeDoubleCO(output);
 }
 
-// Finds recombination map for cross type quadrivalent
-// Chromosome pairing in the head: 1:2 and 3:4
-// Chromosome pairing in the tail: 1:4 and 2:3
-// chr is the selected chromosome (1-4)
-// exchange is the exchange point between chromosomes 
-arma::Mat<int>  findQuadrivalentCO(arma::uword chr, //1-4
-                                   double exchange, //0-genLen
-                                   double centromere, //0-genLen
-                                   const arma::vec& genMap){ //Ordered values 0-genLen, length nSites
-  arma::uvec relPosCO(3,arma::fill::zeros), pairChr1(2), pairChr2(2);
-  arma::uword startPos=0, endPos, readChr=0, nCO_1, nCO;
+/*
+ * Finds recombination maps for a quadrivalent "cross-type" configuration
+ * The configuration for chromosome pairing is as follows:
+ *  Arm 0: chromosome heads 1 and 2
+ *  Arm 1: chromosome tail 2 and 3
+ *  Arm 2: chromosome heads 3 and 4
+ *  Arm 3: chromosome tails 1 and 4
+ * The exchange point between pairings is sampled at random
+ * A centromere from the first chromosome is always selected
+ * The second centromere is sampled at random
+ */
+arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
+                                                double centromere, double v){
+  arma::field<arma::Mat<int> > output(2);
   double genLen = genMap(genMap.n_elem-1);
   
-  // Determine number of crossovers
-  nCO = samplePoisson(genLen);
-  arma::Mat<int> output(nCO+1,2);
-  if(nCO==0){
-    output(0,0) = chr;
-    output(0,1) = 1;
-    return output;
-  }
+  // Sample the exchange point
+  arma::vec u(1, arma::fill::randu);
+  double exchange = u(0)*genLen;
+  u.randu();
+  double start = u(0)-10;
   
-  // Determine crossover sites
-  arma::vec posCO(nCO,arma::fill::randu);
-  posCO = arma::sort(posCO);
-  posCO *= genLen;
+  // Determine crossover postions
+  arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v);
   
-  //Find starting chromosome pair and number of CO prior to exchange
-  //Find second chromosome pair and number of CO after exchange
-  if(centromere<exchange){ //Centromere in head
-    for(arma::uword i=0; i<nCO; ++i){
-      if(posCO(i)<centromere){
-        ++relPosCO(0);
-      }else if(posCO(i)<exchange){
-        ++relPosCO(1);
-      }else{
-        ++relPosCO(2);
-      }
-    }
-    nCO_1 = relPosCO(0) + relPosCO(1);
-    switch(chr){ // Identity of selected centromere
-    case 1: 
-      if(relPosCO(0)%2 == 0){
-        pairChr1(0) = 1;
-        pairChr1(1) = 2;
-      }else{
-        pairChr1(0) = 2;
-        pairChr1(1) = 1;
-      }
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 1;
-        pairChr2(1) = 4;
-      }else{
-        pairChr2(0) = 2;
-        pairChr2(1) = 3;
-      }
-      break; 
-    case 2:
-      if(relPosCO(0)%2 == 0){
-        pairChr1(0) = 2;
-        pairChr1(1) = 1;
-      }else{
-        pairChr1(0) = 1;
-        pairChr1(1) = 2;
-      }
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 2;
-        pairChr2(1) = 3;
-      }else{
-        pairChr2(0) = 1;
-        pairChr2(1) = 4;
-      }
-      break; 
-    case 3:
-      if(relPosCO(0)%2 == 0){
-        pairChr1(0) = 3;
-        pairChr1(1) = 4;
-      }else{
-        pairChr1(0) = 4;
-        pairChr1(1) = 3;
-      }
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 3;
-        pairChr2(1) = 2;
-      }else{
-        pairChr2(0) = 4;
-        pairChr2(1) = 1;
-      }
-      break; 
-    case 4:
-      if(relPosCO(0)%2 == 0){
-        pairChr1(0) = 4;
-        pairChr1(1) = 3;
-      }else{
-        pairChr1(0) = 3;
-        pairChr1(1) = 4;
-      }
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 4;
-        pairChr2(1) = 1;
-      }else{
-        pairChr2(0) = 3;
-        pairChr2(1) = 2;
-      }
-    }
-  }else{ //Centromere in tail
-    for(arma::uword i=0; i<nCO; ++i){
-      if(posCO(i)<exchange){
-        ++relPosCO(0);
-      }else if(posCO(i)<centromere){
-        ++relPosCO(1);
-      }else{
-        ++relPosCO(2);
-      }
-    }
-    nCO_1 = relPosCO(0);
-    switch(chr){ // Identity of selected centromere
-    case 1:
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 1;
-        pairChr2(1) = 4;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 1;
-          pairChr1(1) = 2;
-        }else{
-          pairChr1(0) = 2;
-          pairChr1(1) = 1;
-        }
-      }else{
-        pairChr2(0) = 4;
-        pairChr2(1) = 1;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 4;
-          pairChr1(1) = 3;
-        }else{
-          pairChr1(0) = 3;
-          pairChr1(1) = 4;
-        }
-      }
-      break; 
-    case 2:
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 2;
-        pairChr2(1) = 3;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 2;
-          pairChr1(1) = 1;
-        }else{
-          pairChr1(0) = 1;
-          pairChr1(1) = 2;
-        }
-      }else{
-        pairChr2(0) = 3;
-        pairChr2(1) = 2;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 3;
-          pairChr1(1) = 4;
-        }else{
-          pairChr1(0) = 4;
-          pairChr1(1) = 3;
-        }
-      }
-      break; 
-    case 3:
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 3;
-        pairChr2(1) = 2;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 3;
-          pairChr1(1) = 4;
-        }else{
-          pairChr1(0) = 4;
-          pairChr1(1) = 3;
-        }
-      }else{
-        pairChr2(0) = 2;
-        pairChr2(1) = 3;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 2;
-          pairChr1(1) = 1;
-        }else{
-          pairChr1(0) = 1;
-          pairChr1(1) = 2;
-        }
-      }
-      break; 
-    case 4:
-      if(relPosCO(1)%2 == 0){
-        pairChr2(0) = 4;
-        pairChr2(1) = 1;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 4;
-          pairChr1(1) = 3;
-        }else{
-          pairChr1(0) = 3;
-          pairChr1(1) = 4;
-        }
-      }else{
-        pairChr2(0) = 1;
-        pairChr2(1) = 4;
-        if(relPosCO(0)%2 == 0){
-          pairChr1(0) = 1;
-          pairChr1(1) = 2;
-        }else{
-          pairChr1(0) = 2;
-          pairChr1(1) = 1;
+  // Set chromatid configuration for chiasmata
+  arma::field<arma::umat> chromatidPairs(4);
+  for(arma::uword i=0; i<4; ++i){
+    chromatidPairs(i).set_size(posCO(i).n_elem,2);
+    if(chromatidPairs(i).n_rows>0){
+      chromatidPairs(i).zeros();
+      for(arma::uword j=0; j<chromatidPairs(i).n_elem; ++j){
+        u.randu();
+        if(u(0)>0.5){
+          chromatidPairs(i).at(j) = 1;
         }
       }
     }
   }
   
-  // Find crossover sites on map
-  output(0,0) = pairChr1(0);
-  output(0,1) = 1;
+  // Allocate output with a naive maximum number of COs
+  arma::uword maxCO=0;
+  for(arma::uword i=0; i<4; ++i){
+    maxCO = std::max(maxCO, posCO(i).n_elem);
+  }
+  maxCO *= 2;
+  output(0).set_size(maxCO+1,2);
+  output(1).set_size(maxCO+1,2);
   
-  for(arma::uword i=0; i<nCO_1; ++i){
-    ++readChr;
-    readChr = readChr%2;
-    endPos = intervalSearch(genMap,posCO(i),startPos);
-    output(i+1,0) = pairChr1(readChr);
-    output(i+1,1) = endPos+2;
-    startPos = endPos;
+  // Select centromeres (which chromosome and chromatid)
+  arma::uvec chromosome(2, arma::fill::ones);
+  arma::uvec chromatid(2, arma::fill::ones);
+  chromosome(1) = sampleInt(1,3)(0) + 2;
+  chromatid(1) = sampleInt(1,2)(0);
+  
+  // Loop through each of the selected centromeres
+  arma::uword currentChromosome, currentChromatid;
+  for(arma::uword i=0; i<2; ++i){
+    // Identify starting chromosome and chromatid
+    currentChromosome = chromosome(i);
+    currentChromatid = chromatid(i);
+    if(exchange<centromere){ // Centromere is in the head
+      if(currentChromosome<3){ // currentChromosome is 1 or 2
+        // Account for all crossovers prior to the centromere
+        for(arma::uword j=posCO(0).n_elem; j>0; --j){
+          if(posCO(0)(j-1)<centromere){
+            switch(currentChromosome){
+            case 1:
+              if(chromatidPairs(0)(j-1,0) == currentChromatid){
+                currentChromosome = 2;
+                currentChromatid = chromatidPairs(0)(j-1,1);
+              }
+              break;
+            case 2:
+              if(chromatidPairs(0)(j-1,1) == currentChromatid){
+                currentChromosome = 1;
+                currentChromatid = chromatidPairs(0)(j-1,0);
+              }
+            }
+          }
+        }
+      }else{ // currentChromosome is 3 or 4
+        // Account for all crossovers prior to the centromere
+        for(arma::uword j=posCO(2).n_elem; j>0; --j){
+          if(posCO(2)(j-1)<centromere){
+            switch(currentChromosome){
+            case 3:
+              if(chromatidPairs(2)(j-1,0) == currentChromatid){
+                currentChromosome = 4;
+                currentChromatid = chromatidPairs(2)(j-1,1);
+              }
+              break;
+            case 4:
+              if(chromatidPairs(2)(j-1,1) == currentChromatid){
+                currentChromosome = 3;
+                currentChromatid = chromatidPairs(2)(j-1,0);
+              }
+            }
+          }
+        }
+      }
+    }else{ // Centromere is in the tail
+      if((currentChromosome==1) | (currentChromosome==4)){ 
+        // Find chromosome and chromatid before transition
+        for(arma::uword j=posCO(3).n_elem; j>0; --j){
+          if(posCO(3)(j-1)<centromere){
+            switch(currentChromosome){
+            case 1:
+              if(chromatidPairs(3)(j-1,0) == currentChromatid){
+                currentChromosome = 4;
+                currentChromatid = chromatidPairs(3)(j-1,1);
+              }
+              break;
+            case 4:
+              if(chromatidPairs(3)(j-1,1) == currentChromatid){
+                currentChromosome = 1;
+                currentChromatid = chromatidPairs(3)(j-1,0);
+              }
+            }
+          }
+        }
+        // Find starting chromosome and chromatid
+        switch(currentChromosome){
+        case 1:
+          for(arma::uword j=posCO(0).n_elem; j>0; --j){
+            switch(currentChromosome){
+            case 1:
+              if(chromatidPairs(0)(j-1,0) == currentChromatid){
+                currentChromosome = 2;
+                currentChromatid = chromatidPairs(0)(j-1,1);
+              }
+              break;
+            case 2:
+              if(chromatidPairs(0)(j-1,1) == currentChromatid){
+                currentChromosome = 1;
+                currentChromatid = chromatidPairs(0)(j-1,0);
+              }
+            }
+          }
+          break;
+        case 4:
+          for(arma::uword j=posCO(2).n_elem; j>0; --j){
+            switch(currentChromosome){
+            case 3:
+              if(chromatidPairs(2)(j-1,0) == currentChromatid){
+                currentChromosome = 4;
+                currentChromatid = chromatidPairs(2)(j-1,1);
+              }
+              break;
+            case 4:
+              if(chromatidPairs(2)(j-1,1) == currentChromatid){
+                currentChromosome = 3;
+                currentChromatid = chromatidPairs(2)(j-1,0);
+              }
+            }
+          }
+        }
+        
+      }else{ // currentChromosome is 2 or 3
+        // Find chromosome and chromatid before transition
+        for(arma::uword j=posCO(1).n_elem; j>0; --j){
+          if(posCO(1)(j-1)<centromere){
+            switch(currentChromosome){
+            case 2:
+              if(chromatidPairs(1)(j-1,0) == currentChromatid){
+                currentChromosome = 3;
+                currentChromatid = chromatidPairs(1)(j-1,1);
+              }
+              break;
+            case 3:
+              if(chromatidPairs(1)(j-1,1) == currentChromatid){
+                currentChromosome = 2;
+                currentChromatid = chromatidPairs(1)(j-1,0);
+              }
+            }
+          }
+        }
+        // Find starting chromosome and chromatid
+        switch(currentChromosome){
+        case 2:
+          for(arma::uword j=posCO(0).n_elem; j>0; --j){
+            switch(currentChromosome){
+            case 1:
+              if(chromatidPairs(0)(j-1,0) == currentChromatid){
+                currentChromosome = 2;
+                currentChromatid = chromatidPairs(0)(j-1,1);
+              }
+              break;
+            case 2:
+              if(chromatidPairs(0)(j-1,1) == currentChromatid){
+                currentChromosome = 1;
+                currentChromatid = chromatidPairs(0)(j-1,0);
+              }
+            }
+          }
+          break;
+        case 3:
+          for(arma::uword j=posCO(2).n_elem; j>0; --j){
+            switch(currentChromosome){
+            case 3:
+              if(chromatidPairs(2)(j-1,0) == currentChromatid){
+                currentChromosome = 4;
+                currentChromatid = chromatidPairs(2)(j-1,1);
+              }
+              break;
+            case 4:
+              if(chromatidPairs(2)(j-1,1) == currentChromatid){
+                currentChromosome = 3;
+                currentChromatid = chromatidPairs(2)(j-1,0);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Fill in crossover map
+    arma::uword startPos=0, endPos, nCO=0;
+    output(i)(0,0) = currentChromosome;
+    output(i)(0,1) = 1;
+    if(currentChromosome<3){
+      // Fill crossovers in the head
+      for(arma::uword j=0; j<posCO(0).n_elem; ++j){
+        switch(currentChromosome){
+        case 1:
+          if(chromatidPairs(0)(j,0) == currentChromatid){
+            currentChromosome = 2;
+            currentChromatid = chromatidPairs(0)(j,1);
+            ++nCO;
+            endPos = intervalSearch(genMap,posCO(0)(j),startPos);
+            output(i)(nCO,0) = currentChromosome;
+            output(i)(nCO,1) = endPos+2;
+            startPos = endPos;
+          }
+          break;
+        case 2:
+          if(chromatidPairs(0)(j,1) == currentChromatid){
+            currentChromosome = 1;
+            currentChromatid = chromatidPairs(0)(j,0);
+            ++nCO;
+            endPos = intervalSearch(genMap,posCO(0)(j),startPos);
+            output(i)(nCO,0) = currentChromosome;
+            output(i)(nCO,1) = endPos+2;
+            startPos = endPos;
+          }
+        }
+      }
+      // Fill crossovers in the tail
+      if(currentChromosome==1){
+        for(arma::uword j=0; j<posCO(3).n_elem; ++j){
+          switch(currentChromosome){
+          case 1:
+            if(chromatidPairs(3)(j,0) == currentChromatid){
+              currentChromosome = 4;
+              currentChromatid = chromatidPairs(3)(j,1);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+            break;
+          case 4:
+            if(chromatidPairs(3)(j,1) == currentChromatid){
+              currentChromosome = 1;
+              currentChromatid = chromatidPairs(3)(j,0);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+          }
+        }
+      }else{ // currentChromosome = 2
+        for(arma::uword j=0; j<posCO(1).n_elem; ++j){
+          switch(currentChromosome){
+          case 2:
+            if(chromatidPairs(1)(j,0) == currentChromatid){
+              currentChromosome = 3;
+              currentChromatid = chromatidPairs(1)(j,1);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+            break;
+          case 3:
+            if(chromatidPairs(1)(j,1) == currentChromatid){
+              currentChromosome = 2;
+              currentChromatid = chromatidPairs(1)(j,0);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+          }
+        }
+      }
+    }else{
+      // Fill crossovers in the head
+      for(arma::uword j=0; j<posCO(2).n_elem; ++j){
+        switch(currentChromosome){
+        case 3:
+          if(chromatidPairs(2)(j,0) == currentChromatid){
+            currentChromosome = 4;
+            currentChromatid = chromatidPairs(2)(j,1);
+            ++nCO;
+            endPos = intervalSearch(genMap,posCO(2)(j),startPos);
+            output(i)(nCO,0) = currentChromosome;
+            output(i)(nCO,1) = endPos+2;
+            startPos = endPos;
+          }
+          break;
+        case 4:
+          if(chromatidPairs(2)(j,1) == currentChromatid){
+            currentChromosome = 3;
+            currentChromatid = chromatidPairs(2)(j,0);
+            ++nCO;
+            endPos = intervalSearch(genMap,posCO(2)(j),startPos);
+            output(i)(nCO,0) = currentChromosome;
+            output(i)(nCO,1) = endPos+2;
+            startPos = endPos;
+          }
+        }
+      }
+      // Fill crossovers in the tail
+      if(currentChromosome==4){
+        for(arma::uword j=0; j<posCO(3).n_elem; ++j){
+          switch(currentChromosome){
+          case 1:
+            if(chromatidPairs(3)(j,0) == currentChromatid){
+              currentChromosome = 4;
+              currentChromatid = chromatidPairs(3)(j,1);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+            break;
+          case 4:
+            if(chromatidPairs(3)(j,1) == currentChromatid){
+              currentChromosome = 1;
+              currentChromatid = chromatidPairs(3)(j,0);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+          }
+        }
+      }else{ // currentChromosome = 3
+        for(arma::uword j=0; j<posCO(1).n_elem; ++j){
+          switch(currentChromosome){
+          case 2:
+            if(chromatidPairs(1)(j,0) == currentChromatid){
+              currentChromosome = 3;
+              currentChromatid = chromatidPairs(1)(j,1);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+            break;
+          case 3:
+            if(chromatidPairs(1)(j,1) == currentChromatid){
+              currentChromosome = 2;
+              currentChromatid = chromatidPairs(1)(j,0);
+              ++nCO;
+              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              output(i)(nCO,0) = currentChromosome;
+              output(i)(nCO,1) = endPos+2;
+              startPos = endPos;
+            }
+          }
+        }
+      }
+    }
+    output(i) = output(i).rows(arma::span(0,nCO));
+    output(i) = removeDoubleCO(output(i));
   }
-  readChr = 0;
-  for(arma::uword i=nCO_1; i<nCO; ++i){
-    ++readChr;
-    readChr = readChr%2;
-    endPos = intervalSearch(genMap,posCO(i),startPos);
-    output(i+1,0) = pairChr2(readChr);
-    output(i+1,1) = endPos+2;
-    startPos = endPos;
+  return output;
+}
+
+void transferGeno(const arma::Col<unsigned char>& inChr,
+                  arma::Col<unsigned char>& outChr,
+                  int start,
+                  int stop){
+  start -= 1; // R to C++
+  stop -= 1; // R to C++
+  std::bitset<8> inBits, outBits;
+  int startByte = start / 8;
+  int stopByte = stop / 8;
+  int startBit = start % 8;
+  int stopBit = stop % 8;
+  // Transfer partial start
+  if(startBit != 0){
+    inBits = toBits(inChr(startByte));
+    outBits = toBits(outChr(startByte));
+    if(stopByte > startByte){
+      // Transferring more than this byte
+      for(int i=startBit; i<8; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+      startBit = 0;
+      ++startByte;
+    }else{
+      // Only transferring within this byte
+      for(int i=startBit; i<stopBit; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+      return;
+    }
   }
-  return removeDoubleCO(output);
+  // Transfer full bytes
+  if(stopByte > startByte){
+    outChr(arma::span(startByte,stopByte-1)) = 
+      inChr(arma::span(startByte,stopByte-1));
+    startByte = stopByte;
+  }
+  // Transfer partial stop
+  if(inChr.n_elem == startByte){
+    // End has been reached
+    return;
+  }else{
+    if(stopBit > startBit){
+      inBits = toBits(inChr(startByte));
+      outBits = toBits(outChr(startByte));
+      for(int i = startBit; i<stopBit; ++i){
+        outBits[i] = inBits[i];
+      }
+      outChr(startByte) = toByte(outBits);
+    }
+  }
 }
 
 //Simulates a gamete using a count-location model for recombination
 void bivalent(const arma::Col<unsigned char>& chr1,
               const arma::Col<unsigned char>& chr2,
               const arma::vec& genMap,
+              double v,
               arma::Col<unsigned char>& output,
               arma::Mat<int>& hist){
-  hist = findBivalentCO(genMap);
+  hist = findBivalentCO(genMap, v);
   if(hist.n_rows==1){
     output = chr1;
   }else{
-    arma::uword nSites = chr1.n_elem;
+    int nBins = chr1.n_elem;
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist.n_rows-1); ++i){
       switch(hist(i,0)){
-      case 1:
-        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
-          chr1(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+      case 1: //Chromosome 1
+        transferGeno(chr1, output, 
+                     hist(i,1), hist(i+1,1));
         break; 
-      case 2:
-        output(arma::span(hist(i,1)-1,hist(i+1,1)-1)) = 
-          chr2(arma::span(hist(i,1)-1,hist(i+1,1)-1));
+      case 2: //Chromosome 2
+        transferGeno(chr2, output, 
+                     hist(i,1), hist(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist(hist.n_rows-1,0)){
     case 1:
-      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr1, output, 
+                   hist(hist.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 2:
-      output(arma::span(hist(hist.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist(hist.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr2, output, 
+                   hist(hist.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
 }
@@ -424,24 +741,20 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                   const arma::Col<unsigned char>& chr4,
                   const arma::vec& genMap,
                   double centromere,
+                  double v,
                   arma::Col<unsigned char>& output1,
                   arma::Col<unsigned char>& output2,
                   arma::Mat<int>& hist1,
                   arma::Mat<int>& hist2){
-  arma::uword nSites = chr1.n_elem;
+  int nBins = chr1.n_elem;
   
-  //Find exchange point
-  double genLen = genMap(genMap.n_elem-1);
-  arma::vec exchange(1,arma::fill::randu);
-  exchange *= genLen;
+  arma::field<arma::Mat<int> > output;
+  output = findQuadrivalentCO(genMap, centromere, v);
   
-  //Sample chromosomes
-  arma::uvec selChr = sampleInt(2,4);
-  ++selChr; //1-4 coding
+  hist1 = output(0);
+  hist2 = output(1);
   
   //Resolve first gamete
-  hist1 = findQuadrivalentCO(selChr(0), exchange(0),
-                             centromere, genMap);
   if(hist1.n_rows==1){
     switch(hist1(0,0)){
     case 1:
@@ -457,47 +770,51 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
       output1 = chr4;
     }
   }else{
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist1.n_rows-1); ++i){
       switch(hist1(i,0)){
       case 1:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr1, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;  
       case 2:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr2(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr2, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;   
       case 3:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr3(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
-        break; 
+        transferGeno(chr3, output1, 
+                     hist1(i,1), hist1(i+1,1));
+        break;  
       case 4:
-        output1(arma::span(hist1(i,1)-1,hist1(i+1,1)-1)) = 
-          chr4(arma::span(hist1(i,1)-1,hist1(i+1,1)-1));
+        transferGeno(chr4, output1, 
+                     hist1(i,1), hist1(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist1(hist1.n_rows-1,0)){
     case 1:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr1, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 2:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr2, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 3:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr3(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
-      break; 
+      transferGeno(chr3, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
+      break;
     case 4:
-      output1(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1)) = 
-        chr4(arma::span(hist1(hist1.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr4, output1, 
+                   hist1(hist1.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
   
   //Resolve second gamete
-  hist2 = findQuadrivalentCO(selChr(1), exchange(0),
-                             centromere, genMap);
   if(hist2.n_rows==1){
     switch(hist2(0,0)){
     case 1:
@@ -513,41 +830,47 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
       output2 = chr4;
     }
   }else{
+    // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist2.n_rows-1); ++i){
       switch(hist2(i,0)){
       case 1:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr1(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
-        break; 
+        transferGeno(chr1, output2, 
+                     hist2(i,1), hist2(i+1,1));
+        break;  
       case 2:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        transferGeno(chr2, output2, 
+                     hist2(i,1), hist2(i+1,1));
         break; 
       case 3:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr3(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
-        break; 
+        transferGeno(chr3, output2, 
+                     hist2(i,1), hist2(i+1,1));
+        break;  
       case 4:
-        output2(arma::span(hist2(i,1)-1,hist2(i+1,1)-1)) = 
-          chr4(arma::span(hist2(i,1)-1,hist2(i+1,1)-1));
+        transferGeno(chr4, output2, 
+                     hist2(i,1), hist2(i+1,1));
       }
     }
+    // Fill-in last sites
     switch(hist2(hist2.n_rows-1,0)){
     case 1:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr1(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr1, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 2:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr2, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 3:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr3(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr3, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
       break; 
     case 4:
-      output2(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1)) = 
-        chr4(arma::span(hist2(hist2.n_rows-1,1)-1,nSites-1));
+      transferGeno(chr4, output2, 
+                   hist2(hist2.n_rows-1,1), 
+                   nBins*8+1);
     }
   }
 }
@@ -562,6 +885,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
 // trackRec: track recombination
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
+// v: interference paramater for gamma model
 // quadProb: probability of quadrivalent formation
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
@@ -575,6 +899,7 @@ Rcpp::List cross(
     bool trackRec,
     arma::uword motherPloidy,
     arma::uword fatherPloidy,
+    double v,
     const arma::vec& motherCentromere,
     const arma::vec& fatherCentromere,
     double quadProb,
@@ -604,9 +929,9 @@ Rcpp::List cross(
     for(arma::uword i=0; i<fatherPloidy; ++i)
       xf(i) = i;
     arma::uword progenyChr;
-    arma::uword segSites = motherGeno(chr).n_rows;
-    arma::Cube<unsigned char> tmpGeno(segSites,ploidy,nInd);
-    arma::Col<unsigned char> gamete1(segSites), gamete2(segSites);
+    arma::uword nBins = motherGeno(chr).n_rows;
+    arma::Cube<unsigned char> tmpGeno(nBins,ploidy,nInd);
+    arma::Col<unsigned char> gamete1(nBins), gamete2(nBins);
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       progenyChr=0;
@@ -620,6 +945,7 @@ Rcpp::List cross(
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                      femaleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -634,6 +960,7 @@ Rcpp::List cross(
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                      femaleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -652,6 +979,7 @@ Rcpp::List cross(
                          motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                          femaleMap(chr),
                          motherCentromere(chr),
+                         v,
                          gamete1,
                          gamete2,
                          hist1,
@@ -675,6 +1003,7 @@ Rcpp::List cross(
           bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
                    motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                    femaleMap(chr),
+                   v,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -698,6 +1027,7 @@ Rcpp::List cross(
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                      maleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -712,6 +1042,7 @@ Rcpp::List cross(
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                      maleMap(chr),
+                     v,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -730,6 +1061,7 @@ Rcpp::List cross(
                          fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                          maleMap(chr),
                          fatherCentromere(chr),
+                         v,
                          gamete1,
                          gamete2,
                          hist1,
@@ -753,6 +1085,7 @@ Rcpp::List cross(
           bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
                    fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                    maleMap(chr),
+                   v,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -780,7 +1113,7 @@ Rcpp::List cross(
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     arma::uword nDH, const arma::field<arma::vec>& genMap, 
-    bool trackRec, int nThreads){
+    double v, bool trackRec, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
   //Output data
@@ -794,9 +1127,9 @@ Rcpp::List createDH2(
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
     arma::Mat<int> histMat;
-    arma::uword segSites = geno(chr).n_rows;
-    arma::Cube<unsigned char> tmp(segSites,2,nInd*nDH);
-    arma::Col<unsigned char> gamete(segSites);
+    arma::uword nBins = geno(chr).n_rows;
+    arma::Cube<unsigned char> tmp(nBins,2,nInd*nDH);
+    arma::Col<unsigned char> gamete(nBins);
     arma::uvec x = {0,1};
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop
@@ -804,12 +1137,13 @@ Rcpp::List createDH2(
         bivalent(geno(chr).slice(ind).col(x(0)),
                  geno(chr).slice(ind).col(x(1)),
                  genMap(chr),
+                 v,
                  gamete,
                  histMat);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){
-            if(x(0)==1){
+            if((x(0)==1) & (j==0)){
               histMat.col(0).transform([](int val){return val%2+1;});
             }
             hist.addHist(histMat,i+ind*nDH,chr,j);

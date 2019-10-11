@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <bitset>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -930,8 +931,8 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
-                bool inbred, arma::uword ploidy, int nThreads){
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, 
+                arma::uword ploidy, int nThreads, Rcpp::StringVector seed){
   //Check input
   string t = args;
   if (t == "") {
@@ -948,13 +949,14 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; chr++){
-    arma::Cube<unsigned char> chrGeno;
-    arma::uword nSites, nHap, nInd;
+    // Run MaCS and check for valid output
     vector<AlphaSimRReturn> macsOutput;
-    macsOutput = runFromAlphaSimR(args);
+    macsOutput = runFromAlphaSimR(args+seed(chr));
     if(macsOutput.empty()){
       Rcpp::stop("Macs has failed to run.");
     }
+    
+    arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
     nHap = macsOutput[0].haplotypes.size();
     if(inbred){
@@ -962,65 +964,90 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites,
     }else{
       nInd = nHap/ploidy;
     }
+    arma::uvec selSites;
     if(maxSites(chr)>0){
       if(nSites<maxSites(chr)){
         Rcpp::stop("Not enough segregating sites generated");
       }
-      geno(chr).set_size(maxSites(chr),ploidy,nInd);
-      genMap(chr).set_size(maxSites(chr));
-      // Sample sites
-      arma::uvec selSites = sampleInt(maxSites(chr),nSites);
-      //Fill map with selected sites
-      for(arma::uword site=0; site<maxSites(chr); site++){
-        genMap(chr).at(site) = macsOutput[selSites(site)].length;
-      }
-      //Fill map with selected sites
-      if(inbred){
-        for(arma::uword hap=0; hap<nHap; hap++){
-          for(arma::uword site=0; site<maxSites(chr); site++){
-            geno(chr).slice(hap).row(site).fill(macsOutput[selSites(site)].haplotypes[hap]);
-          }
-        }
-      }else{
-        arma::uword grp=0, ind=0;
-        for(arma::uword hap=0; hap<nHap; hap++){
-          for(arma::uword site=0; site<maxSites(chr); site++){
-            geno(chr).slice(ind).col(grp).row(site) = 
-              macsOutput[selSites(site)].haplotypes[hap];
-          }
-          ++grp;
-          ind += grp/ploidy;
-          grp = grp%ploidy;
-        }
-      }
+      selSites = sampleInt(maxSites(chr),nSites);
+      nSites = maxSites(chr);
     }else{
-      geno(chr).set_size(nSites,ploidy,nInd);
-      genMap(chr).set_size(nSites);
-      //Fill map with all sites
-      for(arma::uword site=0; site<nSites; site++){
-        genMap(chr).at(site) = macsOutput[site].length;
-      }
-      //Fill geno with all sites
-      if(inbred){
-        for(arma::uword hap=0; hap<nHap; hap++){
-          for(arma::uword site=0; site<nSites; site++){
-            geno(chr).slice(hap).row(site).fill(macsOutput[site].haplotypes[hap]);
-          }
-        }
-      }else{
-        arma::uword grp=0, ind=0;
-        for(arma::uword hap=0; hap<nHap; hap++){
-          for(arma::uword site=0; site<nSites; site++){
-            geno(chr).slice(ind).col(grp).row(site) = 
-              macsOutput[site].haplotypes[hap];
-          }
-          ++grp;
-          ind += grp/ploidy;
-          grp = grp%ploidy;
-        }
-      }
+      selSites.set_size(nSites);
+      for(arma::uword i=0; i<nSites; ++i)
+        selSites(i) = i;
     }
     
+    // Fill genMap
+    genMap(chr).set_size(nSites);
+    for(arma::uword site=0; site<nSites; ++site){
+      genMap(chr).at(site) = macsOutput[selSites(site)].length;
+    }
+    
+    // Fill Geno
+    nBins = nSites/8;
+    if((nSites%8) > 0){
+      ++nBins;
+    }
+    
+    geno(chr).set_size(nBins,ploidy,nInd);
+    arma::uword grp=0;
+    arma::uword locus;
+    std::bitset<8> workBits;
+    for(arma::uword i=0; i<nHap; ++i){
+      if(inbred){
+        for(grp=0; grp<ploidy; ++grp){
+          locus = 0;
+          // Fill in bins known to be complete
+          if(nBins > 1){
+            for(arma::uword j=0; j<(nBins-1); ++j){
+              for(arma::uword k=0; k<8; ++k){
+                workBits[k] = macsOutput[selSites(locus)].haplotypes[i];
+                ++locus;
+              }
+              geno(chr).slice(i).col(grp).row(j) = 
+                toByte(workBits);
+            }
+          }
+          // Fill in potentially incomplete bins
+          for(arma::uword k=0; k<8; ++k){
+            if(locus<nSites){
+              workBits[k] = macsOutput[selSites(locus)].haplotypes[i];
+              ++locus;
+            }else{
+              workBits[k] = 0;
+            }
+          }
+          geno(chr).slice(i).col(grp).row(nBins-1) = 
+            toByte(workBits);
+        }
+      }else{
+        locus = 0;
+        // Fill in bins known to be complete
+        if(nBins > 1){
+          for(arma::uword j=0; j<(nBins-1); ++j){
+            for(arma::uword k=0; k<8; ++k){
+              workBits[k] = macsOutput[selSites(locus)].haplotypes[i];
+              ++locus;
+            }
+            geno(chr).slice(i/ploidy).col(grp).row(j) = 
+              toByte(workBits);
+          }
+        }
+        // Fill in potentially incomplete bins
+        for(arma::uword k=0; k<8; ++k){
+          if(locus<nSites){
+            workBits[k] = macsOutput[selSites(locus)].haplotypes[i];
+            ++locus;
+          }else{
+            workBits[k] = 0;
+          }
+        }
+        geno(chr).slice(i/ploidy).col(grp).row(nBins-1) = 
+          toByte(workBits);
+        ++grp;
+        grp = grp%ploidy; 
+      }
+    }
   }
   return Rcpp::List::create(Rcpp::Named("geno")=geno,
                             Rcpp::Named("genMap")=genMap);

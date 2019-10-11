@@ -6,7 +6,7 @@
 \usage{
 RRBLUP2(pop, traits = 1, use = "pheno", snpChip = 1,
   useQtl = FALSE, maxIter = 10, Vu = NULL, Ve = NULL,
-  useEM = TRUE, tol = 1e-06, simParam = NULL, ...)
+  useEM = TRUE, tol = 1e-06, useReps = FALSE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
@@ -37,6 +37,9 @@ reasonable starting point is chosen automatically.}
 the initial values are considered true.}
 
 \item{tol}{tolerance for EM algorithm convergence}
+
+\item{useReps}{should population's reps slot be used to model 
+heterogeneous error variance}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

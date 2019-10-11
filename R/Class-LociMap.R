@@ -38,7 +38,7 @@ setValidity("LociMap",function(object){
 #' to model additive traits
 #' 
 #' @slot addEff additive effects
-#' @slot intercept adjustment factor for gc
+#' @slot intercept adjustment factor for gv
 #'
 #' @export
 setClass("TraitA",
@@ -50,6 +50,32 @@ setValidity("TraitA",function(object){
   errors = character()
   if(object@nLoci!=length(object@addEff)){
     errors = c(errors,"nLoci!=length(addEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#TraitA2----
+#' @title Gender specific additive trait
+#' 
+#' @description Extends \code{\link{TraitA-class}} 
+#' to model seperate additive effects for parent of 
+#' origin. Used exclusively for genomic selection. 
+#' 
+#' @slot addEffMale additive effects
+#'
+#' @export
+setClass("TraitA2",
+         slots=c(addEffMale="numeric"),
+         contains="TraitA")
+
+setValidity("TraitA2",function(object){
+  errors = character()
+  if(object@nLoci!=length(object@addEffMale)){
+    errors = c(errors,"nLoci!=length(addEffMale)")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -100,6 +126,31 @@ setClass("TraitAD",
          contains="TraitA")
 
 setValidity("TraitAD",function(object){
+  errors = character()
+  if(object@nLoci!=length(object@domEff)){
+    errors = c(errors,"nLoci!=length(domEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#TraitA2D----
+#' @title Gender specific additive and dominance trait
+#' 
+#' @description Extends \code{\link{TraitA2-class}} 
+#' to add dominance 
+#' 
+#' @slot domEff dominance effects
+#'
+#' @export
+setClass("TraitA2D",
+         slots=c(domEff="numeric"),
+         contains="TraitA2")
+
+setValidity("TraitA2D",function(object){
   errors = character()
   if(object@nLoci!=length(object@domEff)){
     errors = c(errors,"nLoci!=length(domEff)")
@@ -255,178 +306,3 @@ setValidity("TraitADEG",function(object){
   }
 })
 
-#RRsol----
-#' @title RR-BLUP Solution
-#' 
-#' @description Extends \code{\link{LociMap-class}} 
-#' to contain estimated effects from \code{\link{RRBLUP}}
-#' 
-#' @slot markerEff GEBVs for markers
-#' @slot fixEff Estimates for fixed effects
-#' @slot Vu Estimated marker variance
-#' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
-#' @slot iter Number of iterations for convergence
-#'
-#' @export
-setClass("RRsol",
-         slots=c(markerEff="matrix",
-                 fixEff="matrix",
-                 Vu="matrix",
-                 Ve="matrix",
-                 LL="numeric",
-                 iter="numeric"),
-         contains="LociMap")
-
-setValidity("RRsol",function(object){
-  errors = character()
-  if(!is.numeric(object@markerEff)){
-    errors = c(errors,"!is.numeric(markerEff)")
-  }
-  if(!is.numeric(object@fixEff)){
-    errors = c(errors,"!is.numeric(fixEff)")
-  }
-  if(object@nLoci!=nrow(object@markerEff)){
-    errors = c(errors,"nLoci!=nrow(markerEff)")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-
-
-#RRDsol----
-#' @title RR-BLUP Solution with Dominance
-#' 
-#' @description Extends \code{\link{LociMap-class}} 
-#' to contain estimated effects from \code{\link{RRBLUP}}
-#' 
-#' @slot markerEff GEBVs for markers
-#' @slot addEff additive effects
-#' @slot domEff dominance effects
-#' @slot fixEff Estimates for fixed effects
-#' @slot Vu Estimated marker variance
-#' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
-#' @slot iter Number of iterations for convergence
-#'
-#' @export
-setClass("RRDsol",
-         slots=c(markerEff="matrix",
-                 addEff="matrix",
-                 domEff="matrix",
-                 fixEff="matrix",
-                 Vu="matrix",
-                 Ve="matrix",
-                 LL="numeric",
-                 iter="numeric"),
-         contains="LociMap")
-
-setValidity("RRDsol",function(object){
-  errors = character()
-  if(!is.numeric(object@markerEff)){
-    errors = c(errors,"!is.numeric(markerEff)")
-  }
-  if(!is.numeric(object@addEff)){
-    errors = c(errors,"!is.numeric(addEff)")
-  }
-  if(!is.numeric(object@domEff)){
-    errors = c(errors,"!is.numeric(domEff)")
-  }
-  if(!is.numeric(object@fixEff)){
-    errors = c(errors,"!is.numeric(fixEff)")
-  }
-  if(object@nLoci!=nrow(object@markerEff)){
-    errors = c(errors,"nLoci!=nrow(markerEff)")
-  }
-  if(object@nLoci!=nrow(object@domEff)){
-    errors = c(errors,"nLoci!=nrow(domEff)")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-#GCAsol----
-#' @title RR-BLUP GCA Solution
-#' 
-#' @description Extends \code{\link{LociMap-class}} 
-#' to contain estimated effects from \code{\link{RRBLUP_GCA}}
-#' 
-#' @slot femaleEff marker GCA for "female" pool
-#' @slot maleEff marker GCA for "male" pool
-#' @slot fixEff Estimates for fixed effects
-#' @slot Vu Estimated marker variances in order: 
-#' female effects, male effects and SCA effects 
-#' (\code{\link{SCAsol-class}} only)
-#' @slot Ve Estimated error variance
-#' @slot LL Log-likelihood
-#' @slot iter Number of iterations for convergence
-#'
-#' @export
-setClass("GCAsol",
-         slots=c(femaleEff="matrix",
-                 maleEff="matrix",
-                 fixEff="matrix",
-                 Vu="matrix",
-                 Ve="matrix",
-                 LL="numeric",
-                 iter="numeric"),
-         contains="LociMap")
-
-setValidity("GCAsol",function(object){
-  errors = character()
-  if(!is.numeric(object@femaleEff)){
-    errors = c(errors,"!is.numeric(femaleEff)")
-  }
-  if(!is.numeric(object@maleEff)){
-    errors = c(errors,"!is.numeric(maleEff)")
-  }
-  if(!is.numeric(object@fixEff)){
-    errors = c(errors,"!is.numeric(fixEff)")
-  }
-  if(object@nLoci!=nrow(object@femaleEff)){
-    errors = c(errors,"nLoci!=nrow(femaleEff)")
-  }
-  if(object@nLoci!=nrow(object@maleEff)){
-    errors = c(errors,"nLoci!=nrow(maleEff)")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})
-
-#SCAsol----
-#' @title RR-BLUP SCA Solution
-#' 
-#' @description Extends \code{\link{GCAsol-class}} 
-#' to contain estimated effects from \code{\link{RRBLUP_SCA}}
-#' 
-#' @slot d dominance effect
-#'
-#' @export
-setClass("SCAsol",
-         slots=c(d="matrix"),
-         contains="GCAsol")
-
-setValidity("SCAsol",function(object){
-  errors = character()
-  if(!is.numeric(object@d)){
-    errors = c(errors,"!is.numeric(d)")
-  }
-  if(object@nLoci!=nrow(object@d)){
-    errors = c(errors,"nLoci!=nrow(d)")
-  }
-  if(length(errors)==0){
-    return(TRUE)
-  }else{
-    return(errors)
-  }
-})

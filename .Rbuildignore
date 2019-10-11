@@ -1,3 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 Notes.txt
+^doc$
+^Meta$
+^drafts$

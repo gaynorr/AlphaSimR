@@ -12,7 +12,7 @@
 \S4method{c}{MapPop}(x, ...)
 }
 \arguments{
-\item{x}{a 'MapPop'}
+\item{x}{a 'MapPop' object}
 
 \item{i}{index of chromosomes}
 

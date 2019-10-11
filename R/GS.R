@@ -91,16 +91,27 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   }
   #Fit model
   ans = callFastRRBLUP(y,pop@geno,lociPerChr,
-                       lociLoc,Vu,Ve,maxIter)
+                       lociLoc,Vu,Ve,maxIter,
+                       simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$mu))
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$u,
-               fixEff=as.matrix(ans$beta),
-               Vu=as.matrix(Vu),
-               Ve=as.matrix(Ve),
-               iter=0)
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(Vu),
+               Ve = as.matrix(Ve))
   return(output)
 }
 
@@ -123,6 +134,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -149,7 +162,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1, 
-                  useQtl=FALSE, maxIter=1000L, simParam=NULL, ...){
+                  useQtl=FALSE, maxIter=1000L, useReps=FALSE, 
+                  simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -168,25 +182,35 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                        lociLoc, maxIter)
+                        lociLoc, maxIter, useReps, simParam$nThreads)
   }else{
-    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc)
+    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc,
+                     useReps, simParam$nThreads)
   }
   markerEff=ans$u
-  if(is.null(ans[["iter"]])){
-    iter = 0
-  }else{
-    iter = ans$iter
+  bv = gv = vector("list",ncol(y))
+  for(i in 1:ncol(y)){
+    bv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=ans$alpha[,i],
+                  intercept=ans$beta[i])
+    gv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=ans$alpha[,i],
+                  intercept=ans$mu[i])
   }
+  
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=markerEff,
-               fixEff=ans$beta,
-               Vu=as.matrix(ans$Vu),
-               Ve=as.matrix(ans$Ve),
-               iter=iter)
+               bv = bv,
+               gv = gv,
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -218,6 +242,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -273,7 +299,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1, 
                    useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL, 
-                   useEM=TRUE, tol=1e-6, simParam=NULL, ...){
+                   useEM=TRUE, tol=1e-6, useReps=FALSE, simParam=NULL, 
+                   ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -314,16 +341,27 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
   #Fit model
   ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                    lociLoc,Vu,Ve,tol,maxIter,useEM)
+                    lociLoc,Vu,Ve,tol,maxIter,useEM,useReps,
+                    simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$mu))
   output = new("RRsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=ans$u,
-               fixEff=ans$beta,
-               Vu=as.matrix(ans$Vu),
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -345,6 +383,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -371,8 +411,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1, 
-                    useQtl=FALSE, maxIter=40L, simParam=NULL, 
-                    ...){
+                    useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                    simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -391,30 +431,27 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                     lociLoc,maxIter)
-  p = c(ans$p)
-  q = 1-p
-  fixCoef = c(ans$F)
-  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
-  nMarker = nLoci-sum(fixed) #Number of segregating markers
-  ans = ans$ans
-  fixEff=ans$beta
-  a = ans$u[[1]]
-  d = ans$u[[2]] + fixEff[length(fixEff)]/nMarker
-  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
-  fixEff = matrix(fixEff[-length(fixEff)])
-  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
-  output = new("RRDsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=alpha,
-               addEff=a,
-               domEff=d,
-               fixEff=fixEff,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+                     lociLoc,maxIter,useReps,simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitAD",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  output = new("RRsol",
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -449,6 +486,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -476,8 +515,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1, 
                      useQtl=FALSE, maxIter=10, Va=NULL, Vd=NULL, 
-                     Ve=NULL, useEM=TRUE, tol=1e-6, simParam=NULL, 
-                     ...){
+                     Ve=NULL, useEM=TRUE, tol=1e-6, useReps=FALSE, 
+                     simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -528,30 +567,28 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM)
-  p = c(ans$p)
-  q = 1-p
-  fixCoef = c(ans$F)
-  fixed = ((p<0.000000001) | (p>0.999999999)) #Fixed markers
-  nMarker = nLoci-sum(fixed) #Number of segregating markers
-  ans = ans$ans
-  fixEff=ans$beta
-  a = ans$u[,1,drop=FALSE]
-  d = ans$u[,2,drop=FALSE] + fixEff[length(fixEff)]/nMarker
-  d[fixed] = 0 #Remove fixed markers (without this step they get mean d)
-  fixEff = matrix(fixEff[-length(fixEff)])
-  alpha = a+(q-p)*d*(1-fixCoef)/(1+fixCoef)
-  output = new("RRDsol",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               markerEff=alpha,
-               addEff=a,
-               domEff=d,
-               fixEff=fixEff,
-               Vu=ans$Vu,
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM,
+                      useReps,simParam$nThreads)
+  bv = new("TraitA",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha),
+           intercept=c(ans$beta))
+  gv = new("TraitAD",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  output = new("RRsol",
+               bv = list(bv),
+               gv = list(gv),
+               female = as.list(NULL),
+               male = as.list(NULL),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -574,6 +611,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -600,8 +639,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1, 
-                      useQtl=FALSE, maxIter=40L, simParam=NULL, 
-                      ...){
+                      useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                      simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -620,17 +659,34 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter)
-  output = new("GCAsol",
+                       lociPerChr,lociLoc,maxIter,
+                       useReps,simParam$nThreads)
+  gv = new("TraitA2",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha1),
+           addEffMale=c(ans$alpha2),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[[1]],
-               maleEff=ans$u[[2]],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -663,6 +719,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -690,8 +748,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1, 
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL, 
-                       Ve=NULL, useEM=TRUE, tol=1e-6, simParam=NULL, 
-                       ...){
+                       Ve=NULL, useEM=TRUE, tol=1e-6, useReps=FALSE, 
+                       simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -743,17 +801,34 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA2(y,fixEff,pop@reps,pop@geno,
                         lociPerChr,lociLoc,maxIter,
-                        VuF,VuM,Ve,tol,useEM)
-  output = new("GCAsol",
+                        VuF,VuM,Ve,tol,useEM,
+                        useReps,simParam$nThreads)
+  gv = new("TraitA2",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$alpha1),
+           addEffMale=c(ans$alpha2),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[,1,drop=FALSE],
-               maleEff=ans$u[,2,drop=FALSE],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=as.matrix(ans$Ve),
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
@@ -775,6 +850,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -801,7 +878,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
-                      useQtl=FALSE, maxIter=40L, simParam=NULL, ...){
+                      useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                      simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -820,43 +898,216 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter)
-  ans = ans$ans
-  output = new("SCAsol",
+                       lociPerChr,lociLoc,maxIter,
+                       useReps,simParam$nThreads)
+  gv = new("TraitA2D",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a1),
+           addEffMale=c(ans$a2),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
-               femaleEff=ans$u[[1]],
-               maleEff=ans$u[[2]],
-               d=ans$u[[3]],
-               fixEff=ans$beta,
-               Vu=ans$Vu,
-               Ve=ans$Ve,
-               iter=ans$iter)
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha2),
+               intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
+  return(output)
+}
+
+#' @title RR-BLUP SCA Model 2
+#'
+#' @description
+#' Fits an RR-BLUP model that estimates seperate additive effects for
+#' females and males and a dominance effect. This implementation is meant 
+#' for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that 
+#' RRBLUP_SCA2 is only faster in certain situations. Most users should use 
+#' \code{\link{RRBLUP_SCA}}.
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training population
+#' @param traits an integer indicating the trait to model, or a
+#' function of the traits returning a single value.
+#' @param use train model using phenotypes "pheno", genetic values "gv", 
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param snpChip an integer indicating which SNP chip genotype 
+#' to use
+#' @param useQtl should QTL genotypes be used instead of a SNP chip. 
+#' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+#' QTL may not match the QTL underlying the phenotype supplied in traits.
+#' @param maxIter maximum number of iterations for convergence.
+#' @param VuF marker effect variance for females. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param VuM marker effect variance for males. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param VuD marker effect variance for dominance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param Ve error variance. If value is NULL, a 
+#' reasonable starting point is chosen automatically.
+#' @param useEM use EM to solve variance components. If false, 
+#' the initial values are considered true.
+#' @param tol tolerance for EM algorithm convergence
+#' @param useReps should population's reps slot be used to model 
+#' heterogeneous error variance
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a function for 
+#' traits
+#'
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' SP$addSnpChip(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Run GS model and set EBV
+#' ans = RRBLUP_SCA2(pop, simParam=SP)
+#' pop = setEBV(pop, ans, simParam=SP)
+#' 
+#' #Evaluate accuracy
+#' cor(gv(pop), ebv(pop))
+#' 
+#' @export
+RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1, 
+                       useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL, 
+                       VuD=NULL, Ve=NULL, useEM=TRUE, tol=1e-6, 
+                       useReps=FALSE, simParam=NULL, ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  y = getResponse(pop=pop,trait=traits,use=use,
+                  simParam=simParam,...)
+  fixEff = as.integer(factor(pop@fixEff))
+  if(useQtl){
+    nLoci = simParam$traits[[snpChip]]@nLoci
+    lociPerChr = simParam$traits[[snpChip]]@lociPerChr
+    lociLoc = simParam$traits[[snpChip]]@lociLoc
+  }else{
+    nLoci = simParam$snpChips[[snpChip]]@nLoci
+    lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
+    lociLoc = simParam$snpChips[[snpChip]]@lociLoc
+  }
+  # Sort out VuF, VuM, VuD and Ve
+  if(is.function(traits)){
+    if(is.null(VuF)){
+      VuF = var(y)/nLoci
+    }
+    if(is.null(VuM)){
+      VuM = var(y)/nLoci
+    }
+    if(is.null(VuD)){
+      VuD = var(y)/nLoci/2
+    }
+    if(is.null(Ve)){
+      Ve = var(y)/2
+    }
+  }else{
+    stopifnot(length(traits)==1)
+    if(is.null(VuF)){
+      VuF = 2*simParam$varA[traits]/nLoci
+      if(is.na(VuF)){
+        VuF = var(y)/nLoci
+      }
+    }
+    if(is.null(VuM)){
+      VuM = 2*simParam$varA[traits]/nLoci
+      if(is.na(VuM)){
+        VuM = var(y)/nLoci
+      }
+    }
+    if(is.null(VuD)){
+      VuD = simParam$varA[traits]/nLoci
+      if(is.na(VuD)){
+        VuD = var(y)/nLoci/2
+      }
+    }
+    if(is.null(Ve)){
+      Ve = simParam$varE[traits]
+      if(is.na(Ve)){
+        Ve = var(y)/2
+      }
+    }
+  }
+  #Fit model
+  stopifnot(ncol(y)==1)
+  ans = callRRBLUP_SCA2(y,fixEff,pop@reps,pop@geno,
+                        lociPerChr,lociLoc,maxIter,
+                        VuF,VuM,VuD,Ve,tol,useEM,
+                        useReps,simParam$nThreads)
+  gv = new("TraitA2D",
+           nLoci=nLoci,
+           lociPerChr=lociPerChr,
+           lociLoc=lociLoc,
+           addEff=c(ans$a1),
+           addEffMale=c(ans$a2),
+           domEff=c(ans$d),
+           intercept=c(ans$mu))
+  female = new("TraitA",
+               nLoci=nLoci,
+               lociPerChr=lociPerChr,
+               lociLoc=lociLoc,
+               addEff=c(ans$alpha1),
+               intercept=c(ans$beta1))
+  male = new("TraitA",
+             nLoci=nLoci,
+             lociPerChr=lociPerChr,
+             lociLoc=lociLoc,
+             addEff=c(ans$alpha2),
+             intercept=c(ans$beta2))
+  output = new("RRsol",
+               gv = list(gv),
+               bv = as.list(NULL),
+               female = list(female),
+               male = list(male),
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
   return(output)
 }
 
 #' @title Set EBV
 #'
 #' @description
-#' Sets a population's EBV with genomic estimated
-#' values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}},
-#' or \code{\link{RRBLUP_SCA}}.
+#' Adds genomic estimated values to a populations's EBV 
+#' slot using output from a genomic selection functions. 
+#' The genomic estimated values can be either estimated 
+#' breeding values, estimated genetic values, or 
+#' estimated general combining values.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param solution an object of \code{\link{RRsol-class}},
-#' \code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}
-#' @param gender either NULL, "male" or "female". If 
-#' solution is \code{\link{GCAsol-class}} or 
-#' \code{\link{SCAsol-class}} the EBV is the GCA if used in 
-#' the corresponding pool
-#' @param useGV if model is \code{\link{RRDsol-class}}, 
-#' setting this parameter to TRUE will give use estimated 
-#' genetic values. Otherwise, you get estimated breeding 
-#' values that depend on the population's allele frequency.
-#' @param append should EBVs be appended to existing EBVs
+#' @param solution an object of \code{\link{RRsol-class}}
+#' @param value the genomic value to be estimated. Can be 
+#' either "gv", "bv", "female", or "male".
+#' @param targetPop an optional target population that can 
+#' be used when value is "bv", "female", or "male". When 
+#' supplied, the allele frequency in the targetPop is used 
+#' to set these values.
+#' @param append should estimated values be appended to 
+#' existing data in the EBV slot. If TRUE, a new column is 
+#' added. If FALSE, existing data is replaced with the 
+#' new estimates.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
+#' 
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
 #' @examples 
@@ -880,48 +1131,192 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' cor(gv(pop), ebv(pop))
 #' 
 #' @export
-setEBV = function(pop, solution, gender=NULL, useGV=FALSE, 
+setEBV = function(pop, solution, value="gv", targetPop=NULL, 
                   append=FALSE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(solution)=="RRsol"){
-    ebv = gebvRR(solution, pop, simParam$nThreads)
-  }else if(class(solution)=="RRDsol"){
-    if(useGV){
-      ebv = gegvRRD(solution, pop, simParam$nThreads)
-    }else{
-      ebv = gebvRR(solution, pop, simParam$nThreads)
+  nTraits = length(solution@gv)
+  
+  ebv = matrix(NA_real_,
+               nrow=pop@nInd,
+               ncol=nTraits)
+  
+  value = tolower(value)
+  
+  if(value=="gv"){
+    
+    for(i in 1:nTraits){
+      tmp = getGv(solution@gv[[i]],pop,simParam$nThreads)
+      ebv[,i] = tmp[[1]]
     }
-  }else{
-    if(is.null(gender)){
-      if(class(solution)=="GCAsol"){
-        ebv = gegvGCA(solution, pop, simParam$nThreads)
-      }else{
-        ebv = gegvSCA(solution, pop, simParam$nThreads)
+    
+  }else if(value=="bv"){
+    
+    if(is.null(targetPop)){
+      
+      if(length(solution@bv)==0){
+        stop("This genomic selection model does not produce breeding value estimates.")
       }
-    }else if(toupper(gender)=="FEMALE"){
-      ebv = gebvGCA(solution, pop, TRUE, simParam$nThreads)
-    }else if(toupper(gender)=="MALE"){
-      ebv = gebvGCA(solution, pop, FALSE, simParam$nThreads)
+      
+      for(i in 1:nTraits){
+        tmp = getGv(solution@bv[[i]],pop,simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
     }else{
-      stop(paste0("gender=",gender," is not a valid option"))
+      
+      for(i in 1:nTraits){
+        trait = solution@gv[[i]]
+        if(.hasSlot(trait,"addEffMale")){
+          stop("This genomic selection model does not produce breeding value estimates. Try value='male' or value='female' instead.")
+        }
+        
+        p = calcGenoFreq(targetPop@geno, 
+                         trait@lociPerChr, 
+                         trait@lociLoc, 
+                         simParam$nThreads)
+        p = c(p)
+        q = 1-p
+        
+        a = trait@addEff
+        if(.hasSlot(trait,"domEff")){
+          d = trait@domEff
+        }else{
+          d = rep(0, length(a))
+        }
+        
+        alpha = a+d*(q-p)
+        intercept = -sum((p-q)*alpha)
+        trait = new("TraitA",
+                    nLoci=trait@nLoci,
+                    lociPerChr=trait@lociPerChr,
+                    lociLoc=trait@lociLoc,
+                    addEff=alpha,
+                    intercept=intercept)
+        
+        tmp = getGv(trait, pop, simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
     }
+    
+  }else if(value=="female"){
+    
+    if(is.null(targetPop)){
+      
+      if(length(solution@female)==0){
+        stop("This genomic selection model does not produce GCA estimates for females.")
+      }
+      
+      for(i in 1:nTraits){
+        tmp = getGv(solution@female[[i]],pop,simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
+    }else{
+      
+      for(i in 1:nTraits){
+        trait = solution@gv[[i]]
+        p = calcGenoFreq(targetPop@geno, 
+                         trait@lociPerChr, 
+                         trait@lociLoc, 
+                         simParam$nThreads)
+        p = c(p)
+        q = 1-p
+        
+        a = trait@addEff
+        if(.hasSlot(trait,"domEff")){
+          d = trait@domEff
+        }else{
+          d = rep(0, length(a))
+        }
+        
+        alpha = (a+d*(q-p))/2
+        intercept = -sum((p-q)*alpha)
+        trait = new("TraitA",
+                    nLoci=trait@nLoci,
+                    lociPerChr=trait@lociPerChr,
+                    lociLoc=trait@lociLoc,
+                    addEff=alpha,
+                    intercept=intercept)
+        
+        tmp = getGv(trait, pop, simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
+    }
+    
+  }else if(value=="male"){
+    
+    if(is.null(targetPop)){
+      
+      if(length(solution@male)==0){
+        stop("This genomic selection model does not produce GCA estimates for males.")
+      }
+      
+      for(i in 1:nTraits){
+        tmp = getGv(solution@male[[i]],pop,simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
+    }else{
+      
+      for(i in 1:nTraits){
+        trait = solution@gv[[i]]
+        p = calcGenoFreq(targetPop@geno, 
+                         trait@lociPerChr, 
+                         trait@lociLoc, 
+                         simParam$nThreads)
+        p = c(p)
+        q = 1-p
+        
+        if(.hasSlot(trait,"addEffMale")){
+          a = trait@addEffMale
+        }else{
+          a = trait@addEff
+        }
+        if(.hasSlot(trait,"domEff")){
+          d = trait@domEff
+        }else{
+          d = rep(0, length(a))
+        }
+        
+        alpha = (a+d*(q-p))/2
+        intercept = -sum((p-q)*alpha)
+        trait = new("TraitA",
+                    nLoci=trait@nLoci,
+                    lociPerChr=trait@lociPerChr,
+                    lociLoc=trait@lociLoc,
+                    addEff=alpha,
+                    intercept=intercept)
+        
+        tmp = getGv(trait, pop, simParam$nThreads)
+        ebv[,i] = tmp[[1]]
+      }
+      
+    }
+    
+  }else{
+    stop(paste0("value=",value," is not a valid option"))
   }
+  
   if(append){
     pop@ebv = cbind(pop@ebv,ebv)
   }else{
     pop@ebv = ebv
   }
+  
   return(pop)
 }
+
 
 #' @title RRBLUP Memory Usage
 #'
 #' @description
 #' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
 #' and its related functions for a given training population size. 
-#' Note that this functions may underestimate total usage.
+#' Note that this function may underestimate total usage.
 #'
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual
@@ -948,13 +1343,13 @@ RRBLUPMemUse = function(nInd,nMarker,model="REG"){
   }else if(toupper(model)=="GCA"){
     M = M*2
     V = nInd*nInd*3
-    W = W0 = WQX= nInd*nInd
+    W = W0 = WQX = nInd*nInd
     WX = ee = nInd
     u = u*2
   }else if(toupper(model)=="SCA"){
     M = M*3
     V = nInd*nInd*4
-    W = W0 = WQX= nInd*nInd
+    W = W0 = WQX = nInd*nInd
     WX = ee = nInd
     u = u*3
   }else{

@@ -4,26 +4,26 @@
 \alias{setEBV}
 \title{Set EBV}
 \usage{
-setEBV(pop, solution, gender = NULL, useGV = FALSE, append = FALSE,
+setEBV(pop, solution, value = "gv", targetPop = NULL, append = FALSE,
   simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{solution}{an object of \code{\link{RRsol-class}},
-\code{\link{SCAsol-class}}, or \code{\link{GCAsol-class}}}
+\item{solution}{an object of \code{\link{RRsol-class}}}
 
-\item{gender}{either NULL, "male" or "female". If 
-solution is \code{\link{GCAsol-class}} or 
-\code{\link{SCAsol-class}} the EBV is the GCA if used in 
-the corresponding pool}
+\item{value}{the genomic value to be estimated. Can be 
+either "gv", "bv", "female", or "male".}
 
-\item{useGV}{if model is \code{\link{RRDsol-class}}, 
-setting this parameter to TRUE will give use estimated 
-genetic values. Otherwise, you get estimated breeding 
-values that depend on the population's allele frequency.}
+\item{targetPop}{an optional target population that can 
+be used when value is "bv", "female", or "male". When 
+supplied, the allele frequency in the targetPop is used 
+to set these values.}
 
-\item{append}{should EBVs be appended to existing EBVs}
+\item{append}{should estimated values be appended to 
+existing data in the EBV slot. If TRUE, a new column is 
+added. If FALSE, existing data is replaced with the 
+new estimates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
@@ -31,9 +31,11 @@ values that depend on the population's allele frequency.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Sets a population's EBV with genomic estimated
-values from \code{\link{RRBLUP}}, \code{\link{RRBLUP_GCA}},
-or \code{\link{RRBLUP_SCA}}.
+Adds genomic estimated values to a populations's EBV 
+slot using output from a genomic selection functions. 
+The genomic estimated values can be either estimated 
+breeding values, estimated genetic values, or 
+estimated general combining values.
 }
 \examples{
 #Create founder haplotypes

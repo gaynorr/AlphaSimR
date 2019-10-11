@@ -1,3 +1,24 @@
+Changes in version 0.11.0
+  
+  New features
+    -$MAJOR CHANGE$ rework of setEBV (breaks some scripts)
+    -genotype data now stored as bits (was bytes)
+    -implemented a gamma model for crossover interference
+    -added the mutate function to model random mutations
+    -added a vignette explaining the biological model for traits
+    -GS models now handle polyploids
+    -heterogenous error variance is now optional in GS models (default is homogeneous error)
+    -improved gene drop functionality of pedigreeCross
+    -added keepParents option to makeDH and self (indirectly extends selectFam and selectWithinFam)
+    -added RRBLUP_SCA2
+    -set methods for the "show" function when applied to populations
+    
+  Bug fixes
+    -fixed a bug returning the first individual when selecting 0
+    -fixed error in recombination track when using makeDH
+    -fixed error causing epistatic effects to mask GxE effects
+    -fixed an error with pullSegSiteGeno and pullSegSiteHaplo with variable number of sites per chromosome
+
 Changes in version 0.10.0
   
   New features

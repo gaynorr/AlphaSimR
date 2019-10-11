@@ -1,6 +1,14 @@
-// These function are called by R, but are not listed in the package namespace
+// These functions may be called by R, but are not listed in the package namespace
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
+
+std::bitset<8> toBits(unsigned char byte){
+  return std::bitset<8>(byte);
+}
+
+unsigned char toByte(std::bitset<8> bits){
+  return bits.to_ulong(); 
+}
 
 // Calculates population variance
 //' @title Population variance
@@ -38,14 +46,14 @@ arma::field<arma::Cube<unsigned char> > mergeGeno(
 // [[Rcpp::export]]
 arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
                                                       arma::uvec nInd,
-                                                      arma::uvec nLoci,
+                                                      arma::uvec nBin,
                                                       arma::uword ploidy){
-  arma::field<arma::Cube<unsigned char> > output(nLoci.n_elem);
+  arma::field<arma::Cube<unsigned char> > output(nBin.n_elem);
   arma::uword nTot = sum(nInd);
   arma::uword nPop = nInd.n_elem;
   // Allocate output
-  for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
-    output(chr).set_size(nLoci(chr),ploidy,nTot);
+  for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
+    output(chr).set_size(nBin(chr),ploidy,nTot);
   }
   // Add individual genotypes
   arma::uword startInd=0, endInd=0;
@@ -54,7 +62,7 @@ arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
       endInd += nInd(i)-1;
       Rcpp::S4 pop = popList[i];
       arma::field<arma::Cube<unsigned char> >geno = pop.slot("geno");
-      for(arma::uword chr=0; chr<nLoci.n_elem; ++chr){
+      for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
         output(chr).slices(startInd,endInd) = geno(chr);
       }
       startInd += nInd(i);
@@ -80,22 +88,6 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
     end = start;
   }
   return output;
-}
-
-// Calculates allele frequency on a single chromsome
-// Requires bi-allelic markers, but works for any ploidy
-// [[Rcpp::export]]
-arma::vec calcChrFreq(const arma::Cube<unsigned char>& geno){
-  arma::uword ploidy = geno.n_cols;
-  arma::Mat<unsigned char> tmp = arma::sum(geno,1);
-  arma::vec output = arma::mean(arma::conv_to<arma::mat>::from(tmp),
-                                1)/ploidy;
-  return output;
-}
-
-// [[Rcpp::export]]
-arma::Mat<int> convToImat(const arma::Mat<unsigned char>& X){
-  return arma::conv_to<arma::Mat<int> >::from(X);
 }
 
 // Linear index functions for upper triangle of a square
@@ -127,29 +119,87 @@ arma::uword mapCol(arma::uword k, arma::uword n){
   return k+i+1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2;
 }
 
-
 // Randomly samples integers without replacement
 // n number of integers to return
 // N number of integers to sample from
 // Returns an integer vector of length n with values ranging from 0 to N-1
-// From: https://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
-// Reportedly from: Algorithm 3.4.2S of Knuth's book Seminumeric Algorithms
+// Uses Jeffrey Scott Vitter's Method D
+// [[Rcpp::export]]
 arma::uvec sampleInt(arma::uword n, arma::uword N){
-  arma::uword t = 0;
-  arma::uword m = 0;
-  arma::vec u(1);
-  arma::uvec samples(n);
-  while(m<n){
-    u.randu();
-    if(double(N-t)*u(0) >= double(n-m)){
-      ++t;
-    }else{
-      samples(m) = t;
-      ++t;
-      ++m;
-    }
+  arma::uvec output;
+  output.set_size(n);
+  if(n == 0){
+    return output;
   }
-  return samples;
+  double q, v, x, y1, y2;
+  arma::uword threshold = 13*n;
+  arma::uword S, limit, top, bottom;
+  arma::vec u(1,arma::fill::randu);
+  v = exp(log(u(0))/double(n));
+  q = double(N-n+1);
+  while((n>1) & (threshold<N)){
+    while(true){
+      while(true){
+        x = double(N)*(1-v);
+        S = floor(x);
+        if(double(S)<q){
+          break;
+        }
+        u.randu();
+        v = exp(log(u(0))/double(n));
+      }
+      u.randu();
+      y1 = exp(log(u(0)*double(N)/q)/double(n-1));
+      v = y1*(1-x/double(N))*(q/(q-double(S)));
+      if(v <= 1){
+        break;
+      }
+      y2 = 1;
+      top = N-1;
+      if((n-1) > S){
+        bottom = N-n;
+        limit = N-S;
+      }else{
+        bottom = N-S-1;
+        limit = N-n+1;
+      }
+      for(arma::uword i=N-1; i>=limit; --i)
+        y2 *= double(top)/double(bottom);
+      u.randu();
+      if((double(N)/(double(N)-x)) >= (y1*exp(log(y2)/double(n-1)))){
+        v = exp(log(u(0))/double(n-1));
+        break;
+      }
+      v = exp(log(u(0))/double(n));
+    }
+    output(n-1) = S+1;
+    N = N-S-1;
+    --n;
+    q = double(N-n+1);
+    threshold -= 13;
+  }
+  if(n > 1){
+    top = N-n;
+    while(n >= 2){
+      u.randu();
+      S = 0;
+      q = double(top)/double(N);
+      while(q > u(0)){
+        ++S;
+        --top;
+        --N;
+        q = (q*double(top))/double(N);
+      }
+      output(n-1) = S+1;
+      --N;
+      --n;
+    }
+    u.randu();
+    output(0) = floor(u(0)*N);
+  }else{
+    output(0) = floor(v*N);
+  }
+  return cumsum(output);
 }
 
 // Samples random pairs without replacement from all possible combinations
@@ -260,3 +310,4 @@ int getNumThreads(){
 #endif
   return 1;
 }
+

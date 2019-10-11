@@ -4,7 +4,8 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny = 1, parents = NULL, simParam = NULL)
+self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE,
+  simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -12,6 +13,9 @@ self(pop, nProgeny = 1, parents = NULL, simParam = NULL)
 \item{nProgeny}{total number of selfed progeny per individual}
 
 \item{parents}{an optional vector of indices for allowable parents}
+
+\item{keepParents}{should previous parents be used for mother and 
+father.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

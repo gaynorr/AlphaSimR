@@ -5,18 +5,23 @@
 \alias{RawPop-class}
 \alias{[,RawPop-method}
 \alias{c,RawPop-method}
+\alias{show,RawPop-method}
 \title{Raw Population}
 \usage{
 \S4method{[}{RawPop}(x, i)
 
 \S4method{c}{RawPop}(x, ...)
+
+\S4method{show}{RawPop}(object)
 }
 \arguments{
-\item{x}{a 'RawPop'}
+\item{x}{a 'RawPop' object}
 
 \item{i}{index of individuals}
 
 \item{...}{additional 'RawPop' objects}
+
+\item{object}{a 'RawPop' object}
 }
 \description{
 The raw population class contains only genotype data.
@@ -26,6 +31,8 @@ The raw population class contains only genotype data.
 \item \code{[}: Extract RawPop by index
 
 \item \code{c}: Combine multiple RawPops
+
+\item \code{show}: Show population summary
 }}
 
 \section{Slots}{

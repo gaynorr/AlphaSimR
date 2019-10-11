@@ -54,6 +54,7 @@ makeCross = function(pop,crossPlan,simParam=NULL){
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$v,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
@@ -300,6 +301,7 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
             simParam$isTrackRec,
             females@ploidy,
             males@ploidy,
+            simParam$v,
             simParam$femaleCentromere,
             simParam$maleCentromere,
             simParam$quadProb,
@@ -419,6 +421,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
 #' @param parents an optional vector of indices for allowable parents
+#' @param keepParents should previous parents be used for mother and 
+#' father. 
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -437,7 +441,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' pop2 = self(pop, simParam=SP)
 #' 
 #' @export
-self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
+self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
+                simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -460,6 +465,7 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
               simParam$isTrackRec,
               pop@ploidy,
               pop@ploidy,
+              simParam$v,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
@@ -473,12 +479,19 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
-  return(newPop(rawPop=rPop,
-                mother=rep(pop@id,each=nProgeny),
-                father=rep(pop@id,each=nProgeny),
-                origM=rep(pop@mother,each=nProgeny),
-                origF=rep(pop@father,each=nProgeny),
-                simParam=simParam))
+  if(keepParents){
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nProgeny),
+                  father=rep(pop@id,each=nProgeny),
+                  origM=rep(pop@mother,each=nProgeny),
+                  origF=rep(pop@father,each=nProgeny),
+                  simParam=simParam))
+  }else{
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nProgeny),
+                  father=rep(pop@id,each=nProgeny),
+                  simParam=simParam))
+  }
 }
 
 #' @title Generates DH lines
@@ -490,6 +503,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
 #' @param nDH total number of DH lines per individual
 #' @param useFemale should female recombination rates be used. 
 #' This parameter has no effect if, recombRatio=1.
+#' @param keepParents should previous parents be used for mother and 
+#' father. 
 #' @param simParam an object of 'SimParam' class
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -508,7 +523,8 @@ self = function(pop,nProgeny=1,parents=NULL,simParam=NULL){
 #' pop2 = makeDH(pop, simParam=SP)
 #' 
 #' @export
-makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
+makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
+                  simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -518,11 +534,13 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(useFemale){
     tmp = createDH2(pop@geno,nDH,
                     simParam$femaleMap,
+                    simParam$v,
                     simParam$isTrackRec,
                     simParam$nThreads)
   }else{
     tmp = createDH2(pop@geno,nDH,
                     simParam$maleMap,
+                    simParam$v,
                     simParam$isTrackRec,
                     simParam$nThreads)
   }
@@ -535,13 +553,21 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
   if(simParam$isTrackRec){
     simParam$addToRec(tmp$recHist)
   }
-  return(newPop(rawPop=rPop,
-                mother=rep(pop@id,each=nDH),
-                father=rep(pop@id,each=nDH),
-                origM=rep(pop@mother,each=nDH),
-                origF=rep(pop@father,each=nDH),
-                isDH=TRUE,
-                simParam=simParam))
+  if(keepParents){
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nDH),
+                  father=rep(pop@id,each=nDH),
+                  origM=rep(pop@mother,each=nDH),
+                  origF=rep(pop@father,each=nDH),
+                  isDH=TRUE,
+                  simParam=simParam))
+  }else{
+    return(newPop(rawPop=rPop,
+                  mother=rep(pop@id,each=nDH),
+                  father=rep(pop@id,each=nDH),
+                  isDH=TRUE,
+                  simParam=simParam))
+  }
 }
 
 #' @title Pedigree cross
@@ -552,14 +578,18 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
 #'
 #' @param founderPop a \code{\link{Pop-class}}
 #' @param id a vector of unique identifiers for individuals 
-#' in the pedigree. The values of these ids are seperate from   
-#' the ids in the founderPop.
+#' in the pedigree. The values of these IDs are seperate from   
+#' the IDs in the founderPop if matchID=FALSE.
 #' @param mother a vector of identifiers for the mothers 
 #' of individuals in the pedigree. Must match one of the 
 #' elements in the id vector or they will be treated as unknown.
 #' @param father a vector of identifiers for the fathers 
 #' of individuals in the pedigree. Must match one of the 
 #' elements in the id vector or they will be treated as unknown.
+#' @param matchID indicates if the IDs in founderPop should be 
+#' matched to the id argument. See details.
+#' @param founderNames names for individuals in the founder population. 
+#' Must be provided when matchID=TRUE.
 #' @param maxCycle the maximum number of loops to make over the pedigree 
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
@@ -568,6 +598,12 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
 #' 
+#' @description 
+#' The way in which the user supplied pedigree is used depends on 
+#' the value of matchID. If matchID is TRUE, the IDs in the user 
+#' supplied pedigree are matched against founderNames. If matchID 
+#' is FALSE, founder individuals in the user supplied pedigree are 
+#' randomly sampled from founderPop.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -585,9 +621,10 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,simParam=NULL){
 #' father = c(0,0,2,3:9)
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #' 
+#' 
 #' @export
-pedigreeCross = function(founderPop,id,mother,father, 
-                         maxCycle=100,DH=NULL,useFemale=TRUE,
+pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
+                         founderNames=NULL, maxCycle=100, DH=NULL, useFemale=TRUE, 
                          simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -599,6 +636,10 @@ pedigreeCross = function(founderPop,id,mother,father,
   id = as.character(id)
   mother = as.character(mother)
   father = as.character(father)
+  if(matchID){
+    founderNames = as.character(founderNames)
+    stopifnot(length(founderNames)==nInd(founderPop))
+  }
   if(is.null(DH)){
     DH = logical(length(id))
   }else{
@@ -615,7 +656,12 @@ pedigreeCross = function(founderPop,id,mother,father,
   if(founderPop@nInd<nFounder){
     stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
   }
-  selFounder = sample.int(founderPop@nInd,nFounder)
+  if(!matchID){
+    #Randomize selected founders
+    selFounder = sample.int(founderPop@nInd,nFounder)
+  }else{
+    selFounder = 1:founderPop@nInd
+  }
   output = vector("list",length=length(id))
   # Sort pedigree
   genInd = rep(0,length(id))
@@ -663,38 +709,78 @@ pedigreeCross = function(founderPop,id,mother,father,
       if(genInd[i]==gen){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
           #Is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(id[i],founderNames)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = founderPop[selFounder[founderIndicator]]
         }else if(is.na(matchMother[i])){
           #Mother is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(mother[i],founderNames)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = makeCross2(founderPop[selFounder[founderIndicator]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }else if(is.na(matchFather[i])){
           #Father is a founder
-          founderIndicator = founderIndicator+1L
+          if(!matchID){
+            #Select the next founder
+            founderIndicator = founderIndicator+1L
+          }else{
+            #Match founder
+            founderIndicator = match(father[i],founderNames)
+            if(is.na(founderIndicator)){
+              stop(paste(id[i],"is missing in founderPop"))
+            }
+          }
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    founderPop[selFounder[founderIndicator]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }else{
           #Both parents are in the pedigree
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-        }
-        #Make the individual a DH?
-        if(DH[i]){
-          output[[i]] = makeDH(output[[i]],
-                               useFemale=useFemale,
-                               simParam=simParam)
+          #Make the individual a DH?
+          if(DH[i]){
+            output[[i]] = makeDH(output[[i]],
+                                 useFemale=useFemale,
+                                 simParam=simParam)
+          }
         }
       }
     }
   }
-  return(mergePops(output))
+  output = mergePops(output)
+  return(output)
 }
 

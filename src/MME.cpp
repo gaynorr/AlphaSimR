@@ -231,6 +231,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
                          int maxIter=40){
   double tol = 1e-4;
+  double minVC = sqrt(2.2204460492503131e-016);
   arma::uword k = Mlist.n_elem;
   arma::uword n = y.n_rows;
   arma::uword q = X.n_cols;
@@ -250,10 +251,10 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   while(true){
     ++iter;
     W0 = V(0)*sigma(0);
-    W0.diag() += sigma(k);
     for(arma::uword i=1; i<k; ++i){
       W0 += V(i)*sigma(i);
     }
+    W0.diag() += sigma(k);
     invPass = inv_sympd(W,W0);
     if(!invPass){
       W = pinv(W0);
@@ -294,8 +295,8 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       taper = 0.9;
     }
     sigma += taper*qvec;
-    while(sigma.min() < -(1e-6)){
-      sigma(sigma.index_min()) = -(1e-6);
+    while(sigma.min() < minVC){
+      sigma(sigma.index_min()) = minVC;
     }
     if((iter>1)&(fabs(deltaLlik)<tol*10)){
       break;
@@ -307,9 +308,6 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
       Rf_warning("Reached maxIter without converging");
       break;
     }
-  }
-  while(sigma.min() < 0.0){
-    sigma(sigma.index_min()) = 0.0;
   }
   arma::mat beta(q,1), ee(n,1);
   arma::field<arma::mat> u(k);
@@ -490,25 +488,154 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
+//Uses EM algorithm to solve a mixed model with 3 random effects
+Rcpp::List solveRRBLUP_EM3(const arma::mat& Y, const arma::mat& X,
+                           const arma::mat& M1, const arma::mat& M2, 
+                           const arma::mat& M3, double Vu1, double Vu2, 
+                           double Vu3, double Ve, double tol, 
+                           int maxIter, bool useEM){
+  double lambda1 = Ve/Vu1;
+  double lambda2 = Ve/Vu2;
+  double lambda3 = Ve/Vu3;
+  double delta1=0,delta2=0,delta3=0,VeN=0,Vu1N=0,Vu2N=0,Vu3N=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
+  if(!useEM & (n<(3*m))){
+    arma::mat Vinv = inv_sympd(M1*M1.t()*Vu1+M2*M2.t()*Vu2+M3*M3.t()*Vu3+arma::eye(n,n)*Ve);
+    arma::mat beta = solve(X.t()*Vinv*X, X.t()*Vinv*Y);
+    arma::mat u(m,2);
+    u.col(0) = M1.t()*Vinv*(Y-X*beta)*Vu1;
+    u.col(1) = M2.t()*Vinv*(Y-X*beta)*Vu2;
+    u.col(2) = M3.t()*Vinv*(Y-X*beta)*Vu3;
+    arma::vec Vu(3);
+    Vu(0) = Vu1;
+    Vu(1) = Vu2;
+    Vu(2) = Vu3;
+    return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                              Rcpp::Named("Ve")=Ve,
+                              Rcpp::Named("beta")=beta,
+                              Rcpp::Named("u")=u,
+                              Rcpp::Named("iter")=iter);
+  }
+  arma::mat RHS(q+3*m,q+3*m),LHS(q+3*m,1),Rvec(q+3*m,1);
+  // Top row
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M1;
+  RHS(arma::span(0,q-1),arma::span(q+m,q+2*m-1)) = X.t()*M2;
+  RHS(arma::span(0,q-1),arma::span(q+2*m,q+3*m-1)) = X.t()*M3;
+  // Second row
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M1.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M1.t()*M1;
+  RHS(arma::span(q,q+m-1),arma::span(q+m,q+2*m-1)) = M1.t()*M2;
+  RHS(arma::span(q,q+m-1),arma::span(q+2*m,q+3*m-1)) = M1.t()*M3;
+  // Third row
+  RHS(arma::span(q+m,q+2*m-1),arma::span(0,q-1)) = M2.t()*X;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q,q+m-1)) = M2.t()*M1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)) = M2.t()*M2;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+2*m,q+3*m-1)) = M2.t()*M3;
+  // Fourth row
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(0,q-1)) = M3.t()*X;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q,q+m-1)) = M3.t()*M1;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+m,q+2*m-1)) = M3.t()*M2;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)) = M3.t()*M3;
+  // Add to diagonal
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += lambda2;
+  RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag() += lambda3;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
+  Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
+  Rvec(arma::span(q+2*m,q+3*m-1),0) = M3.t()*Y;
+  arma::mat RHSinv = inv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu1N = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    Vu2N = as_scalar(
+      LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+    )/m;
+    Vu3N = as_scalar(
+      LHS(arma::span(q+2*m,q+3*m-1),0).t()*LHS(arma::span(q+2*m,q+3*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag())
+    )/m;
+    delta1 = VeN/Vu1N-lambda1;
+    delta2 = VeN/Vu2N-lambda2;
+    delta3 = VeN/Vu3N-lambda3;
+    while((fabs(delta1)>tol) || (fabs(delta2)>tol) || (fabs(delta3)>tol)){
+      Ve = VeN;
+      Vu1 = Vu1N;
+      Vu2 = Vu2N;
+      Vu3 = Vu3N;
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta1;
+      RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += delta2;
+      RHS(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag() += delta3;
+      lambda1 += delta1;
+      lambda2 += delta2;
+      lambda3 += delta3;
+      RHSinv = inv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu1N = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      Vu2N = as_scalar(
+        LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+      )/m;
+      Vu3N = as_scalar(
+        LHS(arma::span(q+2*m,q+3*m-1),0).t()*LHS(arma::span(q+2*m,q+3*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+2*m,q+3*m-1),arma::span(q+2*m,q+3*m-1)).diag())
+      )/m;
+      delta1 = VeN/Vu1N-lambda1;
+      delta2 = VeN/Vu2N-lambda2;
+      delta3 = VeN/Vu3N-lambda3;
+    }
+  }
+  arma::vec Vu(3);
+  Vu(0) = Vu1;
+  Vu(1) = Vu2;
+  Vu(2) = Vu3;
+  arma::mat u(m,3);
+  u.col(0) = LHS.rows(arma::span(q,q+m-1));
+  u.col(1) = LHS.rows(arma::span(q+m,q+2*m-1));
+  u.col(2) = LHS.rows(arma::span(q+2*m,q+3*m-1));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("iter")=iter);
+}
+
 // Called by fastRRBLUP function
 // An implementation of the Gauss-Seidel method for solving 
 // mixed model equations for an RR-BLUP model
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y,
                           arma::field<arma::Cube<unsigned char> >& geno, 
-                          arma::ivec& lociPerChr, arma::uvec lociLoc,
-                          double Vu, double Ve, int maxIter){
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc);
-  arma::vec Md(y.n_rows);
+                          arma::Col<int>& lociPerChr, arma::uvec lociLoc,
+                          double Vu, double Ve, arma::uword maxIter, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
+  arma::mat Md(y.n_rows,1);
   arma::rowvec Mdr(M.n_cols);
-  arma::rowvec p2(M.n_cols);
+  arma::rowvec Mmean(M.n_cols);
   arma::vec X(y.n_rows);
   double lhs, rhs, eps, beta=0, solOld;
   arma::rowvec XpX(M.n_cols);
   for(arma::uword i=0; i<M.n_cols; ++i){
-    Md = arma::conv_to<arma::vec>::from(M.col(i));
-    p2(i) = mean(Md);
-    Md -= p2(i);
+    Md = genoToGenoA(M.col(i), ploidy, 1);
+    Mmean(i) = as_scalar(mean(Md));
+    Md -= Mmean(i);
     XpX(i) = accu(Md%Md)/Ve;
   }
   double lambda = 1/Vu;
@@ -527,8 +654,8 @@ Rcpp::List callFastRRBLUP(arma::vec y,
     order = shuffle(order);
     for(arma::uword i=0; i<M.n_cols; ++i){
       k = order(i);
-      Md = arma::conv_to<arma::vec>::from(M.col(k));
-      Md -= p2(k);
+      Md = genoToGenoA(M.col(k), ploidy, 1);
+      Md -= Mmean(k);
       e += Md*u(k);
       lhs = XpX(k)+lambda;
       rhs = accu(Md%e/Ve);
@@ -539,8 +666,8 @@ Rcpp::List callFastRRBLUP(arma::vec y,
     }
     if(iter%200 ==0){
       for(arma::uword i=0; i<M.n_rows; ++i){
-        Mdr = arma::conv_to<arma::rowvec>::from(M.row(k));
-        Mdr -= p2;
+        Mdr = genoToGenoA(M.row(i), ploidy, nThreads);
+        Mdr -= Mmean;
         X(i) = as_scalar(Mdr*u);
       }
       e = y-X-beta;
@@ -549,70 +676,154 @@ Rcpp::List callFastRRBLUP(arma::vec y,
       break;
     }
   }
-  beta -= as_scalar(p2*u);
-  return Rcpp::List::create(Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u);
+  return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                            Rcpp::Named("beta")=-as_scalar(Mmean*u),
+                            Rcpp::Named("mu")=beta);
 }
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x, arma::vec reps,
                       arma::field<arma::Cube<unsigned char> >& geno, 
-                      arma::ivec& lociPerChr, arma::uvec lociLoc){
+                      arma::Col<int>& lociPerChr, arma::uvec lociLoc,
+                      bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
-  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
-  return solveRRBLUP(y, X, M);
+  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+                            ploidy,nThreads);
+  arma::rowvec Mmean = mean(M);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
+  Rcpp::List ans = solveRRBLUP(y, X, M);
+  arma::vec u = ans["u"];
+  arma::mat beta = ans["beta"];
+  return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                            Rcpp::Named("beta")=-as_scalar(Mmean*u),
+                            Rcpp::Named("mu")=beta(0),
+                            Rcpp::Named("Vu")=ans["Vu"],
+                            Rcpp::Named("Ve")=ans["Ve"]);
 }
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, arma::vec reps,
                        arma::field<arma::Cube<unsigned char> >& geno, 
-                       arma::ivec& lociPerChr, arma::uvec lociLoc,
+                       arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                        double Vu, double Ve, double tol, int maxIter, 
-                       bool useEM){
+                       bool useEM, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
-  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
-  return solveRRBLUP_EM(y, X, M, Vu, Ve, 
-                        tol, maxIter, useEM);
+  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+                            ploidy,nThreads);
+  arma::rowvec Mmean = mean(M);
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
+  Rcpp::List ans = solveRRBLUP_EM(y, X, M, Vu, Ve, 
+                                  tol, maxIter, useEM);
+  arma::vec u = ans["u"];
+  arma::mat beta = ans["beta"];
+  return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                            Rcpp::Named("beta")=-as_scalar(Mmean*u),
+                            Rcpp::Named("mu")=beta(0),
+                            Rcpp::Named("Vu")=ans["Vu"],
+                            Rcpp::Named("Ve")=ans["Ve"]);
 }
 
 // Called by RRBLUP_D function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
                         arma::field<arma::Cube<unsigned char> >& geno, 
-                        arma::ivec& lociPerChr, arma::uvec lociLoc,
-                        int maxIter){
+                        arma::Col<int>& lociPerChr, arma::uvec lociLoc,
+                        int maxIter, bool useReps, int nThreads){
+  // Fit GS model
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  Mlist(1) = 1-abs(Mlist(0)-1);
-  arma::rowvec p = mean(Mlist(0),0)/2.0;
-  arma::rowvec het = mean(Mlist(1),0);
-  arma::rowvec F(p.n_elem);
-  for(arma::uword i=0; i<p.n_cols; i++){
-    if((p(i)>0.999999999) | (p(i)<0.000000001)){
-      // Marker is fixed, F is undefined
-      F(i) = 0;
+  Mlist(0) = genoToGenoA(M,ploidy,nThreads);
+  arma::rowvec Mmean = mean(Mlist(0));
+  Mlist(1) = genoToGenoD(M,ploidy,nThreads);
+  arma::mat X;
+  X = join_rows(makeX(x),sum(Mlist(1),1));
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(Mlist(0),reps);
+    sweepReps(Mlist(1),reps);
+  }
+  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  
+  // Clear memory
+  y.reset();
+  X.reset();
+  Mlist.reset();
+  
+  //Scaled genotypes
+  double dP = double(ploidy);
+  arma::vec xx(ploidy+1);
+  for(arma::uword i=0; i<xx.n_elem; ++i)
+    xx(i) = double(i);
+  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
+  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
+  
+  // Calculate genotype frequencies
+  arma::mat freqMat(ploidy+1,M.n_cols);
+  arma::uvec fixed(M.n_cols);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    arma::uvec freq(ploidy+1,arma::fill::zeros);
+    for(arma::uword i=0; i<M.n_rows; ++i){
+      freq(M(i,j)) += 1;
+    }
+    if(any(freq == M.n_rows)){
+      fixed(j) = 1;
     }else{
-      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+      fixed(j) = 0;
+      for(arma::uword i=0; i<freq.n_elem; ++i){
+        freqMat(i,j) = double(freq(i))/double(M.n_rows);
+      }
     }
   }
-  arma::mat X;
-  X = join_rows(makeX(x),mean(Mlist(1),1));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(Mlist(0),reps);
-  sweepReps(Mlist(1),reps);
+  
+  // Solve for average effect
+  arma::vec alpha(M.n_cols), d(M.n_cols);
+  arma::mat beta = ans["beta"];
+  double meanD = beta(beta.n_elem-1);
+  arma::field<arma::mat> u = ans["u"];
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    double genoMu, gvMu;
+    arma::vec gv(ploidy+1);
+    if(fixed(j) == 1){
+      d(j) = 0;
+      alpha(j) = 0;
+    }else{
+      d(j) = u(1).at(j) + meanD;
+      gv = xa*u(0).at(j) + xd*d(j);
+      genoMu = accu(freqMat.col(j)%xa);
+      gvMu = accu(freqMat.col(j)%gv);
+      alpha(j) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
+        accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
+    }
+  }
+  
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter),
-    Rcpp::Named("p")=p,
-    Rcpp::Named("F")=F
+    Rcpp::Named("alpha")=alpha,
+    Rcpp::Named("beta")=-as_scalar(Mmean*alpha),
+    Rcpp::Named("a")=u(0),
+    Rcpp::Named("d")=d,
+    Rcpp::Named("mu")=beta(0),
+    Rcpp::Named("Vu")=ans["Vu"],
+    Rcpp::Named("Ve")=ans["Ve"]
   );
 }
 
@@ -620,32 +831,91 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
                          arma::field<arma::Cube<unsigned char> >& geno, 
-                         arma::ivec& lociPerChr, arma::uvec lociLoc,
+                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                          int maxIter, double Va, double Vd, double Ve, 
-                         double tol, bool useEM){
-  arma::mat Ma = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  arma::mat Md = 1-abs(Ma-1);
-  arma::rowvec p = mean(Ma,0)/2.0;
-  arma::rowvec het = mean(Md,0);
-  arma::rowvec F(p.n_elem);
-  for(arma::uword i=0; i<p.n_cols; i++){
-    if((p(i)>0.999999999) | (p(i)<0.000000001)){
-      // Marker is fixed, F is undefined
-      F(i) = 0;
+                         double tol, bool useEM, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
+  arma::mat Ma = genoToGenoA(M,ploidy,nThreads);
+  arma::rowvec Mmean = mean(Ma);
+  arma::mat Md = genoToGenoD(M,ploidy,nThreads);
+  arma::mat X;
+  X = join_rows(makeX(x),sum(Md,1));
+  if(useReps){
+    sweepReps(y,reps);
+    sweepReps(X,reps);
+    sweepReps(Ma,reps);
+    sweepReps(Md,reps);
+  }
+  Rcpp::List ans = solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM);
+  
+  // Clear memory
+  y.reset();
+  X.reset();
+  Ma.reset();
+  Md.reset();
+  
+  //Scaled genotypes
+  double dP = double(ploidy);
+  arma::vec xx(ploidy+1);
+  for(arma::uword i=0; i<xx.n_elem; ++i)
+    xx(i) = double(i);
+  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
+  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
+  
+  // Calculate genotype frequencies
+  arma::mat freqMat(ploidy+1,M.n_cols);
+  arma::uvec fixed(M.n_cols);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    arma::uvec freq(ploidy+1,arma::fill::zeros);
+    for(arma::uword i=0; i<M.n_rows; ++i){
+      freq(M(i,j)) += 1;
+    }
+    if(any(freq == M.n_cols)){
+      fixed(j) = 1;
     }else{
-      F(i) = 1-het(i)/(2*p(i)*(1-p(i)));
+      fixed(j) = 0;
+      for(arma::uword i=0; i<freq.n_elem; ++i){
+        freqMat(i,j) = double(freq(i))/double(M.n_rows);
+      }
     }
   }
-  arma::mat X;
-  X = join_rows(makeX(x),mean(Md,1));
-  sweepReps(y,reps);
-  sweepReps(X,reps);
-  sweepReps(Ma,reps);
-  sweepReps(Md,reps);
+  
+  // Solve for average effect
+  arma::vec alpha(M.n_cols), d(M.n_cols);
+  arma::mat beta = ans["beta"];
+  double meanD = beta(beta.n_elem-1);
+  arma::mat u = ans["u"];
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    double genoMu, gvMu;
+    arma::vec gv(ploidy+1);
+    if(fixed(j) == 1){
+      d(j) = 0;
+      alpha(j) = 0;
+    }else{
+      d(j) = u(j,1) + meanD;
+      gv = xa*u(j,0) + xd*d(j);
+      genoMu = accu(freqMat.col(j)%xa);
+      gvMu = accu(freqMat.col(j)%gv);
+      alpha(j) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
+        accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
+    }
+  }
+  
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM),
-    Rcpp::Named("p")=p,
-    Rcpp::Named("F")=F
+    Rcpp::Named("alpha")=alpha,
+    Rcpp::Named("beta")=-as_scalar(Mmean*alpha),
+    Rcpp::Named("a")=u.col(0),
+    Rcpp::Named("d")=d,
+    Rcpp::Named("mu")=beta(0),
+    Rcpp::Named("Vu")=ans["Vu"],
+    Rcpp::Named("Ve")=ans["Ve"]
   );
 }
 
@@ -653,74 +923,336 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, arma::vec reps,
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x, arma::vec reps,
                          arma::field<arma::Cube<unsigned char> >& geno, 
-                         arma::ivec& lociPerChr, arma::uvec lociLoc, 
-                         int maxIter){
+                         arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                         int maxIter, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
   arma::mat X = makeX(x);
-  arma::mat M = arma::conv_to<arma::mat>::from(getGeno(geno,lociPerChr,lociLoc));
-  sweepReps(Y,reps);
-  sweepReps(X,reps);
-  sweepReps(M,reps);
-  return solveRRBLUPMV(Y, X, M, maxIter);
+  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+                            ploidy,nThreads);
+  arma::rowvec Mmean = mean(M);
+  if(useReps){
+    sweepReps(Y,reps);
+    sweepReps(X,reps);
+    sweepReps(M,reps);
+  }
+  Rcpp::List ans = solveRRBLUPMV(Y, X, M, maxIter);
+  arma::mat u = ans["u"];
+  arma::mat beta = ans["beta"];
+  return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                            Rcpp::Named("beta")=-(Mmean*u),
+                            Rcpp::Named("mu")=beta.row(0),
+                            Rcpp::Named("Vu")=ans["Vu"],
+                            Rcpp::Named("Ve")=ans["Ve"]);
 }
 
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
-                          arma::ivec& lociPerChr, arma::uvec lociLoc, int maxIter){
-  arma::mat X = makeX(x);
+                          arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                          int maxIter, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
-  Mlist(0) = Mlist(0)*2;
-  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
-  Mlist(1) = Mlist(1)*2;
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(Mlist(0), reps);
-  sweepReps(Mlist(1), reps);
-  return solveRRBLUPMK(y,X,Mlist,maxIter);
+  Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+                         nThreads),ploidy/2,nThreads);
+  Mlist(1) = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+                         nThreads),ploidy/2,nThreads);
+  arma::rowvec Mmean1 = mean(Mlist(0));
+  arma::rowvec Mmean2 = mean(Mlist(1));
+  arma::mat X = makeX(x);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(Mlist(0), reps);
+    sweepReps(Mlist(1), reps);
+  }
+  Rcpp::List ans = solveRRBLUPMK(y,X,Mlist,maxIter);
+  arma::field<arma::mat> u = ans["u"];
+  arma::mat beta = ans["beta"];
+  return Rcpp::List::create(Rcpp::Named("alpha1")=u(0),
+                            Rcpp::Named("alpha2")=u(1),
+                            Rcpp::Named("beta1")=-as_scalar(Mmean1*u(0)),
+                            Rcpp::Named("beta2")=-as_scalar(Mmean2*u(1)),
+                            Rcpp::Named("mu")=beta(0),
+                            Rcpp::Named("Vu")=ans["Vu"],
+                            Rcpp::Named("Ve")=ans["Ve"]);
 }
 
 // Called by RRBLUP_GCA2 function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, arma::vec reps,
                            arma::field<arma::Cube<unsigned char> >& geno, 
-                           arma::ivec& lociPerChr, arma::uvec lociLoc, 
+                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
                            int maxIter, double Vu1, double Vu2, double Ve, 
-                           double tol, bool useEM){
+                           double tol, bool useEM, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  arma::mat M2 = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  arma::rowvec Mmean1 = mean(M1);
+  arma::rowvec Mmean2 = mean(M2);
   arma::mat X = makeX(x);
-  arma::mat M1 = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
-  M1 = M1*2;
-  arma::mat M2 = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
-  M2 = M2*2;
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(M1, reps);
-  sweepReps(M2, reps);
-  return solveRRBLUP_EM2(y,X,M1,M2,Vu1,Vu2,Ve,tol,maxIter,useEM);
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(M1, reps);
+    sweepReps(M2, reps);
+  }
+  Rcpp::List ans = solveRRBLUP_EM2(y,X,M1,M2,Vu1,Vu2,Ve,tol,maxIter,useEM);
+  arma::mat u = ans["u"];
+  arma::mat beta = ans["beta"];
+  return Rcpp::List::create(Rcpp::Named("alpha1")=u.col(0),
+                            Rcpp::Named("alpha2")=u.col(1),
+                            Rcpp::Named("beta1")=-as_scalar(Mmean1*u.col(0)),
+                            Rcpp::Named("beta2")=-as_scalar(Mmean2*u.col(1)),
+                            Rcpp::Named("mu")=beta(0),
+                            Rcpp::Named("Vu")=ans["Vu"],
+                            Rcpp::Named("Ve")=ans["Ve"]);
 }
 
 // Called by RRBLUP_SCA function
+// Only works with diploids
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, arma::vec reps,
                           arma::field<arma::Cube<unsigned char> >& geno, 
-                          arma::ivec& lociPerChr, arma::uvec lociLoc, 
-                          int maxIter){
+                          arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                          int maxIter, bool useReps, int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,1));
-  Mlist(1) = arma::conv_to<arma::mat>::from(getOneHaplo(geno,lociPerChr,lociLoc,2));
-  Mlist(2) = 1-abs(Mlist(0)+Mlist(1)-1);
-  Mlist(0) = Mlist(0)*2;
-  Mlist(1) = Mlist(1)*2;
-  arma::mat X = makeX(x);
-  sweepReps(y, reps);
-  sweepReps(X, reps);
-  sweepReps(Mlist(0), reps);
-  sweepReps(Mlist(1), reps);
-  sweepReps(Mlist(2), reps);
+  Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+                         nThreads),ploidy/2,nThreads);
+  Mlist(1) = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+                         nThreads),ploidy/2,nThreads);
+  // Identify fixed markers
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,
+                                       lociLoc, nThreads);
+  arma::uword m = M.n_cols;
+  double n = double(y.n_rows);
+  arma::uvec fixed(m,arma::fill::ones);
+  arma::rowvec p12(m);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    p12(j) = accu(Mlist(0).col(j)%Mlist(1).col(j)+
+      Mlist(0).col(j)+Mlist(1).col(j)+1)/(4*n);
+    unsigned char firstGeno = M(0,j);
+    for(arma::uword i=1; i<M.n_rows; ++i){
+      if(firstGeno != M(i,j)){
+        fixed(j) = 0;
+        break;
+      }
+    }
+  }
+  
+  // Set dominance genotypes
+  Mlist(2) = genoToGenoD(M,ploidy,nThreads);
+  M.reset();
+  
+  arma::rowvec Mmean1 = mean(Mlist(0));
+  arma::rowvec Mmean2 = mean(Mlist(1));
+  arma::rowvec Mmean12 = mean(Mlist(0)%Mlist(1));
+  arma::mat X;
+  X = join_rows(makeX(x),sum(Mlist(2),1));
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(Mlist(0), reps);
+    sweepReps(Mlist(1), reps);
+    sweepReps(Mlist(2), reps);
+  }
+  
+  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  
+  // Clear memory
+  y.reset();
+  X.reset();
+  Mlist.reset();
+  
+  // Solve for average effect
+  
+  arma::rowvec p1 = (Mmean1+1)/2;
+  arma::rowvec p2 = (Mmean2+1)/2;
+  arma::rowvec intraD = p12-p1%p2;
+  arma::vec alpha1(m), alpha2(m), d(m);
+  arma::mat beta = ans["beta"];
+  double meanD = beta(beta.n_elem-1);
+  arma::field<arma::mat> u = ans["u"];
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<Mmean1.n_cols; ++i){
+    double gv1, gv0, gvMu, alpha, numer, denom;
+    if(fixed(i)==0){
+      d(i) = u(2).at(i) + meanD;
+      //alpha1
+      gv1 = (p2(i)+intraD(i)/p1(i))*(u(0).at(i)+u(1).at(i)) + 
+        ((1-p2(i))-intraD(i)/p1(i))*d(i);
+      gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i) + 
+        ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u(0).at(i)-u(1).at(i));
+      gvMu = p1(i)*gv1+(1-p1(i))*gv0;
+      numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
+      denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha1(i) = alpha;
+      //alpha2
+      gv1 = (p1(i)+intraD(i)/p2(i))*(u(0).at(i)+u(1).at(i)) + 
+        ((1-p1(i))-intraD(i)/p2(i))*d(i);
+      gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i) + 
+        ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u(0).at(i)-u(1).at(i));
+      gvMu = p2(i)*gv1+(1-p2(i))*gv0;
+      numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
+      denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha2(i) = alpha;
+    }else{
+      alpha1(i) = 0;
+      alpha2(i) = 0;
+      d(i) = 0;
+    }
+  }
+  
   return Rcpp::List::create(
-    Rcpp::Named("ans")=solveRRBLUPMK(y, X, Mlist, maxIter)
+    Rcpp::Named("alpha1")=alpha1,
+    Rcpp::Named("alpha2")=alpha2,
+    Rcpp::Named("beta1")=-as_scalar(Mmean1*alpha1),
+    Rcpp::Named("beta2")=-as_scalar(Mmean2*alpha2),
+    Rcpp::Named("a1")=u(0),
+    Rcpp::Named("a2")=u(1),
+    Rcpp::Named("d")=d,
+    Rcpp::Named("mu")=beta(0),
+    Rcpp::Named("Vu")=ans["Vu"],
+    Rcpp::Named("Ve")=ans["Ve"]
   );
 }
 
-
+// Called by RRBLUP_SCA2 function
+// [[Rcpp::export]]
+Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
+                           arma::field<arma::Cube<unsigned char> >& geno, 
+                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                           int maxIter, double Vu1, double Vu2, double Vu3, 
+                           double Ve, double tol, bool useEM, bool useReps, 
+                           int nThreads){
+  arma::uword ploidy = geno(0).n_cols;
+  arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  arma::mat M2 = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+                                             nThreads),ploidy/2,nThreads);
+  // Identify fixed markers
+  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,
+                                       lociLoc, nThreads);
+  arma::uword m = M.n_cols;
+  double n = double(y.n_rows);
+  arma::uvec fixed(m,arma::fill::ones);
+  arma::rowvec p12(m);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<M.n_cols; ++j){
+    p12(j) = accu(M1.col(j)%M2.col(j)+
+      M1.col(j)+M2.col(j)+1)/(4*n);
+    unsigned char firstGeno = M(0,j);
+    for(arma::uword i=1; i<M.n_rows; ++i){
+      if(firstGeno != M(i,j)){
+        fixed(j) = 0;
+        break;
+      }
+    }
+  }
+  
+  // Set dominance genotypes
+  arma::mat M3 = genoToGenoD(M,ploidy,nThreads);
+  M.reset();
+  
+  arma::rowvec Mmean1 = mean(M1);
+  arma::rowvec Mmean2 = mean(M2);
+  arma::rowvec Mmean12 = mean(M1%M2);
+  arma::mat X;
+  X = join_rows(makeX(x),sum(M3,1));
+  if(useReps){
+    sweepReps(y, reps);
+    sweepReps(X, reps);
+    sweepReps(M1, reps);
+    sweepReps(M2, reps);
+    sweepReps(M3, reps);
+  }
+  
+  Rcpp::List ans = solveRRBLUP_EM3(y,X,M1,M2,M3,Vu1,Vu2,Vu3,Ve,tol,maxIter,useEM);
+  
+  // Clear memory
+  y.reset();
+  X.reset();
+  M1.reset();
+  M2.reset();
+  M3.reset();
+  
+  // Solve for average effect
+  
+  arma::rowvec p1 = (Mmean1+1)/2;
+  arma::rowvec p2 = (Mmean2+1)/2;
+  arma::rowvec intraD = p12-p1%p2;
+  arma::vec alpha1(m), alpha2(m), d(m);
+  arma::mat beta = ans["beta"];
+  double meanD = beta(beta.n_elem-1);
+  arma::mat u = ans["u"];
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<Mmean1.n_cols; ++i){
+    double gv1, gv0, gvMu, alpha, numer, denom;
+    if(fixed(i)==0){
+      d(i) = u(i,2) + meanD;
+      //alpha1
+      gv1 = (p2(i)+intraD(i)/p1(i))*(u(i,0)+u(i,1)) + 
+        ((1-p2(i))-intraD(i)/p1(i))*d(i);
+      gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i) + 
+        ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u(i,0)-u(i,1));
+      gvMu = p1(i)*gv1+(1-p1(i))*gv0;
+      numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
+      denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) + 
+        (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha1(i) = alpha;
+      //alpha2
+      gv1 = (p1(i)+intraD(i)/p2(i))*(u(i,0)+u(i,1)) + 
+        ((1-p1(i))-intraD(i)/p2(i))*d(i);
+      gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i) + 
+        ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u(i,0)-u(i,1));
+      gvMu = p2(i)*gv1+(1-p2(i))*gv0;
+      numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
+      denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) + 
+        (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
+      alpha = numer/denom;
+      if(!std::isfinite(alpha)) alpha=0;
+      alpha2(i) = alpha;
+    }else{
+      alpha1(i) = 0;
+      alpha2(i) = 0;
+      d(i) = 0;
+    }
+  }
+  
+  return Rcpp::List::create(
+    Rcpp::Named("alpha1")=alpha1,
+    Rcpp::Named("alpha2")=alpha2,
+    Rcpp::Named("beta1")=-as_scalar(Mmean1*alpha1),
+    Rcpp::Named("beta2")=-as_scalar(Mmean2*alpha2),
+    Rcpp::Named("a1")=u.col(0),
+    Rcpp::Named("a2")=u.col(1),
+    Rcpp::Named("d")=d,
+    Rcpp::Named("mu")=beta(0),
+    Rcpp::Named("Vu")=ans["Vu"],
+    Rcpp::Named("Ve")=ans["Ve"]
+  );
+}

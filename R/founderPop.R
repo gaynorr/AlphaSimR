@@ -114,8 +114,8 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 #' 
 #' @export
-runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
-                   split=NULL,ploidy=2L,manualCommand=NULL,manualGenLen=NULL,
+runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
+                   split=NULL, ploidy=2L, manualCommand=NULL, manualGenLen=NULL,
                    nThreads=NULL){
   if(is.null(nThreads)){
     nThreads = getNumThreads()
@@ -123,15 +123,22 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
+  
+  # Note that the seed doesn't really control the random number seed, 
+  # because MaCS is called within an OpenMP loop.
+  seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
+  
   if(is.null(segSites)){
     segSites = rep(0L,nChr)
   }else if(length(segSites)==1L){
     segSites = rep(as.integer(segSites),nChr)
   }
+  
   popSize = ifelse(inbred,nInd,ploidy*nInd)
+  
   if(!is.null(manualCommand)){
     if(is.null(manualGenLen)) stop("You must define manualGenLen")
-    command = paste(popSize,manualCommand,"-s",sample.int(1e8,1))
+    command = paste0(popSize," ",manualCommand," -s ")
     genLen = manualGenLen
   }else{
     species = toupper(species)
@@ -171,14 +178,13 @@ runMacs = function(nInd,nChr=1,segSites=NULL,inbred=FALSE,species="GENERIC",
       splitI = paste(" -I 2",popSize%/%2,popSize%/%2)
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
-    command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ",sample.int(1e8,1))
+    command = paste0(popSize," ",speciesParams,splitI," ",speciesHist,splitJ," -s ")
   }
   if(!is.null(manualGenLen)){
     genLen = manualGenLen
   }
-  output = vector("list",nChr)
-  macsOut = MaCS(command,segSites,inbred,
-                 ploidy,nThreads)
+  macsOut = MaCS(command, segSites, inbred, ploidy, 
+                 nThreads, seed)
   nLoci = sapply(macsOut$genMap,length)
   genMap = lapply(macsOut$genMap,function(x){
     genLen*(c(x)-min(x))
@@ -301,12 +307,13 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
   }else{
     nSamp = nInd*ploidy
   }
+  nBin = mapPop@nLoci%/%8L + (mapPop@nLoci%%8L > 0L)
   if(!replace) stopifnot(nHaplo>=nSamp)
   output = vector("list",mapPop@nChr)
   for(chr in 1:mapPop@nChr){
     haplo = sample.int(nHaplo,nSamp,replace=replace)
     geno = array(data=as.raw(0),
-                 dim=c(mapPop@nLoci[chr],
+                 dim=c(nBin[chr],
                        ploidy,nInd))
     outHap = 1L 
     outInd = 1L
@@ -364,19 +371,36 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
 #' @export
 quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
   ploidy = as.integer(ploidy)
-  if(inbred){
-    nHap = nInd
-  }else{
-    nHap = ploidy*nInd
-  }
+  nInd = as.integer(nInd)
+  nChr = as.integer(nChr)
+  segSites = as.integer(segSites)
   if(length(segSites)==1) segSites = rep(segSites,nChr)
   if(length(genLen)==1) genLen = rep(genLen,nChr)
+  nBins = segSites%/%8L + (segSites%%8L > 0L)
+  centromere = genLen/2
+  
   genMap = vector("list",nChr)
-  haplotypes = vector("list",nChr)
+  geno = vector("list",nChr)
   for(i in 1:nChr){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
-    haplotypes[[i]] = matrix(sample(0:1,nHap*segSites[i],replace=TRUE),
-                             nrow=nHap, ncol=segSites[i])
+    geno[[i]] = array(sample(as.raw(0:255),
+                             nInd*ploidy*nBins[i],
+                             replace=TRUE),
+                      dim = c(nBins[i],ploidy,nInd))
+    if(inbred){
+      if(ploidy>1){
+        for(j in 2:ploidy){
+          geno[[i]][,j,] = geno[[i]][,1,]
+        }
+      }
+    }
   }
-  return(newMapPop(genMap,haplotypes,inbred,ploidy))
+  return(new("MapPop",
+             nInd=nInd,
+             nChr=nChr,
+             ploidy=ploidy,
+             nLoci=segSites,
+             geno=as.matrix(geno),
+             genMap=as.matrix(genMap),
+             centromere=centromere))
 }

@@ -5,7 +5,7 @@
 \title{RR-BLUP Model}
 \usage{
 RRBLUP(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
-  maxIter = 1000L, simParam = NULL, ...)
+  maxIter = 1000L, useReps = FALSE, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
@@ -25,6 +25,9 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations. Only used 
 when number of traits is greater than 1.}
+
+\item{useReps}{should population's reps slot be used to model 
+heterogeneous error variance}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

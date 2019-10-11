@@ -28,7 +28,6 @@ calcPheno = function(pop,varE,reps,p,simParam){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  validObject(pop)
   if(length(p)==1){
     p = rep(p,simParam$nTraits)
   }
@@ -38,8 +37,7 @@ calcPheno = function(pop,varE,reps,p,simParam){
     varE = simParam$varE
   }
   for(i in 1:simParam$nTraits){
-    traitClass = class(simParam$traits[[i]])
-    if(traitClass=="TraitAG" | traitClass=="TraitADG"){
+    if(.hasSlot(simParam$traits[[i]], "envVar")){
       stdDev = sqrt(simParam$traits[[i]]@envVar)
       gv[,i] = gv[,i]+pop@gxe[[i]]*qnorm(p[i],sd=stdDev)
     }

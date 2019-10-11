@@ -102,7 +102,8 @@ mergePops = function(popList){
     gxe = list()
   }
   #geno
-  geno = mergeMultGeno(popList,nInd=nInd,nLoci=nLoci,ploidy=ploidy)
+  nBin = as.integer(nLoci%/%8L + (nLoci%%8L > 0L))
+  geno = mergeMultGeno(popList,nInd=nInd,nBin=nBin,ploidy=ploidy)
   nInd = sum(nInd)
   return(new("Pop",
              nInd=nInd,

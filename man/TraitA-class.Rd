@@ -13,6 +13,6 @@ to model additive traits
 \describe{
 \item{\code{addEff}}{additive effects}
 
-\item{\code{intercept}}{adjustment factor for gc}
+\item{\code{intercept}}{adjustment factor for gv}
 }}
 

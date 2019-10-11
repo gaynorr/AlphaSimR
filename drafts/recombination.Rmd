@@ -1,0 +1,29 @@
+---
+title: "Genetic Recombination in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: AlphaSimR.bib
+vignette: >
+  %\VignetteIndexEntry{Recombination}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette provides a brief description of AlphaSimR's model for meiosis.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plot(x=NULL, y=NULL, xlim=c(-1,1), ylim=c(-1,1), 
+     axes=FALSE, ylab="", xlab="", main="'Cross-type' Configuration")
+# Arm 0
+lines(x=c(-0.2, -0.2), y=c(0.2, 1), 
+      col="red", lwd=2)
+lines(x=c(-0.15, -0.15), y=c(-0.15, 1), 
+      col="red2", lwd=2)
+# Arm 1
+# Arm 2
+# Arm 3
+
+```
+
+# References

@@ -1,3 +1,7 @@
+convToImat = function(X){
+  return(matrix(as.integer(X),nrow=nrow(X),ncol=ncol(X)))
+}
+
 selectLoci = function(chr,inLociPerChr,inLociLoc){
   if(is.null(chr)){
     return(list(lociPerChr=inLociPerChr,
@@ -198,7 +202,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   tmp = selectLoci(chr,
                    simParam$snpChips[[snpChip]]@lociPerChr,
                    simParam$snpChips[[snpChip]]@lociLoc)
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc)
+  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,simParam$nThreads)
   output = convToImat(output)
   if(class(pop)=="Pop"){
     rownames(output) = pop@id
@@ -248,7 +252,8 @@ pullMultipleSnpGeno = function(pop, chips,
     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
     one = getGeno(pop@geno,
                   simParam$snpChips[[snpChip]]@lociPerChr,
-                  simParam$snpChips[[snpChip]]@lociLoc)
+                  simParam$snpChips[[snpChip]]@lociLoc,
+                  simParam$nThreads)
     one = convToImat(one)
     for (i in 1:pop@nInd){
       if (chips[i] == snpChip) {
@@ -297,7 +302,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
   tmp = selectLoci(chr,
                    simParam$traits[[trait]]@lociPerChr,
                    simParam$traits[[trait]]@lociLoc)
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc)
+  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,simParam$nThreads)
   output = convToImat(output)
   if(class(pop)=="Pop"){
     rownames(output) = pop@id
@@ -337,17 +342,19 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
 #' @export
 pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
   if(class(pop)=="MapPop"){
-    allLoci = c(sapply(pop@nLoci, function(x) 1:x))
+    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
+    nThreads = getNumThreads()
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
     }
-    allLoci = c(sapply(simParam$segSites, function(x) 1:x))
+    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
+    nThreads = simParam$nThreads
   }
   tmp = selectLoci(chr,lociTot,allLoci)
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc)
+  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
   output = convToImat(output)
   if(class(pop)=="Pop"){
     rownames(output) = pop@id
@@ -399,7 +406,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   lociPerChr = tmp$lociPerChr
   lociLoc = tmp$lociLoc
   if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc)
+    output = getHaplo(pop@geno,lociPerChr,lociLoc,simParam$nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
@@ -411,7 +418,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo))
+                         as.integer(haplo),simParam$nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
@@ -476,7 +483,8 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
     if (haplo == "all") {
       one = getHaplo(pop@geno,
                      simParam$snpChips[[snpChip]]@lociPerChr,
-                     simParam$snpChips[[snpChip]]@lociLoc)
+                     simParam$snpChips[[snpChip]]@lociLoc,
+                     simParam$nThreads)
       one = convToImat(one)
       for (i in 1:pop@nInd){
         if (chips[i] == snpChip) {
@@ -489,7 +497,8 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
       one = getOneHaplo(pop@geno,
                         simParam$snpChips[[snpChip]]@lociPerChr,
                         simParam$snpChips[[snpChip]]@lociLoc,
-                        as.integer(haplo))
+                        as.integer(haplo),
+                        simParam$nThreads)
       one = convToImat(one)
       for (i in 1:pop@nInd){
         if (chips[i] == snpChip) {
@@ -546,7 +555,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   lociPerChr = tmp$lociPerChr
   lociLoc = tmp$lociLoc
   if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc)
+    output = getHaplo(pop@geno,lociPerChr,lociLoc,simParam$nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
@@ -558,7 +567,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   }else{
     stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo))
+                         as.integer(haplo),simParam$nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
@@ -603,14 +612,16 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 pullSegSiteHaplo = function(pop, haplo="all",
                             chr=NULL, simParam=NULL){
   if(class(pop)=="MapPop"){
-    allLoci = c(sapply(pop@nLoci, function(x) 1:x))
+    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
+    nThreads = getNumThreads()
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
     }
-    allLoci = c(sapply(simParam$segSites, function(x) 1:x))
+    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
+    nThreads = simParam$nThreads
   }
   if(!is.null(chr)){
     tmp = selectLoci(chr,lociTot,allLoci)
@@ -620,7 +631,8 @@ pullSegSiteHaplo = function(pop, haplo="all",
   if(haplo=="all"){
     output = getHaplo(pop@geno,
                       lociTot,
-                      allLoci)
+                      allLoci,
+                      nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
@@ -634,7 +646,8 @@ pullSegSiteHaplo = function(pop, haplo="all",
     output = getOneHaplo(pop@geno,
                          lociTot,
                          allLoci,
-                         as.integer(haplo))
+                         as.integer(haplo),
+                         nThreads)
     output = convToImat(output)
     if(class(pop)=="Pop"){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")

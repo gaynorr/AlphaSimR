@@ -71,6 +71,8 @@ females relative to male}
 
 \item{\code{founderPop}}{the founder population used for scaling traits}
 
+\item{\code{v}}{the interference parameter for a gamma model of recombination}
+
 \item{\code{quadProb}}{the probability of quadrivalent formation}
 
 \item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
