@@ -67,6 +67,15 @@ arma::vec sampleChiasmata(double start, double end, double v,
   return output(find(output<end));
 }
 
+// Samples the locations for chiasmata via a gamma process for a quadrivalent
+// CO interference is assumed to occur between all arms
+// The first arm is sampled at random
+// start, the position downstream to start the gamma process (should be a negative value)
+// exchange, the positions where chromosomes switch
+// end, the length of the interval used to sample
+// v, the interference parameter
+// n1, the number of gamma deviates sampled for the first arm 
+// n2, the number of gamma deviates sampled for all other arms
 arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
                                            double v, arma::uword n1=40, arma::uword n2=8){
   arma::field<arma::vec> output(4);
@@ -345,7 +354,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
         }
       }
     }else{ // Centromere is in the tail
-      if(currentChromosome==1 | currentChromosome==4){ 
+      if((currentChromosome==1) | (currentChromosome==4)){ 
         // Find chromosome and chromatid before transition
         for(arma::uword j=posCO(3).n_elem; j>0; --j){
           if(posCO(3)(j-1)<centromere){
