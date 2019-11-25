@@ -1160,6 +1160,126 @@ Rcpp::List createDH2(
   return Rcpp::List::create(Rcpp::Named("geno")=output);
 }
 
+// Samples gametes from individuals
+// [[Rcpp::export]]
+Rcpp::List createReducedGenome(
+    const arma::field<arma::Cube<unsigned char> >& geno, 
+    arma::uword nProgeny, const arma::field<arma::vec>& genMap, 
+    double v, bool trackRec, arma::uword ploidy,  
+    arma::vec& centromere, double quadProb, int nThreads){
+  arma::uword nChr = geno.n_elem;
+  arma::uword nInd = geno(0).n_slices;
+  //Output data
+  arma::field<arma::Cube<unsigned char> > output(nChr);
+  RecHist hist;
+  if(trackRec){
+    hist.setSize(nInd*nProgeny,nChr,ploidy/2);
+  }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
+    arma::vec u(1);
+    arma::Mat<int> hist1, hist2;
+    arma::uword nBins = geno(chr).n_rows;
+    arma::Cube<unsigned char> tmpGeno(nBins,ploidy/2,nInd*nProgeny);
+    arma::Col<unsigned char> gamete1(nBins), gamete2(nBins);
+    arma::uvec x(ploidy);
+    for(arma::uword i=0; i<ploidy; ++i) 
+      x(i) = i;
+    for(arma::uword ind=0; ind<(nInd*nProgeny); ++ind){ //Individual loop
+      x = shuffle(x);
+      arma::uword progenyChr=0;
+      arma::uword par = ind/nProgeny;
+      for(arma::uword y=0; y<ploidy; y+=4){
+        if((ploidy-y)>2){
+          u.randu();
+          if(u(0)>quadProb){
+            //Bivalent 1
+            bivalent(geno(chr).slice(par).col(x(y)),
+                     geno(chr).slice(par).col(x(y+1)),
+                     genMap(chr),
+                     v,
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(x(y))+1);
+              hist1.col(0).replace(200,int(x(y+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+            //Bivalent 2
+            bivalent(geno(chr).slice(par).col(x(y+2)),
+                     geno(chr).slice(par).col(x(y+3)),
+                     genMap(chr),
+                     v,
+                     gamete1,
+                     hist1);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(x(y+2))+1);
+              hist1.col(0).replace(200,int(x(y+3))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+            }
+            ++progenyChr;
+          }else{
+            //Quadrivalent
+            quadrivalent(geno(chr).slice(par).col(x(y)),
+                         geno(chr).slice(par).col(x(y+1)),
+                         geno(chr).slice(par).col(x(y+2)),
+                         geno(chr).slice(par).col(x(y+3)),
+                         genMap(chr),
+                         centromere(chr),
+                         v,
+                         gamete1,
+                         gamete2,
+                         hist1,
+                         hist2);
+            tmpGeno.slice(ind).col(progenyChr) = gamete1;
+            tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
+            if(trackRec){
+              hist1.col(0) *= 100; //To avoid conflicts
+              hist1.col(0).replace(100,int(x(y))+1);
+              hist1.col(0).replace(200,int(x(y+1))+1);
+              hist.addHist(hist1,ind,chr,progenyChr);
+              hist2.col(0) *= 100; //To avoid conflicts
+              hist2.col(0).replace(100,int(x(y+2))+1);
+              hist2.col(0).replace(200,int(x(y+3))+1);
+              hist.addHist(hist2,ind,chr,progenyChr+1);
+            }
+            progenyChr += 2;
+          }
+        }else{
+          //Bivalent
+          bivalent(geno(chr).slice(par).col(x(y)),
+                   geno(chr).slice(par).col(x(y+1)),
+                   genMap(chr),
+                   v,
+                   gamete1,
+                   hist1);
+          tmpGeno.slice(ind).col(progenyChr) = gamete1;
+          if(trackRec){
+            hist1.col(0) *= 100; //To avoid conflicts
+            hist1.col(0).replace(100,int(x(y))+1);
+            hist1.col(0).replace(200,int(x(y+1))+1);
+            hist.addHist(hist1,ind,chr,progenyChr);
+          }
+          ++progenyChr;
+        }
+      } // End ploidy loop
+    } // End individual loop
+    output(chr) = tmpGeno;
+  } //End chromosome loop
+  if(trackRec){
+    return Rcpp::List::create(Rcpp::Named("geno")=output,
+                              Rcpp::Named("recHist")=hist.hist);
+  }
+  return Rcpp::List::create(Rcpp::Named("geno")=output);
+}
+
 // Converts    recHist (recombinations between generations) to
 //          ibdRecHist (recombinations since the base generation/population)
 // [[Rcpp::export]]

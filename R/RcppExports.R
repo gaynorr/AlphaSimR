@@ -109,6 +109,10 @@ createDH2 <- function(geno, nDH, genMap, v, trackRec, nThreads) {
     .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, trackRec, nThreads)
 }
 
+createReducedGenome <- function(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads)
+}
+
 getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {
     .Call(`_AlphaSimR_getIbdRecHist`, recHist, pedigree, nLociPerChr)
 }

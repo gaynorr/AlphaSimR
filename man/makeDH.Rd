@@ -12,8 +12,7 @@ makeDH(pop, nDH = 1, useFemale = TRUE, keepParents = TRUE,
 
 \item{nDH}{total number of DH lines per individual}
 
-\item{useFemale}{should female recombination rates be used. 
-This parameter has no effect if, recombRatio=1.}
+\item{useFemale}{should female recombination rates be used.}
 
 \item{keepParents}{should previous parents be used for mother and 
 father.}
@@ -25,7 +24,8 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Creates DH lines from each individual in a population. 
-Only works when gender is "no".
+Only works with diploid individuals. For polyploids, use 
+\code{\link{reduceGenome}} and \code{\link{doubleGenome}}.
 }
 \examples{
 #Create founder haplotypes

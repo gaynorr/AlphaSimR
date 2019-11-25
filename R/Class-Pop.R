@@ -161,7 +161,6 @@ setMethod("[",
             }
             x@nInd = dim(x@geno[[1]])[3]
             class(x) = "MapPop"
-            validObject(x)
             return(x)
           }
 )

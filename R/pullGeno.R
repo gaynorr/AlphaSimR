@@ -213,60 +213,59 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   return(output)
 }
 
-#' @title Pull SNP genotype for multiple snp chips
-#'
-#' @description Retrieves SNP genotype data for multiple snp chips
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param chips a vector. For each animal indicates what snp
-#' chip to use
-#' @param missing What value to use for missing
-#' @param simParam an object of \code{\link{SimParam}}
+#' #' @title Pull SNP genotype for multiple snp chips
+#' #'
+#' #' @description Retrieves SNP genotype data for multiple snp chips
+#' #'
+#' #' @param pop an object of \code{\link{Pop-class}}
+#' #' @param chips a vector. For each animal indicates what snp
+#' #' chip to use
+#' #' @param missing What value to use for missing
+#' #' @param simParam an object of \code{\link{SimParam}}
+#' #' 
+#' #' @return Returns a matrix of SNP genotypes.
+#' #' 
+#' #' @export
+#' pullMultipleSnpGeno = function(pop, chips,
+#'                                missing=9, simParam=NULL) {
+#'   if(is.null(simParam)){
+#'     simParam = get("SP",envir=.GlobalEnv)
+#'   }
+#'   # I feel like the next line shouldn't be needed but I don't know
+#'   # enough R! (dmoney)
+#'   missing = as.integer(missing)
+#'   allSnps = numeric(0)
+#'   uniqueChips = unique(chips)
+#'   for (c in uniqueChips){
+#'     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
+#'   }
 #' 
-#' @return Returns a matrix of SNP genotypes.
+#'   output = matrix(pop@nInd,length(allSnps),data=missing)
+#'   if(class(pop)=="Pop"){
+#'     rownames(output) = pop@id
+#'   }else{
+#'     rownames(output) = as.character(1:pop@nInd)
+#'   }
 #' 
-#' @export
-pullMultipleSnpGeno = function(pop, chips,
-                               missing=9, simParam=NULL) {
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
-  stopifnot(length(chips) == pop@nInd)
-  # I feel like the next line shouldn't be needed but I don't know
-  # enough R! (dmoney)
-  missing = as.integer(missing)
-  allSnps = numeric(0)
-  uniqueChips = unique(chips)
-  for (c in uniqueChips){
-    allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
-  }
-
-  output = matrix(pop@nInd,length(allSnps),data=missing)
-  if(class(pop)=="Pop"){
-    rownames(output) = pop@id
-  }else{
-    rownames(output) = as.character(1:pop@nInd)
-  }
-
-  for (snpChip in uniqueChips){
-    mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
-    one = getGeno(pop@geno,
-                  simParam$snpChips[[snpChip]]@lociPerChr,
-                  simParam$snpChips[[snpChip]]@lociLoc,
-                  simParam$nThreads)
-    one = convToImat(one)
-    for (i in 1:pop@nInd){
-      if (chips[i] == snpChip) {
-        output[i,mask] = one[i,]
-        output[i,mask] = one[i,]
-      }
-    }
-  }
-
-  colnames(output) = paste("SNP",1:ncol(output),sep="_")
-
-  return(output)
-}
+#'   for (snpChip in uniqueChips){
+#'     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
+#'     one = getGeno(pop@geno,
+#'                   simParam$snpChips[[snpChip]]@lociPerChr,
+#'                   simParam$snpChips[[snpChip]]@lociLoc,
+#'                   simParam$nThreads)
+#'     one = convToImat(one)
+#'     for (i in 1:pop@nInd){
+#'       if (chips[i] == snpChip) {
+#'         output[i,mask] = one[i,]
+#'         output[i,mask] = one[i,]
+#'       }
+#'     }
+#'   }
+#' 
+#'   colnames(output) = paste("SNP",1:ncol(output),sep="_")
+#' 
+#'   return(output)
+#' }
 
 #' @title Pull QTL genotype
 #'
@@ -430,89 +429,88 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   return(output)
 }
 
-#' @title Pull SNP haplotypes for multiple chips
-#'
-#' @description Retrieves SNP haplotype data for multiple snp
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param chips a vector. For each animal indicates what snp
-#' chip to use
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotyes and a value of 2 for male haplotypes.
-#' @param missing What value to use for missing
-#' @param simParam an object of \code{\link{SimParam}}
-#'
-#' @return Returns a matrix of SNP haplotypes.
+#' #' @title Pull SNP haplotypes for multiple chips
+#' #'
+#' #' @description Retrieves SNP haplotype data for multiple snp
+#' #'
+#' #' @param pop an object of \code{\link{Pop-class}}
+#' #' @param chips a vector. For each animal indicates what snp
+#' #' chip to use
+#' #' @param haplo either "all" for all haplotypes or an integer
+#' #' for a single set of haplotypes. Use a value of 1 for female
+#' #' haplotyes and a value of 2 for male haplotypes.
+#' #' @param missing What value to use for missing
+#' #' @param simParam an object of \code{\link{SimParam}}
+#' #'
+#' #' @return Returns a matrix of SNP haplotypes.
+#' #' 
+#' #' @export
+#' pullMultipleSnpHaplo = function(pop, chips, haplo="all",
+#'                                 missing=9, simParam=NULL){
+#'   if(is.null(simParam)){
+#'     simParam = get("SP",envir=.GlobalEnv)
+#'   }
+#'   # I feel like the next line shouldn't be needed but I don't know
+#'   # enough R! (dmoney)
+#'   missing = as.integer(missing)
+#'   allSnps = numeric(0)
+#'   uniqueChips = unique(chips)
+#'   for (c in uniqueChips){
+#'     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
+#'   }
 #' 
-#' @export
-pullMultipleSnpHaplo = function(pop, chips, haplo="all",
-                                missing=9, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
-  stopifnot(length(chips) == pop@nInd)
-  # I feel like the next line shouldn't be needed but I don't know
-  # enough R! (dmoney)
-  missing = as.integer(missing)
-  allSnps = numeric(0)
-  uniqueChips = unique(chips)
-  for (c in uniqueChips){
-    allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
-  }
-
-  if (haplo == "all") {
-    output = matrix(pop@nInd*2,length(allSnps),data=missing)
-    if(class(pop)=="Pop"){
-      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }
-  }else{
-    output = matrix(pop@nInd,length(allSnps),data=missing)
-    if(class(pop)=="Pop"){
-      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-    }
-  }
-  for (snpChip in uniqueChips){
-    mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
-    if (haplo == "all") {
-      one = getHaplo(pop@geno,
-                     simParam$snpChips[[snpChip]]@lociPerChr,
-                     simParam$snpChips[[snpChip]]@lociLoc,
-                     simParam$nThreads)
-      one = convToImat(one)
-      for (i in 1:pop@nInd){
-        if (chips[i] == snpChip) {
-          output[i*2-1,mask] = one[i*2-1,]
-          output[i*2,mask] = one[i*2,]
-        }
-      }
-    }
-    else {
-      one = getOneHaplo(pop@geno,
-                        simParam$snpChips[[snpChip]]@lociPerChr,
-                        simParam$snpChips[[snpChip]]@lociLoc,
-                        as.integer(haplo),
-                        simParam$nThreads)
-      one = convToImat(one)
-      for (i in 1:pop@nInd){
-        if (chips[i] == snpChip) {
-          output[i,mask] = one[i,]
-          output[i,mask] = one[i,]
-        }
-      }
-    }
-  }
-
-  colnames(output) = paste("SNP",1:ncol(output),sep="_")
-
-  return(output)
-}
+#'   if (haplo == "all") {
+#'     output = matrix(pop@nInd*2,length(allSnps),data=missing)
+#'     if(class(pop)=="Pop"){
+#'       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+#'                                rep(1:pop@ploidy,pop@nInd),sep="_")
+#'     }else{
+#'       rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
+#'                                rep(1:pop@ploidy,pop@nInd),sep="_")
+#'     }
+#'   }else{
+#'     output = matrix(pop@nInd,length(allSnps),data=missing)
+#'     if(class(pop)=="Pop"){
+#'       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
+#'     }else{
+#'       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
+#'     }
+#'   }
+#'   for (snpChip in uniqueChips){
+#'     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
+#'     if (haplo == "all") {
+#'       one = getHaplo(pop@geno,
+#'                      simParam$snpChips[[snpChip]]@lociPerChr,
+#'                      simParam$snpChips[[snpChip]]@lociLoc,
+#'                      simParam$nThreads)
+#'       one = convToImat(one)
+#'       for (i in 1:pop@nInd){
+#'         if (chips[i] == snpChip) {
+#'           output[i*2-1,mask] = one[i*2-1,]
+#'           output[i*2,mask] = one[i*2,]
+#'         }
+#'       }
+#'     }
+#'     else {
+#'       one = getOneHaplo(pop@geno,
+#'                         simParam$snpChips[[snpChip]]@lociPerChr,
+#'                         simParam$snpChips[[snpChip]]@lociLoc,
+#'                         as.integer(haplo),
+#'                         simParam$nThreads)
+#'       one = convToImat(one)
+#'       for (i in 1:pop@nInd){
+#'         if (chips[i] == snpChip) {
+#'           output[i,mask] = one[i,]
+#'           output[i,mask] = one[i,]
+#'         }
+#'       }
+#'     }
+#'   }
+#' 
+#'   colnames(output) = paste("SNP",1:ncol(output),sep="_")
+#' 
+#'   return(output)
+#' }
 
 #' @title Pull QTL haplotypes
 #'

@@ -924,7 +924,7 @@ SimParam$set(
       nSnpPerChr = rep(nSnpPerChr,private$.nChr)
     }
     stopifnot(length(nSnpPerChr)==private$.nChr)
-    stopifnot(sapply(simParam$potSnp,length)>=nSnpPerChr)
+    stopifnot(sapply(private$.potSnp,length)>=nSnpPerChr)
     stopifnot(dim(structure)[2]==sum(nSnpPerChr))
     lociLoc = lapply(1:private$.nChr,function(x){
       sort(sample(private$.potSnp[[x]],nSnpPerChr[x]))

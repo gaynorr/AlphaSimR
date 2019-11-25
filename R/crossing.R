@@ -32,7 +32,7 @@ makeCross = function(pop,crossPlan,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   if(pop@ploidy%%2L != 0L){
-    stop("You can not cross aneuploids")
+    stop("You cannot cross aneuploids")
   }
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],pop@id),
@@ -127,23 +127,30 @@ randCross = function(pop,nCrosses,nProgeny=1,
     crossPlan[,2] = parents[crossPlan[,2]]
   }else{
     female = which(pop@gender=="F" & (1:pop@nInd)%in%parents)
-    if(length(female)==0){
+    nFemale = length(female)
+    if(nFemale==0){
       stop("population doesn't contain any females")
     }
     male = which(pop@gender=="M" & (1:pop@nInd)%in%parents)
-    if(length(male)==0){
+    nMale = length(male)
+    if(nMale==0){
       stop("population doesn't contain any males")
     }
     if(balance){
-      female = female[sample.int(length(female),length(female))]
-      female = rep(female,length.out=nCrosses)
-      male = male[sample.int(length(male),length(male))]
-      male = rep(male,length.out=nCrosses)
-      male = male[sample.int(nCrosses,nCrosses)]
+      female = female[sample.int(nFemale, nFemale)]
+      female = rep(female, length.out=nCrosses)
+      tmp = male[sample.int(nMale, nMale)]
+      n = nCrosses%/%nMale + 1
+      male = NULL
+      for(i in 1:n){
+        take = nMale - (i:(nMale+i-1))%%nMale
+        male = c(male, tmp[take])
+      }
+      male = male[1:nCrosses]
       crossPlan = cbind(female,male)
     }else{
-      crossPlan = sampAllComb(length(female),
-                              length(male),
+      crossPlan = sampAllComb(nFemale,
+                              nMale,
                               nCrosses)
       crossPlan[,1] = female[crossPlan[,1]]
       crossPlan[,2] = male[crossPlan[,2]]
@@ -390,16 +397,23 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
       stop("population doesn't contain any males")
     }
   }
+  nMale = length(male)
+  nFemale = length(female)
   if(balance){
-    female = female[sample.int(length(female),length(female))]
-    female = rep(female,length.out=nCrosses)
-    male = male[sample.int(length(male),length(male))]
-    male = rep(male,length.out=nCrosses)
-    male = male[sample.int(nCrosses,nCrosses)]
+    female = female[sample.int(nFemale, nFemale)]
+    female = rep(female, length.out=nCrosses)
+    tmp = male[sample.int(nMale, nMale)]
+    n = nCrosses%/%nMale + 1
+    male = NULL
+    for(i in 1:n){
+      take = nMale - (i:(nMale+i-1))%%nMale
+      male = c(male, tmp[take])
+    }
+    male = male[1:nCrosses]
     crossPlan = cbind(female,male)
   }else{
-    crossPlan = sampAllComb(length(female),
-                            length(male),
+    crossPlan = sampAllComb(nFemale,
+                            nMale,
                             nCrosses)
     crossPlan[,1] = female[crossPlan[,1]]
     crossPlan[,2] = male[crossPlan[,2]]
@@ -497,12 +511,12 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 #' @title Generates DH lines
 #' 
 #' @description Creates DH lines from each individual in a population. 
-#' Only works when gender is "no".
+#' Only works with diploid individuals. For polyploids, use 
+#' \code{\link{reduceGenome}} and \code{\link{doubleGenome}}.
 #' 
 #' @param pop an object of 'Pop' superclass
 #' @param nDH total number of DH lines per individual
 #' @param useFemale should female recombination rates be used. 
-#' This parameter has no effect if, recombRatio=1.
 #' @param keepParents should previous parents be used for mother and 
 #' father. 
 #' @param simParam an object of 'SimParam' class
