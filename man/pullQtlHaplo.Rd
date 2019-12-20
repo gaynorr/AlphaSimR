@@ -4,8 +4,7 @@
 \alias{pullQtlHaplo}
 \title{Pull QTL haplotypes}
 \usage{
-pullQtlHaplo(pop, trait = 1, haplo = "all", chr = NULL,
-  simParam = NULL)
+pullQtlHaplo(pop, trait = 1, haplo = "all", chr = NULL, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -59,7 +58,7 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
   }
 
-if (haplo == "all") {
+  if (haplo == "all") {
     output = matrix(pop@nInd*2,length(allSnps),data=missing)
     if(class(pop)=="Pop"){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
@@ -107,9 +106,9 @@ if (haplo == "all") {
     }
   }
 
-colnames(output) = paste("SNP",1:ncol(output),sep="_")
+  colnames(output) = paste("SNP",1:ncol(output),sep="_")
 
-return(output)
+  return(output)
 }
 }
 \examples{

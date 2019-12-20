@@ -4,9 +4,19 @@
 \alias{selectOP}
 \title{Select open pollinating plants}
 \usage{
-selectOP(pop, nInd, nSeeds, probSelf = 0, pollenControl = FALSE,
-  trait = 1, use = "pheno", selectTop = TRUE, candidates = NULL,
-  simParam = NULL, ...)
+selectOP(
+  pop,
+  nInd,
+  nSeeds,
+  probSelf = 0,
+  pollenControl = FALSE,
+  trait = 1,
+  use = "pheno",
+  selectTop = TRUE,
+  candidates = NULL,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

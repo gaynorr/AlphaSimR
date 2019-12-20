@@ -3,7 +3,6 @@
 \docType{package}
 \name{AlphaSimR}
 \alias{AlphaSimR}
-\alias{AlphaSimR-package}
 \title{AlphaSimR: Breeding Program Simulations}
 \description{
 The successor to the 'AlphaSim' software for breeding program 

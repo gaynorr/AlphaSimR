@@ -3,10 +3,12 @@ Changes in version 0.11.1
   New features
     -switched to a circular design for the balance option in randCross and randCross2
     -added reduceGenome and doubleGenome for changing plody levels
+    -added minSnpFreq to SimParam_addSnpChip for any reference population
     
   Bug fixes
     -fixed broken SimParam_addStructuredSnpChip
     -removed broken pullMultipleSnpGeno and pullMultipleSnpHaplo
+    -fixed broken writePlink
 
 Changes in version 0.11.0
   

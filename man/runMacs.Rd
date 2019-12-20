@@ -4,9 +4,18 @@
 \alias{runMacs}
 \title{Create founder haplotypes using MaCS}
 \usage{
-runMacs(nInd, nChr = 1, segSites = NULL, inbred = FALSE,
-  species = "GENERIC", split = NULL, ploidy = 2L,
-  manualCommand = NULL, manualGenLen = NULL, nThreads = NULL)
+runMacs(
+  nInd,
+  nChr = 1,
+  segSites = NULL,
+  inbred = FALSE,
+  species = "GENERIC",
+  split = NULL,
+  ploidy = 2L,
+  manualCommand = NULL,
+  manualGenLen = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}

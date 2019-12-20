@@ -4,8 +4,7 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE,
-  simParam = NULL)
+self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

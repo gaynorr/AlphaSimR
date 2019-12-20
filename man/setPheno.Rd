@@ -4,8 +4,15 @@
 \alias{setPheno}
 \title{Set phenotypes}
 \usage{
-setPheno(pop, varE = NULL, reps = 1, fixEff = 1L, p = 0.5,
-  onlyPheno = FALSE, simParam = NULL)
+setPheno(
+  pop,
+  varE = NULL,
+  reps = 1,
+  fixEff = 1L,
+  p = 0.5,
+  onlyPheno = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or 

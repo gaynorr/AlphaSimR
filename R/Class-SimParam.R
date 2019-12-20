@@ -851,12 +851,14 @@ SimParam$set(
 #' @description 
 #' Randomly assigns eligble SNPs to a SNP chip
 #' 
-#' @section Usage: SP$addSnpChip(nSnpPerChr, force = FALSE)
+#' @section Usage: SP$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL)
 #' 
 #' @param nSnpPerChr number of SNPs per chromosome. 
 #' Can be a single value or nChr values.
-#' @param force should the check for a running simulation be 
-#' ignored. Only set to TRUE if you know what you are doing.
+#' @param minSnpFreq minimum allowable frequency for SNP loci.
+#' If NULL, no minimum frequency is used. 
+#' @param refPop reference population for calculating SNP 
+#' frequency. If NULL, the founder population is used.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -872,17 +874,30 @@ NULL
 SimParam$set(
   "public",
   "addSnpChip",
-  function(nSnpPerChr, force=FALSE){
-    if(!force){
-      private$.isRunning()
-    }
+  function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL){
+    potSnp = private$.potSnp
+    # Fill out SNP vector
     if(length(nSnpPerChr)==1){
       nSnpPerChr = rep(nSnpPerChr,private$.nChr)
     }
     stopifnot(length(nSnpPerChr)==private$.nChr)
-    stopifnot(sapply(private$.potSnp,length)>=nSnpPerChr)
+    
+    # Reduce eligible SNPs for frequency
+    if(!is.null(minSnpFreq)){
+      if(is.null(refPop)){
+        refPop = private$.founderPop
+      }
+      for(chr in 1:private$.nChr){
+        q = calcChrFreq(refPop@geno[[chr]])
+        q = 0.5-abs(q-0.5) #Convert to minor allele frequency
+        tmp = which(q>=minSnpFreq)
+        potSnp[[chr]] = tmp[tmp%in%potSnp[[chr]]]
+      }
+    }
+    # Sample SNPs
+    stopifnot(sapply(potSnp,length)>=nSnpPerChr)
     lociLoc = lapply(1:private$.nChr,function(x){
-      sort(sample(private$.potSnp[[x]],nSnpPerChr[x]))
+      sort(sample(potSnp[[x]],nSnpPerChr[x]))
     })
     lociLoc = do.call("c",lociLoc)
     snpChip = new("LociMap",

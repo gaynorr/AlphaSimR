@@ -4,8 +4,13 @@
 \alias{reduceGenome}
 \title{Create individuals with reduced ploidy}
 \usage{
-reduceGenome(pop, nProgeny = 1, useFemale = TRUE, keepParents = TRUE,
-  simParam = NULL)
+reduceGenome(
+  pop,
+  nProgeny = 1,
+  useFemale = TRUE,
+  keepParents = TRUE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}

@@ -7,14 +7,17 @@
 \item{nSnpPerChr}{number of SNPs per chromosome. 
 Can be a single value or nChr values.}
 
-\item{force}{should the check for a running simulation be 
-ignored. Only set to TRUE if you know what you are doing.}
+\item{minSnpFreq}{minimum allowable frequency for SNP loci.
+If NULL, no minimum frequency is used.}
+
+\item{refPop}{reference population for calculating SNP 
+frequency. If NULL, the founder population is used.}
 }
 \description{
 Randomly assigns eligble SNPs to a SNP chip
 }
 \section{Usage}{
- SP$addSnpChip(nSnpPerChr, force = FALSE)
+ SP$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL)
 }
 
 \examples{

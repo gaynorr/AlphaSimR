@@ -4,8 +4,15 @@
 \alias{randCross}
 \title{Make random crosses}
 \usage{
-randCross(pop, nCrosses, nProgeny = 1, balance = TRUE,
-  parents = NULL, ignoreGender = FALSE, simParam = NULL)
+randCross(
+  pop,
+  nCrosses,
+  nProgeny = 1,
+  balance = TRUE,
+  parents = NULL,
+  ignoreGender = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

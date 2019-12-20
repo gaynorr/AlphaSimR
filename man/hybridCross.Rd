@@ -4,8 +4,13 @@
 \alias{hybridCross}
 \title{Hybrid crossing}
 \usage{
-hybridCross(females, males, crossPlan = "testcross",
-  returnHybridPop = FALSE, simParam = NULL)
+hybridCross(
+  females,
+  males,
+  crossPlan = "testcross",
+  returnHybridPop = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{females}{female population, an object of \code{\link{Pop-class}}}

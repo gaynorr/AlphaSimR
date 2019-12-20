@@ -48,7 +48,7 @@ extern SEXP _AlphaSimR_writeASGenotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP
 extern SEXP _AlphaSimR_writeASHaplotypes(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeGeno(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _AlphaSimR_writeOneHaplo(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _AlphaSimR_writePlinkPed(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _AlphaSimR_writePlinkPed(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcChrFreq",         (DL_FUNC) &_AlphaSimR_calcChrFreq,          1},
@@ -91,7 +91,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_writeASHaplotypes",   (DL_FUNC) &_AlphaSimR_writeASHaplotypes,    7},
     {"_AlphaSimR_writeGeno",           (DL_FUNC) &_AlphaSimR_writeGeno,            5},
     {"_AlphaSimR_writeOneHaplo",       (DL_FUNC) &_AlphaSimR_writeOneHaplo,        6},
-    {"_AlphaSimR_writePlinkPed",       (DL_FUNC) &_AlphaSimR_writePlinkPed,        5},
+    {"_AlphaSimR_writePlinkPed",       (DL_FUNC) &_AlphaSimR_writePlinkPed,        6},
     {NULL, NULL, 0}
 };
 

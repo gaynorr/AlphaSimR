@@ -4,9 +4,17 @@
 \alias{randCross2}
 \title{Make random crosses}
 \usage{
-randCross2(females, males, nCrosses, nProgeny = 1, balance = TRUE,
-  femaleParents = NULL, maleParents = NULL, ignoreGender = FALSE,
-  simParam = NULL)
+randCross2(
+  females,
+  males,
+  nCrosses,
+  nProgeny = 1,
+  balance = TRUE,
+  femaleParents = NULL,
+  maleParents = NULL,
+  ignoreGender = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{females}{an object of \code{\link{Pop-class}} for female parents.}

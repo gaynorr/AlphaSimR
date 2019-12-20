@@ -4,9 +4,21 @@
 \alias{RRBLUP2}
 \title{RR-BLUP Model 2}
 \usage{
-RRBLUP2(pop, traits = 1, use = "pheno", snpChip = 1,
-  useQtl = FALSE, maxIter = 10, Vu = NULL, Ve = NULL,
-  useEM = TRUE, tol = 1e-06, useReps = FALSE, simParam = NULL, ...)
+RRBLUP2(
+  pop,
+  traits = 1,
+  use = "pheno",
+  snpChip = 1,
+  useQtl = FALSE,
+  maxIter = 10,
+  Vu = NULL,
+  Ve = NULL,
+  useEM = TRUE,
+  tol = 1e-06,
+  useReps = FALSE,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

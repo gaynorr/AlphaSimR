@@ -4,8 +4,7 @@
 \alias{quickHaplo}
 \title{Quick founder haplotype simulation}
 \usage{
-quickHaplo(nInd, nChr, segSites, genLen = 1, ploidy = 2L,
-  inbred = FALSE)
+quickHaplo(nInd, nChr, segSites, genLen = 1, ploidy = 2L, inbred = FALSE)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}

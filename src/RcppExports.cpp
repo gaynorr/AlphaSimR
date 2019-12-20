@@ -621,16 +621,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // writePlinkPed
-void writePlinkPed(const Rcpp::DataFrame& fam, const arma::field<arma::Cube<unsigned char> >& geno, const arma::uvec& lociPerChr, arma::uvec lociLoc, const Rcpp::String& file);
-RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP fileSEXP) {
+void writePlinkPed(const Rcpp::DataFrame& fam, const arma::Mat<unsigned char>& haplo, const arma::uword& nInd, const arma::uword& ploidy, const arma::uword& nLoc, const Rcpp::String& file);
+RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP haploSEXP, SEXP nIndSEXP, SEXP ploidySEXP, SEXP nLocSEXP, SEXP fileSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type fam(famSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type lociPerChr(lociPerChrSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type haplo(haploSEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type nInd(nIndSEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type ploidy(ploidySEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type nLoc(nLocSEXP);
     Rcpp::traits::input_parameter< const Rcpp::String& >::type file(fileSEXP);
-    writePlinkPed(fam, geno, lociPerChr, lociLoc, file);
+    writePlinkPed(fam, haplo, nInd, ploidy, nLoc, file);
     return R_NilValue;
 END_RCPP
 }

@@ -337,6 +337,38 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' @param chromLength an integer. The size of chromosomes in base
 #' pairs; assuming all chromosomes are of the same size.
 #'
+#' @examples 
+#' \dontrun{
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$setGender(gender = "yes_rand")
+#' SP$addTraitA(nQtlPerChr = 10)
+#' SP$addSnpChip(nSnpPerChr = 5)
+#' 
+#' #Create population
+#' pop = newPop(rawPop = founderPop)
+#' pop = setPheno(pop, varE = SP$varA)
+#' writePlink(pop, baseName="test")
+#' 
+#' #Test
+#' test = read.table(file = "test.ped")
+#' #...gender
+#' if (!identical(x = c("M", "F")[test[[5]]], y = pop@gender)) { stop() }
+#' #...pheno (issues with rounding)
+#' # if (!identical(x = test[[6]], y = pop@pheno[, 1])) { stop() }
+#' #...genotypes
+#' x = test[, -(1:6)]  - 1
+#' x[, 1] = x[, 1] + x[, 2]
+#' x[, 2] = x[, 3] + x[, 4]
+#' x[, 3] = x[, 5] + x[, 6]
+#' x[, 4] = x[, 7] + x[, 8]
+#' x[, 5] = x[, 9] + x[, 10]
+#' y = pullSnpGeno(pop)
+#' if (sum(x[, 1:5] - y) != 0) { stop() }
+#' }
 #' @export
 writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                       chromLength = 10L^8) {
@@ -344,7 +376,7 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
     simParam = get(x = "SP", envir = .GlobalEnv)
   }
   if (pop@ploidy != 2L) {
-    stop("writePlink() works only with diploids!")
+    stop(paste0("writePlink() will write ", pop@ploidy, " alleles for each locus!"))
   }  
   
   # ---- Map ----
@@ -385,11 +417,15 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                    inLociPerChr = simParam$snpChips[[snpChip]]@lociPerChr,
                    inLociLoc    = simParam$snpChips[[snpChip]]@lociLoc)
   # Add loci alleles to fam and write to file directly from C++
-  writePlinkPed(fam        = fam,
-                geno       = pop@geno,
-                lociPerChr = tmp$lociPerChr,
-                lociLoc    = tmp$lociLoc,
-                file       = paste0(baseName, ".ped"))
+  writePlinkPed(fam    = fam,
+                haplo  = getHaplo(geno       = pop@geno,
+                                  lociPerChr = tmp$lociPerChr,
+                                  lociLoc    = tmp$lociLoc,
+                                  nThreads   = simParam$nThreads),
+                nInd   = nrow(fam),
+                ploidy = pop@ploidy,
+                nLoc   = sum(tmp$lociPerChr),
+                file   = paste0(baseName, ".ped"))
 }
 
 #Create rotation matrix for sampling random deviates

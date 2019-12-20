@@ -51,14 +51,14 @@ pullMultipleSnpGeno = function(pop, chips,
     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
   }
 
-output = matrix(pop@nInd,length(allSnps),data=missing)
+  output = matrix(pop@nInd,length(allSnps),data=missing)
   if(class(pop)=="Pop"){
     rownames(output) = pop@id
   }else{
     rownames(output) = as.character(1:pop@nInd)
   }
 
-for (snpChip in uniqueChips){
+  for (snpChip in uniqueChips){
     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
     one = getGeno(pop@geno,
                   simParam$snpChips[[snpChip]]@lociPerChr,
@@ -73,9 +73,9 @@ for (snpChip in uniqueChips){
     }
   }
 
-colnames(output) = paste("SNP",1:ncol(output),sep="_")
+  colnames(output) = paste("SNP",1:ncol(output),sep="_")
 
-return(output)
+  return(output)
 }
 }
 \examples{
