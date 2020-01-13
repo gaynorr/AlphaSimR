@@ -109,6 +109,10 @@ createDH2 <- function(geno, nDH, genMap, v, trackRec, nThreads) {
     .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, trackRec, nThreads)
 }
 
+createReducedGenome <- function(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads)
+}
+
 getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {
     .Call(`_AlphaSimR_getIbdRecHist`, recHist, pedigree, nLociPerChr)
 }
@@ -166,8 +170,8 @@ packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
-writePlinkPed <- function(fam, geno, lociPerChr, lociLoc, file) {
-    invisible(.Call(`_AlphaSimR_writePlinkPed`, fam, geno, lociPerChr, lociLoc, file))
+writePlinkPed <- function(fam, haplo, nInd, ploidy, nLoc, file) {
+    invisible(.Call(`_AlphaSimR_writePlinkPed`, fam, haplo, nInd, ploidy, nLoc, file))
 }
 
 MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {

@@ -4,8 +4,14 @@
 \alias{setEBV}
 \title{Set EBV}
 \usage{
-setEBV(pop, solution, value = "gv", targetPop = NULL, append = FALSE,
-  simParam = NULL)
+setEBV(
+  pop,
+  solution,
+  value = "gv",
+  targetPop = NULL,
+  append = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

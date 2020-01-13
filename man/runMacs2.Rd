@@ -4,11 +4,22 @@
 \alias{runMacs2}
 \title{Alternative wrapper for MaCS}
 \usage{
-runMacs2(nInd, nChr = 1, segSites = NULL, Ne = 100, bp = 1e+08,
-  genLen = 1, mutRate = 2.5e-08, histNe = c(500, 1500, 6000, 12000,
-  1e+05), histGen = c(100, 1000, 10000, 1e+05, 1e+06), inbred = FALSE,
-  split = NULL, ploidy = 2L, returnCommand = FALSE,
-  nThreads = NULL)
+runMacs2(
+  nInd,
+  nChr = 1,
+  segSites = NULL,
+  Ne = 100,
+  bp = 1e+08,
+  genLen = 1,
+  mutRate = 2.5e-08,
+  histNe = c(500, 1500, 6000, 12000, 1e+05),
+  histGen = c(100, 1000, 10000, 1e+05, 1e+06),
+  inbred = FALSE,
+  split = NULL,
+  ploidy = 2L,
+  returnCommand = FALSE,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{nInd}{number of individuals to simulate}

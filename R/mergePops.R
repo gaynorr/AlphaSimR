@@ -23,6 +23,11 @@
 mergePops = function(popList){
   classes = do.call("c",lapply(popList,
                                function(x) class(x)))
+  if(any(classes=="NULL")){
+    remove = which(classes=="NULL")
+    popList = popList[-remove]
+    classes = classes[-remove]
+  }
   stopifnot(all(classes=="Pop"))
   #nChr
   nChr = do.call("c",lapply(popList,

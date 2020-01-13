@@ -4,8 +4,15 @@
 \alias{writeRecords}
 \title{Write data records}
 \usage{
-writeRecords(pop, dir, snpChip = 1, useQtl = FALSE,
-  includeHaplo = FALSE, append = TRUE, simParam = NULL)
+writeRecords(
+  pop,
+  dir,
+  snpChip = 1,
+  useQtl = FALSE,
+  includeHaplo = FALSE,
+  append = TRUE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

@@ -4,8 +4,15 @@
 \alias{usefulness}
 \title{Usefulness criterion}
 \usage{
-usefulness(pop, trait = 1, use = "gv", p = 0.1, selectTop = TRUE,
-  simParam = NULL, ...)
+usefulness(
+  pop,
+  trait = 1,
+  use = "gv",
+  p = 0.1,
+  selectTop = TRUE,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

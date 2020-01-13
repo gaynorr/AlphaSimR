@@ -4,9 +4,19 @@
 \alias{selectWithinFam}
 \title{Select individuals within families}
 \usage{
-selectWithinFam(pop, nInd, trait = 1, use = "pheno", gender = "B",
-  famType = "B", selectTop = TRUE, returnPop = TRUE,
-  candidates = NULL, simParam = NULL, ...)
+selectWithinFam(
+  pop,
+  nInd,
+  trait = 1,
+  use = "pheno",
+  gender = "B",
+  famType = "B",
+  selectTop = TRUE,
+  returnPop = TRUE,
+  candidates = NULL,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

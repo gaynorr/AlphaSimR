@@ -4,9 +4,22 @@
 \alias{RRBLUP_D2}
 \title{RR-BLUP with Dominance Model 2}
 \usage{
-RRBLUP_D2(pop, traits = 1, use = "pheno", snpChip = 1,
-  useQtl = FALSE, maxIter = 10, Va = NULL, Vd = NULL, Ve = NULL,
-  useEM = TRUE, tol = 1e-06, useReps = FALSE, simParam = NULL, ...)
+RRBLUP_D2(
+  pop,
+  traits = 1,
+  use = "pheno",
+  snpChip = 1,
+  useQtl = FALSE,
+  maxIter = 10,
+  Va = NULL,
+  Vd = NULL,
+  Ve = NULL,
+  useEM = TRUE,
+  tol = 1e-06,
+  useReps = FALSE,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

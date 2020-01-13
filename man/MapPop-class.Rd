@@ -28,7 +28,7 @@ for creating initial populations and setting traits in the
 \itemize{
 \item \code{[}: Extract MapPop by index
 
-\item \code{c}: Combine MapPop chromosomes
+\item \code{c}: Combine multiple MapPops
 }}
 
 \section{Slots}{

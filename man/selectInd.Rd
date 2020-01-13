@@ -4,9 +4,18 @@
 \alias{selectInd}
 \title{Select individuals}
 \usage{
-selectInd(pop, nInd, trait = 1, use = "pheno", gender = "B",
-  selectTop = TRUE, returnPop = TRUE, candidates = NULL,
-  simParam = NULL, ...)
+selectInd(
+  pop,
+  nInd,
+  trait = 1,
+  use = "pheno",
+  gender = "B",
+  selectTop = TRUE,
+  returnPop = TRUE,
+  candidates = NULL,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{and object of \code{\link{Pop-class}} or 

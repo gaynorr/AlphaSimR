@@ -4,8 +4,7 @@
 \alias{sampleHaplo}
 \title{Sample haplotypes from a MapPop}
 \usage{
-sampleHaplo(mapPop, nInd, inbred = FALSE, ploidy = NULL,
-  replace = TRUE)
+sampleHaplo(mapPop, nInd, inbred = FALSE, ploidy = NULL, replace = TRUE)
 }
 \arguments{
 \item{mapPop}{the \code{\link{MapPop-class}} used to 

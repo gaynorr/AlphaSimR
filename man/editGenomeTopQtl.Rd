@@ -4,8 +4,7 @@
 \alias{editGenomeTopQtl}
 \title{Edit genome - the top QTL}
 \usage{
-editGenomeTopQtl(pop, ind, nQtl, trait = 1, increase = TRUE,
-  simParam = NULL)
+editGenomeTopQtl(pop, ind, nQtl, trait = 1, increase = TRUE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

@@ -4,8 +4,17 @@
 \alias{RRBLUP}
 \title{RR-BLUP Model}
 \usage{
-RRBLUP(pop, traits = 1, use = "pheno", snpChip = 1, useQtl = FALSE,
-  maxIter = 1000L, useReps = FALSE, simParam = NULL, ...)
+RRBLUP(
+  pop,
+  traits = 1,
+  use = "pheno",
+  snpChip = 1,
+  useQtl = FALSE,
+  maxIter = 1000L,
+  useReps = FALSE,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

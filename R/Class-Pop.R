@@ -83,12 +83,16 @@ setMethod("c",
           signature(x = "RawPop"),
           function (x, ...){
             for(y in list(...)){
-              stopifnot(class(y)=="RawPop",
-                        x@nChr==y@nChr,
-                        x@ploidy==y@ploidy,
-                        x@nLoci==y@nLoci)
-              x@nInd = x@nInd+y@nInd
-              x@geno = mergeGeno(x@geno,y@geno)
+              if(class(y)=="NULL"){
+                # Do nothing
+              }else{
+                stopifnot(class(y)=="RawPop",
+                          x@nChr==y@nChr,
+                          x@ploidy==y@ploidy,
+                          x@nLoci==y@nLoci)
+                x@nInd = x@nInd+y@nInd
+                x@geno = mergeGeno(x@geno,y@geno)
+              }
             }
             return(x)
           }
@@ -161,27 +165,68 @@ setMethod("[",
             }
             x@nInd = dim(x@geno[[1]])[3]
             class(x) = "MapPop"
-            validObject(x)
             return(x)
           }
 )
 
-#' @describeIn MapPop Combine MapPop chromosomes
+#' @describeIn MapPop Combine multiple MapPops 
 setMethod("c",
           signature(x = "MapPop"),
           function (x, ...){
             for(y in list(...)){
-              stopifnot(class(y)=="MapPop",
-                        x@nInd==y@nInd,
-                        x@ploidy==y@ploidy)
-              x@nChr = x@nChr+y@nChr
-              x@geno = rbind(x@geno,y@geno)
-              x@genMap = rbind(x@genMap,y@genMap)
-              x@nLoci = c(x@nLoci,y@nLoci)
+              if(class(y)=="NULL"){
+                # Do nothing
+              }else{
+                stopifnot(class(y)=="MapPop",
+                          x@nChr==y@nChr,
+                          x@ploidy==y@ploidy,
+                          x@nLoci==y@nLoci,
+                          all.equal(x@genMap, y@genMap))
+                x@nInd = x@nInd+y@nInd
+                x@geno = mergeGeno(x@geno,y@geno)
+              }
             }
             return(x)
           }
 )
+
+#' @title Combine MapPop chromosomes
+#' 
+#' @description
+#' Merges the chromosomes of multiple \code{\link{MapPop-class}} objects. 
+#' Each MapPop must have the same number of chromosomes
+#'
+#' @param ... \code{\link{MapPop-class}} objects to be combined
+#' 
+#' @return Returns an object of \code{\link{MapPop-class}}
+#' 
+#' @examples 
+#' pop1 = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' pop2 = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' combinedPop = cChr(pop1, pop2)
+#'
+#' @export
+cChr = function(...){
+  for(y in list(...)){
+    if(class(y)=="NULL"){
+      #Do nothing
+    }else{
+      stopifnot(class(y)=="MapPop")
+      if(!exists("x",inherits=FALSE)){
+        x = y
+      }else{
+        stopifnot(x@nInd==y@nInd,
+                  x@ploidy==y@ploidy)
+        x@nChr = x@nChr+y@nChr
+        x@geno = rbind(x@geno,y@geno)
+        x@genMap = rbind(x@genMap,y@genMap)
+        x@nLoci = c(x@nLoci,y@nLoci)
+      }
+    }
+  }
+  return(x)
+}
 
 # Pop ---------------------------------------------------------------------
 

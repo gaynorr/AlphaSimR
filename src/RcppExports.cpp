@@ -466,6 +466,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// createReducedGenome
+Rcpp::List createReducedGenome(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nProgeny, const arma::field<arma::vec>& genMap, double v, bool trackRec, arma::uword ploidy, arma::vec& centromere, double quadProb, int nThreads);
+RcppExport SEXP _AlphaSimR_createReducedGenome(SEXP genoSEXP, SEXP nProgenySEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP trackRecSEXP, SEXP ploidySEXP, SEXP centromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type nProgeny(nProgenySEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
+    Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type centromere(centromereSEXP);
+    Rcpp::traits::input_parameter< double >::type quadProb(quadProbSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createReducedGenome(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getIbdRecHist
 Rcpp::List getIbdRecHist(const Rcpp::List& recHist, const Rcpp::IntegerMatrix& pedigree, const Rcpp::IntegerVector& nLociPerChr);
 RcppExport SEXP _AlphaSimR_getIbdRecHist(SEXP recHistSEXP, SEXP pedigreeSEXP, SEXP nLociPerChrSEXP) {
@@ -602,16 +621,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // writePlinkPed
-void writePlinkPed(const Rcpp::DataFrame& fam, const arma::field<arma::Cube<unsigned char> >& geno, const arma::uvec& lociPerChr, arma::uvec lociLoc, const Rcpp::String& file);
-RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP fileSEXP) {
+void writePlinkPed(const Rcpp::DataFrame& fam, const arma::Mat<unsigned char>& haplo, const arma::uword& nInd, const arma::uword& ploidy, const arma::uword& nLoc, const Rcpp::String& file);
+RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP haploSEXP, SEXP nIndSEXP, SEXP ploidySEXP, SEXP nLocSEXP, SEXP fileSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type fam(famSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type lociPerChr(lociPerChrSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
+    Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type haplo(haploSEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type nInd(nIndSEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type ploidy(ploidySEXP);
+    Rcpp::traits::input_parameter< const arma::uword& >::type nLoc(nLocSEXP);
     Rcpp::traits::input_parameter< const Rcpp::String& >::type file(fileSEXP);
-    writePlinkPed(fam, geno, lociPerChr, lociLoc, file);
+    writePlinkPed(fam, haplo, nInd, ploidy, nLoc, file);
     return R_NilValue;
 END_RCPP
 }

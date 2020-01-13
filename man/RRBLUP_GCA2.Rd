@@ -4,10 +4,22 @@
 \alias{RRBLUP_GCA2}
 \title{RR-BLUP GCA Model 2}
 \usage{
-RRBLUP_GCA2(pop, traits = 1, use = "pheno", snpChip = 1,
-  useQtl = FALSE, maxIter = 10, VuF = NULL, VuM = NULL,
-  Ve = NULL, useEM = TRUE, tol = 1e-06, useReps = FALSE,
-  simParam = NULL, ...)
+RRBLUP_GCA2(
+  pop,
+  traits = 1,
+  use = "pheno",
+  snpChip = 1,
+  useQtl = FALSE,
+  maxIter = 10,
+  VuF = NULL,
+  VuM = NULL,
+  Ve = NULL,
+  useEM = TRUE,
+  tol = 1e-06,
+  useReps = FALSE,
+  simParam = NULL,
+  ...
+)
 }
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}

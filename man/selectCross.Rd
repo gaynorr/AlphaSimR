@@ -4,9 +4,20 @@
 \alias{selectCross}
 \title{Select and randomly cross}
 \usage{
-selectCross(pop, nInd = NULL, nFemale = NULL, nMale = NULL, nCrosses,
-  nProgeny = 1, trait = 1, use = "pheno", selectTop = TRUE,
-  simParam = NULL, ..., balance = TRUE)
+selectCross(
+  pop,
+  nInd = NULL,
+  nFemale = NULL,
+  nMale = NULL,
+  nCrosses,
+  nProgeny = 1,
+  trait = 1,
+  use = "pheno",
+  selectTop = TRUE,
+  simParam = NULL,
+  ...,
+  balance = TRUE
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}

@@ -23,6 +23,61 @@ Returns a matrix of QTL genotypes.
 \description{
 Retrieves QTL genotype data
 }
+\details{
+#' @title Pull SNP genotype for multiple snp chips
+#'
+#' @description Retrieves SNP genotype data for multiple snp chips
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param chips a vector. For each animal indicates what snp
+#' chip to use
+#' @param missing What value to use for missing
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @return Returns a matrix of SNP genotypes.
+#' 
+#' @export
+pullMultipleSnpGeno = function(pop, chips,
+                               missing=9, simParam=NULL) {
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  # I feel like the next line shouldn't be needed but I don't know
+  # enough R! (dmoney)
+  missing = as.integer(missing)
+  allSnps = numeric(0)
+  uniqueChips = unique(chips)
+  for (c in uniqueChips){
+    allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
+  }
+
+  output = matrix(pop@nInd,length(allSnps),data=missing)
+  if(class(pop)=="Pop"){
+    rownames(output) = pop@id
+  }else{
+    rownames(output) = as.character(1:pop@nInd)
+  }
+
+  for (snpChip in uniqueChips){
+    mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
+    one = getGeno(pop@geno,
+                  simParam$snpChips[[snpChip]]@lociPerChr,
+                  simParam$snpChips[[snpChip]]@lociLoc,
+                  simParam$nThreads)
+    one = convToImat(one)
+    for (i in 1:pop@nInd){
+      if (chips[i] == snpChip) {
+        output[i,mask] = one[i,]
+        output[i,mask] = one[i,]
+      }
+    }
+  }
+
+  colnames(output) = paste("SNP",1:ncol(output),sep="_")
+
+  return(output)
+}
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
