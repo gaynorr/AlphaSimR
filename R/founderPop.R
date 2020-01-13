@@ -183,12 +183,16 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   if(!is.null(manualGenLen)){
     genLen = manualGenLen
   }
+  if(length(genLen)==1){
+    genLen = rep(genLen, nChr)
+  }
   macsOut = MaCS(command, segSites, inbred, ploidy, 
                  nThreads, seed)
   nLoci = sapply(macsOut$genMap,length)
-  genMap = lapply(macsOut$genMap,function(x){
-    genLen*(c(x)-min(x))
-  })
+  genMap = vector("list",nChr)
+  for(i in 1:nChr){
+    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-min(macsOut$genMap[[i]]))
+  }
   genMap=as.matrix(genMap)
   output = new("MapPop",
                nInd=nInd,
