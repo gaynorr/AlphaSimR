@@ -341,7 +341,13 @@ setMethod("[",
           signature(x = "Pop"),
           function(x, i){
             if(is.character(i)){
-              i = x@id%in%i
+              i = match(i, x@id)
+              if(any(is.na(i))){
+                stop("Trying to select invalid individuals")
+              }
+              if(any(is.null(i))){
+                stop("Not valid ids")
+              }
             }else{
               if(any(abs(i)>x@nInd)){
                 stop("Trying to select invalid individuals")

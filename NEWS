@@ -1,4 +1,9 @@
 Changes in version 0.11.1
+    
+  Bug fixes
+    -fixed subset by id for populations
+
+Changes in version 0.11.1
   
   New features
     -switched to a circular design for the balance option in randCross and randCross2
