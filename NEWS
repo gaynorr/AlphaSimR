@@ -1,5 +1,9 @@
-Changes in version 0.11.1
-    
+Changes in version 0.12.0
+  
+  New features
+    -changed output of genParam function
+    -added h2 and H2 functions
+  
   Bug fixes
     -fixed subset by id for populations
 

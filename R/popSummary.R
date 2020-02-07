@@ -113,12 +113,19 @@ varP = function(pop){
 #' \item{genicVarD}{an nTrait vector of dominance genic variances}
 #' \item{genicVarAA}{an nTrait vector of additive-by-additive genic variances}
 #' \item{genicVarG}{an nTrait vector of total genic variances}
-#' \item{randGenicVarA}{an nTrait vector of additive genic variances assuming random mating}
-#' \item{randGenicVarD}{an nTrait vector of dominance genic variances assuming random mating}
-#' \item{randGenicVarAA}{an nTrait vector of additive-by-additive genic variances assuming random mating}
-#' \item{randGenicVarG}{an nTrait vector of total genic variances assuming random mating}
+#' \item{covA_HW}{an nTrait vector of additive covariances due to non-random mating}
+#' \item{covD_HW}{an nTrait vector of dominance covariances due to non-random mating}
+#' \item{covAA_HW}{an nTrait vector of additive-by-additive covariances due to non-random mating}
+#' \item{covG_HW}{an nTrait vector of total genic covariances due to non-random mating}
+#' \item{covA_L}{an nTrait vector of additive covariances due to linkage disequilibrium}
+#' \item{covD_L}{an nTrait vector of dominance covariances due to linkage disequilibrium}
+#' \item{covAA_L}{an nTrait vector of additive-by-additive covariances due to linkage disequilibrium}
+#' \item{covAD_L}{an nTrait vector of additive by dominance covariances due to linkage disequilibrium}
+#' \item{covAAA_L}{an nTrait vector of additive by additive-by-additive covariances due to linkage disequilibrium}
+#' \item{covDAA_L}{an nTrait vector of dominance by additive-by-additive covariances due to linkage disequilibrium}
+#' \item{covG_L}{an nTrait vector of total genic covariances due to linkage disequilibrium}
 #' \item{mu}{an nTrait vector of trait means}
-#' \item{mu_HWE}{an nTrait vector of expected trait means under Hardy-Weinberg equilibrium}
+#' \item{mu_HW}{an nTrait vector of expected trait means under random mating}
 #' \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 #' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
 #' \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
@@ -155,11 +162,15 @@ genParam = function(pop,simParam=NULL){
   genicVarA=NULL
   genicVarD=NULL
   genicVarAA=NULL
-  genicVarA2=NULL
-  genicVarD2=NULL
-  genicVarAA2=NULL
+  covA_HW=NULL
+  covD_HW=NULL
+  covAA_HW=NULL
+  covG_HW=NULL
+  covAD_L=NULL
+  covAAA_L=NULL
+  covDAA_L=NULL
   mu=NULL
-  mu_HWE=NULL
+  mu_HW=NULL
   gv_a=NULL
   gv_d=NULL
   gv_aa=NULL
@@ -168,51 +179,66 @@ genParam = function(pop,simParam=NULL){
   for(i in 1:simParam$nTraits){
     trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop,simParam$nThreads)
-    genicVarA = c(genicVarA,tmp$genicVarA)
-    genicVarA2 = c(genicVarA2,tmp$genicVarA2)
+    genicVarA = c(genicVarA,tmp$genicVarA2)
+    covA_HW = c(covA_HW,tmp$genicVarA-tmp$genicVarA2)
     gv = cbind(gv,tmp$gv)
     bv = cbind(bv,tmp$bv)
     mu = c(mu,tmp$mu)
-    mu_HWE = c(mu_HWE,tmp$mu_HWE)
+    mu_HW = c(mu_HW,tmp$mu_HWE)
     gv_a = cbind(gv_a,tmp$gv_a)
     gv_mu = c(gv_mu,tmp$gv_mu)
     if(.hasSlot(trait,"domEff")){
-      genicVarD = c(genicVarD,tmp$genicVarD)
-      genicVarD2 = c(genicVarD2,tmp$genicVarD2)
+      genicVarD = c(genicVarD,tmp$genicVarD2)
+      covD_HW = c(covD_HW,tmp$genicVarD-tmp$genicVarD2)
       dd = cbind(dd,tmp$dd)
       gv_d = cbind(gv_d,tmp$gv_d)
     }else{
-      genicVarD = c(genicVarD,0)
-      genicVarD2 = c(genicVarD2,0)
+      covD_HW = c(covD_HW,0)
       dd = cbind(dd,rep(0,pop@nInd))
       gv_d = cbind(gv_d,rep(0,pop@nInd))
     }
     if(.hasSlot(trait,"epiEff")){
-      genicVarAA = c(genicVarAA,tmp$genicVarAA)
-      genicVarAA2 = c(genicVarAA2,tmp$genicVarAA2)
+      genicVarAA = c(genicVarAA,tmp$genicVarAA2)
+      covAA_HW = c(covAA_HW,tmp$genicVarAA-tmp$genicVarAA2)
       aa = cbind(aa,tmp$aa)
       gv_aa = cbind(gv_aa,tmp$gv_aa)
     }else{
       genicVarAA = c(genicVarAA,0)
-      genicVarAA2 = c(genicVarAA2,0)
+      covAA_HW = c(covAA_HW,0)
       aa = cbind(aa,rep(0,pop@nInd))
       gv_aa = cbind(gv_aa,rep(0,pop@nInd))
     }
+    covAD_L = c(covAD_L,popVar(cbind(bv[,i],dd[,i]))[1,2])
+    covAAA_L = c(covAAA_L,popVar(cbind(bv[,i],aa[,i]))[1,2])
+    covDAA_L = c(covDAA_L,popVar(cbind(dd[,i],aa[,i]))[1,2])
   }
-  output = list(varA=popVar(bv),
-                varD=popVar(dd),
-                varAA=popVar(aa),
-                varG=varG(pop),
+  varA = popVar(bv)
+  varD = popVar(dd)
+  varAA = popVar(aa)
+  varG = popVar(gv)
+  genicVarG = genicVarA + genicVarD + genicVarAA
+  covG_HW = covA_HW + covD_HW + covAA_HW
+  output = list(varA=varA,
+                varD=varD,
+                varAA=varAA,
+                varG=varG,
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
                 genicVarAA=genicVarAA,
-                genicVarG=genicVarA+genicVarD+genicVarAA,
-                randGenicVarA=genicVarA2,
-                randGenicVarD=genicVarD2,
-                randGenicVarAA=genicVarAA2,
-                randGenicVarG=genicVarA2+genicVarD2+genicVarAA2,
+                genicVarG=genicVarG,
+                covA_HW=covA_HW,
+                covD_HW=covD_HW,
+                covAA_HW=covAA_HW,
+                covG_HW=covG_HW,
+                covA_L=diag(varA)-genicVarA-covA_HW,
+                covD_L=diag(varD)-genicVarD-covD_HW,
+                covAA_L=diag(varAA)-genicVarAA-covAA_HW,
+                covAD_L=covAD_L,
+                covAAA_L=covAAA_L,
+                covDAA_L=covDAA_L,
+                covG_L=diag(varG)-genicVarG-covG_HW,
                 mu=mu,
-                mu_HWE=mu_HWE,
+                mu_HW=mu_HW,
                 gv=gv,
                 bv=bv,
                 dd=dd,
@@ -572,4 +598,54 @@ ebv = function(pop){
 #' @export
 nInd = function(pop){
   pop@nInd
+}
+
+#' @title Narrow-sense heritability
+#' 
+#' @description Returns narrow-sense heritability for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' h2(pop, simParam=SP)
+#' 
+#' @export
+h2 = function(pop, simParam=NULL){
+  diag(varA(pop))/diag(varP(pop))
+}
+
+#' @title Broad-sense heritability
+#' 
+#' @description Returns broad-sense heritability for all traits
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' H2(pop)
+#' 
+#' @export
+H2 = function(pop){
+  diag(varG(pop))/diag(varP(pop))
 }

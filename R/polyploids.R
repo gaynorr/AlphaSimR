@@ -173,3 +173,37 @@ doubleGenome = function(pop, keepParents=TRUE,
                 simParam=simParam))
 }
 
+#' #' @title Combine genomes of individuals
+#' #' 
+#' #' @description
+#' #' This function is designed to model the pairing of gametes. The male 
+#' #' and female individuals are treated as gametes, so the newly created
+#' #'
+#' #' @param females an object of \code{\link{Pop-class}} for female parents.
+#' #' @param males an object of \code{\link{Pop-class}} for male parents.
+#' #' @param crossPlan a matrix with two column representing 
+#' #' female and male parents. Either integers for the position in 
+#' #' population or character strings for the IDs.
+#' #' @param simParam an object of \code{\link{SimParam}}
+#' #' 
+#' #' @return Returns an object of \code{\link{Pop-class}}
+#' #'
+#' #' @examples 
+#' #' #Create founder haplotypes
+#' #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' #' 
+#' #' #Set simulation parameters
+#' #' SP = SimParam$new(founderPop)
+#' #' 
+#' #' #Create population
+#' #' pop = newPop(founderPop, simParam=SP)
+#' #' 
+#' #' #Cross individual 1 with individual 10
+#' #' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
+#' #' 
+#' #' @export
+#' mergeGenome = function(females,males,crossPlan,simParam=NULL){
+#'   
+#' }
+
