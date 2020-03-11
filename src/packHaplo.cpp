@@ -26,6 +26,7 @@ arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
     if(inbred){
       for(chr=0; chr<ploidy; ++chr){
         locus = 0;
+        
         // Fill in bins known to be complete
         if(nBins > 1){
           for(arma::uword j=0; j<(nBins-1); ++j){
@@ -37,6 +38,7 @@ arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
               toByte(workBits);
           }
         }
+        
         // Fill in potentially incomplete bins
         for(arma::uword k=0; k<8; ++k){
           if(locus<nLoci){
@@ -51,6 +53,7 @@ arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
       }
     }else{
       locus = 0;
+      
       // Fill in bins known to be complete
       if(nBins > 1){
         for(arma::uword j=0; j<(nBins-1); ++j){
@@ -62,6 +65,7 @@ arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
             toByte(workBits);
         }
       }
+      
       // Fill in potentially incomplete bins
       for(arma::uword k=0; k<8; ++k){
         if(locus<nLoci){

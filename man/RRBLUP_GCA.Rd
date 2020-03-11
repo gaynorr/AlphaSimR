@@ -50,7 +50,7 @@ single cross hybrids.
 }
 \examples{
 #Create founder haplotypes
-founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)

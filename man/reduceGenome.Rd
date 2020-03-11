@@ -9,6 +9,7 @@ reduceGenome(
   nProgeny = 1,
   useFemale = TRUE,
   keepParents = TRUE,
+  simRecomb = TRUE,
   simParam = NULL
 )
 }
@@ -22,6 +23,8 @@ reduceGenome(
 \item{keepParents}{should previous parents be used for mother and 
 father.}
 
+\item{simRecomb}{should genetic recombination be modeled.}
+
 \item{simParam}{an object of 'SimParam' class}
 }
 \value{
@@ -32,8 +35,8 @@ Creates new individuals from gametes. This function
 was created to model the creation of diploid potatoes from 
 tetraploid potatoes. It can be used on any population with an 
 even ploidy level. The newly created individuals will have half 
-the ploidy level of the originals and they will first undergo
-a single round of meiosis.
+the ploidy level of the originals. The reduction can occur with 
+or without genetic recombination.
 }
 \examples{
 #Create founder haplotypes

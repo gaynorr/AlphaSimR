@@ -19,9 +19,9 @@ test_that("addTraitA",{
   expect_equal(c(ans$varA),1,tolerance=1e-6)
   expect_equal(c(ans$varD),0,tolerance=1e-6)
   expect_equal(c(ans$varG),1,tolerance=1e-6)
-  expect_equal(ans$genicVarA,1,tolerance=1e-6)
+  expect_equal(ans$genicVarA,0.5,tolerance=1e-6)
   expect_equal(ans$genicVarD,0,tolerance=1e-6)
-  expect_equal(ans$genicVarG,1,tolerance=1e-6)
+  expect_equal(ans$genicVarG,0.5,tolerance=1e-6)
 })
 
 test_that("addTraitAD",{
@@ -37,9 +37,9 @@ test_that("addTraitAD",{
   expect_equal(c(ans$varA),1,tolerance=1e-6)
   expect_equal(c(ans$varD),0,tolerance=1e-6)
   expect_equal(c(ans$varG),1,tolerance=1e-6)
-  expect_equal(ans$genicVarA,1,tolerance=1e-6)
-  expect_equal(ans$genicVarD,0,tolerance=1e-6)
-  expect_equal(ans$genicVarG,1,tolerance=1e-6)
+  expect_equal(ans$genicVarA,0.5,tolerance=1e-6)
+  expect_equal(ans$genicVarD,0.25,tolerance=1e-6)
+  expect_equal(ans$genicVarG,0.75,tolerance=1e-6)
 })
 
 test_that("addTraitAG",{

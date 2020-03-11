@@ -61,7 +61,7 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
   nCol = unlist(nCol)
   segSites = lapply(genMap,length)
   segSites = unlist(segSites)
-  if(!all.equal(nCol,segSites)){
+  if(!all(nCol == segSites)){
     stop("Number of segregating sites in haplotypes and genMap don't match")
   }
   output = vector("list",length(genMap))

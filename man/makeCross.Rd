@@ -4,7 +4,7 @@
 \alias{makeCross}
 \title{Make designed crosses}
 \usage{
-makeCross(pop, crossPlan, simParam = NULL)
+makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -12,6 +12,8 @@ makeCross(pop, crossPlan, simParam = NULL)
 \item{crossPlan}{a matrix with two column representing 
 female and male parents. Either integers for the position in 
 population or character strings for the IDs.}
+
+\item{nProgeny}{number of progeny per cross}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

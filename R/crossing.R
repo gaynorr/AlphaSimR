@@ -8,6 +8,7 @@
 #' @param crossPlan a matrix with two column representing 
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
+#' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -27,7 +28,8 @@
 #' pop2 = makeCross(pop, crossPlan, simParam=SP)
 #'
 #' @export
-makeCross = function(pop,crossPlan,simParam=NULL){
+makeCross = function(pop,crossPlan,nProgeny=1,
+                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -44,6 +46,10 @@ makeCross = function(pop,crossPlan,simParam=NULL){
   if((max(crossPlan)>nInd(pop)) |
      (min(crossPlan)<1L)){
     stop("Invalid crossPlan")
+  }
+  if(nProgeny>1){
+    crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
+                      rep(crossPlan[,2],each=nProgeny))
   }
   tmp = cross(pop@geno,
               crossPlan[,1],
@@ -156,11 +162,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
       crossPlan[,2] = male[crossPlan[,2]]
     }
   }
-  if(nProgeny>1){
-    crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
-                      rep(crossPlan[,2],each=nProgeny))
-  }
-  return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))
+  return(makeCross(pop=pop,crossPlan=crossPlan,nProgeny=nProgeny,simParam=simParam))
 }
 
 #' @title Select and randomly cross
@@ -260,6 +262,7 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' @param crossPlan a matrix with two column representing 
 #' female and male parents. Either integers for the position in 
 #' population or character strings for the IDs.
+#' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -279,7 +282,7 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
 #' 
 #' @export
-makeCross2 = function(females,males,crossPlan,simParam=NULL){
+makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -298,6 +301,10 @@ makeCross2 = function(females,males,crossPlan,simParam=NULL){
      (max(crossPlan[,2])>nInd(males)) |
      (min(crossPlan)<1L)){
     stop("Invalid crossPlan")
+  }
+  if(nProgeny>1){
+    crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
+                      rep(crossPlan[,2],each=nProgeny))
   }
   tmp=cross(females@geno,
             crossPlan[,1],
@@ -418,12 +425,9 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     crossPlan[,1] = female[crossPlan[,1]]
     crossPlan[,2] = male[crossPlan[,2]]
   }
-  if(nProgeny>1){
-    crossPlan = cbind(rep(crossPlan[,1],each=nProgeny),
-                      rep(crossPlan[,2],each=nProgeny))
-  }
   return(makeCross2(females=females,males=males,
-                    crossPlan=crossPlan,simParam=simParam))
+                    crossPlan=crossPlan,nProgeny=nProgeny,
+                    simParam=simParam))
 }
 
 #' @title Self individuals

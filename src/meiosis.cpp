@@ -1,24 +1,32 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
+// Class for storing recombination history
 class RecHist{
 public:
   arma::field< //individual
     arma::field< //chromosome
       arma::field< //ploidy
         arma::Mat<int> > > > hist; //(chr, site)
+  
+  // Allocates space for history
   void setSize(arma::uword nInd, 
                arma::uword nChr, 
                arma::uword ploidy);
+  
+  // Append new recombinations to history
   void addHist(arma::Mat<int>& input, 
                arma::uword nInd, 
                arma::uword chrGroup,
                arma::uword chrInd);
+  
+  // Access history
   arma::Mat<int> getHist(arma::uword ind, 
                          arma::uword chr,
                          arma::uword par);
 };
 
+// Allocates space for history
 void RecHist::setSize(arma::uword nInd, 
                       arma::uword nChr, 
                       arma::uword ploidy=2){
@@ -31,6 +39,7 @@ void RecHist::setSize(arma::uword nInd,
   }
 }
 
+// Append new recombinations to history
 void RecHist::addHist(arma::Mat<int>& input, 
              arma::uword nInd, 
              arma::uword chrGroup,
@@ -38,6 +47,7 @@ void RecHist::addHist(arma::Mat<int>& input,
   hist(nInd)(chrGroup)(chrInd) = input;
 }
 
+// Access history
 arma::Mat<int> RecHist::getHist(arma::uword ind, 
                                 arma::uword chr,
                                 arma::uword par){
@@ -53,16 +63,20 @@ arma::vec sampleChiasmata(double start, double end, double v,
                           arma::uword n=40){
   // Sample deviates from a gamma distribution
   arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
+  
   // Find locations on genetic map
   output = cumsum(output)+start;
+  
   // Add additional values if max position less than end
   while(output(output.n_elem-1)<end){
     arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
     tmp = cumsum(tmp) + output(output.n_elem-1);
     output = join_cols(output, tmp);
   }
+  
   // Remove values less than 0
   output = output(find(output>0));
+  
   // Return values less than the end
   return output(find(output<end));
 }
@@ -150,16 +164,19 @@ arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0
     Rcpp::stop("intervalSearch searching in impossible interval");
   }
   arma::uword end = x.n_elem-1;
+  
   // Check if crossover is at or past end
   if(x[end]<=value){
     return end;
   }
+  
   // Perform search
   arma::uword right = end;
   while((right-left)>1){ // Interval can be decreased
     arma::uword middle = (left + right) / 2;
     if (x[middle] == value){
       left = middle;
+      
       // Check if at the end of the vector
       if(left<end){
         // Check for identical values to the right
@@ -188,8 +205,10 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
   if(X.n_rows<3){
     return X;
   }
+  
   // Initially assume all rows are useful
   arma::Col<int> take(X.n_rows,arma::fill::ones);
+  
   // Remove unobserved crossovers (site doesn't change)
   // Works backwards, because the last crossover is observed
   for(arma::uword i=(X.n_rows-2); i>0; --i){
@@ -197,6 +216,7 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
       take(i) = 0;
     }
   }
+  
   // Remove redundant records (chromosome doesn't change)
   int lastChr = X(0,0);
   for(arma::uword i=1; i<X.n_rows; ++i){
@@ -707,6 +727,7 @@ void bivalent(const arma::Col<unsigned char>& chr1,
     output = chr1;
   }else{
     int nBins = chr1.n_elem;
+    
     // Fill-in based on recombination history
     for(arma::uword i=0; i<(hist.n_rows-1); ++i){
       switch(hist(i,0)){
@@ -719,6 +740,7 @@ void bivalent(const arma::Col<unsigned char>& chr1,
                      hist(i,1), hist(i+1,1));
       }
     }
+    
     // Fill-in last sites
     switch(hist(hist.n_rows-1,0)){
     case 1:
@@ -790,6 +812,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                      hist1(i,1), hist1(i+1,1));
       }
     }
+    
     // Fill-in last sites
     switch(hist1(hist1.n_rows-1,0)){
     case 1:
@@ -850,6 +873,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                      hist2(i,1), hist2(i+1,1));
       }
     }
+    
     // Fill-in last sites
     switch(hist2(hist2.n_rows-1,0)){
     case 1:
@@ -932,10 +956,12 @@ Rcpp::List cross(
     arma::uword nBins = motherGeno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(nBins,ploidy,nInd);
     arma::Col<unsigned char> gamete1(nBins), gamete2(nBins);
+    
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       progenyChr=0;
       xm = shuffle(xm);
+      
       //Female gamete
       for(arma::uword x=0; x<motherPloidy; x+=4){
         if((motherPloidy-x)>2){
@@ -956,6 +982,7 @@ Rcpp::List cross(
               hist.addHist(hist1,ind,chr,progenyChr);
             }
             ++progenyChr;
+            
             //Bivalent 2
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x+2)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
@@ -1038,6 +1065,7 @@ Rcpp::List cross(
               hist.addHist(hist1,ind,chr,progenyChr);
             }
             ++progenyChr;
+            
             //Bivalent 2
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x+2)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
@@ -1210,6 +1238,7 @@ Rcpp::List createReducedGenome(
               hist.addHist(hist1,ind,chr,progenyChr);
             }
             ++progenyChr;
+            
             //Bivalent 2
             bivalent(geno(chr).slice(par).col(x(y+2)),
                      geno(chr).slice(par).col(x(y+3)),

@@ -193,6 +193,7 @@ genParam = function(pop,simParam=NULL){
       dd = cbind(dd,tmp$dd)
       gv_d = cbind(gv_d,tmp$gv_d)
     }else{
+      genicVarD = c(genicVarD,0)
       covD_HW = c(covD_HW,0)
       dd = cbind(dd,rep(0,pop@nInd))
       gv_d = cbind(gv_d,rep(0,pop@nInd))
@@ -598,54 +599,4 @@ ebv = function(pop){
 #' @export
 nInd = function(pop){
   pop@nInd
-}
-
-#' @title Narrow-sense heritability
-#' 
-#' @description Returns narrow-sense heritability for all traits
-#' 
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' h2(pop, simParam=SP)
-#' 
-#' @export
-h2 = function(pop, simParam=NULL){
-  diag(varA(pop))/diag(varP(pop))
-}
-
-#' @title Broad-sense heritability
-#' 
-#' @description Returns broad-sense heritability for all traits
-#' 
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' H2(pop)
-#' 
-#' @export
-H2 = function(pop){
-  diag(varG(pop))/diag(varP(pop))
 }
