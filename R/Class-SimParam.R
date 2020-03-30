@@ -1561,12 +1561,10 @@ SimParam = R6Class(
           tmp = sort(sample(pot[[x]],nSitesPerChr[x]))
           # Add site restrictions
           if(private$.restrSites){
-            for(chr in 1:self$nChr){
-              if(QTL){
-                self$invalidSnp[[chr]] = sort(union(tmp, self$invalidSnp[[x]]))
-              }else{
-                self$invalidQtl[[chr]] = sort(union(tmp, self$invalidQtl[[x]]))
-              }
+            if(QTL){
+              self$invalidSnp[[x]] = sort(union(tmp, self$invalidSnp[[x]]))
+            }else{
+              self$invalidQtl[[x]] = sort(union(tmp, self$invalidQtl[[x]]))
             }
           }
           return(tmp)
