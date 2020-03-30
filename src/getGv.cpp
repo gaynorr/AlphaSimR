@@ -1,7 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
-// Calculates genetic values for genomic predictions use parental origin
+// Calculates genetic values for genomic predictions using parental origin
 arma::field<arma::vec> getGvA2(const Rcpp::S4& trait, 
                                const Rcpp::S4& pop, 
                                int nThreads){

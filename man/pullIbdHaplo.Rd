@@ -27,10 +27,10 @@ are retrieved. If NULL, all sites are retrieved.}
 
 \item{pedigree}{a matrix with ancestral pedigree to set a base
 population. It should be of the same form as \code{simParam$pedigree} 
-(see \code{\link{SimParam_setTrackPed}}), i.e., two columns (mother
-and father) and the same number of rows as \code{simParam$pedigree}.
-Base population can be set by setting parents as 0. If NULL, pedigree
-from \code{\link{SimParam}} is taken.}
+(see \code{setTrackPed} in \code{\link{SimParam}}), i.e., two columns 
+(mother and father) and the same number of rows as 
+\code{simParam$pedigree}.Base population can be set by setting 
+parents as 0. If NULL, pedigree from \code{\link{SimParam}} is taken.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
@@ -44,7 +44,7 @@ Retrieves Identity By Descent (IBD) haplotype data
 }
 \examples{
 #Create founder haplotypes
-founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)

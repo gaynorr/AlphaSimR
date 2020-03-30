@@ -21,12 +21,19 @@ genParam(pop, simParam = NULL)
 \item{genicVarD}{an nTrait vector of dominance genic variances}
 \item{genicVarAA}{an nTrait vector of additive-by-additive genic variances}
 \item{genicVarG}{an nTrait vector of total genic variances}
-\item{randGenicVarA}{an nTrait vector of additive genic variances assuming random mating}
-\item{randGenicVarD}{an nTrait vector of dominance genic variances assuming random mating}
-\item{randGenicVarAA}{an nTrait vector of additive-by-additive genic variances assuming random mating}
-\item{randGenicVarG}{an nTrait vector of total genic variances assuming random mating}
+\item{covA_HW}{an nTrait vector of additive covariances due to non-random mating}
+\item{covD_HW}{an nTrait vector of dominance covariances due to non-random mating}
+\item{covAA_HW}{an nTrait vector of additive-by-additive covariances due to non-random mating}
+\item{covG_HW}{an nTrait vector of total genic covariances due to non-random mating}
+\item{covA_L}{an nTrait vector of additive covariances due to linkage disequilibrium}
+\item{covD_L}{an nTrait vector of dominance covariances due to linkage disequilibrium}
+\item{covAA_L}{an nTrait vector of additive-by-additive covariances due to linkage disequilibrium}
+\item{covAD_L}{an nTrait vector of additive by dominance covariances due to linkage disequilibrium}
+\item{covAAA_L}{an nTrait vector of additive by additive-by-additive covariances due to linkage disequilibrium}
+\item{covDAA_L}{an nTrait vector of dominance by additive-by-additive covariances due to linkage disequilibrium}
+\item{covG_L}{an nTrait vector of total genic covariances due to linkage disequilibrium}
 \item{mu}{an nTrait vector of trait means}
-\item{mu_HWE}{an nTrait vector of expected trait means under Hardy-Weinberg equilibrium}
+\item{mu_HW}{an nTrait vector of expected trait means under random mating}
 \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
 \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}

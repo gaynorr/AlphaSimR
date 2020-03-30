@@ -29,7 +29,7 @@
 #' 
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -142,7 +142,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -278,7 +278,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -391,7 +391,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -494,7 +494,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -619,7 +619,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -727,7 +727,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -858,7 +858,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -969,7 +969,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -1112,7 +1112,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples 
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)

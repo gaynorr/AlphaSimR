@@ -61,7 +61,7 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
   nCol = unlist(nCol)
   segSites = lapply(genMap,length)
   segSites = unlist(segSites)
-  if(!all.equal(nCol,segSites)){
+  if(!all(nCol == segSites)){
     stop("Number of segregating sites in haplotypes and genMap don't match")
   }
   output = vector("list",length(genMap))
@@ -77,7 +77,7 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
                         genMap=as.matrix(genMap[chr]),
                         centromere=max(genMap[[chr]])/2)
   }
-  output = do.call("c",output)
+  output = do.call("cChr",output)
   return(output)
 }
 
@@ -299,8 +299,8 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' @return an object of \code{\link{MapPop-class}}
 #' 
 #' @examples 
-#' founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
-#' founderPop = sampleHaplo(nInd=20,mapPop=founderPop)
+#' founderPop = quickHaplo(nInd=2,nChr=2,segSites=11,inbred=TRUE)
+#' founderPop = sampleHaplo(mapPop=founderPop,nInd=20)
 #' 
 #' @export
 sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
@@ -348,7 +348,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         genMap=as.matrix(mapPop@genMap[chr]),
                         centromere=mapPop@centromere[chr])
   }
-  output = do.call("c",output)
+  output = do.call("cChr",output)
   return(output)
 }
 

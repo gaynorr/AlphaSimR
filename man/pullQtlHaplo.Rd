@@ -113,7 +113,7 @@ pullMultipleSnpHaplo = function(pop, chips, haplo="all",
 }
 \examples{
 #Create founder haplotypes
-founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)

@@ -5,7 +5,7 @@
  * Genotype data is stored in a field of cubes.
  * The field has length equal to nChr
  * Each cube has dimensions nLoci/8 by ploidy by nInd
- * Output return with dimensions nInd by nLoci
+ * Output returned with dimensions nInd by nLoci
  */
 // [[Rcpp::export]]
 arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, 

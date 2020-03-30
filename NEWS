@@ -1,3 +1,21 @@
+Changes in version 0.12.1
+
+  Bug fixes
+    -fix bug in selection of segSites
+
+Changes in version 0.12.0
+  
+  New features
+    -changed output of genParam to match Bulmer, 1976
+    -nProgeny added to makeCross and makeCross2
+    -all SimParam documentation is now in ?SimParam
+    -non-overlapping QTL and SNP is now the default
+    -new interface for restrSegSites in SimParam
+  
+  Bug fixes
+    -fixed subset by id for populations
+    -fixed major bug in newMapPop
+
 Changes in version 0.11.1
   
   New features
