@@ -1,7 +1,15 @@
+Changes in version 0.12.2
+  
+  New features
+    -GxE traits now default to random sampling of p-values
+  
+  Bug fixes
+    -fixed a bug in restrSegSites
+
 Changes in version 0.12.1
 
   Bug fixes
-    -fix bug in selection of segSites
+    -fixed a bug in selection of segSites
 
 Changes in version 0.12.0
   

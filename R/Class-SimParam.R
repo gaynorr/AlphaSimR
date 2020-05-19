@@ -191,24 +191,26 @@ SimParam = R6Class(
     #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
     restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, overlap=FALSE,
                              minSnpFreq=NULL){
-      if(length(minSnpPerChr)==1){
-        minSnpPerChr = rep(minSnpPerChr,self$nChr)
+      if(overlap){
+        private$.restrSites = FALSE
+        invisible(self)
+      }else{
+        # Check inputs
+        if(length(minSnpPerChr)==1){
+          minSnpPerChr = rep(minSnpPerChr,self$nChr)
+        }
+        if(length(minQtlPerChr)==1){
+          minQtlPerChr = rep(minQtlPerChr,self$nChr)
+        }
+        stopifnot(length(minSnpPerChr)==self$nChr,
+                  length(minQtlPerChr)==self$nChr)
+        
+        # Restrict SNPs and then QTL
+        private$.restrSites = TRUE
+        invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
+        invisible(private$.pickLoci(minQtlPerChr))
+        invisible(self)
       }
-      if(length(minQtlPerChr)==1){
-        minQtlPerChr = rep(minQtlPerChr,self$nChr)
-      }
-      stopifnot(length(minSnpPerChr)==self$nChr,
-                length(minQtlPerChr)==self$nChr)
-      private$.restrSites = !overlap
-      if(length(minSnpPerChr)==1){
-        minSnpPerChr = rep(minSnpPerChr,self$nChr)
-      }
-      invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
-      if(length(minQtlPerChr)==1){
-        minQtlPerChr = rep(minQtlPerChr,self$nChr)
-      }
-      invisible(private$.pickLoci(minQtlPerChr))
-      invisible(self)
     },
     
     #' @description Changes how gender is used in the simulation. 

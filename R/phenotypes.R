@@ -28,7 +28,14 @@ calcPheno = function(pop,varE,reps,p,simParam){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(length(p)==1){
+  if(simParam$nTraits == 0L){
+    return(matrix(NA_real_,
+                  nrow=pop@nInd,
+                  ncol=0L))
+  }
+  if(is.null(p)){
+    p = rep(runif(1), simParam$nTraits)
+  }else if(length(p)==1){
     p = rep(p,simParam$nTraits)
   }
   stopifnot(length(p)==simParam$nTraits)
@@ -61,7 +68,8 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' @param fixEff fixed effect to assign to the population. Used 
 #' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
-#' used by GxE traits.
+#' used by GxE traits. If NULL, a value is
+#' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
@@ -91,7 +99,7 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' pop = setPheno(pop, varE=1)
 #' 
 #' @export
-setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=0.5,
+setPheno = function(pop,varE=NULL,reps=1,fixEff=1L,p=NULL,
                     onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
