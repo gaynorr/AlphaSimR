@@ -357,6 +357,7 @@ genetic map}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 Starts the process of building a new simulation 
 by creating a new SimParam object and assigning a founder 
@@ -392,6 +393,7 @@ SP = SimParam$new(founderPop)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setTrackPed"></a>}}
+\if{latex}{\out{\hypertarget{method-setTrackPed}{}}}
 \subsection{Method \code{setTrackPed()}}{
 Sets pedigree tracking for the simulation. 
 By default pedigree tracking is turned off. When turned on, 
@@ -429,6 +431,7 @@ SP$setTrackPed(TRUE)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setTrackRec"></a>}}
+\if{latex}{\out{\hypertarget{method-setTrackRec}{}}}
 \subsection{Method \code{setTrackRec()}}{
 Sets recombination tracking for the simulation.
 By default recombination tracking is turned off. When turned
@@ -466,6 +469,7 @@ SP$setTrackRec(TRUE)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-resetPed"></a>}}
+\if{latex}{\out{\hypertarget{method-resetPed}{}}}
 \subsection{Method \code{resetPed()}}{
 Resets the internal lastId, the pedigree 
 and recombination tracking (if in use) to the 
@@ -507,6 +511,7 @@ pop2@id # 1:10
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-restrSegSites"></a>}}
+\if{latex}{\out{\hypertarget{method-restrSegSites}{}}}
 \subsection{Method \code{restrSegSites()}}{
 Sets restrictions on which segregating sites 
 can serve as SNP and/or QTL.
@@ -553,6 +558,7 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setGender"></a>}}
+\if{latex}{\out{\hypertarget{method-setGender}{}}}
 \subsection{Method \code{setGender()}}{
 Changes how gender is used in the simulation. 
 The default gender of a simulation is "no". To add gender 
@@ -593,6 +599,7 @@ SP$setGender("yes_sys")
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addSnpChip"></a>}}
+\if{latex}{\out{\hypertarget{method-addSnpChip}{}}}
 \subsection{Method \code{addSnpChip()}}{
 Randomly assigns eligble SNPs to a SNP chip
 \subsection{Usage}{
@@ -629,6 +636,7 @@ SP$addSnpChip(10)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addStructuredSnpChip"></a>}}
+\if{latex}{\out{\hypertarget{method-addStructuredSnpChip}{}}}
 \subsection{Method \code{addStructuredSnpChip()}}{
 Randomly selects the number of snps in structure and then
 assigns them to chips based on structure
@@ -653,6 +661,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitA"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitA}{}}}
 \subsection{Method \code{addTraitA()}}{
 Randomly assigns eligble QTLs for one or more additive traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -705,6 +714,7 @@ SP$addTraitA(10)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitAD"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitAD}{}}}
 \subsection{Method \code{addTraitAD()}}{
 Randomly assigns eligble QTLs for one or more traits with dominance. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -770,6 +780,7 @@ SP$addTraitAD(10, meanDD=0.5)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitAG"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitAG}{}}}
 \subsection{Method \code{addTraitAG()}}{
 Randomly assigns eligble QTLs for one ore more additive GxE traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -831,6 +842,7 @@ SP$addTraitAG(10, varGxE=2)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitADG"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitADG}{}}}
 \subsection{Method \code{addTraitADG()}}{
 Randomly assigns eligble QTLs for a trait with dominance and GxE.
 \subsection{Usage}{
@@ -903,6 +915,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitAE"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitAE}{}}}
 \subsection{Method \code{addTraitAE()}}{
 Randomly assigns eligble QTLs for one or more additive and epistasis 
 traits. If simulating more than one trait, all traits will be pleiotrophic 
@@ -962,6 +975,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitADE"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitADE}{}}}
 \subsection{Method \code{addTraitADE()}}{
 Randomly assigns eligble QTLs for one or more traits with dominance and 
 epistasis. If simulating more than one trait, all traits will be pleiotrophic 
@@ -1034,6 +1048,7 @@ SP$addTraitADE(10)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitAEG"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitAEG}{}}}
 \subsection{Method \code{addTraitAEG()}}{
 Randomly assigns eligble QTLs for one or more additive and epistasis 
 GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
@@ -1106,6 +1121,7 @@ SP$addTraitAEG(10, varGxE=2)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addTraitADEG"></a>}}
+\if{latex}{\out{\hypertarget{method-addTraitADEG}{}}}
 \subsection{Method \code{addTraitADEG()}}{
 Randomly assigns eligble QTLs for a trait with dominance, 
 epistasis and GxE.
@@ -1186,6 +1202,7 @@ SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-manAddTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-manAddTrait}{}}}
 \subsection{Method \code{manAddTrait()}}{
 Manually add a new trait to the simulation.
 \subsection{Usage}{
@@ -1218,6 +1235,7 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-switchTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-switchTrait}{}}}
 \subsection{Method \code{switchTrait()}}{
 Switch a trait in the simulation.
 \subsection{Usage}{
@@ -1253,6 +1271,7 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-removeTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-removeTrait}{}}}
 \subsection{Method \code{removeTrait()}}{
 Remove a trait from the simulation
 \subsection{Usage}{
@@ -1272,6 +1291,7 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setVarE"></a>}}
+\if{latex}{\out{\hypertarget{method-setVarE}{}}}
 \subsection{Method \code{setVarE()}}{
 Defines a default value for error 
 variances in the simulation.
@@ -1307,6 +1327,7 @@ SP$setVarE(h2=0.5)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setCorE"></a>}}
+\if{latex}{\out{\hypertarget{method-setCorE}{}}}
 \subsection{Method \code{setCorE()}}{
 Defines a correlation structure for default 
 error variances. You must call \code{setVarE} first to define 
@@ -1341,6 +1362,7 @@ SP$setCorE(E)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-rescaleTraits"></a>}}
+\if{latex}{\out{\hypertarget{method-rescaleTraits}{}}}
 \subsection{Method \code{rescaleTraits()}}{
 Linearly scales all traits to achieve desired 
 values of means and variances in the founder population.
@@ -1395,6 +1417,7 @@ meanG(pop)
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-setRecombRatio"></a>}}
+\if{latex}{\out{\hypertarget{method-setRecombRatio}{}}}
 \subsection{Method \code{setRecombRatio()}}{
 Set the relative recombination rates between males 
 and females. This allows for gender specific recombination rates, 
@@ -1428,6 +1451,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-switchGenMap"></a>}}
+\if{latex}{\out{\hypertarget{method-switchGenMap}{}}}
 \subsection{Method \code{switchGenMap()}}{
 Replaces existing genetic map.
 \subsection{Usage}{
@@ -1450,6 +1474,7 @@ be metacentric.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-switchFemaleMap"></a>}}
+\if{latex}{\out{\hypertarget{method-switchFemaleMap}{}}}
 \subsection{Method \code{switchFemaleMap()}}{
 Replaces existing female genetic map.
 \subsection{Usage}{
@@ -1472,6 +1497,7 @@ be metacentric.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-switchMaleMap"></a>}}
+\if{latex}{\out{\hypertarget{method-switchMaleMap}{}}}
 \subsection{Method \code{switchMaleMap()}}{
 Replaces existing male genetic map.
 \subsection{Usage}{
@@ -1494,6 +1520,7 @@ be metacentric.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addToRec"></a>}}
+\if{latex}{\out{\hypertarget{method-addToRec}{}}}
 \subsection{Method \code{addToRec()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1510,6 +1537,7 @@ For internal use only.
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-updateLastId"></a>}}
+\if{latex}{\out{\hypertarget{method-updateLastId}{}}}
 \subsection{Method \code{updateLastId()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1526,6 +1554,7 @@ For internal use only.
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-addToPed"></a>}}
+\if{latex}{\out{\hypertarget{method-addToPed}{}}}
 \subsection{Method \code{addToPed()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1548,6 +1577,7 @@ For internal use only.
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -478,11 +478,6 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
       }
     }
   }
-  if(simParam$nTraits>0){
-    pheno = addError(gv,simParam$varE)
-  }else{
-    pheno = gv
-  }
   if(is.null(origM)) origM = mother
   if(is.null(origF)) origF = father
   output = new("Pop",
@@ -500,15 +495,24 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                nTraits=simParam$nTraits,
                gv=gv,
                gxe=gxe,
-               pheno=pheno,
+               pheno=matrix(NA_real_,
+                            nrow=rawPop@nInd,
+                            ncol=simParam$nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
                           ncol=0))
+  if(simParam$nTraits>=1){
+    output = setPheno(output, varE=NULL, reps=1, 
+                      fixEff=1L, p=NULL, 
+                      onlyPheno=FALSE, 
+                      simParam=simParam)
+  }
   if(simParam$isTrackPed){
     simParam$addToPed(lastId,mother,father,isDH)
   }else{
     simParam$updateLastId(lastId)
   }
+  
   return(output)
 }
 

@@ -547,3 +547,22 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
     return(pop)
   }
 }
+
+# Sample deviates from a standard normal distribution
+# n is the number of deviates
+# u is a deviate from a uniform distribution [0,1]
+# Seed is generated from u
+rnormWithSeed = function(n, u){
+  glbEnv = globalenv()
+  origSeed = glbEnv$.Random.seed
+  on.exit({
+    if(is.null(origSeed)){
+      rm(list =".Random.seed", envir=glbEnv)
+    }else{
+      assign(".Random.seed", value=origSeed, 
+             envir=glbEnv)
+    }
+  })
+  set.seed(as.integer((u-0.5)*2*2147483647))
+  rnorm(n)
+}

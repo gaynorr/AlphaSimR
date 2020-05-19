@@ -4,7 +4,7 @@
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate rnorm qnorm var
 #' @importFrom stats coef dnorm lm pnorm qgamma
-#' @importFrom stats model.matrix rbinom
+#' @importFrom stats model.matrix rbinom runif
 #' @importFrom utils combn read.table write.table
 #' @importFrom R6 R6Class
 

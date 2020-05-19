@@ -9,7 +9,7 @@ setPheno(
   varE = NULL,
   reps = 1,
   fixEff = 1L,
-  p = 0.5,
+  p = NULL,
   onlyPheno = FALSE,
   simParam = NULL
 )
@@ -28,7 +28,8 @@ nTraits for correlated errors. If NULL, value in simParam is used.}
 by genomic selection models only.}
 
 \item{p}{the p-value for the environmental covariate 
-used by GxE traits.}
+used by GxE traits. If NULL, a value is
+sampled at random.}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
 
