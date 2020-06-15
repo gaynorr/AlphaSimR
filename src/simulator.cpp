@@ -26,70 +26,10 @@ RandNumGenerator::RandNumGenerator(unsigned long iRandomSeed){
 }
 
 RandNumGenerator::~RandNumGenerator(){
-#ifdef DIAG
-  Rcpp::Rcerr<<"Rand generator destructor\n";
-#endif
   delete unif;
 }
 
-void Simulator::printUsage() {
-  Rcpp::Rcout<<"Usage: <samplesize> <region in base pairs> [options]"<<endl;
-  Rcpp::Rcout<<"Options: "<<endl;
-  Rcpp::Rcout<<"-s <random seed>"<<endl;
-  Rcpp::Rcout<<"-d enable debugging messages"<<endl;
-  Rcpp::Rcout<<"-i <iterations>"<<endl;
-  Rcpp::Rcout<<"-h <history> number of previous base pairs to retain"<<endl;
-  Rcpp::Rcout<<"-t <mu> (mutation rate per site per 4N generations)"<<endl;
-  Rcpp::Rcout<<"-F <inputfilename> [0|1] (Tab delimited frequency distribution "<<
-    "file where first column indicate range of SNP allele frequencies "<<
-      "from previous row to current row and last column is desired bin "<<
-        "frequency. Second parameter is 1 if SNPs with derived allele freq > "<<
-          "1.0 should have alleles flipped, 0 otherwise.)"<<endl;
-  Rcpp::Rcout<<"-r <r> (recombination rate per site per 4N generations)"<<endl;
-  Rcpp::Rcout<<"-c <f> <lambda> (f = ratio of gene conversion rate to crossover "<<
-    "rate. tracklen lambda is mean length of tract in base pairs.)"<<endl;
-  Rcpp::Rcout<<"-R <inputfilename> (Tab delimited file where first "<<
-    "two columns indicate range of base pair positions scaled to the "<<
-      "unit interval and last column is ratio with respect to base line "<<
-        "recombination rate.)"<<endl;
-  Rcpp::Rcout<<"-T (Print each local tree in Newick format to standard out)"<<endl;
-  Rcpp::Rcout<<"-G <alpha> (Assign growth rate alpha across populations "<<
-    "where alpha=-log(Np/Nr)"<<endl;
-  Rcpp::Rcout<<"-I <n> <n1> <n2> .. <mig_rate> (Assign all elements of the "<<
-    "migration matrix for n populations.  Values in matrix set to "<<
-      "mig_rate/(n-1).)"<<endl;
-  Rcpp::Rcout<<"-m <i> <j> <m>  (Assign i,j-th element of migration matrix "<<
-    "to m.)"<<
-      endl;
-  Rcpp::Rcout<<"-ma <m_11>..<m_12>..<m_nn> (Assign values to all "<<
-    "elements of migration matrix for n populations.)"<<endl;
-  Rcpp::Rcout<<"-n <i> <size>   (Pop i has size set to size*N_0 "<<endl;
-  Rcpp::Rcout<<"-g <i> <alpha>  (If used must appear after -M option.)"<<endl;
-  Rcpp::Rcout<<"The following options modify parameters at time t."<<endl;
-  Rcpp::Rcout<<"-eG <t> <alpha>  (Assign growth rate for all pops at time"<<
-    " t."<<endl;
-  Rcpp::Rcout<<"-eg <t> <i> <alpha>  (Assign growth rate alpha of pop "<<
-    "i at time t.)"<<endl;
-  Rcpp::Rcout<<"-eM <t> <m> (Assign migrate rate m for all elements "<<
-    "of migration matrix at time t.)"<<endl;
-  Rcpp::Rcout<<"-em <t> <i> <j> <m_ij> (Assign migration rate for i,j-th "<<
-    "element of migration matrix at time t.)"
-    <<"at time t )"<<endl;
-    Rcpp::Rcout<<"-ema <t> <n> <m_11>..<m_12>..<m_nn> (Assign migration rates "
-    " within the migration matrix for n populations at time t.)"<<endl;
-    Rcpp::Rcout<<"-eN <t> <size> (New pop sizes at time t for all pops "<<
-      "where new sizes = size*N_0)"<<endl;
-    Rcpp::Rcout<<"-en <t> <i> <size_i> (New pop size of pop i will be set "<<
-      "to (size_i*N_0) at time t."<<endl;
-    Rcpp::Rcout<<"-es <t> <i> <p> (Split two populations.  At time t, "<<
-      "a proportion p of chromosomes from pop i will migrate to a "<<
-        "population i+1."<<endl;
-    Rcpp::Rcout<<"-ej <t> <i> <j> (Join two populations.  At time t "<<
-      "all chromosomes migrate from pop i to pop j."<<endl;
-}
-
 Configuration::Configuration(){
-  bDebug = false;
   bVariableRecomb = false;
   bSNPAscertainment = false;
   bFlipAlleles = false;
@@ -109,11 +49,8 @@ Configuration::Configuration(){
 }
 
 Configuration::~Configuration(){
-#ifdef DIAG
-  Rcpp::Rcerr<<"Configuration destructor\n";
-#endif
   if (pEventList) {
-  delete pEventList;
+    delete pEventList;
   }
   if (bSNPAscertainment){
     AlleleFreqBinPtrSet::iterator it;
@@ -143,8 +80,8 @@ void Simulator::readInputParameters(CommandArguments arguments){
   unsigned int iTotalArgs = arguments.size();
   
   pConfig=new Configuration();
-
-
+  
+  
   dDefaultPopSize = 1.0;
   dDefaultGrowthAlpha =0.0;
   
@@ -160,14 +97,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
       newRow.push_back(dDefaultMigrationRate);
     pConfig->dMigrationMatrix.push_back(newRow);
   }
-
-  if (iTotalArgs == 0) {
-    Rcpp::stop("You must enter a value for the sample size and seq length.");
-  } 
   
-  if( arguments[0].size()!=2 ){
-    Rcpp::stop("You must enter a value for the sample size and seq length.");
-  }
   iSampleSize = atoi(arguments[0][0].data());
   Population newPop;
   newPop.setChrSampled(iSampleSize);
@@ -176,29 +106,12 @@ void Simulator::readInputParameters(CommandArguments arguments){
   
   pConfig->pPopList.push_back(newPop);
   pConfig->iSampleSize = iSampleSize;
-#ifdef DIAG
-  Rcpp::Rcerr<<"INPUT: Sample size is now "<<pConfig->iSampleSize<<endl;
-#endif
-  if( iSampleSize<= 0) {
-    printUsage();
-    Rcpp::stop("First argument error. Sample size needs to be greater than 0.\n");
-    
-
-  }
   
   pConfig->dSeqLength = atof(arguments[0][1].data());
-#ifdef DIAG
-  Rcpp::Rcerr<<"INPUT: Seq length is now "<<pConfig->dSeqLength<<endl;
-#endif
+  
   set<float> eventTimes;
   for (unsigned int iCurrentArg = 1;iCurrentArg<iTotalArgs;++iCurrentArg){
     try{
-      if(arguments[iCurrentArg][0][0] != '-' ) {
-        Rcpp::Rcerr<<"At argument "<<iCurrentArg<<
-          ", argument needs to be prefixed with a -"<<endl;
-        Rcpp::Rcerr<<"You entered "<<arguments[iCurrentArg][0][0]<<endl;
-        printUsage();
-      }
       double dTime;
       char chType;
       EventPtr wrapper;
@@ -217,9 +130,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
         // example:
         // (2:1.766,(4:0.505,(3:0.222,(1:0.163,5:0.163):0.059):0.283):1.261);
         break;
-      case 'd' :
-        pConfig->bDebug = true;
-        break;
       case 'h' :
         if (arguments[iCurrentArg].size()!=2) {
           Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
@@ -228,9 +138,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           return;
         }
         pConfig->dBasesToTrack = atof(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Base pairs to track is "<<pConfig->dBasesToTrack<<endl;
-#endif
         break;
       case 's' :
         if (arguments[iCurrentArg].size()<2) {
@@ -239,9 +146,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::stop("Argument error");
         }
         pConfig->iRandomSeed = atoi(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Random seed used is "<<pConfig->iRandomSeed<<endl;
-#endif
         break;
       case 't' :  // set mutation parameter
         if (arguments[iCurrentArg].size()!=2) {
@@ -250,9 +154,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::stop("Argument error");
         }
         pConfig->dTheta = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Scaled mutation rate is now "<<pConfig->dTheta<<endl;
-#endif
         break;
       case 'F':
         if (arguments[iCurrentArg].size()!=3){
@@ -279,17 +180,11 @@ void Simulator::readInputParameters(CommandArguments arguments){
             cumFreq+=freq;
             if (end>maxFreq) end = maxFreq;
             if (start>=end) throw "The freq range entered is incorrect.";
-            if (pConfig->bDebug){
-              Rcpp::Rcerr<<"Frequency bin from "<<start<<" to "<<end<<" with freq "<<freq<<endl;
-            }
             AlleleFreqBinPtr bin = AlleleFreqBinPtr(new AlleleFreqBin(start,end,freq));
             pConfig->pAlleleFreqBinPtrSet->insert(bin);
             lastStart = end;
             ++total;
           }
-#ifdef DIAG
-          Rcpp::Rcerr<<"INPUT: Accepted "<<total<<" freqency bins"<<endl;
-#endif
           inFile.close();
           pConfig->bSNPAscertainment = true;
           if (cumFreq>1.0) throw "The total frequency entered exceeds one";
@@ -298,9 +193,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
             }else{
               AlleleFreqBinPtr bin = AlleleFreqBinPtr(new AlleleFreqBin(lastStart,maxFreq,1-cumFreq));
               pConfig->pAlleleFreqBinPtrSet->insert(bin);
-              if (pConfig->bDebug){
-                Rcpp::Rcerr<<"Added frequency bin from "<<lastStart<<" to "<<maxFreq<<" with freq "<<1-cumFreq<<endl;
-              }
             }
           }
         }
@@ -312,9 +204,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::stop("Argument error");
         }
         pConfig->dRecombRateRAcrossSites = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Scaled recombination rate is now "<<pConfig->dRecombRateRAcrossSites<<endl;
-#endif
         break;
       case 'c' :
         if (arguments[iCurrentArg].size()!=3) {
@@ -328,10 +217,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::Rcerr<<"The gene conversion parameters must be positive\n";
           Rcpp::stop("Argument error");
         }
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Gene conversion ratio is now "<<pConfig->dGeneConvRatio<<endl;
-        Rcpp::Rcerr<<"INPUT: Gene conversion tract length is now "<<pConfig->iGeneConvTract<<endl;
-#endif
         break;
       case 'R':
         if (arguments[iCurrentArg].size()!=2){
@@ -350,16 +235,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
             istringstream inStr(line);
             double start,end,ratio;
             inStr>>start>>end>>ratio;
-            if (pConfig->bDebug){
-              Rcpp::Rcerr<<"Hot spot from "<<start<<" to "<<end<<" with rate "<<ratio<<endl;
-            }
             HotSpotBinPtr bin(new HotSpotBin(start,end,ratio));
             pConfig->pHotSpotBinPtrList->push_back(bin);
             ++total;
           }
-#ifdef DIAG
-          Rcpp::Rcerr<<"INPUT: Accepted "<<total<<" hotspots"<<endl;
-#endif
           inFile.close();
           pConfig->bVariableRecomb = true;
         }
@@ -371,9 +250,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::stop("Argument error");
         }
         pConfig->iIterations = atoi(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: Iterations is now "<<pConfig->iIterations<<endl;
-#endif
         break;
       case 'I' :
         if (arguments[iCurrentArg].size()<2) {
@@ -404,9 +280,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           }else{
             pConfig->dGlobalMigration = dDefaultMigrationRate;
           }
-#ifdef DIAG
-          Rcpp::Rcerr<<"INPUT: Global migration rate to "<<pConfig->dGlobalMigration<<endl;
-#endif
         }else{
           Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", the number of island sample sizes entered does not match the first parameter\n";
@@ -417,9 +290,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
         }
         
         // Allocate migration rate matrix
-        if (pConfig->bDebug){
-          Rcpp::Rcerr<<"Constructing migration matrix of dimension "<<pConfig->iTotalPops<<endl;
-        }
         pConfig->dMigrationMatrix.clear();
         for (int i=0;i<pConfig->iTotalPops;++i){
           vector<double> newRow;
@@ -475,10 +345,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       case 'n' :
         //                    // specify population size for each population
-        if( pConfig->iTotalPops < 2 ) {
-          Rcpp::Rcerr<<"You must use -I option first (i.e. specify more than one population)."<<endl;
-          printUsage();
-        }
         if (arguments[iCurrentArg].size()!=3){
           Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
             ", you need to specify the pop ID and the population size.\n";
@@ -491,17 +357,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
             Rcpp::stop("Argument error");
           }
           pConfig->pPopList[popId].setPopSize(popSize) ;
-#ifdef DIAG
-          Rcpp::Rcerr<<"INPUT: Pop "<<arguments[iCurrentArg][1]<<" has size: "<<popSize<<endl;
-#endif
         }
         break;
       case 'g' :
         //                    // specify growth rates
-        if( pConfig->iTotalPops < 2 ) {
-          Rcpp::Rcerr<<"You must use -I option first (i.e. specify more than one population)."<<endl;
-          printUsage();
-        }
         if (arguments[iCurrentArg].size()!=3){
           Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
             ", you need to specify the pop ID and the population growth rate.\n";
@@ -514,9 +373,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
             Rcpp::stop("Argument error");
           }
           pConfig->pPopList[popId].setGrowthAlpha(dDefaultGrowthAlpha);
-#ifdef DIAG
-          Rcpp::Rcerr<<"INPUT: Pop "<<arguments[iCurrentArg][1].data()<<" has growth rate: "<<dDefaultGrowthAlpha<<endl;
-#endif
         }
         break;
       case 'G' :
@@ -532,10 +388,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           //                    Rcpp::Rcerr<<"INPUT: Growth rate for all pop "<<dDefaultGrowthAlpha<<endl;
           for(int i=0; i<pConfig->iTotalPops; ++i){
             pConfig->pPopList[i].setGrowthAlpha(dDefaultGrowthAlpha);
-#ifdef DIAG
-            Rcpp::Rcerr<<"INPUT: Growth rate for pop "<<i<<" is "<<
-              pConfig->pPopList[i].getGrowthAlpha()<<endl;
-#endif
           }
         }
         break;
@@ -550,9 +402,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
           Rcpp::stop("Argument error");
         }
         dTime = atof(arguments[iCurrentArg][1].data());
-#ifdef DIAG
-        Rcpp::Rcerr<<"INPUT: At time "<<dTime<<": ";
-#endif
         if (eventTimes.find(dTime)==eventTimes.end()){
           eventTimes.insert(dTime);
         }else{
@@ -645,11 +494,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
             //iType = Event::POPSPLIT;
             iPop1 = atoi( arguments[iCurrentArg][2].data() )-1;
             dProportion = atof( arguments[iCurrentArg][3].data() );
-            if (iPop1<0||iPop1>=pConfig->iTotalPops||dProportion<0||
-                dProportion>=1){
-              Rcpp::Rcerr<<"Bad values in parameters for pop IDs and/or proportion in pop split\n";
-              printUsage();
-            }
             wrapper = EventPtr(new PopSizeChangeEvent(
               Event::POPSPLIT,dTime,iPop1,dProportion));
             //Rcpp::Rcerr<<"Population "<<arguments[iCurrentArg][2]<<
@@ -666,10 +510,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
             //iType = Event::POPJOIN;
             iPop1 = atoi( arguments[iCurrentArg][2].data() ) -1;
             iPop2 = atoi( arguments[iCurrentArg][3].data() ) -1;
-            if (iPop1<0||iPop2<0){
-              Rcpp::Rcerr<<"Bad values in parameters for pop IDs pop join\n";
-              printUsage();
-            }
             if (iPop1>=pConfig->iTotalPops||
                 iPop2>=pConfig->iTotalPops){
               Rcpp::Rcerr<<"WARNING: The pop IDs used in pop join is greater than the number specified in -I.  You must have a split event before this join event.\n";
@@ -751,11 +591,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       default:
         Rcpp::Rcerr<<"Invalid option, you entered "<<arguments[iCurrentArg][0][1]<<endl;
-      printUsage();
       }
     }catch(const out_of_range & e){
       Rcpp::Rcerr<<"There were too many arguments.\n";
-      printUsage();
     }
   }
   
@@ -769,7 +607,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
     //    <<pConfig->dBasesToTrack<<endl;
   }
   
-  
   pEventList->sort(byEventTime());
   pConfig->pEventList = pEventList;
 }
@@ -779,12 +616,8 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
   
   vector<AlphaSimRReturn> toRet;
   
-  
   try {
     RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
-#ifdef DIAG
-    Rcpp::Rcout << SEED << "\t" << pConfig->iRandomSeed << endl;
-#endif
     for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
       GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
       graphBuilder.build();
@@ -803,13 +636,7 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 void Simulator::beginSimulation() {
   try {
     RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
-#ifdef DIAG
-    Rcpp::Rcout << SEED << "\t" << pConfig->iRandomSeed << endl;
-#endif
     for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
-      if (pConfig->bDebug) {
-        Rcpp::Rcerr << "Iteration: " << i << endl;
-      }
       GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
       graphBuilder.build();
       graphBuilder.printHaplotypes();
@@ -821,75 +648,11 @@ void Simulator::beginSimulation() {
   }
 }
 
-
-
-
-void Simulator::runFromAlphaSimRParams(int sampleSize, float sequenceLength, double mutation, double recombination,
-                                       vector<tuple<float, float> > *popSizeList,
-                                       vector<float> *migrationRate,
-                                       vector<int> lineage) {
-  
-  // double defaultMigrationRate;
-  
-  pConfig = new Configuration();
-  pConfig->iTotalPops = 1;
-    
-  double dDefaultMigrationRate = 0.0;
-  //double dDefaultPopSize = 1.0;
-  
-  for (unsigned int i = 0; i < pConfig->iTotalPops; ++i) {
-    vector<double> newRow;
-    for (unsigned int j = 0; j < pConfig->iTotalPops; ++j)
-      newRow.push_back(dDefaultMigrationRate);
-    pConfig->dMigrationMatrix.push_back(newRow);
-  }
-  
-  pConfig->dSeqLength = sequenceLength;
-  
-  pConfig->dTheta = pConfig->dSeqLength * mutation;
-  pConfig->dRecombRateRAcrossSites = pConfig->dSeqLength * recombination;
-  
-  for (tuple<float, float> pop : *popSizeList) {
-    EventPtr wrapper;
-    wrapper = EventPtr(new GenericEvent(
-      Event::GLOBAL_POPSIZE, get<0>(pop), get<1>(pop)));
-  }
-  
-  
-  int lineageSize = static_cast<int>(lineage.size());
-  
-  if (lineageSize > 0) {
-    if (lineageSize != 3) {
-      Rcpp::Rcerr << "ERROR, lineage not given enough arguements";
-    }
-    // merge populations
-    int iPop1 = lineage[1] - 1;
-    int iPop2 = lineage[2] - 1;
-    if (iPop1 < 0 || iPop2 < 0) {
-      Rcpp::Rcerr << "Bad values in parameters for pop IDs pop join\n";
-    }
-    if (iPop1 >= pConfig->iTotalPops ||
-        iPop2 >= pConfig->iTotalPops) {
-      Rcpp::Rcerr
-      << "WARNING: The pop IDs used in pop join is greater than the number specified in -I.  You must have a split event before this join event.\n";
-    }
-    EventPtr wrapper = EventPtr(new PopJoinEvent(
-      Event::POPJOIN, lineage[0], static_cast<short>(iPop1), static_cast<short>(iPop2)));
-    
-  }
-  beginSimulation();
-  
-  
-}
-
 Simulator::Simulator() {
 }
 
 
 Simulator::~Simulator() {
-#ifdef DIAG
-  Rcpp::Rcerr << "Simulator destructor:" << endl;
-#endif
   delete pConfig;
 }
 

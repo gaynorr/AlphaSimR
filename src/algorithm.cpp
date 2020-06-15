@@ -34,14 +34,7 @@ EdgePtr GraphBuilder::getRandomEdgeOnTree(double & dSplitPoint,
         found = true;
       }else{
         dRunningLength+=curEdge->getLength();
-        //if (pConfig->bDebug){
-        //Rcpp::Rcerr<<"getRandomEdge: running length: "<<dRunningLength<<", random spot "<<dRandomSpot<<"\n"; 
-        //}
       }
-    }else{
-      //if (pConfig->bDebug){
-      //Rcpp::Rcerr<<"getRandomEdge: Sorry edge was deleted\n"; 
-      //}
     }
     ++counter;
     ++it;
@@ -61,12 +54,8 @@ EdgePtr GraphBuilder::getRandomEdgeToCoalesce(EdgePtr & coalescingEdge,
   
   EdgeIndexQueue & pVectorIndicesToRecycle = this->pVectorIndicesToRecycle->at(iPopulation);
   unsigned int edgeVectorSize = pEdgeVector.size();
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"getRandomEdgeToCoalesce: selecting population "<<iPopulation<<" with avail edges: "<< edgeVectorSize<<"\n";
-  }
   bool found = false;
   int iUnifPick =-1;
-  int out_of_range = 0,already_deleted=0;
   while(!found){
     // guessing by randomly selecting elements from the vector of graph
     // edges appears to work pretty well here
@@ -81,28 +70,14 @@ EdgePtr GraphBuilder::getRandomEdgeToCoalesce(EdgePtr & coalescingEdge,
         pVectorIndicesToRecycle.push(iUnifPick);
         edge->bInQueue = true;
       }
-      if (pConfig->bDebug){
-        //Rcpp::Rcerr<<"getRandomEdgeToCoalesce: edge already deleted \n";
-        ++already_deleted;
-      }
       // if the proposed coalescing time is within the endpoints of this
       // randomly picked edge, select this edge
     }else if (edge->getBottomNodeRef()->getHeight()<dHeight
                 && edge->getTopNodeRef()->getHeight()>dHeight) {
       found = true;
-    }else{
-      if (pConfig->bDebug){
-        //Rcpp::Rcerr<<"getRandomEdgeToCoalesce: Edge out of range\n";
-        ++out_of_range;
-      }
     }
   }
   EdgePtr & edge = pEdgeVector[iUnifPick];
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"Stats: out of range edges: "<<out_of_range<<" and already deleted: "<<already_deleted<<endl;
-    Rcpp::Rcerr<<"Edge to coalesce: "<<edge->getBottomNodeRef()->getHeight()<<" to "<<
-      edge->getTopNodeRef()->getHeight()<<endl;
-  }
   
   return edge;
 }
@@ -245,14 +220,6 @@ void GraphBuilder::pruneEdgesAbove(EdgePtr & selectedEdge){
     }
     
   }else{
-#ifdef DIAG
-    if (topNodeType!=Node::MIGRATION
-          && topNodeType!=Node::QUERY){
-      Rcpp::Rcerr<<"At edge with "<<selectedEdge->getBottomNodeRef()->getHeight()<<
-        " and "<<selectedEdge->getTopNodeRef()->getHeight()<<endl;
-      throw "Prune up did not find a migration node";
-    }
-#endif
     EdgePtr topEdge = topNode->getTopEdgeByIndex(0);
     pruneEdgesAbove(topEdge);
   }
@@ -269,12 +236,6 @@ void GraphBuilder::invokeRecombination(GeneConversionPtr & geneConversionPtr){
   // save old edge if gene conversion
   if (this->bBeginGeneConversion) geneConversionPtr->xOverNode = xOverNode;
   
-  if(pConfig->bDebug){
-    Rcpp::Rcerr<<"Adding xover point at "<<dSplitPoint<<
-      " for edge "<<selectedXoverEdge->getBottomNodeRef()->getHeight()<<
-        " to "<<selectedXoverEdge->getTopNodeRef()->getHeight()<<
-          " of population "<<selectedXoverEdge->getBottomNodeRef()->getPopulation()<<endl;
-  }
   EventPtr pXoverEventWrapper = EventPtr(new XoverEvent
                                            (Event::XOVER,dSplitPoint,xOverNode->getPopulation()));
   // insert the xover node at the selected edge
@@ -298,18 +259,11 @@ void GraphBuilder::invokeRecombination(GeneConversionPtr & geneConversionPtr){
   // now initialize the parameters that will be sent to the event traversal routine
   EventPtr newCoalEvent;
   // Traverse the events to find the proper coalescent waiting time.
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"Calling traverse events\n";
-  }
   traverseEvents(true,xOverNode,newCoalEvent);
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"Traverse events completed successfully\n";
-  }
   dSplitPoint = newCoalEvent->getTime();
   bool bNewOrigin = false;
   EdgePtr selectedCoalEdge;
   if (dSplitPoint<this->grandMRCA->getHeight()){
-    if(pConfig->bDebug) Rcpp::Rcerr<<"Coalescing at height "<<dSplitPoint<<endl;
     try{
       selectedCoalEdge = getRandomEdgeToCoalesce(
         coalescingEdge,dSplitPoint);
@@ -330,13 +284,6 @@ void GraphBuilder::invokeRecombination(GeneConversionPtr & geneConversionPtr){
   if (bNewOrigin){
     coalNode = NodePtr(new Node(Node::COAL,
                                 grandMRCA->getPopulation(),dSplitPoint));
-    if(pConfig->bDebug) Rcpp::Rcerr<<"Creating new grand ancestor at "<<
-      coalNode->getHeight()<<endl;
-#ifdef DIAG
-    if (grandMRCA->getPopulation()!=coalNode->getPopulation()){
-      throw "Old grandMRCA and new grandMRCA don't match in pop\n";
-    }
-#endif
     EdgePtr shortEdge = EdgePtr(new Edge(coalNode,grandMRCA));
     shortEdge->iGraphIteration=iGraphIteration;
     addEdge(shortEdge);
@@ -387,14 +334,6 @@ void GraphBuilder::markCurrentTree(){
     bFirstSample = false;
     ++iIterations;
   }
-#ifdef DIAG
-  if (localMRCA->getBottomEdgeByIndex(0)->iGraphIteration!=
-      localMRCA->getBottomEdgeByIndex(1)->iGraphIteration){
-    printDataStructures();
-    Rcpp::Rcerr<<"Proposed grandMRCA at :"<<localMRCA->getHeight()<<endl;
-    throw "Proposed grandMRCA's edges' histories don't match";
-  }
-#endif
 }
 
 
@@ -418,15 +357,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
   //dMigrationMatrix.clear();
   dMigrationMatrix = pConfig->dMigrationMatrix;
   //}
-  if (pConfig->bDebug){
-    //Rcpp::Rcerr<<"Migration Matrix from copy\n";
-    //for (int j=0;j<iTotalPops;++j){
-    //  for (int k=0;k<iTotalPops;++k){
-    //    Rcpp::Rcerr<<" "<<dMigrationMatrix[j][j];
-    //  }
-    //  Rcpp::Rcerr<<endl;
-    // }
-  }
   // set up pile of coalesced nodes for building the prior tree
   NodePtrSet * pCoalescedNodes = NULL;
   if (!bBuildFromEventList){
@@ -447,9 +377,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
   }
   
   // remove any leading events that are marked for deletion.
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"Removing leading events marked for deletion\n";
-  }
   EventPtrList::iterator currentEventIt = pEventList->begin();
   EventPtrList::iterator lastEventIt = pEventList->end();
   EventPtr pNextNewEvent;
@@ -468,9 +395,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
   short int iCoalescingPop = -1;
   unsigned long int iCoalRate = 0;
   double dTime = 0.0,dMigration = 0.0,dLastTime = 0.0,dWaitTime=0.;
-  if (pConfig->bDebug){
-    Rcpp::Rcerr<<"Beginning events traversal\n";
-  }
   while (!bDoneBuild){
     int iEventType = -1;
     if (currentEventIt!=lastEventIt){
@@ -568,10 +492,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           bIsEvent = true;
         }
       }else{
-#ifdef DIAG
-        if (dMigration<0.0)
-          throw "Negative migration. Program exiting";
-#endif
         if(iTotalPops>1 && !bUserEventAvailable){
           int iPops = 0;
           for(int j=0; j<iTotalPops; ++j) {
@@ -590,7 +510,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
     ){
       dTime = pNextNewEvent->getTime();
       short int eventType =  pNextNewEvent->getType();
-      //if (pConfig->bDebug) Rcpp::Rcerr<<"At time "<<dTime<<" event type is  "<<eventType<<endl;
       if (eventType==Event::PAST_COAL){
         CoalEvent * pExistingCoalEvent =
           static_cast<CoalEvent *>(pNextNewEvent.get());
@@ -620,7 +539,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           for (int j=0;j<iTotalPops;++j){
             dMigrationMatrix[j].push_back(pConfig->dGlobalMigration);
           }
-          if (pConfig->bDebug) Rcpp::Rcerr<<"dMigrationMatrix has dim "<<dMigrationMatrix.size()<<endl;
         }
         
         
@@ -652,9 +570,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         short int  iSourcePop = migRateEvent->getSourcePop();
         short int iDestPop = migRateEvent->getDestPop();
         double dMigRate = migRateEvent->getRate();
-        if (pConfig->bDebug){
-          Rcpp::Rcerr<<"Mig matrix has dim "<<dMigrationMatrix.size()<<" and source,Dest is "<<iSourcePop<<","<<iDestPop<<endl;
-        }
         dMigrationMatrix[iSourcePop][iSourcePop]+=
           dMigRate-dMigrationMatrix[iSourcePop][iDestPop];
         dMigrationMatrix[iSourcePop][iDestPop] = dMigRate;
@@ -692,9 +607,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         <PopJoinEvent *>(pNextNewEvent.get());
         short int iSourcePop = joinEvent->getSourcePop();
         short int iDestPop = joinEvent->getDestPop();
-        if (pConfig->bDebug){
-          Rcpp::Rcerr<<"POPJOIN event encountered at time "<<dTime<<" from "<< iSourcePop<<" to "<<iDestPop <<"\n";
-        }
         if (iSourcePop>=iTotalPops){
           Rcpp::Rcerr <<"Source pop and total pops are "<<iSourcePop<<","<<iTotalPops<<" in POP JOIN event at history "<<iGraphIteration<<". It is recommended that you increase the migration rates and/or number of sampled chromosomes.\n";
           
@@ -716,9 +628,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           dMigrationMatrix.push_back(newRow);
           for (int j=0;j<iTotalPops;++j)
             dMigrationMatrix[j].push_back(0.0);
-          if (pConfig->bDebug){
-            Rcpp::Rcerr<<"In pop join, dMigrationMatrix dim is "<<dMigrationMatrix.size()<<endl;
-          }
         }
         
         if (!bBuildFromEventList){
@@ -796,20 +705,12 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
             }
           }
         }
-        if (pConfig->bDebug){
-          Rcpp::Rcerr<<"POPJOIN event completed\n";
-        }
         // 2013-06-23 GKC end codefix to revise migration matrix
       }else if (eventType==Event::POPSPLIT){
         PopSizeChangeEvent *splitEvent = static_cast
         <PopSizeChangeEvent *>(pNextNewEvent.get());
         short int iSourcePop = splitEvent->getPopulationIndex();
         short int iDestPop = iTotalPops;
-        if (pConfig->bDebug){
-          Rcpp::Rcerr<<"POPSPLIT event encountered at time "<<dTime<<
-            " from "<<iSourcePop<<" to "<<iDestPop<<"\n";
-          //    if (iGraphIteration==887) throw "test exit";
-        }
         double dProportion = splitEvent->getPopChangeParam();
         // GKC: 2015-07-05 Add epsilon to migration node
         // to make sure POPSPLIT happens first
@@ -827,8 +728,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         for (int j=0;j<iTotalPops;++j){
           dMigrationMatrix[j].push_back(pConfig->dGlobalMigration);
         }
-        if(pConfig->bDebug) Rcpp::Rcerr<<"POPSPLIT migration matrix expanded "
-                                <<"to "<<dMigrationMatrix.size()<<" rows.\n";
         // end expand migration matrix
         if (!bBuildFromEventList){
           NodePtrList nodesToMigrate;
@@ -850,10 +749,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
             NodePtr parentNode =
               NodePtr(new Node(Node::MIGRATION,
                                iDestPop,dMigrationTime));
-            if(pConfig->bDebug) Rcpp::Rcerr<<
-              "POPSPLIT in build tree, migration node at time "
-              <<dMigrationTime<<
-              endl;
             EdgePtr newEdge =
               EdgePtr(new Edge(parentNode,childNode));
             this->addEdge(newEdge);
@@ -873,14 +768,9 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           //GKC 2015-07-05 make sure the migration event happens
           // after the pop split
           if(nodesToMigrate.size()>0) --currentEventIt;
-          if (pConfig->bDebug) {
-            Rcpp::Rcerr<<"In pop split mig dim is size "<<dMigrationMatrix.size()<<endl;
-          }
+
         }else{
           iDestPop=iTotalPops-1;
-          if (pConfig->bDebug){
-            Rcpp::Rcerr<<"In POPSPLIT: destpop,sourcepop,size: "<<iDestPop<<","<<iSourcePop<<","<<pPopList.size()<<endl;
-          }
           double random = pRandNumGenerator->unifRV();
           bool internal_edge_condition =
             iRequestedPop==iSourcePop &&
@@ -968,20 +858,16 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         throw "Event is not implemented yet!";
       }
       ++currentEventIt;
-      //if (pConfig->bDebug) Rcpp::Rcerr<<"looking for events to mark for deletion\n";
       bool found = false;
       while(!found && currentEventIt!=lastEventIt){
         if (*currentEventIt==NULL) Rcpp::Rcerr<<"null\n";
         if ((*currentEventIt)->bMarkedForDelete) {
-          if(pConfig->bDebug)Rcpp::Rcerr<<"Deleting event at "<<(*currentEventIt)->getTime()<<endl;
           currentEventIt=pEventList->erase(currentEventIt);
         }
         else found = true;
       }
-      //if (pConfig->bDebug) Rcpp::Rcerr<<"user event processing complete\n";
     }else{
       dTime += dWaitTime;
-      //if(pConfig->bDebug) Rcpp::Rcerr<<"Handling migration or coalescence at time "<<dTime<<endl;
       if(iEventType==Event::NEW_MIGRATION){
         double dRandMigr =  dMigration*pRandNumGenerator->unifRV();
         vector<int> migrantPops;
@@ -1002,9 +888,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         int migrant=-1,i=0;
         double dSum=0.;
         while (dRandMigr>=dSum && i<iTotalChrom){
-          if (pConfig->bDebug){
-            //Rcpp::Rcerr<<"In existing mig node, dMigrationMatrix size "<<dMigrationMatrix.size()<<" and migrantPops[i]: "<<migrantPops[i]<<endl;
-          }
           dSum += dMigrationMatrix[migrantPops[i]][migrantPops[i]];
           migrant = i ;
           ++i;
@@ -1047,9 +930,6 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
             dMigrationMatrix[source_pop][source_pop];
           dSum = 0.0;
           i = 0;
-          if (pConfig->bDebug){
-            Rcpp::Rcerr<<"2 In existing mig node, dMigrationMatrix size "<<dMigrationMatrix.size()<<" and sourcepop, itotalpops: "<<source_pop<<","<<iTotalPops<<endl;
-          }
           
           while (dRandMigr>=dSum && i<iTotalPops){
             if( i != source_pop){
@@ -1152,10 +1032,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           pEventList->insert(currentEventIt,newCoalEvent);
           bDoneBuild = true;
         }
-      }else{
-        if (pConfig->bDebug) Rcpp::Rcerr<< "No random event could be assigned.";
       }
-      
     }
     dLastTime = dTime;
   }
@@ -1235,29 +1112,15 @@ void GraphBuilder::addMutations(double startPos,double endPos){
       mutateBelowEdge(selectedEdge);
       NodePtrVector::iterator it;
       
-      
-#ifdef DIAG
-      Rcpp::Rcout<<MUTATIONSITE<<FIELD_DELIMITER<<pMutationPtrVector->size()<<
-        FIELD_DELIMITER<< setw(15) << setprecision(9)<<startPos<<
-          FIELD_DELIMITER<< setw(15) << setprecision(9)<<dMutationTime<<
-            FIELD_DELIMITER;
-#endif
-      
       unique_ptr<AlphaSimRReturn> temp(new AlphaSimRReturn());
       temp->length = startPos;
       unsigned int iSampleSize = pConfig->iSampleSize;
       for (unsigned int iSampleIndex=0;iSampleIndex<iSampleSize;++iSampleIndex){
         SampleNode * sample = static_cast<SampleNode*>(pSampleNodeArray[iSampleIndex].get());
         sites[iSampleIndex]=sample->bAffected;
-#ifdef DIAG
-        Rcpp::Rcout<<sample->bAffected;
-#endif
         temp->haplotypes.push_back(sample->bAffected);
         sample->bAffected=false;
       }
-#ifdef DIAG
-      Rcpp::Rcout<<endl;
-#endif
       mutations.push_back(*temp);
       double dFreq=0.;
       if (pConfig->bSNPAscertainment){
@@ -1327,22 +1190,9 @@ bool GraphBuilder::checkPendingGeneConversions(double & curPos){
         EdgePtr edge1 = gc->xOverNode->getTopEdgeByIndex(1);
         if (gc->xOverNode->bDeleted ||
             edge1->iGraphIteration!=iGraphIteration){
-          if (pConfig->bDebug){
-            Rcpp::Rcerr<<"Deleting gene conversion because:"<<endl;
-            if (gc->xOverNode->bDeleted)
-              Rcpp::Rcerr<<"xover node was deleted\n";
-            else if (edge1->iGraphIteration!=iGraphIteration)
-              Rcpp::Rcerr<<"new edge "<<edge1->getBottomNodeRef()->getHeight()<<" to "<<
-                edge1->getTopNodeRef()->getHeight()<<" was not ancestral\n";
-          }
           delete(*it);
           pGeneConversionPtrSet->erase(it++);
         }else{
-          if (pConfig->bDebug){
-            Rcpp::Rcerr<<"Closing a gene conversion: "<<
-              "Backtracking position from "<<curPos<<" to "<<
-                gc->dEndPos<<endl;
-          }
           curPos = gc->dEndPos;
           this->gcOldEdge = edge0;
           this->gcNewEdge = edge1;
@@ -1361,9 +1211,6 @@ bool GraphBuilder::checkPendingGeneConversions(double & curPos){
 void GraphBuilder::build(){
   double curPos = 0.0,lastPos = 0.0,dMaxPos = 1.0;
   unsigned int iLastCumulativePos = 0;
-#ifdef DIAG
-  Rcpp::Rcerr<<"Debugging: "<<pConfig->bDebug<<endl;
-#endif
   
   HotSpotBinPtrList::iterator hotSpotIt;
   if (pConfig->bVariableRecomb){
@@ -1395,8 +1242,6 @@ void GraphBuilder::build(){
           lastRE=GCSTART;
           double dTractLen = (1.+log(pRandNumGenerator->unifRV())/
                               dLogTractRatio)/pConfig->dSeqLength;
-          if (pConfig->bDebug) Rcpp::Rcerr<<"Proposing tract length: "
-                                   <<dTractLen<<endl;
           newGC = GeneConversionPtr(new GeneConversion(
             curPos+dTractLen));
           pGeneConversionPtrSet->insert(newGC);
@@ -1424,25 +1269,13 @@ void GraphBuilder::build(){
       }else{
         ++iHistoryMax;
       }
-#ifdef DIAG
-      Rcpp::Rcerr<<"iHistoryMax: "<<iHistoryMax<<endl;
-#endif
       if (iHistoryMax>=0){
         pruneARG(iHistoryMax);
       }
     }
     
     initializeCurrentTree();
-#ifdef DIAG
-    Rcpp::Rcerr<<"Tree:"<<iGraphIteration<<
-      ",pos:"<<curPos<<
-        ",len:"<<dLastTreeLength<<
-          ",TMRCA:"<<localMRCA->getHeight()<<
-            ",ARG:"<<
-              ",len:"<<dArgLength<<
-                ",TMRCA:"<<grandMRCA->getHeight()<<
-                  endl;
-#endif
+
     if (pConfig->bVariableRecomb){
       bool bBinCrossed;
       do{
@@ -1459,10 +1292,7 @@ void GraphBuilder::build(){
       // Schiffels following two lines fixes
       uint iSegLength = curPos*pConfig->dSeqLength-iLastCumulativePos;
       iLastCumulativePos += iSegLength;
-#ifdef DIAG
-      Rcpp::Rcout<<NEWICKTREE<<"\t["<<iSegLength<<"]"<<
-        getNewickTree(localMRCA->getHeight(),localMRCA)<<";"<<endl;
-#endif
+
     }
     // check if there was an existing gene conversion event that needs
     // to be closed. backtrack if necessary.
@@ -1473,13 +1303,7 @@ void GraphBuilder::build(){
     lastPos = curPos;
     ++iGraphIteration;
   }while(curPos<dMaxPos);
-#ifdef DIAG
-  Rcpp::Rcerr<<"Completed the chromosome at position "<<curPos<<endl;
-  //if (pMutationPtrVector->size()>0){
-  //        Rcpp::Rcout<<HAPLOEND<<endl;
-  //}
-  Rcpp::Rcerr<<"gcstarts:"<<gcstarts<<" gcends:"<<gcends<<" xovers:"<<xovers<<endl;
-#endif
+
 }
 
 vector<AlphaSimRReturn> GraphBuilder::getMutations() {

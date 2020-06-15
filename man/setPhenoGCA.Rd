@@ -11,7 +11,7 @@ setPhenoGCA(
   varE = NULL,
   reps = 1,
   fixEff = 1L,
-  p = 0.5,
+  p = NULL,
   inbred = FALSE,
   onlyPheno = FALSE,
   simParam = NULL
@@ -33,7 +33,9 @@ dimensions nTraits for correlated errors.}
 \item{fixEff}{fixed effect to assign to the population. Used 
 by genomic selection models only.}
 
-\item{p}{the p-value for the environmental covariate}
+\item{p}{the p-value for the environmental covariate 
+used by GxE traits. If NULL, a value is
+sampled at random.}
 
 \item{inbred}{are both pop and testers fully inbred. They are only 
 fully inbred if created by \code{\link{newPop}} using inbred founders 

@@ -81,26 +81,26 @@ writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
     if(useQtl){
       writeGeno(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                 simParam$traits[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"))
+                file.path(dir,"genotype.txt"),simParam$nThreads)
       if(includeHaplo){
         writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                       simParam$traits[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"))
+                      file.path(dir,"haplotype1.txt"),simParam$nThreads)
         writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                       simParam$traits[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"))
+                      file.path(dir,"haplotype2.txt"),simParam$nThreads)
       }
     }else{
       writeGeno(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                 simParam$snpChips[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"))
+                file.path(dir,"genotype.txt"),simParam$nThreads)
       if(includeHaplo){
         writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                       simParam$snpChips[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"))
+                      file.path(dir,"haplotype1.txt"),simParam$nThreads)
         writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                       simParam$snpChips[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"))
+                      file.path(dir,"haplotype2.txt"),simParam$nThreads)
       }
     }
   }

@@ -10,7 +10,6 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_01.hpp>
 #include "constants.h"
-//#define DIAG
 
 using namespace std;
 
@@ -453,23 +452,12 @@ public:
   
 };
 
-//typedef boost::shared_ptr<AlleleFreqBin> AlleleFreqBinPtr;
-
-
-
 class AlphaSimRReturn {
 public:
-  
   AlphaSimRReturn();
-  
-  
-  
   vector<bool > haplotypes;
   double length;
 };
-
-
-
 
 class Mutation{
 public:
@@ -479,11 +467,6 @@ public:
   double dLocation;
   bool bPrintOutput;
 };
-
-//typedef boost::shared_ptr<Mutation> MutationPtr;
-
-
-
 
 // Configuration container populated by parameter reading procedure
 // can be used by any simulator implementation
@@ -495,7 +478,7 @@ public:
   unsigned int iSampleSize,iIterations,iGeneConvTract;
   unsigned short int iTotalPops;
   long iRandomSeed;
-  bool bDebug,bSNPAscertainment,bFlipAlleles;
+  bool bSNPAscertainment,bFlipAlleles;
   //    bool bHighMutationRate;
   bool bVariableRecomb,bNewickFormat;
   bool bMigrationChangeEventDefined;
@@ -746,16 +729,9 @@ public:
   // from the command line
   // We can always do more error checking here!
   void readInputParameters(CommandArguments args);
-  // Prints the command line parameter usage as described
-  // in the MS manual
-  void printUsage();
   // Calls any coalescent simulator (e.g. fastcoal, MS). In this
   // case, constructs a new graphbuilder and calls the build() function
   void beginSimulation();
-  void runFromAlphaSimRParams(int sampleSize, float sequenceLength, double mutation, double recombination, vector<tuple<float, float> > *popSizeList,
-                              vector<float> *migrationRate = new vector<float>(),
-                              vector<int> lineage = vector<int>());
-  
   vector<AlphaSimRReturn> beginSimulationMemory();
   Simulator();
   ~Simulator(); //destructor
@@ -812,9 +788,6 @@ inline int Population::getChrSampled(){
 inline void Population::changeChrSampled(int change){
   //setChrSampled(this->iChrSampled + change);
   this->iChrSampled+=change;
-#ifdef DIAG
-  if (this->iChrSampled<0) throw "setChrSampled, negative chrs";
-#endif
 }
 
 inline double Population::getPopSize(){
@@ -861,20 +834,12 @@ inline short unsigned int Node::getBottomEdgeSize(){
 
 // a vector of the edge(s) above the node
 inline EdgePtr Node::getTopEdgeByIndex(short unsigned int index){
-#ifdef DIAG
-  if (index>=this->topEdgeSize)
-    throw "Index for top edge out of range";
-#endif
   return index != 0u ?topEdge2.lock():topEdge1.lock();
   //        return index?topEdge2:topEdge1;
   //    return edge;
 }
 
 inline EdgePtr Node::getBottomEdgeByIndex(short unsigned int index){
-#ifdef DIAG
-  if (index>=this->bottomEdgeSize)
-    throw "Index for bottom edge out of range";
-#endif
   return index?bottomEdge2.lock():bottomEdge1.lock();
   //        return index?bottomEdge2:bottomEdge1;
   //    return edge;
@@ -924,6 +889,5 @@ inline double RandNumGenerator::unifRV() {
 }
 
 inline double GraphBuilder::getRate(){
-  //return dArgLength*dScaledRecombRate;
   return dLastTreeLength*dScaledRecombRate;
 }
