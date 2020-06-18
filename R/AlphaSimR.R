@@ -8,8 +8,6 @@
 #' @importFrom utils combn read.table write.table
 #' @importFrom R6 R6Class
 
-#' @title AlphaSimR: Breeding Program Simulations
-#'
 #' @description
 #' The successor to the 'AlphaSim' software for breeding program 
 #' simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>]. 
@@ -27,8 +25,5 @@
 #' Please see the introductionary vignette for instructions for using this package. 
 #' The vignette can be viewed using the following command: 
 #' \code{vignette("intro",package="AlphaSimR")}
-#' 
-#'
-#' @docType package
-#' @name AlphaSimR
-NULL
+#' @keywords internal
+"_PACKAGE"
