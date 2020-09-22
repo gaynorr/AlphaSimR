@@ -3,7 +3,7 @@
 \docType{class}
 \name{TraitA2-class}
 \alias{TraitA2-class}
-\title{Gender specific additive trait}
+\title{Sex specific additive trait}
 \description{
 Extends \code{\link{TraitA-class}} 
 to model seperate additive effects for parent of 

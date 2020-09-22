@@ -89,8 +89,8 @@ selIndex = function(Y,b,scale=FALSE){
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
-#' @param chr a vector of chromosomes to edit. Length must match 
-#' length of segSites.
+#' @param chr a vector of chromosomes to edit. 
+#' Length must match length of segSites.
 #' @param segSites a vector of segregating sites to edit. Length must 
 #' match length of chr.
 #' @param allele either 0 or 1 for desired allele
@@ -115,41 +115,41 @@ selIndex = function(Y,b,scale=FALSE){
 #'                   allele=1, simParam=SP)
 #' 
 #' @export
-editGenome = function(pop,ind,chr,segSites,allele,
-                      simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
+editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
   }
   ind = unique(as.integer(ind))
-  stopifnot(all(ind%in%(1:pop@nInd)))
+  stopifnot(all(ind %in% (1:pop@nInd)))
   chr = as.integer(chr)
   segSites = as.integer(segSites)
-  stopifnot(length(chr)==length(segSites))
+  stopifnot(length(chr) == length(segSites))
   allele = as.integer(allele)
-  stopifnot(allele==0L | allele==1L)
+  stopifnot(all(allele == 0L | allele == 1L))
   allele = as.raw(allele)
-  for(selChr in unique(chr)){
-    sel = chr==selChr
-    selSegSites = segSites[sel]
-    selAllele = allele[sel]
-    for(selSite in selSegSites){
-      BYTE = (selSite-1L)%/%8L + 1L
-      BIT = (selSite-1L)%%8L + 1L
-      for(selInd in ind){
-        for(i in 1:pop@ploidy){
-          TMP = pop@geno[[selChr]][BYTE,i,selInd]
+  if(length(allele) == 1L){
+    allele = rep(allele, length(segSites))
+  }
+  stopifnot(length(allele) == length(segSites))
+  for (selChr in unique(chr)) {
+    sel = which(chr == selChr)
+    for (i in sel) {
+      BYTE = (segSites[i] - 1L)%/%8L + 1L
+      BIT = (segSites[i] - 1L)%%8L + 1L
+      for (selInd in ind) {
+        for (j in 1:pop@ploidy) {
+          TMP = pop@geno[[selChr]][BYTE, j, selInd]
           TMP = rawToBits(TMP)
-          TMP[BIT] = selAllele
+          TMP[BIT] = allele[i]
           TMP = packBits(TMP)
-          pop@geno[[selChr]][BYTE,i,selInd] = TMP
+          pop@geno[[selChr]][BYTE, j, selInd] = TMP
         }
       }
     }
   }
-  # Reset population
   PHENO = pop@pheno
   EBV = pop@ebv
-  pop = resetPop(pop=pop, simParam=simParam)
+  pop = resetPop(pop = pop, simParam = simParam)
   pop@pheno = PHENO
   pop@ebv = EBV
   return(pop)
@@ -344,7 +344,7 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$setGender(gender = "yes_rand")
+#' SP$setSexes(sex = "yes_rand")
 #' SP$addTraitA(nQtlPerChr = 10)
 #' SP$addSnpChip(nSnpPerChr = 5)
 #' 
@@ -355,8 +355,8 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' 
 #' #Test
 #' test = read.table(file = "test.ped")
-#' #...gender
-#' if (!identical(x = c("M", "F")[test[[5]]], y = pop@gender)) { stop() }
+#' #...sex
+#' if (!identical(x = c("M", "F")[test[[5]]], y = pop@sex)) { stop() }
 #' #...pheno (issues with rounding)
 #' # if (!identical(x = test[[6]], y = pop@pheno[, 1])) { stop() }
 #' #...genotypes
@@ -403,10 +403,10 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                    id     = as.integer(pop@id),
                    father = as.integer(pop@father),
                    mother = as.integer(pop@mother),
-                   gender = 0L,
+                   sex = 0L,
                    pheno  = 0)
-  if (!any(pop@gender == "")) {
-    fam$gender = (pop@gender == "F") + 1L
+  if (!any(pop@sex == "H")) {
+    fam$sex = (pop@sex == "F") + 1L
   }
   if (!anyNA(pop@pheno[, trait])) {
     fam$pheno = pop@pheno[, trait]

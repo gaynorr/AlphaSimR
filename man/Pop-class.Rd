@@ -24,7 +24,7 @@
 \item{object}{a 'Pop' object}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add gender, genetic values, 
+Extends \code{\link{RawPop-class}} to add sex, genetic values, 
 phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{
@@ -45,7 +45,8 @@ phenotypes, and pedigrees.
 
 \item{\code{father}}{the identifier of the individual's father}
 
-\item{\code{gender}}{gender of individuals}
+\item{\code{sex}}{sex of individuals: "M" for males, "F" for females,
+and "H" for hermaphrodites}
 
 \item{\code{nTraits}}{number of traits}
 
@@ -65,5 +66,10 @@ Used by genomic selection models but otherwise ignored.}
 
 \item{\code{reps}}{the number of replications used to measure the 
 phenotype. Used by genomic selection models, but otherwise ignored.}
+
+\item{\code{misc}}{a list whose elements correspond to individuals in the 
+population. This list is normally empty and exists solely as an 
+open slot available for uses to store extra information about 
+individuals.}
 }}
 

@@ -36,13 +36,19 @@ selectLoci = function(chr,inLociPerChr,inLociLoc){
 #' 
 #' @param snpChip an integer. Indicates which SNP
 #' chip's map to retrieve.
-#' @param gender determines which gender specific map 
+#' @param sex determines which sex specific map 
 #' is returned. Options are "A" for average map, "F" 
 #' for female map, and "M" for male map. All options are 
-#' equivalent if not using gender specific maps.
+#' equivalent if not using sex specific maps.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
-#' @return Returns a data.frame for the SNP map.
+#' @return Returns a data.frame with:
+#' \describe{
+#'   \item{id}{Unique identifier for the SNP}
+#'   \item{chr}{Chromosome containing the SNP}
+#'   \item{site}{Segregating site on the chromosome}
+#'   \item{pos}{Genetic map position}
+#' }
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -56,21 +62,21 @@ selectLoci = function(chr,inLociPerChr,inLociLoc){
 #' getSnpMap(snpChip=1, simParam=SP)
 #' 
 #' @export
-getSnpMap = function(snpChip=1, gender="A", simParam=NULL){
+getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
   
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   
   #Extract genetic map and SNP positions
-  if(gender=="A"){
+  if(sex=="A"){
     genMap = simParam$genMap
-  }else if(gender=="F"){
+  }else if(sex=="F"){
     genMap = simParam$femaleMap
-  }else if(gender=="M"){
+  }else if(sex=="M"){
     genMap = simParam$maleMap
   }else{
-    stop(paste("gender =",gender,"is not a valid option"))
+    stop(paste("sex =",sex,"is not a valid option"))
   }
   snp = simParam$snpChips[[snpChip]] #SNP positions
   
@@ -95,6 +101,7 @@ getSnpMap = function(snpChip=1, gender="A", simParam=NULL){
   #Create a data.frame with SNP postions on genetic map
   output = data.frame(id=1:snp@nLoci,
                       chr=rep(1:simParam$nChr,snp@lociPerChr),
+                      site=snp@lociLoc,
                       pos=do.call("c",snpMap))
   return(output)
 }
@@ -105,13 +112,19 @@ getSnpMap = function(snpChip=1, gender="A", simParam=NULL){
 #' QTL of a given trait.
 #' 
 #' @param trait an integer for the 
-#' @param gender determines which gender specific map 
+#' @param sex determines which sex specific map 
 #' is returned. Options are "A" for average map, "F" 
 #' for female map, and "M" for male map. All options are 
-#' equivalent if not using gender specific maps.
+#' equivalent if not using sex specific maps.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
-#' @return Returns a data.frame for the SNP map.
+#' @return Returns a data.frame with:
+#' \describe{
+#'   \item{id}{Unique identifier for the QTL}
+#'   \item{chr}{Chromosome containing the QTL}
+#'   \item{site}{Segregating site on the chromosome}
+#'   \item{pos}{Genetic map position}
+#' }
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -125,21 +138,21 @@ getSnpMap = function(snpChip=1, gender="A", simParam=NULL){
 #' getQtlMap(trait=1, simParam=SP)
 #' 
 #' @export
-getQtlMap = function(trait=1, gender="A", simParam=NULL){
+getQtlMap = function(trait=1, sex="A", simParam=NULL){
   
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   
   #Extract genetic map and SNP positions
-  if(gender=="A"){
+  if(sex=="A"){
     genMap = simParam$genMap
-  }else if(gender=="F"){
+  }else if(sex=="F"){
     genMap = simParam$femaleMap
-  }else if(gender=="M"){
+  }else if(sex=="M"){
     genMap = simParam$maleMap
   }else{
-    stop(paste("gender =",gender,"is not a valid option"))
+    stop(paste("sex =",sex,"is not a valid option"))
   }
   qtl = simParam$traits[[trait]] #QTL positions
   
@@ -164,6 +177,7 @@ getQtlMap = function(trait=1, gender="A", simParam=NULL){
   #Create a data.frame with QTL postions on genetic map
   output = data.frame(id=1:qtl@nLoci,
                       chr=rep(1:simParam$nChr,qtl@lociPerChr),
+                      site=qtl@lociLoc,
                       pos=do.call("c",qtlMap))
   return(output)
 }

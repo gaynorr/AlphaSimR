@@ -12,7 +12,7 @@ randCross2(
   balance = TRUE,
   femaleParents = NULL,
   maleParents = NULL,
-  ignoreGender = FALSE,
+  ignoreSexes = FALSE,
   simParam = NULL
 )
 }
@@ -34,7 +34,7 @@ female parents}
 \item{maleParents}{an optional vector of indices for allowable 
 male parents}
 
-\item{ignoreGender}{should gender be ignored}
+\item{ignoreSexes}{should sex be ignored}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

@@ -23,8 +23,8 @@ selectCross(
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{nInd}{the number of individuals to select. These individuals 
-are selected without regards to gender and it supercedes values 
-for nFemale and nMale. Thus if the simulation uses gender, it is 
+are selected without regards to sex and it supercedes values 
+for nFemale and nMale. Thus if the simulation uses sexes, it is 
 likely better to leave this value as NULL and use nFemale and nMale 
 instead.}
 
@@ -53,7 +53,7 @@ Selects lowest values if false.}
 \item{...}{additional arguments if using a function for 
 trait}
 
-\item{balance}{if using gender, this option will balance the number 
+\item{balance}{if using sexes, this option will balance the number 
 of progeny per parent. This argument occurs after ..., so the argument 
 name must be matched exactly.}
 }

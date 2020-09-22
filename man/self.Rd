@@ -23,7 +23,7 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Creates selfed progeny from each individual in a 
-population. Only works when gender is "no".
+population. Only works when sexes is "no".
 }
 \examples{
 #Create founder haplotypes

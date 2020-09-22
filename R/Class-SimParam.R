@@ -25,6 +25,10 @@ SimParam = R6Class(
     #' @field founderPop founder population used for variance scaling
     founderPop = "MapPop",
     
+    #' @field finalizePop function applied to newly created populations.
+    #' Currently does nothing and should only be changed by expert users.
+    finalizePop = "function",
+    
     #' @description Starts the process of building a new simulation 
     #' by creating a new SimParam object and assigning a founder 
     #' population to the class. It is recommended that you save the 
@@ -53,13 +57,14 @@ SimParam = R6Class(
       self$invalidQtl = vector("list",founderPop@nChr) # All eligible
       self$invalidSnp = vector("list",founderPop@nChr) # All eligible
       self$founderPop = founderPop
+      self$finalizePop = function(pop){return(pop)}
       
       # Private items
       private$.restrSites = TRUE
       private$.traits = list()
       private$.segSites = founderPop@nLoci
-      private$.gender = "no"
-      private$.femaleMap = founderPop@genMap
+      private$.sexes = "no"
+      private$.femaleMap = lapply(founderPop@genMap, function(x) x-x[1]) # Set position 1 to 0
       private$.maleMap = NULL
       private$.sepMap = FALSE
       private$.femaleCentromere = founderPop@centromere
@@ -213,16 +218,16 @@ SimParam = R6Class(
       }
     },
     
-    #' @description Changes how gender is used in the simulation. 
-    #' The default gender of a simulation is "no". To add gender 
-    #' to the simulation, run this function with "yes_sys" or 
+    #' @description Changes how sexes are determined in the simulation. 
+    #' The default sexes is "no", indicating all individuals are hermaphrodites. 
+    #' To add sexes to the simulation, run this function with "yes_sys" or 
     #' "yes_rand". The value "yes_sys" will systematically assign 
-    #' gender to newly created individuals as first male, then female. 
-    #' Thus, odd numbers of individuals will have one more male than 
-    #' female. The value "yes_rand" will randomly assign gender to 
-    #' individuals.
+    #' sexes to newly created individuals as first male and then female. 
+    #' Populations with an odd number of individuals will have one more male than 
+    #' female. The value "yes_rand" will randomly assign a sex to each
+    #' individual.
     #' 
-    #' @param gender acceptable value are "no", "yes_sys", or 
+    #' @param sexes acceptable value are "no", "yes_sys", or 
     #' "yes_rand"
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
@@ -233,20 +238,20 @@ SimParam = R6Class(
     #' 
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
-    #' SP$setGender("yes_sys")
-    setGender = function(gender, force=FALSE){
+    #' SP$setSexes("yes_sys")
+    setSexes = function(sexes, force=FALSE){
       if(!force){
         private$.isRunning()
       }
-      gender = tolower(gender)
-      if(gender=="no"){
-        private$.gender="no"
-      }else if(gender=="yes_sys"){
-        private$.gender="yes_sys"
-      }else if(gender=="yes_rand"){
-        private$.gender="yes_rand"
+      sexes = tolower(sexes)
+      if(sexes=="no"){
+        private$.sexes="no"
+      }else if(sexes=="yes_sys"){
+        private$.sexes="yes_sys"
+      }else if(sexes=="yes_rand"){
+        private$.sexes="yes_rand"
       }else{
-        stop(paste0("gender=",gender," is not a valid option"))
+        stop(paste0("sexes=",sexes," is not a valid option"))
       }
       invisible(self)
     },
@@ -1306,7 +1311,7 @@ SimParam = R6Class(
     quadProb = "numeric",
     
     #' @description Set the relative recombination rates between males 
-    #' and females. This allows for gender specific recombination rates, 
+    #' and females. This allows for sex-specific recombination rates, 
     #' under the assumption of equivalent recombination landscapes.
     #' 
     #' @param femaleRatio relative ratio of recombination in females compared to 
@@ -1487,7 +1492,7 @@ SimParam = R6Class(
     .restrSites="logical",
     .traits="list",
     .segSites="integer",
-    .gender="character",
+    .sexes="character",
     .femaleMap="matrix",
     .maleMap="matrix",
     .sepMap="logical",
@@ -1631,12 +1636,12 @@ SimParam = R6Class(
       }
     },
     
-    #' @field gender is gender used for mating
-    gender=function(value){
+    #' @field sexes sexes used for mating
+    sexes=function(value){
       if(missing(value)){
-        private$.gender
+        private$.sexes
       }else{
-        stop("`$gender` is read only",call.=FALSE)
+        stop("`$sexes` is read only",call.=FALSE)
       }
     },
     

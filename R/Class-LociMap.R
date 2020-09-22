@@ -59,7 +59,7 @@ setValidity("TraitA",function(object){
 })
 
 #TraitA2----
-#' @title Gender specific additive trait
+#' @title Sex specific additive trait
 #' 
 #' @description Extends \code{\link{TraitA-class}} 
 #' to model seperate additive effects for parent of 
@@ -138,7 +138,7 @@ setValidity("TraitAD",function(object){
 })
 
 #TraitA2D----
-#' @title Gender specific additive and dominance trait
+#' @title Sex specific additive and dominance trait
 #' 
 #' @description Extends \code{\link{TraitA2-class}} 
 #' to add dominance 

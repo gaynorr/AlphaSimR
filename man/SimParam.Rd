@@ -79,7 +79,7 @@ SP = SimParam$new(founderPop)
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 ## ------------------------------------------------
-## Method `SimParam$setGender`
+## Method `SimParam$setSexes`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -87,7 +87,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$setGender("yes_sys")
+SP$setSexes("yes_sys")
 
 ## ------------------------------------------------
 ## Method `SimParam$addSnpChip`
@@ -255,6 +255,9 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 
 \item{\code{founderPop}}{founder population used for variance scaling}
 
+\item{\code{finalizePop}}{function applied to newly created populations.
+Currently does nothing and should only be changed by expert users.}
+
 \item{\code{v}}{the crossover interference parameter for a gamma model of 
 recombination. A value of 1 indicates no crossover interference 
 (e.g. Haldane mapping function). A value of 2.6 approximates the 
@@ -279,7 +282,7 @@ autopolyploid. (default is 0)}
 
 \item{\code{segSites}}{segregating sites per chromosome}
 
-\item{\code{gender}}{is gender used for mating}
+\item{\code{sexes}}{sexes used for mating}
 
 \item{\code{sepMap}}{are there seperate genetic maps for 
 males and females}
@@ -328,7 +331,7 @@ genetic map}
 \item \href{#method-setTrackRec}{\code{SimParam$setTrackRec()}}
 \item \href{#method-resetPed}{\code{SimParam$resetPed()}}
 \item \href{#method-restrSegSites}{\code{SimParam$restrSegSites()}}
-\item \href{#method-setGender}{\code{SimParam$setGender()}}
+\item \href{#method-setSexes}{\code{SimParam$setSexes()}}
 \item \href{#method-addSnpChip}{\code{SimParam$addSnpChip()}}
 \item \href{#method-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
 \item \href{#method-addTraitA}{\code{SimParam$addTraitA()}}
@@ -557,25 +560,25 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setGender"></a>}}
-\if{latex}{\out{\hypertarget{method-setGender}{}}}
-\subsection{Method \code{setGender()}}{
-Changes how gender is used in the simulation. 
-The default gender of a simulation is "no". To add gender 
-to the simulation, run this function with "yes_sys" or 
+\if{html}{\out{<a id="method-setSexes"></a>}}
+\if{latex}{\out{\hypertarget{method-setSexes}{}}}
+\subsection{Method \code{setSexes()}}{
+Changes how sexes are determined in the simulation. 
+The default sexes is "no", indicating all individuals are hermaphrodites. 
+To add sexes to the simulation, run this function with "yes_sys" or 
 "yes_rand". The value "yes_sys" will systematically assign 
-gender to newly created individuals as first male, then female. 
-Thus, odd numbers of individuals will have one more male than 
-female. The value "yes_rand" will randomly assign gender to 
-individuals.
+sexes to newly created individuals as first male and then female. 
+Populations with an odd number of individuals will have one more male than 
+female. The value "yes_rand" will randomly assign a sex to each
+individual.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setGender(gender, force = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$setSexes(sexes, force = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{gender}}{acceptable value are "no", "yes_sys", or 
+\item{\code{sexes}}{acceptable value are "no", "yes_sys", or 
 "yes_rand"}
 
 \item{\code{force}}{should the check for a running simulation be 
@@ -590,7 +593,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$setGender("yes_sys")
+SP$setSexes("yes_sys")
 }
 \if{html}{\out{</div>}}
 
@@ -1420,7 +1423,7 @@ meanG(pop)
 \if{latex}{\out{\hypertarget{method-setRecombRatio}{}}}
 \subsection{Method \code{setRecombRatio()}}{
 Set the relative recombination rates between males 
-and females. This allows for gender specific recombination rates, 
+and females. This allows for sex-specific recombination rates, 
 under the assumption of equivalent recombination landscapes.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$setRecombRatio(femaleRatio)}\if{html}{\out{</div>}}

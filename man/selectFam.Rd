@@ -9,7 +9,7 @@ selectFam(
   nFam,
   trait = 1,
   use = "pheno",
-  gender = "B",
+  sex = "B",
   famType = "B",
   selectTop = TRUE,
   returnPop = TRUE,
@@ -31,8 +31,8 @@ a single trait or a function returning a vector of length nInd.}
 breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 or randomly "rand"}
 
-\item{gender}{which gender to select. Use "B" for both, "F" for 
-females and "M" for males. If the simulation is not using gender, 
+\item{sex}{which sex to select. Use "B" for both, "F" for 
+females and "M" for males. If the simulation is not using sexes, 
 the argument is ignored.}
 
 \item{famType}{which type of family to select. Use "B" for 

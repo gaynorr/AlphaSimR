@@ -37,13 +37,13 @@ Useful links:
 Authors:
 \itemize{
   \item Gregor Gorjanc (\href{https://orcid.org/0000-0001-8008-2787}{ORCID})
-  \item David Wilson
   \item John Hickey (\href{https://orcid.org/0000-0001-5675-3974}{ORCID})
 }
 
 Other contributors:
 \itemize{
   \item Daniel Money (\href{https://orcid.org/0000-0001-5151-3648}{ORCID}) [contributor]
+  \item David Wilson [contributor]
 }
 
 }

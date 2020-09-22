@@ -66,10 +66,16 @@ mergePops = function(popList){
   reps= do.call("c",
                 lapply(popList,
                        function(x) x@reps))
-  #gender
-  gender = do.call("c",
+  
+  #misc
+  misc = do.call("c",
+                 lapply(popList,
+                        function(x) x@misc))
+  
+  #sex
+  sex = do.call("c",
                    lapply(popList,
-                          function(x) x@gender))
+                          function(x) x@sex))
   #nTraits
   nTraits = do.call("c",lapply(popList,
                                function(x) x@nTraits))
@@ -115,7 +121,7 @@ mergePops = function(popList){
              nChr=nChr,
              ploidy=ploidy,
              nLoci=nLoci,
-             gender=gender,
+             sex=sex,
              geno=geno,
              id=id,
              mother=mother,
@@ -126,5 +132,6 @@ mergePops = function(popList){
              gv=gv,
              gxe=gxe,
              pheno=pheno,
-             ebv=ebv))
+             ebv=ebv,
+             misc=misc))
 }
