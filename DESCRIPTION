@@ -25,8 +25,7 @@ Description: The successor to the 'AlphaSim' software for breeding program
   for fast simulation of biallelic sequences according to a population 
   demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 License: MIT + file LICENSE
-URL: https://alphagenes.roslin.ed.ac.uk/wp/software-2/alphasimr/, 
-  https://github.com/gaynorr/AlphaSimR
+URL: https://github.com/gaynorr/AlphaSimR
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.3.0), methods, R6

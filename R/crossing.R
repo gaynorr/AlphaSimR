@@ -650,7 +650,8 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(simParam$sexes!="no"){
     stop("pedigreeCross currently only works with sex='no'")
   }
-  #Coerce input data
+  
+  # Coerce input data
   id = as.character(id)
   mother = as.character(mother)
   father = as.character(father)
@@ -663,11 +664,13 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }else{
     DH = as.logical(DH)
   }
-  #Check input data
+  
+  # Check input data
   stopifnot(!any(duplicated(id)),
             length(id)==length(mother),
             length(id)==length(father),
             length(id)==length(DH))
+  
   matchFather = match(father,id)
   matchMother = match(mother,id)
   nFounder = sum(is.na(matchFather)|is.na(matchMother))
@@ -675,12 +678,13 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
   }
   if(!matchID){
-    #Randomize selected founders
+    # Randomize selected founders
     selFounder = sample.int(founderPop@nInd,nFounder)
   }else{
     selFounder = 1:founderPop@nInd
   }
   output = vector("list",length=length(id))
+  
   # Sort pedigree
   genInd = rep(0,length(id))
   sorted = rep(FALSE,length(id))
@@ -688,23 +692,23 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     for(i in 1:length(id)){
       if(!sorted[i]){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
-          #Is a founder
+          # Is a founder
           genInd[i] = gen
           sorted[i] = TRUE
         }else if(is.na(matchMother[i])){
-          #Mother is a founder
+          # Mother is a founder
           if(sorted[matchFather[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
           }
         }else if(is.na(matchFather[i])){
-          #Father is a founder
+          # Father is a founder
           if(sorted[matchMother[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
           }
         }else{
-          #Both parents are in the pedigree
+          # Both parents are in the pedigree
           if(sorted[matchMother[i]]&sorted[matchFather[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
@@ -719,6 +723,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(!all(sorted)){
     stop("Failed to sort pedigree, may contain loops or require a higher maxGen")
   }
+  
   # Create individuals
   founderIndicator = 0
   crossPlan = matrix(c(1,1),ncol=2)
@@ -726,12 +731,12 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     for(i in 1:length(id)){
       if(genInd[i]==gen){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
-          #Is a founder
+          # Is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(id[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -739,12 +744,12 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
           }
           output[[i]] = founderPop[selFounder[founderIndicator]]
         }else if(is.na(matchMother[i])){
-          #Mother is a founder
+          # Mother is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(mother[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -754,19 +759,19 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
                                  simParam=simParam)
           }
         }else if(is.na(matchFather[i])){
-          #Father is a founder
+          # Father is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(father[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -776,19 +781,19 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    founderPop[selFounder[founderIndicator]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
                                  simParam=simParam)
           }
         }else{
-          #Both parents are in the pedigree
+          # Both parents are in the pedigree
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
@@ -798,6 +803,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       }
     }
   }
+  
   output = mergePops(output)
   return(output)
 }
