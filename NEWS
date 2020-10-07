@@ -1,10 +1,12 @@
 Changes in version 1.0.0
 
   New features
-    -references to gender have been changed to the more appropriate term sex or sexes
+    -references to gender have been changed to the more appropriate terms sex or sexes
     -added misc slot to populations
     -added finalizePop to SimParam
-    -added physical position to getSnpMap and getQtlMap
+    -added physical positions to getSnpMap and getQtlMap
+    -you can now use h2 and H2 to specify error variance in setPheno
+    -simParam$setVarE now accepts a matrix for varE
     
     Bug fixes
     -fixed a bug in editGenome when making multiple edits

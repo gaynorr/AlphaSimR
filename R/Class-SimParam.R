@@ -1074,17 +1074,18 @@ SimParam = R6Class(
     #' 
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
-    #' @param varA the value for varA in the base population, optional
-    #' @param varG the value for varG in the base population, optional
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing
-    manAddTrait = function(lociMap,varA=NA_real_,varG=NA_real_,
-                           varE=NA_real_,force=FALSE){
+    manAddTrait = function(lociMap,varE=NA_real_,force=FALSE){
       if(!force){
         private$.isRunning()
       }
       stopifnot(is(lociMap,"LociMap"))
+      tmp = calcGenParam(lociMap, self$founderPop, 
+                         self$nThreads)
+      varA = popVar(tmp$bv)[1]
+      varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
       invisible(self)
     },
@@ -1095,23 +1096,28 @@ SimParam = R6Class(
     #' @param traitPos an integer indicate which trait to switch
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
-    #' @param varA the value for varA in the base population, optional
-    #' @param varG the value for varG in the base population, optional
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing
-    switchTrait = function(traitPos,lociMap,varA=NA_real_,varG=NA_real_,
-                           varE=NA_real_,force=FALSE){
+    switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE){
       if(!force){
         private$.isRunning()
       }
       stopifnot(is(lociMap,"LociMap"),
                 traitPos<=self$nTraits,
                 traitPos>0)
+      tmp = calcGenParam(lociMap, self$founderPop, 
+                         self$nThreads)
       private$.traits[[traitPos]] = lociMap
-      private$.varA[traitPos] = varA
-      private$.varG[traitPos] = varG
-      private$.varE[traitPos] = varE
+      private$.varA[traitPos] = popVar(tmp$bv)[1]
+      private$.varG[traitPos] = popVar(tmp$gv)[1]
+      if(is.matrix(private$.varE)){
+        private$.varE[traitPos,] = 0
+        private$.varE[,traitPos] = 0
+        private$.varE[traitPos,traitPos] = varE
+      }else{
+        private$.varE[traitPos] = varE
+      }
       invisible(self)
     },
     
@@ -1129,7 +1135,11 @@ SimParam = R6Class(
       private$.traits[-traits]
       private$.varA[-traits]
       private$.varG[-traits]
-      private$.varE[-traits]
+      if(is.matrix(private$.varE)){
+        private$.varE[-traits,-traits]
+      }else{
+        private$.varE[-traits]
+      }
       invisible(self)
     },
     
@@ -1138,7 +1148,7 @@ SimParam = R6Class(
     #' 
     #' @param h2 a vector of desired narrow-sense heritabilities
     #' @param H2 a vector of desired broad-sense heritabilities
-    #' @param varE a vector of error variances
+    #' @param varE a vector or matrix of error variances
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -1171,7 +1181,12 @@ SimParam = R6Class(
         }
         private$.varE = varE
       }else if(!is.null(varE)){
-        stopifnot(length(varE)==self$nTraits)
+        if(is.matrix(varE)){
+          stopifnot(nrow(varE)==self$nTraits,
+                    ncol(varE)==self$nTraits)
+        }else{
+          stopifnot(length(varE)==self$nTraits)
+        }
         private$.varE = varE
       }else{
         private$.varE = rep(NA_real_,self$nTraits)
@@ -1199,7 +1214,12 @@ SimParam = R6Class(
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
                 length(private$.varE)==self$nTraits)
-      varE = diag(sqrt(private$.varE),
+      if(is.matrix(private$.varE)){
+        varE = diag(private$.varE)
+      }else{
+        varE = private$.varE
+      }
+      varE = diag(sqrt(varE),
                   nrow=self$nTraits,
                   ncol=self$nTraits)
       varE = varE%*%corE%*%varE
