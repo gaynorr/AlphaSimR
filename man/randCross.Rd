@@ -10,7 +10,7 @@ randCross(
   nProgeny = 1,
   balance = TRUE,
   parents = NULL,
-  ignoreGender = FALSE,
+  ignoreSexes = FALSE,
   simParam = NULL
 )
 }
@@ -21,12 +21,12 @@ randCross(
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{balance}{if using gender, this option will balance the number 
+\item{balance}{if using sexes, this option will balance the number 
 of progeny per parent}
 
 \item{parents}{an optional vector of indices for allowable parents}
 
-\item{ignoreGender}{should gender be ignored}
+\item{ignoreSexes}{should sexes be ignored}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

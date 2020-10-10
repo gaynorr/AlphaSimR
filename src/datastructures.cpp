@@ -35,9 +35,6 @@ GeneConversion::GeneConversion(double dEndPos):
 }
 
 GeneConversion::~GeneConversion(){
-#ifdef DIAG
-  //    cout<<"Gene conversion destructor\n";
-#endif
 }
 
 HotSpotBin::HotSpotBin(double dStart,
@@ -56,9 +53,6 @@ AlleleFreqBin::AlleleFreqBin(double dStart,
 }
 
 AlleleFreqBin::~AlleleFreqBin(){
-#ifdef DIAG
-  //    cout<<"AlleleFreqBin destructor\n";
-#endif
 }
 
 
@@ -72,9 +66,6 @@ Population::Population(){
 
 void Population::setLastTime(double time){
   this->dLastTime = time;
-#ifdef DIAG
-  if (time<0) throw "setLastTime, negative time";
-#endif
 }
 
 double Population::getLastTime(){
@@ -83,9 +74,6 @@ double Population::getLastTime(){
 
 void Population::setGrowthAlpha(double alpha){
   this->dGrowthAlpha = alpha;
-#ifdef DIAG
-  if (this->dGrowthAlpha<0) throw "setGrowthAlpha, negative alpha";
-#endif
 }
 
 double Population::getGrowthAlpha(){
@@ -94,34 +82,14 @@ double Population::getGrowthAlpha(){
 
 void Population::setChrSampled(int iChrSampled){
   this->iChrSampled = iChrSampled;
-#ifdef DIAG
-  if (this->iChrSampled<0) throw "setChrSampled, negative chrs";
-#endif
 }
 
 void Population::setPopSize(double dPopSize){
   this->dPopSize = dPopSize;
-#ifdef DIAG
-  if (this->dPopSize<0) throw "setPopSize, negative pop";
-#endif
 }
 
 Edge::Edge(NodePtr & topNode,NodePtr & bottomNode):
   PtrRefCountable(){
-#ifdef DIAG
-  
-  if (topNode->getHeight()<bottomNode->getHeight()){
-    Rcpp::Rcerr<<"Error in creating edge.  Top node must be higher or equal\n";
-    throw "Error in creating edge";
-  }
-  if (topNode->getType()==Node::MIGRATION &&
-      bottomNode->getPopulation()==topNode->getPopulation()){
-    Rcpp::Rcerr<<"Error in creating edge.  Top node must be different from "<<
-      "migration node's population\n";
-    throw "Error in creating edge";
-  }
-  Rcpp::Rcerr<<"edge of constructed.\n";
-#endif
   this->dLength = topNode->getHeight() - bottomNode->getHeight();
   this->topNode = topNode;
   this->getBottomNodeRef() = bottomNode;
@@ -132,17 +100,9 @@ Edge::Edge(NodePtr & topNode,NodePtr & bottomNode):
 }
 
 Edge::~Edge(){
-#ifdef DIAG
-  //    Rcpp::Rcerr<<"edge of length: "<<dLength<<" destructed.\n";
-#endif
-  
 }
 
 void Edge::setBottomNode(NodePtr & bottomNode){
-#ifdef DIAG
-  if (topNode->getHeight()<bottomNode->getHeight())
-    throw "Error in modifying edge.  Top node must be higher or equal";
-#endif
   this->dLength = topNode->getHeight() - bottomNode->getHeight();
   this->bottomNode = bottomNode;
 }
@@ -178,27 +138,6 @@ void Node::addNewEdge(EdgeLocation iLocation,
     break;
     break;
   }
-#ifdef DIAG
-  switch(iType){
-  case Node::COAL:
-    if (bottomEdgeSize>2||
-        topEdgeSize>1)
-      throw "Coal node has too many edges\n";
-    break;
-  case Node::XOVER:
-    if (topEdgeSize>2||
-        bottomEdgeSize>1)
-      throw "Xover node has too many edges\n";
-    break;
-  case Node::MIGRATION:
-    if (bottomEdgeSize>1||
-        topEdgeSize>1)
-      throw "Migration node has too many edges\n";
-    break;
-  default:
-    break;
-  }
-#endif
 }
 
 void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
@@ -215,9 +154,6 @@ void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
         ++i;
       }
     }
-#ifdef DIAG
-    if (!found) throw "Can't find top edge in replace edge";
-#endif
   }else if (iLocation==Node::BOTTOM_EDGE){
     while(!found && i<this->bottomEdgeSize){
       WeakEdgePtr & bottomEdge = i?bottomEdge2:bottomEdge1;
@@ -242,15 +178,9 @@ Node::Node(NodeType iType,short int iPopulation,double dHeight):
   this->topEdgeSize=0;
   this->bottomEdgeSize=0;
   this->bDeleted = false;
-#ifdef DIAG
-  Rcpp::Rcerr<<"Graph node at "<<dHeight<<" constructed."<<endl;
-#endif
 }
 
 Node::~Node(){
-#ifdef DIAG
-  //    Rcpp::Rcerr<<"Graph node at "<<dHeight<<" destructed."<<endl;
-#endif
 }
 
 SampleNode::SampleNode(short int iPopulation,int iId):
@@ -261,17 +191,10 @@ SampleNode::SampleNode(short int iPopulation,int iId):
 
 
 Event::~Event(){
-#ifdef DIAG
-  //    Rcpp::Rcerr<<"At time "<<this->dTime<<" Graph event destructor\n";
-#endif
 }
 
 Event::Event(EventType iType,double dTime):
   PtrRefCountable(){
-#ifdef DIAG
-  if (dTime<0) throw "Error in creating event. Time must be positive";
-  Rcpp::Rcerr<<"At time "<<this->dTime<<" Graph event constructor\n";
-#endif
   this->iType = iType;
   this->dTime = dTime;
   this->bMarkedForDelete = false;
@@ -374,9 +297,6 @@ short int PopJoinEvent::getDestPop(){
 }
 
 GraphBuilder::~GraphBuilder(){
-#ifdef DIAG
-  Rcpp::Rcerr<<"Graphbuilder destructor\n";
-#endif
   this->pConfig = NULL;
   this->pRandNumGenerator = NULL;
   
@@ -418,9 +338,6 @@ GraphBuilder::GraphBuilder(Configuration *pConfig,RandNumGenerator * pRG){
   this->pTreeEdgesToCoalesceArray = new EdgePtr[pConfig->iSampleSize];
   for (int i=0;i<pConfig->iTotalPops;++i){
     this->pEdgeVectorByPop->push_back(EdgePtrVector());
-#ifdef DIAG
-    Rcpp::Rcerr<<"DEBUG: Size at "<<i<<" is "<<this->pEdgeVectorByPop->at(i).size()<<endl;
-#endif
     this->pVectorIndicesToRecycle->push_back(EdgeIndexQueue());
   }
   this->pSampleNodeArray = new NodePtr[pConfig->iSampleSize];
@@ -489,15 +406,6 @@ void GraphBuilder::insertNodeInRunningEdge(NodePtr & newNode,EdgePtr & tempEdge)
   
   NodePtr & bottomNode = tempEdge->getBottomNodeRef();
   NodePtr & topNode = tempEdge->getTopNodeRef();
-#ifdef DIAG
-  if (newNode->getHeight()<=bottomNode->getHeight() ||
-      newNode->getHeight() >= topNode->getHeight()){
-    Rcpp::Rcerr<<"Edge has heights "<<bottomNode->getHeight()<<
-      " and "<<topNode->getHeight()<<endl;
-    Rcpp::Rcerr<<"New node has height "<<newNode->getHeight()<<endl;
-    throw "Node to insert does not fit within coal edge ";
-  }
-#endif
   
   EdgePtr tempEdgeCopy = tempEdge;
   
@@ -517,10 +425,6 @@ void GraphBuilder::insertNodeInRunningEdge(NodePtr & newNode,EdgePtr & tempEdge)
 
 
 void GraphBuilder::mergeEdges(EdgePtr & topEdge,EdgePtr & bottomEdge){
-#ifdef DIAG
-  if (topEdge->getBottomNodeRef()->getHeight()!=bottomEdge->getTopNodeRef()->getHeight())
-    throw "The top edge and bottom edge are mismatched for the join";
-#endif
   // mark expired node as deleted
   bottomEdge->getTopNodeRef()->bDeleted = true;
   NodePtr & bottomNode = bottomEdge->getBottomNodeRef();
@@ -533,16 +437,6 @@ void GraphBuilder::insertNodeInEdge(NodePtr & newNode,
                                     EdgePtr & selectedEdge){
   
   NodePtr bottomNodeCopy = selectedEdge->getBottomNodeRef();
-#ifdef DIAG
-  NodePtr & topNode = selectedEdge->getTopNodeRef();
-  if (newNode->getHeight()<bottomNodeCopy->getHeight() ||
-      newNode->getHeight() > topNode->getHeight()){
-    Rcpp::Rcerr<<"Edge has heights "<<bottomNodeCopy->getHeight()<<
-      " and "<<topNode->getHeight()<<endl;
-    Rcpp::Rcerr<<"New node has height "<<newNode->getHeight()<<endl;
-    throw "Node to insert does not fit within edge";
-  }
-#endif
   int iGraphIteration = selectedEdge->iGraphIteration;
   selectedEdge->setBottomNode(newNode);
   newNode->addNewEdge(Node::TOP_EDGE,selectedEdge);
@@ -559,33 +453,18 @@ void GraphBuilder::insertNodeInEdge(NodePtr & newNode,
 void GraphBuilder::deleteEdge(EdgePtr & edge){
   if (!edge->bDeleted){
     edge->bDeleted = true;
-    if (pConfig->bDebug){
-      Rcpp::Rcerr<<"Deleting edge with hts "<<edge->getBottomNodeRef()->getHeight()<<" and "<<
-        edge->getTopNodeRef()->getHeight()<<endl;
-    }
   }
 }
 
 // Insert into EdgeVector, pop refers to bottom node
 void GraphBuilder::addEdge(EdgePtr & edge){
   unsigned int iPopulation = edge->getBottomNodeRef()->getPopulation();
-  //if(pConfig->bDebug) Rcpp::Rcerr<<"DEBUG addEdge: iPopulation: "<<iPopulation<<" and pEdgeVectorByPop size "<<pEdgeVectorByPop->size()<<endl;
   this->pEdgeListInARG->push_back(edge);
   while (iPopulation>=pEdgeVectorByPop->size()){
     this->pEdgeVectorByPop->push_back(EdgePtrVector());
     this->pVectorIndicesToRecycle->push_back(EdgeIndexQueue());
-    if(pConfig->bDebug)Rcpp::Rcerr<<"DEBUG! addEdge: Adding pop "<<iPopulation<<" has edge vector size: "<<pEdgeVectorByPop->size()<<endl;
-    //        if(pConfig->bDebug)Rcpp::Rcerr<<"DEBUG! addEdge: Just added. Pop "<<iPopulation<<" has edge vector size: "<<pEdgeVectorByPop->at(iPopulation).size()<<endl;
-    //Rcpp::Rcerr<<"Attempting to add edge of population "<<iPopulation<<" when the number of available population edge pools is only "<<pEdgeVectorByPop->size()<<". It is recommended that you increase the migration rates and/or number of sampled chromosomes."<<endl;
-    //for(uint i=0;i<pEdgeVectorByPop->size();++i){
-    //Rcpp::Rcerr<<"Pop "<<i<<" has edge vector size: "<<pEdgeVectorByPop->at(i).size()<<endl;
-    //}
-    // throw "Data structure integrity error.";
-    //}
-    //}
   }
   if (iPopulation>=pEdgeVectorByPop->size()){
-    if(pConfig->bDebug) Rcpp::Rcerr<<"DEBUG! addEdge: Still not added! iPopulation: "<<iPopulation<<" and pEdgeVectorByPop size "<<pEdgeVectorByPop->size()<<endl;
     throw "Something wrong with while loop";
   }
   
@@ -596,7 +475,6 @@ void GraphBuilder::addEdge(EdgePtr & edge){
     at(iPopulation);
   if (pVectorIndicesToRecycle.empty()){
     pEdgeVector.push_back(edge);
-    //if(pConfig->bDebug) Rcpp::Rcerr<<"DEBUG: pEdgeVector for pop "<<iPopulation<<" is now size: "<<pEdgeVector.size()<<endl;
   }else{
     int iIndex = pVectorIndicesToRecycle.front();
     pVectorIndicesToRecycle.pop();
@@ -649,107 +527,9 @@ void GraphBuilder::initializeCurrentTree(){
   }
 }
 
-
-//vector<AlphaSimRReturn> GraphBuilder::getHaplotypes(){
-//    unsigned int iTotalSites = pMutationPtrVector->size();
-//
-//    unique_ptr<vector<AlphaSimRReturn> > lines(new vector<AlphaSimRReturn>());
-//
-//
-//    unique_ptr<vector<int>> haplotypes(new vector<int>());
-//
-//    AlphaSimRReturn tmp;
-//
-//    bool bZeroCellCount=false;
-//    if (iTotalSites){
-//        int iReducedSites=iTotalSites;
-//        if (pConfig->bSNPAscertainment){
-//            // first see if any expected count exceed actual counts
-//            bool bSufficientObs=false;
-//            do{
-//                bSufficientObs=true;
-//                auto it=pConfig->pAlleleFreqBinPtrSet->begin();
-//                while(bSufficientObs && !bZeroCellCount && it!=pConfig->pAlleleFreqBinPtrSet->end()){
-//                    AlleleFreqBinPtr bin = *it;
-//                    auto iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
-//                    if (!iExpectedCount && bin->dFreq>0.){
-//                        bZeroCellCount = true;
-//                    }
-//                    else if (bin->iObservedCounts<iExpectedCount){
-//                        bSufficientObs = false;
-//                        --iReducedSites;
-//                    }else{
-//                        ++it;
-//                    }
-//                }
-//            }while(!bSufficientObs && !bZeroCellCount);
-//            if (bZeroCellCount){
-//                iReducedSites = 0;
-//            }else{
-//                int tally=0;
-//                for (auto it=pConfig->pAlleleFreqBinPtrSet->begin();
-//                     it!=pConfig->pAlleleFreqBinPtrSet->end();++it){
-//                    AlleleFreqBinPtr bin = *it;
-//                    double dStart = bin->dStart;
-//                    double dEnd = bin->dEnd;
-//                    auto iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
-//
-//                    tally+=iExpectedCount;
-//
-//                    while(iExpectedCount>0){
-//                        int iRandIndex = static_cast<int>(pRandNumGenerator->unifRV()*iTotalSites);
-//                        MutationPtr mutation = pMutationPtrVector->at(iRandIndex);
-//                        if (!mutation->bPrintOutput && mutation->dFreq>=dStart && mutation->dFreq<=dEnd){
-//                            mutation->bPrintOutput = true;
-//                            --iExpectedCount;
-//                        }
-//                    }
-//                }
-//                iReducedSites = tally;
-//            }
-//        }
-//
-//
-//        if (iReducedSites){
-//            MutationPtrVector::iterator it;
-//            // copy to a temporary vector if ascertained
-//            cout<<TOTALSAMPLES<<FIELD_DELIMITER<<pConfig->iSampleSize<<endl;
-//            cout<<TOTALSITES<<FIELD_DELIMITER<<iReducedSites<<endl;
-//            cout<<SNPBEGIN<<endl;
-//            if (pConfig->bSNPAscertainment && !bZeroCellCount){
-//                int origIndex=0;
-//                bool indexPrinted=false;
-//                for (it = pMutationPtrVector->begin();
-//                     it!=pMutationPtrVector->end();++it){
-//                    MutationPtr mutation = *it;
-//                    if (mutation->bPrintOutput){
-//                        if (indexPrinted) cout<<FIELD_DELIMITER;
-//                        haplotypes->push_back(origIndex);
-//                        indexPrinted=true;
-//                    }
-//                    ++origIndex;
-//                }
-//            }else{
-//                for(int i=0;i<iReducedSites;++i){
-//                    tmp.haplotypes.emplace_back(i);
-//                }
-//            }
-//
-//
-//
-//
-//            lines->emplace_back(tmp);
-//            cout<<endl<<SNPEND<<endl;
-//        }
-//    }
-//    return *haplotypes;
-//}
-
-
 void GraphBuilder::printHaplotypes(){
   unsigned int iTotalSites = pMutationPtrVector->size();
   bool bZeroCellCount=false;
-  if (pConfig->bDebug) Rcpp::Rcerr<<"Total sites: "<<iTotalSites<<endl;
   if (iTotalSites){
     int iReducedSites=iTotalSites;
     if (pConfig->bSNPAscertainment){
@@ -763,10 +543,6 @@ void GraphBuilder::printHaplotypes(){
           int iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
           if (!iExpectedCount && bin->dFreq>0.){
             bZeroCellCount = true;
-            if (pConfig->bDebug){
-              Rcpp::Rcerr<<"Setting zero cell count true because expecting a proportion of "<<
-                bin->dFreq<<" but found "<<iExpectedCount<<endl;
-            }
           }
           else if (bin->iObservedCounts<iExpectedCount){
             bSufficientObs = false;
@@ -791,16 +567,6 @@ void GraphBuilder::printHaplotypes(){
           int iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
           
           tally+=iExpectedCount;
-          if (pConfig->bDebug) {
-            Rcpp::Rcerr<<"Looking for SNPs in range "<<dStart<<" to "<<dEnd<<endl;
-            Rcpp::Rcerr<<"iObserved count: "<<bin->iObservedCounts<<endl;
-            Rcpp::Rcerr<<"Expecting "<<iExpectedCount<<" SNPS."<<endl;
-          }
-#ifdef DIAG
-          if (bin->iObservedCounts<iExpectedCount){
-            throw "Too many expected counts";
-          }
-#endif
           while(iExpectedCount>0){
             int iRandIndex = static_cast<int>(pRandNumGenerator->unifRV()*iTotalSites);
             MutationPtr mutation = pMutationPtrVector->at(iRandIndex);
@@ -817,34 +583,6 @@ void GraphBuilder::printHaplotypes(){
     if (iReducedSites){
       MutationPtrVector::iterator it;
       // copy to a temporary vector if ascertained
-#ifdef DIAG
-      cout<<TOTALSAMPLES<<FIELD_DELIMITER<<pConfig->iSampleSize<<endl;
-      cout<<TOTALSITES<<FIELD_DELIMITER<<iReducedSites<<endl;
-      cout<<SNPBEGIN<<endl;
-      
-      if (pConfig->bSNPAscertainment && !bZeroCellCount){
-        int origIndex=0;
-        bool indexPrinted=false;
-        for (it = pMutationPtrVector->begin();
-             it!=pMutationPtrVector->end();++it){
-          MutationPtr mutation = *it;
-#ifdef DIAG
-          if (mutation->bPrintOutput){
-            if (indexPrinted) cout<<FIELD_DELIMITER;
-            cout<<origIndex;
-            indexPrinted=true;
-          }
-#endif
-          ++origIndex;
-        }
-      }else{
-        for(int i=0;i<iReducedSites;++i){
-          if (i) cout<<FIELD_DELIMITER;
-          cout<<i;
-        }
-      }
-      cout<<endl<<SNPEND<<endl;
-#endif
     }
   }
 }
@@ -865,14 +603,12 @@ void GraphBuilder::printDataStructures(){
             ",type:"<<curEdge->getTopNodeRef()->getTypeStr()<<
               ",pop:"<<curEdge->getTopNodeRef()->getPopulation()<<
                 ",del:"<<curEdge->bDeleted<<
-                  //        ",length:"<<curEdge->getLength()<<
                   ";hist:"<<curEdge->iGraphIteration<<endl;
     trueLen+=curEdge->getLength();
   }
   
   
   Rcpp::Rcerr<<"Last tree (list of edges)\n";
-  //    it;
   trueLen = 0.0;
   EdgePtrVector::iterator it=pEdgeVectorInTree->begin();
   unsigned int count=0;
@@ -885,9 +621,6 @@ void GraphBuilder::printDataStructures(){
           ";high_ht:"<<curEdge->getTopNodeRef()->getHeight()<<
             ",type:"<<curEdge->getTopNodeRef()->getTypeStr()<<
               ",pop:"<<curEdge->getTopNodeRef()->getPopulation()<<endl;
-    //        ",intree:"<<curEdge->bInCurrentTree<<endl;
-    //        ",length:"<<curEdge->getLength()<<
-    //        ";hist:"<<curEdge->iGraphIteration<<endl;
     trueLen+=curEdge->getLength();
     ++count;
     ++it;

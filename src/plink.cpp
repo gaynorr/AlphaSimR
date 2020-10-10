@@ -15,7 +15,7 @@ void writePlinkPed(const Rcpp::DataFrame          & fam,
   Rcpp::IntegerVector id     = fam["id"];
   Rcpp::IntegerVector father = fam["father"];
   Rcpp::IntegerVector mother = fam["mother"];
-  Rcpp::IntegerVector gender = fam["gender"];
+  Rcpp::IntegerVector sex = fam["sex"];
   Rcpp::NumericVector pheno  = fam["pheno"];
   
   std::ofstream plinkPed;
@@ -24,7 +24,7 @@ void writePlinkPed(const Rcpp::DataFrame          & fam,
   for (arma::uword ind = 0; ind < nInd; ind++) {
     // Family & Individual data
     plinkPed << family[ind] << " " << id[ind]     << " " << father[ind] << " "
-             << mother[ind] << " " << gender[ind] << " " << pheno[ind];
+             << mother[ind] << " " << sex[ind] << " " << pheno[ind];
     // Haplotype data
     // ... first gather locus alleles from all chromosomes
     arma::uword indLastChrom = (ind + 1) * ploidy;

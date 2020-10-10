@@ -1,4 +1,4 @@
-.Rproj.user
+.Rproj
 .Rhistory
 .RData
 .Ruserdata
@@ -8,3 +8,4 @@ src/*.dll
 Notes.txt
 doc
 Meta
+.Rproj.user

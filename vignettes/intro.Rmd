@@ -57,10 +57,10 @@ SP$addTraitA(nQtlPerChr=1000)
 
 The 'A' at the end of `SP$addTraitA` indicates that the trait's QTL only have additive effects. All traits in AlphaSimR will include additive effects. Traits may also include any combination of three additional types of effects: dominance ("D"), epistasis ("E"), and genotype-by-environment ("G"). A specific combination of trait effects is requested by using a function with the appropriate letter ending. For example, a trait with additive and epistasis effects can be requested using `SP$addTraitAE`. The following trait types are currently offered: "A", "AD", "AE", "AG", "ADE", "ADG", "AEG", and "ADEG".
 
-The final line of code defines how gender is determined in the simulation. Gender will be systematically assigned (i.e. male, female, male, ...). Systematic assignment is used to ensure that there is always equal numbers of males and females.
+The final line of code defines how sexes are determined in the simulation. Sex will be systematically assigned (i.e. male, female, male, ...). Systematic assignment is used to ensure that there is always equal numbers of males and females.
 
 ```{r eval=FALSE}
-SP$setGender("yes_sys")
+SP$setSexes("yes_sys")
 ```
 
 ## Modeling the Breeding Program
@@ -115,7 +115,7 @@ founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 # Setting Simulation Parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(nQtlPerChr=1000)
-SP$setGender("yes_sys")
+SP$setSexes("yes_sys")
 
 # Modeling the Breeding Program
 pop = newPop(founderPop)

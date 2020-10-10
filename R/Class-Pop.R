@@ -221,6 +221,7 @@ cChr = function(...){
         x@nChr = x@nChr+y@nChr
         x@geno = rbind(x@geno,y@geno)
         x@genMap = rbind(x@genMap,y@genMap)
+        x@centromere = c(x@centromere,y@centromere)
         x@nLoci = c(x@nLoci,y@nLoci)
       }
     }
@@ -233,7 +234,7 @@ cChr = function(...){
 #' @title Population
 #' 
 #' @description 
-#' Extends \code{\link{RawPop-class}} to add gender, genetic values, 
+#' Extends \code{\link{RawPop-class}} to add sex, genetic values, 
 #' phenotypes, and pedigrees.
 #' 
 #' @param object a 'Pop' object
@@ -244,7 +245,8 @@ cChr = function(...){
 #' @slot id an individual's identifier
 #' @slot mother the identifier of the individual's mother
 #' @slot father the identifier of the individual's father
-#' @slot gender gender of individuals
+#' @slot sex sex of individuals: "M" for males, "F" for females,
+#' and "H" for hermaphrodites
 #' @slot nTraits number of traits
 #' @slot gv matrix of genetic values. When using GxE traits,
 #' gv reflects gv when w=0. Dimensions are nInd by nTraits.
@@ -257,20 +259,25 @@ cChr = function(...){
 #' Used by genomic selection models but otherwise ignored.
 #' @slot reps the number of replications used to measure the 
 #' phenotype. Used by genomic selection models, but otherwise ignored.
+#' @slot misc a list whose elements correspond to individuals in the 
+#' population. This list is normally empty and exists solely as an 
+#' open slot available for uses to store extra information about 
+#' individuals.
 #' 
 #' @export
 setClass("Pop",
          slots=c(id="character",
                  mother="character",
                  father="character",
-                 gender="character",
+                 sex="character",
                  nTraits="integer",
                  gv="matrix",
                  pheno="matrix",
                  ebv="matrix",
                  gxe="list",
                  fixEff="integer",
-                 reps="numeric"),
+                 reps="numeric",
+                 misc="list"),
          contains="RawPop")
 
 setValidity("Pop",function(object){
@@ -284,8 +291,8 @@ setValidity("Pop",function(object){
   if(any(grepl(" ",object@father,fixed=TRUE))){
     errors = c(errors,"father can not contain spaces")
   }
-  if(object@nInd!=length(object@gender)){
-    errors = c(errors,"nInd!=length(gender)")
+  if(object@nInd!=length(object@sex)){
+    errors = c(errors,"nInd!=length(sex)")
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
@@ -329,6 +336,9 @@ setValidity("Pop",function(object){
   if(object@nInd!=length(object@reps)){
     errors = c(errors,"nInd!=length(reps)")
   }
+  if(object@nInd!=length(object@misc)){
+    errors = c(errors,"nInd!=length(misc)")
+  }
   if(length(errors)==0){
     return(TRUE)
   }else{
@@ -358,11 +368,12 @@ setMethod("[",
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
             x@reps = x@reps[i]
+            x@misc = x@misc[i]
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
             x@ebv = x@ebv[i,,drop=FALSE]
-            x@gender = x@gender[i]
-            x@nInd = length(x@gender)
+            x@sex = x@sex[i]
+            x@nInd = length(x@sex)
             if(x@nTraits>=1){
               for(trait in 1:x@nTraits){
                 if(!is.null(x@gxe[[trait]])){
@@ -457,14 +468,14 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
   }
   stopifnot(length(id)==length(mother),
             length(id)==length(father))
-  if(simParam$gender=="no"){
-    gender = rep("",rawPop@nInd)
-  }else if(simParam$gender=="yes_rand"){
-    gender = sample(c("M","F"),rawPop@nInd,replace=TRUE)
-  }else if(simParam$gender=="yes_sys"){
-    gender = rep_len(c("M","F"),rawPop@nInd)
+  if(simParam$sexes=="no"){
+    sex = rep("H",rawPop@nInd)
+  }else if(simParam$sexes=="yes_rand"){
+    sex = sample(c("M","F"),rawPop@nInd,replace=TRUE)
+  }else if(simParam$sexes=="yes_sys"){
+    sex = rep_len(c("M","F"),rawPop@nInd)
   }else{
-    stop(paste("no rules for gender type",simParam$gender))
+    stop(paste("no rules for sex type",simParam$sexes))
   }
   gxe = vector("list",simParam$nTraits)
   gv = matrix(NA_real_,nrow=rawPop@nInd,
@@ -485,7 +496,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                nChr=rawPop@nChr,
                ploidy=rawPop@ploidy,
                nLoci=rawPop@nLoci,
-               gender=gender,
+               sex=sex,
                geno=rawPop@geno,
                id=as.character(id),
                mother=origM,
@@ -500,19 +511,20 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                             ncol=simParam$nTraits),
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=0))
+                          ncol=0),
+               misc=vector("list",rawPop@nInd))
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1, 
                       fixEff=1L, p=NULL, 
                       onlyPheno=FALSE, 
                       simParam=simParam)
   }
+  output = simParam$finalizePop(output)
   if(simParam$isTrackPed){
     simParam$addToPed(lastId,mother,father,isDH)
   }else{
     simParam$updateLastId(lastId)
   }
-  
   return(output)
 }
 

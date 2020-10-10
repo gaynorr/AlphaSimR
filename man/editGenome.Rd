@@ -11,8 +11,8 @@ editGenome(pop, ind, chr, segSites, allele, simParam = NULL)
 
 \item{ind}{a vector of individuals to edit}
 
-\item{chr}{a vector of chromosomes to edit. Length must match 
-length of segSites.}
+\item{chr}{a vector of chromosomes to edit. 
+Length must match length of segSites.}
 
 \item{segSites}{a vector of segregating sites to edit. Length must 
 match length of chr.}

@@ -48,17 +48,17 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   return(response)
 }
 
-# Returns a vector of individuals in a population with the required gender
-checkGender = function(pop,gender,simParam){
-  gender = toupper(gender)
+# Returns a vector of individuals in a population with the required sex
+checkSexes = function(pop,sex,simParam){
+  sex = toupper(sex)
   eligible = 1:pop@nInd
-  if(simParam$gender=="no"){
+  if(simParam$sexes=="no"){
     return(eligible)
   }else{
-    if(gender=="B"){
+    if(sex=="B"){
       return(eligible)
     }else{
-      return(eligible[pop@gender%in%gender])
+      return(eligible[pop@sex%in%sex])
     }
   }
 }
@@ -90,8 +90,8 @@ getFam = function(pop,famType){
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 #' or randomly "rand"
-#' @param gender which gender to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using gender, 
+#' @param sex which sex to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using sexes, 
 #' the argument is ignored.
 #' @param selectTop selects highest values if true. 
 #' Selects lowest values if false.
@@ -122,18 +122,18 @@ getFam = function(pop,famType){
 #' pop2 = selectInd(pop, 5, simParam=SP)
 #' 
 #' @export
-selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
+selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
   if(length(eligible)<nInd){
-    stop("Not enough suitable candidates, check request value and gender")
+    stop("Not enough suitable candidates, check request value and sex")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
@@ -162,8 +162,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 #' or randomly "rand"
-#' @param gender which gender to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using gender, 
+#' @param sex which sex to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using sexes, 
 #' the argument is ignored.
 #' @param famType which type of family to select. Use "B" for 
 #' full-sib families, "F" for half-sib families on female side and "M" 
@@ -200,13 +200,13 @@ selectInd = function(pop,nInd,trait=1,use="pheno",gender="B",
 #' pop3 = selectFam(pop2, 2, simParam=SP)
 #' 
 #' @export
-selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
+selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -251,8 +251,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 #' or randomly "rand"
-#' @param gender which gender to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using gender, 
+#' @param sex which sex to select. Use "B" for both, "F" for 
+#' females and "M" for males. If the simulation is not using sexes, 
 #' the argument is ignored.
 #' @param famType which type of family to select. Use "B" for 
 #' full-sib families, "F" for half-sib families on female side and "M" 
@@ -289,13 +289,13 @@ selectFam = function(pop,nFam,trait=1,use="pheno",gender="B",
 #' pop3 = selectWithinFam(pop2, 1, simParam=SP)
 #' 
 #' @export
-selectWithinFam = function(pop,nInd,trait=1,use="pheno",gender="B",
+selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
                            candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkGender(pop=pop,gender=gender,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -382,7 +382,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
     simParam = get("SP",envir=.GlobalEnv)
   }
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
-                     use=use,gender="B",selectTop=selectTop,
+                     use=use,sex="B",selectTop=selectTop,
                      returnPop=FALSE,candidates=candidates,
                      simParam=simParam,...)
   nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)

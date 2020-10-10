@@ -89,10 +89,10 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param balance if using gender, this option will balance the number 
+#' @param balance if using sexes, this option will balance the number 
 #' of progeny per parent
 #' @param parents an optional vector of indices for allowable parents
-#' @param ignoreGender should gender be ignored
+#' @param ignoreSexes should sexes be ignored
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -113,7 +113,7 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
                      balance=TRUE,parents=NULL,
-                     ignoreGender=FALSE,
+                     ignoreSexes=FALSE,
                      simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -127,17 +127,17 @@ randCross = function(pop,nCrosses,nProgeny=1,
   if(n<=1){
     stop("The population must contain more than 1 individual")
   }
-  if(simParam$gender=="no" | ignoreGender){
+  if(simParam$sexes=="no" | ignoreSexes){
     crossPlan = sampHalfDialComb(n, nCrosses)
     crossPlan[,1] = parents[crossPlan[,1]]
     crossPlan[,2] = parents[crossPlan[,2]]
   }else{
-    female = which(pop@gender=="F" & (1:pop@nInd)%in%parents)
+    female = which(pop@sex=="F" & (1:pop@nInd)%in%parents)
     nFemale = length(female)
     if(nFemale==0){
       stop("population doesn't contain any females")
     }
-    male = which(pop@gender=="M" & (1:pop@nInd)%in%parents)
+    male = which(pop@sex=="M" & (1:pop@nInd)%in%parents)
     nMale = length(male)
     if(nMale==0){
       stop("population doesn't contain any males")
@@ -178,8 +178,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nInd the number of individuals to select. These individuals 
-#' are selected without regards to gender and it supercedes values 
-#' for nFemale and nMale. Thus if the simulation uses gender, it is 
+#' are selected without regards to sex and it supercedes values 
+#' for nFemale and nMale. Thus if the simulation uses sexes, it is 
 #' likely better to leave this value as NULL and use nFemale and nMale 
 #' instead.
 #' @param nFemale the number of females to select. This value is ignored 
@@ -198,7 +198,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' trait
-#' @param balance if using gender, this option will balance the number 
+#' @param balance if using sexes, this option will balance the number 
 #' of progeny per parent. This argument occurs after ..., so the argument 
 #' name must be matched exactly.
 #' 
@@ -228,27 +228,27 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
   }
   if(!is.null(nInd)){
     parents = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
-                        gender="B",selectTop=selectTop,
+                        sex="B",selectTop=selectTop,
                         returnPop=FALSE,simParam=simParam,...)
   }else{
-    if(simParam$gender=="no")
-      stop("You must specify nInd when simParam$gender is `no`")
+    if(simParam$sexes=="no")
+      stop("You must specify nInd when simParam$sexes is `no`")
     if(is.null(nFemale))
       stop("You must specify nFemale if nInd is NULL")
     if(is.null(nMale))
       stop("You must specify nMale if nInd is NULL")
     females = selectInd(pop=pop,nInd=nFemale,trait=trait,use=use,
-                        gender="F",selectTop=selectTop,
+                        sex="F",selectTop=selectTop,
                         returnPop=FALSE,simParam=simParam,...)
     males = selectInd(pop=pop,nInd=nMale,trait=trait,use=use,
-                      gender="M",selectTop=selectTop,
+                      sex="M",selectTop=selectTop,
                       returnPop=FALSE,simParam=simParam,...)
     parents = c(females,males)
   }
   
   return(randCross(pop=pop,nCrosses=nCrosses,nProgeny=nProgeny,
                    balance=balance,parents=parents,
-                   ignoreGender=FALSE,simParam=simParam))
+                   ignoreSexes=FALSE,simParam=simParam))
 }
 
 #' @title Make designed crosses
@@ -352,7 +352,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 #' female parents
 #' @param maleParents an optional vector of indices for allowable 
 #' male parents
-#' @param ignoreGender should gender be ignored
+#' @param ignoreSexes should sex be ignored
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -373,7 +373,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
                       balance=TRUE,femaleParents=NULL,
-                      maleParents=NULL,ignoreGender=FALSE,
+                      maleParents=NULL,ignoreSexes=FALSE,
                       simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -389,16 +389,16 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
   }else{
     maleParents = as.integer(maleParents)
   }
-  if(simParam$gender=="no" | ignoreGender){
+  if(simParam$sexes=="no" | ignoreSexes){
     female = femaleParents
     male = maleParents
   }else{
-    female = which(females@gender=="F" & 
+    female = which(females@sex=="F" & 
                      (1:females@nInd)%in%femaleParents)
     if(length(female)==0){
       stop("population doesn't contain any females")
     }
-    male = which(males@gender=="M" & 
+    male = which(males@sex=="M" & 
                    (1:males@nInd)%in%maleParents)
     if(length(male)==0){
       stop("population doesn't contain any males")
@@ -434,7 +434,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' 
 #' @description 
 #' Creates selfed progeny from each individual in a 
-#' population. Only works when gender is "no".
+#' population. Only works when sexes is "no".
 #' 
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
@@ -647,10 +647,11 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(simParam$gender!="no"){
-    stop("pedigreeCross currently only works with gender='no'")
+  if(simParam$sexes!="no"){
+    stop("pedigreeCross currently only works with sex='no'")
   }
-  #Coerce input data
+  
+  # Coerce input data
   id = as.character(id)
   mother = as.character(mother)
   father = as.character(father)
@@ -663,11 +664,13 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }else{
     DH = as.logical(DH)
   }
-  #Check input data
+  
+  # Check input data
   stopifnot(!any(duplicated(id)),
             length(id)==length(mother),
             length(id)==length(father),
             length(id)==length(DH))
+  
   matchFather = match(father,id)
   matchMother = match(mother,id)
   nFounder = sum(is.na(matchFather)|is.na(matchMother))
@@ -675,12 +678,13 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
   }
   if(!matchID){
-    #Randomize selected founders
+    # Randomize selected founders
     selFounder = sample.int(founderPop@nInd,nFounder)
   }else{
     selFounder = 1:founderPop@nInd
   }
   output = vector("list",length=length(id))
+  
   # Sort pedigree
   genInd = rep(0,length(id))
   sorted = rep(FALSE,length(id))
@@ -688,23 +692,23 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     for(i in 1:length(id)){
       if(!sorted[i]){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
-          #Is a founder
+          # Is a founder
           genInd[i] = gen
           sorted[i] = TRUE
         }else if(is.na(matchMother[i])){
-          #Mother is a founder
+          # Mother is a founder
           if(sorted[matchFather[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
           }
         }else if(is.na(matchFather[i])){
-          #Father is a founder
+          # Father is a founder
           if(sorted[matchMother[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
           }
         }else{
-          #Both parents are in the pedigree
+          # Both parents are in the pedigree
           if(sorted[matchMother[i]]&sorted[matchFather[i]]){
             genInd[i] = gen
             sorted[i] = TRUE
@@ -719,6 +723,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(!all(sorted)){
     stop("Failed to sort pedigree, may contain loops or require a higher maxGen")
   }
+  
   # Create individuals
   founderIndicator = 0
   crossPlan = matrix(c(1,1),ncol=2)
@@ -726,12 +731,12 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     for(i in 1:length(id)){
       if(genInd[i]==gen){
         if(is.na(matchMother[i])&is.na(matchFather[i])){
-          #Is a founder
+          # Is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(id[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -739,12 +744,12 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
           }
           output[[i]] = founderPop[selFounder[founderIndicator]]
         }else if(is.na(matchMother[i])){
-          #Mother is a founder
+          # Mother is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(mother[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -754,19 +759,19 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
                                  simParam=simParam)
           }
         }else if(is.na(matchFather[i])){
-          #Father is a founder
+          # Father is a founder
           if(!matchID){
-            #Select the next founder
+            # Select the next founder
             founderIndicator = founderIndicator+1L
           }else{
-            #Match founder
+            # Match founder
             founderIndicator = match(father[i],founderNames)
             if(is.na(founderIndicator)){
               stop(paste(id[i],"is missing in founderPop"))
@@ -776,19 +781,19 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    founderPop[selFounder[founderIndicator]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
                                  simParam=simParam)
           }
         }else{
-          #Both parents are in the pedigree
+          # Both parents are in the pedigree
           output[[i]] = makeCross2(output[[matchMother[i]]],
                                    output[[matchFather[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam)
-          #Make the individual a DH?
+          # Make the individual a DH?
           if(DH[i]){
             output[[i]] = makeDH(output[[i]],
                                  useFemale=useFemale,
@@ -798,6 +803,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       }
     }
   }
+  
   output = mergePops(output)
   return(output)
 }

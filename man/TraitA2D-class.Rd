@@ -3,7 +3,7 @@
 \docType{class}
 \name{TraitA2D-class}
 \alias{TraitA2D-class}
-\title{Gender specific additive and dominance trait}
+\title{Sex specific additive and dominance trait}
 \description{
 Extends \code{\link{TraitA2-class}} 
 to add dominance

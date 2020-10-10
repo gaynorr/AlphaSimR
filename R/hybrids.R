@@ -233,6 +233,8 @@ calcGCA = function(pop,use="pheno"){
 #' @param fixEff fixed effect to assign to the population. Used 
 #' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
+#' used by GxE traits. If NULL, a value is
+#' sampled at random.
 #' @param inbred are both pop and testers fully inbred. They are only 
 #' fully inbred if created by \code{\link{newPop}} using inbred founders 
 #' or by the \code{\link{makeDH}} function
@@ -265,7 +267,7 @@ calcGCA = function(pop,use="pheno"){
 #' 
 #' @export
 setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       fixEff=1L,p=0.5,inbred=FALSE,
+                       fixEff=1L,p=NULL,inbred=FALSE,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)

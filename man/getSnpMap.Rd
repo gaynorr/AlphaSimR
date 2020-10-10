@@ -4,21 +4,27 @@
 \alias{getSnpMap}
 \title{Get SNP genetic map}
 \usage{
-getSnpMap(snpChip = 1, gender = "A", simParam = NULL)
+getSnpMap(snpChip = 1, sex = "A", simParam = NULL)
 }
 \arguments{
 \item{snpChip}{an integer. Indicates which SNP
 chip's map to retrieve.}
 
-\item{gender}{determines which gender specific map 
+\item{sex}{determines which sex specific map 
 is returned. Options are "A" for average map, "F" 
 for female map, and "M" for male map. All options are 
-equivalent if not using gender specific maps.}
+equivalent if not using sex specific maps.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns a data.frame for the SNP map.
+Returns a data.frame with:
+\describe{
+  \item{id}{Unique identifier for the SNP}
+  \item{chr}{Chromosome containing the SNP}
+  \item{site}{Segregating site on the chromosome}
+  \item{pos}{Genetic map position}
+}
 }
 \description{
 Retrieves the genetic map for a 

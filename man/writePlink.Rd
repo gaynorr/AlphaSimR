@@ -37,7 +37,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$setGender(gender = "yes_rand")
+SP$setSexes(sex = "yes_rand")
 SP$addTraitA(nQtlPerChr = 10)
 SP$addSnpChip(nSnpPerChr = 5)
 
@@ -48,8 +48,8 @@ writePlink(pop, baseName="test")
 
 #Test
 test = read.table(file = "test.ped")
-#...gender
-if (!identical(x = c("M", "F")[test[[5]]], y = pop@gender)) { stop() }
+#...sex
+if (!identical(x = c("M", "F")[test[[5]]], y = pop@sex)) { stop() }
 #...pheno (issues with rounding)
 # if (!identical(x = test[[6]], y = pop@pheno[, 1])) { stop() }
 #...genotypes

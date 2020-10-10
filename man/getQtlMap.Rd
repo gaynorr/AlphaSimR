@@ -4,20 +4,26 @@
 \alias{getQtlMap}
 \title{Get QTL genetic map}
 \usage{
-getQtlMap(trait = 1, gender = "A", simParam = NULL)
+getQtlMap(trait = 1, sex = "A", simParam = NULL)
 }
 \arguments{
 \item{trait}{an integer for the}
 
-\item{gender}{determines which gender specific map 
+\item{sex}{determines which sex specific map 
 is returned. Options are "A" for average map, "F" 
 for female map, and "M" for male map. All options are 
-equivalent if not using gender specific maps.}
+equivalent if not using sex specific maps.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns a data.frame for the SNP map.
+Returns a data.frame with:
+\describe{
+  \item{id}{Unique identifier for the QTL}
+  \item{chr}{Chromosome containing the QTL}
+  \item{site}{Segregating site on the chromosome}
+  \item{pos}{Genetic map position}
+}
 }
 \description{
 Retrieves the genetic map for the 

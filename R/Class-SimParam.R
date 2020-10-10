@@ -25,6 +25,10 @@ SimParam = R6Class(
     #' @field founderPop founder population used for variance scaling
     founderPop = "MapPop",
     
+    #' @field finalizePop function applied to newly created populations.
+    #' Currently does nothing and should only be changed by expert users.
+    finalizePop = "function",
+    
     #' @description Starts the process of building a new simulation 
     #' by creating a new SimParam object and assigning a founder 
     #' population to the class. It is recommended that you save the 
@@ -53,13 +57,14 @@ SimParam = R6Class(
       self$invalidQtl = vector("list",founderPop@nChr) # All eligible
       self$invalidSnp = vector("list",founderPop@nChr) # All eligible
       self$founderPop = founderPop
+      self$finalizePop = function(pop){return(pop)}
       
       # Private items
       private$.restrSites = TRUE
       private$.traits = list()
       private$.segSites = founderPop@nLoci
-      private$.gender = "no"
-      private$.femaleMap = founderPop@genMap
+      private$.sexes = "no"
+      private$.femaleMap = lapply(founderPop@genMap, function(x) x-x[1]) # Set position 1 to 0
       private$.maleMap = NULL
       private$.sepMap = FALSE
       private$.femaleCentromere = founderPop@centromere
@@ -213,16 +218,16 @@ SimParam = R6Class(
       }
     },
     
-    #' @description Changes how gender is used in the simulation. 
-    #' The default gender of a simulation is "no". To add gender 
-    #' to the simulation, run this function with "yes_sys" or 
+    #' @description Changes how sexes are determined in the simulation. 
+    #' The default sexes is "no", indicating all individuals are hermaphrodites. 
+    #' To add sexes to the simulation, run this function with "yes_sys" or 
     #' "yes_rand". The value "yes_sys" will systematically assign 
-    #' gender to newly created individuals as first male, then female. 
-    #' Thus, odd numbers of individuals will have one more male than 
-    #' female. The value "yes_rand" will randomly assign gender to 
-    #' individuals.
+    #' sexes to newly created individuals as first male and then female. 
+    #' Populations with an odd number of individuals will have one more male than 
+    #' female. The value "yes_rand" will randomly assign a sex to each
+    #' individual.
     #' 
-    #' @param gender acceptable value are "no", "yes_sys", or 
+    #' @param sexes acceptable value are "no", "yes_sys", or 
     #' "yes_rand"
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
@@ -233,20 +238,20 @@ SimParam = R6Class(
     #' 
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
-    #' SP$setGender("yes_sys")
-    setGender = function(gender, force=FALSE){
+    #' SP$setSexes("yes_sys")
+    setSexes = function(sexes, force=FALSE){
       if(!force){
         private$.isRunning()
       }
-      gender = tolower(gender)
-      if(gender=="no"){
-        private$.gender="no"
-      }else if(gender=="yes_sys"){
-        private$.gender="yes_sys"
-      }else if(gender=="yes_rand"){
-        private$.gender="yes_rand"
+      sexes = tolower(sexes)
+      if(sexes=="no"){
+        private$.sexes="no"
+      }else if(sexes=="yes_sys"){
+        private$.sexes="yes_sys"
+      }else if(sexes=="yes_rand"){
+        private$.sexes="yes_rand"
       }else{
-        stop(paste0("gender=",gender," is not a valid option"))
+        stop(paste0("sexes=",sexes," is not a valid option"))
       }
       invisible(self)
     },
@@ -1069,17 +1074,18 @@ SimParam = R6Class(
     #' 
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
-    #' @param varA the value for varA in the base population, optional
-    #' @param varG the value for varG in the base population, optional
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing
-    manAddTrait = function(lociMap,varA=NA_real_,varG=NA_real_,
-                           varE=NA_real_,force=FALSE){
+    manAddTrait = function(lociMap,varE=NA_real_,force=FALSE){
       if(!force){
         private$.isRunning()
       }
       stopifnot(is(lociMap,"LociMap"))
+      tmp = calcGenParam(lociMap, self$founderPop, 
+                         self$nThreads)
+      varA = popVar(tmp$bv)[1]
+      varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
       invisible(self)
     },
@@ -1090,23 +1096,28 @@ SimParam = R6Class(
     #' @param traitPos an integer indicate which trait to switch
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
-    #' @param varA the value for varA in the base population, optional
-    #' @param varG the value for varG in the base population, optional
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing
-    switchTrait = function(traitPos,lociMap,varA=NA_real_,varG=NA_real_,
-                           varE=NA_real_,force=FALSE){
+    switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE){
       if(!force){
         private$.isRunning()
       }
       stopifnot(is(lociMap,"LociMap"),
                 traitPos<=self$nTraits,
                 traitPos>0)
+      tmp = calcGenParam(lociMap, self$founderPop, 
+                         self$nThreads)
       private$.traits[[traitPos]] = lociMap
-      private$.varA[traitPos] = varA
-      private$.varG[traitPos] = varG
-      private$.varE[traitPos] = varE
+      private$.varA[traitPos] = popVar(tmp$bv)[1]
+      private$.varG[traitPos] = popVar(tmp$gv)[1]
+      if(is.matrix(private$.varE)){
+        private$.varE[traitPos,] = 0
+        private$.varE[,traitPos] = 0
+        private$.varE[traitPos,traitPos] = varE
+      }else{
+        private$.varE[traitPos] = varE
+      }
       invisible(self)
     },
     
@@ -1124,7 +1135,11 @@ SimParam = R6Class(
       private$.traits[-traits]
       private$.varA[-traits]
       private$.varG[-traits]
-      private$.varE[-traits]
+      if(is.matrix(private$.varE)){
+        private$.varE[-traits,-traits]
+      }else{
+        private$.varE[-traits]
+      }
       invisible(self)
     },
     
@@ -1133,7 +1148,7 @@ SimParam = R6Class(
     #' 
     #' @param h2 a vector of desired narrow-sense heritabilities
     #' @param H2 a vector of desired broad-sense heritabilities
-    #' @param varE a vector of error variances
+    #' @param varE a vector or matrix of error variances
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -1166,7 +1181,12 @@ SimParam = R6Class(
         }
         private$.varE = varE
       }else if(!is.null(varE)){
-        stopifnot(length(varE)==self$nTraits)
+        if(is.matrix(varE)){
+          stopifnot(nrow(varE)==self$nTraits,
+                    ncol(varE)==self$nTraits)
+        }else{
+          stopifnot(length(varE)==self$nTraits)
+        }
         private$.varE = varE
       }else{
         private$.varE = rep(NA_real_,self$nTraits)
@@ -1194,7 +1214,12 @@ SimParam = R6Class(
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
                 length(private$.varE)==self$nTraits)
-      varE = diag(sqrt(private$.varE),
+      if(is.matrix(private$.varE)){
+        varE = diag(private$.varE)
+      }else{
+        varE = private$.varE
+      }
+      varE = diag(sqrt(varE),
                   nrow=self$nTraits,
                   ncol=self$nTraits)
       varE = varE%*%corE%*%varE
@@ -1306,7 +1331,7 @@ SimParam = R6Class(
     quadProb = "numeric",
     
     #' @description Set the relative recombination rates between males 
-    #' and females. This allows for gender specific recombination rates, 
+    #' and females. This allows for sex-specific recombination rates, 
     #' under the assumption of equivalent recombination landscapes.
     #' 
     #' @param femaleRatio relative ratio of recombination in females compared to 
@@ -1487,7 +1512,7 @@ SimParam = R6Class(
     .restrSites="logical",
     .traits="list",
     .segSites="integer",
-    .gender="character",
+    .sexes="character",
     .femaleMap="matrix",
     .maleMap="matrix",
     .sepMap="logical",
@@ -1631,12 +1656,12 @@ SimParam = R6Class(
       }
     },
     
-    #' @field gender is gender used for mating
-    gender=function(value){
+    #' @field sexes sexes used for mating
+    sexes=function(value){
       if(missing(value)){
-        private$.gender
+        private$.sexes
       }else{
-        stop("`$gender` is read only",call.=FALSE)
+        stop("`$sexes` is read only",call.=FALSE)
       }
     },
     
