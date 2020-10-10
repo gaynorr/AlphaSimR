@@ -26,8 +26,7 @@ The vignette can be viewed using the following command:
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://alphagenes.roslin.ed.ac.uk/wp/software-2/alphasimr/}
-  \item \url{https://bitbucket.org/hickeyjohnteam/alphasimr}
+  \item \url{https://github.com/gaynorr/AlphaSimR}
 }
 
 }

@@ -1209,13 +1209,7 @@ SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 \subsection{Method \code{manAddTrait()}}{
 Manually add a new trait to the simulation.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(
-  lociMap,
-  varA = NA_real_,
-  varG = NA_real_,
-  varE = NA_real_,
-  force = FALSE
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1223,10 +1217,6 @@ Manually add a new trait to the simulation.
 \describe{
 \item{\code{lociMap}}{a new object descended from 
 \code{\link{LociMap-class}}}
-
-\item{\code{varA}}{the value for varA in the base population, optional}
-
-\item{\code{varG}}{the value for varG in the base population, optional}
 
 \item{\code{varE}}{default error variance for phenotype, optional}
 
@@ -1242,14 +1232,7 @@ ignored. Only set to TRUE if you know what you are doing}
 \subsection{Method \code{switchTrait()}}{
 Switch a trait in the simulation.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchTrait(
-  traitPos,
-  lociMap,
-  varA = NA_real_,
-  varG = NA_real_,
-  varE = NA_real_,
-  force = FALSE
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchTrait(traitPos, lociMap, varE = NA_real_, force = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1259,10 +1242,6 @@ Switch a trait in the simulation.
 
 \item{\code{lociMap}}{a new object descended from 
 \code{\link{LociMap-class}}}
-
-\item{\code{varA}}{the value for varA in the base population, optional}
-
-\item{\code{varG}}{the value for varG in the base population, optional}
 
 \item{\code{varE}}{default error variance for phenotype, optional}
 
@@ -1309,7 +1288,7 @@ variances in the simulation.
 
 \item{\code{H2}}{a vector of desired broad-sense heritabilities}
 
-\item{\code{varE}}{a vector of error variances}
+\item{\code{varE}}{a vector or matrix of error variances}
 }
 \if{html}{\out{</div>}}
 }
