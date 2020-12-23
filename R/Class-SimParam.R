@@ -57,7 +57,7 @@ SimParam = R6Class(
       self$invalidQtl = vector("list",founderPop@nChr) # All eligible
       self$invalidSnp = vector("list",founderPop@nChr) # All eligible
       self$founderPop = founderPop
-      self$finalizePop = function(pop){return(pop)}
+      self$finalizePop = function(pop, ...){return(pop)}
       
       # Private items
       private$.restrSites = TRUE
@@ -257,7 +257,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble SNPs to a SNP chip
+    #' Randomly assigns eligible SNPs to a SNP chip
     #' 
     #' @param nSnpPerChr number of SNPs per chromosome. 
     #' Can be a single value or nChr values.
@@ -328,7 +328,7 @@ SimParam = R6Class(
     ### Traits (public) ----
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive traits. 
+    #' Randomly assigns eligible QTLs for one or more additive traits. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated additive effects.
     #' 
@@ -382,7 +382,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more traits with dominance. 
+    #' Randomly assigns eligible QTLs for one or more traits with dominance. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -458,7 +458,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one ore more additive GxE traits. 
+    #' Randomly assigns eligible QTLs for one ore more additive GxE traits. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -548,7 +548,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
+    #' Randomly assigns eligible QTLs for a trait with dominance and GxE. 
     #' 
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
     #' value or nChr values.
@@ -659,7 +659,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive and epistasis 
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
     #' traits. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated additive effects.
     #' 
@@ -734,7 +734,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more traits with dominance and 
+    #' Randomly assigns eligible QTLs for one or more traits with dominance and 
     #' epistasis. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -826,7 +826,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive and epistasis 
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
     #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -942,7 +942,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for a trait with dominance, 
+    #' Randomly assigns eligible QTLs for a trait with dominance, 
     #' epistasis and GxE. 
     #' 
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 

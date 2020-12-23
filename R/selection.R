@@ -49,13 +49,18 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
 }
 
 # Returns a vector of individuals in a population with the required sex
-checkSexes = function(pop,sex,simParam){
+checkSexes = function(pop,sex,simParam,...){
   sex = toupper(sex)
   eligible = 1:pop@nInd
   if(simParam$sexes=="no"){
     return(eligible)
   }else{
     if(sex=="B"){
+      # Check in gender is incorrectly being used
+      args = list(...)
+      if(any(names(args)=="gender")){
+        stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
+      }
       return(eligible)
     }else{
       return(eligible[pop@sex%in%sex])
@@ -128,7 +133,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -206,7 +211,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -295,7 +300,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }

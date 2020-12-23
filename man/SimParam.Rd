@@ -604,7 +604,7 @@ SP$setSexes("yes_sys")
 \if{html}{\out{<a id="method-addSnpChip"></a>}}
 \if{latex}{\out{\hypertarget{method-addSnpChip}{}}}
 \subsection{Method \code{addSnpChip()}}{
-Randomly assigns eligble SNPs to a SNP chip
+Randomly assigns eligible SNPs to a SNP chip
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL)}\if{html}{\out{</div>}}
 }
@@ -666,7 +666,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{html}{\out{<a id="method-addTraitA"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitA}{}}}
 \subsection{Method \code{addTraitA()}}{
-Randomly assigns eligble QTLs for one or more additive traits. 
+Randomly assigns eligible QTLs for one or more additive traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated additive effects.
 \subsection{Usage}{
@@ -719,7 +719,7 @@ SP$addTraitA(10)
 \if{html}{\out{<a id="method-addTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitAD}{}}}
 \subsection{Method \code{addTraitAD()}}{
-Randomly assigns eligble QTLs for one or more traits with dominance. 
+Randomly assigns eligible QTLs for one or more traits with dominance. 
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated effects.
 \subsection{Usage}{
@@ -785,7 +785,7 @@ SP$addTraitAD(10, meanDD=0.5)
 \if{html}{\out{<a id="method-addTraitAG"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitAG}{}}}
 \subsection{Method \code{addTraitAG()}}{
-Randomly assigns eligble QTLs for one ore more additive GxE traits. 
+Randomly assigns eligible QTLs for one ore more additive GxE traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
 with correlated effects.
 \subsection{Usage}{
@@ -847,7 +847,7 @@ SP$addTraitAG(10, varGxE=2)
 \if{html}{\out{<a id="method-addTraitADG"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitADG}{}}}
 \subsection{Method \code{addTraitADG()}}{
-Randomly assigns eligble QTLs for a trait with dominance and GxE.
+Randomly assigns eligible QTLs for a trait with dominance and GxE.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADG(
   nQtlPerChr,
@@ -920,7 +920,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 \if{html}{\out{<a id="method-addTraitAE"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitAE}{}}}
 \subsection{Method \code{addTraitAE()}}{
-Randomly assigns eligble QTLs for one or more additive and epistasis 
+Randomly assigns eligible QTLs for one or more additive and epistasis 
 traits. If simulating more than one trait, all traits will be pleiotrophic 
 with correlated additive effects.
 \subsection{Usage}{
@@ -980,7 +980,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 \if{html}{\out{<a id="method-addTraitADE"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitADE}{}}}
 \subsection{Method \code{addTraitADE()}}{
-Randomly assigns eligble QTLs for one or more traits with dominance and 
+Randomly assigns eligible QTLs for one or more traits with dominance and 
 epistasis. If simulating more than one trait, all traits will be pleiotrophic 
 with correlated effects.
 \subsection{Usage}{
@@ -1053,7 +1053,7 @@ SP$addTraitADE(10)
 \if{html}{\out{<a id="method-addTraitAEG"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitAEG}{}}}
 \subsection{Method \code{addTraitAEG()}}{
-Randomly assigns eligble QTLs for one or more additive and epistasis 
+Randomly assigns eligible QTLs for one or more additive and epistasis 
 GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
 with correlated effects.
 \subsection{Usage}{
@@ -1126,7 +1126,7 @@ SP$addTraitAEG(10, varGxE=2)
 \if{html}{\out{<a id="method-addTraitADEG"></a>}}
 \if{latex}{\out{\hypertarget{method-addTraitADEG}{}}}
 \subsection{Method \code{addTraitADEG()}}{
-Randomly assigns eligble QTLs for a trait with dominance, 
+Randomly assigns eligible QTLs for a trait with dominance, 
 epistasis and GxE.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADEG(

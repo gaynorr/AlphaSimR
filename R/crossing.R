@@ -77,7 +77,9 @@ makeCross = function(pop,crossPlan,nProgeny=1,
   return(newPop(rawPop=rPop,
                 mother=pop@id[crossPlan[,1]],
                 father=pop@id[crossPlan[,2]],
-                simParam=simParam))
+                simParam=simParam,
+                femaleParentPop=pop,
+                maleParentPop=pop))
 }
 
 #' @title Make random crosses
@@ -332,7 +334,9 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   return(newPop(rawPop=rPop,
                 mother=females@id[crossPlan[,1]],
                 father=males@id[crossPlan[,2]],
-                simParam=simParam))
+                simParam=simParam,
+                femaleParentPop=females,
+                maleParentPop=males))
 }
 
 #' @title Make random crosses
@@ -503,12 +507,16 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                   father=rep(pop@id,each=nProgeny),
                   origM=rep(pop@mother,each=nProgeny),
                   origF=rep(pop@father,each=nProgeny),
-                  simParam=simParam))
+                  simParam=simParam,
+                  femaleParentPop=pop,
+                  maleParentPop=pop))
   }else{
     return(newPop(rawPop=rPop,
                   mother=rep(pop@id,each=nProgeny),
                   father=rep(pop@id,each=nProgeny),
-                  simParam=simParam))
+                  simParam=simParam,
+                  femaleParentPop=pop,
+                  maleParentPop=pop))
   }
 }
 
@@ -578,13 +586,17 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                   origM=rep(pop@mother,each=nDH),
                   origF=rep(pop@father,each=nDH),
                   isDH=TRUE,
-                  simParam=simParam))
+                  simParam=simParam,
+                  femaleParentPop=pop,
+                  maleParentPop=pop))
   }else{
     return(newPop(rawPop=rPop,
                   mother=rep(pop@id,each=nDH),
                   father=rep(pop@id,each=nDH),
                   isDH=TRUE,
-                  simParam=simParam))
+                  simParam=simParam,
+                  femaleParentPop=pop,
+                  maleParentPop=pop))
   }
 }
 

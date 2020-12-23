@@ -249,7 +249,7 @@ cChr = function(...){
 #' and "H" for hermaphrodites
 #' @slot nTraits number of traits
 #' @slot gv matrix of genetic values. When using GxE traits,
-#' gv reflects gv when w=0. Dimensions are nInd by nTraits.
+#' gv reflects gv when p=0.5. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
 #' @slot ebv matrix of estimated breeding values. Dimensions 
@@ -432,6 +432,8 @@ setMethod("show",
 #' @param isDH optional value indicating if the individuals 
 #' are doubled haploids and/or inbred founders
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments if using a custom function 
+#' for finalizePop
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
@@ -448,7 +450,7 @@ setMethod("show",
 #' 
 #' @export
 newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
-                  origF=NULL,isDH=FALSE,simParam=NULL){
+                  origF=NULL,isDH=FALSE,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -519,7 +521,7 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                       onlyPheno=FALSE, 
                       simParam=simParam)
   }
-  output = simParam$finalizePop(output)
+  output = simParam$finalizePop(output,...)
   if(simParam$isTrackPed){
     simParam$addToPed(lastId,mother,father,isDH)
   }else{

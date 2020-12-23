@@ -1,3 +1,11 @@
+Changes in version 1.0.0
+  
+  AlphaSimR manuscript has been published in G3
+  
+  New features
+    -parent populations are now passed to finalizePop
+    -check added that reports an error when use of discontinued "gender" argument is detected
+
 Changes in version 0.13.0
 
   New features

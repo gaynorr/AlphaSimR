@@ -11,7 +11,8 @@ newPop(
   origM = NULL,
   origF = NULL,
   isDH = FALSE,
-  simParam = NULL
+  simParam = NULL,
+  ...
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ id in pedigree if using track pedigree.}
 are doubled haploids and/or inbred founders}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{...}{additional arguments if using a custom function 
+for finalizePop}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
