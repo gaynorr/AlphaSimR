@@ -4,3 +4,6 @@ Notes.txt
 ^doc$
 ^Meta$
 ^drafts$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
