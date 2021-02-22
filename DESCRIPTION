@@ -2,12 +2,12 @@ Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
 Version: 1.0.0
-Date: 2020-10-20
+Date: 2021-02-22
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
-  person("Gregor", "Gorjanc", role = "aut", 
+  person("Gregor", "Gorjanc", role = "ctb", 
   comment = c(ORCID = "0000-0001-8008-2787")),
-  person("John", "Hickey", role = "aut", 
+  person("John", "Hickey", role = "ctb", 
   comment = c(ORCID = "0000-0001-5675-3974")),
   person("Daniel", "Money", role = "ctb", 
   comment = c(ORCID = "0000-0001-5151-3648")),
