@@ -1,0 +1,8 @@
+pandoc: 2.11.2
+pkgdown: 1.6.1
+pkgdown_sha: ~
+articles:
+  intro: intro.html
+  traits: traits.html
+last_built: 2021-02-22T20:16Z
+
