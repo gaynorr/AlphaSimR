@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
 // Class for storing recombination history
@@ -58,29 +57,69 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // start, the position downstream to start the gamma process (should be a negative value)
 // end, the length of the interval used to sample
 // v, the interference parameter
+// p, the proportion of non-interfering crossovers
 // n, the number of gamma deviates sampled at a time (affects performance, not results)
 arma::vec sampleChiasmata(double start, double end, double v, 
-                          arma::uword n=40){
-  // Sample deviates from a gamma distribution
-  arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
-  
-  // Find locations on genetic map
-  output = cumsum(output)+start;
-  
-  // Add additional values if max position less than end
-  while(output(output.n_elem-1)<end){
-    arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,0.5/v));
-    tmp = cumsum(tmp) + output(output.n_elem-1);
-    output = join_cols(output, tmp);
+                          double p, arma::uword n=40){
+  if((1-p)>1e-6){ // Gamma model
+    // Sample deviates from a gamma distribution
+    arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+    
+    // Find locations on genetic map
+    output = cumsum(output)+start;
+    
+    // Add additional values if max position less than end
+    while(output(output.n_elem-1)<end){
+      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+      tmp = cumsum(tmp) + output(output.n_elem-1);
+      output = join_cols(output, tmp);
+    }
+    
+    // Remove values less than 0
+    output = output(find(output>0));
+    
+    // Select values less than the end
+    return output(find(output<end));
+  }else{ // Gamma sprinkling model
+    // Sample type 1 deviates from a gamma distribution
+    arma::vec type1 = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+    
+    // Find locations on genetic map
+    type1 = cumsum(type1)+start;
+    
+    // Add additional values if max position less than end
+    while(type1(type1.n_elem-1)<end){
+      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+      tmp = cumsum(tmp) + type1(type1.n_elem-1);
+      type1 = join_cols(type1, tmp);
+    }
+    
+    // Remove values less than 0
+    type1 = type1(find(type1>0));
+    
+    // Select values less than the end
+    type1 = type1(find(type1<end));
+    
+    // Sample type 2 deviates from a gamma distribution
+    arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*v*p)));
+    
+    // Find locations on genetic map
+    type2 = cumsum(type1);
+    
+    // Add additional values if max position less than end
+    while(type2(type2.n_elem-1)<end){
+      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*v*p)));
+      tmp = cumsum(tmp) + type2(type2.n_elem-1);
+      type2 = join_cols(type2, tmp);
+    }
+    
+    // Select values less than the end
+    type2 = type2(find(type2<end));
+    
+    // Return sorted vector of type 1 and type 2 crossovers
+    return sort(join_cols(type1, type2));
   }
-  
-  // Remove values less than 0
-  output = output(find(output>0));
-  
-  // Return values less than the end
-  return output(find(output<end));
 }
-
 // Samples the locations for chiasmata via a gamma process for a quadrivalent
 // CO interference is assumed to occur between all arms
 // The first arm is sampled at random
@@ -88,6 +127,7 @@ arma::vec sampleChiasmata(double start, double end, double v,
 // exchange, the positions where chromosomes switch
 // end, the length of the interval used to sample
 // v, the interference parameter
+// p, the proportion of non-interfering crossovers
 // n1, the number of gamma deviates sampled for the first arm 
 // n2, the number of gamma deviates sampled for all other arms
 arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
@@ -232,7 +272,7 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 }
 
 // Finds recombination map for a bivalent pair
-arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v){
+arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
@@ -241,7 +281,7 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v){
   double start = u(0)-10;
   
   // Find crossover positions
-  arma::vec posCO = sampleChiasmata(start, genLen, v);
+  arma::vec posCO = sampleChiasmata(start, genLen, v, p);
   if(posCO.n_elem==0){
     arma::Mat<int> output(1,2,arma::fill::ones);
     return output;
@@ -720,9 +760,10 @@ void bivalent(const arma::Col<unsigned char>& chr1,
               const arma::Col<unsigned char>& chr2,
               const arma::vec& genMap,
               double v,
+              double p,
               arma::Col<unsigned char>& output,
               arma::Mat<int>& hist){
-  hist = findBivalentCO(genMap, v);
+  hist = findBivalentCO(genMap, v, p);
   if(hist.n_rows==1){
     output = chr1;
   }else{
@@ -909,7 +950,8 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
 // trackRec: track recombination
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
-// v: interference paramater for gamma model
+// v: interference parameter for gamma model
+// p: proportion of non-interferring crossovers
 // quadProb: probability of quadrivalent formation
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
@@ -924,6 +966,7 @@ Rcpp::List cross(
     arma::uword motherPloidy,
     arma::uword fatherPloidy,
     double v,
+    double p,
     const arma::vec& motherCentromere,
     const arma::vec& fatherCentromere,
     double quadProb,
@@ -972,6 +1015,7 @@ Rcpp::List cross(
                      motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                      femaleMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -988,6 +1032,7 @@ Rcpp::List cross(
                      motherGeno(chr).slice(mother(ind)).col(xm(x+3)),
                      femaleMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1031,6 +1076,7 @@ Rcpp::List cross(
                    motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
                    femaleMap(chr),
                    v,
+                   p,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1055,6 +1101,7 @@ Rcpp::List cross(
                      fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                      maleMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1071,6 +1118,7 @@ Rcpp::List cross(
                      fatherGeno(chr).slice(father(ind)).col(xf(x+3)),
                      maleMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1114,6 +1162,7 @@ Rcpp::List cross(
                    fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
                    maleMap(chr),
                    v,
+                   p,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1141,7 +1190,7 @@ Rcpp::List cross(
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     arma::uword nDH, const arma::field<arma::vec>& genMap, 
-    double v, bool trackRec, int nThreads){
+    double v, double p, bool trackRec, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
   //Output data
@@ -1166,6 +1215,7 @@ Rcpp::List createDH2(
                  geno(chr).slice(ind).col(x(1)),
                  genMap(chr),
                  v,
+                 p,
                  gamete,
                  histMat);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
@@ -1193,7 +1243,7 @@ Rcpp::List createDH2(
 Rcpp::List createReducedGenome(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     arma::uword nProgeny, const arma::field<arma::vec>& genMap, 
-    double v, bool trackRec, arma::uword ploidy,  
+    double v, double p, bool trackRec, arma::uword ploidy,  
     arma::vec& centromere, double quadProb, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
@@ -1228,6 +1278,7 @@ Rcpp::List createReducedGenome(
                      geno(chr).slice(par).col(x(y+1)),
                      genMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1244,6 +1295,7 @@ Rcpp::List createReducedGenome(
                      geno(chr).slice(par).col(x(y+3)),
                      genMap(chr),
                      v,
+                     p,
                      gamete1,
                      hist1);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
@@ -1287,6 +1339,7 @@ Rcpp::List createReducedGenome(
                    geno(chr).slice(par).col(x(y+1)),
                    genMap(chr),
                    v,
+                   p,
                    gamete1,
                    hist1);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;

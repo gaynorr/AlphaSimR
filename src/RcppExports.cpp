@@ -427,8 +427,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cross
-Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, double v, const arma::vec& motherCentromere, const arma::vec& fatherCentromere, double quadProb, int nThreads);
-RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP vSEXP, SEXP motherCentromereSEXP, SEXP fatherCentromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
+Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, double v, double p, const arma::vec& motherCentromere, const arma::vec& fatherCentromere, double quadProb, int nThreads);
+RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP vSEXP, SEXP pSEXP, SEXP motherCentromereSEXP, SEXP fatherCentromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -442,17 +442,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type motherPloidy(motherPloidySEXP);
     Rcpp::traits::input_parameter< arma::uword >::type fatherPloidy(fatherPloidySEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type p(pSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type motherCentromere(motherCentromereSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type fatherCentromere(fatherCentromereSEXP);
     Rcpp::traits::input_parameter< double >::type quadProb(quadProbSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cross(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads));
+    rcpp_result_gen = Rcpp::wrap(cross(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // createDH2
-Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nDH, const arma::field<arma::vec>& genMap, double v, bool trackRec, int nThreads);
-RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP trackRecSEXP, SEXP nThreadsSEXP) {
+Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nDH, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, int nThreads);
+RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP pSEXP, SEXP trackRecSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -460,15 +461,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type nDH(nDHSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type p(pSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMap, v, trackRec, nThreads));
+    rcpp_result_gen = Rcpp::wrap(createDH2(geno, nDH, genMap, v, p, trackRec, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // createReducedGenome
-Rcpp::List createReducedGenome(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nProgeny, const arma::field<arma::vec>& genMap, double v, bool trackRec, arma::uword ploidy, arma::vec& centromere, double quadProb, int nThreads);
-RcppExport SEXP _AlphaSimR_createReducedGenome(SEXP genoSEXP, SEXP nProgenySEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP trackRecSEXP, SEXP ploidySEXP, SEXP centromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
+Rcpp::List createReducedGenome(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nProgeny, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, arma::uword ploidy, arma::vec& centromere, double quadProb, int nThreads);
+RcppExport SEXP _AlphaSimR_createReducedGenome(SEXP genoSEXP, SEXP nProgenySEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP pSEXP, SEXP trackRecSEXP, SEXP ploidySEXP, SEXP centromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -476,12 +478,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type nProgeny(nProgenySEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type p(pSEXP);
     Rcpp::traits::input_parameter< bool >::type trackRec(trackRecSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type centromere(centromereSEXP);
     Rcpp::traits::input_parameter< double >::type quadProb(quadProbSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(createReducedGenome(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads));
+    rcpp_result_gen = Rcpp::wrap(createReducedGenome(geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -650,4 +653,54 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_AlphaSimR_callFastRRBLUP", (DL_FUNC) &_AlphaSimR_callFastRRBLUP, 8},
+    {"_AlphaSimR_callRRBLUP", (DL_FUNC) &_AlphaSimR_callRRBLUP, 8},
+    {"_AlphaSimR_callRRBLUP2", (DL_FUNC) &_AlphaSimR_callRRBLUP2, 13},
+    {"_AlphaSimR_callRRBLUP_D", (DL_FUNC) &_AlphaSimR_callRRBLUP_D, 9},
+    {"_AlphaSimR_callRRBLUP_D2", (DL_FUNC) &_AlphaSimR_callRRBLUP_D2, 14},
+    {"_AlphaSimR_callRRBLUP_MV", (DL_FUNC) &_AlphaSimR_callRRBLUP_MV, 9},
+    {"_AlphaSimR_callRRBLUP_GCA", (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA, 9},
+    {"_AlphaSimR_callRRBLUP_GCA2", (DL_FUNC) &_AlphaSimR_callRRBLUP_GCA2, 14},
+    {"_AlphaSimR_callRRBLUP_SCA", (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA, 9},
+    {"_AlphaSimR_callRRBLUP_SCA2", (DL_FUNC) &_AlphaSimR_callRRBLUP_SCA2, 15},
+    {"_AlphaSimR_writeASGenotypes", (DL_FUNC) &_AlphaSimR_writeASGenotypes, 7},
+    {"_AlphaSimR_writeASHaplotypes", (DL_FUNC) &_AlphaSimR_writeASHaplotypes, 7},
+    {"_AlphaSimR_calcGenParam", (DL_FUNC) &_AlphaSimR_calcGenParam, 3},
+    {"_AlphaSimR_getGeno", (DL_FUNC) &_AlphaSimR_getGeno, 4},
+    {"_AlphaSimR_getMaternalGeno", (DL_FUNC) &_AlphaSimR_getMaternalGeno, 4},
+    {"_AlphaSimR_getPaternalGeno", (DL_FUNC) &_AlphaSimR_getPaternalGeno, 4},
+    {"_AlphaSimR_getHaplo", (DL_FUNC) &_AlphaSimR_getHaplo, 4},
+    {"_AlphaSimR_getOneHaplo", (DL_FUNC) &_AlphaSimR_getOneHaplo, 5},
+    {"_AlphaSimR_getIbdHaplo", (DL_FUNC) &_AlphaSimR_getIbdHaplo, 3},
+    {"_AlphaSimR_writeGeno", (DL_FUNC) &_AlphaSimR_writeGeno, 5},
+    {"_AlphaSimR_writeOneHaplo", (DL_FUNC) &_AlphaSimR_writeOneHaplo, 6},
+    {"_AlphaSimR_calcGenoFreq", (DL_FUNC) &_AlphaSimR_calcGenoFreq, 4},
+    {"_AlphaSimR_calcChrFreq", (DL_FUNC) &_AlphaSimR_calcChrFreq, 1},
+    {"_AlphaSimR_getGv", (DL_FUNC) &_AlphaSimR_getGv, 3},
+    {"_AlphaSimR_getHybridGv", (DL_FUNC) &_AlphaSimR_getHybridGv, 6},
+    {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
+    {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
+    {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},
+    {"_AlphaSimR_getIbdRecHist", (DL_FUNC) &_AlphaSimR_getIbdRecHist, 3},
+    {"_AlphaSimR_popVar", (DL_FUNC) &_AlphaSimR_popVar, 1},
+    {"_AlphaSimR_mergeGeno", (DL_FUNC) &_AlphaSimR_mergeGeno, 2},
+    {"_AlphaSimR_mergeMultGeno", (DL_FUNC) &_AlphaSimR_mergeMultGeno, 4},
+    {"_AlphaSimR_mergeMultIntMat", (DL_FUNC) &_AlphaSimR_mergeMultIntMat, 3},
+    {"_AlphaSimR_sampleInt", (DL_FUNC) &_AlphaSimR_sampleInt, 2},
+    {"_AlphaSimR_sampAllComb", (DL_FUNC) &_AlphaSimR_sampAllComb, 3},
+    {"_AlphaSimR_sampHalfDialComb", (DL_FUNC) &_AlphaSimR_sampHalfDialComb, 2},
+    {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
+    {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
+    {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
+    {"_AlphaSimR_writePlinkPed", (DL_FUNC) &_AlphaSimR_writePlinkPed, 6},
+    {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_AlphaSimR(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

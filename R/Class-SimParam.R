@@ -51,7 +51,8 @@ SimParam = R6Class(
       
       # Public items
       self$nThreads = getNumThreads()
-      self$v = 1 # No interference
+      self$v = 2.6 # Kosambi
+      self$p = 0 # Single pathway gamma model
       self$quadProb = 0 # No quadrivalent pairing
       self$snpChips = list()
       self$invalidQtl = vector("list",founderPop@nChr) # All eligible
@@ -1323,8 +1324,12 @@ SimParam = R6Class(
     #' recombination. A value of 1 indicates no crossover interference 
     #' (e.g. Haldane mapping function). A value of 2.6 approximates the 
     #' degree of crossover interference implied by the Kosambi mapping 
-    #' function. (default is 1)
+    #' function. (default is 2.6)
     v = "numeric",
+    
+    #' @field p the proportion of crossovers coming from a non-interfering
+    #' pathway. (default is 0)
+    p = "numeric",
     
     #' @field quadProb the probability of quadrivalent pairing in an 
     #' autopolyploid. (default is 0)

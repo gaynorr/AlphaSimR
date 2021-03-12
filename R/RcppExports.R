@@ -101,16 +101,16 @@ getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThre
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
 }
 
-createDH2 <- function(geno, nDH, genMap, v, trackRec, nThreads) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, trackRec, nThreads)
+createDH2 <- function(geno, nDH, genMap, v, p, trackRec, nThreads) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, p, trackRec, nThreads)
 }
 
-createReducedGenome <- function(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads)
+createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
 }
 
 getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {

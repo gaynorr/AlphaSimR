@@ -1,5 +1,4 @@
 // These functions may be called by R, but are not listed in the package namespace
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
 std::bitset<8> toBits(unsigned char byte){

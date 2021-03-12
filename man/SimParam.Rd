@@ -262,7 +262,10 @@ Currently does nothing and should only be changed by expert users.}
 recombination. A value of 1 indicates no crossover interference 
 (e.g. Haldane mapping function). A value of 2.6 approximates the 
 degree of crossover interference implied by the Kosambi mapping 
-function. (default is 1)}
+function. (default is 2.6)}
+
+\item{\code{p}}{the proportion of crossovers coming from a non-interfering
+pathway. (default is 0)}
 
 \item{\code{quadProb}}{the probability of quadrivalent pairing in an 
 autopolyploid. (default is 0)}

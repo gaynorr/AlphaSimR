@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
 arma::field<arma::vec> getHybridGvE(const Rcpp::S4& trait, 
