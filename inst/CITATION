@@ -1,0 +1,14 @@
+citHeader("To cite AlphaSimR in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "AlphaSimR: an R package for breeding program simulation",
+  author   = "R Chris Gaynor, Gregor Gorjanc, John M Hickey",
+  journal  = "G3 Gene|Genomes|Genetics",
+  year     = "2021",
+  volume   = "11",
+  number   = "jkaa07",
+  issue    = "2",
+  url      = "https://doi.org/10.1093/g3journal/jkaa017",
+  textVersion = ""
+)

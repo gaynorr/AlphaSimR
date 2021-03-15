@@ -104,7 +104,7 @@ arma::vec sampleChiasmata(double start, double end, double v,
     arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*v*p)));
     
     // Find locations on genetic map
-    type2 = cumsum(type1);
+    type2 = cumsum(type2);
     
     // Add additional values if max position less than end
     while(type2(type2.n_elem-1)<end){
@@ -131,17 +131,17 @@ arma::vec sampleChiasmata(double start, double end, double v,
 // n1, the number of gamma deviates sampled for the first arm 
 // n2, the number of gamma deviates sampled for all other arms
 arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
-                                           double v, arma::uword n1=40, arma::uword n2=8){
+                                           double v, double p, arma::uword n1=40, arma::uword n2=8){
   arma::field<arma::vec> output(4);
   arma::vec u(1, arma::fill::randu);
   
   // Randomly set order of chromosome arms
   arma::uvec arm = {0, 1, 2, 3};
   arm = shuffle(arm);
-  double nearest, terminator, p;
+  double nearest, terminator, prob;
   
   // First arm
-  output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,0.5/v));
+  output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,1.0/(2.0*v*(1-p))));
   output(arm(0)) = cumsum(output(arm(0))) + start;
   if(arm(0)%2){ // Tail
     terminator = end - exchange;
@@ -149,7 +149,7 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
     terminator = exchange;
   }
   while( output(arm(0))(output(arm(0)).n_elem-1) < terminator ){
-    arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
     tmp = cumsum(tmp) + output(arm(0))(output(arm(0)).n_elem-1);
     output(arm(0)) = join_cols(output(arm(0)), tmp);
   }
@@ -163,14 +163,14 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
   // All other arms
   for(arma::uword i=1; i<4; ++i){
     output(arm(i)).set_size(1+n2);
-    p = R::pgamma(nearest, v, 0.5/v, 1, 0);
+    prob = R::pgamma(nearest, v, 1.0/(2.0*v*(1-p)), 1, 0);
     u.randu();
-    u(0) = u(0)*(1-p)+p;
-    output(arm(i))(0) = R::qgamma(u(0), v, 0.5/v, 1, 0) - nearest;
+    u(0) = u(0)*(1-prob)+prob;
+    output(arm(i))(0) = R::qgamma(u(0), v, 1.0/(2.0*v*(1-p)), 1, 0) - nearest;
     if(output(arm(i))(0) < nearest){
       nearest = output(arm(i))(0);
     }
-    output(arm(i))(arma::span(1,n2)) = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+    output(arm(i))(arma::span(1,n2)) = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
     output(arm(i)) = cumsum(output(arm(i)));
     if(arm(i)%2){ // Tail
       terminator = end - exchange;
@@ -178,7 +178,7 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
       terminator = exchange;
     }
     while( output(arm(i))(output(arm(i)).n_elem-1) < terminator ){
-      arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,0.5/v));
+      arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
       tmp = cumsum(tmp) + output(arm(i))(output(arm(i)).n_elem-1);
       output(arm(i)) = join_cols(output(arm(i)), tmp);
     }
@@ -189,6 +189,41 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
       output(arm(i)) = sort(exchange-output(arm(i)));
     }
   }
+  
+  if(p>1.0e-6){ // Sprinkle recombinations
+    for(arma::uword i=0; i<4; ++i){
+      if(arm(i)%2){ // Tail
+        terminator = end - exchange;
+      }else{ // Head
+        terminator = exchange;
+      }
+      
+      // Sample type 2 deviates from a gamma distribution
+      arma::vec type2 = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*v*p)));
+      
+      // Find locations on genetic map
+      type2 = cumsum(type2);
+      
+      // Add additional values if max position less than terminator
+      while(type2(type2.n_elem-1)<terminator){
+        arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*v*p)));
+        tmp = cumsum(tmp) + type2(type2.n_elem-1);
+        type2 = join_cols(type2, tmp);
+      }
+      
+      // Select values less than the end
+      type2 = type2(find(type2<terminator));
+      
+      // Add exchange to genetic position if in tail
+      if(arm(i)%2){ // Tail
+        type2 += exchange;
+      }
+      
+      // Combine type 1 and 2 crossovers and sort
+      output(arm(i)) = sort(join_cols(output(arm(i)), type2));
+    }
+  }
+  
   return output;
 }
 
@@ -324,7 +359,8 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p){
  * The second centromere is sampled at random
  */
 arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
-                                                double centromere, double v){
+                                                double centromere, double v,
+                                                double p){
   arma::field<arma::Mat<int> > output(2);
   double genLen = genMap(genMap.n_elem-1);
   
@@ -335,7 +371,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   double start = u(0)-10;
   
   // Determine crossover postions
-  arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v);
+  arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v, p);
   
   // Set chromatid configuration for chiasmata
   arma::field<arma::umat> chromatidPairs(4);
@@ -805,6 +841,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                   const arma::vec& genMap,
                   double centromere,
                   double v,
+                  double p,
                   arma::Col<unsigned char>& output1,
                   arma::Col<unsigned char>& output2,
                   arma::Mat<int>& hist1,
@@ -812,7 +849,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
   int nBins = chr1.n_elem;
   
   arma::field<arma::Mat<int> > output;
-  output = findQuadrivalentCO(genMap, centromere, v);
+  output = findQuadrivalentCO(genMap, centromere, v, p);
   
   hist1 = output(0);
   hist2 = output(1);
@@ -1052,6 +1089,7 @@ Rcpp::List cross(
                          femaleMap(chr),
                          motherCentromere(chr),
                          v,
+                         p,
                          gamete1,
                          gamete2,
                          hist1,
@@ -1138,6 +1176,7 @@ Rcpp::List cross(
                          maleMap(chr),
                          fatherCentromere(chr),
                          v,
+                         p,
                          gamete1,
                          gamete2,
                          hist1,
@@ -1315,6 +1354,7 @@ Rcpp::List createReducedGenome(
                          genMap(chr),
                          centromere(chr),
                          v,
+                         p,
                          gamete1,
                          gamete2,
                          hist1,
