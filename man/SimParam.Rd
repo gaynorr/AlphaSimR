@@ -369,7 +369,7 @@ Starts the process of building a new simulation
 by creating a new SimParam object and assigning a founder 
 population to the class. It is recommended that you save the 
 object with the name "SP", because subsequent functions will 
-check your global enviroment for an object of this name if 
+check your global environment for an object of this name if 
 their simParam arguments are NULL. This allows you to call 
 these functions without explicitly supplying a simParam 
 argument with every call.
@@ -1543,7 +1543,7 @@ For internal use only.
 \subsection{Method \code{addToPed()}}{
 For internal use only.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToPed(lastId, mother, father, isDH)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToPed(lastId, id, mother, father, isDH)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1551,11 +1551,13 @@ For internal use only.
 \describe{
 \item{\code{lastId}}{ID of last individual}
 
-\item{\code{mother}}{vector of mother IDs}
+\item{\code{id}}{the name of each individual}
 
-\item{\code{father}}{vector of father IDs}
+\item{\code{mother}}{vector of mother iids}
 
-\item{\code{isDH}}{vector of DH indicators}
+\item{\code{father}}{vector of father iids}
+
+\item{\code{isDH}}{indicator for DH lines}
 }
 \if{html}{\out{</div>}}
 }

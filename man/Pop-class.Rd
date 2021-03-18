@@ -41,6 +41,8 @@ phenotypes, and pedigrees.
 \describe{
 \item{\code{id}}{an individual's identifier}
 
+\item{\code{iid}}{an individual's internal identifier}
+
 \item{\code{mother}}{the identifier of the individual's mother}
 
 \item{\code{father}}{the identifier of the individual's father}

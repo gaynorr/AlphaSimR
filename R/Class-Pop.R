@@ -124,9 +124,9 @@ setMethod("show",
 #' 
 #' @param x a 'MapPop' object
 #' @param i index of chromosomes
-#' @param ... aditional 'MapPop' objects
+#' @param ... additional 'MapPop' objects
 #' 
-#' @slot genMap "matrix" of chromsome genetic maps
+#' @slot genMap "matrix" of chromosome genetic maps
 #' @slot centromere vector of centromere positions
 #' 
 #' @export
@@ -243,6 +243,7 @@ cChr = function(...){
 #' @param ... additional 'Pop' objects
 #' 
 #' @slot id an individual's identifier
+#' @slot iid an individual's internal identifier
 #' @slot mother the identifier of the individual's mother
 #' @slot father the identifier of the individual's father
 #' @slot sex sex of individuals: "M" for males, "F" for females,
@@ -267,6 +268,7 @@ cChr = function(...){
 #' @export
 setClass("Pop",
          slots=c(id="character",
+                 iid="integer",
                  mother="character",
                  father="character",
                  sex="character",
@@ -296,6 +298,9 @@ setValidity("Pop",function(object){
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
+  }
+  if(object@nInd!=length(object@iid)){
+    errors = c(errors,"nInd!=length(iid)")
   }
   if(object@nInd!=length(object@mother)){
     errors = c(errors,"nInd!=length(mother)")
@@ -364,6 +369,7 @@ setMethod("[",
               }
             }
             x@id = x@id[i]
+            x@iid = x@iid[i]
             x@mother = x@mother[i]
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
@@ -423,17 +429,11 @@ setMethod("show",
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or 
 #' \code{\link{RawPop-class}}
-#' @param mother optional id for mothers. Must match 
-#' id in pedigree if using track pedigree.
-#' @param father optional id for fathers. Must match 
-#' id in pedigree if using track pedigree.
-#' @param origM optional alternative id for mothers
-#' @param origF optional alternative id for fathers
-#' @param isDH optional value indicating if the individuals 
-#' are doubled haploids and/or inbred founders
+#' @param id optional id for new individuals.
+#' @param mother optional id for mothers.
+#' @param father optional id for fathers.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a custom function 
-#' for finalizePop
+#' @param ... additional arguments used internally
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #' 
@@ -449,50 +449,69 @@ setMethod("show",
 #' pop = newPop(founderPop, simParam=SP)
 #' 
 #' @export
-newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
-                  origF=NULL,isDH=FALSE,simParam=NULL,...){
+newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  args = list(...)
   stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
   lastId = simParam$lastId
-  id = (1:rawPop@nInd) + lastId
-  lastId = max(id)
+  iid = (1:rawPop@nInd) + lastId
+  lastId = max(iid)
+  if(is.null(id)){
+    id = as.character(iid)
+  }else{
+    id = as.character(id)
+    stopifnot(length(id)==rawPop@nInd)
+  }
+  if(any(names(args)=="iMother")){
+    iMother = args$iMother
+  }else{
+    iMother = rep(0L, rawPop@nInd)
+  }
+  if(any(names(args)=="iFather")){
+    iFather = args$iFather
+  }else{
+    iFather = rep(0L, rawPop@nInd)
+  }
+  if(any(names(args)=="isDH")){
+    isDH = args$isDH
+  }else{
+    isDH = FALSE
+  }
   if(is.null(mother)){
-    mother = rep("0",rawPop@nInd)
+    mother = rep("0", rawPop@nInd)
   }else{
     mother = as.character(mother)
   }
   if(is.null(father)){
-    father = rep("0",rawPop@nInd)
+    father = rep("0", rawPop@nInd)
   }else{
     father = as.character(father)
   }
   stopifnot(length(id)==length(mother),
             length(id)==length(father))
   if(simParam$sexes=="no"){
-    sex = rep("H",rawPop@nInd)
+    sex = rep("H", rawPop@nInd)
   }else if(simParam$sexes=="yes_rand"){
-    sex = sample(c("M","F"),rawPop@nInd,replace=TRUE)
+    sex = sample(c("M","F"), rawPop@nInd, replace=TRUE)
   }else if(simParam$sexes=="yes_sys"){
-    sex = rep_len(c("M","F"),rawPop@nInd)
+    sex = rep_len(c("M","F"), rawPop@nInd)
   }else{
-    stop(paste("no rules for sex type",simParam$sexes))
+    stop(paste("no rules for sex type", simParam$sexes))
   }
   gxe = vector("list",simParam$nTraits)
   gv = matrix(NA_real_,nrow=rawPop@nInd,
               ncol=simParam$nTraits)
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],rawPop,simParam$nThreads)
+      tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
       gv[,i] = tmp[[1]]
       if(length(tmp)>1){
         gxe[[i]] = tmp[[2]]
       }
     }
   }
-  if(is.null(origM)) origM = mother
-  if(is.null(origF)) origF = father
   output = new("Pop",
                nInd=rawPop@nInd,
                nChr=rawPop@nChr,
@@ -500,9 +519,10 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                nLoci=rawPop@nLoci,
                sex=sex,
                geno=rawPop@geno,
-               id=as.character(id),
-               mother=origM,
-               father=origF,
+               id=id,
+               iid=iid,
+               mother=mother,
+               father=father,
                fixEff=rep(1L,rawPop@nInd),
                reps=rep(1,rawPop@nInd),
                nTraits=simParam$nTraits,
@@ -517,13 +537,12 @@ newPop = function(rawPop,mother=NULL,father=NULL,origM=NULL,
                misc=vector("list",rawPop@nInd))
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1, 
-                      fixEff=1L, p=NULL, 
-                      onlyPheno=FALSE, 
+                      fixEff=1L, p=NULL, onlyPheno=FALSE, 
                       simParam=simParam)
   }
   output = simParam$finalizePop(output,...)
   if(simParam$isTrackPed){
-    simParam$addToPed(lastId,mother,father,isDH)
+    simParam$addToPed(lastId,id,iMother,iFather,isDH)
   }else{
     simParam$updateLastId(lastId)
   }

@@ -50,6 +50,10 @@ mergePops = function(popList){
   id = do.call("c",
                lapply(popList,
                       function(x) x@id))
+  #iid
+  iid = do.call("c",
+                lapply(popList,
+                       function(x) x@iid))
   #mother
   mother = do.call("c",
                    lapply(popList,
@@ -124,6 +128,7 @@ mergePops = function(popList){
              sex=sex,
              geno=geno,
              id=id,
+             iid=iid,
              mother=mother,
              father=father,
              fixEff=fixEff,

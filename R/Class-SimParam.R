@@ -33,7 +33,7 @@ SimParam = R6Class(
     #' by creating a new SimParam object and assigning a founder 
     #' population to the class. It is recommended that you save the 
     #' object with the name "SP", because subsequent functions will 
-    #' check your global enviroment for an object of this name if 
+    #' check your global environment for an object of this name if 
     #' their simParam arguments are NULL. This allows you to call 
     #' these functions without explicitly supplying a simParam 
     #' argument with every call.
@@ -1478,10 +1478,11 @@ SimParam = R6Class(
     #' @description For internal use only.
     #' 
     #' @param lastId ID of last individual
-    #' @param mother vector of mother IDs
-    #' @param father vector of father IDs
-    #' @param isDH vector of DH indicators
-    addToPed = function(lastId,mother,father,isDH){
+    #' @param id the name of each individual
+    #' @param mother vector of mother iids
+    #' @param father vector of father iids
+    #' @param isDH indicator for DH lines
+    addToPed = function(lastId,id,mother,father,isDH){
       if(!private$.isTrackPed){
         stop("isTrackPed is FALSE")
       }
@@ -1505,6 +1506,7 @@ SimParam = R6Class(
         }
       }
       tmp = cbind(mother,father,isDH)
+      rownames(tmp) = id
       private$.pedigree = rbind(private$.pedigree,tmp)
       private$.lastId = lastId
       invisible(self)

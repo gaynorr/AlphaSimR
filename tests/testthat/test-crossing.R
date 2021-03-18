@@ -14,15 +14,15 @@ test_that("makeCross",{
   pop1 = makeCross(pop=pop,crossPlan=crossPlan,simParam=SP)
   expect_equal(SP$lastId,12L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(1L,10L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(2L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(1L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(2L,10L))
   #Match by id
   crossPlan = matrix(as.character(crossPlan),ncol=2)
   pop2 = makeCross(pop=pop,crossPlan=crossPlan,simParam=SP)
   expect_equal(SP$lastId,22L)
   expect_equal(meanG(pop2),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(1L,20L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(2L,20L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(1L,20L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(2L,20L))
 })
 
 test_that("makeCross2",{
@@ -35,15 +35,15 @@ test_that("makeCross2",{
   pop1 = makeCross2(females=pop,males=pop,crossPlan=crossPlan,simParam=SP)
   expect_equal(SP$lastId,12L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(1L,10L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(2L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(1L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(2L,10L))
   #Match by id
   crossPlan = matrix(as.character(crossPlan),ncol=2)
   pop2 = makeCross2(females=pop,males=pop,crossPlan=crossPlan,simParam=SP)
   expect_equal(SP$lastId,22L)
   expect_equal(meanG(pop2),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(1L,20L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(2L,20L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(1L,20L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(2L,20L))
 })
 
 test_that("randCross",{
@@ -56,8 +56,8 @@ test_that("randCross",{
   pop1 = randCross(pop=pop,nCrosses=1,nProgeny=10,simParam=SP)
   expect_equal(SP$lastId,12L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(2L,10L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(1L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(2L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(1L,10L))
 })
 
 test_that("randCross2",{
@@ -70,8 +70,8 @@ test_that("randCross2",{
   pop1 = randCross2(females=pop,males=pop,nCrosses=1,nProgeny=10,simParam=SP)
   expect_equal(SP$lastId,12L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],rep(2L,10L))
-  expect_equal(SP$pedigree[-(1:2),2L],rep(1L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),rep(2L,10L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),rep(1L,10L))
 })
 
 test_that("self",{
@@ -83,9 +83,9 @@ test_that("self",{
   pop1 = self(pop=pop,nProgeny=1,simParam=SP)
   expect_equal(SP$lastId,4L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],c(1L,2L))
-  expect_equal(SP$pedigree[-(1:2),2L],c(1L,2L))
-  expect_equal(SP$pedigree[-(1:2),3L],c(0L,0L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),c(1L,2L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),c(1L,2L))
+  expect_equal(unname(SP$pedigree[-(1:2),3L]),c(0L,0L))
 })
 
 test_that("makeDH",{
@@ -97,9 +97,9 @@ test_that("makeDH",{
   pop1 = makeDH(pop=pop,nDH=1,simParam=SP)
   expect_equal(SP$lastId,4L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],c(1L,2L))
-  expect_equal(SP$pedigree[-(1:2),2L],c(1L,2L))
-  expect_equal(SP$pedigree[-(1:2),3L],c(1L,1L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),c(1L,2L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),c(1L,2L))
+  expect_equal(unname(SP$pedigree[-(1:2),3L]),c(1L,1L))
 })
 
 test_that("selectCross",{
@@ -111,8 +111,8 @@ test_that("selectCross",{
   pop1 = selectCross(pop=pop,nFemale=1,nMale=1,use="rand",nCrosses=2,simParam=SP)
   expect_equal(SP$lastId,4L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
-  expect_equal(SP$pedigree[-(1:2),1L],c(2L,2L))
-  expect_equal(SP$pedigree[-(1:2),2L],c(1L,1L))
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),c(2L,2L))
+  expect_equal(unname(SP$pedigree[-(1:2),2L]),c(1L,1L))
 })
 
 test_that("selectOP",{
@@ -124,5 +124,5 @@ test_that("selectOP",{
   expect_equal(SP$lastId,4L)
   expect_equal(meanG(pop1),0,tolerance=1e-6)
   tmp = abs(SP$pedigree[-(1:2),1L]-SP$pedigree[-(1:2),2L])
-  expect_equal(tmp,c(1L,1L))
+  expect_equal(unname(tmp),c(1L,1L))
 })
