@@ -29,6 +29,10 @@ SimParam = R6Class(
     #' Currently does nothing and should only be changed by expert users.
     finalizePop = "function",
     
+    #' @field allowEmptyPop if true, population arguments with nInd=0 will 
+    #' return an empty population without a warning instead of an error.
+    allowEmptyPop = "logical",
+    
     #' @description Starts the process of building a new simulation 
     #' by creating a new SimParam object and assigning a founder 
     #' population to the class. It is recommended that you save the 
@@ -59,6 +63,7 @@ SimParam = R6Class(
       self$invalidSnp = vector("list",founderPop@nChr) # All eligible
       self$founderPop = founderPop
       self$finalizePop = function(pop, ...){return(pop)}
+      self$allowEmptyPop = FALSE # Empty populations trigger an error
       
       # Private items
       private$.restrSites = TRUE

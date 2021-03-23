@@ -123,7 +123,7 @@ setMethod("show",
 #' \code{\link{SimParam}}.
 #' 
 #' @param x a 'MapPop' object
-#' @param i index of chromosomes
+#' @param i index of individuals
 #' @param ... additional 'MapPop' objects
 #' 
 #' @slot genMap "matrix" of chromosome genetic maps
@@ -603,3 +603,94 @@ resetPop = function(pop,simParam=NULL){
   }
   return(pop)
 }
+
+# MegaPop ------------------------------------------------------------------
+
+#' @title Mega-Population
+#' 
+#' @description 
+#' The mega-population represents a population of populations. 
+#' It is designed to behave like a list of populations. 
+#' 
+#' @param object a 'MegaPop' object
+#' @param x a 'MegaPop' object
+#' @param i index of populations or megapopulations
+#' @param ... additional 'MegaPop' objects
+#' 
+#' @slot nInd vector for number of individuals
+#' @slot nPop number of populations
+#' @slot pop list of populations
+#' 
+#' 
+#' @export
+setClass("MegaPop",
+         slots=c(nInd="integer",
+                 nPop="integer",
+                 pop="list"))
+
+setValidity("MegaPop",function(object){
+  errors = character()
+  if(object@nPop!=length(object@pop)){
+    errors = c(errors,"nPop is not correct")
+  }else{
+    # Check that all populations are valid
+    for(i in 1:object@nPop){
+      if(!validObject(object@pop[[i]]) & 
+         (class(object@pop[[i]]=="Pop"))){
+        errors = c(errors,paste("pop",i,"is not a valid pop"))
+      }
+    }
+  }
+  if(object@nInd!=sapply(object@pop,"nInd")){
+    errors = c(errors,"nInd in not correct")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#' @describeIn MegaPop Extract MegaPop by index
+setMethod("[",
+          signature(x = "MegaPop"),
+          function(x, i){
+            if(any(abs(i)>x@nInd)){
+              stop("Trying to select invalid individuals")
+            }
+            x@pop = x@pop[i]
+            x@nPop = length(x@pop)
+            x@nInd = sapply(x@pop, "nInd")
+            return(x)
+          }
+)
+
+#' @describeIn MegaPop Extract Pop by index
+setMethod("[[",
+          signature(x = "MegaPop"),
+          function (x, i){
+            i = as.integer(i)
+            stopifnot(length(i)==1L,
+                      max(i)<x@nPop,
+                      min(i)>0L)
+            return(x@pop[[i]])
+          }
+)
+
+#' @describeIn MegaPop Combine multiple MegaPops
+setMethod("c",
+          signature(x = "MegaPop"),
+          function (x, ...){
+            for(y in list(...)){
+              if(class(y)=="NULL"){
+                # Do nothing
+              }else{
+                stopifnot(class(y)=="MegaPop")
+                x@pop = c(x@pop, y@pop)
+                x@nInd = c(x@nInd, y@nInd)
+                x@nPop = x@nPop + y@nPop
+              }
+            }
+            return(x)
+          }
+)

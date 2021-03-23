@@ -3,7 +3,8 @@
 #' @description Rapidly merges a list of populations into a
 #' single population
 #' 
-#' @param popList a list containing \code{\link{Pop-class}} elements
+#' @param popList a list containing \code{\link{Pop-class}} elements 
+#' or a \code{\link{MegaPop-class}}
 #' 
 #' @return Returns a \code{\link{Pop-class}}
 #' 
@@ -21,6 +22,10 @@
 #' 
 #' @export
 mergePops = function(popList){
+  if(class(popList)=="MegaPop"){
+    popList = popList@pop
+  }
+  
   classes = do.call("c",lapply(popList,
                                function(x) class(x)))
   if(any(classes=="NULL")){

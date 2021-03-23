@@ -1,4 +1,6 @@
-citHeader("To cite AlphaSimR in publications use:")
+citHeader("To cite AlphaSimR in publications use:
+
+Gaynor, R. Chris, Gregor Gorjanc, and John M. Hickey. 2021. AlphaSimR: an R package for breeding program simulations. G3 Gene|Genomes|Genetics 11(2):jkaa017. https://doi.org/10.1093/g3journal/jkaa017.")
 
 citEntry(
   entry    = "Article",

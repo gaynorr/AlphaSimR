@@ -9,6 +9,7 @@ Changes in version 1.0.0
     -runMacs2 now adjusts Ne for autopolyploids
     -parent populations are now passed to finalizePop
     -check added that throws an error when use of discontinued "gender" argument is detected
+    -added the MegaPop-class
 
 Changes in version 0.13.0
 
