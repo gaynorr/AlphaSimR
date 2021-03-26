@@ -131,7 +131,7 @@ setMethod("show",
 #' 
 #' @export
 setClass("MapPop",
-         slots=c(genMap="matrix",
+         slots=c(genMap="list",
                  centromere="numeric"),
          contains="RawPop")
 
@@ -220,7 +220,7 @@ cChr = function(...){
                   x@ploidy==y@ploidy)
         x@nChr = x@nChr+y@nChr
         x@geno = rbind(x@geno,y@geno)
-        x@genMap = rbind(x@genMap,y@genMap)
+        x@genMap = c(x@genMap,y@genMap)
         x@centromere = c(x@centromere,y@centromere)
         x@nLoci = c(x@nLoci,y@nLoci)
       }
@@ -614,36 +614,27 @@ resetPop = function(pop,simParam=NULL){
 #' 
 #' @param object a 'MegaPop' object
 #' @param x a 'MegaPop' object
-#' @param i index of populations or megapopulations
-#' @param ... additional 'MegaPop' objects
+#' @param i index of populations or mega-populations
+#' @param ... additional 'MegaPop' or 'Pop' objects
 #' 
-#' @slot nInd vector for number of individuals
-#' @slot nPop number of populations
-#' @slot pop list of populations
+#' @slot pops list of \code{\link{Pop-class}} and/or 
+#' \code{MegaPop-class}
 #' 
 #' 
 #' @export
 setClass("MegaPop",
-         slots=c(nInd="integer",
-                 nPop="integer",
-                 pop="list"))
+         slots=c(pops="list"))
 
 setValidity("MegaPop",function(object){
   errors = character()
-  if(object@nPop!=length(object@pop)){
-    errors = c(errors,"nPop is not correct")
-  }else{
     # Check that all populations are valid
-    for(i in 1:object@nPop){
-      if(!validObject(object@pop[[i]]) & 
-         (class(object@pop[[i]]=="Pop"))){
-        errors = c(errors,paste("pop",i,"is not a valid pop"))
+    for(i in 1:object@pops){
+      if(!validObject(object@pops[[i]]) & 
+         (class(object@pops[[i]])=="Pop" | 
+                class(object@pops[[i]])=="MegaPop")){
+        errors = c(errors,paste("object",i,"is not a valid pop"))
       }
     }
-  }
-  if(object@nInd!=sapply(object@pop,"nInd")){
-    errors = c(errors,"nInd in not correct")
-  }
   if(length(errors)==0){
     return(TRUE)
   }else{
@@ -655,12 +646,7 @@ setValidity("MegaPop",function(object){
 setMethod("[",
           signature(x = "MegaPop"),
           function(x, i){
-            if(any(abs(i)>x@nInd)){
-              stop("Trying to select invalid individuals")
-            }
-            x@pop = x@pop[i]
-            x@nPop = length(x@pop)
-            x@nInd = sapply(x@pop, "nInd")
+            x@pops = x@pops[i]
             return(x)
           }
 )
@@ -669,11 +655,7 @@ setMethod("[",
 setMethod("[[",
           signature(x = "MegaPop"),
           function (x, i){
-            i = as.integer(i)
-            stopifnot(length(i)==1L,
-                      max(i)<x@nPop,
-                      min(i)>0L)
-            return(x@pop[[i]])
+            return(x@pops[[i]])
           }
 )
 
@@ -685,12 +667,48 @@ setMethod("c",
               if(class(y)=="NULL"){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="MegaPop")
-                x@pop = c(x@pop, y@pop)
-                x@nInd = c(x@nInd, y@nInd)
-                x@nPop = x@nPop + y@nPop
+                if(class(y)=="Pop"){
+                  x@pops = c(x@pops, y)
+                }else{
+                  stopifnot(class(y)=="MegaPop")
+                  x@pops = c(x@pops, y@pops)
+                }
               }
             }
             return(x)
           }
 )
+
+#' @title Create new Mega Population
+#' 
+#' @description
+#' Creates a new \code{\link{MegaPop-class}} from one or more
+#' \code{\link{Pop-class}} and/or \code{\link{MegaPop-class}} 
+#' objects.  
+#'
+#' @param ... one or more \code{\link{Pop-class}} and/or 
+#' \code{\link{MegaPop-class}} objects.
+#'
+#' @return Returns an object of \code{\link{MegaPop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' megaPop = newMegaPop(pop)
+#' 
+#' @export
+newMegaPop = function(...){
+  input = list(...)
+  class = sapply(input, "class")
+  stopifnot(all(class=="Pop" | class=="MegaPop"))
+  output = new("MegaPop", pops=input)
+  return(output)
+}
+

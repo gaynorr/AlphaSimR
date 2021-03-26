@@ -1361,19 +1361,15 @@ SimParam = R6Class(
       private$.sepMap = TRUE
       feSc = 2/(1/femaleRatio+1)
       maSc = 2/(femaleRatio+1)
-      private$.femaleMap = as.matrix(
-        lapply(genMap,
-               function(x){
-                 feSc*x
-               })
-      )
+      private$.femaleMap = lapply(genMap,
+                                  function(x){
+                                    feSc*x
+                                  })
       private$.femaleCentromere = feSc*private$.femaleCentromere
-      private$.maleMap = as.matrix(
-        lapply(genMap,
-               function(x){
-                 maSc*x
-               })
-      )
+      private$.maleMap = lapply(genMap,
+                                function(x){
+                                  maSc*x
+                                })
       private$.maleCentromere = maSc*private$.maleCentromere
       invisible(self)
     },
@@ -1525,8 +1521,8 @@ SimParam = R6Class(
     .traits="list",
     .segSites="integer",
     .sexes="character",
-    .femaleMap="matrix",
-    .maleMap="matrix",
+    .femaleMap="list",
+    .maleMap="list",
     .sepMap="logical",
     .femaleCentromere="numeric",
     .maleCentromere="numeric",

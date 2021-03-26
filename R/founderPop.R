@@ -37,7 +37,7 @@
 #' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
 #' 
 #' @export
-newMapPop = function(genMap,haplotypes,inbred=FALSE,
+newMapPop = function(genMap, haplotypes, inbred=FALSE,
                      ploidy=2L){
   stopifnot(length(genMap)==length(haplotypes))
   nRow = lapply(haplotypes,nrow)
@@ -74,8 +74,14 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
                         ploidy=ploidy,
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(genMap[chr]),
+                        genMap=genMap[chr],
                         centromere=max(genMap[[chr]])/2)
+    if(is.null(names(output[[chr]]@genMap))){
+      names(output[[chr]]@genMap) = as.character(chr)
+    }
+    if(is.null(names(output[[chr]]@genMap[[1]]))){
+      names(output[[chr]]@genMap[[1]]) = paste(chr,1:segSites[chr],sep="_")
+    }
   }
   output = do.call("cChr",output)
   return(output)
@@ -196,9 +202,10 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nLoci = sapply(macsOut$genMap,length)
   genMap = vector("list",nChr)
   for(i in 1:nChr){
-    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-min(macsOut$genMap[[i]]))
+    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-macsOut$genMap[[i]][1])
+    names(genMap[[i]]) = paste(i,1:length(genMap[[i]]),sep="_")
   }
-  genMap=as.matrix(genMap)
+  names(genMap) = as.character(1:nChr)
   output = new("MapPop",
                nInd=nInd,
                nChr=nChr,
@@ -397,10 +404,12 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
   geno = vector("list",nChr)
   for(i in 1:nChr){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
+    names(genMap[[i]]) = paste(i, 1:segSites[i], sep="_")
     geno[[i]] = array(sample(as.raw(0:255),
                              nInd*ploidy*nBins[i],
                              replace=TRUE),
                       dim = c(nBins[i],ploidy,nInd))
+    
     if(inbred){
       if(ploidy>1){
         for(j in 2:ploidy){
@@ -409,12 +418,13 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
       }
     }
   }
+  names(genMap) = as.character(1:nChr)
   return(new("MapPop",
              nInd=nInd,
              nChr=nChr,
              ploidy=ploidy,
              nLoci=segSites,
              geno=as.matrix(geno),
-             genMap=as.matrix(genMap),
+             genMap=genMap,
              centromere=centromere))
 }

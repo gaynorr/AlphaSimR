@@ -133,6 +133,14 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
+                      use=use, sex=sex, selectTop=selectTop, 
+                      returnPop=TRUE, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
+  }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
@@ -210,6 +218,14 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
+                      use=use, sex=sex, famType=famType, 
+                      selectTop=selectTop, returnPop=TRUE, 
+                      candidates=NULL, simParam=simParam, ...)
+    return(pop)
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
@@ -300,6 +316,14 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
+                      use=use, sex=sex, selectTop=selectTop, 
+                      returnPop=TRUE, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
+  }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
@@ -385,6 +409,14 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    stopifnot(is.null(candidates))
+    pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
+                      pollenControl=pollenControl, trait=trait, use=use,
+                      selectTop=selectTop, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
   }
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
                      use=use,sex="B",selectTop=selectTop,

@@ -10,7 +10,7 @@
 #' 0 will skip writing a snpChip.
 #' @param useQtl should QTL genotype be written instead of SNP chip
 #' genotypes.
-#' @param includeHaplo should markers be seperated by female and male
+#' @param includeHaplo should markers be separated by female and male
 #' haplotypes.
 #' @param append if true, new records are added to any existing records.
 #' If false, any existing records are deleted before writing new records.

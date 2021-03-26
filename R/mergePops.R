@@ -23,7 +23,12 @@
 #' @export
 mergePops = function(popList){
   if(class(popList)=="MegaPop"){
-    popList = popList@pop
+    for(i in 1:length(popList@pops)){
+      if(class(popList@pops[i])=="MegaPop"){
+        popList@pops[i] = mergePops(popList@pops[i])
+      }
+    }
+    popList = popList@pops
   }
   
   classes = do.call("c",lapply(popList,

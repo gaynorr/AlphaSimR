@@ -474,6 +474,13 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(class(pop)=="MegaPop"){
+    stopifnot(is.null(parents))
+    pop@pops = lapply(pop@pops, self, nProgeny=nProgeny, 
+                      parents=NULL, keepParents=keepParents, 
+                      simParam=simParam)
+    return(pop)
+  }
   if(is.null(parents)){
     parents = 1:pop@nInd
   }else{
@@ -562,6 +569,11 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                   simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    pop@pops = lapply(pop@pops, makeDH, nDH=nDH, useFemale=useFemale,
+                      keepParents=keepParents, simParam=simParam)
+    return(pop)
   }
   if(pop@ploidy!=2){
     stop("Only works with diploids")
