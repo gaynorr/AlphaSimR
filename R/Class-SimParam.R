@@ -76,6 +76,7 @@ SimParam = R6Class(
       private$.femaleCentromere = founderPop@centromere
       private$.maleCentromere = NULL
       private$.lastId = 0L
+      private$.lastHaplo = 0L
       private$.isTrackPed = FALSE
       private$.pedigree = matrix(NA_integer_,nrow=0,ncol=3)
       private$.isTrackRec = FALSE
@@ -1456,13 +1457,33 @@ SimParam = R6Class(
     
     #' @description For internal use only.
     #' 
+    #' @param lastId ID of last individual
+    #' @param id the name of each individual
+    #' @param mother vector of mother iids
+    #' @param father vector of father iids
+    #' @param isDH indicator for DH lines
     #' @param hist new recombination history
-    addToRec = function(hist){
-      stopifnot(is.list(hist))
-      if(!private$.isTrackRec){
-        stop("isTrackRec is FALSE")
+    addToRec = function(lastId,id,iMother,iFather,isDH,hist){
+      nNewInd = lastId-private$.lastId
+      stopifnot(nNewInd>0)
+      if(length(isDH)==1) isDH = rep(isDH,nNewInd)
+      mother = as.integer(mother)
+      father = as.integer(father)
+      isDH = as.integer(isDH)
+      stopifnot(length(mother)==nNewInd,
+                length(father)==nNewInd,
+                length(isDH)==nNewInd)
+      tmp = cbind(mother,father,isDH)
+      rownames(tmp) = id
+      private$.pedigree = rbind(private$.pedigree,tmp)
+      private$.lastId = lastId
+      if(is.null(hist)){
+        # Fill in initial haplotypes
+      }else{
+        # Drop haplotypes through recombination history
+        
       }
-      private$.recHist = c(private$.recHist,hist)
+      
       invisible(self)
     },
     
@@ -1484,9 +1505,6 @@ SimParam = R6Class(
     #' @param father vector of father iids
     #' @param isDH indicator for DH lines
     addToPed = function(lastId,id,mother,father,isDH){
-      if(!private$.isTrackPed){
-        stop("isTrackPed is FALSE")
-      }
       nNewInd = lastId-private$.lastId
       stopifnot(nNewInd>0)
       if(length(isDH)==1) isDH = rep(isDH,nNewInd)
@@ -1496,16 +1514,6 @@ SimParam = R6Class(
       stopifnot(length(mother)==nNewInd,
                 length(father)==nNewInd,
                 length(isDH)==nNewInd)
-      if(private$.isTrackRec){
-        if(length(private$.recHist)==lastId){
-          #Recombination history already added
-        }else if(length(private$.recHist)==private$.lastId){
-          #No recombination history, assume founder individuals
-          private$.recHist = c(private$.recHist,vector("list",nNewInd))
-        }else{
-          stop("Unexpected outcome in recombination tracking")
-        }
-      }
       tmp = cbind(mother,father,isDH)
       rownames(tmp) = id
       private$.pedigree = rbind(private$.pedigree,tmp)
@@ -1535,6 +1543,7 @@ SimParam = R6Class(
     .varG="numeric",
     .varE="numeric",
     .version="character",
+    .lastHaplo="integer",
     
     .isRunning = function(){
       if(private$.lastId==0L){

@@ -73,7 +73,9 @@ makeCross = function(pop,crossPlan,nProgeny=1,
              nLoci=pop@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
-    simParam$addToRec(tmp$recHist)
+    hist = tmp$recHist
+  }else{
+    hist = NULL
   }
   return(newPop(rawPop=rPop,
                 mother=pop@id[crossPlan[,1]],
@@ -82,7 +84,8 @@ makeCross = function(pop,crossPlan,nProgeny=1,
                 iMother=pop@iid[crossPlan[,1]],
                 iFather=pop@iid[crossPlan[,2]],
                 femaleParentPop=pop,
-                maleParentPop=pop))
+                maleParentPop=pop,
+                hist=hist))
 }
 
 #' @title Make random crosses
@@ -333,7 +336,9 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
              nLoci=females@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
-    simParam$addToRec(tmp$recHist)
+    hist = tmp$recHist
+  }else{
+    hist = NULL
   }
   return(newPop(rawPop=rPop,
                 mother=females@id[crossPlan[,1]],
@@ -342,7 +347,8 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
                 iMother=females@iid[crossPlan[,1]],
                 iFather=males@iid[crossPlan[,2]],
                 femaleParentPop=females,
-                maleParentPop=males))
+                maleParentPop=males,
+                hist=hist))
 }
 
 #' @title Make random crosses
@@ -513,7 +519,9 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
              nLoci=pop@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
-    simParam$addToRec(tmp$recHist)
+    hist = tmp$recHist
+  }else{
+    hist = NULL
   }
   if(keepParents){
     return(newPop(rawPop=rPop,
@@ -523,7 +531,8 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                   iMother=rep(pop@iid,each=nProgeny),
                   iFather=rep(pop@iid,each=nProgeny),
                   femaleParentPop=pop,
-                  maleParentPop=pop))
+                  maleParentPop=pop,
+                  hist=hist))
   }else{
     return(newPop(rawPop=rPop,
                   mother=rep(pop@id,each=nProgeny),
@@ -532,7 +541,8 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                   iMother=rep(pop@iid,each=nProgeny),
                   iFather=rep(pop@iid,each=nProgeny),
                   femaleParentPop=pop,
-                  maleParentPop=pop))
+                  maleParentPop=pop,
+                  hist=hist))
   }
 }
 
@@ -600,7 +610,9 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
              nLoci=pop@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
-    simParam$addToRec(tmp$recHist)
+    hist = tmp$recHist
+  }else{
+    hist = NULL
   }
   if(keepParents){
     return(newPop(rawPop=rPop,
@@ -611,7 +623,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                   iMother=rep(pop@iid, each=nDH),
                   iFather=rep(pop@iid, each=nDH),
                   femaleParentPop=pop,
-                  maleParentPop=pop))
+                  maleParentPop=pop,
+                  hist=hist))
   }else{
     return(newPop(rawPop=rPop,
                   mother=rep(pop@id, each=nDH),
@@ -621,7 +634,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                   iMother=rep(pop@iid, each=nDH),
                   iFather=rep(pop@iid, each=nDH),
                   femaleParentPop=pop,
-                  maleParentPop=pop))
+                  maleParentPop=pop,
+                  hist=hist))
   }
 }
 
