@@ -128,11 +128,13 @@ setMethod("show",
 #' 
 #' @slot genMap "matrix" of chromosome genetic maps
 #' @slot centromere vector of centromere positions
+#' @slot inbred indicates whether the individuals are fully inbred
 #' 
 #' @export
 setClass("MapPop",
          slots=c(genMap="list",
-                 centromere="numeric"),
+                 centromere="numeric",
+                 inbred="logical"),
          contains="RawPop")
 
 setValidity("MapPop",function(object){
@@ -164,7 +166,6 @@ setMethod("[",
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
-            class(x) = "MapPop"
             return(x)
           }
 )
@@ -184,6 +185,99 @@ setMethod("c",
                           all.equal(x@genMap, y@genMap))
                 x@nInd = x@nInd+y@nInd
                 x@geno = mergeGeno(x@geno,y@geno)
+                x@inbred = x@inbred & y@inbred
+              }
+            }
+            return(x)
+          }
+)
+
+# NamedMapPop ------------------------------------------------------------------
+
+#' @title Raw population with genetic map and id
+#' 
+#' @description 
+#' Extends \code{\link{MapPop-class}} to add id, mother and father. 
+#' 
+#' @param x a 'NamedMapPop' object
+#' @param i index of individuals
+#' @param ... additional 'NamedMapPop' objects
+#' 
+#' @slot id an individual's identifier
+#' @slot mother the identifier of the individual's mother
+#' @slot father the identifier of the individual's father
+#' 
+#' @export
+setClass("NamedMapPop",
+         slots=c(id="character",
+                 mother="character",
+                 father="character"),
+         contains="MapPop")
+
+setValidity("NamedMapPop",function(object){
+  errors = character()
+  if(any(grepl(" ",object@id,fixed=TRUE))){
+    errors = c(errors,"id can not contain spaces")
+  }
+  if(any(grepl(" ",object@mother,fixed=TRUE))){
+    errors = c(errors,"mother can not contain spaces")
+  }
+  if(any(grepl(" ",object@father,fixed=TRUE))){
+    errors = c(errors,"father can not contain spaces")
+  }
+  if(object@nInd!=length(object@id)){
+    errors = c(errors,"nInd!=length(id)")
+  }
+  if(object@nInd!=length(object@mother)){
+    errors = c(errors,"nInd!=length(mother)")
+  }
+  if(object@nInd!=length(object@father)){
+    errors = c(errors,"nInd!=length(father)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+#' @describeIn NamedMapPop Extract NamedMapPop by index
+setMethod("[",
+          signature(x = "NamedMapPop"),
+          function(x, i){
+            if(any(abs(i)>x@nInd)){
+              stop("Trying to select invalid individuals")
+            }
+            for(chr in 1:x@nChr){
+              x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
+            }
+            x@nInd = dim(x@geno[[1]])[3]
+            x@id = x@id[i]
+            x@mother = x@mother[i]
+            x@father = x@father[i]
+            return(x)
+          }
+)
+
+#' @describeIn NamedMapPop Combine multiple NamedMapPops 
+setMethod("c",
+          signature(x = "NamedMapPop"),
+          function (x, ...){
+            for(y in list(...)){
+              if(class(y)=="NULL"){
+                # Do nothing
+              }else{
+                stopifnot(class(y)=="NamedMapPop",
+                          x@nChr==y@nChr,
+                          x@ploidy==y@ploidy,
+                          x@nLoci==y@nLoci,
+                          all.equal(x@genMap, y@genMap))
+                x@nInd = x@nInd+y@nInd
+                x@id = c(x@id, y@id)
+                x@mother = c(x@mother, y@mother)
+                x@father = c(x@father, y@father)
+                x@geno = mergeGeno(x@geno,y@geno)
+                x@inbred = x@inbred & y@inbred
               }
             }
             return(x)
@@ -193,10 +287,12 @@ setMethod("c",
 #' @title Combine MapPop chromosomes
 #' 
 #' @description
-#' Merges the chromosomes of multiple \code{\link{MapPop-class}} objects. 
+#' Merges the chromosomes of multiple \code{\link{MapPop-class}} or 
+#' \code{\link{NamedMapPop-class}} objects. 
 #' Each MapPop must have the same number of chromosomes
 #'
-#' @param ... \code{\link{MapPop-class}} objects to be combined
+#' @param ... \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}} 
+#' objects to be combined
 #' 
 #' @return Returns an object of \code{\link{MapPop-class}}
 #' 
@@ -212,7 +308,7 @@ cChr = function(...){
     if(class(y)=="NULL"){
       #Do nothing
     }else{
-      stopifnot(class(y)=="MapPop")
+      stopifnot(class(y)=="MapPop" | class(y)=="NamedMapPop")
       if(!exists("x",inherits=FALSE)){
         x = y
       }else{
@@ -223,6 +319,7 @@ cChr = function(...){
         x@genMap = c(x@genMap,y@genMap)
         x@centromere = c(x@centromere,y@centromere)
         x@nLoci = c(x@nLoci,y@nLoci)
+        x@inbred = x@inbred & y@inbred
       }
     }
   }
@@ -459,7 +556,11 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
   iid = (1:rawPop@nInd) + lastId
   lastId = max(iid)
   if(is.null(id)){
-    id = as.character(iid)
+    if(class(rawPop)=="NamedMapPop"){
+      id = rawPop@id
+    }else{
+      id = as.character(iid)
+    }
   }else{
     id = as.character(id)
     stopifnot(length(id)==rawPop@nInd)
@@ -480,12 +581,20 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
     isDH = FALSE
   }
   if(is.null(mother)){
-    mother = rep("0", rawPop@nInd)
+    if(class(rawPop)=="NamedMapPop"){
+      mother = rawPop@mother
+    }else{
+      mother = rep("0", rawPop@nInd)
+    }
   }else{
     mother = as.character(mother)
   }
   if(is.null(father)){
-    father = rep("0", rawPop@nInd)
+    if(class(rawPop)=="NamedMapPop"){
+      father = rawPop@father
+    }else{
+      father = rep("0", rawPop@nInd)
+    }
   }else{
     father = as.character(father)
   }

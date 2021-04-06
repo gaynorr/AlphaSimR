@@ -75,7 +75,8 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
                         genMap=genMap[chr],
-                        centromere=max(genMap[[chr]])/2)
+                        centromere=max(genMap[[chr]])/2,
+                        inbred=inbred)
     if(is.null(names(output[[chr]]@genMap))){
       names(output[[chr]]@genMap) = as.character(chr)
     }
@@ -213,7 +214,8 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
                nLoci=nLoci,
                geno=macsOut$geno,
                genMap=genMap,
-               centromere=sapply(genMap,max)/2)
+               centromere=sapply(genMap,max)/2,
+               inbred=inbred)
   return(output)
 }
 
@@ -363,7 +365,8 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
                         genMap=as.matrix(mapPop@genMap[chr]),
-                        centromere=mapPop@centromere[chr])
+                        centromere=mapPop@centromere[chr],
+                        inbred=inbred)
   }
   output = do.call("cChr",output)
   return(output)
@@ -426,5 +429,6 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              nLoci=segSites,
              geno=as.matrix(geno),
              genMap=genMap,
-             centromere=centromere))
+             centromere=centromere,
+             inbred=inbred))
 }
