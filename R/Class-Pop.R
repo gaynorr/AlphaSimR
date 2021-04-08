@@ -578,7 +578,11 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
   if(any(names(args)=="isDH")){
     isDH = args$isDH
   }else{
-    isDH = FALSE
+    if(class(rawPop)=="MapPop" | class(rawPop)=="NamedMapPop"){
+      isDH = rawPop@inbred
+    }else{
+      isDH = FALSE
+    }
   }
   if(is.null(mother)){
     if(class(rawPop)=="NamedMapPop"){
@@ -657,7 +661,7 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
       }else{
         hist = NULL
       }
-      simParam$addToRec(lastId,id,iMother,iFather,isDH,hist)
+      simParam$addToRec(lastId,id,iMother,iFather,isDH,hist,output@ploidy)
     }else{
       simParam$addToPed(lastId,id,iMother,iFather,isDH)
     }

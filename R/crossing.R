@@ -34,7 +34,7 @@ makeCross = function(pop,crossPlan,nProgeny=1,
     simParam = get("SP",envir=.GlobalEnv)
   }
   if(pop@ploidy%%2L != 0L){
-    stop("You cannot cross aneuploids")
+    stop("You can not cross indiviuals with odd ploidy levels")
   }
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],pop@id),
@@ -296,7 +296,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   }
   if((females@ploidy%%2L != 0L) | 
      (males@ploidy%%2L != 0L)){
-    stop("You can not cross aneuploids")
+    stop("You can not cross indiviuals with odd ploidy levels")
   }
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],females@id),

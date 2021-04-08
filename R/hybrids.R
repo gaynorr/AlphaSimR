@@ -40,7 +40,7 @@ hybridCross = function(females, males,
   }
   if((females@ploidy%%2L != 0L) | 
      (males@ploidy%%2L != 0L)){
-    stop("You can not cross aneuploids")
+    stop("You can not cross indiviuals with odd ploidy levels")
   }
   #crossPlan for test cross
   if(length(crossPlan)==1){

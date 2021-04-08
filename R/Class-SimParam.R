@@ -1463,7 +1463,9 @@ SimParam = R6Class(
     #' @param father vector of father iids
     #' @param isDH indicator for DH lines
     #' @param hist new recombination history
-    addToRec = function(lastId,id,iMother,iFather,isDH,hist){
+    #' @param ploidy ploidy level
+    addToRec = function(lastId,id,mother,father,isDH,
+                        hist,ploidy){
       nNewInd = lastId-private$.lastId
       stopifnot(nNewInd>0)
       if(length(isDH)==1) isDH = rep(isDH,nNewInd)
@@ -1475,14 +1477,47 @@ SimParam = R6Class(
                 length(isDH)==nNewInd)
       tmp = cbind(mother,father,isDH)
       rownames(tmp) = id
-      private$.pedigree = rbind(private$.pedigree,tmp)
-      private$.lastId = lastId
       if(is.null(hist)){
+        nChr = length(private$.femaleMap)
+        newRecHist = vector("list", nNewInd)
         # Fill in initial haplotypes
+        tmpLastHaplo = private$.lastHaplo
+        for(i in 1:nNewInd){
+          # Create empty recombination history
+          newRecHist[[i]] = vector("list", nChr)
+          for(j in 1:nChr){
+            newRecHist[[i]][[j]] = vector("list", ploidy)
+          }
+          
+          # Cycle through ploidy then chromosome
+          if(all(isDH==1L)){
+            tmpLastHaplo = tmpLastHaplo + 1L
+            for(k in 1:ploidy){
+              for(j in 1:nChr){
+                newRecHist[[i]][[j]][[k]] = matrix(
+                  c(tmpLastHaplo,1L), ncol=2)
+              }
+            }
+          }else{
+            for(k in 1:ploidy){
+              tmpLastHaplo = tmpLastHaplo + 1L
+              for(j in 1:nChr){
+                newRecHist[[i]][[j]][[k]] = matrix(
+                  c(tmpLastHaplo,1L), ncol=2)
+              }
+            }
+          }
+        }
+        private$.lastHaplo = tmpLastHaplo
       }else{
         # Drop haplotypes through recombination history
-        
+        newRecHist = addRecHist(pedigree=tmp,
+                                newRec=hist,
+                                recHist=private$.recHist)
       }
+      private$.recHist = c(private$.recHist, newRecHist)
+      private$.pedigree = rbind(private$.pedigree,tmp)
+      private$.lastId = lastId
       
       invisible(self)
     },
@@ -1888,4 +1923,117 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   }
   epiEff = sweep(epiEff,2,sqrt(relVar),"*")
   return(epiEff)
+}
+
+
+# To be replaced with a C++ function
+# rec, a matrix containing two columns: chr, site
+# hist, a list of matrices each matrix represents one
+# chr from rec:chr and contains two columns: haplo, site
+#
+# output: a matrix containing two columns: haplo, site
+calcHist = function(rec,    # Matrix: chr, site
+                    hist){  # List: Matrix: haplo, site 
+  nCO = nrow(rec) - 1
+  if(nCO==0){
+    # No recombination, copy over history
+    return(hist[[rec[1,1]]])
+    
+  }else{
+    # Initial site(s)
+    output = hist[[rec[1,1]]]
+    # Trim off end
+    output = output[output[,2]<rec[2,2],,drop=FALSE]
+    
+    # Middle sites
+    if(nCO>1){ # More than one recombination
+      for(i in 2:nCO){
+        y = hist[[rec[i,1]]]
+        
+        # Trim off end
+        y = y[y[,2]<rec[i+1,2],,drop=FALSE]
+        for(j in 1:nrow(y)){
+          if(y[j,2]>rec[i,2]){
+            j = j-1
+            break
+          }
+        }
+        y = y[j:nrow(y),,drop=FALSE]
+        
+        # Check for match for haplotype match at crossover
+        if(output[nrow(output),1]==y[1,1]){
+          y = y[-1,,drop=FALSE]
+        }else{
+          # Change first site to position of crossover
+          y[1,2] = rec[i,2]
+        }
+        
+        output = rbind(output,y)
+      }
+    }
+    
+    # Last site(s)
+    y = hist[[rec[nrow(rec),1]]]
+    
+    # Trim off start
+    for(j in 1:nrow(y)){
+      if(y[j,2]>rec[nrow(rec),2]){
+        j = j-1
+        break
+      }
+    }
+    y = y[j:nrow(y),,drop=FALSE]
+    
+    # Check for match for haplotype match at crossover
+    if(output[nrow(output),1]==y[1,1]){
+      y = y[-1,,drop=FALSE]
+    }else{
+      # Change first site to position of crossover
+      y[1,2] = rec[nrow(rec),2]
+    }
+    
+    output = rbind(output,y)
+  }
+  return(output)
+}
+
+addRecHist = function(pedigree, newRec, recHist){
+  # Determine individuals and species data
+  nInd = nrow(pedigree)
+  nChr = length(newRec[[1]])
+  ploidy = length(newRec[[1]][[1]])
+  
+  # Create list for new recHist entries
+  newRecHist = vector("list", nInd)
+  
+  # Propagate list one element at a time
+  for(ind in 1:nInd){
+    indRecHist = vector("list", nChr)
+    
+    # Extract mother and father
+    mother = recHist[[pedigree[ind, 1] ]]
+    father = recHist[[pedigree[ind, 2] ]]
+    
+    # Cycle through chromosomes
+    for(chr in 1:nChr){
+      chrRecHist = vector("list", ploidy)
+      
+      # Cycle through maternal haplotypes
+      for(p in 1:(ploidy/2)){
+        chrRecHist[[p]] = calcHist(newRec[[ind]][[chr]][[p]], 
+                                   mother[[chr]])
+      }
+      
+      # Cycle through paternal haplotypes
+      for(p in (ploidy/2+1):ploidy){
+        chrRecHist[[p]] = calcHist(newRec[[ind]][[chr]][[p]], 
+                                   father[[chr]])
+      }
+      
+      indRecHist[[chr]] = chrRecHist
+    }
+    
+    newRecHist[[ind]] = indRecHist
+  }
+  return(newRecHist)
 }
