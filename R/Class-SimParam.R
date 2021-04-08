@@ -76,7 +76,6 @@ SimParam = R6Class(
       private$.femaleCentromere = founderPop@centromere
       private$.maleCentromere = NULL
       private$.lastId = 0L
-      private$.lastHaplo = 0L
       private$.isTrackPed = FALSE
       private$.pedigree = matrix(NA_integer_,nrow=0,ncol=3)
       private$.isTrackRec = FALSE
@@ -85,6 +84,10 @@ SimParam = R6Class(
       private$.varG = numeric()
       private$.varE = numeric()
       private$.version = packageDescription("AlphaSimR")$Version 
+      private$.lastHaplo = 0L
+      private$.hasHap = logical()
+      private$.hap = list()
+      private$.isFounder = logical()
       
       invisible(self)
     },
@@ -1478,48 +1481,80 @@ SimParam = R6Class(
       tmp = cbind(mother,father,isDH)
       rownames(tmp) = id
       if(is.null(hist)){
-        nChr = length(private$.femaleMap)
-        newRecHist = vector("list", nNewInd)
-        # Fill in initial haplotypes
+        newRecHist = vector("list",nNewInd)
         tmpLastHaplo = private$.lastHaplo
-        for(i in 1:nNewInd){
-          # Create empty recombination history
-          newRecHist[[i]] = vector("list", nChr)
-          for(j in 1:nChr){
-            newRecHist[[i]][[j]] = vector("list", ploidy)
-          }
-          
-          # Cycle through ploidy then chromosome
-          if(all(isDH==1L)){
+        if(all(isDH==1L)){
+          for(i in 1:nNewInd){
             tmpLastHaplo = tmpLastHaplo + 1L
-            for(k in 1:ploidy){
-              for(j in 1:nChr){
-                newRecHist[[i]][[j]][[k]] = matrix(
-                  c(tmpLastHaplo,1L), ncol=2)
-              }
-            }
-          }else{
-            for(k in 1:ploidy){
-              tmpLastHaplo = tmpLastHaplo + 1L
-              for(j in 1:nChr){
-                newRecHist[[i]][[j]][[k]] = matrix(
-                  c(tmpLastHaplo,1L), ncol=2)
-              }
-            }
+            newRecHist[[i]] = rep(tmpLastHaplo, ploidy)
+          }
+        }else{
+          for(i in 1:nNewInd){
+            newRecHist[[i]] = (tmpLastHaplo+1L):(tmpLastHaplo+ploidy)
+            tmpLastHaplo = tmpLastHaplo + ploidy
           }
         }
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
+        private$.recHist = c(private$.recHist, newRecHist)
         private$.lastHaplo = tmpLastHaplo
       }else{
-        # Drop haplotypes through recombination history
-        newRecHist = addRecHist(pedigree=tmp,
-                                newRec=hist,
-                                recHist=private$.recHist)
+        # Add hist to recombination history
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
+        private$.recHist = c(private$.recHist, hist)
       }
-      private$.recHist = c(private$.recHist, newRecHist)
-      private$.pedigree = rbind(private$.pedigree,tmp)
+      private$.pedigree = rbind(private$.pedigree, tmp)
       private$.lastId = lastId
       
       invisible(self)
+    },
+    
+    #' @description For internal use only.
+    #' 
+    #' @param iid internal ID
+    ibdHaplo = function(iid){
+      ped = private$.pedigree
+      
+      # Determine unique iid for all ancestors
+      uid = list()
+      i = 1L
+      uid[[i]] = unique(iid)
+      while(any(uid[[i]]!=0L)){
+        i = i+1L
+        uid[[i]] = unique(c(ped[uid[[i-1]],1:2]))
+      }
+      uid = unique(unlist(uid))
+      uid = sort(uid)[-1] # First one is always zero
+      
+      # Iterate through uid and add hap if needed
+      nChr = length(private$.femaleMap)
+      for(i in uid){
+        if(!private$.hasHap[i]){
+          if(private$.isFounder[i]){
+            # Generate initial haplotypes
+            ploidy = length(private$.recHist[[i]])
+            hap = vector("list", ploidy)
+            for(j in 1:ploidy){
+              hap[[j]] = matrix(c(private$.recHist[[i]][j],
+                                  1L),ncol=2)
+            }
+            hap2 = vector("list", nChr)
+            for(j in 1:nChr){
+              hap2[[j]] = hap
+            }
+            private$.hap[[as.character(i)]] = hap2
+          }else{
+            stop("Not implemented")
+            # Generate haplotypes from parents
+            private$.hap[[as.character(i)]] = hap
+          }
+          private$.hasHap[i] = TRUE
+        }
+      }
+      
+      # Return relevant haplotypes
+      return(private$.hap)
     },
     
     #' @description For internal use only.
@@ -1579,6 +1614,9 @@ SimParam = R6Class(
     .varE="numeric",
     .version="character",
     .lastHaplo="integer",
+    .hasHap="logical",
+    .hap="list",
+    .isFounder="logical",
     
     .isRunning = function(){
       if(private$.lastId==0L){
@@ -1996,6 +2034,7 @@ calcHist = function(rec,    # Matrix: chr, site
   }
   return(output)
 }
+
 
 addRecHist = function(pedigree, newRec, recHist){
   # Determine individuals and species data
