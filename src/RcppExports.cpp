@@ -426,6 +426,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getFounderIbd
+arma::field<    arma::field<      arma::field<        arma::Mat<int> > > > getFounderIbd(const arma::field<arma::ivec>& founder, arma::uword nChr);
+RcppExport SEXP _AlphaSimR_getFounderIbd(SEXP founderSEXP, SEXP nChrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::ivec>& >::type founder(founderSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type nChr(nChrSEXP);
+    rcpp_result_gen = Rcpp::wrap(getFounderIbd(founder, nChr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// getNonFounderIbd
+arma::field<    arma::field<      arma::Mat<int> > > getNonFounderIbd(const arma::field<arma::field<arma::Mat<int> > >& recHist, const arma::field<arma::field<arma::Mat<int> > >& mother, const arma::field<arma::field<arma::Mat<int> > >& father);
+RcppExport SEXP _AlphaSimR_getNonFounderIbd(SEXP recHistSEXP, SEXP motherSEXP, SEXP fatherSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type recHist(recHistSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type father(fatherSEXP);
+    rcpp_result_gen = Rcpp::wrap(getNonFounderIbd(recHist, mother, father));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cross
 Rcpp::List cross(const arma::field<arma::Cube<unsigned char> >& motherGeno, arma::uvec mother, const arma::field<arma::Cube<unsigned char> >& fatherGeno, arma::uvec father, const arma::field<arma::vec>& femaleMap, const arma::field<arma::vec>& maleMap, bool trackRec, arma::uword motherPloidy, arma::uword fatherPloidy, double v, double p, const arma::vec& motherCentromere, const arma::vec& fatherCentromere, double quadProb, int nThreads);
 RcppExport SEXP _AlphaSimR_cross(SEXP motherGenoSEXP, SEXP motherSEXP, SEXP fatherGenoSEXP, SEXP fatherSEXP, SEXP femaleMapSEXP, SEXP maleMapSEXP, SEXP trackRecSEXP, SEXP motherPloidySEXP, SEXP fatherPloidySEXP, SEXP vSEXP, SEXP pSEXP, SEXP motherCentromereSEXP, SEXP fatherCentromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
@@ -681,6 +706,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcChrFreq", (DL_FUNC) &_AlphaSimR_calcChrFreq, 1},
     {"_AlphaSimR_getGv", (DL_FUNC) &_AlphaSimR_getGv, 3},
     {"_AlphaSimR_getHybridGv", (DL_FUNC) &_AlphaSimR_getHybridGv, 6},
+    {"_AlphaSimR_getFounderIbd", (DL_FUNC) &_AlphaSimR_getFounderIbd, 2},
+    {"_AlphaSimR_getNonFounderIbd", (DL_FUNC) &_AlphaSimR_getNonFounderIbd, 3},
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
     {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},

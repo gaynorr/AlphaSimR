@@ -101,6 +101,14 @@ getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThre
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
+getFounderIbd <- function(founder, nChr) {
+    .Call(`_AlphaSimR_getFounderIbd`, founder, nChr)
+}
+
+getNonFounderIbd <- function(recHist, mother, father) {
+    .Call(`_AlphaSimR_getNonFounderIbd`, recHist, mother, father)
+}
+
 cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
     .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
 }

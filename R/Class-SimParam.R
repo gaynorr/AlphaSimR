@@ -1514,47 +1514,54 @@ SimParam = R6Class(
     #' 
     #' @param iid internal ID
     ibdHaplo = function(iid){
-      ped = private$.pedigree
+      if(all(private$.hasHap[iid])){
+        # Return relevant haplotypes
+        return(private$.hap[as.character(iid)])
+      }
       
-      # Determine unique iid for all ancestors
+      ## Fill in missing haplotypes
+      
+      # Determine unique iid for needed individuals without hap data
       uid = list()
       i = 1L
       uid[[i]] = unique(iid)
       while(any(uid[[i]]!=0L)){
         i = i+1L
-        uid[[i]] = unique(c(ped[uid[[i-1]],1:2]))
+        uid[[i]] = unique(c(private$.pedigree[uid[[i-1]],1:2]))
       }
       uid = unique(unlist(uid))
       uid = sort(uid)[-1] # First one is always zero
+      uid = uid[!private$.hasHap[uid]]
       
-      # Iterate through uid and add hap if needed
-      nChr = length(private$.femaleMap)
-      for(i in uid){
-        if(!private$.hasHap[i]){
-          if(private$.isFounder[i]){
-            # Generate initial haplotypes
-            ploidy = length(private$.recHist[[i]])
-            hap = vector("list", ploidy)
-            for(j in 1:ploidy){
-              hap[[j]] = matrix(c(private$.recHist[[i]][j],
-                                  1L),ncol=2)
-            }
-            hap2 = vector("list", nChr)
-            for(j in 1:nChr){
-              hap2[[j]] = hap
-            }
-            private$.hap[[as.character(i)]] = hap2
-          }else{
-            stop("Not implemented")
-            # Generate haplotypes from parents
-            private$.hap[[as.character(i)]] = hap
-          }
-          private$.hasHap[i] = TRUE
+      # Split uid by founder and non-founder
+      fuid = uid[private$.isFounder[uid]]
+      nfuid = uid[!private$.isFounder[uid]]
+      
+      # Set hap for founders
+      if(length(fuid)>0){
+        nChr = length(private$.femaleMap)
+        newHap = getFounderIbd(founder=private$.recHist[fuid], 
+                               nChr=nChr)
+        names(newHap) = as.character(fuid)
+        private$.hap = c(private$.hap, newHap)
+        private$.hasHap[fuid] = TRUE
+      }
+      
+      # Set hap for non-founders
+      if(length(nfuid)>0){
+        for(id in nfuid){
+          mother = as.character(private$.pedigree[id,1])
+          father = as.character(private$.pedigree[id,2])
+          private$.hap[[as.character(id)]] = 
+            getNonFounderIbd(recHist=private$.recHist[[id ]],
+                             mother=private$.hap[[mother]],
+                             father=private$.hap[[father]])
+          private$.hasHap[id] = TRUE
         }
       }
       
       # Return relevant haplotypes
-      return(private$.hap)
+      return(private$.hap[as.character(iid)])
     },
     
     #' @description For internal use only.
@@ -1889,6 +1896,15 @@ SimParam = R6Class(
       }
     },
     
+    #' @field haplotypes list of computed IBD haplotypes
+    haplotypes=function(value){
+      if(missing(value)){
+        private$.hap
+      }else{
+        stop("`$haplotypes` is read only",call.=FALSE)
+      }
+    },
+    
     #' @field varA additive genetic variance in founderPop
     varA=function(value){
       if(missing(value)){
@@ -1961,118 +1977,4 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   }
   epiEff = sweep(epiEff,2,sqrt(relVar),"*")
   return(epiEff)
-}
-
-
-# To be replaced with a C++ function
-# rec, a matrix containing two columns: chr, site
-# hist, a list of matrices each matrix represents one
-# chr from rec:chr and contains two columns: haplo, site
-#
-# output: a matrix containing two columns: haplo, site
-calcHist = function(rec,    # Matrix: chr, site
-                    hist){  # List: Matrix: haplo, site 
-  nCO = nrow(rec) - 1
-  if(nCO==0){
-    # No recombination, copy over history
-    return(hist[[rec[1,1]]])
-    
-  }else{
-    # Initial site(s)
-    output = hist[[rec[1,1]]]
-    # Trim off end
-    output = output[output[,2]<rec[2,2],,drop=FALSE]
-    
-    # Middle sites
-    if(nCO>1){ # More than one recombination
-      for(i in 2:nCO){
-        y = hist[[rec[i,1]]]
-        
-        # Trim off end
-        y = y[y[,2]<rec[i+1,2],,drop=FALSE]
-        for(j in 1:nrow(y)){
-          if(y[j,2]>rec[i,2]){
-            j = j-1
-            break
-          }
-        }
-        y = y[j:nrow(y),,drop=FALSE]
-        
-        # Check for match for haplotype match at crossover
-        if(output[nrow(output),1]==y[1,1]){
-          y = y[-1,,drop=FALSE]
-        }else{
-          # Change first site to position of crossover
-          y[1,2] = rec[i,2]
-        }
-        
-        output = rbind(output,y)
-      }
-    }
-    
-    # Last site(s)
-    y = hist[[rec[nrow(rec),1]]]
-    
-    # Trim off start
-    for(j in 1:nrow(y)){
-      if(y[j,2]>rec[nrow(rec),2]){
-        j = j-1
-        break
-      }
-    }
-    y = y[j:nrow(y),,drop=FALSE]
-    
-    # Check for match for haplotype match at crossover
-    if(output[nrow(output),1]==y[1,1]){
-      y = y[-1,,drop=FALSE]
-    }else{
-      # Change first site to position of crossover
-      y[1,2] = rec[nrow(rec),2]
-    }
-    
-    output = rbind(output,y)
-  }
-  return(output)
-}
-
-
-addRecHist = function(pedigree, newRec, recHist){
-  # Determine individuals and species data
-  nInd = nrow(pedigree)
-  nChr = length(newRec[[1]])
-  ploidy = length(newRec[[1]][[1]])
-  
-  # Create list for new recHist entries
-  newRecHist = vector("list", nInd)
-  
-  # Propagate list one element at a time
-  for(ind in 1:nInd){
-    indRecHist = vector("list", nChr)
-    
-    # Extract mother and father
-    mother = recHist[[pedigree[ind, 1] ]]
-    father = recHist[[pedigree[ind, 2] ]]
-    
-    # Cycle through chromosomes
-    for(chr in 1:nChr){
-      chrRecHist = vector("list", ploidy)
-      
-      # Cycle through maternal haplotypes
-      for(p in 1:(ploidy/2)){
-        chrRecHist[[p]] = calcHist(newRec[[ind]][[chr]][[p]], 
-                                   mother[[chr]])
-      }
-      
-      # Cycle through paternal haplotypes
-      for(p in (ploidy/2+1):ploidy){
-        chrRecHist[[p]] = calcHist(newRec[[ind]][[chr]][[p]], 
-                                   father[[chr]])
-      }
-      
-      indRecHist[[chr]] = chrRecHist
-    }
-    
-    newRecHist[[ind]] = indRecHist
-  }
-  return(newRecHist)
 }
