@@ -70,16 +70,17 @@ arma::field< //chromosome
                   
                   // Trim front
                   arma::uword l;
+                  arma::uword m = Y.n_rows-1;
                   for(l=0; l<Y.n_rows; l++){
-                    if(Y(l,1)>recHist(i)(j)(k+1,1)){
-                      --l;
+                    if(Y(l,1)>recHist(i)(j)(nCO,1)){
+                      m = l-1;
                       break;
                     }
                   }
-                  Y = Y.rows(l,Y.n_rows-1);
+                  Y = Y.rows(m,Y.n_rows-1);
                   
                   // Check for haplotype match
-                  if(Y(0,1)==X(X.n_rows-1,1)){
+                  if(Y(0,0)==X(X.n_rows-1,0)){
                     // Drop first row
                     Y.shed_row(0);
                   }else{
@@ -106,7 +107,7 @@ arma::field< //chromosome
               Y = Y.rows(m,Y.n_rows-1);
               
               // Check for haplotype match
-              if(Y(0,1)==X(X.n_rows-1,1)){
+              if(Y(0,0)==X(X.n_rows-1,0)){
                 // Drop first row
                 Y.shed_row(0);
               }else{
@@ -136,16 +137,17 @@ arma::field< //chromosome
                   
                   // Trim front
                   arma::uword l;
+                  arma::uword m = Y.n_rows-1;
                   for(l=0; l<Y.n_rows; l++){
-                    if(Y(l,1)>recHist(i)(j)(k+1,1)){
-                      --l;
+                    if(Y(l,1)>recHist(i)(j)(nCO,1)){
+                      m = l-1;
                       break;
                     }
                   }
-                  Y = Y.rows(l,Y.n_rows-1);
+                  Y = Y.rows(m,Y.n_rows-1);
                   
                   // Check for haplotype match
-                  if(Y(0,1)==X(X.n_rows-1,1)){
+                  if(Y(0,0)==X(X.n_rows-1,0)){
                     // Drop first row
                     Y.shed_row(0);
                   }else{
@@ -172,7 +174,7 @@ arma::field< //chromosome
               Y = Y.rows(m,Y.n_rows-1);
               
               // Check for haplotype match
-              if(Y(0,1)==X(X.n_rows-1,1)){
+              if(Y(0,0)==X(X.n_rows-1,0)){
                 // Drop first row
                 Y.shed_row(0);
               }else{
