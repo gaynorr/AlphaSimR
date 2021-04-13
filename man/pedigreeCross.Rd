@@ -10,7 +10,6 @@ pedigreeCross(
   mother,
   father,
   matchID = FALSE,
-  founderNames = NULL,
   maxCycle = 100,
   DH = NULL,
   useFemale = TRUE,
@@ -34,9 +33,6 @@ elements in the id vector or they will be treated as unknown.}
 
 \item{matchID}{indicates if the IDs in founderPop should be 
 matched to the id argument. See details.}
-
-\item{founderNames}{names for individuals in the founder population. 
-Must be provided when matchID=TRUE.}
 
 \item{maxCycle}{the maximum number of loops to make over the pedigree 
 to sort it.}

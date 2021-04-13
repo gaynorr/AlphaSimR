@@ -7,7 +7,8 @@
 mergePops(popList)
 }
 \arguments{
-\item{popList}{a list containing \code{\link{Pop-class}} elements}
+\item{popList}{a list containing \code{\link{Pop-class}} elements 
+or a \code{\link{MegaPop-class}}}
 }
 \value{
 Returns a \code{\link{Pop-class}}

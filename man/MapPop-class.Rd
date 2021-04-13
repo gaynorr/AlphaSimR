@@ -14,7 +14,7 @@
 \arguments{
 \item{x}{a 'MapPop' object}
 
-\item{i}{index of chromosomes}
+\item{i}{index of individuals}
 
 \item{...}{additional 'MapPop' objects}
 }
@@ -37,5 +37,7 @@ for creating initial populations and setting traits in the
 \item{\code{genMap}}{"matrix" of chromosome genetic maps}
 
 \item{\code{centromere}}{vector of centromere positions}
+
+\item{\code{inbred}}{indicates whether the individuals are fully inbred}
 }}
 

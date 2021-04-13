@@ -84,6 +84,10 @@ SimParam = R6Class(
       private$.varG = numeric()
       private$.varE = numeric()
       private$.version = packageDescription("AlphaSimR")$Version 
+      private$.lastHaplo = 0L
+      private$.hasHap = logical()
+      private$.hap = list()
+      private$.isFounder = logical()
       
       invisible(self)
     },
@@ -1456,14 +1460,108 @@ SimParam = R6Class(
     
     #' @description For internal use only.
     #' 
+    #' @param lastId ID of last individual
+    #' @param id the name of each individual
+    #' @param mother vector of mother iids
+    #' @param father vector of father iids
+    #' @param isDH indicator for DH lines
     #' @param hist new recombination history
-    addToRec = function(hist){
-      stopifnot(is.list(hist))
-      if(!private$.isTrackRec){
-        stop("isTrackRec is FALSE")
+    #' @param ploidy ploidy level
+    addToRec = function(lastId,id,mother,father,isDH,
+                        hist,ploidy){
+      nNewInd = lastId-private$.lastId
+      stopifnot(nNewInd>0)
+      if(length(isDH)==1) isDH = rep(isDH,nNewInd)
+      mother = as.integer(mother)
+      father = as.integer(father)
+      isDH = as.integer(isDH)
+      stopifnot(length(mother)==nNewInd,
+                length(father)==nNewInd,
+                length(isDH)==nNewInd)
+      tmp = cbind(mother,father,isDH)
+      rownames(tmp) = id
+      if(is.null(hist)){
+        newRecHist = vector("list",nNewInd)
+        tmpLastHaplo = private$.lastHaplo
+        if(all(isDH==1L)){
+          for(i in 1:nNewInd){
+            tmpLastHaplo = tmpLastHaplo + 1L
+            newRecHist[[i]] = rep(tmpLastHaplo, ploidy)
+          }
+        }else{
+          for(i in 1:nNewInd){
+            newRecHist[[i]] = (tmpLastHaplo+1L):(tmpLastHaplo+ploidy)
+            tmpLastHaplo = tmpLastHaplo + ploidy
+          }
+        }
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
+        private$.recHist = c(private$.recHist, newRecHist)
+        private$.lastHaplo = tmpLastHaplo
+      }else{
+        # Add hist to recombination history
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
+        private$.recHist = c(private$.recHist, hist)
       }
-      private$.recHist = c(private$.recHist,hist)
+      private$.pedigree = rbind(private$.pedigree, tmp)
+      private$.lastId = lastId
+      
       invisible(self)
+    },
+    
+    #' @description For internal use only.
+    #' 
+    #' @param iid internal ID
+    ibdHaplo = function(iid){
+      if(all(private$.hasHap[iid])){
+        # Return relevant haplotypes
+        return(private$.hap[as.character(iid)])
+      }
+      
+      ## Fill in missing haplotypes
+      
+      # Determine unique iid for needed individuals without hap data
+      uid = list()
+      i = 1L
+      uid[[i]] = unique(iid)
+      while(any(uid[[i]]!=0L)){
+        i = i+1L
+        uid[[i]] = unique(c(private$.pedigree[uid[[i-1]],1:2]))
+      }
+      uid = unique(unlist(uid))
+      uid = sort(uid)[-1] # First one is always zero
+      uid = uid[!private$.hasHap[uid]]
+      
+      # Split uid by founder and non-founder
+      fuid = uid[private$.isFounder[uid]]
+      nfuid = uid[!private$.isFounder[uid]]
+      
+      # Set hap for founders
+      if(length(fuid)>0){
+        nChr = length(private$.femaleMap)
+        newHap = getFounderIbd(founder=private$.recHist[fuid], 
+                               nChr=nChr)
+        names(newHap) = as.character(fuid)
+        private$.hap = c(private$.hap, newHap)
+        private$.hasHap[fuid] = TRUE
+      }
+      
+      # Set hap for non-founders
+      if(length(nfuid)>0){
+        for(id in nfuid){
+          mother = as.character(private$.pedigree[id,1])
+          father = as.character(private$.pedigree[id,2])
+          private$.hap[[as.character(id)]] = 
+            getNonFounderIbd(recHist=private$.recHist[[id ]],
+                             mother=private$.hap[[mother]],
+                             father=private$.hap[[father]])
+          private$.hasHap[id] = TRUE
+        }
+      }
+      
+      # Return relevant haplotypes
+      return(private$.hap[as.character(iid)])
     },
     
     #' @description For internal use only.
@@ -1484,9 +1582,6 @@ SimParam = R6Class(
     #' @param father vector of father iids
     #' @param isDH indicator for DH lines
     addToPed = function(lastId,id,mother,father,isDH){
-      if(!private$.isTrackPed){
-        stop("isTrackPed is FALSE")
-      }
       nNewInd = lastId-private$.lastId
       stopifnot(nNewInd>0)
       if(length(isDH)==1) isDH = rep(isDH,nNewInd)
@@ -1496,16 +1591,6 @@ SimParam = R6Class(
       stopifnot(length(mother)==nNewInd,
                 length(father)==nNewInd,
                 length(isDH)==nNewInd)
-      if(private$.isTrackRec){
-        if(length(private$.recHist)==lastId){
-          #Recombination history already added
-        }else if(length(private$.recHist)==private$.lastId){
-          #No recombination history, assume founder individuals
-          private$.recHist = c(private$.recHist,vector("list",nNewInd))
-        }else{
-          stop("Unexpected outcome in recombination tracking")
-        }
-      }
       tmp = cbind(mother,father,isDH)
       rownames(tmp) = id
       private$.pedigree = rbind(private$.pedigree,tmp)
@@ -1535,6 +1620,10 @@ SimParam = R6Class(
     .varG="numeric",
     .varE="numeric",
     .version="character",
+    .lastHaplo="integer",
+    .hasHap="logical",
+    .hap="list",
+    .isFounder="logical",
     
     .isRunning = function(){
       if(private$.lastId==0L){
@@ -1804,6 +1893,15 @@ SimParam = R6Class(
         private$.recHist
       }else{
         stop("`$recHist` is read only",call.=FALSE)
+      }
+    },
+    
+    #' @field haplotypes list of computed IBD haplotypes
+    haplotypes=function(value){
+      if(missing(value)){
+        private$.hap
+      }else{
+        stop("`$haplotypes` is read only",call.=FALSE)
       }
     },
     

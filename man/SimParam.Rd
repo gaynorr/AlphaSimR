@@ -258,6 +258,9 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \item{\code{finalizePop}}{function applied to newly created populations.
 Currently does nothing and should only be changed by expert users.}
 
+\item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will 
+return an empty population without a warning instead of an error.}
+
 \item{\code{v}}{the crossover interference parameter for a gamma model of 
 recombination. A value of 1 indicates no crossover interference 
 (e.g. Haldane mapping function). A value of 2.6 approximates the 
@@ -316,6 +319,8 @@ genetic map}
 
 \item{\code{recHist}}{list of historic recombination events}
 
+\item{\code{haplotypes}}{list of computed IBD haplotypes}
+
 \item{\code{varA}}{additive genetic variance in founderPop}
 
 \item{\code{varG}}{total genetic variance in founderPop}
@@ -356,6 +361,7 @@ genetic map}
 \item \href{#method-switchFemaleMap}{\code{SimParam$switchFemaleMap()}}
 \item \href{#method-switchMaleMap}{\code{SimParam$switchMaleMap()}}
 \item \href{#method-addToRec}{\code{SimParam$addToRec()}}
+\item \href{#method-ibdHaplo}{\code{SimParam$ibdHaplo()}}
 \item \href{#method-updateLastId}{\code{SimParam$updateLastId()}}
 \item \href{#method-addToPed}{\code{SimParam$addToPed()}}
 \item \href{#method-clone}{\code{SimParam$clone()}}
@@ -1509,13 +1515,42 @@ be metacentric.}
 \subsection{Method \code{addToRec()}}{
 For internal use only.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToRec(hist)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToRec(lastId, id, mother, father, isDH, hist, ploidy)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{lastId}}{ID of last individual}
+
+\item{\code{id}}{the name of each individual}
+
+\item{\code{mother}}{vector of mother iids}
+
+\item{\code{father}}{vector of father iids}
+
+\item{\code{isDH}}{indicator for DH lines}
+
 \item{\code{hist}}{new recombination history}
+
+\item{\code{ploidy}}{ploidy level}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ibdHaplo"></a>}}
+\if{latex}{\out{\hypertarget{method-ibdHaplo}{}}}
+\subsection{Method \code{ibdHaplo()}}{
+For internal use only.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$ibdHaplo(iid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{iid}}{internal ID}
 }
 \if{html}{\out{</div>}}
 }

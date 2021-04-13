@@ -26,7 +26,7 @@ value will indicate which trait's QTL genotype to save. A value of
 \item{useQtl}{should QTL genotype be written instead of SNP chip
 genotypes.}
 
-\item{includeHaplo}{should markers be seperated by female and male
+\item{includeHaplo}{should markers be separated by female and male
 haplotypes.}
 
 \item{append}{if true, new records are added to any existing records.
