@@ -364,7 +364,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         ploidy=as.integer(ploidy),
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(mapPop@genMap[chr]),
+                        genMap=mapPop@genMap[chr],
                         centromere=mapPop@centromere[chr],
                         inbred=inbred)
   }

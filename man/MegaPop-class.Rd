@@ -20,8 +20,6 @@
 \item{i}{index of populations or mega-populations}
 
 \item{...}{additional 'MegaPop' or 'Pop' objects}
-
-\item{object}{a 'MegaPop' object}
 }
 \description{
 The mega-population represents a population of populations. 

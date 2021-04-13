@@ -663,19 +663,19 @@ sortPed = function(id, mother, father, maxCycle=100){
         unsorted[i] = FALSE
       }else if(is.na(output$mother[i])){
         # Mother is a founder
-        if(sorted[output$father[i]]){
+        if(!unsorted[output$father[i]]){
           output$gen[i] = gen
           unsorted[i] = FALSE
         }
       }else if(is.na(output$father[i])){
         # Father is a founder
-        if(sorted[output$mother[i]]){
+        if(!unsorted[output$mother[i]]){
           output$gen[i] = gen
           unsorted[i] = FALSE
         }
       }else{
         # Both parents are in the pedigree
-        if(sorted[output$mother[i]]&sorted[output$father[i]]){
+        if(!unsorted[output$mother[i]] & !unsorted[output$father[i]]){
           output$gen[i] = gen
           unsorted[i] = FALSE
         }

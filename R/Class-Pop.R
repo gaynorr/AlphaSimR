@@ -734,7 +734,6 @@ resetPop = function(pop,simParam=NULL){
 #' The mega-population represents a population of populations. 
 #' It is designed to behave like a list of populations. 
 #' 
-#' @param object a 'MegaPop' object
 #' @param x a 'MegaPop' object
 #' @param i index of populations or mega-populations
 #' @param ... additional 'MegaPop' or 'Pop' objects
@@ -750,7 +749,7 @@ setClass("MegaPop",
 setValidity("MegaPop",function(object){
   errors = character()
     # Check that all populations are valid
-    for(i in 1:object@pops){
+    for(i in 1:length(object@pops)){
       if(!validObject(object@pops[[i]]) & 
          (class(object@pops[[i]])=="Pop" | 
                 class(object@pops[[i]])=="MegaPop")){
@@ -823,7 +822,7 @@ setMethod("c",
 #' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' megaPop = newMegaPop(pop)
+#' megaPop = newMegaPop(pop=pop)
 #' 
 #' @export
 newMegaPop = function(...){

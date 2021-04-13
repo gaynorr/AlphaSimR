@@ -28,6 +28,6 @@ SP$addTraitA(10)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
-megaPop = newMegaPop(pop)
+megaPop = newMegaPop(pop=pop)
 
 }

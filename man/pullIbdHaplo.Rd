@@ -13,10 +13,6 @@ pullIbdHaplo(pop, chr = NULL, simParam = NULL)
 all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
-
-\item{haplo}{either "all" for all haplotypes or an integer
-for a single set of haplotypes. Use a value of 1 for female
-haplotypes and a value of 2 for male haplotypes.}
 }
 \value{
 Returns a matrix of SNP haplotypes.

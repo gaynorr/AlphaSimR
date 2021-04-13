@@ -546,9 +546,6 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' @description Retrieves IBD haplotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
