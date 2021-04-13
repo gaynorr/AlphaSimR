@@ -330,19 +330,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getIbdHaplo
-Rcpp::IntegerMatrix getIbdHaplo(const Rcpp::List& ibdRecHist, const Rcpp::IntegerVector& individuals, const Rcpp::IntegerVector& nLociPerChr);
-RcppExport SEXP _AlphaSimR_getIbdHaplo(SEXP ibdRecHistSEXP, SEXP individualsSEXP, SEXP nLociPerChrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type ibdRecHist(ibdRecHistSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type individuals(individualsSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type nLociPerChr(nLociPerChrSEXP);
-    rcpp_result_gen = Rcpp::wrap(getIbdHaplo(ibdRecHist, individuals, nLociPerChr));
-    return rcpp_result_gen;
-END_RCPP
-}
 // writeGeno
 void writeGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, Rcpp::String filePath, int nThreads);
 RcppExport SEXP _AlphaSimR_writeGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP filePathSEXP, SEXP nThreadsSEXP) {
@@ -448,6 +435,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type father(fatherSEXP);
     rcpp_result_gen = Rcpp::wrap(getNonFounderIbd(recHist, mother, father));
+    return rcpp_result_gen;
+END_RCPP
+}
+// createIbdMat
+arma::Mat<int> createIbdMat(arma::field<arma::field<arma::field<arma::Mat<int> > > >& ibd, arma::uvec chr, arma::uvec nLoci, arma::uword ploidy, arma::uword nThreads);
+RcppExport SEXP _AlphaSimR_createIbdMat(SEXP ibdSEXP, SEXP chrSEXP, SEXP nLociSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::field<arma::field<arma::Mat<int> > > >& >::type ibd(ibdSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type chr(chrSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type nLoci(nLociSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createIbdMat(ibd, chr, nLoci, ploidy, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -699,7 +701,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getPaternalGeno", (DL_FUNC) &_AlphaSimR_getPaternalGeno, 4},
     {"_AlphaSimR_getHaplo", (DL_FUNC) &_AlphaSimR_getHaplo, 4},
     {"_AlphaSimR_getOneHaplo", (DL_FUNC) &_AlphaSimR_getOneHaplo, 5},
-    {"_AlphaSimR_getIbdHaplo", (DL_FUNC) &_AlphaSimR_getIbdHaplo, 3},
     {"_AlphaSimR_writeGeno", (DL_FUNC) &_AlphaSimR_writeGeno, 5},
     {"_AlphaSimR_writeOneHaplo", (DL_FUNC) &_AlphaSimR_writeOneHaplo, 6},
     {"_AlphaSimR_calcGenoFreq", (DL_FUNC) &_AlphaSimR_calcGenoFreq, 4},
@@ -708,6 +709,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getHybridGv", (DL_FUNC) &_AlphaSimR_getHybridGv, 6},
     {"_AlphaSimR_getFounderIbd", (DL_FUNC) &_AlphaSimR_getFounderIbd, 2},
     {"_AlphaSimR_getNonFounderIbd", (DL_FUNC) &_AlphaSimR_getNonFounderIbd, 3},
+    {"_AlphaSimR_createIbdMat", (DL_FUNC) &_AlphaSimR_createIbdMat, 5},
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
     {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},

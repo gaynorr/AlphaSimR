@@ -73,10 +73,6 @@ getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo, nThreads) {
     .Call(`_AlphaSimR_getOneHaplo`, geno, lociPerChr, lociLoc, haplo, nThreads)
 }
 
-getIbdHaplo <- function(ibdRecHist, individuals, nLociPerChr) {
-    .Call(`_AlphaSimR_getIbdHaplo`, ibdRecHist, individuals, nLociPerChr)
-}
-
 writeGeno <- function(geno, lociPerChr, lociLoc, filePath, nThreads) {
     invisible(.Call(`_AlphaSimR_writeGeno`, geno, lociPerChr, lociLoc, filePath, nThreads))
 }
@@ -107,6 +103,10 @@ getFounderIbd <- function(founder, nChr) {
 
 getNonFounderIbd <- function(recHist, mother, father) {
     .Call(`_AlphaSimR_getNonFounderIbd`, recHist, mother, father)
+}
+
+createIbdMat <- function(ibd, chr, nLoci, ploidy, nThreads) {
+    .Call(`_AlphaSimR_createIbdMat`, ibd, chr, nLoci, ploidy, nThreads)
 }
 
 cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {

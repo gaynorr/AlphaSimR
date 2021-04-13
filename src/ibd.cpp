@@ -190,3 +190,44 @@ arma::field< //chromosome
       
       return output;
     }
+
+// Calculates IBD for individual using recombination data and parental IBD
+// [[Rcpp::export]]
+arma::Mat<int> createIbdMat(arma::field<arma::field<arma::field<arma::Mat<int> > > >& ibd,
+                            arma::uvec chr,
+                            arma::uvec nLoci,
+                            arma::uword ploidy,
+                            arma::uword nThreads){
+  // R to C++
+  chr -= 1; 
+  arma::uword nChr = chr.n_elem;
+  arma::uword nInd = ibd.n_elem;
+  arma::uword totLoci = accu(nLoci(chr));
+  arma::Mat<int> output(totLoci,nInd*ploidy);
+  
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<nInd; ++i){
+    for(arma::uword j=0; j<ploidy; ++j){
+      arma::uword stop,start=0;
+      for(arma::uword k=0; k<nChr; ++k){
+        arma::uword nSeg = ibd(i)(k)(j).n_rows;
+        if(nSeg>1){
+          // First segments
+          for(arma::uword l=0; l<(nSeg-1); ++l){
+            stop = start + ibd(i)(k)(j)(l+1,1) - ibd(i)(k)(j)(l,1) - 1;
+            output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(k)(j)(l,0));
+            start = stop + 1;
+          }
+        }
+        // Last segment
+        stop = start + nLoci(chr(k)) - ibd(i)(k)(j)(nSeg-1,1);
+        output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(k)(j)(nSeg-1,0));
+        start = stop+1;
+      }
+    }
+  }
+  
+  return output.t();
+}
