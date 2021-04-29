@@ -1,3 +1,9 @@
+# Internal function for calculating mean EBV of populations
+# Used selectPop MegaPop-class
+meanEBV = function(pop){
+  colMeans(pop@ebv)
+}
+
 #' @title Mean genetic values
 #' 
 #' @description Returns the mean genetic values for all traits

@@ -87,8 +87,8 @@ getFam = function(pop,famType){
 #' @description Selects a subset of nInd individuals from a 
 #' population.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -108,8 +108,8 @@ getFam = function(pop,famType){
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -167,8 +167,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @description Selects a subset of full-sib families from a 
 #' population.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -191,8 +191,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -264,8 +264,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' full-sib family within a population. Will return all individuals 
 #' from a full-sib family if it has less than or equal to nInd individuals.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -288,8 +288,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -366,7 +366,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' selfing. The function also provides an option for modeling 
 #' selection as occuring before or after pollination.
 #' 
-#' @param pop an object of \code{\link{Pop-class}}
+#' @param pop and object of \code{\link{Pop-class}} 
+#' or \code{\link{MegaPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
 #' @param probSelf percentage of seeds expected from selfing. 
@@ -384,7 +385,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} 
+#' or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes

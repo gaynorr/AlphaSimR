@@ -34,7 +34,7 @@
 #' chr2 = matrix(chr2,nrow=20,ncol=11)
 #' haplotypes = list(chr1,chr2)
 #' 
-#' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
+#' founderPop = newMapPop(genMap=genMap, haplotypes=haplotypes)
 #' 
 #' @export
 newMapPop = function(genMap, haplotypes, inbred=FALSE,
@@ -131,8 +131,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
   
-  # Note that the seed doesn't really control the random number seed, 
-  # because MaCS is called within an OpenMP loop.
+  # Note that the seed doesn't really control the random number seed. 
+  # This is partially because MaCS is called within an OpenMP loop, but
+  # it is still a problem even with nThreads = 1
   seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
   
   if(is.null(segSites)){

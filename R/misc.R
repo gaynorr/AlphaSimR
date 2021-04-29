@@ -548,6 +548,38 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
   }
 }
 
+#' @title Lose individuals at random
+#' 
+#' @description
+#' Samples individuals at random to remove from the population. 
+#' The user supplies a probability for the individuals to be 
+#' removed from the population.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param p the expected proportion of individuals that will
+#' be lost to attrition.
+#'
+#' @return an object of \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=100, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' #Lose an expected 5% of individuals
+#' pop = attrition(pop, p=0.05)
+#' 
+#' @export
+attrition = function(pop, p){
+  take = as.logical(rbinom(pop@nInd, size=1, prob=1-p))
+  return(pop[take])
+}
+
 # Sample deviates from a standard normal distribution
 # n is the number of deviates
 # u is a deviate from a uniform distribution [0,1]
