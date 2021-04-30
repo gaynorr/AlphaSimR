@@ -16,6 +16,9 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
+  if(nInd<nThreads){
+    nThreads = nInd;
+  }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   int loc1;
   int loc2 = -1;
@@ -60,6 +63,9 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
+  if(nInd<nThreads){
+    nThreads = nInd;
+  }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   int loc1;
   int loc2 = -1;
@@ -104,6 +110,9 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
+  if(nInd<nThreads){
+    nThreads = nInd;
+  }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   int loc1;
   int loc2 = -1;
@@ -149,6 +158,9 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
+  if(nInd<nThreads){
+    nThreads = nInd;
+  }
   arma::Mat<unsigned char> output(nInd*ploidy,arma::sum(lociPerChr));
   int loc1;
   int loc2 = -1;
@@ -195,6 +207,9 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
   
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
+  if(nInd<nThreads){
+    nThreads = nInd;
+  }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr));
   int loc1;
   int loc2 = -1;

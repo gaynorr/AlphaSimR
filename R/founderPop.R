@@ -130,6 +130,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
+  if(nChr<nThreads){
+    nThreads = nChr
+  }
   
   # Note that the seed doesn't really control the random number seed. 
   # This is partially because MaCS is called within an OpenMP loop, but
