@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
 // Calculates genetic parameters for traits with epistasis

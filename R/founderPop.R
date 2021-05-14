@@ -34,10 +34,10 @@
 #' chr2 = matrix(chr2,nrow=20,ncol=11)
 #' haplotypes = list(chr1,chr2)
 #' 
-#' founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
+#' founderPop = newMapPop(genMap=genMap, haplotypes=haplotypes)
 #' 
 #' @export
-newMapPop = function(genMap,haplotypes,inbred=FALSE,
+newMapPop = function(genMap, haplotypes, inbred=FALSE,
                      ploidy=2L){
   stopifnot(length(genMap)==length(haplotypes))
   nRow = lapply(haplotypes,nrow)
@@ -74,8 +74,15 @@ newMapPop = function(genMap,haplotypes,inbred=FALSE,
                         ploidy=ploidy,
                         nLoci=as.integer(segSites[chr]),
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(genMap[chr]),
-                        centromere=max(genMap[[chr]])/2)
+                        genMap=genMap[chr],
+                        centromere=max(genMap[[chr]])/2,
+                        inbred=inbred)
+    if(is.null(names(output[[chr]]@genMap))){
+      names(output[[chr]]@genMap) = as.character(chr)
+    }
+    if(is.null(names(output[[chr]]@genMap[[1]]))){
+      names(output[[chr]]@genMap[[1]]) = paste(chr,1:segSites[chr],sep="_")
+    }
   }
   output = do.call("cChr",output)
   return(output)
@@ -123,9 +130,13 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nInd = as.integer(nInd)
   nChr = as.integer(nChr)
   ploidy = as.integer(ploidy)
+  if(nChr<nThreads){
+    nThreads = nChr
+  }
   
-  # Note that the seed doesn't really control the random number seed, 
-  # because MaCS is called within an OpenMP loop.
+  # Note that the seed doesn't really control the random number seed. 
+  # This is partially because MaCS is called within an OpenMP loop, but
+  # it is still a problem even with nThreads = 1
   seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
   
   if(is.null(segSites)){
@@ -142,27 +153,32 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
     genLen = manualGenLen
   }else{
     species = toupper(species)
-    if(species=="GENERIC"){ #GENERIC----
+    if(species=="GENERIC"){ 
+      #GENERIC----
       genLen = 1.0
       Ne = 100
       speciesParams = "1E8 -t 1E-5 -r 4E-6"
       speciesHist = "-eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0"
-    }else if(species=="CATTLE"){ #CATTLE----
+    }else if(species=="CATTLE"){ 
+      #CATTLE----
       genLen = 1.0
       Ne = 90
       speciesParams = "1E8 -t 9E-6 -r 3.6E-6"
       speciesHist = "-eN 0.011 1.33 -eN 0.019 2.78 -eN 0.036 3.89 -eN 0.053 11.11 -eN 0.069 16.67 -eN 0.431 22.22 -eN 1.264 27.78 -eN 1.819 38.89 -eN 4.875 77.78 -eN 6.542 111.11 -eN 9.319 188.89 -eN 92.097 688.89 -eN 2592.097 688.89"
-    }else if(species=="WHEAT"){ #WHEAT----
+    }else if(species=="WHEAT"){ 
+      #WHEAT----
       genLen = 1.43
       Ne = 50
       speciesParams = "8E8 -t 4E-7 -r 3.6E-7"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 1.00 40 -eN 2.00 60 -eN 3.00 80 -eN 4.00 100 -eN 5.00 120 -eN 10.00 140 -eN 20.00 160 -eN 30.00 180 -eN 40.00 200 -eN 50.00 240 -eN 100.00 320 -eN 200.00 400 -eN 300.00 480 -eN 400.00 560 -eN 500.00 640"
-    }else if(species=="MAIZE"){ #MAIZE----
+    }else if(species=="MAIZE"){ 
+      #MAIZE----
       genLen = 2.0
       Ne = 100
       speciesParams = "2E8 -t 5E-6 -r 4E-6"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100" 
-    }else if(species=="EUROPEAN"){ #EUROPEAN----
+    }else if(species=="EUROPEAN"){ 
+      #EUROPEAN----
       genLen = 1.3
       Ne = 512000
       speciesParams = "1.3E8 -t 0.0483328 -r 0.02054849"
@@ -191,9 +207,10 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nLoci = sapply(macsOut$genMap,length)
   genMap = vector("list",nChr)
   for(i in 1:nChr){
-    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-min(macsOut$genMap[[i]]))
+    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-macsOut$genMap[[i]][1])
+    names(genMap[[i]]) = paste(i,1:length(genMap[[i]]),sep="_")
   }
-  genMap=as.matrix(genMap)
+  names(genMap) = as.character(1:nChr)
   output = new("MapPop",
                nInd=nInd,
                nChr=nChr,
@@ -201,7 +218,8 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
                nLoci=nLoci,
                geno=macsOut$geno,
                genMap=genMap,
-               centromere=sapply(genMap,max)/2)
+               centromere=sapply(genMap,max)/2,
+               inbred=inbred)
   return(output)
 }
 
@@ -253,6 +271,11 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     inbred=FALSE,split=NULL,ploidy=2L,returnCommand=FALSE,
                     nThreads=NULL){
   stopifnot(length(histNe)==length(histGen))
+  # Adjust Ne according to ploidy level
+  Ne = Ne*(ploidy/2L)
+  if(!is.null(histNe)){
+    histNe = histNe*(ploidy/2L)
+  }
   speciesParams = paste(bp,"-t",4*Ne*mutRate,
                         "-r",4*Ne*genLen/bp)
   speciesHist = ""
@@ -345,8 +368,9 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         ploidy=as.integer(ploidy),
                         nLoci=mapPop@nLoci[chr],
                         geno=as.matrix(list(geno)),
-                        genMap=as.matrix(mapPop@genMap[chr]),
-                        centromere=mapPop@centromere[chr])
+                        genMap=mapPop@genMap[chr],
+                        centromere=mapPop@centromere[chr],
+                        inbred=inbred)
   }
   output = do.call("cChr",output)
   return(output)
@@ -387,10 +411,12 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
   geno = vector("list",nChr)
   for(i in 1:nChr){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
+    names(genMap[[i]]) = paste(i, 1:segSites[i], sep="_")
     geno[[i]] = array(sample(as.raw(0:255),
                              nInd*ploidy*nBins[i],
                              replace=TRUE),
                       dim = c(nBins[i],ploidy,nInd))
+    
     if(inbred){
       if(ploidy>1){
         for(j in 2:ploidy){
@@ -399,12 +425,14 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
       }
     }
   }
+  names(genMap) = as.character(1:nChr)
   return(new("MapPop",
              nInd=nInd,
              nChr=nChr,
              ploidy=ploidy,
              nLoci=segSites,
              geno=as.matrix(geno),
-             genMap=as.matrix(genMap),
-             centromere=centromere))
+             genMap=genMap,
+             centromere=centromere,
+             inbred=inbred))
 }

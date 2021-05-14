@@ -40,7 +40,7 @@ hybridCross = function(females, males,
   }
   if((females@ploidy%%2L != 0L) | 
      (males@ploidy%%2L != 0L)){
-    stop("You can not cross aneuploids")
+    stop("You can not cross indiviuals with odd ploidy levels")
   }
   #crossPlan for test cross
   if(length(crossPlan)==1){
@@ -242,7 +242,7 @@ calcGCA = function(pop,use="pheno"){
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
-#' The reps parameter is for convient representation of replicated data. 
+#' The reps parameter is for convenient representation of replicated data. 
 #' It was intended for representation of replicated yield trials in plant 
 #' breeding programs. In this case, varE is set to the plot error and 
 #' reps is set to the number plots per entry. The resulting phenotype 
@@ -271,6 +271,14 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    stopifnot(class(testers)=="Pop", !onlyPheno)
+    pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers, 
+                      use=use, varE=varE, reps=reps, fixEff=fixEff,
+                      p=p, inbred=inbred, onlyPheno=FALSE, 
+                      simParam=simParam)
+    return(pop)
   }
   if(any(duplicated(pop@id))){
     stop("This function does not work with duplicate IDs")
@@ -304,6 +312,103 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
         GCAf = unname(as.matrix(tmp[,-1,drop=F]))
     }
   }
+  if(onlyPheno){
+    return(GCAf)
+  }
+  pop@pheno = GCAf
+  pop@fixEff = rep(as.integer(fixEff),pop@nInd)
+  return(pop)
+}
+
+#' @title Set progeny test as phenotype
+#' 
+#' @description 
+#' Models a progeny test of individuals in 'pop'. Returns 'pop' with a phenotype 
+#' representing the average performance of their progeny. The phenotype is generated
+#' by mating individuals in 'pop' to randomly chosen individuals in testPop a 
+#' number of times equal to 'nMatePerInd'.
+#' 
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param testPop an object of \code{\link{Pop-class}}
+#' @param nMatePerInd number of times an individual in 'pop' is mated to an 
+#' individual in testPop
+#' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
+#' @param varE error variances for phenotype if \code{use="pheno"}. A vector
+#' of length nTraits for independent error or a square matrix of 
+#' dimensions nTraits for correlated errors.
+#' @param reps number of replications for phenotype. See details.
+#' @param fixEff fixed effect to assign to the population. Used 
+#' by genomic selection models only.
+#' @param p the p-value for the environmental covariate 
+#' used by GxE traits. If NULL, a value is
+#' sampled at random.
+#' @param onlyPheno should only the phenotype be returned, see return
+#' @param simParam an object of \code{\link{SimParam}}
+#' 
+#' @details
+#' The reps parameter is for convenient representation of replicated data. 
+#' It was intended for representation of replicated yield trials in plant 
+#' breeding programs. In this case, varE is set to the plot error and 
+#' reps is set to the number plots per entry. The resulting phenotype 
+#' would reflect the mean of all replications.
+#' 
+#' @return Returns an object of \code{\link{Pop-class}} or 
+#' a matrix if onlyPheno=TRUE
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create two populations of 5 individuals
+#' pop1 = newPop(founderPop[1:5], simParam=SP)
+#' pop2 = newPop(founderPop[6:10], simParam=SP)
+#' 
+#' #Set phenotype according to a progeny test
+#' pop3 = setPhenoProgTest(pop1, pop2, use="gv", simParam=SP)
+#' 
+#' @export
+setPhenoProgTest = function(pop,testPop,nMatePerInd=1L,use="pheno",varE=NULL,reps=1,
+                            fixEff=1L,p=NULL,onlyPheno=FALSE,simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    stopifnot(class(testPop)=="Pop", !onlyPheno)
+    pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop, 
+                      nMatePerInd=nMatePerInd, use=use, varE=varE, reps=reps, 
+                      fixEff=fixEff, p=p, onlyPheno=FALSE, 
+                      simParam=simParam)
+    return(pop)
+  }
+  if(any(duplicated(pop@id))){
+    stop("This function does not work with duplicate IDs")
+  }
+  stopifnot(class(pop)=="Pop",class(testPop)=="Pop")
+  use = tolower(use)
+  #Make hybrids
+  tmp = randCross2(females=pop, males=testPop, nCrosses=nInd(pop)*nMatePerInd,
+                   balance=TRUE, simParam=simParam)
+  #Get response
+  if(use=="pheno"){
+    y = setPheno(tmp, varE=varE, p=p, reps=reps,
+                 onlyPheno=TRUE, simParam=simParam)
+  }else if(use=="gv"){
+    y = tmp@gv
+  }else{
+    stop(paste0("use=",use," is not a valid option"))
+  }
+  if(ncol(y)==0){
+    stop(paste("No values for",use))
+  }
+  female = factor(tmp@mother, levels=pop@id)
+  #Calculate simple means
+  tmp = aggregate(y~female, FUN=mean)
+  GCAf = unname(as.matrix(tmp[,-1,drop=F]))
+  
   if(onlyPheno){
     return(GCAf)
   }

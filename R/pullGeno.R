@@ -80,7 +80,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
   }
   snp = simParam$snpChips[[snpChip]] #SNP positions
   
-  #Create a list of SNP postions on the genetic map
+  #Create a list of SNP positions on the genetic map
   #Each list element corresponds to a chromosome
   snpMap = lapply(1:simParam$nChr, function(x){
     if(snp@lociPerChr[x]==0){
@@ -156,7 +156,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
   }
   qtl = simParam$traits[[trait]] #QTL positions
   
-  #Create a list of QTL postions on the genetic map
+  #Create a list of QTL positions on the genetic map
   #Each list element corresponds to a chromosome
   qtlMap = lapply(1:simParam$nChr, function(x){
     if(qtl@lociPerChr[x]==0){
@@ -174,7 +174,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
     }
   })
   
-  #Create a data.frame with QTL postions on genetic map
+  #Create a data.frame with QTL positions on genetic map
   output = data.frame(id=1:qtl@nLoci,
                       chr=rep(1:simParam$nChr,qtl@lociPerChr),
                       site=qtl@lociLoc,
@@ -226,60 +226,6 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   colnames(output) = paste("SNP",1:ncol(output),sep="_")
   return(output)
 }
-
-#' #' @title Pull SNP genotype for multiple snp chips
-#' #'
-#' #' @description Retrieves SNP genotype data for multiple snp chips
-#' #'
-#' #' @param pop an object of \code{\link{Pop-class}}
-#' #' @param chips a vector. For each animal indicates what snp
-#' #' chip to use
-#' #' @param missing What value to use for missing
-#' #' @param simParam an object of \code{\link{SimParam}}
-#' #' 
-#' #' @return Returns a matrix of SNP genotypes.
-#' #' 
-#' #' @export
-#' pullMultipleSnpGeno = function(pop, chips,
-#'                                missing=9, simParam=NULL) {
-#'   if(is.null(simParam)){
-#'     simParam = get("SP",envir=.GlobalEnv)
-#'   }
-#'   # I feel like the next line shouldn't be needed but I don't know
-#'   # enough R! (dmoney)
-#'   missing = as.integer(missing)
-#'   allSnps = numeric(0)
-#'   uniqueChips = unique(chips)
-#'   for (c in uniqueChips){
-#'     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
-#'   }
-#' 
-#'   output = matrix(pop@nInd,length(allSnps),data=missing)
-#'   if(class(pop)=="Pop"){
-#'     rownames(output) = pop@id
-#'   }else{
-#'     rownames(output) = as.character(1:pop@nInd)
-#'   }
-#' 
-#'   for (snpChip in uniqueChips){
-#'     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
-#'     one = getGeno(pop@geno,
-#'                   simParam$snpChips[[snpChip]]@lociPerChr,
-#'                   simParam$snpChips[[snpChip]]@lociLoc,
-#'                   simParam$nThreads)
-#'     one = convToImat(one)
-#'     for (i in 1:pop@nInd){
-#'       if (chips[i] == snpChip) {
-#'         output[i,mask] = one[i,]
-#'         output[i,mask] = one[i,]
-#'       }
-#'     }
-#'   }
-#' 
-#'   colnames(output) = paste("SNP",1:ncol(output),sep="_")
-#' 
-#'   return(output)
-#' }
 
 #' @title Pull QTL genotype
 #'
@@ -354,10 +300,11 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
 #' 
 #' @export
 pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
-  if(class(pop)=="MapPop"){
+  if(class(pop)=="MapPop" | class(pop)=="NamedMapPop"){
     allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
+    map = pop@genMap
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
@@ -365,16 +312,17 @@ pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
     allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
     nThreads = simParam$nThreads
+    map = simParam$genMap
   }
   tmp = selectLoci(chr,lociTot,allLoci)
   output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
   output = convToImat(output)
-  if(class(pop)=="Pop"){
+  if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
     rownames(output) = pop@id
   }else{
     rownames(output) = as.character(1:pop@nInd)
   }
-  colnames(output) = paste("SITE",1:ncol(output),sep="_")
+  colnames(output) = unlist(lapply(map[chr], names))
   return(output)
 }
 
@@ -387,7 +335,7 @@ pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
 #' chip's haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotyes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -443,89 +391,6 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   return(output)
 }
 
-#' #' @title Pull SNP haplotypes for multiple chips
-#' #'
-#' #' @description Retrieves SNP haplotype data for multiple snp
-#' #'
-#' #' @param pop an object of \code{\link{Pop-class}}
-#' #' @param chips a vector. For each animal indicates what snp
-#' #' chip to use
-#' #' @param haplo either "all" for all haplotypes or an integer
-#' #' for a single set of haplotypes. Use a value of 1 for female
-#' #' haplotyes and a value of 2 for male haplotypes.
-#' #' @param missing What value to use for missing
-#' #' @param simParam an object of \code{\link{SimParam}}
-#' #'
-#' #' @return Returns a matrix of SNP haplotypes.
-#' #' 
-#' #' @export
-#' pullMultipleSnpHaplo = function(pop, chips, haplo="all",
-#'                                 missing=9, simParam=NULL){
-#'   if(is.null(simParam)){
-#'     simParam = get("SP",envir=.GlobalEnv)
-#'   }
-#'   # I feel like the next line shouldn't be needed but I don't know
-#'   # enough R! (dmoney)
-#'   missing = as.integer(missing)
-#'   allSnps = numeric(0)
-#'   uniqueChips = unique(chips)
-#'   for (c in uniqueChips){
-#'     allSnps = sort(union(allSnps,simParam$snpChips[[c]]@lociLoc))
-#'   }
-#' 
-#'   if (haplo == "all") {
-#'     output = matrix(pop@nInd*2,length(allSnps),data=missing)
-#'     if(class(pop)=="Pop"){
-#'       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-#'                                rep(1:pop@ploidy,pop@nInd),sep="_")
-#'     }else{
-#'       rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-#'                                rep(1:pop@ploidy,pop@nInd),sep="_")
-#'     }
-#'   }else{
-#'     output = matrix(pop@nInd,length(allSnps),data=missing)
-#'     if(class(pop)=="Pop"){
-#'       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-#'     }else{
-#'       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-#'     }
-#'   }
-#'   for (snpChip in uniqueChips){
-#'     mask = allSnps %in% simParam$snpChips[[snpChip]]@lociLoc
-#'     if (haplo == "all") {
-#'       one = getHaplo(pop@geno,
-#'                      simParam$snpChips[[snpChip]]@lociPerChr,
-#'                      simParam$snpChips[[snpChip]]@lociLoc,
-#'                      simParam$nThreads)
-#'       one = convToImat(one)
-#'       for (i in 1:pop@nInd){
-#'         if (chips[i] == snpChip) {
-#'           output[i*2-1,mask] = one[i*2-1,]
-#'           output[i*2,mask] = one[i*2,]
-#'         }
-#'       }
-#'     }
-#'     else {
-#'       one = getOneHaplo(pop@geno,
-#'                         simParam$snpChips[[snpChip]]@lociPerChr,
-#'                         simParam$snpChips[[snpChip]]@lociLoc,
-#'                         as.integer(haplo),
-#'                         simParam$nThreads)
-#'       one = convToImat(one)
-#'       for (i in 1:pop@nInd){
-#'         if (chips[i] == snpChip) {
-#'           output[i,mask] = one[i,]
-#'           output[i,mask] = one[i,]
-#'         }
-#'       }
-#'     }
-#'   }
-#' 
-#'   colnames(output) = paste("SNP",1:ncol(output),sep="_")
-#' 
-#'   return(output)
-#' }
-
 #' @title Pull QTL haplotypes
 #'
 #' @description Retrieves QTL haplotype data
@@ -535,7 +400,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' QTL haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotyes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -600,7 +465,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' \code{\link{RawPop-class}}
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotyes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -623,10 +488,11 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all",
                             chr=NULL, simParam=NULL){
-  if(class(pop)=="MapPop"){
+  if(class(pop)=="MapPop" | class(pop)=="NamedMapPop"){
     allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
+    map = pop@genMap
   }else{
     if(is.null(simParam)){
       simParam = get("SP",envir=.GlobalEnv)
@@ -634,11 +500,14 @@ pullSegSiteHaplo = function(pop, haplo="all",
     allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
     nThreads = simParam$nThreads
+    map = simParam$genMap
   }
   if(!is.null(chr)){
     tmp = selectLoci(chr,lociTot,allLoci)
     lociTot = tmp$lociPerChr
     allLoci = tmp$lociLoc
+  }else{
+    chr = 1:pop@nChr
   }
   if(haplo=="all"){
     output = getHaplo(pop@geno,
@@ -646,7 +515,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
                       allLoci,
                       nThreads)
     output = convToImat(output)
-    if(class(pop)=="Pop"){
+    if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }else{
@@ -661,42 +530,27 @@ pullSegSiteHaplo = function(pop, haplo="all",
                          as.integer(haplo),
                          nThreads)
     output = convToImat(output)
-    if(class(pop)=="Pop"){
+    if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
     }else{
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
     }
   }
-  colnames(output) = paste("SITE",1:ncol(output),sep="_")
+  colnames(output) = unlist(lapply(map[chr], names))
   return(output)
 }
 
-#' @title Pull Identity By Descent (IBD) haplotypes
-#' 
-#' @description 
-#' Retrieves Identity By Descent (IBD) haplotype data
+
+#' @title Pull IBD haplotypes
 #'
-#' @param pop an object of \code{\link{Pop-class}} or 
-#' \code{\link{RawPop-class}}. If NULL, haplotypes for the whole
-#' ancestral pedigree are retreived. Otherwise, haplotypes just for
-#' the \code{pop} individuals are retreived. In both cases the base
-#' population is controlled by \code{pedigree}.
-#' @param chr a vector of chromosomes to retrieve. If NULL, 
-#' all chromosomes are retrieved.
-#' @param snpChip an integer. Indicates which SNP array loci
-#' are retrieved. If NULL, all sites are retrieved.
-#' @param pedigree a matrix with ancestral pedigree to set a base
-#' population. It should be of the same form as \code{simParam$pedigree} 
-#' (see \code{setTrackPed} in \code{\link{SimParam}}), i.e., two columns 
-#' (mother and father) and the same number of rows as 
-#' \code{simParam$pedigree}.Base population can be set by setting 
-#' parents as 0. If NULL, pedigree from \code{\link{SimParam}} is taken.
-#' 
+#' @description Retrieves IBD haplotype data
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param chr a vector of chromosomes to retrieve. If NULL,
+#' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
-#' @return Returns a matrix of haplotypes with Identity By Descent
-#' (IBD) coding of locus alleles. The matrix colnames reflect whether
-#' all segregagting loci (sites) are retreived or only SNP array loci.
+#' @return Returns a matrix of SNP haplotypes.
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -713,83 +567,34 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' pullIbdHaplo(pop, simParam=SP)
 #' 
 #' @export
-pullIbdHaplo = function(pop = NULL, chr = NULL, snpChip = NULL, pedigree = NULL, simParam = NULL) {
-  
-  # ---- Setup -----
-  
-  if (is.null(simParam)) {
-    simParam = get(x = "SP", envir = .GlobalEnv)
-  }
-  if (pop@ploidy != 2L) {
-    stop("pullIbdHaplo() works (currently) only with diploids!")
-  }
-  if (!simParam$isTrackRec) {
-    stop("To use pullIbdHaplo(), simParam must hold ancestral recombination data! See ?SimParam_setTrackRec")
-  }
-  if (is.null(pedigree) & !simParam$isTrackPed) {
-    stop("To use pullIbdHaplo() with pedigree = NULL, simParam must hold ancestral pedigree data! See ?SimParam_setTrackPed")
-  }
-  lociLoc = c(sapply(X = simParam$segSites, FUN = function(x) 1L:x))
-  lociPerChr = simParam$segSites
-  if (is.null(chr)) {
-    chr = 1L:simParam$nChr
-  } else {
-    tmp = selectLoci(chr = chr, inLociPerChr = lociPerChr, inLociLoc = lociLoc)
-    lociLoc = tmp$lociLoc
-    lociPerChr = tmp$lociPerChr
-  }
-  if (is.null(pedigree)) {
-    pedigree = simParam$pedigree
-  } else {
-    if (nrow(pedigree) != length(simParam$recHist)) {
-      stop("pedigree must have the same number of rows as simParam$recHist!")
-    }
+pullIbdHaplo = function(pop, chr=NULL, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
   }
   
-  # ---- Get IBD recombinations -----
-  
-  ibdRecHist = getIbdRecHist(recHist     = simParam$recHist,
-                             pedigree    = pedigree,
-                             nLociPerChr = lociPerChr)$ibdRecHist
-
-  # ---- Get IBD haplotypes -----
-  
-  if (!is.null(pop)) {
-    nInd = pop@nInd
-    individuals = as.integer(pop@id)
-  } else {
-    nInd = nrow(pedigree)
-    individuals = 1L:nInd
+  if(!simParam$isTrackRec){
+    stop(
+      "pullIbdHaplo can only be used with the trackRec option, see trackRec in ?SimParam"
+      )
   }
-  output = getIbdHaplo(ibdRecHist  = ibdRecHist,
-                       individuals = individuals,
-                       nLociPerChr = lociPerChr)
-  rownames(output) = paste(rep(x = individuals,        each  = pop@ploidy),
-                           rep(x = 1L:pop@ploidy, times = nInd), sep = "_")
   
-  # ---- Subset loci -----
-  
-  if (!is.null(snpChip)) {
-    Sel = integer(length = sum(simParam$snpChips[[snpChip]]@lociPerChr[chr]))
-    ArrayEnd = 0L
-    ChrStart = 0L
-    for (Chr in chr) {
-      # Chr = 1L
-      # Chr = 2L
-      Tmp = selectLoci(chr = Chr,
-                       inLociPerChr = simParam$snpChips[[snpChip]]@lociPerChr,
-                       inLociLoc    = simParam$snpChips[[snpChip]]@lociLoc)
-      ArrayStart = ArrayEnd + 1L
-      ArrayEnd   = ArrayStart + Tmp$lociPerChr[Chr] - 1L
-      # cat(ArrayStart, ArrayEnd, "\n")
-      Sel[ArrayStart:ArrayEnd] = ChrStart + Tmp$lociLoc
-      ChrStart = ChrStart + lociPerChr[Chr]
-    }
-    output = output[, Sel]
-    colnames(output) = paste("SNP",  1L:ncol(output), sep = "_")
-  } else {
-    colnames(output) = paste("SITE", 1L:ncol(output), sep = "_")
+  if(is.null(chr)){
+    chr = 1:pop@nChr
   }
+  
+  # Retrieve IBD data
+  ibd = simParam$ibdHaplo(pop@iid)
+  
+  # Fill in output matrix
+  output = createIbdMat(ibd=ibd, chr=chr, 
+                        nLoci=pop@nLoci, 
+                        ploidy=pop@ploidy,
+                        nThreads=simParam$nThreads)
+  
+  rownames(output) = paste(rep(pop@id,each=pop@ploidy),
+                           rep(1:pop@ploidy,pop@nInd),sep="_")
+  
+  colnames(output) = unlist(lapply(simParam$genMap[chr], names))
   
   return(output)
 }

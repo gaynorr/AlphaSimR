@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 #include <iostream>
 #include <fstream>

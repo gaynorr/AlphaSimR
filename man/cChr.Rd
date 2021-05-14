@@ -7,13 +7,15 @@
 cChr(...)
 }
 \arguments{
-\item{...}{\code{\link{MapPop-class}} objects to be combined}
+\item{...}{\code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}} 
+objects to be combined}
 }
 \value{
 Returns an object of \code{\link{MapPop-class}}
 }
 \description{
-Merges the chromosomes of multiple \code{\link{MapPop-class}} objects. 
+Merges the chromosomes of multiple \code{\link{MapPop-class}} or 
+\code{\link{NamedMapPop-class}} objects. 
 Each MapPop must have the same number of chromosomes
 }
 \examples{

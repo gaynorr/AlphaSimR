@@ -1,3 +1,16 @@
+Changes in version 1.0.0
+  
+  AlphaSimR manuscript has been published in G3 (citation added)
+  
+  New features
+    -changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
+    -change default interfernce parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)
+    -new internal id (iid) that allows user to freely change id slot in populations
+    -runMacs2 now adjusts Ne for autopolyploids
+    -parent populations are now passed to finalizePop
+    -check added that throws an error when use of discontinued "gender" argument is detected
+    -added experimental MegaPop-class
+
 Changes in version 0.13.0
 
   New features

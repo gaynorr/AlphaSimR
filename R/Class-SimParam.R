@@ -29,11 +29,15 @@ SimParam = R6Class(
     #' Currently does nothing and should only be changed by expert users.
     finalizePop = "function",
     
+    #' @field allowEmptyPop if true, population arguments with nInd=0 will 
+    #' return an empty population without a warning instead of an error.
+    allowEmptyPop = "logical",
+    
     #' @description Starts the process of building a new simulation 
     #' by creating a new SimParam object and assigning a founder 
     #' population to the class. It is recommended that you save the 
     #' object with the name "SP", because subsequent functions will 
-    #' check your global enviroment for an object of this name if 
+    #' check your global environment for an object of this name if 
     #' their simParam arguments are NULL. This allows you to call 
     #' these functions without explicitly supplying a simParam 
     #' argument with every call.
@@ -51,13 +55,15 @@ SimParam = R6Class(
       
       # Public items
       self$nThreads = getNumThreads()
-      self$v = 1 # No interference
+      self$v = 2.6 # Kosambi
+      self$p = 0 # Single pathway gamma model
       self$quadProb = 0 # No quadrivalent pairing
       self$snpChips = list()
       self$invalidQtl = vector("list",founderPop@nChr) # All eligible
       self$invalidSnp = vector("list",founderPop@nChr) # All eligible
       self$founderPop = founderPop
-      self$finalizePop = function(pop){return(pop)}
+      self$finalizePop = function(pop, ...){return(pop)}
+      self$allowEmptyPop = FALSE # Empty populations trigger an error
       
       # Private items
       private$.restrSites = TRUE
@@ -78,6 +84,10 @@ SimParam = R6Class(
       private$.varG = numeric()
       private$.varE = numeric()
       private$.version = packageDescription("AlphaSimR")$Version 
+      private$.lastHaplo = 0L
+      private$.hasHap = logical()
+      private$.hap = list()
+      private$.isFounder = logical()
       
       invisible(self)
     },
@@ -257,7 +267,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble SNPs to a SNP chip
+    #' Randomly assigns eligible SNPs to a SNP chip
     #' 
     #' @param nSnpPerChr number of SNPs per chromosome. 
     #' Can be a single value or nChr values.
@@ -328,7 +338,7 @@ SimParam = R6Class(
     ### Traits (public) ----
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive traits. 
+    #' Randomly assigns eligible QTLs for one or more additive traits. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated additive effects.
     #' 
@@ -382,7 +392,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more traits with dominance. 
+    #' Randomly assigns eligible QTLs for one or more traits with dominance. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -458,7 +468,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one ore more additive GxE traits. 
+    #' Randomly assigns eligible QTLs for one ore more additive GxE traits. 
     #' If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -548,7 +558,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for a trait with dominance and GxE. 
+    #' Randomly assigns eligible QTLs for a trait with dominance and GxE. 
     #' 
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
     #' value or nChr values.
@@ -659,7 +669,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive and epistasis 
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
     #' traits. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated additive effects.
     #' 
@@ -734,7 +744,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more traits with dominance and 
+    #' Randomly assigns eligible QTLs for one or more traits with dominance and 
     #' epistasis. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -826,7 +836,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for one or more additive and epistasis 
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
     #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
     #' with correlated effects.
     #' 
@@ -942,7 +952,7 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Randomly assigns eligble QTLs for a trait with dominance, 
+    #' Randomly assigns eligible QTLs for a trait with dominance, 
     #' epistasis and GxE. 
     #' 
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
@@ -1323,8 +1333,12 @@ SimParam = R6Class(
     #' recombination. A value of 1 indicates no crossover interference 
     #' (e.g. Haldane mapping function). A value of 2.6 approximates the 
     #' degree of crossover interference implied by the Kosambi mapping 
-    #' function. (default is 1)
+    #' function. (default is 2.6)
     v = "numeric",
+    
+    #' @field p the proportion of crossovers coming from a non-interfering
+    #' pathway. (default is 0)
+    p = "numeric",
     
     #' @field quadProb the probability of quadrivalent pairing in an 
     #' autopolyploid. (default is 0)
@@ -1351,19 +1365,15 @@ SimParam = R6Class(
       private$.sepMap = TRUE
       feSc = 2/(1/femaleRatio+1)
       maSc = 2/(femaleRatio+1)
-      private$.femaleMap = as.matrix(
-        lapply(genMap,
-               function(x){
-                 feSc*x
-               })
-      )
+      private$.femaleMap = lapply(genMap,
+                                  function(x){
+                                    feSc*x
+                                  })
       private$.femaleCentromere = feSc*private$.femaleCentromere
-      private$.maleMap = as.matrix(
-        lapply(genMap,
-               function(x){
-                 maSc*x
-               })
-      )
+      private$.maleMap = lapply(genMap,
+                                function(x){
+                                  maSc*x
+                                })
       private$.maleCentromere = maSc*private$.maleCentromere
       invisible(self)
     },
@@ -1450,14 +1460,108 @@ SimParam = R6Class(
     
     #' @description For internal use only.
     #' 
+    #' @param lastId ID of last individual
+    #' @param id the name of each individual
+    #' @param mother vector of mother iids
+    #' @param father vector of father iids
+    #' @param isDH indicator for DH lines
     #' @param hist new recombination history
-    addToRec = function(hist){
-      stopifnot(is.list(hist))
-      if(!private$.isTrackRec){
-        stop("isTrackRec is FALSE")
+    #' @param ploidy ploidy level
+    addToRec = function(lastId,id,mother,father,isDH,
+                        hist,ploidy){
+      nNewInd = lastId-private$.lastId
+      stopifnot(nNewInd>0)
+      if(length(isDH)==1) isDH = rep(isDH,nNewInd)
+      mother = as.integer(mother)
+      father = as.integer(father)
+      isDH = as.integer(isDH)
+      stopifnot(length(mother)==nNewInd,
+                length(father)==nNewInd,
+                length(isDH)==nNewInd)
+      tmp = cbind(mother,father,isDH)
+      rownames(tmp) = id
+      if(is.null(hist)){
+        newRecHist = vector("list",nNewInd)
+        tmpLastHaplo = private$.lastHaplo
+        if(all(isDH==1L)){
+          for(i in 1:nNewInd){
+            tmpLastHaplo = tmpLastHaplo + 1L
+            newRecHist[[i]] = rep(tmpLastHaplo, ploidy)
+          }
+        }else{
+          for(i in 1:nNewInd){
+            newRecHist[[i]] = (tmpLastHaplo+1L):(tmpLastHaplo+ploidy)
+            tmpLastHaplo = tmpLastHaplo + ploidy
+          }
+        }
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
+        private$.recHist = c(private$.recHist, newRecHist)
+        private$.lastHaplo = tmpLastHaplo
+      }else{
+        # Add hist to recombination history
+        private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
+        private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
+        private$.recHist = c(private$.recHist, hist)
       }
-      private$.recHist = c(private$.recHist,hist)
+      private$.pedigree = rbind(private$.pedigree, tmp)
+      private$.lastId = lastId
+      
       invisible(self)
+    },
+    
+    #' @description For internal use only.
+    #' 
+    #' @param iid internal ID
+    ibdHaplo = function(iid){
+      if(all(private$.hasHap[iid])){
+        # Return relevant haplotypes
+        return(private$.hap[as.character(iid)])
+      }
+      
+      ## Fill in missing haplotypes
+      
+      # Determine unique iid for needed individuals without hap data
+      uid = list()
+      i = 1L
+      uid[[i]] = unique(iid)
+      while(any(uid[[i]]!=0L)){
+        i = i+1L
+        uid[[i]] = unique(c(private$.pedigree[uid[[i-1]],1:2]))
+      }
+      uid = unique(unlist(uid))
+      uid = sort(uid)[-1] # First one is always zero
+      uid = uid[!private$.hasHap[uid]]
+      
+      # Split uid by founder and non-founder
+      fuid = uid[private$.isFounder[uid]]
+      nfuid = uid[!private$.isFounder[uid]]
+      
+      # Set hap for founders
+      if(length(fuid)>0){
+        nChr = length(private$.femaleMap)
+        newHap = getFounderIbd(founder=private$.recHist[fuid], 
+                               nChr=nChr)
+        names(newHap) = as.character(fuid)
+        private$.hap = c(private$.hap, newHap)
+        private$.hasHap[fuid] = TRUE
+      }
+      
+      # Set hap for non-founders
+      if(length(nfuid)>0){
+        for(id in nfuid){
+          mother = as.character(private$.pedigree[id,1])
+          father = as.character(private$.pedigree[id,2])
+          private$.hap[[as.character(id)]] = 
+            getNonFounderIbd(recHist=private$.recHist[[id ]],
+                             mother=private$.hap[[mother]],
+                             father=private$.hap[[father]])
+          private$.hasHap[id] = TRUE
+        }
+      }
+      
+      # Return relevant haplotypes
+      return(private$.hap[as.character(iid)])
     },
     
     #' @description For internal use only.
@@ -1473,13 +1577,11 @@ SimParam = R6Class(
     #' @description For internal use only.
     #' 
     #' @param lastId ID of last individual
-    #' @param mother vector of mother IDs
-    #' @param father vector of father IDs
-    #' @param isDH vector of DH indicators
-    addToPed = function(lastId,mother,father,isDH){
-      if(!private$.isTrackPed){
-        stop("isTrackPed is FALSE")
-      }
+    #' @param id the name of each individual
+    #' @param mother vector of mother iids
+    #' @param father vector of father iids
+    #' @param isDH indicator for DH lines
+    addToPed = function(lastId,id,mother,father,isDH){
       nNewInd = lastId-private$.lastId
       stopifnot(nNewInd>0)
       if(length(isDH)==1) isDH = rep(isDH,nNewInd)
@@ -1489,17 +1591,8 @@ SimParam = R6Class(
       stopifnot(length(mother)==nNewInd,
                 length(father)==nNewInd,
                 length(isDH)==nNewInd)
-      if(private$.isTrackRec){
-        if(length(private$.recHist)==lastId){
-          #Recombination history already added
-        }else if(length(private$.recHist)==private$.lastId){
-          #No recombination history, assume founder individuals
-          private$.recHist = c(private$.recHist,vector("list",nNewInd))
-        }else{
-          stop("Unexpected outcome in recombination tracking")
-        }
-      }
       tmp = cbind(mother,father,isDH)
+      rownames(tmp) = id
       private$.pedigree = rbind(private$.pedigree,tmp)
       private$.lastId = lastId
       invisible(self)
@@ -1513,8 +1606,8 @@ SimParam = R6Class(
     .traits="list",
     .segSites="integer",
     .sexes="character",
-    .femaleMap="matrix",
-    .maleMap="matrix",
+    .femaleMap="list",
+    .maleMap="list",
     .sepMap="logical",
     .femaleCentromere="numeric",
     .maleCentromere="numeric",
@@ -1527,6 +1620,10 @@ SimParam = R6Class(
     .varG="numeric",
     .varE="numeric",
     .version="character",
+    .lastHaplo="integer",
+    .hasHap="logical",
+    .hap="list",
+    .isFounder="logical",
     
     .isRunning = function(){
       if(private$.lastId==0L){
@@ -1796,6 +1893,15 @@ SimParam = R6Class(
         private$.recHist
       }else{
         stop("`$recHist` is read only",call.=FALSE)
+      }
+    },
+    
+    #' @field haplotypes list of computed IBD haplotypes
+    haplotypes=function(value){
+      if(missing(value)){
+        private$.hap
+      }else{
+        stop("`$haplotypes` is read only",call.=FALSE)
       }
     },
     

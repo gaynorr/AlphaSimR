@@ -49,13 +49,18 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
 }
 
 # Returns a vector of individuals in a population with the required sex
-checkSexes = function(pop,sex,simParam){
+checkSexes = function(pop,sex,simParam,...){
   sex = toupper(sex)
   eligible = 1:pop@nInd
   if(simParam$sexes=="no"){
     return(eligible)
   }else{
     if(sex=="B"){
+      # Check in gender is incorrectly being used
+      args = list(...)
+      if(any(names(args)=="gender")){
+        stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
+      }
       return(eligible)
     }else{
       return(eligible[pop@sex%in%sex])
@@ -82,8 +87,8 @@ getFam = function(pop,famType){
 #' @description Selects a subset of nInd individuals from a 
 #' population.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -103,8 +108,8 @@ getFam = function(pop,famType){
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -128,7 +133,15 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
+                      use=use, sex=sex, selectTop=selectTop, 
+                      returnPop=TRUE, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
+  }
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -154,8 +167,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @description Selects a subset of full-sib families from a 
 #' population.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -178,8 +191,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -206,7 +219,15 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
+                      use=use, sex=sex, famType=famType, 
+                      selectTop=selectTop, returnPop=TRUE, 
+                      candidates=NULL, simParam=simParam, ...)
+    return(pop)
+  }
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -243,8 +264,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' full-sib family within a population. Will return all individuals 
 #' from a full-sib family if it has less than or equal to nInd individuals.
 #' 
-#' @param pop and object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @param pop and object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating 
 #' a single trait or a function returning a vector of length nInd.
@@ -267,8 +288,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
-#' \code{\link{HybridPop-class}}
+#' @return Returns an object of \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -295,7 +316,15 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam)
+  if(class(pop)=="MegaPop"){
+    stopifnot(returnPop, is.null(candidates))
+    pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
+                      use=use, sex=sex, selectTop=selectTop, 
+                      returnPop=TRUE, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
+  }
+  eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     eligible = eligible[eligible%in%candidates]
   }
@@ -337,7 +366,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' selfing. The function also provides an option for modeling 
 #' selection as occuring before or after pollination.
 #' 
-#' @param pop an object of \code{\link{Pop-class}}
+#' @param pop and object of \code{\link{Pop-class}} 
+#' or \code{\link{MegaPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
 #' @param probSelf percentage of seeds expected from selfing. 
@@ -355,7 +385,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param ... additional arguments if using a function for 
 #' trait
 #' 
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} 
+#' or \code{\link{MegaPop-class}}
 #' 
 #' @examples 
 #' #Create founder haplotypes
@@ -380,6 +411,14 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     candidates=NULL,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(class(pop)=="MegaPop"){
+    stopifnot(is.null(candidates))
+    pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
+                      pollenControl=pollenControl, trait=trait, use=use,
+                      selectTop=selectTop, candidates=NULL, 
+                      simParam=simParam, ...)
+    return(pop)
   }
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
                      use=use,sex="B",selectTop=selectTop,

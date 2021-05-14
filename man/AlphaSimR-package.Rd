@@ -33,14 +33,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Chris Gaynor \email{gaynor.robert@hotmail.com} (\href{https://orcid.org/0000-0003-0558-6656}{ORCID})
 
-Authors:
-\itemize{
-  \item Gregor Gorjanc (\href{https://orcid.org/0000-0001-8008-2787}{ORCID})
-  \item John Hickey (\href{https://orcid.org/0000-0001-5675-3974}{ORCID})
-}
-
 Other contributors:
 \itemize{
+  \item Gregor Gorjanc (\href{https://orcid.org/0000-0001-8008-2787}{ORCID}) [contributor]
+  \item John Hickey (\href{https://orcid.org/0000-0001-5675-3974}{ORCID}) [contributor]
   \item Daniel Money (\href{https://orcid.org/0000-0001-5151-3648}{ORCID}) [contributor]
   \item David Wilson [contributor]
 }

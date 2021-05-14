@@ -1,10 +1,31 @@
 # README #
 
-This package is currently under development. A manuscript detailing its use and the theory behind its operation is has been accepted. You can view an advanced copy of the manuscript here: https://academic.oup.com/g3journal/advance-article/doi/10.1093/g3journal/jkaa017/6025179
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
+[![](http://cranlogs.r-pkg.org/badges/grand-total/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
+[![](http://cranlogs.r-pkg.org/badges/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
 
-'AlphaSimR' is available on both CRAN and Github. The most recent version will be on Github and it can be downloaded and installed using the 'devtools' library and the following command:
-devtools::install_github("gaynorr/AlphaSimR")
 
-Installing from Github requires the following libraries: 'R6', 'Rcpp', 'RcppArmadillo', and 'BH'.
+The AlphaSimR website is currently under development and has only been made available for testing at this time. This page will change when the website is ready for widespread use.
 
+## Publication
+
+Gaynor, R. Chris, Gregor Gorjanc, and John M. Hickey. 2021. AlphaSimR: an R package for breeding program simulations. G3 Gene|Genomes|Genetics 11(2):jkaa017. https://doi.org/10.1093/g3journal/jkaa017.
+
+## Download
+
+[AlphaSimR](https://cran.r-project.org/package=AlphaSimR) is available on CRAN.
+
+To install use:
+
+    install.packages('AlphaSimR')
+
+The development version of AlphaSimR (potentially unstable) can be accessed from the devel branch on GitHub.
+
+To install use:
+
+    devtools::install_github(repo="gaynorr/AlphaSimR@devel")
+
+To install with vignettes use:
+
+    devtools::install_github(repo="gaynorr/AlphaSimR@devel", build_vignettes=TRUE)
 

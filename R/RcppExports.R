@@ -73,10 +73,6 @@ getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo, nThreads) {
     .Call(`_AlphaSimR_getOneHaplo`, geno, lociPerChr, lociLoc, haplo, nThreads)
 }
 
-getIbdHaplo <- function(ibdRecHist, individuals, nLociPerChr) {
-    .Call(`_AlphaSimR_getIbdHaplo`, ibdRecHist, individuals, nLociPerChr)
-}
-
 writeGeno <- function(geno, lociPerChr, lociLoc, filePath, nThreads) {
     invisible(.Call(`_AlphaSimR_writeGeno`, geno, lociPerChr, lociLoc, filePath, nThreads))
 }
@@ -101,20 +97,28 @@ getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThre
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, motherCentromere, fatherCentromere, quadProb, nThreads)
+getFounderIbd <- function(founder, nChr) {
+    .Call(`_AlphaSimR_getFounderIbd`, founder, nChr)
 }
 
-createDH2 <- function(geno, nDH, genMap, v, trackRec, nThreads) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, trackRec, nThreads)
+getNonFounderIbd <- function(recHist, mother, father) {
+    .Call(`_AlphaSimR_getNonFounderIbd`, recHist, mother, father)
 }
 
-createReducedGenome <- function(geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, trackRec, ploidy, centromere, quadProb, nThreads)
+createIbdMat <- function(ibd, chr, nLoci, ploidy, nThreads) {
+    .Call(`_AlphaSimR_createIbdMat`, ibd, chr, nLoci, ploidy, nThreads)
 }
 
-getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {
-    .Call(`_AlphaSimR_getIbdRecHist`, recHist, pedigree, nLociPerChr)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
+}
+
+createDH2 <- function(geno, nDH, genMap, v, p, trackRec, nThreads) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, p, trackRec, nThreads)
+}
+
+createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
 }
 
 #' @title Population variance

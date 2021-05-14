@@ -19,7 +19,8 @@ selectOP(
 )
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}}}
+\item{pop}{and object of \code{\link{Pop-class}} 
+or \code{\link{MegaPop-class}}}
 
 \item{nInd}{the number of plants to select}
 
@@ -48,7 +49,8 @@ Selects lowest values if false.}
 trait}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} 
+or \code{\link{MegaPop-class}}
 }
 \description{
 This function models selection in an open pollinating 

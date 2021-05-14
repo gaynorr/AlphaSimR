@@ -19,8 +19,8 @@ selectFam(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}} or 
-\code{\link{HybridPop-class}}}
+\item{pop}{and object of \code{\link{Pop-class}}, 
+\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}}
 
 \item{nFam}{the number of families to select}
 
@@ -54,8 +54,8 @@ individuals is returned.}
 trait}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
-\code{\link{HybridPop-class}}
+Returns an object of \code{\link{Pop-class}}, 
+\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
 }
 \description{
 Selects a subset of full-sib families from a 

@@ -45,6 +45,6 @@ chr2 = sample(x=0:1,size=20*11,replace=TRUE)
 chr2 = matrix(chr2,nrow=20,ncol=11)
 haplotypes = list(chr1,chr2)
 
-founderPop = newMapPop(genMap=genMap,haplotypes=haplotypes)
+founderPop = newMapPop(genMap=genMap, haplotypes=haplotypes)
 
 }

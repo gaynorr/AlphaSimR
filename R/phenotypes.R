@@ -97,7 +97,7 @@ calcPheno = function(pop,varE,reps,p,simParam){
 #' for each trait or supply a matrix that specify the covariance of 
 #' the errors.
 #' 
-#' The reps parameter is for convient representation of replicated data. 
+#' The reps parameter is for convenient representation of replicated data. 
 #' It is intended to represent replicated yield trials in plant 
 #' breeding programs. In this case, varE is set to the plot error and 
 #' reps is set to the number of plots per entry. The resulting phenotype 
@@ -127,6 +127,14 @@ setPheno = function(pop,h2=NULL,H2=NULL,varE=NULL,reps=1,
                     simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  
+  if(class(pop)=="MegaPop"){
+    stopifnot(!onlyPheno)
+    pop@pops = lapply(pop@pops, setPheno, h2=h2, H2=H2,
+                      varE=varE, reps=reps, fixEff=fixEff, 
+                      p=p, simParam=simParam)
+    return(pop)
   }
   
   # Calculate varE if using h2 or H2

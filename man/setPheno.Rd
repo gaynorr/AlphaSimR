@@ -72,7 +72,7 @@ directly. The user may supply a vector describing the error variance
 for each trait or supply a matrix that specify the covariance of 
 the errors.
 
-The reps parameter is for convient representation of replicated data. 
+The reps parameter is for convenient representation of replicated data. 
 It is intended to represent replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
 reps is set to the number of plots per entry. The resulting phenotype 

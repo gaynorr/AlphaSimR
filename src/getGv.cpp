@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include "alphasimr.h"
 
 // Calculates genetic values for genomic predictions using parental origin

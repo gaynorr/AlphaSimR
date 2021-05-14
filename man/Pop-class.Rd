@@ -41,6 +41,8 @@ phenotypes, and pedigrees.
 \describe{
 \item{\code{id}}{an individual's identifier}
 
+\item{\code{iid}}{an individual's internal identifier}
+
 \item{\code{mother}}{the identifier of the individual's mother}
 
 \item{\code{father}}{the identifier of the individual's father}
@@ -51,7 +53,7 @@ and "H" for hermaphrodites}
 \item{\code{nTraits}}{number of traits}
 
 \item{\code{gv}}{matrix of genetic values. When using GxE traits,
-gv reflects gv when w=0. Dimensions are nInd by nTraits.}
+gv reflects gv when p=0.5. Dimensions are nInd by nTraits.}
 
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are
 nInd by nTraits.}

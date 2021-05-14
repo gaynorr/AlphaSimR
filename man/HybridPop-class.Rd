@@ -43,7 +43,7 @@ Memory is saved by not storing genotypic data.
 \item{\code{nTraits}}{number of traits}
 
 \item{\code{gv}}{matrix of genetic values. When using GxE traits,
-gv reflects gv when w=0. Dimensions are nInd by nTraits.}
+gv reflects gv when p=0.5. Dimensions are nInd by nTraits.}
 
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are
 nInd by nTraits.}

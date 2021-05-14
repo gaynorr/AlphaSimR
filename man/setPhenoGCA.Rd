@@ -54,7 +54,7 @@ Calculates general combining ability from a set of testers and
 returns these values as phenotypes for a population.
 }
 \details{
-The reps parameter is for convient representation of replicated data. 
+The reps parameter is for convenient representation of replicated data. 
 It was intended for representation of replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
 reps is set to the number plots per entry. The resulting phenotype 

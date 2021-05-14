@@ -4,34 +4,21 @@
 \alias{newPop}
 \title{Create new Population}
 \usage{
-newPop(
-  rawPop,
-  mother = NULL,
-  father = NULL,
-  origM = NULL,
-  origF = NULL,
-  isDH = FALSE,
-  simParam = NULL
-)
+newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam = NULL, ...)
 }
 \arguments{
 \item{rawPop}{an object of \code{\link{MapPop-class}} or 
 \code{\link{RawPop-class}}}
 
-\item{mother}{optional id for mothers. Must match 
-id in pedigree if using track pedigree.}
+\item{id}{optional id for new individuals.}
 
-\item{father}{optional id for fathers. Must match 
-id in pedigree if using track pedigree.}
+\item{mother}{optional id for mothers.}
 
-\item{origM}{optional alternative id for mothers}
-
-\item{origF}{optional alternative id for fathers}
-
-\item{isDH}{optional value indicating if the individuals 
-are doubled haploids and/or inbred founders}
+\item{father}{optional id for fathers.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{...}{additional arguments used internally}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
