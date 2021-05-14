@@ -4,6 +4,7 @@
 [![](http://cranlogs.r-pkg.org/badges/grand-total/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
 [![](http://cranlogs.r-pkg.org/badges/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
 
+
 The AlphaSimR website is currently under development and has only been made available for testing at this time. This page will change when the website is ready for widespread use.
 
 ## Publication
@@ -27,3 +28,4 @@ To install use:
 To install with vignettes use:
 
     devtools::install_github(repo="gaynorr/AlphaSimR@devel", build_vignettes=TRUE)
+
