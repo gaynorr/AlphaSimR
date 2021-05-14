@@ -515,19 +515,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getIbdRecHist
-Rcpp::List getIbdRecHist(const Rcpp::List& recHist, const Rcpp::IntegerMatrix& pedigree, const Rcpp::IntegerVector& nLociPerChr);
-RcppExport SEXP _AlphaSimR_getIbdRecHist(SEXP recHistSEXP, SEXP pedigreeSEXP, SEXP nLociPerChrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type recHist(recHistSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type pedigree(pedigreeSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type nLociPerChr(nLociPerChrSEXP);
-    rcpp_result_gen = Rcpp::wrap(getIbdRecHist(recHist, pedigree, nLociPerChr));
-    return rcpp_result_gen;
-END_RCPP
-}
 // popVar
 arma::mat popVar(const arma::mat& X);
 RcppExport SEXP _AlphaSimR_popVar(SEXP XSEXP) {
@@ -713,7 +700,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
     {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},
-    {"_AlphaSimR_getIbdRecHist", (DL_FUNC) &_AlphaSimR_getIbdRecHist, 3},
     {"_AlphaSimR_popVar", (DL_FUNC) &_AlphaSimR_popVar, 1},
     {"_AlphaSimR_mergeGeno", (DL_FUNC) &_AlphaSimR_mergeGeno, 2},
     {"_AlphaSimR_mergeMultGeno", (DL_FUNC) &_AlphaSimR_mergeMultGeno, 4},

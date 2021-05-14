@@ -30,7 +30,7 @@ SP = SimParam$new(founderPop)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Lose an expect 5\% of individuals
+#Lose an expected 5\% of individuals
 pop = attrition(pop, p=0.05)
 
 }

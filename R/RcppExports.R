@@ -121,10 +121,6 @@ createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, 
     .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
 }
 
-getIbdRecHist <- function(recHist, pedigree, nLociPerChr) {
-    .Call(`_AlphaSimR_getIbdRecHist`, recHist, pedigree, nLociPerChr)
-}
-
 #' @title Population variance
 #' 
 #' @description
