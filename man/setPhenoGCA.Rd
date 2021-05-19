@@ -8,6 +8,8 @@ setPhenoGCA(
   pop,
   testers,
   use = "pheno",
+  h2 = NULL,
+  H2 = NULL,
   varE = NULL,
   reps = 1,
   fixEff = 1L,
@@ -24,9 +26,13 @@ setPhenoGCA(
 
 \item{use}{true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)}
 
-\item{varE}{error variances for phenotype if \code{use="pheno"}. A vector
-of length nTraits for independent error or a square matrix of 
-dimensions nTraits for correlated errors.}
+\item{h2}{a vector of desired narrow-sense heritabilities for
+each trait. See details.}
+
+\item{H2}{a vector of desired broad-sense heritabilities for
+each trait. See details.}
+
+\item{varE}{error (co)variances for traits. See details.}
 
 \item{reps}{number of replications for phenotype. See details.}
 
@@ -54,11 +60,32 @@ Calculates general combining ability from a set of testers and
 returns these values as phenotypes for a population.
 }
 \details{
+There are three arguments for setting the error variance of a 
+phenotype: h2, H2, and varE. The user should only use one of these 
+arguments. If the user supplies values for more than one, only one 
+will be used according to order in which they are listed above.
+
+The h2 argument allows the user to specify the error variance 
+according to narrow-sense heritability. This calculation uses the
+additive genetic variance and total genetic variance in the founder 
+population. Thus, the heritability relates to the founder population 
+and not the current population.
+
+The H2 argument allows the user to specify the error variance 
+according to broad-sense heritability. This calculation uses the
+total genetic variance in the founder population. Thus, the heritability 
+relates to the founder population and not the current population.
+
+The varE argument allows the user to specify the error variance
+directly. The user may supply a vector describing the error variance 
+for each trait or supply a matrix that specify the covariance of 
+the errors.
+
 The reps parameter is for convenient representation of replicated data. 
-It was intended for representation of replicated yield trials in plant 
+It is intended to represent replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number plots per entry. The resulting phenotype 
-would reflect the mean of all replications.
+reps is set to the number of plots per entry. The resulting phenotype 
+represents the entry-means.
 }
 \examples{
 #Create founder haplotypes
