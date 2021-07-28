@@ -1,7 +1,8 @@
-Changes in version 1.0.1.9000
+Changes in version 1.0.2
 
   New features
     -added h2 and H2 to setPhenoGCA
+    -pullGeno and pullHaplo functions now report marker names from the genetic map
 
 Changes in version 1.0.1
 
