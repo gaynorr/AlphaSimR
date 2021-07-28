@@ -226,9 +226,11 @@ calcGCA = function(pop,use="pheno"){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param testers an object of \code{\link{Pop-class}}
 #' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
-#' @param varE error variances for phenotype if \code{use="pheno"}. A vector
-#' of length nTraits for independent error or a square matrix of 
-#' dimensions nTraits for correlated errors.
+#' @param h2 a vector of desired narrow-sense heritabilities for
+#' each trait. See details.
+#' @param H2 a vector of desired broad-sense heritabilities for
+#' each trait. See details.
+#' @param varE error (co)variances for traits. See details.
 #' @param reps number of replications for phenotype. See details.
 #' @param fixEff fixed effect to assign to the population. Used 
 #' by genomic selection models only.
@@ -242,11 +244,32 @@ calcGCA = function(pop,use="pheno"){
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
 #' @details
+#' There are three arguments for setting the error variance of a 
+#' phenotype: h2, H2, and varE. The user should only use one of these 
+#' arguments. If the user supplies values for more than one, only one 
+#' will be used according to order in which they are listed above.
+#' 
+#' The h2 argument allows the user to specify the error variance 
+#' according to narrow-sense heritability. This calculation uses the
+#' additive genetic variance and total genetic variance in the founder 
+#' population. Thus, the heritability relates to the founder population 
+#' and not the current population.
+#' 
+#' The H2 argument allows the user to specify the error variance 
+#' according to broad-sense heritability. This calculation uses the
+#' total genetic variance in the founder population. Thus, the heritability 
+#' relates to the founder population and not the current population.
+#' 
+#' The varE argument allows the user to specify the error variance
+#' directly. The user may supply a vector describing the error variance 
+#' for each trait or supply a matrix that specify the covariance of 
+#' the errors.
+#' 
 #' The reps parameter is for convenient representation of replicated data. 
-#' It was intended for representation of replicated yield trials in plant 
+#' It is intended to represent replicated yield trials in plant 
 #' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number plots per entry. The resulting phenotype 
-#' would reflect the mean of all replications.
+#' reps is set to the number of plots per entry. The resulting phenotype 
+#' represents the entry-means.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' a matrix if onlyPheno=TRUE
@@ -266,8 +289,8 @@ calcGCA = function(pop,use="pheno"){
 #' pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
 #' 
 #' @export
-setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
-                       fixEff=1L,p=NULL,inbred=FALSE,
+setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
+                       varE=NULL,reps=1,fixEff=1L,p=NULL,inbred=FALSE,
                        onlyPheno=FALSE,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -290,6 +313,33 @@ setPhenoGCA = function(pop,testers,use="pheno",varE=NULL,reps=1,
                     returnHybridPop=inbred,simParam=simParam)
   #Get response
   if(use=="pheno"){
+    # Calculate varE if using h2 or H2
+    if(!is.null(h2)){
+      if(length(h2)==1){
+        h2 = rep(h2, simParam$nTraits)
+      }
+      stopifnot(length(h2)==simParam$nTraits,
+                all(simParam$varG>0),
+                all(simParam$varA>0))
+      varE = numeric(simParam$nTraits)
+      for(i in 1:length(h2)){
+        tmp = simParam$varA[i]/h2[i]-simParam$varG[i]
+        if(tmp<0){
+          stop(paste0("h2=",h2[i]," is not possible for trait ",i))
+        }
+        varE[i] = tmp
+      }
+    }else if(!is.null(H2)){
+      if(length(H2)==1){
+        H2 = rep(H2, simParam$nTraits)
+      }
+      stopifnot(length(H2)==simParam$nTraits)
+      varE = numeric(simParam$nTraits)
+      for(i in 1:length(H2)){
+        tmp = simParam$varG[i]/H2[i]-simParam$varG[i]
+        varE[i] = tmp
+      }
+    }
     y = setPheno(tmp,varE=varE,p=p,reps=reps,
                  onlyPheno=TRUE,simParam=simParam)
   }else if(use=="gv"){

@@ -29,6 +29,24 @@ selectLoci = function(chr,inLociPerChr,inLociLoc){
               lociLoc=outLociLoc))
 }
 
+# Retrieves Marker names from genMap
+# lociPerChr, number of loci per chromosome
+# lociLoc, position of loci on chromosome
+# genMap, genetic map with names
+getLociNames = function(lociPerChr, lociLoc, genMap){
+  lociNames = character(length(lociLoc))
+  start = end = 0L
+  for(chr in 1:length(lociPerChr)){
+    if(lociPerChr[chr]>0){
+      start = end + 1L
+      end = end + lociPerChr[chr]
+      take = lociLoc[start:end]
+      lociNames[start:end] = names(genMap[[chr]])[take]
+    }
+  }
+  return(lociNames)
+}
+
 #' @title Get SNP genetic map
 #' 
 #' @description Retrieves the genetic map for a 
@@ -99,7 +117,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
   })
   
   #Create a data.frame with SNP postions on genetic map
-  output = data.frame(id=1:snp@nLoci,
+  output = data.frame(id=getLociNames(snp@lociPerChr, snp@lociLoc, genMap),
                       chr=rep(1:simParam$nChr,snp@lociPerChr),
                       site=snp@lociLoc,
                       pos=do.call("c",snpMap))
@@ -175,7 +193,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
   })
   
   #Create a data.frame with QTL positions on genetic map
-  output = data.frame(id=1:qtl@nLoci,
+  output = data.frame(id=getLociNames(qtl@lociPerChr, qtl@lociLoc, genMap),
                       chr=rep(1:simParam$nChr,qtl@lociPerChr),
                       site=qtl@lociLoc,
                       pos=do.call("c",qtlMap))
@@ -223,7 +241,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   }else{
     rownames(output) = as.character(1:pop@nInd)
   }
-  colnames(output) = paste("SNP",1:ncol(output),sep="_")
+  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
   return(output)
 }
 
@@ -268,7 +286,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
   }else{
     rownames(output) = as.character(1:pop@nInd)
   }
-  colnames(output) = paste("QTL",1:ncol(output),sep="_")
+  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
   return(output)
 }
 
@@ -322,7 +340,7 @@ pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
   }else{
     rownames(output) = as.character(1:pop@nInd)
   }
-  colnames(output) = unlist(lapply(map[chr], names))
+  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, map)
   return(output)
 }
 
@@ -387,7 +405,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
     }
   }
-  colnames(output) = paste("SNP",1:ncol(output),sep="_")
+  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
   return(output)
 }
 
@@ -452,7 +470,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
     }
   }
-  colnames(output) = paste("QTL",1:ncol(output),sep="_")
+  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
   return(output)
 }
 
@@ -536,7 +554,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
     }
   }
-  colnames(output) = unlist(lapply(map[chr], names))
+  colnames(output) = getLociNames(lociTot, allLoci, map)
   return(output)
 }
 

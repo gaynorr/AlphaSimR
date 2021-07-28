@@ -4,7 +4,7 @@ Gaynor, R. Chris, Gregor Gorjanc, and John M. Hickey. 2021. AlphaSimR: an R pack
 
 citEntry(
   entry    = "Article",
-  title    = "AlphaSimR: an R package for breeding program simulation",
+  title    = "AlphaSimR: an R package for breeding program simulations",
   author   = "R Chris Gaynor, Gregor Gorjanc, John M Hickey",
   journal  = "G3 Gene|Genomes|Genetics",
   year     = "2021",
