@@ -1,3 +1,8 @@
+Changes in version 1.0.3
+
+  Bug fixes
+    -fixed formatting error in genetic maps created by runMacs that broke genotype extraction functions
+
 Changes in version 1.0.2
 
   New features
