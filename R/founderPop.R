@@ -207,7 +207,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   nLoci = sapply(macsOut$genMap,length)
   genMap = vector("list",nChr)
   for(i in 1:nChr){
-    genMap[[i]] = genLen[i]*(macsOut$genMap[[i]]-macsOut$genMap[[i]][1])
+    genMap[[i]] = genLen[i]*c(macsOut$genMap[[i]]-macsOut$genMap[[i]][1])
     names(genMap[[i]]) = paste(i,1:length(genMap[[i]]),sep="_")
   }
   names(genMap) = as.character(1:nChr)
