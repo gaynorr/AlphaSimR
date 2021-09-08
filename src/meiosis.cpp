@@ -61,7 +61,14 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // n, the number of gamma deviates sampled at a time (affects performance, not results)
 arma::vec sampleChiasmata(double start, double end, double v, 
                           double p, arma::uword n=40){
-  if((1-p)>1e-6){ // Gamma model
+  if((1-p)<1e-6){
+    // All chiasmata from type 2 pathway
+    // Changing v and p to model type 2 with gamma model
+    p = 0;
+    v = 1;
+  }
+  
+  if(p<1e-6){ // Gamma model
     // Sample deviates from a gamma distribution
     arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
     
@@ -101,14 +108,14 @@ arma::vec sampleChiasmata(double start, double end, double v,
     type1 = type1(find(type1<end));
     
     // Sample type 2 deviates from a gamma distribution
-    arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*v*p)));
+    arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
     
     // Find locations on genetic map
     type2 = cumsum(type2);
     
     // Add additional values if max position less than end
     while(type2(type2.n_elem-1)<end){
-      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*v*p)));
+      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
       tmp = cumsum(tmp) + type2(type2.n_elem-1);
       type2 = join_cols(type2, tmp);
     }
@@ -139,6 +146,13 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
   arma::uvec arm = {0, 1, 2, 3};
   arm = shuffle(arm);
   double nearest, terminator, prob;
+  
+  if((1-p)<1e-6){
+    // All chiasmata from type 2 pathway
+    // Changing v and p to model type 2 with type 1 pathway
+    p = 0;
+    v = 1;
+  }
   
   // First arm
   output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,1.0/(2.0*v*(1-p))));
@@ -199,14 +213,14 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
       }
       
       // Sample type 2 deviates from a gamma distribution
-      arma::vec type2 = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*v*p)));
+      arma::vec type2 = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*p)));
       
       // Find locations on genetic map
       type2 = cumsum(type2);
       
       // Add additional values if max position less than terminator
       while(type2(type2.n_elem-1)<terminator){
-        arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*v*p)));
+        arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*p)));
         tmp = cumsum(tmp) + type2(type2.n_elem-1);
         type2 = join_cols(type2, tmp);
       }
