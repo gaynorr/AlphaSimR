@@ -1,3 +1,11 @@
+Changes in version 1.0.4.9990
+  
+  New features
+    -added snpChip argument to pullIbdHaplo for backwards compatibility
+    
+  Bug fixes
+    -fixed error in pullIbdHaplo when chr isn't NULL
+
 Changes in version 1.0.4
 
   Bug fixes

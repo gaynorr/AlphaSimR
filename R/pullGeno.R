@@ -565,7 +565,9 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
+#' @param snpChip an integer indicating which SNP array loci 
+#' are to be retrieved. If NULL, all sites are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of SNP haplotypes.
@@ -585,7 +587,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' pullIbdHaplo(pop, simParam=SP)
 #' 
 #' @export
-pullIbdHaplo = function(pop, chr=NULL, simParam=NULL){
+pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -613,6 +615,20 @@ pullIbdHaplo = function(pop, chr=NULL, simParam=NULL){
                            rep(1:pop@ploidy,pop@nInd),sep="_")
   
   colnames(output) = unlist(lapply(simParam$genMap[chr], names))
+  
+  if(!is.null(snpChip)){
+    nLoci = founderPop@nLoci[chr]
+    tmp = getSnpMap(snpChip=snpChip,simParam=simParam)
+    tmp = tmp[tmp$chr%in%chr,]
+    if(length(chr)>1){
+      for(i in 2:length(chr)){
+        j = chr[i]
+        tmp[tmp$chr==j,"site"] =
+          tmp[tmp$chr==j,"site"] + sum(nLoci[1:(i-1)])
+      }
+    }
+    output = output[,tmp$site,drop=FALSE]
+  }
   
   return(output)
 }

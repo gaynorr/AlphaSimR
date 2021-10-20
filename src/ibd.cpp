@@ -212,18 +212,18 @@ arma::Mat<int> createIbdMat(arma::field<arma::field<arma::field<arma::Mat<int> >
     for(arma::uword j=0; j<ploidy; ++j){
       arma::uword stop,start=0;
       for(arma::uword k=0; k<nChr; ++k){
-        arma::uword nSeg = ibd(i)(k)(j).n_rows;
+        arma::uword nSeg = ibd(i)(chr(k))(j).n_rows;
         if(nSeg>1){
           // First segments
           for(arma::uword l=0; l<(nSeg-1); ++l){
-            stop = start + ibd(i)(k)(j)(l+1,1) - ibd(i)(k)(j)(l,1) - 1;
-            output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(k)(j)(l,0));
+            stop = start + ibd(i)(chr(k))(j)(l+1,1) - ibd(i)(chr(k))(j)(l,1) - 1;
+            output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(chr(k))(j)(l,0));
             start = stop + 1;
           }
         }
         // Last segment
-        stop = start + nLoci(chr(k)) - ibd(i)(k)(j)(nSeg-1,1);
-        output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(k)(j)(nSeg-1,0));
+        stop = start + nLoci(chr(k)) - ibd(i)(chr(k))(j)(nSeg-1,1);
+        output.col(i*ploidy+j).rows(start,stop).fill(ibd(i)(chr(k))(j)(nSeg-1,0));
         start = stop+1;
       }
     }
