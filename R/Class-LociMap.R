@@ -31,6 +31,12 @@ setValidity("LociMap",function(object){
   }
 })
 
+#' @describeIn LociMap Test if object is a LociMap class object
+isLociMap = function(x) {
+  ret = is(x, class2 = "LociMap")
+  return(ret)
+}
+
 #TraitA----
 #' @title Additive trait
 #' 
@@ -58,6 +64,12 @@ setValidity("TraitA",function(object){
   }
 })
 
+#' @describeIn TraitA Test if object is a TraitA class object
+isTraitA = function(x) {
+  ret = is(x, class2 = "TraitA")
+  return(ret)
+}
+
 #TraitA2----
 #' @title Sex specific additive trait
 #' 
@@ -83,6 +95,12 @@ setValidity("TraitA2",function(object){
     return(errors)
   }
 })
+
+#' @describeIn TraitA2 Test if object is a TraitA2 class object
+isTraitA2 = function(x) {
+  ret = is(x, class2 = "TraitA2")
+  return(ret)
+}
 
 #TraitAE----
 #' @title Additive and epistatic trait
@@ -112,6 +130,12 @@ setValidity("TraitAE",function(object){
   }
 })
 
+#' @describeIn TraitAE Test if object is a TraitAE class object
+isTraitAE = function(x) {
+  ret = is(x, class2 = "TraitAE")
+  return(ret)
+}
+
 #TraitAD----
 #' @title Additive and dominance trait
 #' 
@@ -137,6 +161,12 @@ setValidity("TraitAD",function(object){
   }
 })
 
+#' @describeIn TraitAD Test if object is a TraitAD class object
+isTraitAD = function(x) {
+  ret = is(x, class2 = "TraitAD")
+  return(ret)
+}
+
 #TraitA2D----
 #' @title Sex specific additive and dominance trait
 #' 
@@ -161,6 +191,12 @@ setValidity("TraitA2D",function(object){
     return(errors)
   }
 })
+
+#' @describeIn TraitA2D Test if object is a TraitA2D class object
+isTraitA2D = function(x) {
+  ret = is(x, class2 = "TraitA2D")
+  return(ret)
+}
 
 #TraitADE----
 #' @title Additive, dominance, and epistatic trait
@@ -189,6 +225,12 @@ setValidity("TraitADE",function(object){
     return(errors)
   }
 })
+
+#' @describeIn TraitADE Test if object is a TraitADE class object
+isTraitADE = function(x) {
+  ret = is(x, class2 = "TraitADE")
+  return(ret)
+}
 
 #TraitAG----
 #' @title Additive and GxE trait
@@ -219,6 +261,12 @@ setValidity("TraitAG",function(object){
   }
 })
 
+#' @describeIn TraitAG Test if object is a TraitAG class object
+isTraitAG = function(x) {
+  ret = is(x, class2 = "TraitAG")
+  return(ret)
+}
+
 #TraitAEG----
 #' @title Additive, epistasis and GxE trait
 #' 
@@ -247,6 +295,12 @@ setValidity("TraitAEG",function(object){
     return(errors)
   }
 })
+
+#' @describeIn TraitAEG Test if object is a TraitAEG class object
+isTraitAEG = function(x) {
+  ret = is(x, class2 = "TraitAEG")
+  return(ret)
+}
 
 #TraitADG----
 #' @title Additive, dominance and GxE trait
@@ -277,6 +331,12 @@ setValidity("TraitADG",function(object){
   }
 })
 
+#' @describeIn TraitADG Test if object is a TraitADG class object
+isTraitADG = function(x) {
+  ret = is(x, class2 = "TraitADG")
+  return(ret)
+}
+
 #TraitADEG----
 #' @title Additive, dominance, epistasis, and GxE trait
 #' 
@@ -306,3 +366,8 @@ setValidity("TraitADEG",function(object){
   }
 })
 
+#' @describeIn TraitADEG Test if object is a TraitADEG class object
+isTraitADEG = function(x) {
+  ret = is(x, class2 = "TraitADEG")
+  return(ret)
+}
