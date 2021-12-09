@@ -110,6 +110,8 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
   return Z;
 }
 
+
+
 // Generates weighted matrix
 // Allows for heterogenous variance due to unequal replication
 void sweepReps(arma::mat& X, arma::vec reps){
@@ -119,6 +121,17 @@ void sweepReps(arma::mat& X, arma::vec reps){
   }
 }
 
+//' @title Solve RR-BLUP
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   arma::uword n = y.n_rows;
@@ -165,6 +178,19 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("u")=u);
 }
 
+//' @title Solve Multivariate RR-BLUP
+//'
+//' @description
+//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
+//'
+//' @param Y a matrix with n rows and q columns
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000, 
                          double tol=1e-6){
@@ -227,6 +253,18 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
+//' @title Solve Multikernel RR-BLUP
+//'
+//' @description
+//' Solves a univariate mixed model with multiple random effects.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Mlist a list of M matrices
+//' @param maxIter maximum number of iteration
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                          arma::field<arma::mat>& Mlist,
                          int maxIter=40){
@@ -326,7 +364,24 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
-//Uses EM algorithm to solve a mixed model with 1 random effect
+//' @title Solve RR-BLUP with EM
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using
+//' the Expectation-Maximization algorithm.
+//'
+//' @param Y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//' @param Vu initial guess for variance of marker effects
+//' @param Ve initial guess for error variance
+//' @param tol tolerance for declaring convergence
+//' @param maxIter maximum iteration for attempting convergence
+//' @param useEM should EM algorithm be used. If false, no estimation of
+//' variance components is performed. The initial values are treated as true.
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
                           arma::mat& M, double Vu, double Ve, 
                           double tol, int maxIter,
@@ -389,7 +444,26 @@ Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
-//Uses EM algorithm to solve a mixed model with 2 random effects
+//' @title Solve RR-BLUP with EM and 2 random effects
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+M_1u_1+M_2u_2+e} using
+//' the Expectation-Maximization algorithm.
+//'
+//' @param Y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M1 a matrix with n rows and m1 columns
+//' @param M2 a matrix with n rows and m2 columns
+//' @param Vu1 initial guess for variance of the first marker effects
+//' @param Vu2 initial guess for variance of the second marker effects
+//' @param Ve initial guess for error variance
+//' @param tol tolerance for declaring convergence
+//' @param maxIter maximum iteration for attempting convergence
+//' @param useEM should EM algorithm be used. If false, no estimation of
+//' variance components is performed. The initial values are treated as true.
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
                            const arma::mat& M1, const arma::mat& M2, 
                            double Vu1, double Vu2, double Ve, 
@@ -488,7 +562,28 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
-//Uses EM algorithm to solve a mixed model with 3 random effects
+//' @title Solve RR-BLUP with EM and 3 random effects
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+M_1u_1+M_2u_2+M_3u_3+e} using
+//' the Expectation-Maximization algorithm.
+//'
+//' @param Y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M1 a matrix with n rows and m1 columns
+//' @param M2 a matrix with n rows and m2 columns
+//' @param M3 a matrix with n rows and m3 columns
+//' @param Vu1 initial guess for variance of the first marker effects
+//' @param Vu2 initial guess for variance of the second marker effects
+//' @param Vu3 initial guess for variance of the second marker effects
+//' @param Ve initial guess for error variance
+//' @param tol tolerance for declaring convergence
+//' @param maxIter maximum iteration for attempting convergence
+//' @param useEM should EM algorithm be used. If false, no estimation of
+//' variance components is performed. The initial values are treated as true.
+//'
+//' @export
+// [[Rcpp::export]]
 Rcpp::List solveRRBLUP_EM3(const arma::mat& Y, const arma::mat& X,
                            const arma::mat& M1, const arma::mat& M2, 
                            const arma::mat& M3, double Vu1, double Vu2, 
@@ -1255,4 +1350,267 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, arma::vec reps,
     Rcpp::Named("Vu")=ans["Vu"],
     Rcpp::Named("Ve")=ans["Ve"]
   );
+}
+
+//' @title Solve Univariate Model
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Z a matrix with n rows and m columns
+//' @param K a matrix with m rows and m columns
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
+                    const arma::mat& Z, const arma::mat& K){
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
+  double df = double(n)-double(q);
+  double offset = log(double(n));
+  
+  // Construct system of equations for eigendecomposition
+  arma::mat S = -(X*inv_sympd(X.t()*X)*X.t());
+  S.diag() += 1;
+  arma::mat ZK = Z*K;
+  arma::mat H = ZK*Z.t(); // Used later
+  H.diag() += offset;
+  S = S*H*S;
+  
+  // Compute eigendecomposition
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, S);
+  
+  // Drop eigenvalues
+  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
+  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
+                  arma::span(q,eigvec.n_cols-1));
+  
+  // Estimate variances and solve equations
+  arma::vec eta = eigvec.t()*y;
+  Rcpp::List optRes = optimize(*objREML,
+                               Rcpp::List::create(
+                                 Rcpp::Named("df")=df,
+                                 Rcpp::Named("eta")=eta,
+                                 Rcpp::Named("lambda")=eigval),
+                                 1.0e-10, 1.0e10);
+  double delta = optRes["parameter"];
+  H.diag() += (delta-offset);
+  H = inv_sympd(H);
+  arma::mat XH = X.t()*H;
+  arma::mat beta = solve(XH*X,XH*y);
+  arma::mat u = ZK.t()*(H*(y-X*beta));
+  double Vu = sum(eta%eta/(eigval+delta))/df;
+  double Ve = delta*Vu;
+  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=ll);
+}
+
+//' @title Solve Multivariate Model
+//'
+//' @description
+//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
+//'
+//' @param Y a matrix with n rows and q columns
+//' @param X a matrix with n rows and x columns
+//' @param Z a matrix with n rows and m columns
+//' @param K a matrix with m rows and m columns
+//' @param tol tolerance for convergence
+//' @param maxIter maximum number of iteration
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
+                    const arma::mat& Z, const arma::mat& K,
+                    double tol=1e-6, int maxIter=1000){
+  arma::uword n = Y.n_rows;
+  arma::uword m = Y.n_cols;
+  arma::mat ZK = Z*K;
+  arma::mat ZKZ = ZK*Z.t();
+  arma::vec eigval(n);
+  arma::mat eigvec(n,n);
+  eigen2(eigval, eigvec, ZKZ);
+  arma::mat Yt = Y.t()*eigvec;
+  arma::mat Xt = X.t()*eigvec;
+  arma::mat Vu = cov(Y)/2;
+  arma::mat Ve = Vu;
+  arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
+  arma::mat B = Yt*W; //BLUEs
+  arma::mat Gt(m,n), sigma(m,m), BNew,
+  VeNew(m,m), VuNew(m,m);
+  double denom, numer;
+  bool converging=true;
+  int iter=0;
+  while(converging){
+    ++iter;
+    VeNew.fill(0.0);
+    VuNew.fill(0.0);
+    for(arma::uword i=0; i<n; ++i){
+      Gt.col(i) = eigval(i)*Vu*inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(Yt.col(i)-B*Xt.col(i));
+    }
+    BNew = (Yt - Gt)*W;
+    for(arma::uword i=0; i<n; ++i){
+      sigma = eigval(i)*Vu-(eigval(i)*Vu)*inv_sympd(eigval(i)*Vu+
+        Ve+tol*arma::eye(m,m))*(eigval(i)*Vu);
+      VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
+      VeNew += 1.0/double(n)*((Yt.col(i)-BNew*Xt.col(i)-Gt.col(i))*
+        (Yt.col(i)-BNew*Xt.col(i)-Gt.col(i)).t()+sigma);
+    }
+    denom = fabs(sum(Ve.diag()));
+    if(denom>0.0){
+      numer = fabs(sum(VeNew.diag()-Ve.diag()));
+      if((numer/denom)<tol) converging=false;
+    }
+    Ve = VeNew;
+    Vu = VuNew;
+    B = BNew;
+    if(iter>=maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  arma::mat HI = inv_sympd(kron(ZKZ, Vu)+
+    kron(arma::eye(n,n), Ve)+
+    tol*arma::eye(n*m,n*m));
+  arma::mat E = Y.t() - B*X.t();
+  arma::mat U = kron(K, Vu)*kron(Z.t(),
+                     arma::eye(m,m))*(HI*vectorise(E)); //BLUPs
+  U.reshape(m,U.n_elem/m);
+  //Log Likelihood calculation
+  arma::mat ll = -0.5*arma::vectorise(E).t()*HI*vectorise(E);
+  ll -= double(n*m)/2.0*log(2*PI);
+  double value;
+  double sign;
+  log_det(value, sign, kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve));
+  ll -= 0.5*value*sign;
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=B.t(),
+                            Rcpp::Named("u")=U.t(),
+                            Rcpp::Named("LL")=arma::as_scalar(ll),
+                            Rcpp::Named("iter")=iter);
+}
+
+//' @title Solve Multikernel Model
+//'
+//' @description
+//' Solves a univariate mixed model with multiple random effects.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param Zlist a list of Z matrices
+//' @param Klist a list of K matrices
+//' @param maxIter maximum number of iteration
+//' @param tol tolerance for convergence
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
+                    arma::field<arma::mat>& Zlist,
+                    arma::field<arma::mat>& Klist,
+                    int maxIter=40, double tol=1e-4){
+  arma::uword k = Klist.n_elem;
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
+  double df = double(n)-double(q);
+  arma::field<arma::mat> V(k);
+  for(arma::uword i=0; i<k; ++i){
+    V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
+  }
+  arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
+  arma::vec qvec(k+1), sigma(k+1);
+  double rss, ldet, llik, llik0=0, deltaLlik, taper,
+  value, sign;
+  bool invPass;
+  arma::field<arma::mat> T(k);
+  sigma.fill(var(y.col(0)));
+  int iter = 0;
+  while(true){
+    ++iter;
+    W0 = V(0)*sigma(0);
+    W0.diag() += sigma(k);
+    for(arma::uword i=1; i<k; ++i){
+      W0 += V(i)*sigma(i);
+    }
+    invPass = inv_sympd(W,W0);
+    if(!invPass){
+      W = pinv(W0);
+    }
+    WX = W*X;
+    WQX = W - WX*solve(X.t()*WX, WX.t());
+    rss = as_scalar(y.t()*WQX*y);
+    sigma = sigma*(rss/df);
+    WQX = WQX*(df/rss);
+    log_det(value, sign, WQX);
+    ldet = value*sign;
+    llik = ldet/2 - df/2;
+    if(iter == 1) llik0 = llik;
+    deltaLlik = llik - llik0;
+    llik0 = llik;
+    for(arma::uword i=0; i<k; ++i){
+      T(i) = WQX*V(i);
+    }
+    for(arma::uword i=0; i<k; ++i){
+      qvec(i) = as_scalar(y.t()*T(i)*WQX*y - sum(T(i).diag()));
+      for(arma::uword j=0; j<k; ++j){
+        A(i,j) = accu(T(i)%T(j).t());
+      }
+      A(i,k) = accu(T(i)%WQX.t());
+    }
+    for(arma::uword j=0; j<k; ++j){
+      A(k,j) = accu(WQX%T(j).t());
+    }
+    A(k,k) = accu(WQX%WQX.t());
+    qvec(k) = as_scalar(y.t()*WQX*WQX*y - sum(WQX.diag()));
+    A = pinv(A);
+    qvec = A*qvec;
+    if(iter == 1){
+      taper = 0.5;
+    }else if(iter == 2){
+      taper = 0.7;
+    }else{
+      taper = 0.9;
+    }
+    sigma += taper*qvec;
+    while(sigma.min() < -(1e-6)){
+      sigma(sigma.index_min()) = -(1e-6);
+    }
+    if((iter > 1) & (fabs(deltaLlik) < tol*10)){
+      break;
+    }
+    if(max(abs(qvec)) < tol){
+      break;
+    }
+    if(iter >= maxIter){
+      Rf_warning("Reached maxIter without converging");
+      break;
+    }
+  }
+  while(sigma.min() < 0.0){
+    sigma(sigma.index_min()) = 0.0;
+  }
+  arma::mat beta(q,1), ee(n,1);
+  arma::field<arma::mat> u(k);
+  beta = solve(X.t()*W*X,X.t()*W*y);
+  ee = y - X*beta;
+  for(arma::uword i=0; i<k; ++i){
+    u(i) = (Klist(i)*sigma(i))*Zlist(i).t()*W*ee;
+  }
+  arma::vec Vu(k), Ve(1);
+  Vu = sigma(arma::span(0,k-1));
+  Ve = sigma(k);
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("LL")=llik,
+                            Rcpp::Named("iter")=iter);
 }

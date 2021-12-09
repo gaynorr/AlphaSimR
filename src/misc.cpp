@@ -105,18 +105,18 @@ arma::uword mapIndex(arma::uword i, arma::uword j,
 // Find row given mapping index
 // k = mapping index
 // n = dimension of matrix
-arma::uword mapRow(arma::uword k, arma::uword n){
+arma::uword mapRow(const arma::uword& k, const arma::uword& n){
   return n-2-static_cast<arma::uword>(sqrt(-8*double(k) + 4*double(n)*(double(n)-1)-7)/2-0.5);
 }
 
 // Find column given mapping index
+// row = previously determined row
 // k = mapping index
 // n = dimension of matrix
-arma::uword mapCol(arma::uword k, arma::uword n){
-  arma::uword i;
-  i = mapRow(k,n);
-  return k+i+1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2;
+arma::uword mapCol(const arma::uword& row, const arma::uword& k, const arma::uword& n){
+  return k+row+1 - n*(n-1)/2 + (n-row)*((n-row)-1)/2;
 }
+
 
 // Randomly samples integers without replacement
 // n number of integers to return
@@ -261,7 +261,7 @@ arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
   arma::umat output(n,2);
   for(arma::uword i=0; i<n; ++i){
     output(i,0) = mapRow(samples(i),nLevel);
-    output(i,1) = mapCol(samples(i),nLevel);
+    output(i,1) = mapCol(output(i,0),samples(i),nLevel);
   }
   if(fullComb>0){
     arma::umat tmp(N*fullComb,2);
@@ -269,7 +269,7 @@ arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
     for(arma::uword j=0; j<(N*fullComb); ++j){
       i = j%N;
       tmp(j,0) = mapRow(i,nLevel);
-      tmp(j,1) = mapCol(i,nLevel);
+      tmp(j,1) = mapCol(tmp(j,0),i,nLevel);
     }
     output = arma::join_cols(output,tmp);
   }

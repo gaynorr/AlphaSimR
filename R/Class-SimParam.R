@@ -1388,6 +1388,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchGenMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
@@ -1413,6 +1414,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchFemaleMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
@@ -1443,6 +1445,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchMaleMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
