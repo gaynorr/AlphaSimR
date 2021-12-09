@@ -18,7 +18,6 @@
 #' has dimensions nChr by 1 and each element is a three dimensional
 #' array of raw values. The array dimensions are nLoci by ploidy by nInd.
 #' 
-#' 
 #' @export
 setClass("RawPop",
          slots=c(nInd="integer",
@@ -112,6 +111,12 @@ setMethod("show",
           }
 )
 
+#' @describeIn RawPop Test if object is a RawPop class object
+isRawPop = function(x) {
+  ret = is(x, class2 = "RawPop")
+  return(ret)
+}
+
 # MapPop ------------------------------------------------------------------
 
 #' @title Raw population with genetic map
@@ -191,6 +196,12 @@ setMethod("c",
             return(x)
           }
 )
+
+#' @describeIn MapPop Test if object is a MapPop class object
+isMapPop = function(x) {
+  ret = is(x, class2 = "MapPop")
+  return(ret)
+}
 
 # NamedMapPop ------------------------------------------------------------------
 
@@ -324,6 +335,12 @@ cChr = function(...){
     }
   }
   return(x)
+}
+
+#' @describeIn NamedMapPop Test if object is a NamedMapPop class object
+isNamedMapPop = function(x) {
+  ret = is(x, class2 = "NamedMapPop")
+  return(ret)
 }
 
 # Pop ---------------------------------------------------------------------
@@ -726,6 +743,12 @@ resetPop = function(pop,simParam=NULL){
   return(pop)
 }
 
+#' @describeIn Pop Test if object is a Pop class object
+isPop = function(x) {
+  ret = is(x, class2 = "Pop")
+  return(ret)
+}
+
 # MegaPop ------------------------------------------------------------------
 
 #' @title Mega-Population
@@ -833,3 +856,8 @@ newMegaPop = function(...){
   return(output)
 }
 
+#' @describeIn MegaPop Test if object is a MegaPop class object
+isMegaPop = function(x) {
+  ret = is(x, class2 = "MegaPop")
+  return(ret)
+}

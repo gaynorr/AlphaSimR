@@ -122,3 +122,9 @@ setMethod("c",
             return(x)
           }
 )
+
+#' @describeIn HybridPop Test if object is a HybridPop class object
+isHybridPop = function(x) {
+  ret = is(x, class2 = "HybridPop")
+  return(ret)
+}
