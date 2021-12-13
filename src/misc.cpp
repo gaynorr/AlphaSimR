@@ -302,6 +302,19 @@ double choose(double n, double k){
   return (n*choose(n-1,k-1))/k;
 }
 
+// Gets the number of available threads
+//' @title Number of available threads
+//'
+//' @description
+//' Gets the number of available threads by calling the OpenMP function
+//' \code{omp_get_max_threads()}
+//'
+//' @return integer
+//'
+//' @examples
+//' getNumThreads()
+//'
+//' @export
 // [[Rcpp::export]]
 int getNumThreads(){
 #ifdef _OPENMP
