@@ -1685,7 +1685,11 @@ SimParam = R6Class(
         if(nSitesPerChr[x]==0){
           return(NULL)
         }else{
-          tmp = sort(sample(pot[[x]],nSitesPerChr[x]))
+          if(length(pot[[x]])==1){
+            tmp = pot[[x]]
+          }else{
+            tmp = sort(sample(pot[[x]],nSitesPerChr[x]))
+          }
           # Add site restrictions
           if(private$.restrSites){
             if(QTL){

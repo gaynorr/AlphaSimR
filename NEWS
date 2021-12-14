@@ -6,6 +6,7 @@ Changes in version 1.0.4.9990
     
   Bug fixes
     -fixed error in pullIbdHaplo when chr isn't NULL
+    -fixed an error with assigning 1 QTL and/or SNP
 
 Changes in version 1.0.4
 
