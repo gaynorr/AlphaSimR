@@ -34,7 +34,7 @@ for creating initial populations and setting traits in the
 \section{Slots}{
 
 \describe{
-\item{\code{genMap}}{"matrix" of chromosome genetic maps}
+\item{\code{genMap}}{list of chromosome genetic maps}
 
 \item{\code{centromere}}{vector of centromere positions}
 

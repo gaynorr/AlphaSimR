@@ -129,6 +129,7 @@ mergePops = function(popList){
   #geno
   nBin = as.integer(nLoci%/%8L + (nLoci%%8L > 0L))
   geno = mergeMultGeno(popList,nInd=nInd,nBin=nBin,ploidy=ploidy)
+  dim(geno) = NULL # Account for matrix bug in RcppArmadillo
   nInd = sum(nInd)
   return(new("Pop",
              nInd=nInd,

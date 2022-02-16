@@ -329,6 +329,18 @@ calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
+#' @title Number of available threads
+#'
+#' @description
+#' Gets the number of available threads by calling the OpenMP function
+#' \code{omp_get_max_threads()}
+#'
+#' @return integer
+#'
+#' @examples
+#' getNumThreads()
+#'
+#' @export
 getNumThreads <- function() {
     .Call(`_AlphaSimR_getNumThreads`)
 }

@@ -617,7 +617,7 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
   colnames(output) = unlist(lapply(simParam$genMap[chr], names))
   
   if(!is.null(snpChip)){
-    nLoci = founderPop@nLoci[chr]
+    nLoci = pop@nLoci[chr]
     tmp = getSnpMap(snpChip=snpChip,simParam=simParam)
     tmp = tmp[tmp$chr%in%chr,]
     if(length(chr)>1){

@@ -20,7 +20,6 @@ setClass("RRsol",
                  Vu="matrix",
                  Ve="matrix"))
 
-#' @describeIn RRsol Test if object is a RRsol class object
 isRRsol = function(x) {
   ret = is(x, class2 = "RRsol")
   return(ret)

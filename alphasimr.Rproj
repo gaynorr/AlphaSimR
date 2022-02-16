@@ -15,9 +15,9 @@ LaTeX: pdfLaTeX
 BuildType: Package
 PackageUseDevtools: Yes
 PackageInstallArgs: --no-multiarch --with-keep.source
-PackageCheckArgs: --as-cran
+PackageCheckArgs: --as-cran --no-multiarch
 PackageRoxygenize: rd,collate,namespace
 
 PythonType: conda
-PythonVersion: 3.6.10
+PythonVersion: 3.6.13
 PythonPath: C:\Users\gayno\AppData\Local\r-miniconda\envs\r-reticulate\python.exe

@@ -4,13 +4,16 @@
 \alias{pullIbdHaplo}
 \title{Pull IBD haplotypes}
 \usage{
-pullIbdHaplo(pop, chr = NULL, simParam = NULL)
+pullIbdHaplo(pop, chr = NULL, snpChip = NULL, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
-all chromosome are retrieved.}
+all chromosomes are retrieved.}
+
+\item{snpChip}{an integer indicating which SNP array loci 
+are to be retrieved. If NULL, all sites are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

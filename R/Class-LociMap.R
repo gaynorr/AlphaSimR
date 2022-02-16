@@ -31,7 +31,6 @@ setValidity("LociMap",function(object){
   }
 })
 
-#' @describeIn LociMap Test if object is a LociMap class object
 isLociMap = function(x) {
   ret = is(x, class2 = "LociMap")
   return(ret)
@@ -64,7 +63,6 @@ setValidity("TraitA",function(object){
   }
 })
 
-#' @describeIn TraitA Test if object is a TraitA class object
 isTraitA = function(x) {
   ret = is(x, class2 = "TraitA")
   return(ret)
@@ -96,7 +94,6 @@ setValidity("TraitA2",function(object){
   }
 })
 
-#' @describeIn TraitA2 Test if object is a TraitA2 class object
 isTraitA2 = function(x) {
   ret = is(x, class2 = "TraitA2")
   return(ret)
@@ -130,7 +127,6 @@ setValidity("TraitAE",function(object){
   }
 })
 
-#' @describeIn TraitAE Test if object is a TraitAE class object
 isTraitAE = function(x) {
   ret = is(x, class2 = "TraitAE")
   return(ret)
@@ -161,7 +157,6 @@ setValidity("TraitAD",function(object){
   }
 })
 
-#' @describeIn TraitAD Test if object is a TraitAD class object
 isTraitAD = function(x) {
   ret = is(x, class2 = "TraitAD")
   return(ret)
@@ -192,7 +187,6 @@ setValidity("TraitA2D",function(object){
   }
 })
 
-#' @describeIn TraitA2D Test if object is a TraitA2D class object
 isTraitA2D = function(x) {
   ret = is(x, class2 = "TraitA2D")
   return(ret)
@@ -226,7 +220,6 @@ setValidity("TraitADE",function(object){
   }
 })
 
-#' @describeIn TraitADE Test if object is a TraitADE class object
 isTraitADE = function(x) {
   ret = is(x, class2 = "TraitADE")
   return(ret)
@@ -261,7 +254,6 @@ setValidity("TraitAG",function(object){
   }
 })
 
-#' @describeIn TraitAG Test if object is a TraitAG class object
 isTraitAG = function(x) {
   ret = is(x, class2 = "TraitAG")
   return(ret)
@@ -296,7 +288,6 @@ setValidity("TraitAEG",function(object){
   }
 })
 
-#' @describeIn TraitAEG Test if object is a TraitAEG class object
 isTraitAEG = function(x) {
   ret = is(x, class2 = "TraitAEG")
   return(ret)
@@ -331,7 +322,6 @@ setValidity("TraitADG",function(object){
   }
 })
 
-#' @describeIn TraitADG Test if object is a TraitADG class object
 isTraitADG = function(x) {
   ret = is(x, class2 = "TraitADG")
   return(ret)
@@ -366,7 +356,6 @@ setValidity("TraitADEG",function(object){
   }
 })
 
-#' @describeIn TraitADEG Test if object is a TraitADEG class object
 isTraitADEG = function(x) {
   ret = is(x, class2 = "TraitADEG")
   return(ret)

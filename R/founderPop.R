@@ -73,7 +73,7 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
                         nChr=1L,
                         ploidy=ploidy,
                         nLoci=as.integer(segSites[chr]),
-                        geno=as.matrix(list(geno)),
+                        geno=list(geno),
                         genMap=genMap[chr],
                         centromere=max(genMap[[chr]])/2,
                         inbred=inbred)
@@ -204,6 +204,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   }
   macsOut = MaCS(command, segSites, inbred, ploidy, 
                  nThreads, seed)
+  dim(macsOut$geno) = NULL # Account for matrix bug in RcppArmadillo
   nLoci = sapply(macsOut$genMap,length)
   genMap = vector("list",nChr)
   for(i in 1:nChr){
@@ -367,7 +368,7 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         nChr=1L,
                         ploidy=as.integer(ploidy),
                         nLoci=mapPop@nLoci[chr],
-                        geno=as.matrix(list(geno)),
+                        geno=list(geno),
                         genMap=mapPop@genMap[chr],
                         centromere=mapPop@centromere[chr],
                         inbred=inbred)
@@ -431,7 +432,7 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              nChr=nChr,
              ploidy=ploidy,
              nLoci=segSites,
-             geno=as.matrix(geno),
+             geno=geno,
              genMap=genMap,
              centromere=centromere,
              inbred=inbred))
