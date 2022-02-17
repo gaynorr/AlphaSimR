@@ -17,6 +17,7 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
                   long long int* LIWORK, long long int* INFO);
 #endif
 
+const double pi = 3.14159265358979323846;
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices
@@ -1405,7 +1406,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   arma::mat u = ZK.t()*(H*(y-X*beta));
   double Vu = sum(eta%eta/(eigval+delta))/df;
   double Ve = delta*Vu;
-  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*PI/df));
+  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*pi/df));
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
@@ -1486,7 +1487,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   U.reshape(m,U.n_elem/m);
   //Log Likelihood calculation
   arma::mat ll = -0.5*arma::vectorise(E).t()*HI*vectorise(E);
-  ll -= double(n*m)/2.0*log(2*PI);
+  ll -= double(n*m)/2.0*log(2*pi);
   double value;
   double sign;
   log_det(value, sign, kron(ZKZ, Vu)+kron(arma::eye(n,n), Ve));

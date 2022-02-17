@@ -1,4 +1,9 @@
-Changes in version 1.0.4.9990
+Changes in version 1.1.1
+    
+  Bug fixes
+    -removed use of PI variable in C++ code which is compilier specific
+
+Changes in version 1.1.0
   
   New features
     -added snpChip argument to pullIbdHaplo for backwards compatibility
