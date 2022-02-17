@@ -1,3 +1,26 @@
+Changes in version 1.1.2
+    
+  Bug fixes
+    -added missing #ifdef _OPENMP to OCS.cpp
+
+Changes in version 1.1.1
+    
+  Bug fixes
+    -removed use of PI variable in C++ code which is compilier specific
+
+Changes in version 1.1.0
+  
+  New features
+    -added snpChip argument to pullIbdHaplo for backwards compatibility
+    -exposed internal mixed model solvers
+    -all selection functions now return a warning when there are not enough individuals
+    
+  Bug fixes
+    -fixed error in pullIbdHaplo when chr isn't NULL
+    -fixed an error with assigning 1 QTL and/or SNP
+    -changed geno slot from matrix to list to support future RcppArmadillo changes
+    -doubleGenome and reduceGenome now work with IBD tracking
+
 Changes in version 1.0.4
 
   Bug fixes

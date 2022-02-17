@@ -161,6 +161,7 @@ genParam = function(pop,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop")
+  nInd=nInd(pop)
   gv=NULL
   bv=NULL
   dd=NULL
@@ -215,9 +216,15 @@ genParam = function(pop,simParam=NULL){
       aa = cbind(aa,rep(0,pop@nInd))
       gv_aa = cbind(gv_aa,rep(0,pop@nInd))
     }
-    covAD_L = c(covAD_L,popVar(cbind(bv[,i],dd[,i]))[1,2])
-    covAAA_L = c(covAAA_L,popVar(cbind(bv[,i],aa[,i]))[1,2])
-    covDAA_L = c(covDAA_L,popVar(cbind(dd[,i],aa[,i]))[1,2])
+    if(nInd==1){
+      covAD_L = c(covAD_L,0)
+      covAAA_L = c(covAAA_L,0)
+      covDAA_L = c(covDAA_L,0)
+    } else {
+      covAD_L = c(covAD_L,popVar(cbind(bv[,i],dd[,i]))[1,2])
+      covAAA_L = c(covAAA_L,popVar(cbind(bv[,i],aa[,i]))[1,2])
+      covDAA_L = c(covDAA_L,popVar(cbind(dd[,i],aa[,i]))[1,2])
+    }
   }
   varA = popVar(bv)
   varD = popVar(dd)

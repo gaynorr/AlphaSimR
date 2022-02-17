@@ -130,6 +130,7 @@ getFam = function(pop,famType){
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,...){
+  stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -146,7 +147,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
     eligible = eligible[eligible%in%candidates]
   }
   if(length(eligible)<nInd){
-    stop("Not enough suitable candidates, check request value and sex")
+    nInd = length(eligible)
+    warning("Suitable candidates smaller than nInd, returning ",nInd," individuals")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
@@ -216,6 +218,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,...){
+  stopifnot(nFam>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -234,8 +237,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   allFam = getFam(pop=pop,famType=famType)
   availFam = allFam[eligible]
   if(nFam>length(unique(availFam))){
-    stop(paste(nFam,"families requested but only",length(unique(availFam)),
-               "families are available"))
+    nFam = length(unique(availFam))
+    warning("Suitable families smaller than nFam, returning ", nFam, " families")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,...)
@@ -313,6 +316,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
                            candidates=NULL,simParam=NULL,...){
+  stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -409,6 +413,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
                     candidates=NULL,simParam=NULL,...){
+  stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }

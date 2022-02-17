@@ -14,10 +14,9 @@
 #' @slot nChr number of chromosomes
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
-#' @slot geno "matrix" containing chromosome genotypes. The "matrix" 
-#' has dimensions nChr by 1 and each element is a three dimensional
-#' array of raw values. The array dimensions are nLoci by ploidy by nInd.
-#' 
+#' @slot geno list of nChr length containing chromosome genotypes.
+#' Each element is a three dimensional array of raw values. 
+#' The array dimensions are nLoci by ploidy by nInd.
 #' 
 #' @export
 setClass("RawPop",
@@ -25,7 +24,7 @@ setClass("RawPop",
                  nChr="integer",
                  ploidy="integer",
                  nLoci="integer",
-                 geno="matrix"))
+                 geno="list"))
 
 setValidity("RawPop",function(object){
   errors = character()
@@ -112,6 +111,11 @@ setMethod("show",
           }
 )
 
+isRawPop = function(x) {
+  ret = is(x, class2 = "RawPop")
+  return(ret)
+}
+
 # MapPop ------------------------------------------------------------------
 
 #' @title Raw population with genetic map
@@ -126,7 +130,7 @@ setMethod("show",
 #' @param i index of individuals
 #' @param ... additional 'MapPop' objects
 #' 
-#' @slot genMap "matrix" of chromosome genetic maps
+#' @slot genMap list of chromosome genetic maps
 #' @slot centromere vector of centromere positions
 #' @slot inbred indicates whether the individuals are fully inbred
 #' 
@@ -191,6 +195,11 @@ setMethod("c",
             return(x)
           }
 )
+
+isMapPop = function(x) {
+  ret = is(x, class2 = "MapPop")
+  return(ret)
+}
 
 # NamedMapPop ------------------------------------------------------------------
 
@@ -315,7 +324,7 @@ cChr = function(...){
         stopifnot(x@nInd==y@nInd,
                   x@ploidy==y@ploidy)
         x@nChr = x@nChr+y@nChr
-        x@geno = rbind(x@geno,y@geno)
+        x@geno = c(x@geno,y@geno)
         x@genMap = c(x@genMap,y@genMap)
         x@centromere = c(x@centromere,y@centromere)
         x@nLoci = c(x@nLoci,y@nLoci)
@@ -324,6 +333,11 @@ cChr = function(...){
     }
   }
   return(x)
+}
+
+isNamedMapPop = function(x) {
+  ret = is(x, class2 = "NamedMapPop")
+  return(ret)
 }
 
 # Pop ---------------------------------------------------------------------
@@ -726,6 +740,11 @@ resetPop = function(pop,simParam=NULL){
   return(pop)
 }
 
+isPop = function(x) {
+  ret = is(x, class2 = "Pop")
+  return(ret)
+}
+
 # MegaPop ------------------------------------------------------------------
 
 #' @title Mega-Population
@@ -833,3 +852,7 @@ newMegaPop = function(...){
   return(output)
 }
 
+isMegaPop = function(x) {
+  ret = is(x, class2 = "MegaPop")
+  return(ret)
+}

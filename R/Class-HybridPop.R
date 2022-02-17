@@ -122,3 +122,8 @@ setMethod("c",
             return(x)
           }
 )
+
+isHybridPop = function(x) {
+  ret = is(x, class2 = "HybridPop")
+  return(ret)
+}

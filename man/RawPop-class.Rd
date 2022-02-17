@@ -46,8 +46,8 @@ The raw population class contains only genotype data.
 
 \item{\code{nLoci}}{number of loci per chromosome}
 
-\item{\code{geno}}{"matrix" containing chromosome genotypes. The "matrix" 
-has dimensions nChr by 1 and each element is a three dimensional
-array of raw values. The array dimensions are nLoci by ploidy by nInd.}
+\item{\code{geno}}{list of nChr length containing chromosome genotypes.
+Each element is a three dimensional array of raw values. 
+The array dimensions are nLoci by ploidy by nInd.}
 }}
 

@@ -1388,6 +1388,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchGenMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
@@ -1413,6 +1414,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchFemaleMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
@@ -1443,6 +1445,7 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to 
     #' be metacentric.
     switchMaleMap = function(genMap, centromere=NULL){
+      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
@@ -1682,7 +1685,11 @@ SimParam = R6Class(
         if(nSitesPerChr[x]==0){
           return(NULL)
         }else{
-          tmp = sort(sample(pot[[x]],nSitesPerChr[x]))
+          if(length(pot[[x]])==1){
+            tmp = pot[[x]]
+          }else{
+            tmp = sort(sample(pot[[x]],nSitesPerChr[x]))
+          }
           # Add site restrictions
           if(private$.restrSites){
             if(QTL){
@@ -1977,4 +1984,9 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   }
   epiEff = sweep(epiEff,2,sqrt(relVar),"*")
   return(epiEff)
+}
+
+isSimParam = function(x) {
+  ret = is(x, class2 = "SimParam")
+  return(ret)
 }

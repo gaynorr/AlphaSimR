@@ -20,3 +20,7 @@ setClass("RRsol",
                  Vu="matrix",
                  Ve="matrix"))
 
+isRRsol = function(x) {
+  ret = is(x, class2 = "RRsol")
+  return(ret)
+}

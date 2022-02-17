@@ -66,6 +66,7 @@ makeCross = function(pop,crossPlan,nProgeny=1,
               simParam$maleCentromere,
               simParam$quadProb,
               simParam$nThreads)
+  dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -329,6 +330,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
             simParam$maleCentromere,
             simParam$quadProb,
             simParam$nThreads)
+  dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=females@nChr,
@@ -512,6 +514,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
               simParam$maleCentromere,
               simParam$quadProb,
               simParam$nThreads)
+  dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
              nChr=pop@nChr,
@@ -603,6 +606,7 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                     simParam$isTrackRec,
                     simParam$nThreads)
   }
+  dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nDH),
              nChr=pop@nChr,

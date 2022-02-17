@@ -40,7 +40,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
     gv_d.set_size(nInd,nThreads);
     gv_d.zeros();
   }
-  arma::vec x(ploidy+1); // Genotype dossage
+  arma::vec x(ploidy+1); // Genotype dosage
   for(arma::uword i=0; i<x.n_elem; ++i)
     x(i) = double(i);
   arma::vec xa = (x-dP/2.0)*(2.0/dP);

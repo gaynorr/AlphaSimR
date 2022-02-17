@@ -62,6 +62,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                             simParam$femaleCentromere,
                             simParam$quadProb,
                             simParam$nThreads)
+  dim(tmp$geno) = NULL 
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nProgeny),
              nChr=pop@nChr,
@@ -69,22 +70,32 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
              nLoci=pop@nLoci,
              geno=tmp$geno)
   if(simParam$isTrackRec){
-    simParam$addToRec(tmp$recHist)
+    hist = tmp$recHist
+  }else{
+    hist = NULL
   }
   if(keepParents){
     return(newPop(rawPop=rPop,
-                  mother=rep(pop@id,each=nProgeny),
-                  father=rep(pop@id,each=nProgeny),
-                  origM=rep(pop@mother,each=nProgeny),
-                  origF=rep(pop@father,each=nProgeny),
-                  isDH=FALSE,
-                  simParam=simParam))
+                  mother=rep(pop@mother,each=nProgeny),
+                  father=rep(pop@father,each=nProgeny),
+                  simParam=simParam,
+                  iMother=rep(pop@iid,each=nProgeny),
+                  iFather=rep(pop@iid,each=nProgeny),
+                  femaleParentPop=pop,
+                  maleParentPop=pop,
+                  hist=hist
+    ))
   }else{
     return(newPop(rawPop=rPop,
                   mother=rep(pop@id,each=nProgeny),
                   father=rep(pop@id,each=nProgeny),
-                  isDH=FALSE,
-                  simParam=simParam))
+                  simParam=simParam,
+                  iMother=rep(pop@iid,each=nProgeny),
+                  iFather=rep(pop@iid,each=nProgeny),
+                  femaleParentPop=pop,
+                  maleParentPop=pop,
+                  hist=hist
+    ))
   }
 }
 
@@ -167,15 +178,19 @@ doubleGenome = function(pop, keepParents=TRUE,
         }
       }
     }
-    simParam$addToRec(newHist)
+  }else{
+    newHist = NULL
   }
   return(newPop(rawPop=rPop,
-                mother=mother,
-                father=father,
-                origM=origM,
-                origF=origF,
+                mother=origM,
+                father=origF,
+                simParam=simParam,
                 isDH=TRUE,
-                simParam=simParam))
+                iMother=pop@iid,
+                iFather=pop@iid,
+                femaleParentPop=pop,
+                maleParentPop=pop,
+                hist=newHist))
 }
 
 #' @title Combine genomes of individuals
@@ -248,7 +263,7 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
              nChr=females@nChr,
              ploidy=females@ploidy+males@ploidy,
              nLoci=females@nLoci,
-             geno=as.matrix(geno))
+             geno=geno)
   
   if(simParam$isTrackRec){
     # Duplicate recombination histories
