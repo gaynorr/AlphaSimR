@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -64,7 +60,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/gaynorr/AlphaSimR/">
+  <a href="https://github.com/gaynorr/AlphaSimR/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -83,11 +79,11 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Traits in AlphaSimR</h1>
-                        <h4 class="author">Chris Gaynor</h4>
+                        <h4 data-toc-skip class="author">Chris Gaynor</h4>
             
-            <h4 class="date">2021-09-08</h4>
+            <h4 data-toc-skip class="date">2022-02-17</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/master/vignettes/traits.Rmd"><code>vignettes/traits.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/HEAD/vignettes/traits.Rmd" class="external-link"><code>vignettes/traits.Rmd</code></a></small>
       <div class="hidden name"><code>traits.Rmd</code></div>
 
     </div>
@@ -107,9 +103,9 @@ G(x, w)
 \end{equation}\]</span></p>
 <p>The left-hand side of equation (1) consists of the following terms: <span class="math inline">\(GV\)</span>, which represents an individual’s genetic value; <span class="math inline">\(x\)</span>, which represents a vector of QTL genotype dosages; and <span class="math inline">\(w\)</span>, which represents an environmental covariate. The right-hand side of the equation consists of an intercept (<span class="math inline">\(\mu\)</span>) and four functions. The intercept is used to obtain the user specified trait mean in a founder population. The functions model each of the biological effects. All other trait in the <strong>ADEG</strong> framework can be modeled with equation (1) by simply removing any functions for biological effects that those traits lack.</p>
 <p>The discussion of the <strong>ADEG</strong> framework will continue below with an explanation for each function in equation (1) after first describing the concept of genotype dosage scaling. Genotype dosage scaling is discussed first, because it is applied within each of the aforementioned functions.</p>
-<div id="genotype-dosage-scaling" class="section level1">
-<h1 class="hasAnchor">
-<a href="#genotype-dosage-scaling" class="anchor"></a>Genotype Dosage Scaling</h1>
+<div class="section level2">
+<h2 id="genotype-dosage-scaling">Genotype Dosage Scaling<a class="anchor" aria-label="anchor" href="#genotype-dosage-scaling"></a>
+</h2>
 <p>AlphaSimR defines an individual’s raw genotype dosage as the number of copies of the “1” allele at a locus. Since all loci in AlphaSimR are biallelic with alleles “0” and “1”, this definition for raw genotype dosage fully explains an individual’s genotype. The number of copies of the “0” allele is just the individual’s ploidy level minus its raw genotype dosage. This is usually a rather irrelevant detail, because most user will want to model diploid organism whose ploidy level is always two. However, AlphaSimR can also be used to model a wide range of autopolyploid organisms and it even allows for mixing ploidy levels within a simulation. This means that the allowable range for raw genotype dosage is not a fixed value and that software must account for this fact.</p>
 <p>AlphaSimR accounts for different levels of ploidy by scaling an organism’s genotype dosage in accordance with its ploidy level. The primary motivation for using scaled dosages is to unify user inputs. The use of scaled dosages can also make it easier to compare simulations with different levels of ploidy. However, the user must use care when making such comparisons, because the underlying assumptions used by this model may not be valid.</p>
 <p>The use of scaled genotype dosages implies that an individual’s genetic value depends on the relative ratio of alleles and that it is independent of the organism’s ploidy level. For some traits in some organisms there is evidence to support this assumption or at least not reject it, but there is also plenty of evidence clearly rejecting this assumption in other traits <span class="citation">(Gallais 2003)</span>. Thus, the direct comparisons that are possible in AlphaSimR are not always biologically relevant. However, the vast majority of users won’t be running a simulation that depends on this assumption, so the information presented below is solely for the purpose of understanding the functions presented in the following sections.</p>
@@ -125,9 +121,9 @@ x_D = x \big( ploidy - x \big) \big( \tfrac{2}{ploidy} \big)^2
 <p>Table 1 provides an example of raw and scaled genotype dosages for a diploid and an autotetraploid organism. The diploid and tetraploid columns represent the raw genotype dosages for the respective organisms. The additive and dominance columns represent the corresponding scaled genotype dosages. This table shows how the 0, 1 and 2 genotypes of a diploid organism are treated as being equivalent to the 0, 2 and 4 genotypes of an autotetraploid organism.</p>
 
 </div>
-<div id="additive-effects" class="section level1">
-<h1 class="hasAnchor">
-<a href="#additive-effects" class="anchor"></a>Additive Effects</h1>
+<div class="section level2">
+<h2 id="additive-effects">Additive Effects<a class="anchor" aria-label="anchor" href="#additive-effects"></a>
+</h2>
 <p><span class="math display">\[\begin{equation}
 A(x) = \sum a x_A
 \end{equation}\]</span></p>
@@ -137,9 +133,9 @@ A(x) = \sum a x_A
 <p>The second stage is scaling the magnitude of the effects to achieve a user specified genetic variance. The user specified genetic variance can be either total or additive. The scaling procedure involves not just the additive effect, but also dominance and epistatic effects if the trait includes those effects as well. The procedure works by first calculating the variance in the founder population using the initially sampled effects and then calculating a scaling constant that is applied to all effects to achieve the desired variance in the founder population. The scaling constant equals the square-root of the target genetic variance (total or additive) divided by the square-root of the initial genetic variance (total or additive). Note that the founder population is the population the user uses to initialize the simulation parameters object.</p>
 <p>Scaling the magnitude of effects allows AlphaSimR to build simulations with trait values matching real-world counterparts. For example, a user simulating grain yield in a plant species is likely to have estimates for the means and variances in tons per hectare. The user can use those to create a simulation with the same values. The primary benefit of matching these values is to make interpretation of simulation results more intuitive. The significance of the results will be more apparent to the user because they can work in a scale that is familiar to them. It also allows the user to more easily identify potential flaws in the simulation when values move outside the range of biologically acceptable values.</p>
 </div>
-<div id="dominance-effects" class="section level1">
-<h1 class="hasAnchor">
-<a href="#dominance-effects" class="anchor"></a>Dominance Effects</h1>
+<div class="section level2">
+<h2 id="dominance-effects">Dominance Effects<a class="anchor" aria-label="anchor" href="#dominance-effects"></a>
+</h2>
 <p><span class="math display">\[\begin{equation}
 D(x) = \sum d x_D
 \end{equation}\]</span></p>
@@ -155,9 +151,9 @@ d = \delta \left| a \right|
 <p>An unfortunate side effect of the dominance model in polyploids is that the previously described interpretation of dominance degrees breaks. Consider a single QTL with an additive effect of 1 and a dominance degree of 1. The genotypes and genetic values for the example for both a diploid and an autotetraploid organism are given below in Table 2. For the diploid organism, the heterozygous genotype is equivalent to the best homozygote, so a dominance degree of 1 indicates complete dominance. However, the autotetraploid organism has three heterozygous genotypes. The value of the middlemost heterozygous genotype is equivalent to the best homozygote, but it is not the heterozygous genotype with the highest value. The heterozygous genotype with the highest value is better than the best homozygote, so a dominance degree of 1 actually represents over-dominance in an autotetraploid.</p>
 
 </div>
-<div id="epistatic-effects" class="section level1">
-<h1 class="hasAnchor">
-<a href="#epistatic-effects" class="anchor"></a>Epistatic Effects</h1>
+<div class="section level2">
+<h2 id="epistatic-effects">Epistatic Effects<a class="anchor" aria-label="anchor" href="#epistatic-effects"></a>
+</h2>
 <p><span class="math display">\[\begin{equation}
 E(x) = \sum e x_{A_1} x_{A_2}
 \end{equation}\]</span></p>
@@ -165,9 +161,9 @@ E(x) = \sum e x_{A_1} x_{A_2}
 <p>The epistatic model in equation (7) is somewhat constrained. The model only allows epistasis between pairs of loci and it only models additive-by-additive epistasis. The motivation behind using this constrained model is to maintain computational tractability when using very large numbers of QTL. As with the dominance model, this model is considered a reasonable approximation for a more complicated reality.</p>
 <p>The sampling of epistatic effects is similar to the sampling of additive effects with one additional user specified parameter for the relative ratio of the additive-by-additive epistatic variance. The relative ratio refers to the ratio between additive-by-additive epistatic variance and additive variance. This parameter sets the variance of epistatic effects. Specifically, the variance of the effects is set to a value expected to achieve the desired ratio in a random mating population whose QTL are in linkage equilibrium and have an allele frequency of 0.5. Note that most populations, including simulated populations, will not meet these assumptions, so the observed relative ratio between additive and additive-by-additive epistatic variance is unlikely to match the requested ratio. The observed additive-by-additive epistatic variance will typically be smaller, because its value is maximized at allele frequency 0.5. Note that unselected bi-parental populations derived from inbred parents are expected to have allele frequencies of 0.5 for segregating alleles. Thus, these populations are ideal for estimating a reasonable value for the relative ratio of additive-by-additive epistatic variance.</p>
 </div>
-<div id="genotype-by-environment-effects" class="section level1">
-<h1 class="hasAnchor">
-<a href="#genotype-by-environment-effects" class="anchor"></a>Genotype-by-Environment Effects</h1>
+<div class="section level2">
+<h2 id="genotype-by-environment-effects">Genotype-by-Environment Effects<a class="anchor" aria-label="anchor" href="#genotype-by-environment-effects"></a>
+</h2>
 <p><span class="math display">\[\begin{equation}
 G(x, w) = w b(x)
 \end{equation}\]</span></p>
@@ -184,38 +180,38 @@ b(x) = \mu_G + \sum g x_A
 Var(w b) = E[w]^2 Var(b) + Var(w) E[b]^2 + Var(w) Var(b)
 \end{equation}\]</span></p>
 <p>Equation (10) above gives the variance for the product of <span class="math inline">\(w\)</span> and <span class="math inline">\(b\)</span> in equation (8). The term <span class="math inline">\(Var()\)</span> indicates the variance of a variable and the term <span class="math inline">\(E[]\)</span> indicates the expectation (mean) of a variable. In the founder population, the expectations for <span class="math inline">\(w\)</span> and <span class="math inline">\(b\)</span> are zero, so the first two terms in the right-hand side of the equation drop out. Equation (10) reduces to the product of the two variances. The variance of <span class="math inline">\(w\)</span> is one and the variance of <span class="math inline">\(b\)</span> equals the genotype-by-environment interaction variance, so the variance in equation (8) equals the genotype-by-environment interaction variance and is equivalent to the variance in the genotype specific slopes. It must be repeated that the above description is limited to the founder population. This is an important point, because the mean and variance for genotype specific slope can and will be different in other populations since it is under genetic control.</p>
-<div id="adding-environmental-variance" class="section level2">
-<h2 class="hasAnchor">
-<a href="#adding-environmental-variance" class="anchor"></a>Adding Environmental Variance</h2>
+<div class="section level3">
+<h3 id="adding-environmental-variance">Adding Environmental Variance<a class="anchor" aria-label="anchor" href="#adding-environmental-variance"></a>
+</h3>
 <p>The genotype-by-environment effects model described above is altered to model a founder population with a non-zero environmental variance. All of the above equations remain relevant under the altered model and only the sampling distributions of the effects in the equations are changed. Specifically, the variance of environmental covariate is set to the environmental variance (<span class="math inline">\(\sigma_E^2\)</span>) and the genotype specific slope is set to a different mean and variance. The mean of the genotype specific slope is set to one and the variance is set to the genotype-by-environment interaction variance divided by the environmental variance (<span class="math inline">\(\tfrac{\sigma_{GE}^2}{\sigma_E^2}\)</span>).</p>
 <p>The logic behind these modifications becomes clear with an examination of equation (10). The right-hand side of equation (10) contains three terms. The first term equals zero, because the environmental covariate has a mean of zero (<em>i.e.</em> <span class="math inline">\(E[w] = 0\)</span>). The second term equals the environmental variance, because the mean for genotype specific slope equals one and the variance of the environmental covariate equals the environmental variance (<em>i.e.</em> <span class="math inline">\(E[b] = 1\)</span> and <span class="math inline">\(Var(w) = \sigma_E^2\)</span>). Finally, the value of the last term equals the genotype-by-environment interaction variance (<em>i.e.</em> <span class="math inline">\(Var(w) Var(b) = \sigma_E^2 \tfrac{\sigma_{GE}^2}{\sigma_E^2} = \sigma_{GE}^2\)</span>).</p>
 <p>An examination of equation (10) also shows how both the environmental and genotype-by-environment interaction variances are populations specific parameters that are under genetic control. For example, a population with a higher average genotype specific slope will also have a higher value for the second term in equation (10). This population thus have a higher environmental variance even though the environment itself has not changed. Likewise, the amount of genotype-by-environment interaction variance depends on the variance for the genotype specific slope.</p>
 </div>
-<div id="relationship-to-finlay-wilkinson-regression" class="section level2">
-<h2 class="hasAnchor">
-<a href="#relationship-to-finlay-wilkinson-regression" class="anchor"></a>Relationship to Finlay-Wilkinson Regression</h2>
+<div class="section level3">
+<h3 id="relationship-to-finlay-wilkinson-regression">Relationship to Finlay-Wilkinson Regression<a class="anchor" aria-label="anchor" href="#relationship-to-finlay-wilkinson-regression"></a>
+</h3>
 <p>AlphaSimR’s model for genotype-by-environment effects is effectively a biological model for Finlay-Wilkinson regression. Finlay-Wilkinson regression is a classic technique for analyzing genotype-by-environment interactions <span class="citation">(Finlay and Wilkinson 1963)</span>. In its simplest form, an individual’s genotype-by-environment interaction is reduced to an intercept and a slope. The slope in Finlay-Wilkinson regression is roughly equivalent to genotype specific slope in equation (9). The intercept in Finlay-Wilkinson regression is roughly equivalent to the genetic value of an individual in the target environment.</p>
 <p>Initially, the similarity between these two models was not intentional. The model used in AlphaSimR originates with the model used by Gaynor <em>et al.</em> <span class="citation">(2017)</span>. This model treated each QTL’s additive effect as random variable whose value depended on the value of an environmental covariate. That model is roughly equivalent to AlphaSimR’s model when the founder population has zero environmental variance. The difference between the models is that AlphaSimR scales effects to exactly achieve a desired variance and the Gaynor <em>et al.</em> model randomly sampled effects so that the expectation of the sampled effects equaled the desired variance. It was only realized later that a slight change to the model, as described above, could introduce a specified amount of environmental variance and that those modifications would result in a model with properties matching those measured by Finlay-Wilkinson regression.</p>
 </div>
-<div id="user-interaction" class="section level2">
-<h2 class="hasAnchor">
-<a href="#user-interaction" class="anchor"></a>User Interaction</h2>
+<div class="section level3">
+<h3 id="user-interaction">User Interaction<a class="anchor" aria-label="anchor" href="#user-interaction"></a>
+</h3>
 <p>AlphaSimR users do not directly observe nor set the value of the environmental covariate. Instead, they indirectly set its value by providing a randomly sampled p-value for each environment. AlphaSimR then uses this p-value to calculate the appropriate value of <span class="math inline">\(w\)</span> for any level of environmental variance. Users should note that p-values follow a uniform distribution over the range of zero to one, so it is recommended that users randomly generate p-values using R’s built-in <code>runif</code> function. A p-value of 0.5 corresponds to <span class="math inline">\(w\)</span> equaling zero and is equivalent to the target environment. If the user does not supply a p-value, AlphaSimR will sample one at random.</p>
 <p>Genetic values and genetic variances reported by AlphaSimR are always for the target environment. Since the target environment corresponds to <span class="math inline">\(w\)</span> equaling zero, equation (8) is effectively ignored in these calculations. Only the values for phenotypes and phenotypic variance ever reflect a contribution from genotype-by-environment interaction.</p>
 </div>
 </div>
-<div id="references" class="section level1 unnumbered">
-<h1 class="hasAnchor">
-<a href="#references" class="anchor"></a>References</h1>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
 <div id="refs" class="references">
 <div id="ref-FinlayWilkinson">
-<p>Finlay, K. W., and G. N. Wilkinson. 1963. “The Analysis of Adaptation in a Plant-Breeding Programme.” <em>Australian Journal of Agricultural Research</em> 14 (6): 742–54. <a href="https://doi.org/10.1071/ar9630742">https://doi.org/10.1071/ar9630742</a>.</p>
+<p>Finlay, K. W., and G. N. Wilkinson. 1963. “The Analysis of Adaptation in a Plant-Breeding Programme.” <em>Australian Journal of Agricultural Research</em> 14 (6): 742–54. <a href="https://doi.org/10.1071/ar9630742" class="external-link">https://doi.org/10.1071/ar9630742</a>.</p>
 </div>
 <div id="ref-Gallais">
 <p>Gallais, A. 2003. <em>Quantitative Genetics and Breeding Methods in Autopolyploid Plants</em>. Paris: INRA.</p>
 </div>
 <div id="ref-gaynor_2017">
-<p>Gaynor, R. Chris, Gregor Gorjanc, Alison R. Bentley, Eric S. Ober, Phil Howell, Robert Jackson, Ian J. Mackay, and John M. Hickey. 2017. “A Two-Part Strategy for Using Genomic Selection to Develop Inbred Lines.” <em>Crop Science</em> 57 (5): 2372–86. <a href="https://doi.org/10.2135/cropsci2016.09.0742">https://doi.org/10.2135/cropsci2016.09.0742</a>.</p>
+<p>Gaynor, R. Chris, Gregor Gorjanc, Alison R. Bentley, Eric S. Ober, Phil Howell, Robert Jackson, Ian J. Mackay, and John M. Hickey. 2017. “A Two-Part Strategy for Using Genomic Selection to Develop Inbred Lines.” <em>Crop Science</em> 57 (5): 2372–86. <a href="https://doi.org/10.2135/cropsci2016.09.0742" class="external-link">https://doi.org/10.2135/cropsci2016.09.0742</a>.</p>
 </div>
 </div>
 </div>
@@ -232,11 +228,13 @@ Var(w b) = E[w]^2 Var(b) + Var(w) E[b]^2 + Var(w) Var(b)
 
 
       <footer><div class="copyright">
-  <p>Developed by Chris Gaynor.</p>
+  <p></p>
+<p>Developed by Chris Gaynor.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -244,6 +242,8 @@ Var(w b) = E[w]^2 Var(b) + Var(w) E[b]^2 + Var(w) Var(b)
 
   
 
+
+  
 
   </body>
 </html>

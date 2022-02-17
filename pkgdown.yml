@@ -1,8 +1,8 @@
 pandoc: 2.7.3
-pkgdown: 1.6.1
+pkgdown: 2.0.2
 pkgdown_sha: ~
 articles:
   intro: intro.html
   traits: traits.html
-last_built: 2021-09-08T15:13Z
+last_built: 2022-02-17T16:45Z
 
