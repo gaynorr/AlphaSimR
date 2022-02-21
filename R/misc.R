@@ -598,3 +598,19 @@ rnormWithSeed = function(n, u){
   set.seed(as.integer((u-0.5)*2*2147483647))
   rnorm(n)
 }
+
+
+# determines if the given real symmetric matrix is 
+# positive semi-definite
+is.psd <- function(x, tol = 1E-7){
+  eigenvalues <- eigen(x, only.values = TRUE)$values
+  nRows <- nrow(x)
+  for (i in seq_len(nRows)) {
+    if (abs(eigenvalues[i]) < tol) {
+      eigenvalues[i] <- 0
+    }
+  }
+  ifelse(any(eigenvalues < 0), FALSE, TRUE)
+}
+
+

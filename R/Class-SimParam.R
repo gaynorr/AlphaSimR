@@ -373,6 +373,10 @@ SimParam = R6Class(
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 length(mean)==nrow(corA))
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -437,6 +441,12 @@ SimParam = R6Class(
                 isSymmetric(corA),
                 isSymmetric(corDD),
                 length(mean)==nrow(corA))
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corDD, tol = 1E-7)){
+        warning("Matrix of correlations between dominance degrees ('corDD') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -513,6 +523,12 @@ SimParam = R6Class(
                 length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv))
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corGxE, tol = 1E-7)){
+        warning("Matrix of correlations between GxE effects ('corGxE') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -612,6 +628,15 @@ SimParam = R6Class(
                 nrow(corDD)==nTraits,
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits)
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corDD, tol = 1E-7)){
+        warning("Matrix of correlations between dominance degrees ('corDD') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corGxE, tol = 1E-7)){
+        warning("Matrix of correlations between GxE effects ('corGxE') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -711,6 +736,12 @@ SimParam = R6Class(
                 length(relAA)==length(mean),
                 length(mean)==nrow(corA),
                 (sum(nQtlPerChr)%%2L)==0L)
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corAA, tol = 1E-7)){
+        warning("Matrix of correlations between additive-by-additive effects ('corAA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -793,12 +824,22 @@ SimParam = R6Class(
       if(is.null(corAA)) corAA=diag(nTraits)
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
+                isSymmetric(corAA),
                 isSymmetric(corDD),
                 length(mean)==nrow(corA),
                 length(mean)==nrow(corAA),
                 length(mean)==nrow(corDD),
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L)
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corAA, tol = 1E-7)){
+        warning("Matrix of correlations between additive-by-additive effects ('corAA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corDD, tol = 1E-7)){
+        warning("Matrix of correlations between dominance degrees ('corDD') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -893,6 +934,16 @@ SimParam = R6Class(
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
                 (sum(nQtlPerChr)%%2L)==0L)
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corGxE, tol = 1E-7)){
+        warning("Matrix of correlations between GxE effects ('corGxE') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      
+      if(!is.psd(corAA, tol = 1E-7)){
+        warning("Matrix of correlations between additive-by-additive effects ('corAA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1017,6 +1068,19 @@ SimParam = R6Class(
                 length(varEnv)==nTraits,
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L)
+      if(!is.psd(corA, tol = 1E-7)){
+        warning("Matrix of correlations between additive effects ('corA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corDD, tol = 1E-7)){
+        warning("Matrix of correlations between dominance degrees ('corDD') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      if(!is.psd(corGxE, tol = 1E-7)){
+        warning("Matrix of correlations between GxE effects ('corGxE') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
+      
+      if(!is.psd(corAA, tol = 1E-7)){
+        warning("Matrix of correlations between additive-by-additive effects ('corAA') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1224,6 +1288,9 @@ SimParam = R6Class(
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
                 length(private$.varE)==self$nTraits)
+      if(!is.psd(corE, tol = 1E-7)){
+        warning("Matrix of correlations for the error variances ('corE') is not positive semi-definite. We recommend creating a valid correlation matrix.", call. = FALSE)
+      }
       if(is.matrix(private$.varE)){
         varE = diag(private$.varE)
       }else{
