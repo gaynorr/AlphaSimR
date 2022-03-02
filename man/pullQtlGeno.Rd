@@ -2,7 +2,7 @@
 % Please edit documentation in R/pullGeno.R
 \name{pullQtlGeno}
 \alias{pullQtlGeno}
-\title{Pull QTL genotype}
+\title{Pull QTL genotypes}
 \usage{
 pullQtlGeno(pop, trait = 1, chr = NULL, simParam = NULL)
 }

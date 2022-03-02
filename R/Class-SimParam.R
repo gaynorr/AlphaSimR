@@ -584,7 +584,7 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
-    addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
+    addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
                            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
                            shape=1,force=FALSE){
@@ -982,7 +982,7 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
-    addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
+    addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
                             corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
                             gamma=FALSE,shape=1,force=FALSE){
@@ -1953,7 +1953,7 @@ SimParam = R6Class(
 #### External helpers ----
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%rotMat(corr)
+                  ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
       x = (pnorm(addEff[,i])-0.5)*2
@@ -1966,7 +1966,7 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
 sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
                       meanDD,varDD){
   domEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%rotMat(corDD)
+                  ncol=nTraits)%*%transMat(corDD)
   domEff = sweep(domEff,2,sqrt(varDD),"*")
   domEff = sweep(domEff,2,meanDD,"+")
   domEff = abs(addEff)*domEff
@@ -1975,7 +1975,7 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
-                  ncol=nTraits)%*%rotMat(corr)
+                  ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
       x = (pnorm(epiEff[,i])-0.5)*2

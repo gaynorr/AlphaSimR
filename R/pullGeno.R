@@ -200,7 +200,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
   return(output)
 }
 
-#' @title Pull SNP genotype
+#' @title Pull SNP genotypes
 #'
 #' @description Retrieves SNP genotype data
 #'
@@ -245,7 +245,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, simParam=NULL){
   return(output)
 }
 
-#' @title Pull QTL genotype
+#' @title Pull QTL genotypes
 #'
 #' @description Retrieves QTL genotype data
 #'
@@ -290,7 +290,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, simParam=NULL){
   return(output)
 }
 
-#' @title Pull seg site genotypes
+#' @title Pull segregating site genotypes
 #'
 #' @description
 #' Retrieves genotype data for all segregating sites
@@ -353,7 +353,7 @@ pullSegSiteGeno = function(pop, chr=NULL, simParam=NULL){
 #' chip's haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -395,7 +395,6 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }
   }else{
-    stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
                          as.integer(haplo),simParam$nThreads)
     output = convToImat(output)
@@ -418,7 +417,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' QTL haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -460,7 +459,6 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }
   }else{
-    stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
                          as.integer(haplo),simParam$nThreads)
     output = convToImat(output)
@@ -483,7 +481,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' \code{\link{RawPop-class}}
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes.
+#' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
@@ -541,7 +539,6 @@ pullSegSiteHaplo = function(pop, haplo="all",
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }
   }else{
-    stopifnot(haplo%in%c(1,2))
     output = getOneHaplo(pop@geno,
                          lociTot,
                          allLoci,
@@ -632,3 +629,73 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
   
   return(output)
 }
+
+
+#' #' @title Pull marker genotypes
+#' #'
+#' #' @description Retrieves genotype data for user
+#' #' specified loci
+#' #'
+#' #' @param pop an object of \code{\link{Pop-class}}
+#' #' @param markers a character vector. Indicates the 
+#' #' names of the loci to be retrieved. 
+#' #' @param simParam an object of \code{\link{SimParam}}
+#' #'
+#' #' @return Returns a matrix of genotypes.
+#' #' 
+#' #' @examples 
+#' #' #Create founder haplotypes
+#' #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#' #' 
+#' #' #Set simulation parameters
+#' #' SP = SimParam$new(founderPop)
+#' #' SP$addTraitA(10)
+#' #' SP$addSnpChip(5)
+#' #' 
+#' #' #Create population
+#' #' pop = newPop(founderPop, simParam=SP)
+#' #' 
+#' #' #Pull genotype data for first two markers on chromosome one.
+#' #' #Marker name is consistent with default naming in AlphaSimR.
+#' #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
+#' #' 
+#' #' @export
+#' pullMarkerGeno = function(pop, markers, simParam=NULL){
+#'   
+#' }
+#' 
+#' #' @title Pull marker haplotypes
+#' #'
+#' #' @description Retrieves genotype data for user
+#' #' specified loci
+#' #'
+#' #' @param pop an object of \code{\link{Pop-class}}
+#' #' @param markers a character vector. Indicates the 
+#' #' names of the loci to be retrieved
+#' #' @param haplo either "all" for all haplotypes or an integer
+#' #' for a single set of haplotypes. Use a value of 1 for female
+#' #' haplotypes and a value of 2 for male haplotypes in diploids.
+#' #' @param simParam an object of \code{\link{SimParam}}
+#' #'
+#' #' @return Returns a matrix of genotypes.
+#' #' 
+#' #' @examples 
+#' #' #Create founder haplotypes
+#' #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#' #' 
+#' #' #Set simulation parameters
+#' #' SP = SimParam$new(founderPop)
+#' #' SP$addTraitA(10)
+#' #' SP$addSnpChip(5)
+#' #' 
+#' #' #Create population
+#' #' pop = newPop(founderPop, simParam=SP)
+#' #' 
+#' #' #Pull genotype data for first two markers on chromosome one.
+#' #' #Marker name is consistent with default naming in AlphaSimR.
+#' #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
+#' #' 
+#' #' @export
+#' pullMarkerHaplo = function(pop, markers, haplo="all", simParam=NULL){
+#'   
+#' }

@@ -19,7 +19,7 @@ genomic selection. Included is the 'Markovian Coalescent Simulator' ('MaCS')
 for fast simulation of biallelic sequences according to a population 
 demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 
-Please see the introductionary vignette for instructions for using this package. 
+Please see the introductory vignette for instructions for using this package. 
 The vignette can be viewed using the following command: 
 \code{vignette("intro",package="AlphaSimR")}
 }

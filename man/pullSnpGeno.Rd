@@ -2,7 +2,7 @@
 % Please edit documentation in R/pullGeno.R
 \name{pullSnpGeno}
 \alias{pullSnpGeno}
-\title{Pull SNP genotype}
+\title{Pull SNP genotypes}
 \usage{
 pullSnpGeno(pop, snpChip = 1, chr = NULL, simParam = NULL)
 }

@@ -1,0 +1,7 @@
+# importGenMap
+# 
+# importInbredGeno
+# 
+# importHaplo
+# 
+# importTrait

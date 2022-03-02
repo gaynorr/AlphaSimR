@@ -93,7 +93,6 @@ setMethod("[",
                 }
               }
             }
-            validObject(x)
             return(x)
           }
 )
@@ -118,7 +117,6 @@ setMethod("c",
                 }
               }
             }
-            validObject(x)
             return(x)
           }
 )

@@ -2,7 +2,7 @@
 % Please edit documentation in R/pullGeno.R
 \name{pullSegSiteGeno}
 \alias{pullSegSiteGeno}
-\title{Pull seg site genotypes}
+\title{Pull segregating site genotypes}
 \usage{
 pullSegSiteGeno(pop, chr = NULL, simParam = NULL)
 }

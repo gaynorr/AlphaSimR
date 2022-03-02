@@ -428,12 +428,76 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                 file   = paste0(baseName, ".ped"))
 }
 
-#Create rotation matrix for sampling random deviates
-#Uses SVD method for stability
-rotMat = function(X){
-  ans = svd(X)
-  u = t(ans$u)*sqrt(pmax(ans$d,0))
-  return(t(ans$v%*%u))
+#' @title Linear transformation matrix
+#' 
+#' @description 
+#' Creates an m by m linear transformation matrix that 
+#' can be applied to n by m uncorrelated deviates 
+#' sampled from a standard normal distribution to produce
+#' create correlated deviates with an arbitrary correlation 
+#' of R. If R is not positive semi-definite, the function 
+#' returns smoothing and returns a warning (see details).
+#' 
+#' @param R a correlation matrix
+#' 
+#' @details 
+#' An eigendecomposition is applied to the correlation 
+#' matrix and used to test if it is positive semi-definite. 
+#' If the matrix is not positive semi-definite, it is not a 
+#' valid correlation matrix. In this case, smoothing is 
+#' applied to the matrix (as described in the 'psych' library) 
+#' to obtain a valid correlation matrix. The resulting 
+#' deviates will thus not exactly match the desired correlation, 
+#' but will hopefully be close if the the input matrix wasn't 
+#' too far removed from a valid correlation matrix.
+#' 
+#' @examples 
+#' # Create an 2x2 correlation matrix
+#' R = 0.5*diag(2) + 0.5
+#' 
+#' # Sample 1000 uncorrelated deviates from a 
+#' # bivariate standard normal distribution
+#' X = matrix(rnorm(2*1000), ncol=2)
+#' 
+#' # Compute the transformation matrix
+#' T = transMat(R)
+#' 
+#' # Apply the transformation to the deviates
+#' Y = X%*%T
+#' 
+#' # Measure the sample correlation
+#' cor(Y)
+#' 
+#' @export
+transMat = function(R){
+  # Check if matrix is symmetric 
+  # Stop if it is not
+  nameR = deparse(substitute(R))
+  if(!isSymmetric(R)){
+    stop(nameR, " is not a symmetric matrix")
+  }
+  
+  # Check if matrix is positive semi-definite
+  # Provide a warning if it is not
+  eig = eigen(R, symmetric=TRUE)
+  
+  if(min(eig$values)<.Machine$double.eps){
+    warning("Matrix is not positive semi-definite, see ?transMat for details")
+    # Performing correlation matrix smoothing
+    eig$values[eig$values<.Machine$double.eps] = 100*.Machine$double.eps
+    m = ncol(R)
+    totVar = sum(eig$values)
+    eig$values = eig$values * m/totVar
+    newR = eig$vectors%*%diag(eig$values)%*%t(eig$vectors)
+    newR = cov2cor(newR)
+    eig = eigen(newR, symmetric=TRUE)
+  }
+  
+  return(
+    t(eig$vectors %*% 
+        (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
+    )
+  )
 }
 
 #' @title Add Random Mutations

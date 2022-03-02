@@ -6,7 +6,7 @@ addError = function(gv,varE,reps=1){
     stopifnot(isSymmetric(varE),
               ncol(varE)==nTraits)
     error = matrix(rnorm(nInd*nTraits),
-                   ncol=nTraits)%*%rotMat(varE)
+                   ncol=nTraits)%*%transMat(varE)
   }else{
     stopifnot(length(varE)==nTraits)
     error = lapply(varE,function(x){
