@@ -154,9 +154,9 @@ doubleGenome = function(pop, keepParents=TRUE,
   if(simParam$isTrackPed){
     # Extract actual parents
     ped = simParam$ped
-    id = as.integer(pop@id)
-    mother = ped[id,1]
-    father = ped[id,2]
+    iid = as.integer(pop@id)
+    mother = ped[iid,1]
+    father = ped[iid,2]
   }else{
     # Provide arbitrary parents (not actually used)
     mother = origM
@@ -175,7 +175,7 @@ doubleGenome = function(pop, keepParents=TRUE,
           for(m in 1:2){
             k = k+1
             newHist[[i]][[j]][[k]] = 
-              oldHist[[id[i]]][[j]][[l]]
+              oldHist[[iid[i]]][[j]][[l]]
             # the above works because when simParam$isTrackRec is set, we also
             # have simParam$isTrackPed set, and hence we have id
           }
