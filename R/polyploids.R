@@ -79,8 +79,9 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                   mother=rep(pop@mother,each=nProgeny),
                   father=rep(pop@father,each=nProgeny),
                   simParam=simParam,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
+                  isDH=FALSE,
+                  iMother=rep(as.integer(pop@mother),each=nProgeny),
+                  iFather=rep(as.integer(pop@father),each=nProgeny),
                   femaleParentPop=pop,
                   maleParentPop=pop,
                   hist=hist
@@ -90,6 +91,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                   mother=rep(pop@id,each=nProgeny),
                   father=rep(pop@id,each=nProgeny),
                   simParam=simParam,
+                  isDH=FALSE,
                   iMother=rep(pop@iid,each=nProgeny),
                   iFather=rep(pop@iid,each=nProgeny),
                   femaleParentPop=pop,
@@ -152,7 +154,7 @@ doubleGenome = function(pop, keepParents=TRUE,
   if(simParam$isTrackPed){
     # Extract actual parents
     ped = simParam$ped
-    id = as.numeric(pop@id)
+    id = as.integer(pop@id)
     mother = ped[id,1]
     father = ped[id,2]
   }else{
@@ -188,8 +190,8 @@ doubleGenome = function(pop, keepParents=TRUE,
                 father=origF,
                 simParam=simParam,
                 isDH=TRUE,
-                iMother=pop@iid,
-                iFather=pop@iid,
+                iMother=as.integer(origM),
+                iFather=as.integer(origF),
                 femaleParentPop=pop,
                 maleParentPop=pop,
                 hist=newHist))
