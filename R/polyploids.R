@@ -242,8 +242,10 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
      (min(crossPlan)<1L)){
     stop("Invalid crossPlan")
   }
-  mother = as.integer(females@id[crossPlan[,1]])
-  father = as.integer(males@id[crossPlan[,2]])
+  mother = females@id[crossPlan[,1]]
+  father = males@id[crossPlan[,2]]
+  iMother = as.integer(mother)
+  iFather = as.integer(father)
   # Merge genotype data
   geno = vector("list", females@nChr)
   for(i in 1:females@nChr){
@@ -279,21 +281,27 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
         for(l in 1:females@ploidy){
           k = k+1
           newHist[[i]][[j]][[k]] = 
-            oldHist[[mother[i]]][[j]][[l]]
+            oldHist[[iMother[i]]][[j]][[l]]
         }
         for(l in 1:males@ploidy){
           k = k+1
           newHist[[i]][[j]][[k]] = 
-            oldHist[[father[i]]][[j]][[l]]
+            oldHist[[iFather[i]]][[j]][[l]]
         }
       }
     }
-    simParam$addToRec(newHist)
+  }else{
+    newHist = NULL
   }
   return(newPop(rawPop=rPop,
                 mother=mother,
                 father=father,
+                simParam=simParam,
                 isDH=FALSE,
-                simParam=simParam))
+                iMother=iMother,
+                iFather=iFather,
+                femaleParentPop=females,
+                maleParentPop=males,
+                hist=newHist))
 }
 
