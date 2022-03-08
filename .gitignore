@@ -5,6 +5,10 @@
 src/*.o
 src/*.so
 src/*.dll
+src/Makevars
 Notes.txt
 Meta
 .Rproj.user
+.DS_Store
+config.log
+config.status
