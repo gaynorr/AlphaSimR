@@ -173,7 +173,9 @@ doubleGenome = function(pop, keepParents=TRUE,
           for(m in 1:2){
             k = k+1
             newHist[[i]][[j]][[k]] = 
-              oldHist[[as.numeric(id[i])]][[j]][[l]]
+              oldHist[[id[i]]][[j]][[l]]
+            # the above works because when simParam$isTrackRec is set, we also
+            # have simParam$isTrackPed set, and hence we have id
           }
         }
       }
