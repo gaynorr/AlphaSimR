@@ -1,3 +1,14 @@
+Changes in version 1.1.2.9990
+    
+  New features
+    -added importGenMap to format genetic maps for AlphaSimR
+    -added importInbredGeno and importHaplo to make it easier to create a simulation from external data
+    -added importSnpChip, importTraitA and importTraitAD to SimParam to make it easier to manually define traits
+    -added pullMarkerGeno and pullMarkerHaplo to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip
+    
+  Bug fixes
+    -reduceGenome, mergeGenome and doubleGenome should really now work with pedigree and recombination tracking
+
 Changes in version 1.1.2
     
   Bug fixes

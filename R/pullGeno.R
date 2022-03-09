@@ -631,46 +631,83 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
 }
 
 
-#' #' @title Pull marker genotypes
-#' #'
-#' #' @description Retrieves genotype data for user
-#' #' specified loci
-#' #'
-#' #' @param pop an object of \code{\link{Pop-class}}
-#' #' @param markers a character vector. Indicates the 
-#' #' names of the loci to be retrieved. 
-#' #' @param simParam an object of \code{\link{SimParam}}
-#' #'
-#' #' @return Returns a matrix of genotypes.
-#' #' 
-#' #' @examples 
-#' #' #Create founder haplotypes
-#' #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' #' 
-#' #' #Set simulation parameters
-#' #' SP = SimParam$new(founderPop)
-#' #' SP$addTraitA(10)
-#' #' SP$addSnpChip(5)
-#' #' 
-#' #' #Create population
-#' #' pop = newPop(founderPop, simParam=SP)
-#' #' 
-#' #' #Pull genotype data for first two markers on chromosome one.
-#' #' #Marker name is consistent with default naming in AlphaSimR.
-#' #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
-#' #' 
-#' #' @export
-#' pullMarkerGeno = function(pop, markers, simParam=NULL){
-#'   
-#' }
-#' 
+#' @title Pull marker genotypes
+#'
+#' @description Retrieves genotype data for user
+#' specified loci
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param markers a character vector. Indicates the
+#' names of the loci to be retrieved.
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns a matrix of genotypes.
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$addSnpChip(5)
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#'
+#' #Pull genotype data for first two markers on chromosome one.
+#' #Marker name is consistent with default naming in AlphaSimR.
+#' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
+#'
+#' @export
+pullMarkerGeno = function(pop, markers, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  
+  # Extract genetic map and check if names are in map
+  genMap = simParam$genMap
+  genMapMarkerNames = unlist(lapply(genMap, names))
+  stopifnot(all(markers%in%genMapMarkerNames))
+  
+  # Create lociPerChr and lociLoc
+  lociPerChr = integer(length(genMap))
+  lociLoc = vector("list", length(genMap))
+  
+  # Loop through chromosomes
+  for(i in 1:length(genMap)){
+    
+    # Initialize lociLoc
+    lociLoc[[i]] = integer()
+    
+    # Find matches if they exist
+    take = match(names(genMap[[i]]), markers)
+    lociPerChr[i] = length(na.omit(take))
+    if(lociPerChr[i]>0L){
+      lociLoc[[i]] = which(!is.na(take))
+    }
+  }
+  lociLoc = unlist(lociLoc)
+  
+  # Get genotypes
+  output = getGeno(pop@geno, lociPerChr, 
+                   lociLoc, simParam$nThreads)
+  output = convToImat(output)
+  rownames(output) = pop@id
+  colnames(output) = getLociNames(lociPerChr, 
+                                  lociLoc, 
+                                  genMap)
+  output = output[,match(markers, colnames(output)),drop=FALSE]
+  return(output)
+}
+
 #' #' @title Pull marker haplotypes
 #' #'
 #' #' @description Retrieves genotype data for user
 #' #' specified loci
 #' #'
 #' #' @param pop an object of \code{\link{Pop-class}}
-#' #' @param markers a character vector. Indicates the 
+#' #' @param markers a character vector. Indicates the
 #' #' names of the loci to be retrieved
 #' #' @param haplo either "all" for all haplotypes or an integer
 #' #' for a single set of haplotypes. Use a value of 1 for female
@@ -678,24 +715,24 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
 #' #' @param simParam an object of \code{\link{SimParam}}
 #' #'
 #' #' @return Returns a matrix of genotypes.
-#' #' 
-#' #' @examples 
+#' #'
+#' #' @examples
 #' #' #Create founder haplotypes
 #' #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' #' 
+#' #'
 #' #' #Set simulation parameters
 #' #' SP = SimParam$new(founderPop)
 #' #' SP$addTraitA(10)
 #' #' SP$addSnpChip(5)
-#' #' 
+#' #'
 #' #' #Create population
 #' #' pop = newPop(founderPop, simParam=SP)
-#' #' 
+#' #'
 #' #' #Pull genotype data for first two markers on chromosome one.
 #' #' #Marker name is consistent with default naming in AlphaSimR.
 #' #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
-#' #' 
+#' #'
 #' #' @export
 #' pullMarkerHaplo = function(pop, markers, haplo="all", simParam=NULL){
-#'   
+#' 
 #' }
