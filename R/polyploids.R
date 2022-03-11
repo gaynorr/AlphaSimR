@@ -141,7 +141,7 @@ doubleGenome = function(pop, keepParents=TRUE,
   
   geno = pop@geno
   for(i in 1:pop@nChr){
-    geno[[i]] = geno[[i]][,rep(1:pop@ploidy,each=2),]
+    geno[[i]] = geno[[i]][,rep(1:pop@ploidy,each=2),,drop=FALSE]
   }
   
   rPop = new("RawPop",
@@ -251,11 +251,11 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
                               females@ploidy+males@ploidy,
                               nrow(crossPlan)))
     for(j in 1:nrow(crossPlan)){
-      # Add female gamete
+      # Add female gametes
       geno[[i]][,1:females@ploidy,j] = 
         females@geno[[i]][,,crossPlan[j,1]]
       
-      # Add male gamete
+      # Add male gametes
       geno[[i]][,(females@ploidy+1):(females@ploidy+males@ploidy),j] = 
         males@geno[[i]][,,crossPlan[j,2]]
     }
@@ -279,15 +279,13 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
     }
     
     # Add male contribution
-    i = females@ploidy
-    for(j in 1:males@ploidy){
-      i = i+j
-      hist[[i]] = cbind(i, 1L)
+    for(i in 1:males@ploidy){
+      hist[[i+females@ploidy]] = cbind(i, 1L)
     }
     
     # Rep for chromosomes and individuals
-    hist = rep(list(hist), pop@nChr)
-    hist = rep(list(hist), pop@nInd)
+    hist = rep(list(hist), rPop@nChr)
+    hist = rep(list(hist), rPop@nInd)
   }else{
     hist = NULL
   }
