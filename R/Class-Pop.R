@@ -740,6 +740,26 @@ resetPop = function(pop,simParam=NULL){
   return(pop)
 }
 
+#' @title Test if object is of a Population class
+#' 
+#' @description Utilify function to test if object is of a Population class
+#' 
+#' @param x \code{\link{Pop-class}}
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' isPop(pop)
+#' isPop(SP)
+#' 
+#' @export
 isPop = function(x) {
   ret = is(x, class2 = "Pop")
   return(ret)
