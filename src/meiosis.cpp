@@ -13,7 +13,7 @@ public:
                arma::uword nChr, 
                arma::uword ploidy);
   
-  // Append new recombinations to history
+  // Append new recombination history
   void addHist(arma::Mat<int>& input, 
                arma::uword nInd, 
                arma::uword chrGroup,
@@ -38,7 +38,7 @@ void RecHist::setSize(arma::uword nInd,
   }
 }
 
-// Append new recombinations to history
+// Append new recombination history
 void RecHist::addHist(arma::Mat<int>& input, 
              arma::uword nInd, 
              arma::uword chrGroup,
@@ -1002,7 +1002,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
 // v: interference parameter for gamma model
-// p: proportion of non-interferring crossovers
+// p: proportion of non-interfering crossovers
 // quadProb: probability of quadrivalent formation
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
