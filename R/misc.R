@@ -1,3 +1,45 @@
+#' @rdname isFemale
+#' @title Test if individuals of a population are female or male
+#'
+#' @description Test if individuals of a population are female or male
+#'
+#' @param x \code{\link{Pop-class}}
+#'
+#' @return logical
+#'
+#' @examples
+#' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
+#' SP <- SimParam$new(founderGenomes)
+#' SP$setSexes(sexes = "yes_sys")
+#' pop <- newPop(founderGenomes)
+#' 
+#' isFemale(pop)
+#' isMale(pop)
+#' 
+#' pop[isFemale(pop)]
+#' pop[isFemale(pop)]@sex
+#' 
+#' @export
+isFemale <- function(x) {
+  if (isPop(x)) {
+    ret <- x@sex == "F"
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
+#' @describeIn isFemale Test if individuals of a population are female or male
+#' @export
+isMale <- function(x) {
+  if (isPop(x)) {
+    ret <- x@sex == "M"
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
 #' @title Selection intensity
 #' 
 #' @description 
