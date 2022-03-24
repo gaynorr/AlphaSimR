@@ -31,6 +31,8 @@ setValidity("LociMap",function(object){
   }
 })
 
+#' @describeIn LociMap Test if object is of a LociMap class
+#' @export
 isLociMap = function(x) {
   ret = is(x, class2 = "LociMap")
   return(ret)
@@ -63,6 +65,8 @@ setValidity("TraitA",function(object){
   }
 })
 
+#' @describeIn TraitA Test if object is of a TraitA class
+#' @export
 isTraitA = function(x) {
   ret = is(x, class2 = "TraitA")
   return(ret)
@@ -94,6 +98,8 @@ setValidity("TraitA2",function(object){
   }
 })
 
+#' @describeIn TraitA2 Test if object is of a TraitA2 class
+#' @export
 isTraitA2 = function(x) {
   ret = is(x, class2 = "TraitA2")
   return(ret)
@@ -127,6 +133,8 @@ setValidity("TraitAE",function(object){
   }
 })
 
+#' @describeIn TraitAE Test if object is of a TraitAE class
+#' @export
 isTraitAE = function(x) {
   ret = is(x, class2 = "TraitAE")
   return(ret)
@@ -157,6 +165,8 @@ setValidity("TraitAD",function(object){
   }
 })
 
+#' @describeIn TraitAD Test if object is of a TraitAD class
+#' @export
 isTraitAD = function(x) {
   ret = is(x, class2 = "TraitAD")
   return(ret)
@@ -187,6 +197,8 @@ setValidity("TraitA2D",function(object){
   }
 })
 
+#' @describeIn TraitA2D Test if object is of a TraitA2D class
+#' @export
 isTraitA2D = function(x) {
   ret = is(x, class2 = "TraitA2D")
   return(ret)
@@ -220,6 +232,8 @@ setValidity("TraitADE",function(object){
   }
 })
 
+#' @describeIn TraitADE Test if object is of a TraitADE class
+#' @export
 isTraitADE = function(x) {
   ret = is(x, class2 = "TraitADE")
   return(ret)
@@ -254,6 +268,8 @@ setValidity("TraitAG",function(object){
   }
 })
 
+#' @describeIn TraitAG Test if object is of a TraitAG class
+#' @export
 isTraitAG = function(x) {
   ret = is(x, class2 = "TraitAG")
   return(ret)
@@ -288,6 +304,8 @@ setValidity("TraitAEG",function(object){
   }
 })
 
+#' @describeIn TraitAEG Test if object is of a TraitAEG class
+#' @export
 isTraitAEG = function(x) {
   ret = is(x, class2 = "TraitAEG")
   return(ret)
@@ -322,6 +340,8 @@ setValidity("TraitADG",function(object){
   }
 })
 
+#' @describeIn TraitADG Test if object is of a TraitADG class
+#' @export
 isTraitADG = function(x) {
   ret = is(x, class2 = "TraitADG")
   return(ret)
@@ -356,6 +376,8 @@ setValidity("TraitADEG",function(object){
   }
 })
 
+#' @describeIn TraitADEG Test if object is of a TraitADEG class
+#' @export
 isTraitADEG = function(x) {
   ret = is(x, class2 = "TraitADEG")
   return(ret)
