@@ -40,6 +40,146 @@ isMale <- function(x) {
   return(ret)
 }
 
+
+#' @rdname setMisc
+#' @title Set miscelaneous information in a population
+#'
+#' @description Set miscelaneous information in a population
+#'
+#' @param x \code{\link{Pop-class}}
+#' @param node character, name of the node to set within the \code{x@misc} slot
+#' @param value, value to be saved into \code{x@misc[[*]][[node]]}; length of
+#'   \code{value} should be equal to \code{nInd(x)}; if its length is 1, then
+#'   it is repeated using \code{rep} (see examples)
+#'
+#' @details A \code{NULL} in \code{value} is ignored
+#' 
+#' @return \code{\link{Pop-class}} with \code{x@misc[[*]][[node]]} set
+#' basePop <- newPop(founderGenomes)
+#'
+#' basePop <- setMisc(basePop, node = "info", value = 1)
+#' basePop@misc
+#' getMisc(x = basePop, node = "info")
+#'
+#' basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
+#' basePop@misc
+#' getMisc(x = basePop, node = "info2")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in seq_len(n)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in c(1, 3)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' getMisc(x = basePop)
+#'
+#' @export
+setMisc <- function(x, node = NULL, value = NULL) {
+  if (isPop(x)) {
+    if (is.null(node)) {
+      stop("Argument node must be provided!")
+    }
+    if (is.null(value)) {
+      stop("Argument value must be provided!")
+    }
+    n <- nInd(x)
+    if (length(value) == 1 && n > 1) {
+      value <- rep(x = value, times = n)
+    }
+    if (length(value) != n) {
+      stop("Argument value must be of length 1 or nInd(x)!")
+    }
+    for (ind in seq_len(n)) {
+      if (!is.null(value[ind])) {
+        x@misc[[ind]][node] <- value[ind]
+      }
+    }
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(x)
+}
+
+#' @rdname getMisc
+#' @title Get miscelaneous information in a population
+#'
+#' @description Get miscelaneous information in a population
+#'
+#' @param x \code{\link{Pop-class}}
+#' @param node character, name of the node to get from the \code{x@misc} slot;
+#'   if \code{NULL} the whole \code{x@misc} slot is returned
+#'
+#' @return The \code{x@misc} slot or its nodes \code{x@misc[[*]][[node]]}
+#'
+#' @examples
+#' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
+#' SP <- SimParam$new(founderGenomes)
+#' basePop <- newPop(founderGenomes)
+#'
+#' basePop <- setMisc(basePop, node = "info", value = 1)
+#' basePop@misc
+#' getMisc(x = basePop, node = "info")
+#'
+#' basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
+#' basePop@misc
+#' getMisc(x = basePop, node = "info2")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in seq_len(n)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in c(1, 3)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' getMisc(x = basePop)
+#' 
+#' @export
+getMisc <- function(x, node = NULL) {
+  if (isPop(x)) {
+    if (is.null(node)) {
+      ret <- x@misc
+    } else {
+      nInd <- nInd(x)
+      ret <- vector(mode = "list", length = nInd)
+      for (ind in seq_len(nInd)) {
+        if (!is.null(x@misc[[ind]][[node]])) {
+          ret[ind] <- x@misc[[ind]][node]
+        }
+      }
+    }
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
 #' @title Selection intensity
 #' 
 #' @description 
