@@ -1986,8 +1986,7 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   return(epiEff)
 }
 
-#' @describeIn SimParam Test if object is of a SimParam class
-#' @export
+# Test if object is of a SimParam class
 isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)

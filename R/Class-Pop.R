@@ -111,8 +111,7 @@ setMethod("show",
           }
 )
 
-#' @describeIn RawPop Test if object is of RawPop class
-#' @export
+# Test if object is of RawPop class
 isRawPop = function(x) {
   ret = is(x, class2 = "RawPop")
   return(ret)
@@ -198,8 +197,7 @@ setMethod("c",
           }
 )
 
-#' @describeIn MapPop Test if object is of a MapPop class
-#' @export
+# Test if object is of a MapPop class
 isMapPop = function(x) {
   ret = is(x, class2 = "MapPop")
   return(ret)
@@ -339,8 +337,7 @@ cChr = function(...){
   return(x)
 }
 
-#' @describeIn NamedMapPop Test if object is a NamedMapPop class
-#' @export
+# Test if object is a NamedMapPop class
 isNamedMapPop = function(x) {
   ret = is(x, class2 = "NamedMapPop")
   return(ret)
@@ -564,7 +561,6 @@ setMethod("show",
 #' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' isPop(pop)
 #' 
 #' @export
 newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
@@ -748,8 +744,7 @@ resetPop = function(pop,simParam=NULL){
 }
 
 
-#' @describeIn Pop Test if object is of a Pop class
-#' @export
+# Test if object is of a Pop class
 isPop = function(x) {
   ret = is(x, class2 = "Pop")
   return(ret)
@@ -852,7 +847,6 @@ setMethod("c",
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' megaPop = newMegaPop(pop=pop)
-#' isMegaPop(megaPop)
 #' 
 #' @export
 newMegaPop = function(...){
@@ -863,8 +857,7 @@ newMegaPop = function(...){
   return(output)
 }
 
-#' @describeIn MegaPop Test if object is of a MegaPop class
-#' @export
+# Test if object is of a MegaPop class
 isMegaPop = function(x) {
   ret = is(x, class2 = "MegaPop")
   return(ret)

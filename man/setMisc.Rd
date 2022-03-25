@@ -17,16 +17,6 @@ it is repeated using \code{rep} (see examples)}
 }
 \value{
 \code{\link{Pop-class}} with \code{x@misc[[*]][[node]]} set
-}
-\description{
-Set miscelaneous information in a population
-}
-\details{
-A \code{NULL} in \code{value} is ignored
-}
-\examples{
-founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
-SP <- SimParam$new(founderGenomes)
 basePop <- newPop(founderGenomes)
 
 basePop <- setMisc(basePop, node = "info", value = 1)
@@ -58,5 +48,10 @@ basePop@misc
 getMisc(x = basePop, node = "location")
 
 getMisc(x = basePop)
-
+}
+\description{
+Set miscelaneous information in a population
+}
+\details{
+A \code{NULL} in \code{value} is ignored
 }

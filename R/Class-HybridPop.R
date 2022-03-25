@@ -121,8 +121,7 @@ setMethod("c",
           }
 )
 
-#' @describeIn HybridPop Test if object is of a HybridPop class
-#' @export
+# Test if object is of a HybridPop class
 isHybridPop = function(x) {
   ret = is(x, class2 = "HybridPop")
   return(ret)
