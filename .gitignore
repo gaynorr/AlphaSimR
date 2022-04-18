@@ -8,6 +8,5 @@ src/*.o
 src/*.so
 src/*.dll
 Notes.txt
-Makevars
 Meta
 .Rproj.user

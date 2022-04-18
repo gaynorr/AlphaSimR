@@ -9,12 +9,15 @@
 #' @slot nLoci total number of loci
 #' @slot lociPerChr number of loci per chromosome
 #' @slot lociLoc physical position of loci
+#' @slot name optional name for LociMap object
 #'
 #' @export
 setClass("LociMap",
          slots=c(nLoci="integer",
                  lociPerChr="integer",
-                 lociLoc="integer"))
+                 lociLoc="integer",
+                 name="character"),
+         prototype=list(name=NA_character_))
 
 setValidity("LociMap",function(object){
   errors = character()

@@ -580,10 +580,10 @@ void GraphBuilder::printHaplotypes(){
         Rcpp::Rcerr<<"Total sites reduced from "<<iTotalSites<<" to "<<iReducedSites<<endl;
       }
     }
-    if (iReducedSites){
-      MutationPtrVector::iterator it;
+    // if (iReducedSites){
+      // MutationPtrVector::iterator it;
       // copy to a temporary vector if ascertained
-    }
+    // }
   }
 }
 

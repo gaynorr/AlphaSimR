@@ -5,7 +5,7 @@
 #' @importFrom stats aggregate rnorm qnorm var
 #' @importFrom stats coef dnorm lm pnorm qgamma na.omit
 #' @importFrom stats model.matrix rbinom runif cov2cor
-#' @importFrom utils combn read.table write.table
+#' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
 
 #' @description
