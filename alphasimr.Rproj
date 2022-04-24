@@ -20,4 +20,4 @@ PackageRoxygenize: rd,collate,namespace
 
 PythonType: conda
 PythonVersion: 3.6.13
-PythonPath: C:\Users\gayno\AppData\Local\r-miniconda\envs\r-reticulate\python.exe
+PythonPath: C:/Users/gayno/AppData/Local/r-miniconda/envs/r-reticulate/python.exe

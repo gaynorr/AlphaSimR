@@ -78,15 +78,15 @@ makeCross = function(pop,crossPlan,nProgeny=1,
   }else{
     hist = NULL
   }
-  return(newPop(rawPop=rPop,
-                mother=pop@id[crossPlan[,1]],
-                father=pop@id[crossPlan[,2]],
-                simParam=simParam,
-                iMother=pop@iid[crossPlan[,1]],
-                iFather=pop@iid[crossPlan[,2]],
-                femaleParentPop=pop,
-                maleParentPop=pop,
-                hist=hist))
+  return(.newPop(rawPop=rPop,
+                 mother=pop@id[crossPlan[,1]],
+                 father=pop@id[crossPlan[,2]],
+                 iMother=pop@iid[crossPlan[,1]],
+                 iFather=pop@iid[crossPlan[,2]],
+                 femaleParentPop=pop,
+                 maleParentPop=pop,
+                 hist=hist,
+                 simParam=simParam))
 }
 
 #' @title Make random crosses
@@ -342,15 +342,15 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   }else{
     hist = NULL
   }
-  return(newPop(rawPop=rPop,
-                mother=females@id[crossPlan[,1]],
-                father=males@id[crossPlan[,2]],
-                simParam=simParam,
-                iMother=females@iid[crossPlan[,1]],
-                iFather=males@iid[crossPlan[,2]],
-                femaleParentPop=females,
-                maleParentPop=males,
-                hist=hist))
+  return(.newPop(rawPop=rPop,
+                 mother=females@id[crossPlan[,1]],
+                 father=males@id[crossPlan[,2]],
+                 iMother=females@iid[crossPlan[,1]],
+                 iFather=males@iid[crossPlan[,2]],
+                 femaleParentPop=females,
+                 maleParentPop=males,
+                 hist=hist,
+                 simParam=simParam))
 }
 
 #' @title Make random crosses
@@ -527,25 +527,25 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
     hist = NULL
   }
   if(keepParents){
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@mother,each=nProgeny),
-                  father=rep(pop@father,each=nProgeny),
-                  simParam=simParam,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@mother,each=nProgeny),
+                   father=rep(pop@father,each=nProgeny),
+                   iMother=rep(pop@iid,each=nProgeny),
+                   iFather=rep(pop@iid,each=nProgeny),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }else{
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@id,each=nProgeny),
-                  father=rep(pop@id,each=nProgeny),
-                  simParam=simParam,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@id,each=nProgeny),
+                   father=rep(pop@id,each=nProgeny),
+                   iMother=rep(pop@iid,each=nProgeny),
+                   iFather=rep(pop@iid,each=nProgeny),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }
 }
 
@@ -619,27 +619,27 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
     hist = NULL
   }
   if(keepParents){
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@mother, each=nDH),
-                  father=rep(pop@father, each=nDH),
-                  simParam=simParam,
-                  isDH=TRUE,
-                  iMother=rep(pop@iid, each=nDH),
-                  iFather=rep(pop@iid, each=nDH),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@mother, each=nDH),
+                   father=rep(pop@father, each=nDH),
+                   isDH=TRUE,
+                   iMother=rep(pop@iid, each=nDH),
+                   iFather=rep(pop@iid, each=nDH),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }else{
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@id, each=nDH),
-                  father=rep(pop@id, each=nDH),
-                  simParam=simParam,
-                  isDH=TRUE,
-                  iMother=rep(pop@iid, each=nDH),
-                  iFather=rep(pop@iid, each=nDH),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@id, each=nDH),
+                   father=rep(pop@id, each=nDH),
+                   isDH=TRUE,
+                   iMother=rep(pop@iid, each=nDH),
+                   iFather=rep(pop@iid, each=nDH),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }
 }
 

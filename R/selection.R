@@ -27,6 +27,14 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       stop(paste0("Use=",use," is not an option"))
     }
   }else{
+    if(is.character(trait)){
+      # Suspect trait is a name
+      take = match(trait, simParam$traitNames)
+      if(is.na(take)){
+        stop("'",trait,"' did not match any trait names")
+      }
+      trait = take
+    }
     if(use == "gv"){
       response = pop@gv[,trait,drop=FALSE]
     }else if(use=="ebv"){

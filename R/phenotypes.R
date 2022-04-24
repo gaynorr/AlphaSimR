@@ -20,6 +20,7 @@ addError = function(gv,varE,reps=1){
   }
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
+  colnames(pheno) = colnames(gv)
   return(pheno)
 }
 

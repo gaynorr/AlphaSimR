@@ -1,3 +1,19 @@
+convertTraitsToNames = function(traits, simParam){
+  if(is.character(traits)){
+    # Suspect trait is a name
+    take = match(traits, simParam$traitNames)
+    if(is.na(take)){
+      stop("'",traits,"' did not match any trait names")
+    }
+    traits = take
+  }else if(is.function(traits)){
+    traits = "Custom Function"
+  }else{
+    traits = simParam$traitNames[traits]
+  }
+  return(traits)
+}
+
 #' @title Fast RR-BLUP
 #'
 #' @description
@@ -8,8 +24,8 @@
 #' than the intercept) or account for unequal replication. 
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model or a
-#' function of the traits returning a single value. Only univariate models 
+#' @param traits an integer indicating the trait to model, a trait name, 
+#' or a function of the traits returning a single value. Only univariate models 
 #' are supported.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -54,9 +70,14 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   #fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -66,6 +87,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   # Sort out Vu and Ve
   if(is.function(traits)){
     if(is.null(Vu)){
@@ -89,22 +111,28 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
       }
     }
   }
+  
   #Fit model
   ans = callFastRRBLUP(y,pop@geno,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
                        simParam$nThreads)
+  
   bv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$beta))
+           intercept=c(ans$beta),
+           name=paste0("est_BV_",traits))
+  
   gv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   output = new("RRsol",
                bv = list(bv),
                gv = list(gv),
@@ -112,6 +140,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                male = as.list(NULL),
                Vu = as.matrix(Vu),
                Ve = as.matrix(Ve))
+  
   return(output)
 }
 
@@ -123,8 +152,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' Fits an RR-BLUP model for genomic predictions.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait or traits to model, or a
-#' function of the traits returning a single value.
+#' @param traits an integer indicating the trait or traits to model, a vector of trait names, 
+#' or a function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype 
@@ -167,9 +196,14 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -179,6 +213,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   #Fit model
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y,fixEff,pop@reps,pop@geno,lociPerChr,
@@ -187,21 +222,27 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc,
                      useReps, simParam$nThreads)
   }
+  
   markerEff=ans$u
+  
   bv = gv = vector("list",ncol(y))
+  
   for(i in 1:ncol(y)){
     bv[[i]] = new("TraitA",
                   nLoci=nLoci,
                   lociPerChr=lociPerChr,
                   lociLoc=lociLoc,
                   addEff=ans$alpha[,i],
-                  intercept=ans$beta[i])
+                  intercept=ans$beta[i],
+                  name=paste0("est_BV_",traits[i]))
+    
     gv[[i]] = new("TraitA",
                   nLoci=nLoci,
                   lociPerChr=lociPerChr,
                   lociLoc=lociLoc,
                   addEff=ans$alpha[,i],
-                  intercept=ans$mu[i])
+                  intercept=ans$mu[i],
+                  name=paste0("est_GV_",traits[i]))
   }
   
   output = new("RRsol",
@@ -211,6 +252,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -224,7 +266,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value. Unlike \code{\link{RRBLUP}}, 
 #' only univariate models are supported.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
@@ -304,9 +346,14 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -316,6 +363,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   # Sort out Vu and Ve
   if(is.function(traits)){
     if(is.null(Vu)){
@@ -339,22 +387,28 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
       }
     }
   }
+  
   #Fit model
   ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
                     lociLoc,Vu,Ve,tol,maxIter,useEM,useReps,
                     simParam$nThreads)
+  
   bv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$beta))
+           intercept=c(ans$beta),
+           name=paste0("est_BV_",traits))
+  
   gv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   output = new("RRsol",
                bv = list(bv),
                gv = list(gv),
@@ -362,6 +416,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -372,7 +427,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' dominance effects.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -416,9 +471,14 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -428,23 +488,29 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
                      lociLoc,maxIter,useReps,simParam$nThreads)
+  
   bv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$beta))
+           intercept=c(ans$beta),
+           name=paste0("est_BV_",traits))
+  
   gv = new("TraitAD",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$a),
            domEff=c(ans$d),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   output = new("RRsol",
                bv = list(bv),
                gv = list(gv),
@@ -452,6 +518,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -466,7 +533,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_D}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -520,9 +587,14 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -532,6 +604,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   # Sort out Va, Vd and Ve
   if(is.function(traits)){
     if(is.null(Va)){
@@ -564,24 +637,30 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
       }
     }
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
                       lociLoc,maxIter,Va,Vd,Ve,tol,useEM,
                       useReps,simParam$nThreads)
+  
   bv = new("TraitA",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha),
-           intercept=c(ans$beta))
+           intercept=c(ans$beta),
+           name=paste0("est_BV_",traits))
+  
   gv = new("TraitAD",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$a),
            domEff=c(ans$d),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   output = new("RRsol",
                bv = list(bv),
                gv = list(gv),
@@ -589,6 +668,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -601,7 +681,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' single cross hybrids.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -644,9 +724,14 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -656,30 +741,38 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
                        lociPerChr,lociLoc,maxIter,
                        useReps,simParam$nThreads)
+  
   gv = new("TraitA2",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha1),
            addEffMale=c(ans$alpha2),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha1),
-               intercept=c(ans$beta1))
+               intercept=c(ans$beta1),
+               name=paste0("est_female_",traits))
+  
   male = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha2),
-               intercept=c(ans$beta2))
+               intercept=c(ans$beta2),
+             name=paste0("est_male_",traits))
+  
   output = new("RRsol",
                gv = list(gv),
                bv = as.list(NULL),
@@ -687,6 +780,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                male = list(male),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -700,7 +794,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_GCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -753,9 +847,14 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -765,6 +864,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   # Sort out VuF, VuM and Ve
   if(is.function(traits)){
     if(is.null(VuF)){
@@ -797,31 +897,40 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
       }
     }
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
+  
   ans = callRRBLUP_GCA2(y,fixEff,pop@reps,pop@geno,
                         lociPerChr,lociLoc,maxIter,
                         VuF,VuM,Ve,tol,useEM,
                         useReps,simParam$nThreads)
+  
   gv = new("TraitA2",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
            lociLoc=lociLoc,
            addEff=c(ans$alpha1),
            addEffMale=c(ans$alpha2),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha1),
-               intercept=c(ans$beta1))
+               intercept=c(ans$beta1),
+               name=paste0("est_female_",traits))
+  
   male = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha2),
-               intercept=c(ans$beta2))
+               intercept=c(ans$beta2),
+             name=paste0("est_male_",traits))
+  
   output = new("RRsol",
                gv = list(gv),
                bv = as.list(NULL),
@@ -829,6 +938,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                male = list(male),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -840,7 +950,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_GCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -883,9 +993,14 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -895,11 +1010,13 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
                        lociPerChr,lociLoc,maxIter,
                        useReps,simParam$nThreads)
+  
   gv = new("TraitA2D",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
@@ -907,19 +1024,25 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
            addEff=c(ans$a1),
            addEffMale=c(ans$a2),
            domEff=c(ans$d),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha1),
-               intercept=c(ans$beta1))
+               intercept=c(ans$beta1),
+               name=paste0("est_female_",traits))
+  
   male = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha2),
-               intercept=c(ans$beta2))
+               intercept=c(ans$beta2),
+             name=paste0("est_male_",traits))
+  
   output = new("RRsol",
                gv = list(gv),
                bv = as.list(NULL),
@@ -927,6 +1050,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                male = list(male),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -940,7 +1064,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_SCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, or a
+#' @param traits an integer indicating the trait to model, a trait name, or a
 #' function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv", 
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
@@ -995,9 +1119,14 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,...)
+  
+  traits = convertTraitsToNames(traits, simParam)
+  
   fixEff = as.integer(factor(pop@fixEff))
+  
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
     lociPerChr = simParam$traits[[snpChip]]@lociPerChr
@@ -1007,6 +1136,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  
   # Sort out VuF, VuM, VuD and Ve
   if(is.function(traits)){
     if(is.null(VuF)){
@@ -1048,12 +1178,14 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
       }
     }
   }
+  
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA2(y,fixEff,pop@reps,pop@geno,
                         lociPerChr,lociLoc,maxIter,
                         VuF,VuM,VuD,Ve,tol,useEM,
                         useReps,simParam$nThreads)
+  
   gv = new("TraitA2D",
            nLoci=nLoci,
            lociPerChr=lociPerChr,
@@ -1061,19 +1193,25 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
            addEff=c(ans$a1),
            addEffMale=c(ans$a2),
            domEff=c(ans$d),
-           intercept=c(ans$mu))
+           intercept=c(ans$mu),
+           name=paste0("est_GV_",traits))
+  
   female = new("TraitA",
                nLoci=nLoci,
                lociPerChr=lociPerChr,
                lociLoc=lociLoc,
                addEff=c(ans$alpha1),
-               intercept=c(ans$beta1))
+               intercept=c(ans$beta1),
+               name=paste0("est_female_",traits))
+  
   male = new("TraitA",
              nLoci=nLoci,
              lociPerChr=lociPerChr,
              lociLoc=lociLoc,
              addEff=c(ans$alpha2),
-             intercept=c(ans$beta2))
+             intercept=c(ans$beta2),
+             name=paste0("est_male_",traits))
+  
   output = new("RRsol",
                gv = list(gv),
                bv = as.list(NULL),
@@ -1081,6 +1219,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                male = list(male),
                Vu = as.matrix(ans$Vu),
                Ve = as.matrix(ans$Ve))
+  
   return(output)
 }
 
@@ -1136,6 +1275,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   nTraits = length(solution@gv)
   
   ebv = matrix(NA_real_,
@@ -1149,6 +1289,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
     for(i in 1:nTraits){
       tmp = getGv(solution@gv[[i]],pop,simParam$nThreads)
       ebv[,i] = tmp[[1]]
+      colnames(ebv)[i] = solution@gv[[i]]@name
     }
     
   }else if(value=="bv"){
@@ -1162,6 +1303,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       for(i in 1:nTraits){
         tmp = getGv(solution@bv[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        colnames(ebv)[i] = solution@bv[[i]]@name
       }
       
     }else{
@@ -1197,6 +1339,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         
         tmp = getGv(trait, pop, simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        
+        # changing original name from "est_GV_..." to "est_BV_..."
+        tmp = solution@gv[[i]]@name
+        tmp = strsplit(tmp, "_")[[1]]
+        tmp[2] = "BV"
+        colnames(ebv)[i] = paste(tmp,collapse="_")
       }
       
     }
@@ -1212,6 +1360,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       for(i in 1:nTraits){
         tmp = getGv(solution@female[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        colnames(ebv)[i] = solution@female[[i]]@name
       }
       
     }else{
@@ -1243,6 +1392,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         
         tmp = getGv(trait, pop, simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        
+        # changing original name from "est_GV_..." to "est_female_..."
+        tmp = solution@gv[[i]]@name
+        tmp = strsplit(tmp, "_")[[1]]
+        tmp[2] = "female"
+        colnames(ebv)[i] = paste(tmp,collapse="_")
       }
       
     }
@@ -1258,6 +1413,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       for(i in 1:nTraits){
         tmp = getGv(solution@male[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        colnames(ebv)[i] = solution@male[[i]]@name
       }
       
     }else{
@@ -1293,6 +1449,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         
         tmp = getGv(trait, pop, simParam$nThreads)
         ebv[,i] = tmp[[1]]
+        
+        # changing original name from "est_BV_..." to "est_male_..."
+        tmp = solution@gv[[i]]@name
+        tmp = strsplit(tmp, "_")[[1]]
+        tmp[2] = "male"
+        colnames(ebv)[i] = paste(tmp,collapse="_")
       }
       
     }
