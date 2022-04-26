@@ -778,6 +778,7 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param markers a character vector. Indicates the
 #' names of the loci to be retrieved.
+#' @param asRaw return in raw (byte) format
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return Returns a matrix of genotypes.

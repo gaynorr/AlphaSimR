@@ -4,13 +4,15 @@
 \alias{pullMarkerGeno}
 \title{Pull marker genotypes}
 \usage{
-pullMarkerGeno(pop, markers, simParam = NULL)
+pullMarkerGeno(pop, markers, asRaw = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{markers}{a character vector. Indicates the
 names of the loci to be retrieved.}
+
+\item{asRaw}{return in raw (byte) format}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

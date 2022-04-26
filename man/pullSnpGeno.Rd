@@ -4,7 +4,7 @@
 \alias{pullSnpGeno}
 \title{Pull SNP genotypes}
 \usage{
-pullSnpGeno(pop, snpChip = 1, chr = NULL, simParam = NULL)
+pullSnpGeno(pop, snpChip = 1, chr = NULL, asRaw = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -14,6 +14,8 @@ chip's genotypes to retrieve.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
+
+\item{asRaw}{return in raw (byte) format}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

@@ -278,6 +278,10 @@ autopolyploid. (default is 0)}
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
+\item{\code{traitNames}}{vector of trait names}
+
+\item{\code{snpChipNames}}{vector of chip names}
+
 \item{\code{traits}}{list of traits}
 
 \item{\code{nChr}}{number of chromosomes}
@@ -615,7 +619,7 @@ SP$setSexes("yes_sys")
 \subsection{Method \code{addSnpChip()}}{
 Randomly assigns eligible SNPs to a SNP chip
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL, name = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -629,6 +633,8 @@ If NULL, no minimum frequency is used.}
 
 \item{\code{refPop}}{reference population for calculating SNP 
 frequency. If NULL, the founder population is used.}
+
+\item{\code{name}}{optional name for chip}
 }
 \if{html}{\out{</div>}}
 }
@@ -686,7 +692,8 @@ with correlated additive effects.
   corA = NULL,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -707,6 +714,8 @@ with correlated additive effects.
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -743,7 +752,8 @@ with correlated effects.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -773,6 +783,8 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -808,7 +820,8 @@ with correlated effects.
   corGxE = NULL,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -835,6 +848,8 @@ with correlated effects.
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -872,7 +887,8 @@ Randomly assigns eligible QTLs for a trait with dominance and GxE.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -908,6 +924,8 @@ value or nChr values.}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -943,7 +961,8 @@ with correlated additive effects.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -972,6 +991,8 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -1006,7 +1027,8 @@ with correlated effects.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1041,6 +1063,8 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -1079,7 +1103,8 @@ with correlated effects.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1114,6 +1139,8 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
@@ -1154,7 +1181,8 @@ epistasis and GxE.
   useVarA = TRUE,
   gamma = FALSE,
   shape = 1,
-  force = FALSE
+  force = FALSE,
+  name = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1195,6 +1223,8 @@ to additive variance in a diploid organism with allele frequency 0.5}
 
 \item{\code{force}}{should the check for a running simulation be 
 ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait(s)}
 }
 \if{html}{\out{</div>}}
 }
