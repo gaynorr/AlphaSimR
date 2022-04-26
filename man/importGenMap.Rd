@@ -21,7 +21,7 @@ AlphaSimR's internal format. Map positions must be
 in Morgans.
 }
 \examples{
-genMap = data.frame(markerName=c("a","b","c","d","e"),
+genMap = data.frame(markerName=letters[1:5],
                     chromosome=c(1,1,1,2,2),
                     position=c(0,0.5,1,0.15,0.4))
 
