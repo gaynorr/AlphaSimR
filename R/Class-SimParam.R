@@ -30,7 +30,7 @@ SimParam = R6Class(
     finalizePop = "function",
     
     #' @field allowEmptyPop if true, population arguments with nInd=0 will 
-    #' return an empty population without a warning instead of an error.
+    #' return an empty population with a warning instead of an error.
     allowEmptyPop = "logical",
     
     #' @description Starts the process of building a new simulation 
@@ -1136,7 +1136,9 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Manually add a new trait to the simulation.
+    #' Manually add a new trait to the simulation. Trait must 
+    #' be formatted as a \code{\link{LociMap-class}}. If the 
+    #' trait is not already formatted, consider using importTrait.
     #' 
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
@@ -1153,6 +1155,148 @@ SimParam = R6Class(
       varA = popVar(tmp$bv)[1]
       varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
+      invisible(self)
+    },
+    
+    #' @description 
+    #' Manually add a new trait(s) to the simulation. Unlike the 
+    #' manAddTrait function, this function does not require 
+    #' formatting the trait as a \code{\link{LociMap-class}}. 
+    #' The formatting is performed automatically for the user, 
+    #' with more user friendly data.frames or matrices taken as 
+    #' inputs. This function only works for A and AD trait types.
+    #' 
+    #' @param markerNames a vector of names for the QTL
+    #' @param addEff a matrix of additive effects (nLoci x nTraits). 
+    #' Alternatively, a vector of length nLoci can be supplied for 
+    #' a single trait.
+    #' @param domEff optional dominance effects for each locus
+    #' @param intercept optional intercepts for each trait
+    #' @param name optional name(s) for the trait(s)
+    #' @param varE default error variance for phenotype, optional
+    #' @param force should the check for a running simulation be 
+    #' ignored. Only set to TRUE if you know what you are doing
+    importTrait = function(markerNames, 
+                           addEff, 
+                           domEff=NULL,
+                           intercept=NULL, 
+                           name=NULL, 
+                           varE=NULL,
+                           force=FALSE){
+      if(!force){
+        private$.isRunning()
+      }
+      
+      # Check addEff and domEff inputs
+      addEff = as.matrix(addEff)
+      stopifnot(length(markerNames)==nrow(addEff))
+      nTraits = ncol(addEff)
+      if(is.null(domEff)){
+        useDom = FALSE
+      }else{
+        useDom = TRUE
+        domEff = as.matrix(domEff)
+        stopifnot(nrow(addEff)==nrow(domEff),
+                  ncol(addEff)==nrow(domEff))
+      }
+      
+      # Prepare the intercept
+      if(is.null(intercept)){
+        intercept = rep(0, nTraits)
+      }else{
+        intercept = as.numeric(intercept)
+        stopifnot(length(intercept)==nTraits)
+      }
+      
+      # Prepare varE
+      if(!is.null(varE)){
+        varE = as.numeric(varE)
+        stopifnot(length(varE)==nTraits)
+      }
+      
+      # Prepare trait names
+      if(is.null(names)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }else{
+        stopifnot(length(names)==nTraits)
+      }
+      
+      
+      # Extract genetic map and check if marker names are on the map
+      genMapMarkerNames = unlist(lapply(private$.femaleMap, names))
+      stopifnot(all(markerNames%in%genMapMarkerNames))
+      
+      # Create trait variables
+      lociPerChr = integer(self$nChr)
+      lociLoc = vector("list", self$nChr)
+      addEffList = domEffList = vector("list", nTraits)
+      for(i in 1:nTraits){
+        addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
+      }
+      
+      # Loop through chromosomes
+      for(i in 1:self$nChr){
+        # Working on trait 1
+        # Initialize variables
+        addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
+        lociLoc[[i]] = integer()
+        
+        # Find matches if they exist
+        take = match(names(genMap[[i]]), markerNames)
+        lociPerChr[i] = length(na.omit(take))
+        
+        if(lociPerChr[i]>0L){
+          lociLoc[[i]] = which(!is.na(take))
+          addEffList[[1]][[i]] = addEff[na.omit(take),1]
+          if(useDom){
+            domEffList[[1]][[i]] = domEff[na.omit(take),1]
+          }
+        }
+        
+        # Work on additional traits?
+        if(nTraits>1){
+          for(j in 2:nTraits){
+            addEffList[[j]][[i]] = domEffList[[j]][[i]] = numeric()
+            if(lociPerChr[i]>0L){
+              addEffList[[j]][[i]] = addEff[na.omit(take),j]
+              if(useDom){
+                domEffList[[j]][[i]] = domEff[na.omit(take),j]
+              }
+            }
+          }
+        }
+      }
+      
+      lociLoc = unlist(lociLoc)
+      nLoci = sum(lociPerChr)
+      
+      # Create Trait(s)
+      for(i in 1:nTraits){
+        addEff = unlist(addEffList[[i]])
+        if(useDom){
+          domEff = unlist(domEffList[[i]])
+          trait = new("TraitAD", 
+                      addEff=addEff,
+                      domEff=domEff,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else{
+          trait = new("TraitA", 
+                      addEff=addEff,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }
+        
+        # Add trait to simParam
+        self$manAddTrait(lociMap=trait, varE=varE[i], force=force)
+      }
+      
       invisible(self)
     },
     

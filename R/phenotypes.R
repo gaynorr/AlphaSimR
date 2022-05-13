@@ -130,7 +130,7 @@ setPheno = function(pop,h2=NULL,H2=NULL,varE=NULL,reps=1,
     simParam = get("SP",envir=.GlobalEnv)
   }
   
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(!onlyPheno)
     pop@pops = lapply(pop@pops, setPheno, h2=h2, H2=H2,
                       varE=varE, reps=reps, fixEff=fixEff, 

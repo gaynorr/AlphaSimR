@@ -259,7 +259,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 Currently does nothing and should only be changed by expert users.}
 
 \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will 
-return an empty population without a warning instead of an error.}
+return an empty population with a warning instead of an error.}
 
 \item{\code{v}}{the crossover interference parameter for a gamma model of 
 recombination. A value of 1 indicates no crossover interference 
@@ -355,6 +355,7 @@ genetic map}
 \item \href{#method-addTraitAEG}{\code{SimParam$addTraitAEG()}}
 \item \href{#method-addTraitADEG}{\code{SimParam$addTraitADEG()}}
 \item \href{#method-manAddTrait}{\code{SimParam$manAddTrait()}}
+\item \href{#method-importTrait}{\code{SimParam$importTrait()}}
 \item \href{#method-switchTrait}{\code{SimParam$switchTrait()}}
 \item \href{#method-removeTrait}{\code{SimParam$removeTrait()}}
 \item \href{#method-setVarE}{\code{SimParam$setVarE()}}
@@ -1246,7 +1247,9 @@ SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 \if{html}{\out{<a id="method-manAddTrait"></a>}}
 \if{latex}{\out{\hypertarget{method-manAddTrait}{}}}
 \subsection{Method \code{manAddTrait()}}{
-Manually add a new trait to the simulation.
+Manually add a new trait to the simulation. Trait must 
+be formatted as a \code{\link{LociMap-class}}. If the 
+trait is not already formatted, consider using importTrait.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE)}\if{html}{\out{</div>}}
 }
@@ -1256,6 +1259,51 @@ Manually add a new trait to the simulation.
 \describe{
 \item{\code{lociMap}}{a new object descended from 
 \code{\link{LociMap-class}}}
+
+\item{\code{varE}}{default error variance for phenotype, optional}
+
+\item{\code{force}}{should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-importTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-importTrait}{}}}
+\subsection{Method \code{importTrait()}}{
+Manually add a new trait(s) to the simulation. Unlike the 
+manAddTrait function, this function does not require 
+formatting the trait as a \code{\link{LociMap-class}}. 
+The formatting is performed automatically for the user, 
+with more user friendly data.frames or matrices taken as 
+inputs. This function only works for A and AD trait types.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$importTrait(
+  markerNames,
+  addEff,
+  domEff = NULL,
+  intercept = NULL,
+  name = NULL,
+  varE = NULL,
+  force = FALSE
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{markerNames}}{a vector of names for the QTL}
+
+\item{\code{addEff}}{a matrix of additive effects (nLoci x nTraits). 
+Alternatively, a vector of length nLoci can be supplied for 
+a single trait.}
+
+\item{\code{domEff}}{optional dominance effects for each locus}
+
+\item{\code{intercept}}{optional intercepts for each trait}
+
+\item{\code{name}}{optional name(s) for the trait(s)}
 
 \item{\code{varE}}{default error variance for phenotype, optional}
 

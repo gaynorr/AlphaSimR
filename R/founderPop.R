@@ -8,7 +8,7 @@
 #' @param haplotypes a list of matrices or data.frames that 
 #' can be coerced to matrices. See details.
 #' @param inbred are individuals fully inbred
-#' @param ploidy ploidy level of organism
+#' @param ploidy ploidy level of the organism
 #' 
 #' @details
 #' Each item of genMap must be a vector of ordered genetic lengths in 

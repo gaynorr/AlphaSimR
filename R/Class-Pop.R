@@ -82,7 +82,7 @@ setMethod("c",
           signature(x = "RawPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
                 stopifnot(class(y)=="RawPop",
@@ -180,7 +180,7 @@ setMethod("c",
           signature(x = "MapPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
                 stopifnot(class(y)=="MapPop",
@@ -275,10 +275,10 @@ setMethod("c",
           signature(x = "NamedMapPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="NamedMapPop",
+                stopifnot(is(y,"NamedMapPop"),
                           x@nChr==y@nChr,
                           x@ploidy==y@ploidy,
                           x@nLoci==y@nLoci,
@@ -316,10 +316,10 @@ setMethod("c",
 #' @export
 cChr = function(...){
   for(y in list(...)){
-    if(class(y)=="NULL"){
+    if(is(y,"NULL")){
       #Do nothing
     }else{
-      stopifnot(class(y)=="MapPop" | class(y)=="NamedMapPop")
+      stopifnot(is(y,"MapPop"))
       if(!exists("x",inherits=FALSE)){
         x = y
       }else{
@@ -604,7 +604,7 @@ newPop = function(rawPop,simParam=NULL,...){
   lastId = max(iid)
   
   if(is.null(id)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       id = rawPop@id
     }else{
       id = as.character(iid)
@@ -620,7 +620,7 @@ newPop = function(rawPop,simParam=NULL,...){
   }
   
   if(is.null(isDH)){
-    if(class(rawPop)=="MapPop" | class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "MapPop")){
       isDH = rawPop@inbred
     }else{
       isDH = FALSE
@@ -628,7 +628,7 @@ newPop = function(rawPop,simParam=NULL,...){
   }
   
   if(is.null(mother)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       mother = rawPop@mother
     }else{
       mother = rep("0", rawPop@nInd)
@@ -636,7 +636,7 @@ newPop = function(rawPop,simParam=NULL,...){
   }
   
   if(is.null(father)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       father = rawPop@father
     }else{
       father = rep("0", rawPop@nInd)
@@ -806,8 +806,8 @@ setValidity("MegaPop",function(object){
     # Check that all populations are valid
     for(i in 1:length(object@pops)){
       if(!validObject(object@pops[[i]]) & 
-         (class(object@pops[[i]])=="Pop" | 
-                class(object@pops[[i]])=="MegaPop")){
+         (is(object@pops[[i]], "Pop") | 
+                is(object@pops[[i]],"MegaPop"))){
         errors = c(errors,paste("object",i,"is not a valid pop"))
       }
     }
@@ -840,13 +840,13 @@ setMethod("c",
           signature(x = "MegaPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
-                if(class(y)=="Pop"){
+                if(is(y,"Pop")){
                   x@pops = c(x@pops, y)
                 }else{
-                  stopifnot(class(y)=="MegaPop")
+                  stopifnot(is(y,"MegaPop"))
                   x@pops = c(x@pops, y@pops)
                 }
               }

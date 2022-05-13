@@ -14,7 +14,7 @@ can be coerced to matrices. See details.}
 
 \item{inbred}{are individuals fully inbred}
 
-\item{ploidy}{ploidy level of organism}
+\item{ploidy}{ploidy level of the organism}
 }
 \value{
 an object of \code{\link{MapPop-class}}

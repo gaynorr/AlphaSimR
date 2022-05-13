@@ -482,7 +482,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(is.null(parents))
     pop@pops = lapply(pop@pops, self, nProgeny=nProgeny, 
                       parents=NULL, keepParents=keepParents, 
@@ -583,7 +583,7 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     pop@pops = lapply(pop@pops, makeDH, nDH=nDH, useFemale=useFemale,
                       keepParents=keepParents, simParam=simParam)
     return(pop)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/importData.R
 \name{importInbredGeno}
 \alias{importInbredGeno}
-\title{Import diploid inbred genotypes}
+\title{Import inbred, diploid genotypes}
 \usage{
 importInbredGeno(geno, genMap, ped = NULL)
 }
@@ -24,9 +24,15 @@ a \code{\link{MapPop-class}} if ped is NULL,
 otherwise a \code{\link{NamedMapPop-class}}
 }
 \description{
-Formats a genetic map stored in a data.frame to
-AlphaSimR's internal format. Map positions must be 
-in Morgans.
+Formats the genotypes from inbred, diploid lines 
+to an AlphaSimR population that can be used to 
+initialize a simulation. An attempt is made to 
+automatically detect 0,1,2 or -1,0,1 genotype coding. 
+Heterozygotes or probabilistic genotypes are allowed, 
+but will be coerced to the nearest homozygote. Pedigree 
+information is optional and when provided will be 
+passed to the population for easier identification 
+in the simulation.
 }
 \examples{
 geno = rbind(c(2,2,0,2,0),

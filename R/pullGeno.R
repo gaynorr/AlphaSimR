@@ -274,7 +274,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
     output = convToImat(output)
   }
   
-  if(class(pop)=="Pop"){
+  if(is(pop,"Pop")){
     rownames(output) = pop@id
   }else{
     rownames(output) = as.character(1:pop@nInd)
@@ -338,7 +338,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL){
     output = convToImat(output)
   }
   
-  if(class(pop)=="Pop"){
+  if(is(pop,"Pop")){
     rownames(output) = pop@id
   }else{
     rownames(output) = as.character(1:pop@nInd)
@@ -378,7 +378,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' 
 #' @export
 pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL){
-  if(class(pop)=="MapPop" | class(pop)=="NamedMapPop"){
+  if(is(pop,"MapPop")){
     allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
@@ -402,7 +402,7 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL){
     output = convToImat(output)
   }
   
-  if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
+  if(is(pop,"Pop") | is(pop,"NamedMapPop")){
     rownames(output) = pop@id
   }else{
     rownames(output) = as.character(1:pop@nInd)
@@ -474,7 +474,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop"){
+    if(is(pop,"Pop")){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }else{
@@ -489,7 +489,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop"){
+    if(is(pop,"Pop")){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
     }else{
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
@@ -563,7 +563,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop"){
+    if(is(pop,"Pop")){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }else{
@@ -578,7 +578,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop"){
+    if(is(pop,"Pop")){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
     }else{
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
@@ -623,7 +623,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @export
 pullSegSiteHaplo = function(pop, haplo="all",
                             chr=NULL, asRaw=FALSE, simParam=NULL){
-  if(class(pop)=="MapPop" | class(pop)=="NamedMapPop"){
+  if(is(pop,"MapPop")){
     allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
     lociTot = pop@nLoci
     nThreads = getNumThreads()
@@ -653,7 +653,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
+    if(is(pop,"Pop") | is(pop,"NamedMapPop")){
       rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }else{
@@ -672,7 +672,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
       output = convToImat(output)
     }
     
-    if(class(pop)=="Pop" | class(pop)=="NamedMapPop"){
+    if(is(pop,"Pop") | is(pop,"NamedMapPop")){
       rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
     }else{
       rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
@@ -843,7 +843,7 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
 
 #' #' @title Pull marker haplotypes
 #' #'
-#' #' @description Retrieves genotype data for user
+#' #' @description Retrieves haplotype data for user
 #' #' specified loci
 #' #'
 #' #' @param pop an object of \code{\link{Pop-class}}
@@ -864,13 +864,14 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
 #' #' SP = SimParam$new(founderPop)
 #' #' SP$addTraitA(10)
 #' #' SP$addSnpChip(5)
+#' #' SP$setTrackRec(TRUE)
 #' #'
 #' #' #Create population
 #' #' pop = newPop(founderPop, simParam=SP)
 #' #'
-#' #' #Pull genotype data for first two markers on chromosome one.
+#' #' #Pull haplotype data for first two markers on chromosome one.
 #' #' #Marker name is consistent with default naming in AlphaSimR.
-#' #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
+#' #' pullMarkerHaplo(pop, markers=c("1_1","1_2"), simParam=SP)
 #' #'
 #' #' @export
 #' pullMarkerHaplo = function(pop, markers, haplo="all", simParam=NULL){

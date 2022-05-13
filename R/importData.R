@@ -51,12 +51,18 @@ importGenMap = function(genMap){
   return(genMap)
 }
  
-#' @title Import diploid inbred genotypes
+#' @title Import inbred, diploid genotypes
 #' 
 #' @description
-#' Formats a genetic map stored in a data.frame to
-#' AlphaSimR's internal format. Map positions must be 
-#' in Morgans. 
+#' Formats the genotypes from inbred, diploid lines 
+#' to an AlphaSimR population that can be used to 
+#' initialize a simulation. An attempt is made to 
+#' automatically detect 0,1,2 or -1,0,1 genotype coding. 
+#' Heterozygotes or probabilistic genotypes are allowed, 
+#' but will be coerced to the nearest homozygote. Pedigree 
+#' information is optional and when provided will be 
+#' passed to the population for easier identification 
+#' in the simulation.
 #' 
 #' @param geno a matrix of genotypes
 #' @param genMap genetic map as a data.frame. The first  
@@ -157,125 +163,101 @@ importInbredGeno = function(geno, genMap, ped=NULL){
   return(founderPop)
 }
 
-# # importHaplo
-# 
-# 
-# 
-# # Convert to SimParam functions
-# importSnpChip = function(markerName,
-#                          chipName=NULL){
-#   
-# }
-# 
-# importTraitA = function(markerName, 
-#                         addEff, 
-#                         intercept=0, 
-#                         traitName=NULL, 
-#                         simParam=NULL){
-#   if(is.null(simParam)){
-#     simParam = get("SP",envir=.GlobalEnv)
-#   }
-#   
-#   stopifnot(length(markerName)==length(addEff))
-#   
-#   # Extract genetic map and check if names are in map
-#   genMap = simParam$genMap
-#   genMapMarkerNames = unlist(lapply(genMap, names))
-#   stopifnot(all(markerName%in%genMapMarkerNames))
-#   
-#   # Create trait variables
-#   lociPerChr = integer(length(genMap))
-#   addEffList = lociLoc = vector("list", length(genMap))
-#   
-#   # Loop through chromosomes
-#   for(i in 1:length(genMap)){
-#     
-#     # Initialize variables
-#     addEffList[[i]] = numeric()
-#     lociLoc[[i]] = integer()
-#     
-#     # Find matches if they exist
-#     take = match(names(genMap[[i]]), markerName)
-#     lociPerChr[i] = length(na.omit(take))
-#     if(lociPerChr[i]>0L){
-#       lociLoc[[i]] = which(!is.na(take))
-#       addEffList[[i]] = addEff[na.omit(take)]
-#     }
-#   }
-#   addEff = unlist(addEffList)
-#   lociLoc = unlist(lociLoc)
-#   nLoci = sum(lociPerChr)
-#   
-#   # Create Trait
-#   trait = new("TraitA", 
-#               addEff=addEff,
-#               intercept=as.numeric(intercept),
-#               nLoci=nLoci,
-#               lociPerChr=lociPerChr,
-#               lociLoc=lociLoc)
-#   
-#   # Add trait to simParam
-#   simParam$manAddTrait(trait)
-#   
-#   # Return nothing
-#   invisible(NULL)
-# }
-# 
-# importTraitAD = function(markerName, 
-#                         addEff, 
-#                         domEff,
-#                         intercept=0, 
-#                         traitName=NULL, 
-#                         simParam=NULL){
-#   if(is.null(simParam)){
-#     simParam = get("SP",envir=.GlobalEnv)
-#   }
-#   
-#   stopifnot(length(markerName)==length(addEff))
-#   
-#   # Extract genetic map and check if names are in map
-#   genMap = simParam$genMap
-#   genMapMarkerNames = unlist(lapply(genMap, names))
-#   stopifnot(all(markerName%in%genMapMarkerNames))
-#   
-#   # Create trait variables
-#   lociPerChr = integer(length(genMap))
-#   addEffList = domEffList = lociLoc = 
-#     vector("list", length(genMap))
-#   
-#   # Loop through chromosomes
-#   for(i in 1:length(genMap)){
-#     
-#     # Initialize variables
-#     addEffList[[i]] = domEffList[[i]] = numeric()
-#     lociLoc[[i]] = integer()
-#     
-#     # Find matches if they exist
-#     take = match(names(genMap[[i]]), markerName)
-#     lociPerChr[i] = length(na.omit(take))
-#     if(lociPerChr[i]>0L){
-#       lociLoc[[i]] = which(!is.na(take))
-#       addEffList[[i]] = addEff[na.omit(take)]
-#       domEffList[[i]] = domEff[na.omit(take)]
-#     }
-#   }
-#   addEff = unlist(addEffList)
-#   domEff = unlist(domEffList)
-#   lociLoc = unlist(lociLoc)
-#   nLoci = sum(lociPerChr)
-#   
-#   # Create Trait
-#   trait = new("TraitAD", 
-#               addEff=addEff,
-#               domEff=domEff,
-#               intercept=as.numeric(intercept),
-#               nLoci=nLoci,
-#               lociPerChr=lociPerChr,
-#               lociLoc=lociLoc)
-#   
-#   # Add trait to simParam
-#   simParam$manAddTrait(trait)
-#   
-#   # Return nothing
-#   invisible(NULL)
-# }
+
+#' @title Import haplotypes
+#' 
+#' @description
+#' Formats haplotype in a matrix format to an 
+#' AlphaSimR population that can be used to 
+#' initialize a simulation. This function serves 
+#' as wrapper for \code{\link{newMapPop}} that 
+#' utilizes a more user friendly input format.
+#' 
+#' @param haplo a matrix of genotypes
+#' @param genMap genetic map as a data.frame. The first  
+#' three columns must be: marker name, chromosome, and 
+#' map position (Morgans). Marker name and chromosome are 
+#' coerced using as.character. See \code{\link{importGenMap}}
+#' @param ploidy ploidy level of the organism
+#' @param ped an optional pedigree for the supplied 
+#' genotypes. The first three columns must be: id, 
+#' mother, and father. All values are coerced using 
+#' as.character.
+#'
+#' @return a \code{\link{MapPop-class}} if ped is NULL,
+#' otherwise a \code{\link{NamedMapPop-class}}
+#' 
+#' @examples 
+#' haplo = rbind(c(1,1,0,1,0),
+#'               c(1,1,0,1,0),
+#'               c(0,1,1,0,0),
+#'               c(0,1,1,0,0))
+#' colnames(haplo) = letters[1:5]
+#' 
+#' genMap = data.frame(markerName=letters[1:5],
+#'                     chromosome=c(1,1,1,2,2),
+#'                     position=c(0,0.5,1,0.15,0.4))
+#' 
+#' ped = data.frame(id=c("a","b"),
+#'                  mother=c(0,0),
+#'                  father=c(0,0))
+#' 
+#' founderPop = importHaplo(haplo=haplo, 
+#'                          genMap=genMap,
+#'                          ploidy=2L,
+#'                          ped=ped)
+#' 
+#' @export
+importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
+  # Extract pedigree, if supplied
+  if(!is.null(ped)){
+    id = as.character(ped[,1])
+    stopifnot(length(id)==(nrow(haplo)/ploidy),
+              !any(duplicated(id)))
+    mother = as.character(ped[,2])
+    father = as.character(ped[,3])
+  }
+  
+  genMap = importGenMap(genMap)
+  
+  # Get marker names
+  if(is.data.frame(haplo)){
+    haplo = as.matrix(haplo)
+  }
+  markerName = colnames(haplo)
+  
+  # Convert haplotypes to integers
+  haplo = matrix(as.integer(haplo), ncol=ncol(haplo))
+  stopifnot(max(haplo)<=1L,
+            min(haplo)>=0L)
+  
+  # Create haplotype list
+  haplotypes = vector("list", length=length(genMap))
+  
+  # Order haplotypes by chromosome
+  for(i in 1:length(genMap)){
+    mapMarkers = names(genMap[[i]])
+    take = match(mapMarkers, markerName)
+    if(any(is.na(take))){
+      genMap[[i]] = genMap[[i]][is.na(take)]
+      stopifnot(length(genMap[[i]]) >= 1L)
+      genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
+      take = na.omit(take)
+    }
+    haplotypes[[i]] = haplo[,take]
+  }
+  
+  founderPop = newMapPop(genMap=genMap,
+                         haplotypes=haplotypes)
+  
+  if(!is.null(ped)){
+    founderPop = new("NamedMapPop",
+                     id=id,
+                     mother=mother,
+                     father=father,
+                     founderPop)
+  }
+  
+  return(founderPop)
+}
+
