@@ -7,7 +7,7 @@
 importHaplo(haplo, genMap, ploidy = 2L, ped = NULL)
 }
 \arguments{
-\item{haplo}{a matrix of genotypes}
+\item{haplo}{a matrix of haplotypes}
 
 \item{genMap}{genetic map as a data.frame. The first
 three columns must be: marker name, chromosome, and 

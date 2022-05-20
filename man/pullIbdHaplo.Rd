@@ -18,7 +18,7 @@ are to be retrieved. If NULL, all sites are retrieved.}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns a matrix of SNP haplotypes.
+Returns a matrix of IBD haplotypes.
 }
 \description{
 Retrieves IBD haplotype data

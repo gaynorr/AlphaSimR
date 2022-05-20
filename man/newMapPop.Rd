@@ -29,8 +29,11 @@ Morgans. The first value must be zero. The length of the vector
 determines the number of segregating sites on the chromosome.
 
 Each item of haplotypes must be coercible to a matrix. The columns 
-of this matrix correspond to segregating sites and their number must 
-match
+of this matrix correspond to segregating sites. The number of rows 
+must match the number of individuals times the ploidy if using 
+inbred=FALSE. If using inbred=TRUE, the number of rows must equal 
+the number of individuals. The haplotypes can be stored as numeric, 
+integer or raw. The underlying C++ function will use raw.
 }
 \examples{
 # Create genetic map for two chromosomes, each 1 Morgan long

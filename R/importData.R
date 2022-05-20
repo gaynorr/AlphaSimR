@@ -114,22 +114,27 @@ importInbredGeno = function(geno, genMap, ped=NULL){
   markerName = colnames(geno)
 
   # Check marker coding and convert to haplotypes
-  minGeno = min(geno)
-  maxGeno = max(geno)
-  stopifnot(minGeno >= (-1-1e-8) )
-
-  if(minGeno < (0-1e-8) ){
-    # Suspect -1,0,1 coding
-    stopifnot(maxGeno <= (1+1e-8) )
-    # Converting to 0,1 haplotypes with hard thresholds
-    geno = matrix(as.integer( round( (geno+1)/2 ) ),
-                  ncol=ncol(geno))
+  if(is.raw(geno)){
+    geno[geno==as.raw(1)] = as.raw(0) # For consistency with round
+    geno[geno==as.raw(2)] = as.raw(1)
   }else{
-    # Suspect 0,1,2 coding
-    stopifnot(maxGeno <= (2+1e-8) )
-    # Converting to 0,1 haplotypes with hard thresholds
-    geno = matrix(as.integer( round( geno/2 ) ),
-                  ncol=ncol(geno))
+    minGeno = min(geno)
+    maxGeno = max(geno)
+    stopifnot(minGeno >= (-1-1e-8) )
+    
+    if(minGeno < (0-1e-8) ){
+      # Suspect -1,0,1 coding
+      stopifnot(maxGeno <= (1+1e-8) )
+      # Converting to 0,1 haplotypes with hard thresholds
+      geno = matrix(as.raw( round( (geno+1)/2 ) ),
+                    ncol=ncol(geno))
+    }else{
+      # Suspect 0,1,2 coding
+      stopifnot(maxGeno <= (2+1e-8) )
+      # Converting to 0,1 haplotypes with hard thresholds
+      geno = matrix(as.raw( round( geno/2 ) ),
+                    ncol=ncol(geno))
+    }
   }
 
   # Create haplotype list
@@ -173,7 +178,7 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' as wrapper for \code{\link{newMapPop}} that 
 #' utilizes a more user friendly input format.
 #' 
-#' @param haplo a matrix of genotypes
+#' @param haplo a matrix of haplotypes
 #' @param genMap genetic map as a data.frame. The first  
 #' three columns must be: marker name, chromosome, and 
 #' map position (Morgans). Marker name and chromosome are 
@@ -226,10 +231,9 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   }
   markerName = colnames(haplo)
   
-  # Convert haplotypes to integers
-  haplo = matrix(as.integer(haplo), ncol=ncol(haplo))
-  stopifnot(max(haplo)<=1L,
-            min(haplo)>=0L)
+  # Convert haplotypes to raw
+  haplo = matrix(as.raw(haplo), ncol=ncol(haplo))
+  stopifnot(haplo==as.raw(0) | haplo==as.raw(1))
   
   # Create haplotype list
   haplotypes = vector("list", length=length(genMap))

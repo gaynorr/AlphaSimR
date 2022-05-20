@@ -1,8 +1,8 @@
 convToImat = function(X){
-  return(matrix(as.integer(X),nrow=nrow(X),ncol=ncol(X)))
+  return(matrix(as.integer(X), nrow=nrow(X) ,ncol=ncol(X)))
 }
 
-selectLoci = function(chr,inLociPerChr,inLociLoc){
+selectLoci = function(chr, inLociPerChr, inLociLoc){
   if(is.null(chr)){
     return(list(lociPerChr=inLociPerChr,
                 lociLoc=inLociLoc))
@@ -696,7 +696,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' are to be retrieved. If NULL, all sites are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
 #'
-#' @return Returns a matrix of SNP haplotypes.
+#' @return Returns a matrix of IBD haplotypes.
 #' 
 #' @examples 
 #' #Create founder haplotypes
