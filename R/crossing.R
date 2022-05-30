@@ -714,6 +714,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
 #' should be made a doubled haploid.
+#' @param nSelf an optional vector indicating how many generations an 
+#' individual should be selfed.
 #' @param useFemale If creating DH lines, should female recombination 
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
@@ -744,7 +746,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' 
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
-                         maxCycle=100, DH=NULL, useFemale=TRUE, simParam=NULL){
+                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE, 
+                         simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -762,12 +765,16 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }else{
     DH = as.logical(DH)
   }
+  if(is.null(nSelf)){
+    nSelf = rep(0, length(id))
+  }
   
   # Check input data
   stopifnot(!any(duplicated(id)),
             length(id)==length(mother),
             length(id)==length(father),
-            length(id)==length(DH))
+            length(id)==length(DH),
+            length(id)==length(nSelf))
   
   # Sort pedigree (identifies potential problems)
   ped = sortPed(id=id, mother=mother, father=father, 
@@ -854,14 +861,23 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    crossPlan=crossPlan,
                                    simParam=simParam)
         }
-        
-        # Make the individual a DH?
-        if(DH[i]){
-          output[[i]] = makeDH(output[[i]],
-                               useFemale=useFemale,
-                               simParam=simParam)
+      }
+      
+      # Self?
+      if(nSelf[i]>0){
+        for(j in 1:nSelf[i]){
+          output[i] = self(output[[i]],
+                           useFemale=useFemale,
+                           simParam=simParam)
         }
-      } 
+      }
+      
+      # Make the individual a DH?
+      if(DH[i]){
+        output[[i]] = makeDH(output[[i]],
+                             useFemale=useFemale,
+                             simParam=simParam)
+      }
     }
   }
   
