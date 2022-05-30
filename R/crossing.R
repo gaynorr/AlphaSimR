@@ -866,8 +866,8 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       # Self?
       if(nSelf[i]>0){
         for(j in 1:nSelf[i]){
-          output[i] = self(output[[i]],
-                           simParam=simParam)
+          output[[i]] = self(output[[i]],
+                             simParam=simParam)
         }
       }
       
