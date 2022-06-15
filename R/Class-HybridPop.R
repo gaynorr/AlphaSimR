@@ -93,7 +93,6 @@ setMethod("[",
                 }
               }
             }
-            validObject(x)
             return(x)
           }
 )
@@ -118,11 +117,11 @@ setMethod("c",
                 }
               }
             }
-            validObject(x)
             return(x)
           }
 )
 
+# Test if object is of a HybridPop class
 isHybridPop = function(x) {
   ret = is(x, class2 = "HybridPop")
   return(ret)

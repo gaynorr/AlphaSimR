@@ -1,3 +1,185 @@
+#' @rdname isFemale
+#' @title Test if individuals of a population are female or male
+#'
+#' @description Test if individuals of a population are female or male
+#'
+#' @param x \code{\link{Pop-class}}
+#'
+#' @return logical
+#'
+#' @examples
+#' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
+#' SP <- SimParam$new(founderGenomes)
+#' SP$setSexes(sexes = "yes_sys")
+#' pop <- newPop(founderGenomes)
+#' 
+#' isFemale(pop)
+#' isMale(pop)
+#' 
+#' pop[isFemale(pop)]
+#' pop[isFemale(pop)]@sex
+#' 
+#' @export
+isFemale <- function(x) {
+  if (isPop(x)) {
+    ret <- x@sex == "F"
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
+#' @describeIn isFemale Test if individuals of a population are female or male
+#' @export
+isMale <- function(x) {
+  if (isPop(x)) {
+    ret <- x@sex == "M"
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
+
+#' @rdname setMisc
+#' @title Set miscelaneous information in a population
+#'
+#' @description Set miscelaneous information in a population
+#'
+#' @param x \code{\link{Pop-class}}
+#' @param node character, name of the node to set within the \code{x@misc} slot
+#' @param value, value to be saved into \code{x@misc[[*]][[node]]}; length of
+#'   \code{value} should be equal to \code{nInd(x)}; if its length is 1, then
+#'   it is repeated using \code{rep} (see examples)
+#'
+#' @details A \code{NULL} in \code{value} is ignored
+#' 
+#' @return \code{\link{Pop-class}} with \code{x@misc[[*]][[node]]} set
+#' basePop <- newPop(founderGenomes)
+#'
+#' basePop <- setMisc(basePop, node = "info", value = 1)
+#' basePop@misc
+#' getMisc(x = basePop, node = "info")
+#'
+#' basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
+#' basePop@misc
+#' getMisc(x = basePop, node = "info2")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in seq_len(n)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in c(1, 3)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' getMisc(x = basePop)
+#'
+#' @export
+setMisc <- function(x, node = NULL, value = NULL) {
+  if (isPop(x)) {
+    if (is.null(node)) {
+      stop("Argument node must be provided!")
+    }
+    if (is.null(value)) {
+      stop("Argument value must be provided!")
+    }
+    n <- nInd(x)
+    if (length(value) == 1 && n > 1) {
+      value <- rep(x = value, times = n)
+    }
+    if (length(value) != n) {
+      stop("Argument value must be of length 1 or nInd(x)!")
+    }
+    for (ind in seq_len(n)) {
+      if (!is.null(value[ind])) {
+        x@misc[[ind]][node] <- value[ind]
+      }
+    }
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(x)
+}
+
+#' @rdname getMisc
+#' @title Get miscelaneous information in a population
+#'
+#' @description Get miscelaneous information in a population
+#'
+#' @param x \code{\link{Pop-class}}
+#' @param node character, name of the node to get from the \code{x@misc} slot;
+#'   if \code{NULL} the whole \code{x@misc} slot is returned
+#'
+#' @return The \code{x@misc} slot or its nodes \code{x@misc[[*]][[node]]}
+#'
+#' @examples
+#' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
+#' SP <- SimParam$new(founderGenomes)
+#' basePop <- newPop(founderGenomes)
+#'
+#' basePop <- setMisc(basePop, node = "info", value = 1)
+#' basePop@misc
+#' getMisc(x = basePop, node = "info")
+#'
+#' basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
+#' basePop@misc
+#' getMisc(x = basePop, node = "info2")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in seq_len(n)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' n <- nInd(basePop)
+#' location <- vector(mode = "list", length = n)
+#' for (ind in c(1, 3)) {
+#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
+#' }
+#' location
+#' basePop <- setMisc(basePop, node = "location", value = location)
+#' basePop@misc
+#' getMisc(x = basePop, node = "location")
+#' 
+#' getMisc(x = basePop)
+#' 
+#' @export
+getMisc <- function(x, node = NULL) {
+  if (isPop(x)) {
+    if (is.null(node)) {
+      ret <- x@misc
+    } else {
+      nInd <- nInd(x)
+      ret <- vector(mode = "list", length = nInd)
+      for (ind in seq_len(nInd)) {
+        if (!is.null(x@misc[[ind]][[node]])) {
+          ret[ind] <- x@misc[[ind]][node]
+        }
+      }
+    }
+  } else {
+    stop("Argument x must be a Pop class object!")
+  }
+  return(ret)
+}
+
 #' @title Selection intensity
 #' 
 #' @description 
@@ -428,12 +610,76 @@ writePlink = function(pop, baseName, trait = 1L, snpChip = 1L, simParam = NULL,
                 file   = paste0(baseName, ".ped"))
 }
 
-#Create rotation matrix for sampling random deviates
-#Uses SVD method for stability
-rotMat = function(X){
-  ans = svd(X)
-  u = t(ans$u)*sqrt(pmax(ans$d,0))
-  return(t(ans$v%*%u))
+#' @title Linear transformation matrix
+#' 
+#' @description 
+#' Creates an m by m linear transformation matrix that 
+#' can be applied to n by m uncorrelated deviates 
+#' sampled from a standard normal distribution to produce
+#' create correlated deviates with an arbitrary correlation 
+#' of R. If R is not positive semi-definite, the function 
+#' returns smoothing and returns a warning (see details).
+#' 
+#' @param R a correlation matrix
+#' 
+#' @details 
+#' An eigendecomposition is applied to the correlation 
+#' matrix and used to test if it is positive semi-definite. 
+#' If the matrix is not positive semi-definite, it is not a 
+#' valid correlation matrix. In this case, smoothing is 
+#' applied to the matrix (as described in the 'psych' library) 
+#' to obtain a valid correlation matrix. The resulting 
+#' deviates will thus not exactly match the desired correlation, 
+#' but will hopefully be close if the the input matrix wasn't 
+#' too far removed from a valid correlation matrix.
+#' 
+#' @examples 
+#' # Create an 2x2 correlation matrix
+#' R = 0.5*diag(2) + 0.5
+#' 
+#' # Sample 1000 uncorrelated deviates from a 
+#' # bivariate standard normal distribution
+#' X = matrix(rnorm(2*1000), ncol=2)
+#' 
+#' # Compute the transformation matrix
+#' T = transMat(R)
+#' 
+#' # Apply the transformation to the deviates
+#' Y = X%*%T
+#' 
+#' # Measure the sample correlation
+#' cor(Y)
+#' 
+#' @export
+transMat = function(R){
+  # Check if matrix is symmetric 
+  # Stop if it is not
+  nameR = deparse(substitute(R))
+  if(!isSymmetric(R)){
+    stop(nameR, " is not a symmetric matrix")
+  }
+  
+  # Check if matrix is positive semi-definite
+  # Provide a warning if it is not
+  eig = eigen(R, symmetric=TRUE)
+  
+  if(min(eig$values)<.Machine$double.eps){
+    warning("Matrix is not positive semi-definite, see ?transMat for details")
+    # Performing correlation matrix smoothing
+    eig$values[eig$values<.Machine$double.eps] = 100*.Machine$double.eps
+    m = ncol(R)
+    totVar = sum(eig$values)
+    eig$values = eig$values * m/totVar
+    newR = eig$vectors%*%diag(eig$values)%*%t(eig$vectors)
+    newR = cov2cor(newR)
+    eig = eigen(newR, symmetric=TRUE)
+  }
+  
+  return(
+    t(eig$vectors %*% 
+        (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
+    )
+  )
 }
 
 #' @title Add Random Mutations

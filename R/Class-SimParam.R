@@ -30,7 +30,7 @@ SimParam = R6Class(
     finalizePop = "function",
     
     #' @field allowEmptyPop if true, population arguments with nInd=0 will 
-    #' return an empty population without a warning instead of an error.
+    #' return an empty population with a warning instead of an error.
     allowEmptyPop = "logical",
     
     #' @description Starts the process of building a new simulation 
@@ -275,6 +275,7 @@ SimParam = R6Class(
     #' If NULL, no minimum frequency is used. 
     #' @param refPop reference population for calculating SNP 
     #' frequency. If NULL, the founder population is used.
+    #' @param name optional name for chip
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -283,11 +284,16 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addSnpChip(10)
-    addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL){
+    addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL, name=NULL){
       if(length(nSnpPerChr)==1){
         nSnpPerChr = rep(nSnpPerChr,self$nChr)
       }
       snpChip = private$.pickLoci(nSnpPerChr, FALSE, minSnpFreq, refPop)
+      if(is.null(name)){
+        snpChip@name = paste0("Chip",self$nSnpChips + 1L)
+      }else{
+        snpChip@name = name
+      }
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
@@ -350,6 +356,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -359,7 +366,7 @@ SimParam = R6Class(
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
-                         gamma=FALSE,shape=1,force=FALSE){
+                         gamma=FALSE,shape=1,force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -370,9 +377,13 @@ SimParam = R6Class(
       if(length(gamma)==1) gamma = rep(gamma,nTraits)
       if(length(shape)==1) shape = rep(shape,nTraits)
       if(is.null(corA)) corA=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
-                length(mean)==nrow(corA))
+                length(mean)==nrow(corA),
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -380,7 +391,8 @@ SimParam = R6Class(
         trait = new("TraitA",
                     qtlLoci,
                     addEff=addEff[,i],
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -409,6 +421,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #'  
     #' @examples 
     #' #Create founder haplotypes
@@ -419,7 +432,7 @@ SimParam = R6Class(
     #' SP$addTraitAD(10, meanDD=0.5)
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
-                          gamma=FALSE,shape=1,force=FALSE){
+                          gamma=FALSE,shape=1,force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -433,10 +446,14 @@ SimParam = R6Class(
       if(length(shape)==1) shape = rep(shape,nTraits)
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corDD)) corDD=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corDD),
-                length(mean)==nrow(corA))
+                length(mean)==nrow(corA),
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -447,7 +464,8 @@ SimParam = R6Class(
                     qtlLoci,
                     addEff=addEff[,i],
                     domEff=domEff[,i],
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -483,6 +501,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -493,7 +512,7 @@ SimParam = R6Class(
     #' SP$addTraitAG(10, varGxE=2)
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
-                          force=FALSE){
+                          force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -506,13 +525,17 @@ SimParam = R6Class(
       if(length(varEnv)==1) varEnv = rep(varEnv,nTraits)
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corGxE)) corGxE=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corGxE),
                 length(mean)==nrow(corA),
                 length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
-                length(mean)==length(varEnv))
+                length(mean)==length(varEnv),
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -522,7 +545,8 @@ SimParam = R6Class(
         trait = new("TraitA",
                     qtlLoci,
                     addEff=addEff[,i],
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -576,6 +600,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #'  
     #' @examples 
     #' #Create founder haplotypes
@@ -584,10 +609,10 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
-    addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
+    addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
                            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
-                           shape=1,force=FALSE){
+                           shape=1,force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -603,6 +628,9 @@ SimParam = R6Class(
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corDD)) corDD=diag(nTraits)
       if(is.null(corGxE)) corGxE=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corDD),
@@ -611,7 +639,8 @@ SimParam = R6Class(
                 nrow(corGxE)==nTraits,
                 nrow(corDD)==nTraits,
                 length(varGxE)==nTraits,
-                length(varEnv)==nTraits)
+                length(varEnv)==nTraits,
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -624,7 +653,8 @@ SimParam = R6Class(
                     qtlLoci,
                     addEff=addEff[,i],
                     domEff=domEff[,i],
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -686,12 +716,14 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #' 
     #' @examples 
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
-                          corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE){
+                          corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
+                          name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -705,12 +737,16 @@ SimParam = R6Class(
       if(length(relAA)==1) relAA = rep(relAA,nTraits)
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corAA)) corAA=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corAA),
                 length(relAA)==length(mean),
                 length(mean)==nrow(corA),
-                (sum(nQtlPerChr)%%2L)==0L)
+                (sum(nQtlPerChr)%%2L)==0L,
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -723,7 +759,8 @@ SimParam = R6Class(
                     qtlLoci,
                     addEff=addEff[,i],
                     epiEff=cbind(E,epiEff[,i]),
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -764,6 +801,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #'  
     #' @examples 
     #' #Create founder haplotypes
@@ -774,7 +812,8 @@ SimParam = R6Class(
     #' SP$addTraitADE(10)
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
-                           useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE){
+                           useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
+                           name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -791,6 +830,9 @@ SimParam = R6Class(
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corDD)) corDD=diag(nTraits)
       if(is.null(corAA)) corAA=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corDD),
@@ -798,7 +840,8 @@ SimParam = R6Class(
                 length(mean)==nrow(corAA),
                 length(mean)==nrow(corDD),
                 length(relAA)==length(mean),
-                (sum(nQtlPerChr)%%2L)==0L)
+                (sum(nQtlPerChr)%%2L)==0L,
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -814,7 +857,8 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     domEff=domEff[,i],
                     epiEff=cbind(E,epiEff[,i]),
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -856,6 +900,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #' 
     #' @examples 
     #' #Create founder haplotypes
@@ -866,7 +911,7 @@ SimParam = R6Class(
     #' SP$addTraitAEG(10, varGxE=2)
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
-                           shape=1,force=FALSE){
+                           shape=1,force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -882,6 +927,9 @@ SimParam = R6Class(
       if(is.null(corA)) corA=diag(nTraits)
       if(is.null(corAA)) corAA=diag(nTraits)
       if(is.null(corGxE)) corGxE=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 length(relAA)==length(mean),
                 isSymmetric(corA),
@@ -892,7 +940,8 @@ SimParam = R6Class(
                 length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
-                (sum(nQtlPerChr)%%2L)==0L)
+                (sum(nQtlPerChr)%%2L)==0L,
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -907,7 +956,8 @@ SimParam = R6Class(
                     qtlLoci,
                     addEff=addEff[,i],
                     epiEff=cbind(E,epiEff[,i]),
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -974,6 +1024,7 @@ SimParam = R6Class(
     #' @param shape the shape parameter for the gamma distribution
     #' @param force should the check for a running simulation be 
     #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
     #'  
     #' @examples 
     #' #Create founder haplotypes
@@ -982,10 +1033,10 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
-    addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=1e-6,
+    addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
                             corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
-                            gamma=FALSE,shape=1,force=FALSE){
+                            gamma=FALSE,shape=1,force=FALSE,name=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -1004,6 +1055,9 @@ SimParam = R6Class(
       if(is.null(corDD)) corDD=diag(nTraits)
       if(is.null(corGxE)) corGxE=diag(nTraits)
       if(is.null(corAA)) corAA=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
       stopifnot(length(mean)==length(var),
                 isSymmetric(corA),
                 isSymmetric(corDD),
@@ -1016,7 +1070,8 @@ SimParam = R6Class(
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits,
                 length(relAA)==length(mean),
-                (sum(nQtlPerChr)%%2L)==0L)
+                (sum(nQtlPerChr)%%2L)==0L,
+                length(mean)==length(name))
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1034,7 +1089,8 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     domEff=domEff[,i],
                     epiEff=cbind(E,epiEff[,i]),
-                    intercept=0)
+                    intercept=0,
+                    name=name[i])
         tmp = calcGenParam(trait, self$founderPop, 
                            self$nThreads)
         if(useVarA){
@@ -1080,7 +1136,9 @@ SimParam = R6Class(
     },
     
     #' @description 
-    #' Manually add a new trait to the simulation.
+    #' Manually add a new trait to the simulation. Trait must 
+    #' be formatted as a \code{\link{LociMap-class}}. If the 
+    #' trait is not already formatted, consider using importTrait.
     #' 
     #' @param lociMap a new object descended from 
     #' \code{\link{LociMap-class}}
@@ -1097,6 +1155,148 @@ SimParam = R6Class(
       varA = popVar(tmp$bv)[1]
       varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
+      invisible(self)
+    },
+    
+    #' @description 
+    #' Manually add a new trait(s) to the simulation. Unlike the 
+    #' manAddTrait function, this function does not require 
+    #' formatting the trait as a \code{\link{LociMap-class}}. 
+    #' The formatting is performed automatically for the user, 
+    #' with more user friendly data.frames or matrices taken as 
+    #' inputs. This function only works for A and AD trait types.
+    #' 
+    #' @param markerNames a vector of names for the QTL
+    #' @param addEff a matrix of additive effects (nLoci x nTraits). 
+    #' Alternatively, a vector of length nLoci can be supplied for 
+    #' a single trait.
+    #' @param domEff optional dominance effects for each locus
+    #' @param intercept optional intercepts for each trait
+    #' @param name optional name(s) for the trait(s)
+    #' @param varE default error variance for phenotype, optional
+    #' @param force should the check for a running simulation be 
+    #' ignored. Only set to TRUE if you know what you are doing
+    importTrait = function(markerNames, 
+                           addEff, 
+                           domEff=NULL,
+                           intercept=NULL, 
+                           name=NULL, 
+                           varE=NULL,
+                           force=FALSE){
+      if(!force){
+        private$.isRunning()
+      }
+      
+      # Check addEff and domEff inputs
+      addEff = as.matrix(addEff)
+      stopifnot(length(markerNames)==nrow(addEff))
+      nTraits = ncol(addEff)
+      if(is.null(domEff)){
+        useDom = FALSE
+      }else{
+        useDom = TRUE
+        domEff = as.matrix(domEff)
+        stopifnot(nrow(addEff)==nrow(domEff),
+                  ncol(addEff)==nrow(domEff))
+      }
+      
+      # Prepare the intercept
+      if(is.null(intercept)){
+        intercept = rep(0, nTraits)
+      }else{
+        intercept = as.numeric(intercept)
+        stopifnot(length(intercept)==nTraits)
+      }
+      
+      # Prepare varE
+      if(!is.null(varE)){
+        varE = as.numeric(varE)
+        stopifnot(length(varE)==nTraits)
+      }
+      
+      # Prepare trait names
+      if(is.null(names)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }else{
+        stopifnot(length(names)==nTraits)
+      }
+      
+      
+      # Extract genetic map and check if marker names are on the map
+      genMapMarkerNames = unlist(lapply(private$.femaleMap, names))
+      stopifnot(all(markerNames%in%genMapMarkerNames))
+      
+      # Create trait variables
+      lociPerChr = integer(self$nChr)
+      lociLoc = vector("list", self$nChr)
+      addEffList = domEffList = vector("list", nTraits)
+      for(i in 1:nTraits){
+        addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
+      }
+      
+      # Loop through chromosomes
+      for(i in 1:self$nChr){
+        # Working on trait 1
+        # Initialize variables
+        addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
+        lociLoc[[i]] = integer()
+        
+        # Find matches if they exist
+        take = match(names(genMap[[i]]), markerNames)
+        lociPerChr[i] = length(na.omit(take))
+        
+        if(lociPerChr[i]>0L){
+          lociLoc[[i]] = which(!is.na(take))
+          addEffList[[1]][[i]] = addEff[na.omit(take),1]
+          if(useDom){
+            domEffList[[1]][[i]] = domEff[na.omit(take),1]
+          }
+        }
+        
+        # Work on additional traits?
+        if(nTraits>1){
+          for(j in 2:nTraits){
+            addEffList[[j]][[i]] = domEffList[[j]][[i]] = numeric()
+            if(lociPerChr[i]>0L){
+              addEffList[[j]][[i]] = addEff[na.omit(take),j]
+              if(useDom){
+                domEffList[[j]][[i]] = domEff[na.omit(take),j]
+              }
+            }
+          }
+        }
+      }
+      
+      lociLoc = unlist(lociLoc)
+      nLoci = sum(lociPerChr)
+      
+      # Create Trait(s)
+      for(i in 1:nTraits){
+        addEff = unlist(addEffList[[i]])
+        if(useDom){
+          domEff = unlist(domEffList[[i]])
+          trait = new("TraitAD", 
+                      addEff=addEff,
+                      domEff=domEff,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else{
+          trait = new("TraitA", 
+                      addEff=addEff,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }
+        
+        # Add trait to simParam
+        self$manAddTrait(lociMap=trait, varE=varE[i], force=force)
+      }
+      
       invisible(self)
     },
     
@@ -1715,6 +1915,42 @@ SimParam = R6Class(
   active = list(
     #### Active ----
     
+    #' @field traitNames vector of trait names
+    traitNames=function(value){
+      if(missing(value)){
+        traitNames = sapply(private$.traits, function(x){
+          x@name
+        })
+        return(traitNames)
+      }else{
+        value = as.character(value)
+        if(length(value)!=self$nTraits){
+          stop("length of traitNames vector must equal ",self$nTraits)
+        }
+        for(i in 1:self$nTraits){
+          private$.traits[[i]]@name = value[i]
+        }
+      }
+    },
+    
+    #' @field snpChipNames vector of chip names
+    snpChipNames=function(value){
+      if(missing(value)){
+        snpChipNames = sapply(self$snpChips, function(x){
+          x@name
+        })
+        return(snpChipNames)
+      }else{
+        value = as.character(value)
+        if(length(value)!=self$nSnpChips){
+          stop("length of snpChipNames vector must equal ",self$nSnpChips)
+        }
+        for(i in 1:self$nSnpChips){
+          self$snpChips[[i]]@name = value[i]
+        }
+      }
+    },
+    
     #' @field traits list of traits
     traits=function(value){
       if(missing(value)){
@@ -1953,7 +2189,7 @@ SimParam = R6Class(
 #### External helpers ----
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%rotMat(corr)
+                  ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
       x = (pnorm(addEff[,i])-0.5)*2
@@ -1966,7 +2202,7 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
 sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
                       meanDD,varDD){
   domEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
-                  ncol=nTraits)%*%rotMat(corDD)
+                  ncol=nTraits)%*%transMat(corDD)
   domEff = sweep(domEff,2,sqrt(varDD),"*")
   domEff = sweep(domEff,2,meanDD,"+")
   domEff = abs(addEff)*domEff
@@ -1975,7 +2211,7 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
-                  ncol=nTraits)%*%rotMat(corr)
+                  ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
       x = (pnorm(epiEff[,i])-0.5)*2
@@ -1986,6 +2222,7 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   return(epiEff)
 }
 
+# Test if object is of a SimParam class
 isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)

@@ -42,9 +42,27 @@ arma::field< //chromosome
         const arma::field<arma::field<arma::Mat<int> > >& father){
       arma::uword nChr = recHist.n_elem;
       arma::uword motherPloidy = mother(0).n_elem;
+      arma::uword fatherPloidy = father(0).n_elem;
       arma::uword ploidy = recHist(0).n_elem;
       arma::field<arma::field<arma::Mat<int> > > output;
       output.set_size(nChr);
+      
+      // Test ploidy levels of parents
+      if(ploidy == (motherPloidy+fatherPloidy)/2){
+        // Suspect regular cross or DH
+        // Proceed as normal
+      }else if(ploidy == (motherPloidy+fatherPloidy)/4){
+        // Suspect reduceGenome was used
+        // Proceed as normal, all gametes will be taken from mother
+      }else if(ploidy == (motherPloidy+fatherPloidy)){
+        // Suspect doubleGenome or mergeGenome was used
+        // Double motherPloidy to pull all gametes
+        motherPloidy *= 2;
+      }else{
+        // No idea what happened
+        Rcpp::stop("Unexpected parental ploidy levels");
+      }
+      
       
       for(arma::uword i=0; i<nChr; ++i){
         output(i).set_size(ploidy);

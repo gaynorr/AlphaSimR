@@ -1110,7 +1110,7 @@ void GraphBuilder::addMutations(double startPos,double endPos){
       EdgePtr selectedEdge = getRandomEdgeOnTree(dMutationTime,dRandomSpot);
       //Rcpp::Rcerr<<"Mutation time is "<<dMutationTime<<endl;
       mutateBelowEdge(selectedEdge);
-      NodePtrVector::iterator it;
+      // NodePtrVector::iterator it;
       
       unique_ptr<AlphaSimRReturn> temp(new AlphaSimRReturn());
       temp->length = startPos;

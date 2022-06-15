@@ -10,7 +10,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   if(use=="rand"){
     return(rnorm(pop@nInd))
   }
-  if(class(trait)=="function"){
+  if(is(trait,"function")){
     if(use=="gv"){
       response = trait(pop@gv,...)
     }else if(use=="ebv"){
@@ -18,7 +18,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
     }else if(use=="pheno"){
       response = trait(pop@pheno,...)
     }else if(use=="bv"){
-      if(class(pop)=="HybridPop"){
+      if(is(pop,"HybridPop")){
         stop("Use='bv' is not a valid option for HybridPop")
       }
       response = genParam(pop,simParam=simParam)$bv
@@ -27,6 +27,14 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
       stop(paste0("Use=",use," is not an option"))
     }
   }else{
+    if(is.character(trait)){
+      # Suspect trait is a name
+      take = match(trait, simParam$traitNames)
+      if(is.na(take)){
+        stop("'",trait,"' did not match any trait names")
+      }
+      trait = take
+    }
     if(use == "gv"){
       response = pop@gv[,trait,drop=FALSE]
     }else if(use=="ebv"){
@@ -34,7 +42,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
     }else if(use=="pheno"){
       response = pop@pheno[,trait,drop=FALSE]
     }else if(use=="bv"){
-      if(class(pop)=="HybridPop"){
+      if(is(pop,"HybridPop")){
         stop("Use='bv' is not a valid option for HybridPop")
       }
       response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
@@ -134,7 +142,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop, 
@@ -222,7 +230,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
                       use=use, sex=sex, famType=famType, 
@@ -320,7 +328,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop, 
@@ -417,7 +425,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(is.null(candidates))
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
                       pollenControl=pollenControl, trait=trait, use=use,

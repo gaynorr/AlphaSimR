@@ -73,7 +73,9 @@ meanP = function(pop){
 #' 
 #' @export
 varG = function(pop){
-  popVar(pop@gv)
+  G = popVar(pop@gv)
+  rownames(G) = colnames(G) = colnames(pop@gv)
+  return(G)
 }
 
 #' @title Phenotypic variance
@@ -97,7 +99,9 @@ varG = function(pop){
 #' 
 #' @export
 varP = function(pop){
-  popVar(pop@pheno)
+  P = popVar(pop@pheno)
+  rownames(P) = colnames(P) = colnames(pop@pheno)
+  return(P)
 }
 
 #' @title Sumarize genetic parameters
@@ -161,77 +165,82 @@ genParam = function(pop,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   stopifnot(class(pop)=="Pop")
-  nInd=nInd(pop)
-  gv=NULL
-  bv=NULL
-  dd=NULL
-  aa=NULL
-  genicVarA=NULL
-  genicVarD=NULL
-  genicVarAA=NULL
-  covA_HW=NULL
-  covD_HW=NULL
-  covAA_HW=NULL
-  covG_HW=NULL
-  covAD_L=NULL
-  covAAA_L=NULL
-  covDAA_L=NULL
-  mu=NULL
-  mu_HW=NULL
-  gv_a=NULL
-  gv_d=NULL
-  gv_aa=NULL
-  gv_mu=NULL
+  nInd = nInd(pop)
+  nTraits = simParam$nTraits
+  traitNames = simParam$traitNames
+  
+  # Blank nInd x nTrait matrices
+  gv = matrix(NA_real_, nrow=nInd, ncol=nTraits)
+  colnames(gv) = traitNames
+  bv = dd = aa = gv_a = gv_d = gv_aa = gv
+  
+  # Blank nTrait vectors
+  genicVarA = rep(NA_real_, nTraits)
+  names(genicVarA) = traitNames
+  genicVarD = genicVarAA = covA_HW = covD_HW = covAA_HW =
+    covG_HW = mu = mu_HW = gv_mu = covAAA_L = covDAA_L = 
+    covAD_L = genicVarA
+
   #Loop through trait calculations
-  for(i in 1:simParam$nTraits){
+  for(i in 1:nTraits){
     trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop,simParam$nThreads)
-    genicVarA = c(genicVarA,tmp$genicVarA2)
-    covA_HW = c(covA_HW,tmp$genicVarA-tmp$genicVarA2)
-    gv = cbind(gv,tmp$gv)
-    bv = cbind(bv,tmp$bv)
-    mu = c(mu,tmp$mu)
-    mu_HW = c(mu_HW,tmp$mu_HWE)
-    gv_a = cbind(gv_a,tmp$gv_a)
-    gv_mu = c(gv_mu,tmp$gv_mu)
+    genicVarA[i] = tmp$genicVarA2
+    covA_HW[i] = tmp$genicVarA-tmp$genicVarA2
+    gv[,i] = tmp$gv
+    bv[,i] = tmp$bv
+    mu[i] = tmp$mu
+    mu_HW[i] = tmp$mu_HWE
+    gv_a[,i] = tmp$gv_a
+    gv_mu[i] = tmp$gv_mu
     if(.hasSlot(trait,"domEff")){
-      genicVarD = c(genicVarD,tmp$genicVarD2)
-      covD_HW = c(covD_HW,tmp$genicVarD-tmp$genicVarD2)
-      dd = cbind(dd,tmp$dd)
-      gv_d = cbind(gv_d,tmp$gv_d)
+      genicVarD[i] = tmp$genicVarD2
+      covD_HW[i] = tmp$genicVarD-tmp$genicVarD2
+      dd[,i] = tmp$dd
+      gv_d[,i] = tmp$gv_d
     }else{
-      genicVarD = c(genicVarD,0)
-      covD_HW = c(covD_HW,0)
-      dd = cbind(dd,rep(0,pop@nInd))
-      gv_d = cbind(gv_d,rep(0,pop@nInd))
+      genicVarD[i] = 0
+      covD_HW[i] = 0
+      dd[,i] = rep(0,pop@nInd)
+      gv_d[,i] = rep(0,pop@nInd)
     }
     if(.hasSlot(trait,"epiEff")){
-      genicVarAA = c(genicVarAA,tmp$genicVarAA2)
-      covAA_HW = c(covAA_HW,tmp$genicVarAA-tmp$genicVarAA2)
-      aa = cbind(aa,tmp$aa)
-      gv_aa = cbind(gv_aa,tmp$gv_aa)
+      genicVarAA[i] = tmp$genicVarAA2
+      covAA_HW[i] = tmp$genicVarAA-tmp$genicVarAA2
+      aa[,i] = tmp$aa
+      gv_aa[,i] = tmp$gv_aa
     }else{
-      genicVarAA = c(genicVarAA,0)
-      covAA_HW = c(covAA_HW,0)
-      aa = cbind(aa,rep(0,pop@nInd))
-      gv_aa = cbind(gv_aa,rep(0,pop@nInd))
+      genicVarAA[i] = 0
+      covAA_HW[i] = 0
+      aa[,i] = rep(0,pop@nInd)
+      gv_aa[,i] = rep(0,pop@nInd)
     }
     if(nInd==1){
-      covAD_L = c(covAD_L,0)
-      covAAA_L = c(covAAA_L,0)
-      covDAA_L = c(covDAA_L,0)
+      covAD_L[i] = 0
+      covAAA_L[i] = 0
+      covDAA_L[i] = 0
     } else {
-      covAD_L = c(covAD_L,popVar(cbind(bv[,i],dd[,i]))[1,2])
-      covAAA_L = c(covAAA_L,popVar(cbind(bv[,i],aa[,i]))[1,2])
-      covDAA_L = c(covDAA_L,popVar(cbind(dd[,i],aa[,i]))[1,2])
+      covAD_L[i] = popVar(cbind(bv[,i],dd[,i]))[1,2]
+      covAAA_L[i] = popVar(cbind(bv[,i],aa[,i]))[1,2]
+      covDAA_L[i] = popVar(cbind(dd[,i],aa[,i]))[1,2]
     }
   }
+  
   varA = popVar(bv)
+  rownames(varA) = colnames(varA) = traitNames
+  
   varD = popVar(dd)
+  rownames(varD) = colnames(varD) = traitNames
+  
   varAA = popVar(aa)
+  rownames(varAA) = colnames(varAA) = traitNames
+  
   varG = popVar(gv)
+  rownames(varG) = colnames(varG) = traitNames
+  
   genicVarG = genicVarA + genicVarD + genicVarAA
   covG_HW = covA_HW + covD_HW + covAA_HW
+  
   output = list(varA=varA,
                 varD=varD,
                 varAA=varAA,

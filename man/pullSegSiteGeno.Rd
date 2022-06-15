@@ -2,9 +2,9 @@
 % Please edit documentation in R/pullGeno.R
 \name{pullSegSiteGeno}
 \alias{pullSegSiteGeno}
-\title{Pull seg site genotypes}
+\title{Pull segregating site genotypes}
 \usage{
-pullSegSiteGeno(pop, chr = NULL, simParam = NULL)
+pullSegSiteGeno(pop, chr = NULL, asRaw = FALSE, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or
@@ -12,6 +12,8 @@ pullSegSiteGeno(pop, chr = NULL, simParam = NULL)
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
+
+\item{asRaw}{return in raw (byte) format}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

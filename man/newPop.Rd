@@ -2,19 +2,13 @@
 % Please edit documentation in R/Class-Pop.R
 \name{newPop}
 \alias{newPop}
-\title{Create new Population}
+\title{Create new population}
 \usage{
-newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam = NULL, ...)
+newPop(rawPop, simParam = NULL, ...)
 }
 \arguments{
 \item{rawPop}{an object of \code{\link{MapPop-class}} or 
-\code{\link{RawPop-class}}}
-
-\item{id}{optional id for new individuals.}
-
-\item{mother}{optional id for mothers.}
-
-\item{father}{optional id for fathers.}
+\code{\link{NamedMapPop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
@@ -24,10 +18,11 @@ newPop(rawPop, id = NULL, mother = NULL, father = NULL, simParam = NULL, ...)
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Creates a new \code{\link{Pop-class}} from an object of 
-\code{\link{MapPop-class}} or \code{\link{RawPop-class}}. 
-The function is intended for creating initial populations from 
-'FOUNDERPOP' created by \code{\link{runMacs}}.
+Creates an initial \code{\link{Pop-class}} from an object of 
+\code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. 
+The function is intended for us with output from functions such 
+as \code{\link{runMacs}}, \code{\link{newMapPop}}, or 
+\code{\link{quickHaplo}}.
 }
 \examples{
 #Create founder haplotypes

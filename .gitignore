@@ -2,9 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+config.log
+config.status
 src/*.o
 src/*.so
 src/*.dll
 Notes.txt
 Meta
 .Rproj.user
+alphasimr.Rproj

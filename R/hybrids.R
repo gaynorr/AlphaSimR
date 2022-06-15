@@ -295,7 +295,7 @@ setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(class(testers)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers, 
                       use=use, varE=varE, reps=reps, fixEff=fixEff,
@@ -426,7 +426,7 @@ setPhenoProgTest = function(pop,testPop,nMatePerInd=1L,use="pheno",varE=NULL,rep
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(class(testPop)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop, 
                       nMatePerInd=nMatePerInd, use=use, varE=varE, reps=reps, 

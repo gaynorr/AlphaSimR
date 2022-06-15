@@ -78,15 +78,15 @@ makeCross = function(pop,crossPlan,nProgeny=1,
   }else{
     hist = NULL
   }
-  return(newPop(rawPop=rPop,
-                mother=pop@id[crossPlan[,1]],
-                father=pop@id[crossPlan[,2]],
-                simParam=simParam,
-                iMother=pop@iid[crossPlan[,1]],
-                iFather=pop@iid[crossPlan[,2]],
-                femaleParentPop=pop,
-                maleParentPop=pop,
-                hist=hist))
+  return(.newPop(rawPop=rPop,
+                 mother=pop@id[crossPlan[,1]],
+                 father=pop@id[crossPlan[,2]],
+                 iMother=pop@iid[crossPlan[,1]],
+                 iFather=pop@iid[crossPlan[,2]],
+                 femaleParentPop=pop,
+                 maleParentPop=pop,
+                 hist=hist,
+                 simParam=simParam))
 }
 
 #' @title Make random crosses
@@ -342,15 +342,15 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   }else{
     hist = NULL
   }
-  return(newPop(rawPop=rPop,
-                mother=females@id[crossPlan[,1]],
-                father=males@id[crossPlan[,2]],
-                simParam=simParam,
-                iMother=females@iid[crossPlan[,1]],
-                iFather=males@iid[crossPlan[,2]],
-                femaleParentPop=females,
-                maleParentPop=males,
-                hist=hist))
+  return(.newPop(rawPop=rPop,
+                 mother=females@id[crossPlan[,1]],
+                 father=males@id[crossPlan[,2]],
+                 iMother=females@iid[crossPlan[,1]],
+                 iFather=males@iid[crossPlan[,2]],
+                 femaleParentPop=females,
+                 maleParentPop=males,
+                 hist=hist,
+                 simParam=simParam))
 }
 
 #' @title Make random crosses
@@ -482,7 +482,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(is.null(parents))
     pop@pops = lapply(pop@pops, self, nProgeny=nProgeny, 
                       parents=NULL, keepParents=keepParents, 
@@ -527,25 +527,25 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
     hist = NULL
   }
   if(keepParents){
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@mother,each=nProgeny),
-                  father=rep(pop@father,each=nProgeny),
-                  simParam=simParam,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@mother,each=nProgeny),
+                   father=rep(pop@father,each=nProgeny),
+                   iMother=rep(pop@iid,each=nProgeny),
+                   iFather=rep(pop@iid,each=nProgeny),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }else{
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@id,each=nProgeny),
-                  father=rep(pop@id,each=nProgeny),
-                  simParam=simParam,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@id,each=nProgeny),
+                   father=rep(pop@id,each=nProgeny),
+                   iMother=rep(pop@iid,each=nProgeny),
+                   iFather=rep(pop@iid,each=nProgeny),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }
 }
 
@@ -583,7 +583,7 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     pop@pops = lapply(pop@pops, makeDH, nDH=nDH, useFemale=useFemale,
                       keepParents=keepParents, simParam=simParam)
     return(pop)
@@ -619,27 +619,27 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
     hist = NULL
   }
   if(keepParents){
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@mother, each=nDH),
-                  father=rep(pop@father, each=nDH),
-                  simParam=simParam,
-                  isDH=TRUE,
-                  iMother=rep(pop@iid, each=nDH),
-                  iFather=rep(pop@iid, each=nDH),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@mother, each=nDH),
+                   father=rep(pop@father, each=nDH),
+                   isDH=TRUE,
+                   iMother=rep(pop@iid, each=nDH),
+                   iFather=rep(pop@iid, each=nDH),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }else{
-    return(newPop(rawPop=rPop,
-                  mother=rep(pop@id, each=nDH),
-                  father=rep(pop@id, each=nDH),
-                  simParam=simParam,
-                  isDH=TRUE,
-                  iMother=rep(pop@iid, each=nDH),
-                  iFather=rep(pop@iid, each=nDH),
-                  femaleParentPop=pop,
-                  maleParentPop=pop,
-                  hist=hist))
+    return(.newPop(rawPop=rPop,
+                   mother=rep(pop@id, each=nDH),
+                   father=rep(pop@id, each=nDH),
+                   isDH=TRUE,
+                   iMother=rep(pop@iid, each=nDH),
+                   iFather=rep(pop@iid, each=nDH),
+                   femaleParentPop=pop,
+                   maleParentPop=pop,
+                   hist=hist,
+                   simParam=simParam))
   }
 }
 
@@ -714,6 +714,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' to sort it.
 #' @param DH an optional vector indicating if an individual 
 #' should be made a doubled haploid.
+#' @param nSelf an optional vector indicating how many generations an 
+#' individual should be selfed.
 #' @param useFemale If creating DH lines, should female recombination 
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
@@ -744,7 +746,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' 
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
-                         maxCycle=100, DH=NULL, useFemale=TRUE, simParam=NULL){
+                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE, 
+                         simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -762,12 +765,16 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }else{
     DH = as.logical(DH)
   }
+  if(is.null(nSelf)){
+    nSelf = rep(0, length(id))
+  }
   
   # Check input data
   stopifnot(!any(duplicated(id)),
             length(id)==length(mother),
             length(id)==length(father),
-            length(id)==length(DH))
+            length(id)==length(DH),
+            length(id)==length(nSelf))
   
   # Sort pedigree (identifies potential problems)
   ped = sortPed(id=id, mother=mother, father=father, 
@@ -854,14 +861,22 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    crossPlan=crossPlan,
                                    simParam=simParam)
         }
-        
-        # Make the individual a DH?
-        if(DH[i]){
-          output[[i]] = makeDH(output[[i]],
-                               useFemale=useFemale,
-                               simParam=simParam)
+      }
+      
+      # Self?
+      if(nSelf[i]>0){
+        for(j in 1:nSelf[i]){
+          output[[i]] = self(output[[i]],
+                             simParam=simParam)
         }
-      } 
+      }
+      
+      # Make the individual a DH?
+      if(DH[i]){
+        output[[i]] = makeDH(output[[i]],
+                             useFemale=useFemale,
+                             simParam=simParam)
+      }
     }
   }
   

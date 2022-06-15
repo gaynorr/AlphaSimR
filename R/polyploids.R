@@ -36,9 +36,11 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   if(pop@ploidy%%2L){
-    stop("You cannot reduce aneuploids")
+    stop("You cannot reduce odd ploidy levels")
   }
+  
   if(simRecomb){
     if(useFemale){
       map = simParam$femaleMap
@@ -53,6 +55,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
     }
     map = as.matrix(map)
   }
+  
   tmp = createReducedGenome(pop@geno, nProgeny,
                             map,
                             simParam$v,
@@ -63,17 +66,20 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                             simParam$quadProb,
                             simParam$nThreads)
   dim(tmp$geno) = NULL 
+  
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd*nProgeny),
              nChr=pop@nChr,
              ploidy=as.integer(pop@ploidy/2),
              nLoci=pop@nLoci,
              geno=tmp$geno)
+  
   if(simParam$isTrackRec){
     hist = tmp$recHist
   }else{
     hist = NULL
   }
+  
   if(keepParents){
     return(newPop(rawPop=rPop,
                   mother=rep(pop@mother,each=nProgeny),
@@ -132,65 +138,59 @@ doubleGenome = function(pop, keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   geno = pop@geno
   for(i in 1:pop@nChr){
-    geno[[i]] = geno[[i]][,rep(1:pop@ploidy,each=2),]
+    geno[[i]] = geno[[i]][,rep(1:pop@ploidy,each=2),,drop=FALSE]
   }
+  
   rPop = new("RawPop",
              nInd=as.integer(pop@nInd),
              nChr=pop@nChr,
              ploidy=2L*pop@ploidy,
              nLoci=pop@nLoci,
              geno=geno)
-  if(keepParents){
-    origM=pop@mother
-    origF=pop@father
-  }else{
-    origM=pop@id
-    origF=pop@id
-  }
-  if(simParam$isTrackPed){
-    # Extract actual parents
-    ped = simParam$ped
-    id = as.numeric(pop@id)
-    mother = ped[id,1]
-    father = ped[id,2]
-  }else{
-    # Provide arbitrary parents (not actually used)
-    mother = origM
-    father = origF
-  }
+  
   if(simParam$isTrackRec){
-    # Duplicate recombination histories
-    oldHist = simParam$recHist
-    newHist = vector("list", 2*pop@ploidy)
-    newHist = rep(list(newHist), pop@nChr)
-    newHist = rep(list(newHist), pop@nInd)
-    for(i in 1:pop@nInd){
-      for(j in 1:pop@nChr){
-        k = 0
-        for(l in 1:pop@ploidy){
-          for(m in 1:2){
-            k = k+1
-            newHist[[i]][[j]][[k]] = 
-              oldHist[[as.numeric(id[i])]][[j]][[l]]
-          }
-        }
-      }
+    # Match haplotypes according to original ploidy
+    hist = vector("list", pop@ploidy)
+    for(i in 1:pop@ploidy){
+      hist[[i]] = cbind(i, 1L)
     }
+    
+    # Double ploidy
+    hist = rep(hist, each=2)
+    
+    # Rep for chromosomes and individuals
+    hist = rep(list(hist), pop@nChr)
+    hist = rep(list(hist), pop@nInd)
   }else{
-    newHist = NULL
+    hist = NULL
   }
-  return(newPop(rawPop=rPop,
-                mother=origM,
-                father=origF,
-                simParam=simParam,
-                isDH=TRUE,
-                iMother=pop@iid,
-                iFather=pop@iid,
-                femaleParentPop=pop,
-                maleParentPop=pop,
-                hist=newHist))
+  
+  if(keepParents){
+    return(newPop(rawPop=rPop,
+                  mother=pop@mother,
+                  father=pop@father,
+                  simParam=simParam,
+                  iMother=pop@iid,
+                  iFather=pop@iid,
+                  femaleParentPop=pop,
+                  maleParentPop=pop,
+                  hist=hist
+    ))
+  }else{
+    return(newPop(rawPop=rPop,
+                  mother=pop@id,
+                  father=pop@id,
+                  simParam=simParam,
+                  iMother=pop@iid,
+                  iFather=pop@iid,
+                  femaleParentPop=pop,
+                  maleParentPop=pop,
+                  hist=hist
+    ))
+  }
 }
 
 #' @title Combine genomes of individuals
@@ -228,6 +228,7 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
   if(is.character(crossPlan)){ #Match by ID
     crossPlan = cbind(match(crossPlan[,1],females@id),
                       match(crossPlan[,2],males@id))
@@ -235,13 +236,13 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
+  
   if((max(crossPlan[,1])>nInd(females)) | 
      (max(crossPlan[,2])>nInd(males)) |
      (min(crossPlan)<1L)){
     stop("Invalid crossPlan")
   }
-  mother = as.integer(females@id[crossPlan[,1]])
-  father = as.integer(males@id[crossPlan[,2]])
+  
   # Merge genotype data
   geno = vector("list", females@nChr)
   for(i in 1:females@nChr){
@@ -250,14 +251,16 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
                               females@ploidy+males@ploidy,
                               nrow(crossPlan)))
     for(j in 1:nrow(crossPlan)){
-      # Add female gamete
+      # Add female gametes
       geno[[i]][,1:females@ploidy,j] = 
         females@geno[[i]][,,crossPlan[j,1]]
-      # Add male gamete
+      
+      # Add male gametes
       geno[[i]][,(females@ploidy+1):(females@ploidy+males@ploidy),j] = 
         males@geno[[i]][,,crossPlan[j,2]]
     }
   }
+  
   rPop = new("RawPop",
              nInd=as.integer(nrow(crossPlan)),
              nChr=females@nChr,
@@ -265,33 +268,37 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
              nLoci=females@nLoci,
              geno=geno)
   
+  
   if(simParam$isTrackRec){
-    # Duplicate recombination histories
-    oldHist = simParam$recHist
-    newHist = vector("list", females@ploidy+males@ploidy)
-    newHist = rep(list(newHist), females@nChr)
-    newHist = rep(list(newHist), nrow(crossPlan))
-    for(i in 1:nrow(crossPlan)){
-      for(j in 1:females@nChr){
-        k = 0
-        for(l in 1:females@ploidy){
-          k = k+1
-          newHist[[i]][[j]][[k]] = 
-            oldHist[[mother[i]]][[j]][[l]]
-        }
-        for(l in 1:males@ploidy){
-          k = k+1
-          newHist[[i]][[j]][[k]] = 
-            oldHist[[father[i]]][[j]][[l]]
-        }
-      }
+    # Create history for haplotypes
+    hist = vector("list", rPop@ploidy)
+    
+    # Add female contribution
+    for(i in 1:females@ploidy){
+      hist[[i]] = cbind(i, 1L)
     }
-    simParam$addToRec(newHist)
+    
+    # Add male contribution
+    for(i in 1:males@ploidy){
+      hist[[i+females@ploidy]] = cbind(i, 1L)
+    }
+    
+    # Rep for chromosomes and individuals
+    hist = rep(list(hist), rPop@nChr)
+    hist = rep(list(hist), rPop@nInd)
+  }else{
+    hist = NULL
   }
+  
   return(newPop(rawPop=rPop,
-                mother=mother,
-                father=father,
-                isDH=FALSE,
-                simParam=simParam))
+                mother=females@id[crossPlan[,1]],
+                father=males@id[crossPlan[,2]],
+                simParam=simParam,
+                iMother=females@iid[crossPlan[,1]],
+                iFather=males@iid[crossPlan[,2]],
+                femaleParentPop=females,
+                maleParentPop=males,
+                hist=hist
+  ))
 }
 

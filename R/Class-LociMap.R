@@ -9,12 +9,15 @@
 #' @slot nLoci total number of loci
 #' @slot lociPerChr number of loci per chromosome
 #' @slot lociLoc physical position of loci
+#' @slot name optional name for LociMap object
 #'
 #' @export
 setClass("LociMap",
          slots=c(nLoci="integer",
                  lociPerChr="integer",
-                 lociLoc="integer"))
+                 lociLoc="integer",
+                 name="character"),
+         prototype=list(name=NA_character_))
 
 setValidity("LociMap",function(object){
   errors = character()
@@ -31,6 +34,7 @@ setValidity("LociMap",function(object){
   }
 })
 
+# Test if object is of a LociMap class
 isLociMap = function(x) {
   ret = is(x, class2 = "LociMap")
   return(ret)
@@ -63,6 +67,7 @@ setValidity("TraitA",function(object){
   }
 })
 
+# Test if object is of a TraitA class
 isTraitA = function(x) {
   ret = is(x, class2 = "TraitA")
   return(ret)
@@ -94,6 +99,7 @@ setValidity("TraitA2",function(object){
   }
 })
 
+# Test if object is of a TraitA2 class
 isTraitA2 = function(x) {
   ret = is(x, class2 = "TraitA2")
   return(ret)
@@ -127,6 +133,7 @@ setValidity("TraitAE",function(object){
   }
 })
 
+# Test if object is of a TraitAE class
 isTraitAE = function(x) {
   ret = is(x, class2 = "TraitAE")
   return(ret)
@@ -157,6 +164,7 @@ setValidity("TraitAD",function(object){
   }
 })
 
+# Test if object is of a TraitAD class
 isTraitAD = function(x) {
   ret = is(x, class2 = "TraitAD")
   return(ret)
@@ -187,6 +195,7 @@ setValidity("TraitA2D",function(object){
   }
 })
 
+# Test if object is of a TraitA2D class
 isTraitA2D = function(x) {
   ret = is(x, class2 = "TraitA2D")
   return(ret)
@@ -220,6 +229,7 @@ setValidity("TraitADE",function(object){
   }
 })
 
+# Test if object is of a TraitADE class
 isTraitADE = function(x) {
   ret = is(x, class2 = "TraitADE")
   return(ret)
@@ -254,6 +264,7 @@ setValidity("TraitAG",function(object){
   }
 })
 
+# Test if object is of a TraitAG class
 isTraitAG = function(x) {
   ret = is(x, class2 = "TraitAG")
   return(ret)
@@ -288,6 +299,7 @@ setValidity("TraitAEG",function(object){
   }
 })
 
+# Test if object is of a TraitAEG class
 isTraitAEG = function(x) {
   ret = is(x, class2 = "TraitAEG")
   return(ret)
@@ -322,6 +334,7 @@ setValidity("TraitADG",function(object){
   }
 })
 
+# Test if object is of a TraitADG class
 isTraitADG = function(x) {
   ret = is(x, class2 = "TraitADG")
   return(ret)
@@ -356,6 +369,7 @@ setValidity("TraitADEG",function(object){
   }
 })
 
+# Test if object is of a TraitADEG class
 isTraitADEG = function(x) {
   ret = is(x, class2 = "TraitADEG")
   return(ret)

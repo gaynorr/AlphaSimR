@@ -19,8 +19,8 @@ RRBLUP(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait or traits to model, or a
-function of the traits returning a single value.}
+\item{traits}{an integer indicating the trait or traits to model, a vector of trait names, 
+or a function of the traits returning a single value.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv", 
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}

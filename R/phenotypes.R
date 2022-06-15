@@ -6,7 +6,7 @@ addError = function(gv,varE,reps=1){
     stopifnot(isSymmetric(varE),
               ncol(varE)==nTraits)
     error = matrix(rnorm(nInd*nTraits),
-                   ncol=nTraits)%*%rotMat(varE)
+                   ncol=nTraits)%*%transMat(varE)
   }else{
     stopifnot(length(varE)==nTraits)
     error = lapply(varE,function(x){
@@ -20,6 +20,7 @@ addError = function(gv,varE,reps=1){
   }
   error = error/sqrt(rep(reps,nrow(error)))
   pheno = gv + error
+  colnames(pheno) = colnames(gv)
   return(pheno)
 }
 
@@ -129,7 +130,7 @@ setPheno = function(pop,h2=NULL,H2=NULL,varE=NULL,reps=1,
     simParam = get("SP",envir=.GlobalEnv)
   }
   
-  if(class(pop)=="MegaPop"){
+  if(is(pop,"MegaPop")){
     stopifnot(!onlyPheno)
     pop@pops = lapply(pop@pops, setPheno, h2=h2, H2=H2,
                       varE=varE, reps=reps, fixEff=fixEff, 

@@ -12,6 +12,7 @@ pedigreeCross(
   matchID = FALSE,
   maxCycle = 100,
   DH = NULL,
+  nSelf = NULL,
   useFemale = TRUE,
   simParam = NULL
 )
@@ -39,6 +40,9 @@ to sort it.}
 
 \item{DH}{an optional vector indicating if an individual 
 should be made a doubled haploid.}
+
+\item{nSelf}{an optional vector indicating how many generations an 
+individual should be selfed.}
 
 \item{useFemale}{If creating DH lines, should female recombination 
 rates be used. This parameter has no effect if, recombRatio=1.}

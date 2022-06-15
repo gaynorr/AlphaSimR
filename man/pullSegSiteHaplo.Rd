@@ -4,7 +4,13 @@
 \alias{pullSegSiteHaplo}
 \title{Pull seg site haplotypes}
 \usage{
-pullSegSiteHaplo(pop, haplo = "all", chr = NULL, simParam = NULL)
+pullSegSiteHaplo(
+  pop,
+  haplo = "all",
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or
@@ -12,10 +18,12 @@ pullSegSiteHaplo(pop, haplo = "all", chr = NULL, simParam = NULL)
 
 \item{haplo}{either "all" for all haplotypes or an integer
 for a single set of haplotypes. Use a value of 1 for female
-haplotypes and a value of 2 for male haplotypes.}
+haplotypes and a value of 2 for male haplotypes in diploids.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
+
+\item{asRaw}{return in raw (byte) format}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }

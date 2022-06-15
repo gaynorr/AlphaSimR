@@ -19,7 +19,7 @@ genomic selection. Included is the 'Markovian Coalescent Simulator' ('MaCS')
 for fast simulation of biallelic sequences according to a population 
 demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 
-Please see the introductionary vignette for instructions for using this package. 
+Please see the introductory vignette for instructions for using this package. 
 The vignette can be viewed using the following command: 
 \code{vignette("intro",package="AlphaSimR")}
 }
@@ -39,6 +39,7 @@ Other contributors:
   \item John Hickey (\href{https://orcid.org/0000-0001-5675-3974}{ORCID}) [contributor]
   \item Daniel Money (\href{https://orcid.org/0000-0001-5151-3648}{ORCID}) [contributor]
   \item David Wilson [contributor]
+  \item Thiago Oliveira (\href{https://orcid.org/0000-0002-4555-2584}{ORCID}) [contributor]
 }
 
 }

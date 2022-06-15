@@ -23,7 +23,7 @@ RRBLUP2(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model or a
+\item{traits}{an integer indicating the trait to model, a trait name, or a
 function of the traits returning a single value. Unlike \code{\link{RRBLUP}}, 
 only univariate models are supported.}
 

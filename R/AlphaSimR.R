@@ -3,9 +3,9 @@
 #' @importFrom methods new validObject is .hasSlot 
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate rnorm qnorm var
-#' @importFrom stats coef dnorm lm pnorm qgamma
-#' @importFrom stats model.matrix rbinom runif
-#' @importFrom utils combn read.table write.table
+#' @importFrom stats coef dnorm lm pnorm qgamma na.omit
+#' @importFrom stats model.matrix rbinom runif cov2cor
+#' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
 
 #' @description
@@ -22,7 +22,7 @@
 #' for fast simulation of biallelic sequences according to a population 
 #' demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 #' 
-#' Please see the introductionary vignette for instructions for using this package. 
+#' Please see the introductory vignette for instructions for using this package. 
 #' The vignette can be viewed using the following command: 
 #' \code{vignette("intro",package="AlphaSimR")}
 #' @keywords internal

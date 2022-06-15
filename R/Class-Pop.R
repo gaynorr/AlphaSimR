@@ -82,7 +82,7 @@ setMethod("c",
           signature(x = "RawPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
                 stopifnot(class(y)=="RawPop",
@@ -111,6 +111,7 @@ setMethod("show",
           }
 )
 
+# Test if object is of RawPop class
 isRawPop = function(x) {
   ret = is(x, class2 = "RawPop")
   return(ret)
@@ -179,7 +180,7 @@ setMethod("c",
           signature(x = "MapPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
                 stopifnot(class(y)=="MapPop",
@@ -196,6 +197,7 @@ setMethod("c",
           }
 )
 
+# Test if object is of a MapPop class
 isMapPop = function(x) {
   ret = is(x, class2 = "MapPop")
   return(ret)
@@ -273,10 +275,10 @@ setMethod("c",
           signature(x = "NamedMapPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="NamedMapPop",
+                stopifnot(is(y,"NamedMapPop"),
                           x@nChr==y@nChr,
                           x@ploidy==y@ploidy,
                           x@nLoci==y@nLoci,
@@ -314,10 +316,10 @@ setMethod("c",
 #' @export
 cChr = function(...){
   for(y in list(...)){
-    if(class(y)=="NULL"){
+    if(is(y,"NULL")){
       #Do nothing
     }else{
-      stopifnot(class(y)=="MapPop" | class(y)=="NamedMapPop")
+      stopifnot(is(y,"MapPop"))
       if(!exists("x",inherits=FALSE)){
         x = y
       }else{
@@ -335,6 +337,7 @@ cChr = function(...){
   return(x)
 }
 
+# Test if object is a NamedMapPop class
 isNamedMapPop = function(x) {
   ret = is(x, class2 = "NamedMapPop")
   return(ret)
@@ -530,19 +533,17 @@ setMethod("show",
           }
 )
 
-#' @title Create new Population
+#' @title Create new population
 #' 
 #' @description
-#' Creates a new \code{\link{Pop-class}} from an object of 
-#' \code{\link{MapPop-class}} or \code{\link{RawPop-class}}. 
-#' The function is intended for creating initial populations from 
-#' 'FOUNDERPOP' created by \code{\link{runMacs}}.
+#' Creates an initial \code{\link{Pop-class}} from an object of 
+#' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. 
+#' The function is intended for us with output from functions such 
+#' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or 
+#' \code{\link{quickHaplo}}.
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or 
-#' \code{\link{RawPop-class}}
-#' @param id optional id for new individuals.
-#' @param mother optional id for mothers.
-#' @param father optional id for fathers.
+#' \code{\link{NamedMapPop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments used internally
 #'
@@ -560,64 +561,91 @@ setMethod("show",
 #' pop = newPop(founderPop, simParam=SP)
 #' 
 #' @export
-newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
+newPop = function(rawPop,simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  args = list(...)
+  return(.newPop(rawPop=rawPop,simParam=simParam,...))
+}
+
+#' @title Create new population (internal)
+#' 
+#' @description
+#' Creates a new \code{\link{Pop-class}} from an object of 
+#' of the Pop superclass. 
+#'
+#' @param rawPop an object of the pop superclass
+#' @param id optional id for new individuals
+#' @param mother optional id for mothers
+#' @param father optional id for fathers
+#' @param iMother optional internal id for mothers
+#' @param iFather optional internal id for fathers
+#' @param isDH optional indicator for DH/inbred individuals
+#' @param femaleParentPop optional population of female parents
+#' @param maleParentPop optional population of male parents
+#' @param hist optional recombination history
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... additional arguments passed to the finalizePop 
+#' function in simParam
+#'
+#' @return Returns an object of \code{\link{Pop-class}}
+.newPop = function(rawPop, id=NULL, mother=NULL, father=NULL,
+                   iMother=NULL, iFather=NULL, isDH=NULL,
+                   femaleParentPop=NULL, maleParentPop=NULL, 
+                   hist=NULL, simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  
   stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
+  
   lastId = simParam$lastId
   iid = (1:rawPop@nInd) + lastId
   lastId = max(iid)
+  
   if(is.null(id)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       id = rawPop@id
     }else{
       id = as.character(iid)
     }
-  }else{
-    id = as.character(id)
-    stopifnot(length(id)==rawPop@nInd)
   }
-  if(any(names(args)=="iMother")){
-    iMother = args$iMother
-  }else{
+  
+  if(is.null(iMother)){
     iMother = rep(0L, rawPop@nInd)
   }
-  if(any(names(args)=="iFather")){
-    iFather = args$iFather
-  }else{
+  
+  if(is.null(iFather)){
     iFather = rep(0L, rawPop@nInd)
   }
-  if(any(names(args)=="isDH")){
-    isDH = args$isDH
-  }else{
-    if(class(rawPop)=="MapPop" | class(rawPop)=="NamedMapPop"){
+  
+  if(is.null(isDH)){
+    if(is(rawPop, "MapPop")){
       isDH = rawPop@inbred
     }else{
       isDH = FALSE
     }
   }
+  
   if(is.null(mother)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       mother = rawPop@mother
     }else{
       mother = rep("0", rawPop@nInd)
     }
-  }else{
-    mother = as.character(mother)
   }
+  
   if(is.null(father)){
-    if(class(rawPop)=="NamedMapPop"){
+    if(is(rawPop, "NamedMapPop")){
       father = rawPop@father
     }else{
       father = rep("0", rawPop@nInd)
     }
-  }else{
-    father = as.character(father)
   }
+  
   stopifnot(length(id)==length(mother),
             length(id)==length(father))
+  
   if(simParam$sexes=="no"){
     sex = rep("H", rawPop@nInd)
   }else if(simParam$sexes=="yes_rand"){
@@ -627,18 +655,26 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
   }else{
     stop(paste("no rules for sex type", simParam$sexes))
   }
-  gxe = vector("list",simParam$nTraits)
+  
+  gxe = vector("list", simParam$nTraits)
+  
   gv = matrix(NA_real_,nrow=rawPop@nInd,
               ncol=simParam$nTraits)
+  colnames(gv) = rep(NA_character_, simParam$nTraits)
+  
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
       gv[,i] = tmp[[1]]
+
+      colnames(gv)[i] = simParam$traits[[i]]@name
+      
       if(length(tmp)>1){
         gxe[[i]] = tmp[[2]]
       }
     }
   }
+  
   output = new("Pop",
                nInd=rawPop@nInd,
                nChr=rawPop@nChr,
@@ -667,14 +703,11 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
                       fixEff=1L, p=NULL, onlyPheno=FALSE, 
                       simParam=simParam)
   }
+  
   output = simParam$finalizePop(output,...)
+  
   if(simParam$isTrackPed){
     if(simParam$isTrackRec){
-      if(any(names(args)=="hist")){
-        hist = args$hist
-      }else{
-        hist = NULL
-      }
       simParam$addToRec(lastId,id,iMother,iFather,isDH,hist,output@ploidy)
     }else{
       simParam$addToPed(lastId,id,iMother,iFather,isDH)
@@ -682,6 +715,7 @@ newPop = function(rawPop,id=NULL,mother=NULL,father=NULL,simParam=NULL,...){
   }else{
     simParam$updateLastId(lastId)
   }
+  
   return(output)
 }
 
@@ -740,6 +774,8 @@ resetPop = function(pop,simParam=NULL){
   return(pop)
 }
 
+
+# Test if object is of a Pop class
 isPop = function(x) {
   ret = is(x, class2 = "Pop")
   return(ret)
@@ -770,8 +806,8 @@ setValidity("MegaPop",function(object){
     # Check that all populations are valid
     for(i in 1:length(object@pops)){
       if(!validObject(object@pops[[i]]) & 
-         (class(object@pops[[i]])=="Pop" | 
-                class(object@pops[[i]])=="MegaPop")){
+         (is(object@pops[[i]], "Pop") | 
+                is(object@pops[[i]],"MegaPop"))){
         errors = c(errors,paste("object",i,"is not a valid pop"))
       }
     }
@@ -804,13 +840,13 @@ setMethod("c",
           signature(x = "MegaPop"),
           function (x, ...){
             for(y in list(...)){
-              if(class(y)=="NULL"){
+              if(is(y,"NULL")){
                 # Do nothing
               }else{
-                if(class(y)=="Pop"){
+                if(is(y,"Pop")){
                   x@pops = c(x@pops, y)
                 }else{
-                  stopifnot(class(y)=="MegaPop")
+                  stopifnot(is(y,"MegaPop"))
                   x@pops = c(x@pops, y@pops)
                 }
               }
@@ -852,6 +888,7 @@ newMegaPop = function(...){
   return(output)
 }
 
+# Test if object is of a MegaPop class
 isMegaPop = function(x) {
   ret = is(x, class2 = "MegaPop")
   return(ret)

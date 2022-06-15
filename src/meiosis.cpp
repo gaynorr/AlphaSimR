@@ -13,7 +13,7 @@ public:
                arma::uword nChr, 
                arma::uword ploidy);
   
-  // Append new recombinations to history
+  // Append new recombination history
   void addHist(arma::Mat<int>& input, 
                arma::uword nInd, 
                arma::uword chrGroup,
@@ -38,7 +38,7 @@ void RecHist::setSize(arma::uword nInd,
   }
 }
 
-// Append new recombinations to history
+// Append new recombination history
 void RecHist::addHist(arma::Mat<int>& input, 
              arma::uword nInd, 
              arma::uword chrGroup,
@@ -784,13 +784,13 @@ void transferGeno(const arma::Col<unsigned char>& inChr,
     }
   }
   // Transfer full bytes
-  if(stopByte > startByte){
+  if(stopByte >  startByte){
     outChr(arma::span(startByte,stopByte-1)) = 
       inChr(arma::span(startByte,stopByte-1));
     startByte = stopByte;
   }
   // Transfer partial stop
-  if(inChr.n_elem == startByte){
+  if(inChr.n_elem == static_cast<arma::uword>(startByte) ){
     // End has been reached
     return;
   }else{
@@ -1002,7 +1002,7 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
 // v: interference parameter for gamma model
-// p: proportion of non-interferring crossovers
+// p: proportion of non-interfering crossovers
 // quadProb: probability of quadrivalent formation
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
@@ -1033,7 +1033,7 @@ Rcpp::List cross(
   if(trackRec){
     hist.setSize(nInd,nChr,ploidy);
   }
-  if(nChr<nThreads){
+  if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
   //Loop through chromosomes
@@ -1255,7 +1255,7 @@ Rcpp::List createDH2(
   if(trackRec){
     hist.setSize(nInd*nDH,nChr,2);
   }
-  if(nChr<nThreads){
+  if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
 #ifdef _OPENMP
@@ -1312,7 +1312,7 @@ Rcpp::List createReducedGenome(
   if(trackRec){
     hist.setSize(nInd*nProgeny,nChr,ploidy/2);
   }
-  if(nChr<nThreads){
+  if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
 #ifdef _OPENMP

@@ -15,5 +15,7 @@ used for both SNPs and QTLs
 \item{\code{lociPerChr}}{number of loci per chromosome}
 
 \item{\code{lociLoc}}{physical position of loci}
+
+\item{\code{name}}{optional name for LociMap object}
 }}
 
