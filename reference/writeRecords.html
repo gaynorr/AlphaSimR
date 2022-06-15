@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -78,24 +78,37 @@
     <h2>Arguments</h2>
     <dl><dt>pop</dt>
 <dd><p>an object of <code><a href="Pop-class.html">Pop-class</a></code></p></dd>
+
+
 <dt>dir</dt>
 <dd><p>path to a directory for saving output</p></dd>
+
+
 <dt>snpChip</dt>
 <dd><p>which SNP chip genotype to save. If useQtl=TRUE, this
 value will indicate which trait's QTL genotype to save. A value of
 0 will skip writing a snpChip.</p></dd>
+
+
 <dt>useQtl</dt>
 <dd><p>should QTL genotype be written instead of SNP chip
 genotypes.</p></dd>
+
+
 <dt>includeHaplo</dt>
 <dd><p>should markers be separated by female and male
 haplotypes.</p></dd>
+
+
 <dt>append</dt>
 <dd><p>if true, new records are added to any existing records.
 If false, any existing records are deleted before writing new records.
 Note that this will delete all files in the 'dir' directory.</p></dd>
+
+
 <dt>simParam</dt>
 <dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+
 </dl></div>
 
   </div>
@@ -110,7 +123,7 @@ Note that this will delete all files in the 'dir' directory.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

@@ -127,6 +127,9 @@
     <loc>/reference/dd.html</loc>
   </url>
   <url>
+    <loc>/reference/dot-newPop.html</loc>
+  </url>
+  <url>
     <loc>/reference/doubleGenome.html</loc>
   </url>
   <url>
@@ -157,6 +160,9 @@
     <loc>/reference/genicVarG.html</loc>
   </url>
   <url>
+    <loc>/reference/getMisc.html</loc>
+  </url>
+  <url>
     <loc>/reference/getNumThreads.html</loc>
   </url>
   <url>
@@ -172,7 +178,19 @@
     <loc>/reference/hybridCross.html</loc>
   </url>
   <url>
+    <loc>/reference/importGenMap.html</loc>
+  </url>
+  <url>
+    <loc>/reference/importHaplo.html</loc>
+  </url>
+  <url>
+    <loc>/reference/importInbredGeno.html</loc>
+  </url>
+  <url>
     <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/isFemale.html</loc>
   </url>
   <url>
     <loc>/reference/makeCross.html</loc>
@@ -221,6 +239,12 @@
   </url>
   <url>
     <loc>/reference/pullIbdHaplo.html</loc>
+  </url>
+  <url>
+    <loc>/reference/pullMarkerGeno.html</loc>
+  </url>
+  <url>
+    <loc>/reference/pullMarkerHaplo.html</loc>
   </url>
   <url>
     <loc>/reference/pullQtlGeno.html</loc>
@@ -292,6 +316,9 @@
     <loc>/reference/setEBV.html</loc>
   </url>
   <url>
+    <loc>/reference/setMisc.html</loc>
+  </url>
+  <url>
     <loc>/reference/setPheno.html</loc>
   </url>
   <url>
@@ -329,6 +356,9 @@
   </url>
   <url>
     <loc>/reference/solveUVM.html</loc>
+  </url>
+  <url>
+    <loc>/reference/transMat.html</loc>
   </url>
   <url>
     <loc>/reference/usefulness.html</loc>

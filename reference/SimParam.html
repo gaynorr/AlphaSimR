@@ -18,7 +18,7 @@ as SP will allow it to be accessed by function defaults."><!-- mathjax --><scrip
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -27,7 +27,7 @@ as SP will allow it to be accessed by function defaults."><!-- mathjax --><scrip
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -102,7 +102,7 @@ Currently does nothing and should only be changed by expert users.</p></dd>
 
 <dt><code>allowEmptyPop</code></dt>
 <dd><p>if true, population arguments with nInd=0 will 
-return an empty population without a warning instead of an error.</p></dd>
+return an empty population with a warning instead of an error.</p></dd>
 
 
 <dt><code>v</code></dt>
@@ -127,7 +127,15 @@ autopolyploid. (default is 0)</p></dd>
     </div>
     <div id="active-bindings">
     <h2>Active bindings</h2>
-    <p></p><div class="r6-active-bindings"><dl><dt><code>traits</code></dt>
+    <p></p><div class="r6-active-bindings"><dl><dt><code>traitNames</code></dt>
+<dd><p>vector of trait names</p></dd>
+
+
+<dt><code>snpChipNames</code></dt>
+<dd><p>vector of chip names</p></dd>
+
+
+<dt><code>traits</code></dt>
 <dd><p>list of traits</p></dd>
 
 
@@ -249,6 +257,7 @@ genetic map</p></dd>
 <li><p><a href="#method-addTraitAEG"><code>SimParam$addTraitAEG()</code></a></p></li>
 <li><p><a href="#method-addTraitADEG"><code>SimParam$addTraitADEG()</code></a></p></li>
 <li><p><a href="#method-manAddTrait"><code>SimParam$manAddTrait()</code></a></p></li>
+<li><p><a href="#method-importTrait"><code>SimParam$importTrait()</code></a></p></li>
 <li><p><a href="#method-switchTrait"><code>SimParam$switchTrait()</code></a></p></li>
 <li><p><a href="#method-removeTrait"><code>SimParam$removeTrait()</code></a></p></li>
 <li><p><a href="#method-setVarE"><code>SimParam$setVarE()</code></a></p></li>
@@ -497,7 +506,7 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 <h3 id="method-addsnpchip-">Method <code>addSnpChip()</code><a class="anchor" aria-label="anchor" href="#method-addsnpchip-"></a></h3>
 <p>Randomly assigns eligible SNPs to a SNP chip</p><div class="section">
 <h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="va">nSnpPerChr</span>, minSnpFreq <span class="op">=</span> <span class="cn">NULL</span>, refPop <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="va">nSnpPerChr</span>, minSnpFreq <span class="op">=</span> <span class="cn">NULL</span>, refPop <span class="op">=</span> <span class="cn">NULL</span>, name <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -515,6 +524,10 @@ If NULL, no minimum frequency is used.</p></dd>
 <dt><code>refPop</code></dt>
 <dd><p>reference population for calculating SNP 
 frequency. If NULL, the founder population is used.</p></dd>
+
+
+<dt><code>name</code></dt>
+<dd><p>optional name for chip</p></dd>
 
 
 </dl><p></p></div>
@@ -571,7 +584,8 @@ with correlated additive effects.</p><div class="section">
   corA <span class="op">=</span> <span class="cn">NULL</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -606,6 +620,10 @@ with correlated additive effects.</p><div class="section">
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -636,7 +654,8 @@ with correlated effects.</p><div class="section">
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -688,6 +707,10 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -717,7 +740,8 @@ with correlated effects.</p><div class="section">
   corGxE <span class="op">=</span> <span class="cn">NULL</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -764,6 +788,10 @@ with correlated effects.</p><div class="section">
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -785,7 +813,7 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
   <span class="va">nQtlPerChr</span>,
   mean <span class="op">=</span> <span class="fl">0</span>,
   var <span class="op">=</span> <span class="fl">1</span>,
-  varEnv <span class="op">=</span> <span class="fl">1e-06</span>,
+  varEnv <span class="op">=</span> <span class="fl">0</span>,
   varGxE <span class="op">=</span> <span class="fl">1e-06</span>,
   meanDD <span class="op">=</span> <span class="fl">0</span>,
   varDD <span class="op">=</span> <span class="fl">0</span>,
@@ -795,7 +823,8 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -859,6 +888,10 @@ value or nChr values.</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -888,7 +921,8 @@ with correlated additive effects.</p><div class="section">
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -937,6 +971,10 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -965,7 +1003,8 @@ with correlated effects.</p><div class="section">
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -1026,6 +1065,10 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -1058,7 +1101,8 @@ with correlated effects.</p><div class="section">
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -1119,6 +1163,10 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -1141,7 +1189,7 @@ epistasis and GxE.</p><div class="section">
   <span class="va">nQtlPerChr</span>,
   mean <span class="op">=</span> <span class="fl">0</span>,
   var <span class="op">=</span> <span class="fl">1</span>,
-  varEnv <span class="op">=</span> <span class="fl">1e-06</span>,
+  varEnv <span class="op">=</span> <span class="fl">0</span>,
   varGxE <span class="op">=</span> <span class="fl">1e-06</span>,
   meanDD <span class="op">=</span> <span class="fl">0</span>,
   varDD <span class="op">=</span> <span class="fl">0</span>,
@@ -1153,7 +1201,8 @@ epistasis and GxE.</p><div class="section">
   useVarA <span class="op">=</span> <span class="cn">TRUE</span>,
   gamma <span class="op">=</span> <span class="cn">FALSE</span>,
   shape <span class="op">=</span> <span class="fl">1</span>,
-  force <span class="op">=</span> <span class="cn">FALSE</span>
+  force <span class="op">=</span> <span class="cn">FALSE</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>
 <span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
@@ -1226,6 +1275,10 @@ to additive variance in a diploid organism with allele frequency 0.5</p></dd>
 ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
 </dl><p></p></div>
 </div>
 <div class="section">
@@ -1241,7 +1294,9 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 
 </div><p></p><hr><a id="method-manAddTrait"></a><div class="section">
 <h3 id="method-manaddtrait-">Method <code>manAddTrait()</code><a class="anchor" aria-label="anchor" href="#method-manaddtrait-"></a></h3>
-<p>Manually add a new trait to the simulation.</p><div class="section">
+<p>Manually add a new trait to the simulation. Trait must 
+be formatted as a <code><a href="LociMap-class.html">LociMap-class</a></code>. If the 
+trait is not already formatted, consider using importTrait.</p><div class="section">
 <h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">manAddTrait</span><span class="op">(</span><span class="va">lociMap</span>, varE <span class="op">=</span> <span class="cn">NA_real_</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
@@ -1265,15 +1320,71 @@ ignored. Only set to TRUE if you know what you are doing</p></dd>
 </dl><p></p></div>
 </div>
 
-</div><p></p><hr><a id="method-switchTrait"></a><div class="section">
-<h3 id="method-switchtrait-">Method <code>switchTrait()</code><a class="anchor" aria-label="anchor" href="#method-switchtrait-"></a></h3>
-<p>Switch a trait in the simulation.</p><div class="section">
+</div><p></p><hr><a id="method-importTrait"></a><div class="section">
+<h3 id="method-importtrait-">Method <code>importTrait()</code><a class="anchor" aria-label="anchor" href="#method-importtrait-"></a></h3>
+<p>Manually add a new trait(s) to the simulation. Unlike the 
+manAddTrait function, this function does not require 
+formatting the trait as a <code><a href="LociMap-class.html">LociMap-class</a></code>. 
+The formatting is performed automatically for the user, 
+with more user friendly data.frames or matrices taken as 
+inputs. This function only works for A and AD trait types.</p><div class="section">
 <h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchTrait</span><span class="op">(</span><span class="va">traitPos</span>, <span class="va">lociMap</span>, varE <span class="op">=</span> <span class="cn">NA_real_</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">importTrait</span><span class="op">(</span>
+  <span class="va">markerNames</span>,
+  <span class="va">addEff</span>,
+  domEff <span class="op">=</span> <span class="cn">NULL</span>,
+  intercept <span class="op">=</span> <span class="cn">NULL</span>,
+  name <span class="op">=</span> <span class="cn">NULL</span>,
+  varE <span class="op">=</span> <span class="cn">NULL</span>,
+  force <span class="op">=</span> <span class="cn">FALSE</span>
+<span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
 <h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>markerNames</code></dt>
+<dd><p>a vector of names for the QTL</p></dd>
+
+
+<dt><code>addEff</code></dt>
+<dd><p>a matrix of additive effects (nLoci x nTraits). 
+Alternatively, a vector of length nLoci can be supplied for 
+a single trait.</p></dd>
+
+
+<dt><code>domEff</code></dt>
+<dd><p>optional dominance effects for each locus</p></dd>
+
+
+<dt><code>intercept</code></dt>
+<dd><p>optional intercepts for each trait</p></dd>
+
+
+<dt><code>name</code></dt>
+<dd><p>optional name(s) for the trait(s)</p></dd>
+
+
+<dt><code>varE</code></dt>
+<dd><p>default error variance for phenotype, optional</p></dd>
+
+
+<dt><code>force</code></dt>
+<dd><p>should the check for a running simulation be 
+ignored. Only set to TRUE if you know what you are doing</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div><p></p><hr><a id="method-switchTrait"></a><div class="section">
+<h3 id="method-switchtrait-">Method <code>switchTrait()</code><a class="anchor" aria-label="anchor" href="#method-switchtrait-"></a></h3>
+<p>Switch a trait in the simulation.</p><div class="section">
+<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchTrait</span><span class="op">(</span><span class="va">traitPos</span>, <span class="va">lociMap</span>, varE <span class="op">=</span> <span class="cn">NA_real_</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>traitPos</code></dt>
 <dd><p>an integer indicate which trait to switch</p></dd>
 
@@ -1298,12 +1409,12 @@ ignored. Only set to TRUE if you know what you are doing</p></dd>
 </div><p></p><hr><a id="method-removeTrait"></a><div class="section">
 <h3 id="method-removetrait-">Method <code>removeTrait()</code><a class="anchor" aria-label="anchor" href="#method-removetrait-"></a></h3>
 <p>Remove a trait from the simulation</p><div class="section">
-<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">removeTrait</span><span class="op">(</span><span class="va">traits</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
+<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>traits</code></dt>
 <dd><p>an integer vector indicating which traits to remove</p></dd>
 
@@ -1320,12 +1431,12 @@ ignored. Only set to TRUE if you know what you are doing</p></dd>
 <h3 id="method-setvare-">Method <code>setVarE()</code><a class="anchor" aria-label="anchor" href="#method-setvare-"></a></h3>
 <p>Defines a default value for error 
 variances in the simulation.</p><div class="section">
-<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
+<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2 <span class="op">=</span> <span class="cn">NULL</span>, H2 <span class="op">=</span> <span class="cn">NULL</span>, varE <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
+<h4 id="arguments-20">Arguments<a class="anchor" aria-label="anchor" href="#arguments-20"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>h2</code></dt>
 <dd><p>a vector of desired narrow-sense heritabilities</p></dd>
 
@@ -1357,12 +1468,12 @@ variances in the simulation.</p><div class="section">
 <p>Defines a correlation structure for default 
 error variances. You must call <code>setVarE</code> first to define 
 the default error variances.</p><div class="section">
-<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
+<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">setCorE</span><span class="op">(</span><span class="va">corE</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-20">Arguments<a class="anchor" aria-label="anchor" href="#arguments-20"></a></h4>
+<h4 id="arguments-21">Arguments<a class="anchor" aria-label="anchor" href="#arguments-21"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>corE</code></dt>
 <dd><p>a correlation matrix for the error variances</p></dd>
 
@@ -1387,7 +1498,7 @@ the default error variances.</p><div class="section">
 <h3 id="method-rescaletraits-">Method <code>rescaleTraits()</code><a class="anchor" aria-label="anchor" href="#method-rescaletraits-"></a></h3>
 <p>Linearly scales all traits to achieve desired 
 values of means and variances in the founder population.</p><div class="section">
-<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
+<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">rescaleTraits</span><span class="op">(</span>
   mean <span class="op">=</span> <span class="fl">0</span>,
   var <span class="op">=</span> <span class="fl">1</span>,
@@ -1398,7 +1509,7 @@ values of means and variances in the founder population.</p><div class="section"
 </div>
 
 <div class="section">
-<h4 id="arguments-21">Arguments<a class="anchor" aria-label="anchor" href="#arguments-21"></a></h4>
+<h4 id="arguments-22">Arguments<a class="anchor" aria-label="anchor" href="#arguments-22"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>mean</code></dt>
 <dd><p>a vector of new trait means</p></dd>
 
@@ -1447,12 +1558,12 @@ values of means and variances in the founder population.</p><div class="section"
 <p>Set the relative recombination rates between males 
 and females. This allows for sex-specific recombination rates, 
 under the assumption of equivalent recombination landscapes.</p><div class="section">
-<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
+<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">setRecombRatio</span><span class="op">(</span><span class="va">femaleRatio</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-22">Arguments<a class="anchor" aria-label="anchor" href="#arguments-22"></a></h4>
+<h4 id="arguments-23">Arguments<a class="anchor" aria-label="anchor" href="#arguments-23"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>femaleRatio</code></dt>
 <dd><p>relative ratio of recombination in females compared to 
 males. A value of 2 indicate twice as much recombination in females. The 
@@ -1475,32 +1586,8 @@ value must be greater than 0. (default is 1)</p></dd>
 </div><p></p><hr><a id="method-switchGenMap"></a><div class="section">
 <h3 id="method-switchgenmap-">Method <code>switchGenMap()</code><a class="anchor" aria-label="anchor" href="#method-switchgenmap-"></a></h3>
 <p>Replaces existing genetic map.</p><div class="section">
-<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchGenMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
-</div>
-
-<div class="section">
-<h4 id="arguments-23">Arguments<a class="anchor" aria-label="anchor" href="#arguments-23"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>genMap</code></dt>
-<dd><p>a list of length nChr containing 
-numeric vectors for the position of each segregating 
-site on a chromosome.</p></dd>
-
-
-<dt><code>centromere</code></dt>
-<dd><p>a numeric vector of centromere 
-positions. If NULL, the centromere are assumed to 
-be metacentric.</p></dd>
-
-
-</dl><p></p></div>
-</div>
-
-</div><p></p><hr><a id="method-switchFemaleMap"></a><div class="section">
-<h3 id="method-switchfemalemap-">Method <code>switchFemaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchfemalemap-"></a></h3>
-<p>Replaces existing female genetic map.</p><div class="section">
 <h4 id="usage-24">Usage<a class="anchor" aria-label="anchor" href="#usage-24"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchFemaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchGenMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -1520,11 +1607,11 @@ be metacentric.</p></dd>
 </dl><p></p></div>
 </div>
 
-</div><p></p><hr><a id="method-switchMaleMap"></a><div class="section">
-<h3 id="method-switchmalemap-">Method <code>switchMaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchmalemap-"></a></h3>
-<p>Replaces existing male genetic map.</p><div class="section">
+</div><p></p><hr><a id="method-switchFemaleMap"></a><div class="section">
+<h3 id="method-switchfemalemap-">Method <code>switchFemaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchfemalemap-"></a></h3>
+<p>Replaces existing female genetic map.</p><div class="section">
 <h4 id="usage-25">Usage<a class="anchor" aria-label="anchor" href="#usage-25"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchMaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchFemaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -1544,15 +1631,39 @@ be metacentric.</p></dd>
 </dl><p></p></div>
 </div>
 
-</div><p></p><hr><a id="method-addToRec"></a><div class="section">
-<h3 id="method-addtorec-">Method <code>addToRec()</code><a class="anchor" aria-label="anchor" href="#method-addtorec-"></a></h3>
-<p>For internal use only.</p><div class="section">
+</div><p></p><hr><a id="method-switchMaleMap"></a><div class="section">
+<h3 id="method-switchmalemap-">Method <code>switchMaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchmalemap-"></a></h3>
+<p>Replaces existing male genetic map.</p><div class="section">
 <h4 id="usage-26">Usage<a class="anchor" aria-label="anchor" href="#usage-26"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToRec</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span>, <span class="va">hist</span>, <span class="va">ploidy</span><span class="op">)</span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchMaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
 <h4 id="arguments-26">Arguments<a class="anchor" aria-label="anchor" href="#arguments-26"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>genMap</code></dt>
+<dd><p>a list of length nChr containing 
+numeric vectors for the position of each segregating 
+site on a chromosome.</p></dd>
+
+
+<dt><code>centromere</code></dt>
+<dd><p>a numeric vector of centromere 
+positions. If NULL, the centromere are assumed to 
+be metacentric.</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div><p></p><hr><a id="method-addToRec"></a><div class="section">
+<h3 id="method-addtorec-">Method <code>addToRec()</code><a class="anchor" aria-label="anchor" href="#method-addtorec-"></a></h3>
+<p>For internal use only.</p><div class="section">
+<h4 id="usage-27">Usage<a class="anchor" aria-label="anchor" href="#usage-27"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToRec</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span>, <span class="va">hist</span>, <span class="va">ploidy</span><span class="op">)</span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-27">Arguments<a class="anchor" aria-label="anchor" href="#arguments-27"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>ID of last individual</p></dd>
 
@@ -1587,12 +1698,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-ibdHaplo"></a><div class="section">
 <h3 id="method-ibdhaplo-">Method <code>ibdHaplo()</code><a class="anchor" aria-label="anchor" href="#method-ibdhaplo-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-27">Usage<a class="anchor" aria-label="anchor" href="#usage-27"></a></h4>
+<h4 id="usage-28">Usage<a class="anchor" aria-label="anchor" href="#usage-28"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">ibdHaplo</span><span class="op">(</span><span class="va">iid</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-27">Arguments<a class="anchor" aria-label="anchor" href="#arguments-27"></a></h4>
+<h4 id="arguments-28">Arguments<a class="anchor" aria-label="anchor" href="#arguments-28"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>iid</code></dt>
 <dd><p>internal ID</p></dd>
 
@@ -1603,12 +1714,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-updateLastId"></a><div class="section">
 <h3 id="method-updatelastid-">Method <code>updateLastId()</code><a class="anchor" aria-label="anchor" href="#method-updatelastid-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-28">Usage<a class="anchor" aria-label="anchor" href="#usage-28"></a></h4>
+<h4 id="usage-29">Usage<a class="anchor" aria-label="anchor" href="#usage-29"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">updateLastId</span><span class="op">(</span><span class="va">lastId</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-28">Arguments<a class="anchor" aria-label="anchor" href="#arguments-28"></a></h4>
+<h4 id="arguments-29">Arguments<a class="anchor" aria-label="anchor" href="#arguments-29"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>last ID assigned</p></dd>
 
@@ -1619,12 +1730,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-addToPed"></a><div class="section">
 <h3 id="method-addtoped-">Method <code>addToPed()</code><a class="anchor" aria-label="anchor" href="#method-addtoped-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-29">Usage<a class="anchor" aria-label="anchor" href="#usage-29"></a></h4>
+<h4 id="usage-30">Usage<a class="anchor" aria-label="anchor" href="#usage-30"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToPed</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-29">Arguments<a class="anchor" aria-label="anchor" href="#arguments-29"></a></h4>
+<h4 id="arguments-30">Arguments<a class="anchor" aria-label="anchor" href="#arguments-30"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>ID of last individual</p></dd>
 
@@ -1651,12 +1762,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-clone"></a><div class="section">
 <h3 id="method-clone-">Method <code>clone()</code><a class="anchor" aria-label="anchor" href="#method-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-30">Usage<a class="anchor" aria-label="anchor" href="#usage-30"></a></h4>
+<h4 id="usage-31">Usage<a class="anchor" aria-label="anchor" href="#usage-31"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span class="va">SimParam</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-30">Arguments<a class="anchor" aria-label="anchor" href="#arguments-30"></a></h4>
+<h4 id="arguments-31">Arguments<a class="anchor" aria-label="anchor" href="#arguments-31"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 
@@ -1881,7 +1992,8 @@ be metacentric.</p></dd>
 <span class="r-in"><span class="co">#Create population</span></span>
 <span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu"><a href="meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -4.996004e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        Trait1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -2.081668e-18 </span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">#Change mean to 1</span></span>
 <span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">rescaleTraits</span><span class="op">(</span>mean<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
@@ -1914,7 +2026,7 @@ be metacentric.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

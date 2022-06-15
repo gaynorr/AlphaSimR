@@ -21,7 +21,7 @@ RRBLUP_SCA."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -30,7 +30,7 @@ RRBLUP_SCA."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -94,46 +94,75 @@ RRBLUP_SCA2 is only faster in certain situations. Most users should use
     <h2>Arguments</h2>
     <dl><dt>pop</dt>
 <dd><p>a <code><a href="Pop-class.html">Pop-class</a></code> to serve as the training population</p></dd>
+
+
 <dt>traits</dt>
-<dd><p>an integer indicating the trait to model, or a
+<dd><p>an integer indicating the trait to model, a trait name, or a
 function of the traits returning a single value.</p></dd>
+
+
 <dt>use</dt>
 <dd><p>train model using phenotypes "pheno", genetic values "gv", 
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"</p></dd>
+
+
 <dt>snpChip</dt>
 <dd><p>an integer indicating which SNP chip genotype 
 to use</p></dd>
+
+
 <dt>useQtl</dt>
 <dd><p>should QTL genotypes be used instead of a SNP chip. 
 If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 QTL may not match the QTL underlying the phenotype supplied in traits.</p></dd>
+
+
 <dt>maxIter</dt>
 <dd><p>maximum number of iterations for convergence.</p></dd>
+
+
 <dt>VuF</dt>
 <dd><p>marker effect variance for females. If value is NULL, a 
 reasonable starting point is chosen automatically.</p></dd>
+
+
 <dt>VuM</dt>
 <dd><p>marker effect variance for males. If value is NULL, a 
 reasonable starting point is chosen automatically.</p></dd>
+
+
 <dt>VuD</dt>
 <dd><p>marker effect variance for dominance. If value is NULL, a 
 reasonable starting point is chosen automatically.</p></dd>
+
+
 <dt>Ve</dt>
 <dd><p>error variance. If value is NULL, a 
 reasonable starting point is chosen automatically.</p></dd>
+
+
 <dt>useEM</dt>
 <dd><p>use EM to solve variance components. If false, 
 the initial values are considered true.</p></dd>
+
+
 <dt>tol</dt>
 <dd><p>tolerance for EM algorithm convergence</p></dd>
+
+
 <dt>useReps</dt>
 <dd><p>should population's reps slot be used to model 
 heterogeneous error variance</p></dd>
+
+
 <dt>simParam</dt>
 <dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+
+
 <dt>...</dt>
 <dd><p>additional arguments if using a function for 
 traits</p></dd>
+
 </dl></div>
 
     <div id="ref-examples">
@@ -156,8 +185,8 @@ traits</p></dd>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">#Evaluate accuracy</span></span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="gv.html">gv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span>, <span class="fu"><a href="ebv.html">ebv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.7073428</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        est_GV_Trait1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1     0.7498381</span>
 <span class="r-in"></span>
 </code></pre></div>
     </div>
@@ -173,7 +202,7 @@ traits</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

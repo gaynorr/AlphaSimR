@@ -18,7 +18,7 @@ genetic maps and haplotypes."><!-- mathjax --><script src="https://cdnjs.cloudfl
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -27,7 +27,7 @@ genetic maps and haplotypes."><!-- mathjax --><script src="https://cdnjs.cloudfl
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -72,17 +72,28 @@ genetic maps and haplotypes.</p>
     <h2>Arguments</h2>
     <dl><dt>genMap</dt>
 <dd><p>a list of genetic maps</p></dd>
+
+
 <dt>haplotypes</dt>
 <dd><p>a list of matrices or data.frames that 
 can be coerced to matrices. See details.</p></dd>
+
+
 <dt>inbred</dt>
 <dd><p>are individuals fully inbred</p></dd>
+
+
 <dt>ploidy</dt>
-<dd><p>ploidy level of organism</p></dd>
+<dd><p>ploidy level of the organism</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>an object of <code><a href="MapPop-class.html">MapPop-class</a></code></p>
+    
+
+<p>an object of <code><a href="MapPop-class.html">MapPop-class</a></code></p>
+
+
     </div>
     <div id="details">
     <h2>Details</h2>
@@ -90,8 +101,11 @@ can be coerced to matrices. See details.</p></dd>
 Morgans. The first value must be zero. The length of the vector 
 determines the number of segregating sites on the chromosome.</p>
 <p>Each item of haplotypes must be coercible to a matrix. The columns 
-of this matrix correspond to segregating sites and their number must 
-match</p>
+of this matrix correspond to segregating sites. The number of rows 
+must match the number of individuals times the ploidy if using 
+inbred=FALSE. If using inbred=TRUE, the number of rows must equal 
+the number of individuals. The haplotypes can be stored as numeric, 
+integer or raw. The underlying C++ function will use raw.</p>
     </div>
 
     <div id="ref-examples">
@@ -124,7 +138,7 @@ match</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

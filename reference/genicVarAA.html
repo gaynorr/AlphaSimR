@@ -18,7 +18,7 @@ genic variance for all traits"><!-- mathjax --><script src="https://cdnjs.cloudf
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -27,7 +27,7 @@ genic variance for all traits"><!-- mathjax --><script src="https://cdnjs.cloudf
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -72,8 +72,11 @@ genic variance for all traits</p>
     <h2>Arguments</h2>
     <dl><dt>pop</dt>
 <dd><p>an object of <code><a href="Pop-class.html">Pop-class</a></code></p></dd>
+
+
 <dt>simParam</dt>
 <dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+
 </dl></div>
 
     <div id="ref-examples">
@@ -89,7 +92,8 @@ genic variance for all traits</p>
 <span class="r-in"><span class="co">#Create population</span></span>
 <span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">genicVarAA</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0 </span>
 <span class="r-in"></span>
 </code></pre></div>
     </div>
@@ -105,7 +109,7 @@ genic variance for all traits</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

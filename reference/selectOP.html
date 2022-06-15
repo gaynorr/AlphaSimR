@@ -20,7 +20,7 @@ selection as occuring before or after pollination."><!-- mathjax --><script src=
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -29,7 +29,7 @@ selection as occuring before or after pollination."><!-- mathjax --><script src=
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -89,36 +89,64 @@ selection as occuring before or after pollination.</p>
     <dl><dt>pop</dt>
 <dd><p>and object of <code><a href="Pop-class.html">Pop-class</a></code> 
 or <code><a href="MegaPop-class.html">MegaPop-class</a></code></p></dd>
+
+
 <dt>nInd</dt>
 <dd><p>the number of plants to select</p></dd>
+
+
 <dt>nSeeds</dt>
 <dd><p>number of seeds per plant</p></dd>
+
+
 <dt>probSelf</dt>
 <dd><p>percentage of seeds expected from selfing. 
 Value ranges from 0 to 1.</p></dd>
+
+
 <dt>pollenControl</dt>
 <dd><p>are plants selected before pollination</p></dd>
+
+
 <dt>trait</dt>
 <dd><p>the trait for selection. Either a number indicating 
 a single trait or a function returning a vector of length nInd.</p></dd>
+
+
 <dt>use</dt>
 <dd><p>select on genetic values "gv", estimated
 breeding values "ebv", breeding values "bv", phenotypes "pheno", 
 or randomly "rand"</p></dd>
+
+
 <dt>selectTop</dt>
 <dd><p>selects highest values if true. 
 Selects lowest values if false.</p></dd>
+
+
 <dt>candidates</dt>
 <dd><p>an optional vector of eligible selection candidates.</p></dd>
+
+
 <dt>simParam</dt>
 <dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+
+
 <dt>...</dt>
 <dd><p>additional arguments if using a function for 
 trait</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Returns an object of <code><a href="Pop-class.html">Pop-class</a></code>or <code><a href="MegaPop-class.html">MegaPop-class</a></code></p>
+    
+
+<p>Returns an object of <code><a href="Pop-class.html">Pop-class</a></code></p>
+ 
+
+<p>or <code><a href="MegaPop-class.html">MegaPop-class</a></code></p>
+
+
     </div>
 
     <div id="ref-examples">
@@ -152,7 +180,7 @@ trait</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -63,29 +63,51 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">pullQtlHaplo</span><span class="op">(</span><span class="va">pop</span>, trait <span class="op">=</span> <span class="fl">1</span>, haplo <span class="op">=</span> <span class="st">"all"</span>, chr <span class="op">=</span> <span class="cn">NULL</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">pullQtlHaplo</span><span class="op">(</span>
+  <span class="va">pop</span>,
+  trait <span class="op">=</span> <span class="fl">1</span>,
+  haplo <span class="op">=</span> <span class="st">"all"</span>,
+  chr <span class="op">=</span> <span class="cn">NULL</span>,
+  asRaw <span class="op">=</span> <span class="cn">FALSE</span>,
+  simParam <span class="op">=</span> <span class="cn">NULL</span>
+<span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>pop</dt>
 <dd><p>an object of <code><a href="Pop-class.html">Pop-class</a></code></p></dd>
+
+
 <dt>trait</dt>
 <dd><p>an integer. Indicates which trait's
 QTL haplotypes to retrieve.</p></dd>
+
+
 <dt>haplo</dt>
 <dd><p>either "all" for all haplotypes or an integer
 for a single set of haplotypes. Use a value of 1 for female
-haplotypes and a value of 2 for male haplotypes.</p></dd>
+haplotypes and a value of 2 for male haplotypes in diploids.</p></dd>
+
+
 <dt>chr</dt>
 <dd><p>a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.</p></dd>
+
+
+<dt>asRaw</dt>
+<dd><p>return in raw (byte) format</p></dd>
+
+
 <dt>simParam</dt>
 <dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Returns a matrix of QTL haplotypes.</p>
+    
+
+<p>Returns a matrix of QTL haplotypes.</p>
     </div>
 
     <div id="ref-examples">
@@ -101,27 +123,27 @@ all chromosome are retrieved.</p></dd>
 <span class="r-in"><span class="co">#Create population</span></span>
 <span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">pullQtlHaplo</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      1_1 1_2 1_3 1_4 1_6 1_7 1_10 1_11 1_13 1_15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1_1    1   1   0   0   0   0    0    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1_2    1   1   0   0   0   0    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2_1    0   1   1   1   1   1    0    1    1    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2_2    0   1   1   1   0   0    0    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3_1    1   0   1   0   0   0    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3_2    1   1   0   1   0   1    0    0    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4_1    0   0   1   0   1   1    1    1    1    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4_2    1   0   0   0   0   1    0    1    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5_1    0   0   0   1   0   0    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5_2    0   0   0   1   0   1    0    1    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6_1    1   1   1   0   0   1    1    0    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6_2    1   0   1   1   0   0    0    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7_1    1   0   0   1   0   1    1    0    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7_2    0   1   0   0   0   1    1    0    1    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8_1    1   0   0   0   1   1    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8_2    0   0   0   0   0   1    1    0    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9_1    1   0   0   1   0   1    1    0    1    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9_2    0   0   1   0   0   1    0    1    0    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10_1   1   1   1   1   0   0    1    0    1    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10_2   0   0   1   1   1   0    0    0    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      1_1 1_2 1_5 1_6 1_7 1_8 1_11 1_12 1_14 1_15</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1_1    0   1   0   0   0   1    1    1    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1_2    0   1   0   1   0   1    0    1    0    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2_1    1   1   1   0   1   0    1    1    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2_2    1   0   1   0   0   0    1    1    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3_1    0   0   1   1   0   0    1    0    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3_2    0   0   0   1   1   0    0    1    1    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4_1    0   1   0   0   1   1    0    0    1    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4_2    0   0   0   0   1   0    1    1    1    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5_1    1   0   1   0   1   0    1    0    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5_2    0   0   0   1   1   0    0    1    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6_1    0   1   1   0   0   1    1    0    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6_2    1   0   1   0   0   0    0    0    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7_1    0   0   0   1   0   1    0    1    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7_2    1   0   0   0   1   1    0    0    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8_1    1   0   1   1   1   1    1    0    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8_2    0   1   0   0   1   1    1    0    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9_1    1   1   1   1   1   1    1    1    0    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9_2    0   1   0   1   1   1    0    1    0    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10_1   0   1   1   0   0   1    0    1    1    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10_2   1   1   1   1   0   0    1    0    1    0</span>
 <span class="r-in"></span>
 </code></pre></div>
     </div>
@@ -137,7 +159,7 @@ all chromosome are retrieved.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>
