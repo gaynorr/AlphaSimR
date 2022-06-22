@@ -1,3 +1,8 @@
+Changes in version 1.2.1
+    
+  Bug fixes
+    -fixed bugs relating to importData functions
+
 Changes in version 1.2.0
     
   New features
