@@ -1,7 +1,8 @@
 Changes in version 1.2.1
-    
+  
   Bug fixes
     -fixed bugs relating to importData functions
+    -fixed writePlink errors and no longer requires equal length chromosomes
 
 Changes in version 1.2.0
     

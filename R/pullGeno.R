@@ -129,7 +129,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
   
   #Create a data.frame with SNP postions on genetic map
   output = data.frame(id=getLociNames(snp@lociPerChr, snp@lociLoc, genMap),
-                      chr=rep(1:simParam$nChr,snp@lociPerChr),
+                      chr=rep(names(genMap),snp@lociPerChr),
                       site=snp@lociLoc,
                       pos=do.call("c",snpMap))
   return(output)
@@ -215,7 +215,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
   
   #Create a data.frame with QTL positions on genetic map
   output = data.frame(id=getLociNames(qtl@lociPerChr, qtl@lociLoc, genMap),
-                      chr=rep(1:simParam$nChr,qtl@lociPerChr),
+                      chr=rep(names(genMap),qtl@lociPerChr),
                       site=qtl@lociLoc,
                       pos=do.call("c",qtlMap))
   return(output)
