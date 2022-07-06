@@ -790,21 +790,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// writePlinkPed
-void writePlinkPed(const Rcpp::DataFrame& fam, const arma::Mat<unsigned char>& haplo, const arma::uword& nInd, const arma::uword& ploidy, const arma::uword& nLoc, const Rcpp::String& file);
-RcppExport SEXP _AlphaSimR_writePlinkPed(SEXP famSEXP, SEXP haploSEXP, SEXP nIndSEXP, SEXP ploidySEXP, SEXP nLocSEXP, SEXP fileSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type fam(famSEXP);
-    Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type haplo(haploSEXP);
-    Rcpp::traits::input_parameter< const arma::uword& >::type nInd(nIndSEXP);
-    Rcpp::traits::input_parameter< const arma::uword& >::type ploidy(ploidySEXP);
-    Rcpp::traits::input_parameter< const arma::uword& >::type nLoc(nLocSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::String& >::type file(fileSEXP);
-    writePlinkPed(fam, haplo, nInd, ploidy, nLoc, file);
-    return R_NilValue;
-END_RCPP
-}
 // MaCS
 Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, Rcpp::StringVector seed);
 RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP) {
@@ -872,7 +857,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
-    {"_AlphaSimR_writePlinkPed", (DL_FUNC) &_AlphaSimR_writePlinkPed, 6},
     {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
     {NULL, NULL, 0}
 };

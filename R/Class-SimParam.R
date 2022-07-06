@@ -51,7 +51,7 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     initialize = function(founderPop){
-      stopifnot(class(founderPop)=="MapPop")
+      stopifnot(is(founderPop, "MapPop"))
       
       # Public items
       self$nThreads = getNumThreads()
@@ -1212,15 +1212,16 @@ SimParam = R6Class(
       if(!is.null(varE)){
         varE = as.numeric(varE)
         stopifnot(length(varE)==nTraits)
+      }else{
+        varE = rep(NA_real_, nTraits)
       }
       
       # Prepare trait names
-      if(is.null(names)){
+      if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }else{
-        stopifnot(length(names)==nTraits)
+        stopifnot(length(name)==nTraits)
       }
-      
       
       # Extract genetic map and check if marker names are on the map
       genMapMarkerNames = unlist(lapply(private$.femaleMap, names))
@@ -1242,7 +1243,7 @@ SimParam = R6Class(
         lociLoc[[i]] = integer()
         
         # Find matches if they exist
-        take = match(names(genMap[[i]]), markerNames)
+        take = match(names(private$.femaleMap[[i]]), markerNames)
         lociPerChr[i] = length(na.omit(take))
         
         if(lociPerChr[i]>0L){

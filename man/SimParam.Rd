@@ -338,43 +338,43 @@ genetic map}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{SimParam$new()}}
-\item \href{#method-setTrackPed}{\code{SimParam$setTrackPed()}}
-\item \href{#method-setTrackRec}{\code{SimParam$setTrackRec()}}
-\item \href{#method-resetPed}{\code{SimParam$resetPed()}}
-\item \href{#method-restrSegSites}{\code{SimParam$restrSegSites()}}
-\item \href{#method-setSexes}{\code{SimParam$setSexes()}}
-\item \href{#method-addSnpChip}{\code{SimParam$addSnpChip()}}
-\item \href{#method-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
-\item \href{#method-addTraitA}{\code{SimParam$addTraitA()}}
-\item \href{#method-addTraitAD}{\code{SimParam$addTraitAD()}}
-\item \href{#method-addTraitAG}{\code{SimParam$addTraitAG()}}
-\item \href{#method-addTraitADG}{\code{SimParam$addTraitADG()}}
-\item \href{#method-addTraitAE}{\code{SimParam$addTraitAE()}}
-\item \href{#method-addTraitADE}{\code{SimParam$addTraitADE()}}
-\item \href{#method-addTraitAEG}{\code{SimParam$addTraitAEG()}}
-\item \href{#method-addTraitADEG}{\code{SimParam$addTraitADEG()}}
-\item \href{#method-manAddTrait}{\code{SimParam$manAddTrait()}}
-\item \href{#method-importTrait}{\code{SimParam$importTrait()}}
-\item \href{#method-switchTrait}{\code{SimParam$switchTrait()}}
-\item \href{#method-removeTrait}{\code{SimParam$removeTrait()}}
-\item \href{#method-setVarE}{\code{SimParam$setVarE()}}
-\item \href{#method-setCorE}{\code{SimParam$setCorE()}}
-\item \href{#method-rescaleTraits}{\code{SimParam$rescaleTraits()}}
-\item \href{#method-setRecombRatio}{\code{SimParam$setRecombRatio()}}
-\item \href{#method-switchGenMap}{\code{SimParam$switchGenMap()}}
-\item \href{#method-switchFemaleMap}{\code{SimParam$switchFemaleMap()}}
-\item \href{#method-switchMaleMap}{\code{SimParam$switchMaleMap()}}
-\item \href{#method-addToRec}{\code{SimParam$addToRec()}}
-\item \href{#method-ibdHaplo}{\code{SimParam$ibdHaplo()}}
-\item \href{#method-updateLastId}{\code{SimParam$updateLastId()}}
-\item \href{#method-addToPed}{\code{SimParam$addToPed()}}
-\item \href{#method-clone}{\code{SimParam$clone()}}
+\item \href{#method-SimParam-new}{\code{SimParam$new()}}
+\item \href{#method-SimParam-setTrackPed}{\code{SimParam$setTrackPed()}}
+\item \href{#method-SimParam-setTrackRec}{\code{SimParam$setTrackRec()}}
+\item \href{#method-SimParam-resetPed}{\code{SimParam$resetPed()}}
+\item \href{#method-SimParam-restrSegSites}{\code{SimParam$restrSegSites()}}
+\item \href{#method-SimParam-setSexes}{\code{SimParam$setSexes()}}
+\item \href{#method-SimParam-addSnpChip}{\code{SimParam$addSnpChip()}}
+\item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
+\item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
+\item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
+\item \href{#method-SimParam-addTraitAG}{\code{SimParam$addTraitAG()}}
+\item \href{#method-SimParam-addTraitADG}{\code{SimParam$addTraitADG()}}
+\item \href{#method-SimParam-addTraitAE}{\code{SimParam$addTraitAE()}}
+\item \href{#method-SimParam-addTraitADE}{\code{SimParam$addTraitADE()}}
+\item \href{#method-SimParam-addTraitAEG}{\code{SimParam$addTraitAEG()}}
+\item \href{#method-SimParam-addTraitADEG}{\code{SimParam$addTraitADEG()}}
+\item \href{#method-SimParam-manAddTrait}{\code{SimParam$manAddTrait()}}
+\item \href{#method-SimParam-importTrait}{\code{SimParam$importTrait()}}
+\item \href{#method-SimParam-switchTrait}{\code{SimParam$switchTrait()}}
+\item \href{#method-SimParam-removeTrait}{\code{SimParam$removeTrait()}}
+\item \href{#method-SimParam-setVarE}{\code{SimParam$setVarE()}}
+\item \href{#method-SimParam-setCorE}{\code{SimParam$setCorE()}}
+\item \href{#method-SimParam-rescaleTraits}{\code{SimParam$rescaleTraits()}}
+\item \href{#method-SimParam-setRecombRatio}{\code{SimParam$setRecombRatio()}}
+\item \href{#method-SimParam-switchGenMap}{\code{SimParam$switchGenMap()}}
+\item \href{#method-SimParam-switchFemaleMap}{\code{SimParam$switchFemaleMap()}}
+\item \href{#method-SimParam-switchMaleMap}{\code{SimParam$switchMaleMap()}}
+\item \href{#method-SimParam-addToRec}{\code{SimParam$addToRec()}}
+\item \href{#method-SimParam-ibdHaplo}{\code{SimParam$ibdHaplo()}}
+\item \href{#method-SimParam-updateLastId}{\code{SimParam$updateLastId()}}
+\item \href{#method-SimParam-addToPed}{\code{SimParam$addToPed()}}
+\item \href{#method-SimParam-clone}{\code{SimParam$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-SimParam-new"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-new}{}}}
 \subsection{Method \code{new()}}{
 Starts the process of building a new simulation 
 by creating a new SimParam object and assigning a founder 
@@ -409,8 +409,8 @@ SP = SimParam$new(founderPop)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setTrackPed"></a>}}
-\if{latex}{\out{\hypertarget{method-setTrackPed}{}}}
+\if{html}{\out{<a id="method-SimParam-setTrackPed"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setTrackPed}{}}}
 \subsection{Method \code{setTrackPed()}}{
 Sets pedigree tracking for the simulation. 
 By default pedigree tracking is turned off. When turned on, 
@@ -447,8 +447,8 @@ SP$setTrackPed(TRUE)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setTrackRec"></a>}}
-\if{latex}{\out{\hypertarget{method-setTrackRec}{}}}
+\if{html}{\out{<a id="method-SimParam-setTrackRec"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setTrackRec}{}}}
 \subsection{Method \code{setTrackRec()}}{
 Sets recombination tracking for the simulation.
 By default recombination tracking is turned off. When turned
@@ -485,8 +485,8 @@ SP$setTrackRec(TRUE)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-resetPed"></a>}}
-\if{latex}{\out{\hypertarget{method-resetPed}{}}}
+\if{html}{\out{<a id="method-SimParam-resetPed"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-resetPed}{}}}
 \subsection{Method \code{resetPed()}}{
 Resets the internal lastId, the pedigree 
 and recombination tracking (if in use) to the 
@@ -527,8 +527,8 @@ pop2@id # 1:10
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-restrSegSites"></a>}}
-\if{latex}{\out{\hypertarget{method-restrSegSites}{}}}
+\if{html}{\out{<a id="method-SimParam-restrSegSites"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-restrSegSites}{}}}
 \subsection{Method \code{restrSegSites()}}{
 Sets restrictions on which segregating sites 
 can serve as SNP and/or QTL.
@@ -574,8 +574,8 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setSexes"></a>}}
-\if{latex}{\out{\hypertarget{method-setSexes}{}}}
+\if{html}{\out{<a id="method-SimParam-setSexes"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setSexes}{}}}
 \subsection{Method \code{setSexes()}}{
 Changes how sexes are determined in the simulation. 
 The default sexes is "no", indicating all individuals are hermaphrodites. 
@@ -615,8 +615,8 @@ SP$setSexes("yes_sys")
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addSnpChip"></a>}}
-\if{latex}{\out{\hypertarget{method-addSnpChip}{}}}
+\if{html}{\out{<a id="method-SimParam-addSnpChip"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addSnpChip}{}}}
 \subsection{Method \code{addSnpChip()}}{
 Randomly assigns eligible SNPs to a SNP chip
 \subsection{Usage}{
@@ -654,8 +654,8 @@ SP$addSnpChip(10)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addStructuredSnpChip"></a>}}
-\if{latex}{\out{\hypertarget{method-addStructuredSnpChip}{}}}
+\if{html}{\out{<a id="method-SimParam-addStructuredSnpChip"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addStructuredSnpChip}{}}}
 \subsection{Method \code{addStructuredSnpChip()}}{
 Randomly selects the number of snps in structure and then
 assigns them to chips based on structure
@@ -679,8 +679,8 @@ ignored. Only set to TRUE if you know what you are doing.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitA"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitA}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitA"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitA}{}}}
 \subsection{Method \code{addTraitA()}}{
 Randomly assigns eligible QTLs for one or more additive traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -735,8 +735,8 @@ SP$addTraitA(10)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitAD"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitAD}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitAD"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitAD}{}}}
 \subsection{Method \code{addTraitAD()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -804,8 +804,8 @@ SP$addTraitAD(10, meanDD=0.5)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitAG"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitAG}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitAG"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitAG}{}}}
 \subsection{Method \code{addTraitAG()}}{
 Randomly assigns eligible QTLs for one ore more additive GxE traits. 
 If simulating more than one trait, all traits will be pleiotrophic 
@@ -869,8 +869,8 @@ SP$addTraitAG(10, varGxE=2)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitADG"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitADG}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitADG"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitADG}{}}}
 \subsection{Method \code{addTraitADG()}}{
 Randomly assigns eligible QTLs for a trait with dominance and GxE.
 \subsection{Usage}{
@@ -945,8 +945,8 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitAE"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitAE}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitAE"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitAE}{}}}
 \subsection{Method \code{addTraitAE()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis 
 traits. If simulating more than one trait, all traits will be pleiotrophic 
@@ -1008,8 +1008,8 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitADE"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitADE}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitADE"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitADE}{}}}
 \subsection{Method \code{addTraitADE()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance and 
 epistasis. If simulating more than one trait, all traits will be pleiotrophic 
@@ -1084,8 +1084,8 @@ SP$addTraitADE(10)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitAEG"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitAEG}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitAEG"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitAEG}{}}}
 \subsection{Method \code{addTraitAEG()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis 
 GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
@@ -1160,8 +1160,8 @@ SP$addTraitAEG(10, varGxE=2)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addTraitADEG"></a>}}
-\if{latex}{\out{\hypertarget{method-addTraitADEG}{}}}
+\if{html}{\out{<a id="method-SimParam-addTraitADEG"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addTraitADEG}{}}}
 \subsection{Method \code{addTraitADEG()}}{
 Randomly assigns eligible QTLs for a trait with dominance, 
 epistasis and GxE.
@@ -1244,8 +1244,8 @@ SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-manAddTrait"></a>}}
-\if{latex}{\out{\hypertarget{method-manAddTrait}{}}}
+\if{html}{\out{<a id="method-SimParam-manAddTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-manAddTrait}{}}}
 \subsection{Method \code{manAddTrait()}}{
 Manually add a new trait to the simulation. Trait must 
 be formatted as a \code{\link{LociMap-class}}. If the 
@@ -1269,8 +1269,8 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-importTrait"></a>}}
-\if{latex}{\out{\hypertarget{method-importTrait}{}}}
+\if{html}{\out{<a id="method-SimParam-importTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-importTrait}{}}}
 \subsection{Method \code{importTrait()}}{
 Manually add a new trait(s) to the simulation. Unlike the 
 manAddTrait function, this function does not require 
@@ -1314,8 +1314,8 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-switchTrait"></a>}}
-\if{latex}{\out{\hypertarget{method-switchTrait}{}}}
+\if{html}{\out{<a id="method-SimParam-switchTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-switchTrait}{}}}
 \subsection{Method \code{switchTrait()}}{
 Switch a trait in the simulation.
 \subsection{Usage}{
@@ -1339,8 +1339,8 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-removeTrait"></a>}}
-\if{latex}{\out{\hypertarget{method-removeTrait}{}}}
+\if{html}{\out{<a id="method-SimParam-removeTrait"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-removeTrait}{}}}
 \subsection{Method \code{removeTrait()}}{
 Remove a trait from the simulation
 \subsection{Usage}{
@@ -1359,8 +1359,8 @@ ignored. Only set to TRUE if you know what you are doing}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setVarE"></a>}}
-\if{latex}{\out{\hypertarget{method-setVarE}{}}}
+\if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{Method \code{setVarE()}}{
 Defines a default value for error 
 variances in the simulation.
@@ -1395,8 +1395,8 @@ SP$setVarE(h2=0.5)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setCorE"></a>}}
-\if{latex}{\out{\hypertarget{method-setCorE}{}}}
+\if{html}{\out{<a id="method-SimParam-setCorE"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setCorE}{}}}
 \subsection{Method \code{setCorE()}}{
 Defines a correlation structure for default 
 error variances. You must call \code{setVarE} first to define 
@@ -1430,8 +1430,8 @@ SP$setCorE(E)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-rescaleTraits"></a>}}
-\if{latex}{\out{\hypertarget{method-rescaleTraits}{}}}
+\if{html}{\out{<a id="method-SimParam-rescaleTraits"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-rescaleTraits}{}}}
 \subsection{Method \code{rescaleTraits()}}{
 Linearly scales all traits to achieve desired 
 values of means and variances in the founder population.
@@ -1485,8 +1485,8 @@ meanG(pop)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setRecombRatio"></a>}}
-\if{latex}{\out{\hypertarget{method-setRecombRatio}{}}}
+\if{html}{\out{<a id="method-SimParam-setRecombRatio"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setRecombRatio}{}}}
 \subsection{Method \code{setRecombRatio()}}{
 Set the relative recombination rates between males 
 and females. This allows for sex-specific recombination rates, 
@@ -1519,8 +1519,8 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-switchGenMap"></a>}}
-\if{latex}{\out{\hypertarget{method-switchGenMap}{}}}
+\if{html}{\out{<a id="method-SimParam-switchGenMap"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-switchGenMap}{}}}
 \subsection{Method \code{switchGenMap()}}{
 Replaces existing genetic map.
 \subsection{Usage}{
@@ -1542,8 +1542,8 @@ be metacentric.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-switchFemaleMap"></a>}}
-\if{latex}{\out{\hypertarget{method-switchFemaleMap}{}}}
+\if{html}{\out{<a id="method-SimParam-switchFemaleMap"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-switchFemaleMap}{}}}
 \subsection{Method \code{switchFemaleMap()}}{
 Replaces existing female genetic map.
 \subsection{Usage}{
@@ -1565,8 +1565,8 @@ be metacentric.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-switchMaleMap"></a>}}
-\if{latex}{\out{\hypertarget{method-switchMaleMap}{}}}
+\if{html}{\out{<a id="method-SimParam-switchMaleMap"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-switchMaleMap}{}}}
 \subsection{Method \code{switchMaleMap()}}{
 Replaces existing male genetic map.
 \subsection{Usage}{
@@ -1588,8 +1588,8 @@ be metacentric.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addToRec"></a>}}
-\if{latex}{\out{\hypertarget{method-addToRec}{}}}
+\if{html}{\out{<a id="method-SimParam-addToRec"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addToRec}{}}}
 \subsection{Method \code{addToRec()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1617,8 +1617,8 @@ For internal use only.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ibdHaplo"></a>}}
-\if{latex}{\out{\hypertarget{method-ibdHaplo}{}}}
+\if{html}{\out{<a id="method-SimParam-ibdHaplo"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-ibdHaplo}{}}}
 \subsection{Method \code{ibdHaplo()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1634,8 +1634,8 @@ For internal use only.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-updateLastId"></a>}}
-\if{latex}{\out{\hypertarget{method-updateLastId}{}}}
+\if{html}{\out{<a id="method-SimParam-updateLastId"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-updateLastId}{}}}
 \subsection{Method \code{updateLastId()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1651,8 +1651,8 @@ For internal use only.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addToPed"></a>}}
-\if{latex}{\out{\hypertarget{method-addToPed}{}}}
+\if{html}{\out{<a id="method-SimParam-addToPed"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addToPed}{}}}
 \subsection{Method \code{addToPed()}}{
 For internal use only.
 \subsection{Usage}{
@@ -1676,8 +1676,8 @@ For internal use only.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-SimParam-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
