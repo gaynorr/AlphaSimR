@@ -19,7 +19,7 @@ recalculated to reflect the any changes due to editing, but other slots remain t
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -67,7 +67,7 @@ recalculated to reflect the any changes due to editing, but other slots remain t
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">editGenomeTopQtl</span><span class="op">(</span><span class="va">pop</span>, <span class="va">ind</span>, <span class="va">nQtl</span>, trait <span class="op">=</span> <span class="fl">1</span>, increase <span class="op">=</span> <span class="cn">TRUE</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">editGenomeTopQtl</span><span class="op">(</span><span class="va">pop</span>, <span class="va">ind</span>, <span class="va">nQtl</span>, trait <span class="op">=</span> <span class="fl">1</span>, increase <span class="op">=</span> <span class="cn">TRUE</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -107,19 +107,19 @@ recalculated to reflect the any changes due to editing, but other slots remain t
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co">#Create founder haplotypes</span></span>
-<span class="r-in"><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">2</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Set simulation parameters</span></span>
-<span class="r-in"><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Create population</span></span>
-<span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Change up to 10 loci for individual 1 </span></span>
-<span class="r-in"><span class="va">pop2</span> <span class="op">=</span> <span class="fu">editGenomeTopQtl</span><span class="op">(</span><span class="va">pop</span>, ind<span class="op">=</span><span class="fl">1</span>, nQtl<span class="op">=</span><span class="fl">10</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in">                  </span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">2</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Create population</span></span></span>
+<span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Change up to 10 loci for individual 1 </span></span></span>
+<span class="r-in"><span><span class="va">pop2</span> <span class="op">=</span> <span class="fu">editGenomeTopQtl</span><span class="op">(</span><span class="va">pop</span>, ind<span class="op">=</span><span class="fl">1</span>, nQtl<span class="op">=</span><span class="fl">10</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                  </span></span>
 </code></pre></div>
     </div>
   </div>
@@ -134,7 +134,7 @@ recalculated to reflect the any changes due to editing, but other slots remain t
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

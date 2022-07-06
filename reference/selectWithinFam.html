@@ -19,7 +19,7 @@ from a full-sib family if it has less than or equal to nInd individuals."><!-- m
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -67,19 +67,19 @@ from a full-sib family if it has less than or equal to nInd individuals.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">selectWithinFam</span><span class="op">(</span>
-  <span class="va">pop</span>,
-  <span class="va">nInd</span>,
-  trait <span class="op">=</span> <span class="fl">1</span>,
-  use <span class="op">=</span> <span class="st">"pheno"</span>,
-  sex <span class="op">=</span> <span class="st">"B"</span>,
-  famType <span class="op">=</span> <span class="st">"B"</span>,
-  selectTop <span class="op">=</span> <span class="cn">TRUE</span>,
-  returnPop <span class="op">=</span> <span class="cn">TRUE</span>,
-  candidates <span class="op">=</span> <span class="cn">NULL</span>,
-  simParam <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">selectWithinFam</span><span class="op">(</span></span>
+<span>  <span class="va">pop</span>,</span>
+<span>  <span class="va">nInd</span>,</span>
+<span>  trait <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  use <span class="op">=</span> <span class="st">"pheno"</span>,</span>
+<span>  sex <span class="op">=</span> <span class="st">"B"</span>,</span>
+<span>  famType <span class="op">=</span> <span class="st">"B"</span>,</span>
+<span>  selectTop <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  returnPop <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  candidates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  simParam <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -152,23 +152,23 @@ trait</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co">#Create founder haplotypes</span></span>
-<span class="r-in"><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Set simulation parameters</span></span>
-<span class="r-in"><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Create population</span></span>
-<span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Create 3 biparental families with 10 progeny</span></span>
-<span class="r-in"><span class="va">pop2</span> <span class="op">=</span> <span class="fu"><a href="randCross.html">randCross</a></span><span class="op">(</span><span class="va">pop</span>, nCrosses<span class="op">=</span><span class="fl">3</span>, nProgeny<span class="op">=</span><span class="fl">10</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Select best individual per family</span></span>
-<span class="r-in"><span class="va">pop3</span> <span class="op">=</span> <span class="fu">selectWithinFam</span><span class="op">(</span><span class="va">pop2</span>, <span class="fl">1</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Create population</span></span></span>
+<span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Create 3 biparental families with 10 progeny</span></span></span>
+<span class="r-in"><span><span class="va">pop2</span> <span class="op">=</span> <span class="fu"><a href="randCross.html">randCross</a></span><span class="op">(</span><span class="va">pop</span>, nCrosses<span class="op">=</span><span class="fl">3</span>, nProgeny<span class="op">=</span><span class="fl">10</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Select best individual per family</span></span></span>
+<span class="r-in"><span><span class="va">pop3</span> <span class="op">=</span> <span class="fu">selectWithinFam</span><span class="op">(</span><span class="va">pop2</span>, <span class="fl">1</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -183,7 +183,7 @@ trait</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

@@ -18,7 +18,7 @@ given SNP chip."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -65,7 +65,7 @@ given SNP chip.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">getSnpMap</span><span class="op">(</span>snpChip <span class="op">=</span> <span class="fl">1</span>, sex <span class="op">=</span> <span class="st">"A"</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">getSnpMap</span><span class="op">(</span>snpChip <span class="op">=</span> <span class="fl">1</span>, sex <span class="op">=</span> <span class="st">"A"</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -107,22 +107,22 @@ equivalent if not using sex specific maps.</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co">#Create founder haplotypes</span></span>
-<span class="r-in"><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Set simulation parameters</span></span>
-<span class="r-in"><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Pull SNP map</span></span>
-<span class="r-in"><span class="fu">getSnpMap</span><span class="op">(</span>snpChip<span class="op">=</span><span class="fl">1</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Pull SNP map</span></span></span>
+<span class="r-in"><span><span class="fu">getSnpMap</span><span class="op">(</span>snpChip<span class="op">=</span><span class="fl">1</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      id chr site       pos</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_2 1_2   1    2 0.1111111</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1_3 1_3   1    3 0.2222222</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_4 1_4   1    4 0.3333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1_5 1_5   1    5 0.4444444</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_7 1_7   1    7 0.6666667</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1_8 1_8   1    8 0.7777778</span>
-<span class="r-in"></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1_9 1_9   1    9 0.8888889</span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -137,7 +137,7 @@ equivalent if not using sex specific maps.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

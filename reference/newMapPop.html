@@ -18,7 +18,7 @@ genetic maps and haplotypes."><!-- mathjax --><script src="https://cdnjs.cloudfl
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -65,7 +65,7 @@ genetic maps and haplotypes.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">newMapPop</span><span class="op">(</span><span class="va">genMap</span>, <span class="va">haplotypes</span>, inbred <span class="op">=</span> <span class="cn">FALSE</span>, ploidy <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">newMapPop</span><span class="op">(</span><span class="va">genMap</span>, <span class="va">haplotypes</span>, inbred <span class="op">=</span> <span class="cn">FALSE</span>, ploidy <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -110,20 +110,20 @@ integer or raw. The underlying C++ function will use raw.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co"># Create genetic map for two chromosomes, each 1 Morgan long</span></span>
-<span class="r-in"><span class="co"># Each chromosome contains 11 equally spaced segregating sites</span></span>
-<span class="r-in"><span class="va">genMap</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,length.out<span class="op">=</span><span class="fl">11</span><span class="op">)</span>,</span>
-<span class="r-in">               <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,length.out<span class="op">=</span><span class="fl">11</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in">               </span>
-<span class="r-in"><span class="co"># Create haplotypes for 10 outbred individuals</span></span>
-<span class="r-in"><span class="va">chr1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x<span class="op">=</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>,size<span class="op">=</span><span class="fl">20</span><span class="op">*</span><span class="fl">11</span>,replace<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">chr1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">chr1</span>,nrow<span class="op">=</span><span class="fl">20</span>,ncol<span class="op">=</span><span class="fl">11</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">chr2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x<span class="op">=</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>,size<span class="op">=</span><span class="fl">20</span><span class="op">*</span><span class="fl">11</span>,replace<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">chr2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">chr2</span>,nrow<span class="op">=</span><span class="fl">20</span>,ncol<span class="op">=</span><span class="fl">11</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">haplotypes</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">chr1</span>,<span class="va">chr2</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="va">founderPop</span> <span class="op">=</span> <span class="fu">newMapPop</span><span class="op">(</span>genMap<span class="op">=</span><span class="va">genMap</span>, haplotypes<span class="op">=</span><span class="va">haplotypes</span><span class="op">)</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Create genetic map for two chromosomes, each 1 Morgan long</span></span></span>
+<span class="r-in"><span><span class="co"># Each chromosome contains 11 equally spaced segregating sites</span></span></span>
+<span class="r-in"><span><span class="va">genMap</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,length.out<span class="op">=</span><span class="fl">11</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>               <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span>,length.out<span class="op">=</span><span class="fl">11</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>               </span></span>
+<span class="r-in"><span><span class="co"># Create haplotypes for 10 outbred individuals</span></span></span>
+<span class="r-in"><span><span class="va">chr1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x<span class="op">=</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>,size<span class="op">=</span><span class="fl">20</span><span class="op">*</span><span class="fl">11</span>,replace<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">chr1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">chr1</span>,nrow<span class="op">=</span><span class="fl">20</span>,ncol<span class="op">=</span><span class="fl">11</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">chr2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x<span class="op">=</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>,size<span class="op">=</span><span class="fl">20</span><span class="op">*</span><span class="fl">11</span>,replace<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">chr2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">chr2</span>,nrow<span class="op">=</span><span class="fl">20</span>,ncol<span class="op">=</span><span class="fl">11</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">haplotypes</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">chr1</span>,<span class="va">chr2</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu">newMapPop</span><span class="op">(</span>genMap<span class="op">=</span><span class="va">genMap</span>, haplotypes<span class="op">=</span><span class="va">haplotypes</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -138,7 +138,7 @@ integer or raw. The underlying C++ function will use raw.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

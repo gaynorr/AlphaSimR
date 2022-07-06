@@ -22,7 +22,7 @@ returns smoothing and returns a warning (see details)."><!-- mathjax --><script 
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -73,7 +73,7 @@ returns smoothing and returns a warning (see details).</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">transMat</span><span class="op">(</span><span class="va">R</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">transMat</span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -97,25 +97,25 @@ too far removed from a valid correlation matrix.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co"># Create an 2x2 correlation matrix</span></span>
-<span class="r-in"><span class="va">R</span> <span class="op">=</span> <span class="fl">0.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.5</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Sample 1000 uncorrelated deviates from a </span></span>
-<span class="r-in"><span class="co"># bivariate standard normal distribution</span></span>
-<span class="r-in"><span class="va">X</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="fl">1000</span><span class="op">)</span>, ncol<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Compute the transformation matrix</span></span>
-<span class="r-in"><span class="cn">T</span> <span class="op">=</span> <span class="fu">transMat</span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Apply the transformation to the deviates</span></span>
-<span class="r-in"><span class="va">Y</span> <span class="op">=</span> <span class="va">X</span><span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span><span class="cn">T</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Measure the sample correlation</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Create an 2x2 correlation matrix</span></span></span>
+<span class="r-in"><span><span class="va">R</span> <span class="op">=</span> <span class="fl">0.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.5</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Sample 1000 uncorrelated deviates from a </span></span></span>
+<span class="r-in"><span><span class="co"># bivariate standard normal distribution</span></span></span>
+<span class="r-in"><span><span class="va">X</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="fl">1000</span><span class="op">)</span>, ncol<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Compute the transformation matrix</span></span></span>
+<span class="r-in"><span><span class="cn">T</span> <span class="op">=</span> <span class="fu">transMat</span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Apply the transformation to the deviates</span></span></span>
+<span class="r-in"><span><span class="va">Y</span> <span class="op">=</span> <span class="va">X</span><span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span><span class="cn">T</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Measure the sample correlation</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]      [,2]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 1.0000000 0.5093193</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.5093193 1.0000000</span>
-<span class="r-in"></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 1.0000000 0.4845071</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.4845071 1.0000000</span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -130,7 +130,7 @@ too far removed from a valid correlation matrix.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

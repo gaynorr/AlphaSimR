@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">AlphaSimR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.1</span>
       </span>
     </div>
 
@@ -63,7 +63,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">pullSegSiteGeno</span><span class="op">(</span><span class="va">pop</span>, chr <span class="op">=</span> <span class="cn">NULL</span>, asRaw <span class="op">=</span> <span class="cn">FALSE</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pullSegSiteGeno</span><span class="op">(</span><span class="va">pop</span>, chr <span class="op">=</span> <span class="cn">NULL</span>, asRaw <span class="op">=</span> <span class="cn">FALSE</span>, simParam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -95,29 +95,29 @@ all chromosome are retrieved.</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="co">#Create founder haplotypes</span></span>
-<span class="r-in"><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">15</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Set simulation parameters</span></span>
-<span class="r-in"><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">#Create population</span></span>
-<span class="r-in"><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">pullSegSiteGeno</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">15</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Create population</span></span></span>
+<span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">pullSegSiteGeno</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    1_1 1_2 1_3 1_4 1_5 1_6 1_7 1_8 1_9 1_10 1_11 1_12 1_13 1_14 1_15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1   1   2   0   0   2   2   0   2    0    1    0    2    1    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    2   0   0   1   1   0   2   2   2    0    1    0    0    1    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    2   1   2   1   0   2   1   1   2    1    1    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    0   0   0   1   0   0   1   1   1    2    0    1    0    2    2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    2   1   1   1   0   1   1   0   1    1    2    1    0    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    2   0   0   0   1   2   0   0   1    1    2    0    1    2    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    1   0   2   1   1   1   0   0   0    0    1    2    1    0    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8    2   1   0   2   1   2   0   1   0    1    1    1    1    1    1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9    1   2   1   2   2   0   0   2   1    2    0    2    1    2    2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10   1   0   2   2   1   1   1   0   0    0    0    0    0    1    1</span>
-<span class="r-in"></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    0   1   1   1   1   2   1   1   1    0    0    1    0    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    1   1   2   1   1   0   1   1   1    1    1    2    2    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    0   0   1   1   1   1   1   0   1    0    1    2    1    2    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    2   2   2   1   1   1   2   0   1    1    2    2    2    1    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    1   1   2   1   2   1   1   0   0    1    1    2    1    0    2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    2   2   1   1   1   1   1   1   0    2    2    2    1    2    2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    0   1   1   1   2   1   1   1   0    1    1    0    0    2    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    2   0   1   0   1   2   1   0   0    0    0    1    2    0    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9    1   1   1   1   1   0   1   1   0    2    0    0    0    2    1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10   1   1   1   2   1   1   2   1   1    1    1    2    0    1    1</span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -132,7 +132,7 @@ all chromosome are retrieved.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>
