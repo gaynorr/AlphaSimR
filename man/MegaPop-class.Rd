@@ -31,9 +31,9 @@ It is designed to behave like a list of populations.
 
 \item \code{[[}: Extract Pop by index
 
-\item \code{c}: Combine multiple MegaPops
-}}
+\item \code{c(MegaPop)}: Combine multiple MegaPops
 
+}}
 \section{Slots}{
 
 \describe{

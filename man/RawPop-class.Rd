@@ -30,11 +30,11 @@ The raw population class contains only genotype data.
 \itemize{
 \item \code{[}: Extract RawPop by index
 
-\item \code{c}: Combine multiple RawPops
+\item \code{c(RawPop)}: Combine multiple RawPops
 
-\item \code{show}: Show population summary
+\item \code{show(RawPop)}: Show population summary
+
 }}
-
 \section{Slots}{
 
 \describe{

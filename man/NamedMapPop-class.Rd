@@ -25,9 +25,9 @@ Extends \code{\link{MapPop-class}} to add id, mother and father.
 \itemize{
 \item \code{[}: Extract NamedMapPop by index
 
-\item \code{c}: Combine multiple NamedMapPops
-}}
+\item \code{c(NamedMapPop)}: Combine multiple NamedMapPops
 
+}}
 \section{Slots}{
 
 \describe{

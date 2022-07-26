@@ -26,9 +26,9 @@ Memory is saved by not storing genotypic data.
 \itemize{
 \item \code{[}: Extract HybridPop using index or id
 
-\item \code{c}: Combine multiple HybridPops
-}}
+\item \code{c(HybridPop)}: Combine multiple HybridPops
 
+}}
 \section{Slots}{
 
 \describe{

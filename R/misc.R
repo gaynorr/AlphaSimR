@@ -180,6 +180,46 @@ getMisc <- function(x, node = NULL) {
   return(ret)
 }
 
+#' @title Get pedigree
+#' 
+#' @description 
+#' Returns the population's pedigree as stored in the 
+#' id, mother and father slots. NULL is returned if the 
+#' input population lacks the required.
+#' 
+#' @param pop a population
+#' 
+#' @examples 
+#' # Create a founder population
+#' founderPop = quickHaplo(2,1,2)
+#' 
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' 
+#' # Create a population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' # Get the pedigree
+#' getPed(pop)
+#' 
+#' # Returns NULL when a population lacks a pedigree
+#' getPed(founderPop)
+#' 
+#' @export
+getPed = function(pop){
+  if(.hasSlot(pop, "id") & 
+     .hasSlot(pop, "mother") & 
+     .hasSlot(pop, "father")){
+    df = data.frame(id = pop@id,
+                    mother = pop@mother,
+                    father = pop@father)
+    return(df)
+  }else{
+    return(NULL)
+  }
+}
+
+
 #' @title Selection intensity
 #' 
 #' @description 

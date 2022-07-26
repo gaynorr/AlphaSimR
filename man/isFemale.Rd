@@ -20,9 +20,9 @@ Test if individuals of a population are female or male
 }
 \section{Functions}{
 \itemize{
-\item \code{isMale}: Test if individuals of a population are female or male
-}}
+\item \code{isMale()}: Test if individuals of a population are female or male
 
+}}
 \examples{
 founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
 SP <- SimParam$new(founderGenomes)

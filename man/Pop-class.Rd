@@ -31,11 +31,11 @@ phenotypes, and pedigrees.
 \itemize{
 \item \code{[}: Extract Pop by index or id
 
-\item \code{c}: Combine multiple Pops
+\item \code{c(Pop)}: Combine multiple Pops
 
-\item \code{show}: Show population summary
+\item \code{show(Pop)}: Show population summary
+
 }}
-
 \section{Slots}{
 
 \describe{
