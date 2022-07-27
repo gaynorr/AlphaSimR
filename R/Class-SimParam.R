@@ -1,7 +1,7 @@
 #' @title Simulation parameters
-#' 
-#' @description 
-#' Container for global simulation parameters. Saving this object 
+#'
+#' @description
+#' Container for global simulation parameters. Saving this object
 #' as SP will allow it to be accessed by function defaults.
 #'
 #' @export
@@ -9,50 +9,50 @@ SimParam = R6Class(
   "SimParam",
   public = list(
     #### Public ----
-    
+
     #' @field nThreads number of threads used on platforms with OpenMP support
     nThreads = "integer",
-    
+
     #' @field snpChips list of SNP chips
     snpChips = "list",
-    
+
     #' @field invalidQtl list of segregating sites that aren't valid QTL
     invalidQtl = "list",
-    
+
     #' @field invalidSnp list of segregating sites that aren't valid SNP
     invalidSnp = "list",
-    
+
     #' @field founderPop founder population used for variance scaling
     founderPop = "MapPop",
-    
+
     #' @field finalizePop function applied to newly created populations.
     #' Currently does nothing and should only be changed by expert users.
     finalizePop = "function",
-    
-    #' @field allowEmptyPop if true, population arguments with nInd=0 will 
+
+    #' @field allowEmptyPop if true, population arguments with nInd=0 will
     #' return an empty population with a warning instead of an error.
     allowEmptyPop = "logical",
-    
-    #' @description Starts the process of building a new simulation 
-    #' by creating a new SimParam object and assigning a founder 
-    #' population to the class. It is recommended that you save the 
-    #' object with the name "SP", because subsequent functions will 
-    #' check your global environment for an object of this name if 
-    #' their simParam arguments are NULL. This allows you to call 
-    #' these functions without explicitly supplying a simParam 
+
+    #' @description Starts the process of building a new simulation
+    #' by creating a new SimParam object and assigning a founder
+    #' population to the class. It is recommended that you save the
+    #' object with the name "SP", because subsequent functions will
+    #' check your global environment for an object of this name if
+    #' their simParam arguments are NULL. This allows you to call
+    #' these functions without explicitly supplying a simParam
     #' argument with every call.
-    #' 
+    #'
     #' @param founderPop an object of \code{\link{MapPop-class}}
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     initialize = function(founderPop){
       stopifnot(is(founderPop, "MapPop"))
-      
+
       # Public items
       self$nThreads = getNumThreads()
       self$v = 2.6 # Kosambi
@@ -64,7 +64,7 @@ SimParam = R6Class(
       self$founderPop = founderPop
       self$finalizePop = function(pop, ...){return(pop)}
       self$allowEmptyPop = FALSE # Empty populations trigger an error
-      
+
       # Private items
       private$.restrSites = TRUE
       private$.traits = list()
@@ -83,30 +83,30 @@ SimParam = R6Class(
       private$.varA = numeric()
       private$.varG = numeric()
       private$.varE = numeric()
-      private$.version = packageDescription("AlphaSimR")$Version 
+      private$.version = packageDescription("AlphaSimR")$Version
       private$.lastHaplo = 0L
       private$.hasHap = logical()
       private$.hap = list()
       private$.isFounder = logical()
-      
+
       invisible(self)
     },
-    
-    #' @description Sets pedigree tracking for the simulation. 
-    #' By default pedigree tracking is turned off. When turned on, 
-    #' the pedigree of all individuals created will be tracked, 
-    #' except those created by \code{\link{hybridCross}}. Turning 
-    #' off pedigree tracking will turn off recombination tracking 
+
+    #' @description Sets pedigree tracking for the simulation.
+    #' By default pedigree tracking is turned off. When turned on,
+    #' the pedigree of all individuals created will be tracked,
+    #' except those created by \code{\link{hybridCross}}. Turning
+    #' off pedigree tracking will turn off recombination tracking
     #' if it is turned on.
-    #' 
+    #'
     #' @param isTrackPed should pedigree tracking be on.
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$setTrackPed(TRUE)
@@ -121,7 +121,7 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
+
     #' @description Sets recombination tracking for the simulation.
     #' By default recombination tracking is turned off. When turned
     #' on recombination tracking will also turn on pedigree tracking.
@@ -151,26 +151,26 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description Resets the internal lastId, the pedigree 
-    #' and recombination tracking (if in use) to the 
-    #' supplied lastId. Be careful using this function because 
+
+    #' @description Resets the internal lastId, the pedigree
+    #' and recombination tracking (if in use) to the
+    #' supplied lastId. Be careful using this function because
     #' it may introduce a bug if you use individuals from
     #' the deleted portion of the pedigree.
-    #' 
+    #'
     #' @param lastId last ID to include in pedigree
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
-    #' 
+    #'
     #' #Create population
     #' pop = newPop(founderPop, simParam=SP)
     #' pop@id # 1:10
-    #' 
+    #'
     #' #Create another population after reseting pedigree
     #' SP$resetPed()
     #' pop2 = newPop(founderPop, simParam=SP)
@@ -183,24 +183,24 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description Sets restrictions on which segregating sites 
+
+    #' @description Sets restrictions on which segregating sites
     #' can serve as SNP and/or QTL.
-    #' 
-    #' @param minQtlPerChr the minimum number of segSites for QTLs. 
-    #' Can be a single value or a vector values for each 
+    #'
+    #' @param minQtlPerChr the minimum number of segSites for QTLs.
+    #' Can be a single value or a vector values for each
     #' chromosome.
-    #' @param minSnpPerChr the minimum number of segSites for SNPs. 
-    #' Can be a single value or a vector values for each 
+    #' @param minSnpPerChr the minimum number of segSites for SNPs.
+    #' Can be a single value or a vector values for each
     #' chromosome.
     #' @param overlap should SNP and QTL sites be allowed to overlap.
-    #' @param minSnpFreq minimum allowable frequency for SNP loci. 
+    #' @param minSnpFreq minimum allowable frequency for SNP loci.
     #' No minimum SNP frequency is used if value is NULL.
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
@@ -219,7 +219,7 @@ SimParam = R6Class(
         }
         stopifnot(length(minSnpPerChr)==self$nChr,
                   length(minQtlPerChr)==self$nChr)
-        
+
         # Restrict SNPs and then QTL
         private$.restrSites = TRUE
         invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
@@ -227,25 +227,25 @@ SimParam = R6Class(
         invisible(self)
       }
     },
-    
-    #' @description Changes how sexes are determined in the simulation. 
-    #' The default sexes is "no", indicating all individuals are hermaphrodites. 
-    #' To add sexes to the simulation, run this function with "yes_sys" or 
-    #' "yes_rand". The value "yes_sys" will systematically assign 
-    #' sexes to newly created individuals as first male and then female. 
-    #' Populations with an odd number of individuals will have one more male than 
+
+    #' @description Changes how sexes are determined in the simulation.
+    #' The default sexes is "no", indicating all individuals are hermaphrodites.
+    #' To add sexes to the simulation, run this function with "yes_sys" or
+    #' "yes_rand". The value "yes_sys" will systematically assign
+    #' sexes to newly created individuals as first male and then female.
+    #' Populations with an odd number of individuals will have one more male than
     #' female. The value "yes_rand" will randomly assign a sex to each
     #' individual.
-    #' 
-    #' @param sexes acceptable value are "no", "yes_sys", or 
+    #'
+    #' @param sexes acceptable value are "no", "yes_sys", or
     #' "yes_rand"
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$setSexes("yes_sys")
@@ -265,22 +265,22 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Randomly assigns eligible SNPs to a SNP chip
-    #' 
-    #' @param nSnpPerChr number of SNPs per chromosome. 
+    #'
+    #' @param nSnpPerChr number of SNPs per chromosome.
     #' Can be a single value or nChr values.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
-    #' If NULL, no minimum frequency is used. 
-    #' @param refPop reference population for calculating SNP 
+    #' If NULL, no minimum frequency is used.
+    #' @param refPop reference population for calculating SNP
     #' frequency. If NULL, the founder population is used.
     #' @param name optional name for chip
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addSnpChip(10)
@@ -297,16 +297,16 @@ SimParam = R6Class(
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Randomly selects the number of snps in structure and then
     #' assigns them to chips based on structure
-    #' 
-    #' @param nSnpPerChr number of SNPs per chromosome. 
+    #'
+    #' @param nSnpPerChr number of SNPs per chromosome.
     #' Can be a single value or nChr values.
     #' @param structure a matrix.  Rows are snp chips, columns are chips.
     #' If value is true then that snp is on that chip.
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     addStructuredSnpChip = function(nSnpPerChr,structure,force=FALSE){
       if(!force){
@@ -322,7 +322,7 @@ SimParam = R6Class(
         sort(sample(self$potSnp[[x]],nSnpPerChr[x]))
       })
       lociLoc = do.call("c",lociLoc)
-      
+
       for (i in 1:nrow(structure)){
         snps = lociLoc[structure[i,]]
         start = 1
@@ -340,28 +340,28 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
+
     ### Traits (public) ----
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one or more additive traits. 
-    #' If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more additive traits.
+    #' If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated additive effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
     #' @param corA a matrix of correlations between additive effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
@@ -393,7 +393,7 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         trait@addEff = trait@addEff*scale
@@ -402,12 +402,12 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one or more traits with dominance. 
-    #' If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more traits with dominance.
+    #' If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
@@ -415,18 +415,18 @@ SimParam = R6Class(
     #' @param varDD variance of dominance degree
     #' @param corA a matrix of correlations between additive effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param useVarA tune according to additive genetic variance if true. If 
+    #' @param useVarA tune according to additive genetic variance if true. If
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #'  
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitAD(10, meanDD=0.5)
@@ -466,7 +466,7 @@ SimParam = R6Class(
                     domEff=domEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -484,12 +484,12 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one ore more additive GxE traits. 
-    #' If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one ore more additive GxE traits.
+    #' If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
@@ -499,14 +499,14 @@ SimParam = R6Class(
     #' @param corGxE a matrix of correlations between GxE effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitAG(10, varGxE=2)
@@ -547,18 +547,18 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         trait@addEff = trait@addEff*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
-        
+
         # GxE component
         traitG = new("TraitA",
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop, 
+        tmpG = calcGenParam(traitG, self$founderPop,
                             self$nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
@@ -575,16 +575,16 @@ SimParam = R6Class(
                       gxeInt = 1-mean(tmpG$gv*scaleG),
                       envVar = varEnv[i])
         }
-        
+
         private$.addTrait(trait,var[i],var[i])
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for a trait with dominance and GxE. 
-    #' 
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for a trait with dominance and GxE.
+    #'
+    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
@@ -598,14 +598,14 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #'  
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
@@ -655,7 +655,7 @@ SimParam = R6Class(
                     domEff=domEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -665,13 +665,13 @@ SimParam = R6Class(
         trait@addEff = trait@addEff*scale
         trait@domEff = trait@domEff*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
-        
+
         # GxE component
         traitG = new("TraitA",
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop, 
+        tmpG = calcGenParam(traitG, self$founderPop,
                             self$nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
@@ -688,7 +688,7 @@ SimParam = R6Class(
                       gxeInt = 1-mean(tmpG$gv*scaleG),
                       envVar = varEnv[i])
         }
-        
+
         if(useVarA){
           private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
         }else{
@@ -697,28 +697,28 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
-    #' traits. If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis
+    #' traits. If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated additive effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared 
+    #' @param relAA the relative value of additive-by-additive variance compared
     #' to additive variance in a diploid organism with allele frequency 0.5
     #' @param corA a matrix of correlations between additive effects
     #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If 
+    #' @param useVarA tune according to additive genetic variance if true. If
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
@@ -761,7 +761,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -779,34 +779,34 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one or more traits with dominance and 
-    #' epistasis. If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more traits with dominance and
+    #' epistasis. If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared 
+    #' @param relAA the relative value of additive-by-additive variance compared
     #' to additive variance in a diploid organism with allele frequency 0.5
     #' @param corA a matrix of correlations between additive effects
     #' @param corDD a matrix of correlations between dominance degrees
     #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If 
+    #' @param useVarA tune according to additive genetic variance if true. If
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #'  
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADE(10)
@@ -859,7 +859,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -878,34 +878,34 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for one or more additive and epistasis 
-    #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more additive and epistasis
+    #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic
     #' with correlated effects.
-    #' 
+    #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared 
+    #' @param relAA the relative value of additive-by-additive variance compared
     #' to additive variance in a diploid organism with allele frequency 0.5
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param corA a matrix of correlations between additive effects
     #' @param corAA a matrix of correlations between additive-by-additive effects
     #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true. If 
+    #' @param useVarA tune according to additive genetic variance if true. If
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitAEG(10, varGxE=2)
@@ -958,7 +958,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -968,13 +968,13 @@ SimParam = R6Class(
         trait@addEff = trait@addEff*scale
         trait@epiEff[,3] = trait@epiEff[,3]*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
-        
+
         # GxE component
         traitG = new("TraitA",
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop, 
+        tmpG = calcGenParam(traitG, self$founderPop,
                             self$nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
@@ -991,7 +991,7 @@ SimParam = R6Class(
                       gxeInt = 1-mean(tmpG$gv*scaleG),
                       envVar = varEnv[i])
         }
-        
+
         if(useVarA){
           private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
         }else{
@@ -1000,12 +1000,12 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Randomly assigns eligible QTLs for a trait with dominance, 
-    #' epistasis and GxE. 
-    #' 
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for a trait with dominance,
+    #' epistasis and GxE.
+    #'
+    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
     #' @param mean a vector of desired mean genetic values for one or more traits
     #' @param var a vector of desired genetic variances for one or more traits
@@ -1013,7 +1013,7 @@ SimParam = R6Class(
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared 
+    #' @param relAA the relative value of additive-by-additive variance compared
     #' to additive variance in a diploid organism with allele frequency 0.5
     #' @param corA a matrix of correlations between additive effects
     #' @param corDD a matrix of correlations between dominance degrees
@@ -1022,14 +1022,14 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
-    #'  
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
@@ -1091,7 +1091,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop, 
+        tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -1102,13 +1102,13 @@ SimParam = R6Class(
         trait@domEff = trait@domEff*scale
         trait@epiEff[,3] = trait@epiEff[,3]*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
-        
+
         # GxE component
         traitG = new("TraitA",
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop, 
+        tmpG = calcGenParam(traitG, self$founderPop,
                             self$nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
@@ -1125,7 +1125,7 @@ SimParam = R6Class(
                       gxeInt = 1-mean(tmpG$gv*scaleG),
                       envVar = varEnv[i])
         }
-        
+
         if(useVarA){
           private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
         }else{
@@ -1134,59 +1134,59 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Manually add a new trait to the simulation. Trait must 
-    #' be formatted as a \code{\link{LociMap-class}}. If the 
+
+    #' @description
+    #' Manually add a new trait to the simulation. Trait must
+    #' be formatted as a \code{\link{LociMap-class}}. If the
     #' trait is not already formatted, consider using importTrait.
-    #' 
-    #' @param lociMap a new object descended from 
+    #'
+    #' @param lociMap a new object descended from
     #' \code{\link{LociMap-class}}
     #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     manAddTrait = function(lociMap,varE=NA_real_,force=FALSE){
       if(!force){
         private$.isRunning()
       }
       stopifnot(is(lociMap,"LociMap"))
-      tmp = calcGenParam(lociMap, self$founderPop, 
+      tmp = calcGenParam(lociMap, self$founderPop,
                          self$nThreads)
       varA = popVar(tmp$bv)[1]
       varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
       invisible(self)
     },
-    
-    #' @description 
-    #' Manually add a new trait(s) to the simulation. Unlike the 
-    #' manAddTrait function, this function does not require 
-    #' formatting the trait as a \code{\link{LociMap-class}}. 
-    #' The formatting is performed automatically for the user, 
-    #' with more user friendly data.frames or matrices taken as 
+
+    #' @description
+    #' Manually add a new trait(s) to the simulation. Unlike the
+    #' manAddTrait function, this function does not require
+    #' formatting the trait as a \code{\link{LociMap-class}}.
+    #' The formatting is performed automatically for the user,
+    #' with more user friendly data.frames or matrices taken as
     #' inputs. This function only works for A and AD trait types.
-    #' 
+    #'
     #' @param markerNames a vector of names for the QTL
-    #' @param addEff a matrix of additive effects (nLoci x nTraits). 
-    #' Alternatively, a vector of length nLoci can be supplied for 
+    #' @param addEff a matrix of additive effects (nLoci x nTraits).
+    #' Alternatively, a vector of length nLoci can be supplied for
     #' a single trait.
     #' @param domEff optional dominance effects for each locus
     #' @param intercept optional intercepts for each trait
     #' @param name optional name(s) for the trait(s)
     #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
-    importTrait = function(markerNames, 
-                           addEff, 
+    importTrait = function(markerNames,
+                           addEff,
                            domEff=NULL,
-                           intercept=NULL, 
-                           name=NULL, 
+                           intercept=NULL,
+                           name=NULL,
                            varE=NULL,
                            force=FALSE){
       if(!force){
         private$.isRunning()
       }
-      
+
       # Check addEff and domEff inputs
       addEff = as.matrix(addEff)
       stopifnot(length(markerNames)==nrow(addEff))
@@ -1199,7 +1199,7 @@ SimParam = R6Class(
         stopifnot(nrow(addEff)==nrow(domEff),
                   ncol(addEff)==nrow(domEff))
       }
-      
+
       # Prepare the intercept
       if(is.null(intercept)){
         intercept = rep(0, nTraits)
@@ -1207,7 +1207,7 @@ SimParam = R6Class(
         intercept = as.numeric(intercept)
         stopifnot(length(intercept)==nTraits)
       }
-      
+
       # Prepare varE
       if(!is.null(varE)){
         varE = as.numeric(varE)
@@ -1215,18 +1215,18 @@ SimParam = R6Class(
       }else{
         varE = rep(NA_real_, nTraits)
       }
-      
+
       # Prepare trait names
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }else{
         stopifnot(length(name)==nTraits)
       }
-      
+
       # Extract genetic map and check if marker names are on the map
       genMapMarkerNames = unlist(lapply(private$.femaleMap, names))
       stopifnot(all(markerNames%in%genMapMarkerNames))
-      
+
       # Create trait variables
       lociPerChr = integer(self$nChr)
       lociLoc = vector("list", self$nChr)
@@ -1234,18 +1234,18 @@ SimParam = R6Class(
       for(i in 1:nTraits){
         addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
       }
-      
+
       # Loop through chromosomes
       for(i in 1:self$nChr){
         # Working on trait 1
         # Initialize variables
         addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
         lociLoc[[i]] = integer()
-        
+
         # Find matches if they exist
         take = match(names(private$.femaleMap[[i]]), markerNames)
         lociPerChr[i] = length(na.omit(take))
-        
+
         if(lociPerChr[i]>0L){
           lociLoc[[i]] = which(!is.na(take))
           addEffList[[1]][[i]] = addEff[na.omit(take),1]
@@ -1253,7 +1253,7 @@ SimParam = R6Class(
             domEffList[[1]][[i]] = domEff[na.omit(take),1]
           }
         }
-        
+
         # Work on additional traits?
         if(nTraits>1){
           for(j in 2:nTraits){
@@ -1267,16 +1267,16 @@ SimParam = R6Class(
           }
         }
       }
-      
+
       lociLoc = unlist(lociLoc)
       nLoci = sum(lociPerChr)
-      
+
       # Create Trait(s)
       for(i in 1:nTraits){
         addEff = unlist(addEffList[[i]])
         if(useDom){
           domEff = unlist(domEffList[[i]])
-          trait = new("TraitAD", 
+          trait = new("TraitAD",
                       addEff=addEff,
                       domEff=domEff,
                       intercept=intercept[i],
@@ -1285,7 +1285,7 @@ SimParam = R6Class(
                       lociLoc=lociLoc,
                       name=name[i])
         }else{
-          trait = new("TraitA", 
+          trait = new("TraitA",
                       addEff=addEff,
                       intercept=intercept[i],
                       nLoci=nLoci,
@@ -1293,22 +1293,22 @@ SimParam = R6Class(
                       lociLoc=lociLoc,
                       name=name[i])
         }
-        
+
         # Add trait to simParam
         self$manAddTrait(lociMap=trait, varE=varE[i], force=force)
       }
-      
+
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Switch a trait in the simulation.
-    #' 
+    #'
     #' @param traitPos an integer indicate which trait to switch
-    #' @param lociMap a new object descended from 
+    #' @param lociMap a new object descended from
     #' \code{\link{LociMap-class}}
     #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE){
       if(!force){
@@ -1317,7 +1317,7 @@ SimParam = R6Class(
       stopifnot(is(lociMap,"LociMap"),
                 traitPos<=self$nTraits,
                 traitPos>0)
-      tmp = calcGenParam(lociMap, self$founderPop, 
+      tmp = calcGenParam(lociMap, self$founderPop,
                          self$nThreads)
       private$.traits[[traitPos]] = lociMap
       private$.varA[traitPos] = popVar(tmp$bv)[1]
@@ -1331,12 +1331,12 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
+
     #' @description
     #' Remove a trait from the simulation
-    #' 
+    #'
     #' @param traits an integer vector indicating which traits to remove
-    #' @param force should the check for a running simulation be 
+    #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     removeTrait = function(traits,force=FALSE){
       if(!force){
@@ -1353,18 +1353,18 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description Defines a default value for error 
+
+    #' @description Defines a default value for error
     #' variances in the simulation.
-    #' 
+    #'
     #' @param h2 a vector of desired narrow-sense heritabilities
     #' @param H2 a vector of desired broad-sense heritabilities
     #' @param varE a vector or matrix of error variances
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
@@ -1404,17 +1404,17 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description Defines a correlation structure for default 
-    #' error variances. You must call \code{setVarE} first to define 
+
+    #' @description Defines a correlation structure for default
+    #' error variances. You must call \code{setVarE} first to define
     #' the default error variances.
-    #' 
+    #'
     #' @param corE a correlation matrix for the error variances
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
@@ -1437,11 +1437,11 @@ SimParam = R6Class(
       private$.varE = varE
       invisible(self)
     },
-    
+
     #' @description
-    #' Linearly scales all traits to achieve desired 
-    #' values of means and variances in the founder population. 
-    #' 
+    #' Linearly scales all traits to achieve desired
+    #' values of means and variances in the founder population.
+    #'
     #' @param mean a vector of new trait means
     #' @param var a vector of new trait variances
     #' @param varEnv a vector of new environmental variances
@@ -1449,28 +1449,28 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #'
     #' @note
-    #' By default the founder population is the population used to 
-    #' initalize the SimParam object. This population can be changed by 
-    #' replacing the population in the founderPop slot. You must run 
-    #' \code{\link{resetPop}} on any existing populations to obtain the 
-    #' new trait values. 
-    #' 
-    #' @examples 
+    #' By default the founder population is the population used to
+    #' initalize the SimParam object. This population can be changed by
+    #' replacing the population in the founderPop slot. You must run
+    #' \code{\link{resetPop}} on any existing populations to obtain the
+    #' new trait values.
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
-    #' 
+    #'
     #' #Create population
     #' pop = newPop(founderPop, simParam=SP)
     #' meanG(pop)
-    #' 
+    #'
     #' #Change mean to 1
     #' SP$rescaleTraits(mean=1)
     #' #Run resetPop for change to take effect
-    #' pop = resetPop(pop, simParam=SP) 
+    #' pop = resetPop(pop, simParam=SP)
     #' meanG(pop)
     rescaleTraits = function(mean=0,var=1,varEnv=0,
                              varGxE=1e-6,useVarA=TRUE){
@@ -1482,7 +1482,7 @@ SimParam = R6Class(
         trait = private$.traits[[i]]
         trait@intercept = 0
         tmp = calcGenParam(trait,
-                           self$founderPop, 
+                           self$founderPop,
                            self$nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
@@ -1497,7 +1497,7 @@ SimParam = R6Class(
           trait@epiEff[,3] = trait@epiEff[,3]*scale
         }
         trait@intercept = mean[i]-mean(tmp$gv*scale)
-        
+
         if(.hasSlot(trait,"gxeEff")){
           traitG = new("TraitA",
                        nLoci = trait@nLoci,
@@ -1506,9 +1506,9 @@ SimParam = R6Class(
                        addEff = trait@gxeEff,
                        intercept = 0)
           tmpG = calcGenParam(traitG,
-                              self$founderPop, 
+                              self$founderPop,
                               self$nThreads)
-          
+
           if(varEnv[i]==0){
             scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
             trait@gxeEff = trait@gxeEff*scaleG
@@ -1527,36 +1527,36 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
+
     #### Genetic map (public) ----
-    
-    #' @field v the crossover interference parameter for a gamma model of 
-    #' recombination. A value of 1 indicates no crossover interference 
-    #' (e.g. Haldane mapping function). A value of 2.6 approximates the 
-    #' degree of crossover interference implied by the Kosambi mapping 
+
+    #' @field v the crossover interference parameter for a gamma model of
+    #' recombination. A value of 1 indicates no crossover interference
+    #' (e.g. Haldane mapping function). A value of 2.6 approximates the
+    #' degree of crossover interference implied by the Kosambi mapping
     #' function. (default is 2.6)
     v = "numeric",
-    
+
     #' @field p the proportion of crossovers coming from a non-interfering
     #' pathway. (default is 0)
     p = "numeric",
-    
-    #' @field quadProb the probability of quadrivalent pairing in an 
+
+    #' @field quadProb the probability of quadrivalent pairing in an
     #' autopolyploid. (default is 0)
     quadProb = "numeric",
-    
-    #' @description Set the relative recombination rates between males 
-    #' and females. This allows for sex-specific recombination rates, 
+
+    #' @description Set the relative recombination rates between males
+    #' and females. This allows for sex-specific recombination rates,
     #' under the assumption of equivalent recombination landscapes.
-    #' 
-    #' @param femaleRatio relative ratio of recombination in females compared to 
-    #' males. A value of 2 indicate twice as much recombination in females. The 
+    #'
+    #' @param femaleRatio relative ratio of recombination in females compared to
+    #' males. A value of 2 indicate twice as much recombination in females. The
     #' value must be greater than 0. (default is 1)
-    #' 
-    #' @examples 
+    #'
+    #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$setRecombRatio(2) #Twice as much recombination in females
@@ -1578,15 +1578,15 @@ SimParam = R6Class(
       private$.maleCentromere = maSc*private$.maleCentromere
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Replaces existing genetic map.
-    #' 
-    #' @param genMap a list of length nChr containing 
-    #' numeric vectors for the position of each segregating 
+    #'
+    #' @param genMap a list of length nChr containing
+    #' numeric vectors for the position of each segregating
     #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere 
-    #' positions. If NULL, the centromere are assumed to 
+    #' @param centromere a numeric vector of centromere
+    #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchGenMap = function(genMap, centromere=NULL){
       genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
@@ -1604,15 +1604,15 @@ SimParam = R6Class(
       private$.maleCentromere = NULL
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Replaces existing female genetic map.
-    #' 
-    #' @param genMap a list of length nChr containing 
-    #' numeric vectors for the position of each segregating 
+    #'
+    #' @param genMap a list of length nChr containing
+    #' numeric vectors for the position of each segregating
     #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere 
-    #' positions. If NULL, the centromere are assumed to 
+    #' @param centromere a numeric vector of centromere
+    #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchFemaleMap = function(genMap, centromere=NULL){
       genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
@@ -1635,15 +1635,15 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
+
+    #' @description
     #' Replaces existing male genetic map.
-    #' 
-    #' @param genMap a list of length nChr containing 
-    #' numeric vectors for the position of each segregating 
+    #'
+    #' @param genMap a list of length nChr containing
+    #' numeric vectors for the position of each segregating
     #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere 
-    #' positions. If NULL, the centromere are assumed to 
+    #' @param centromere a numeric vector of centromere
+    #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchMaleMap = function(genMap, centromere=NULL){
       genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
@@ -1659,11 +1659,11 @@ SimParam = R6Class(
       private$.maleCentromere = centromere
       invisible(self)
     },
-    
+
     #### Internal (public) ----
-    
+
     #' @description For internal use only.
-    #' 
+    #'
     #' @param lastId ID of last individual
     #' @param id the name of each individual
     #' @param mother vector of mother iids
@@ -1710,21 +1710,21 @@ SimParam = R6Class(
       }
       private$.pedigree = rbind(private$.pedigree, tmp)
       private$.lastId = lastId
-      
+
       invisible(self)
     },
-    
+
     #' @description For internal use only.
-    #' 
+    #'
     #' @param iid internal ID
     ibdHaplo = function(iid){
       if(all(private$.hasHap[iid])){
         # Return relevant haplotypes
         return(private$.hap[as.character(iid)])
       }
-      
+
       ## Fill in missing haplotypes
-      
+
       # Determine unique iid for needed individuals without hap data
       uid = list()
       i = 1L
@@ -1736,40 +1736,40 @@ SimParam = R6Class(
       uid = unique(unlist(uid))
       uid = sort(uid)[-1] # First one is always zero
       uid = uid[!private$.hasHap[uid]]
-      
+
       # Split uid by founder and non-founder
       fuid = uid[private$.isFounder[uid]]
       nfuid = uid[!private$.isFounder[uid]]
-      
+
       # Set hap for founders
       if(length(fuid)>0){
         nChr = length(private$.femaleMap)
-        newHap = getFounderIbd(founder=private$.recHist[fuid], 
+        newHap = getFounderIbd(founder=private$.recHist[fuid],
                                nChr=nChr)
         names(newHap) = as.character(fuid)
         private$.hap = c(private$.hap, newHap)
         private$.hasHap[fuid] = TRUE
       }
-      
+
       # Set hap for non-founders
       if(length(nfuid)>0){
         for(id in nfuid){
           mother = as.character(private$.pedigree[id,1])
           father = as.character(private$.pedigree[id,2])
-          private$.hap[[as.character(id)]] = 
+          private$.hap[[as.character(id)]] =
             getNonFounderIbd(recHist=private$.recHist[[id ]],
                              mother=private$.hap[[mother]],
                              father=private$.hap[[father]])
           private$.hasHap[id] = TRUE
         }
       }
-      
+
       # Return relevant haplotypes
       return(private$.hap[as.character(iid)])
     },
-    
+
     #' @description For internal use only.
-    #' 
+    #'
     #' @param lastId last ID assigned
     updateLastId = function(lastId){
       lastId = as.integer(lastId)
@@ -1777,9 +1777,9 @@ SimParam = R6Class(
       private$.lastId = lastId
       invisible(self)
     },
-    
+
     #' @description For internal use only.
-    #' 
+    #'
     #' @param lastId ID of last individual
     #' @param id the name of each individual
     #' @param mother vector of mother iids
@@ -1801,11 +1801,11 @@ SimParam = R6Class(
       private$.lastId = lastId
       invisible(self)
     }
-    
+
   ),
   private = list(
     #### Private ----
-    
+
     .restrSites="logical",
     .traits="list",
     .segSites="integer",
@@ -1828,7 +1828,7 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
-    
+
     .isRunning = function(){
       if(private$.lastId==0L){
         invisible(self)
@@ -1836,7 +1836,7 @@ SimParam = R6Class(
         stop("lastId doesn't equal 0, you must run resetPed to proceed")
       }
     },
-    
+
     .addTrait = function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
       stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
                 length(varA)==1,length(varG)==1,length(varE)==1)
@@ -1846,17 +1846,17 @@ SimParam = R6Class(
       private$.varE = c(private$.varE,varE)
       invisible(self)
     },
-    
+
     .pickLoci = function(nSitesPerChr, QTL=TRUE, minFreq=NULL, refPop=NULL){
       stopifnot(length(nSitesPerChr)==self$nChr)
-      
+
       # Get invalid sites
       if(QTL){
         restr = self$invalidQtl
       }else{
         restr = self$invalidSnp
       }
-      
+
       # Identify potential sites
       pot = vector('list', self$nChr)
       for(i in 1:self$nChr){
@@ -1866,7 +1866,7 @@ SimParam = R6Class(
           pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
         }
       }
-      
+
       # Filter for minimum frequency
       if(!is.null(minFreq)){
         if(is.null(refPop)){
@@ -1880,7 +1880,7 @@ SimParam = R6Class(
         }
       }
       stopifnot(sapply(pot,length)>=nSitesPerChr)
-      
+
       # Sample sites
       lociLoc = lapply(1:self$nChr,function(x){
         if(nSitesPerChr[x]==0){
@@ -1902,7 +1902,7 @@ SimParam = R6Class(
           return(tmp)
         }
       })
-      
+
       # Create and return a LociMap
       lociLoc = do.call("c",lociLoc)
       loci = new("LociMap",
@@ -1911,11 +1911,11 @@ SimParam = R6Class(
                  lociLoc=as.integer(lociLoc))
       return(loci)
     }
-    
+
   ),
   active = list(
     #### Active ----
-    
+
     #' @field traitNames vector of trait names
     traitNames=function(value){
       if(missing(value)){
@@ -1933,7 +1933,7 @@ SimParam = R6Class(
         }
       }
     },
-    
+
     #' @field snpChipNames vector of chip names
     snpChipNames=function(value){
       if(missing(value)){
@@ -1951,7 +1951,7 @@ SimParam = R6Class(
         }
       }
     },
-    
+
     #' @field traits list of traits
     traits=function(value){
       if(missing(value)){
@@ -1960,7 +1960,7 @@ SimParam = R6Class(
         stop("`$traits` is read only, see manAddTrait",call.=FALSE)
       }
     },
-    
+
     #' @field nChr number of chromosomes
     nChr=function(value){
       if(missing(value)){
@@ -1969,7 +1969,7 @@ SimParam = R6Class(
         stop("`$nChr` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field nTraits number of traits
     nTraits=function(value){
       if(missing(value)){
@@ -1978,7 +1978,7 @@ SimParam = R6Class(
         stop("`$nTraits` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field nSnpChips number of SNP chips
     nSnpChips=function(value){
       if(missing(value)){
@@ -1987,7 +1987,7 @@ SimParam = R6Class(
         stop("`$nSnpChips` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field segSites segregating sites per chromosome
     segSites=function(value){
       if(missing(value)){
@@ -1996,7 +1996,7 @@ SimParam = R6Class(
         stop("`$segSites` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field sexes sexes used for mating
     sexes=function(value){
       if(missing(value)){
@@ -2005,8 +2005,8 @@ SimParam = R6Class(
         stop("`$sexes` is read only",call.=FALSE)
       }
     },
-    
-    #' @field sepMap are there seperate genetic maps for 
+
+    #' @field sepMap are there seperate genetic maps for
     #' males and females
     sepMap=function(value){
       if(missing(value)){
@@ -2015,7 +2015,7 @@ SimParam = R6Class(
         stop("`$sepMap` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field genMap "matrix" of chromosome genetic maps
     genMap=function(value){
       if(missing(value)){
@@ -2033,8 +2033,8 @@ SimParam = R6Class(
         stop("`$genMap` is read only",call.=FALSE)
       }
     },
-    
-    #' @field femaleMap "matrix" of chromosome genetic maps for 
+
+    #' @field femaleMap "matrix" of chromosome genetic maps for
     #' females
     femaleMap=function(value){
       if(missing(value)){
@@ -2043,8 +2043,8 @@ SimParam = R6Class(
         stop("`$femaleMap` is read only",call.=FALSE)
       }
     },
-    
-    #' @field maleMap "matrix" of chromosome genetic maps for 
+
+    #' @field maleMap "matrix" of chromosome genetic maps for
     #' males
     maleMap=function(value){
       if(missing(value)){
@@ -2057,7 +2057,7 @@ SimParam = R6Class(
         stop("`$maleMap` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field centromere position of centromeres genetic map
     centromere=function(value){
       if(missing(value)){
@@ -2070,8 +2070,8 @@ SimParam = R6Class(
         stop("`$centromere` is read only",call.=FALSE)
       }
     },
-    
-    #' @field femaleCentromere position of centromeres on female 
+
+    #' @field femaleCentromere position of centromeres on female
     #' genetic map
     femaleCentromere=function(value){
       if(missing(value)){
@@ -2080,8 +2080,8 @@ SimParam = R6Class(
         stop("`$femaleCentromere` is read only",call.=FALSE)
       }
     },
-    
-    #' @field maleCentromere position of centromeres on male 
+
+    #' @field maleCentromere position of centromeres on male
     #' genetic map
     maleCentromere=function(value){
       if(missing(value)){
@@ -2094,7 +2094,7 @@ SimParam = R6Class(
         stop("`$maleCentromere` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field lastId last ID number assigned
     lastId=function(value){
       if(missing(value)){
@@ -2103,7 +2103,7 @@ SimParam = R6Class(
         stop("`$lastId` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field isTrackPed is pedigree being tracked
     isTrackPed=function(value){
       if(missing(value)){
@@ -2112,7 +2112,7 @@ SimParam = R6Class(
         stop("`$isTrackPed` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field pedigree pedigree matrix for all individuals
     pedigree=function(value){
       if(missing(value)){
@@ -2121,7 +2121,7 @@ SimParam = R6Class(
         stop("`$pedigree` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field isTrackRec is recombination being tracked
     isTrackRec=function(value){
       if(missing(value)){
@@ -2130,7 +2130,7 @@ SimParam = R6Class(
         stop("`$isTrackRec` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field recHist list of historic recombination events
     recHist=function(value){
       if(missing(value)){
@@ -2139,7 +2139,7 @@ SimParam = R6Class(
         stop("`$recHist` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field haplotypes list of computed IBD haplotypes
     haplotypes=function(value){
       if(missing(value)){
@@ -2148,7 +2148,7 @@ SimParam = R6Class(
         stop("`$haplotypes` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field varA additive genetic variance in founderPop
     varA=function(value){
       if(missing(value)){
@@ -2157,7 +2157,7 @@ SimParam = R6Class(
         stop("`$varA` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field varG total genetic variance in founderPop
     varG=function(value){
       if(missing(value)){
@@ -2166,7 +2166,7 @@ SimParam = R6Class(
         stop("`$varG` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field varE default error variance
     varE=function(value){
       if(missing(value)){
@@ -2175,7 +2175,7 @@ SimParam = R6Class(
         stop("`$varE` is read only",call.=FALSE)
       }
     },
-    
+
     #' @field version the version of AlphaSimR used to generate this object
     version=function(value){
       if(missing(value)){
@@ -2223,7 +2223,8 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   return(epiEff)
 }
 
-# Test if object is of a SimParam class
+#' @describeIn SimParam Test if object is of a SimParam class
+#' @export
 isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)

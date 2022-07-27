@@ -5,11 +5,14 @@
 \alias{MapPop-class}
 \alias{[,MapPop-method}
 \alias{c,MapPop-method}
+\alias{isMapPop}
 \title{Raw population with genetic map}
 \usage{
 \S4method{[}{MapPop}(x, i)
 
 \S4method{c}{MapPop}(x, ...)
+
+isMapPop(x)
 }
 \arguments{
 \item{x}{a 'MapPop' object}
@@ -19,18 +22,23 @@
 \item{...}{additional 'MapPop' objects}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add a genetic map. 
+Extends \code{\link{RawPop-class}} to add a genetic map.
 This is the first object created in a simulation. It is used
-for creating initial populations and setting traits in the 
+for creating initial populations and setting traits in the
 \code{\link{SimParam}}.
 }
 \section{Methods (by generic)}{
 \itemize{
 \item \code{[}: Extract MapPop by index
 
-\item \code{c}: Combine multiple MapPops
-}}
+\item \code{c(MapPop)}: Combine multiple MapPops
 
+}}
+\section{Functions}{
+\itemize{
+\item \code{isMapPop()}: Test if object is of a MapPop class
+
+}}
 \section{Slots}{
 
 \describe{

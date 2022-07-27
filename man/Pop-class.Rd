@@ -24,18 +24,18 @@
 \item{object}{a 'Pop' object}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add sex, genetic values, 
+Extends \code{\link{RawPop-class}} to add sex, genetic values,
 phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{
 \itemize{
 \item \code{[}: Extract Pop by index or id
 
-\item \code{c}: Combine multiple Pops
+\item \code{c(Pop)}: Combine multiple Pops
 
-\item \code{show}: Show population summary
+\item \code{show(Pop)}: Show population summary
+
 }}
-
 \section{Slots}{
 
 \describe{
@@ -58,20 +58,20 @@ gv reflects gv when p=0.5. Dimensions are nInd by nTraits.}
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are
 nInd by nTraits.}
 
-\item{\code{ebv}}{matrix of estimated breeding values. Dimensions 
+\item{\code{ebv}}{matrix of estimated breeding values. Dimensions
 are nInd rows and a variable number of columns.}
 
 \item{\code{gxe}}{list containing GxE slopes for GxE traits}
 
-\item{\code{fixEff}}{a fixed effect relating to the phenotype. 
+\item{\code{fixEff}}{a fixed effect relating to the phenotype.
 Used by genomic selection models but otherwise ignored.}
 
-\item{\code{reps}}{the number of replications used to measure the 
+\item{\code{reps}}{the number of replications used to measure the
 phenotype. Used by genomic selection models, but otherwise ignored.}
 
-\item{\code{misc}}{a list whose elements correspond to individuals in the 
-population. This list is normally empty and exists solely as an 
-open slot available for uses to store extra information about 
+\item{\code{misc}}{a list whose elements correspond to individuals in the
+population. This list is normally empty and exists solely as an
+open slot available for uses to store extra information about
 individuals.}
 }}
 
