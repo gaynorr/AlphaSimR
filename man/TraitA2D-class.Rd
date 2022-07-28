@@ -5,7 +5,7 @@
 \alias{TraitA2D-class}
 \title{Sex specific additive and dominance trait}
 \description{
-Extends \code{\link{TraitA2-class}} 
+Extends \code{\link{TraitA2-class}}
 to add dominance
 }
 \section{Slots}{

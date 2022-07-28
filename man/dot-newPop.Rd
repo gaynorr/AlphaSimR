@@ -42,13 +42,13 @@
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments passed to the finalizePop 
+\item{...}{additional arguments passed to the finalizePop
 function in simParam}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Creates a new \code{\link{Pop-class}} from an object of 
+Creates a new \code{\link{Pop-class}} from an object of
 of the Pop superclass.
 }

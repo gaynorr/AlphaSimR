@@ -41,7 +41,6 @@ It is designed to behave like a list of populations.
 \itemize{
 \item \code{isMegaPop()}: Test if object is of a MegaPop class
 
-
 }}
 \section{Slots}{
 

@@ -5,7 +5,7 @@
 \alias{TraitAEG-class}
 \title{Additive, epistasis and GxE trait}
 \description{
-Extends \code{\link{TraitAE-class}} 
+Extends \code{\link{TraitAE-class}}
 to add GxE effects
 }
 \section{Slots}{

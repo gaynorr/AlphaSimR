@@ -5,7 +5,7 @@
 \alias{TraitADEG-class}
 \title{Additive, dominance, epistasis, and GxE trait}
 \description{
-Extends \code{\link{TraitADE-class}} 
+Extends \code{\link{TraitADE-class}}
 to add GxE effects
 }
 \section{Slots}{
