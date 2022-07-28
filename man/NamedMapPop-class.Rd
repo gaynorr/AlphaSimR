@@ -35,6 +35,7 @@ Extends \code{\link{MapPop-class}} to add id, mother and father.
 \itemize{
 \item \code{isNamedMapPop()}: Test if object is a NamedMapPop class
 
+
 }}
 \section{Slots}{
 

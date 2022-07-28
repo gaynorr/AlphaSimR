@@ -36,6 +36,7 @@ Memory is saved by not storing genotypic data.
 \itemize{
 \item \code{isHybridPop()}: Test if object is of a HybridPop class
 
+
 }}
 \section{Slots}{
 

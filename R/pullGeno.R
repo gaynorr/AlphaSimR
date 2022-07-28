@@ -47,6 +47,76 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
   return(lociNames)
 }
 
+#' @title Get genetic map
+#' 
+#' @description Retrieves the genetic map for all loci.
+#' 
+#' @param object where to retrieve the genetic map. 
+#' Can be an object of \code{\link{SimParam}} or 
+#' \code{\link{MapPop-class}}. If NULL, the function will 
+#' look for a SimParam object called "SP" in your 
+#' global environment.
+#' @param sex determines which sex specific map 
+#' is returned. Options are "A" for average map, "F" 
+#' for female map, and "M" for male map. All options are 
+#' equivalent if not using sex specific maps or using 
+#' pulling from a MapPop.
+#'
+#' @return Returns a data.frame with:
+#' \describe{
+#'   \item{id}{Unique identifier for locus}
+#'   \item{chr}{Chromosome containing the locus}
+#'   \item{pos}{Genetic map position}
+#' }
+#' 
+#' @examples 
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' 
+#' #Set simulation parameters
+#' getGenMap(founderPop)
+#' 
+#' @export
+getGenMap = function(object=NULL, sex="A"){
+  
+  if(is.null(object)){
+    object = get("SP",envir=.GlobalEnv)
+  }
+  
+  if(is(object, "SimParam")){
+    # Extract the sex specific map
+    if(sex=="A"){
+      genMap = object$genMap
+    }else if(sex=="F"){
+      genMap = object$femaleMap
+    }else if(sex=="M"){
+      genMap = object$maleMap
+    }else{
+      stop(paste("sex =",sex,"is not a valid option"))
+    }
+  }else if(is(object, "MapPop")){
+    # No sex specific maps
+    genMap = object@genMap
+  }else{
+    stop("object is class ",
+         class(object), 
+         ", which is not a valid source for the genetic map")
+  }
+  
+  # Loci names
+  id = unlist(lapply(genMap, names))
+  
+  # Chromosome names
+  nLoci = sapply(genMap, length)
+  chr = rep(names(genMap), nLoci)
+  
+  # Map positions
+  pos = do.call("c", genMap)
+  
+  # Output data.frame
+  return(data.frame(id, chr, pos))
+}
+
 #' @title Get SNP genetic map
 #' 
 #' @description Retrieves the genetic map for a 

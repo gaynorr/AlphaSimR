@@ -38,6 +38,7 @@ for creating initial populations and setting traits in the
 \itemize{
 \item \code{isMapPop()}: Test if object is of a MapPop class
 
+
 }}
 \section{Slots}{
 
