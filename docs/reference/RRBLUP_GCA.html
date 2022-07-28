@@ -34,6 +34,9 @@ single cross hybrids."><!-- mathjax --><script src="https://cdnjs.cloudflare.com
     <a class="dropdown-item" href="../articles/traits.html">Traits in AlphaSimR</a>
   </div>
 </li>
+<li class="nav-item">
+  <a class="nav-link" href="../news/index.html">Changelog</a>
+</li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
 
@@ -139,13 +142,12 @@ traits</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Run GS model and set EBV</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">=</span> <span class="fu">RRBLUP_GCA</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Reached maxIter without converging</span>
 <span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="setEBV.html">setEBV</a></span><span class="op">(</span><span class="va">pop</span>, <span class="va">ans</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Evaluate accuracy</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="gv.html">gv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span>, <span class="fu"><a href="ebv.html">ebv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        est_GV_Trait1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1     0.9405672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1     0.7981109</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
