@@ -3,19 +3,10 @@
 \docType{class}
 \name{LociMap-class}
 \alias{LociMap-class}
-\alias{isLociMap}
 \title{Loci metadata}
-\usage{
-isLociMap(x)
-}
 \description{
 used for both SNPs and QTLs
 }
-\section{Functions}{
-\itemize{
-\item \code{isLociMap()}: Test if object is of a LociMap class
-
-}}
 \section{Slots}{
 
 \describe{

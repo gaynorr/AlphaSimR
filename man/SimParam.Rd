@@ -2,20 +2,11 @@
 % Please edit documentation in R/Class-SimParam.R
 \name{SimParam}
 \alias{SimParam}
-\alias{isSimParam}
 \title{Simulation parameters}
-\usage{
-isSimParam(x)
-}
 \description{
 Container for global simulation parameters. Saving this object
 as SP will allow it to be accessed by function defaults.
 }
-\section{Functions}{
-\itemize{
-\item \code{isSimParam()}: Test if object is of a SimParam class
-
-}}
 \note{
 By default the founder population is the population used to
 initalize the SimParam object. This population can be changed by
