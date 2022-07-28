@@ -6,6 +6,7 @@
 \alias{[,MegaPop-method}
 \alias{[[,MegaPop-method}
 \alias{c,MegaPop-method}
+\alias{isMegaPop}
 \title{Mega-Population}
 \usage{
 \S4method{[}{MegaPop}(x, i)
@@ -13,6 +14,8 @@
 \S4method{[[}{MegaPop}(x, i)
 
 \S4method{c}{MegaPop}(x, ...)
+
+isMegaPop(x)
 }
 \arguments{
 \item{x}{a 'MegaPop' object}
@@ -22,7 +25,7 @@
 \item{...}{additional 'MegaPop' or 'Pop' objects}
 }
 \description{
-The mega-population represents a population of populations. 
+The mega-population represents a population of populations.
 It is designed to behave like a list of populations.
 }
 \section{Methods (by generic)}{
@@ -31,13 +34,18 @@ It is designed to behave like a list of populations.
 
 \item \code{[[}: Extract Pop by index
 
-\item \code{c}: Combine multiple MegaPops
-}}
+\item \code{c(MegaPop)}: Combine multiple MegaPops
 
+}}
+\section{Functions}{
+\itemize{
+\item \code{isMegaPop()}: Test if object is of a MegaPop class
+
+}}
 \section{Slots}{
 
 \describe{
-\item{\code{pops}}{list of \code{\link{Pop-class}} and/or 
+\item{\code{pops}}{list of \code{\link{Pop-class}} and/or
 \code{MegaPop-class}}
 }}
 
