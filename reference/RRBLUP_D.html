@@ -141,12 +141,13 @@ traits</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Run GS model and set EBV</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">=</span> <span class="fu">RRBLUP_D</span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Reached maxIter without converging</span>
 <span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="setEBV.html">setEBV</a></span><span class="op">(</span><span class="va">pop</span>, <span class="va">ans</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Evaluate accuracy</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="gv.html">gv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span>, <span class="fu"><a href="ebv.html">ebv</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        est_GV_Trait1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1   -0.04450508</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trait1     0.3988028</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
