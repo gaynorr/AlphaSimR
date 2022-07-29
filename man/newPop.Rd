@@ -7,7 +7,7 @@
 newPop(rawPop, simParam = NULL, ...)
 }
 \arguments{
-\item{rawPop}{an object of \code{\link{MapPop-class}} or 
+\item{rawPop}{an object of \code{\link{MapPop-class}} or
 \code{\link{NamedMapPop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
@@ -18,10 +18,10 @@ newPop(rawPop, simParam = NULL, ...)
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Creates an initial \code{\link{Pop-class}} from an object of 
-\code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. 
-The function is intended for us with output from functions such 
-as \code{\link{runMacs}}, \code{\link{newMapPop}}, or 
+Creates an initial \code{\link{Pop-class}} from an object of
+\code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
+The function is intended for us with output from functions such
+as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
 \code{\link{quickHaplo}}.
 }
 \examples{
@@ -34,5 +34,6 @@ SP$addTraitA(10)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
+isPop(pop)
 
 }

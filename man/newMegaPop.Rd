@@ -7,7 +7,7 @@
 newMegaPop(...)
 }
 \arguments{
-\item{...}{one or more \code{\link{Pop-class}} and/or 
+\item{...}{one or more \code{\link{Pop-class}} and/or
 \code{\link{MegaPop-class}} objects.}
 }
 \value{
@@ -15,7 +15,7 @@ Returns an object of \code{\link{MegaPop-class}}
 }
 \description{
 Creates a new \code{\link{MegaPop-class}} from one or more
-\code{\link{Pop-class}} and/or \code{\link{MegaPop-class}} 
+\code{\link{Pop-class}} and/or \code{\link{MegaPop-class}}
 objects.
 }
 \examples{
@@ -29,5 +29,6 @@ SP$addTraitA(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 megaPop = newMegaPop(pop=pop)
+isMegaPop(megaPop)
 
 }

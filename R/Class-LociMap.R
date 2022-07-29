@@ -3,9 +3,9 @@
 
 #LociMap----
 #' @title Loci metadata
-#' 
+#'
 #' @description used for both SNPs and QTLs
-#' 
+#'
 #' @slot nLoci total number of loci
 #' @slot lociPerChr number of loci per chromosome
 #' @slot lociLoc physical position of loci
@@ -34,7 +34,7 @@ setValidity("LociMap",function(object){
   }
 })
 
-# Test if object is of a LociMap class
+# Test if object is of LociMap class
 isLociMap = function(x) {
   ret = is(x, class2 = "LociMap")
   return(ret)
@@ -42,10 +42,10 @@ isLociMap = function(x) {
 
 #TraitA----
 #' @title Additive trait
-#' 
-#' @description Extends \code{\link{LociMap-class}} 
+#'
+#' @description Extends \code{\link{LociMap-class}}
 #' to model additive traits
-#' 
+#'
 #' @slot addEff additive effects
 #' @slot intercept adjustment factor for gv
 #'
@@ -75,11 +75,11 @@ isTraitA = function(x) {
 
 #TraitA2----
 #' @title Sex specific additive trait
-#' 
-#' @description Extends \code{\link{TraitA-class}} 
-#' to model seperate additive effects for parent of 
-#' origin. Used exclusively for genomic selection. 
-#' 
+#'
+#' @description Extends \code{\link{TraitA-class}}
+#' to model seperate additive effects for parent of
+#' origin. Used exclusively for genomic selection.
+#'
 #' @slot addEffMale additive effects
 #'
 #' @export
@@ -107,10 +107,10 @@ isTraitA2 = function(x) {
 
 #TraitAE----
 #' @title Additive and epistatic trait
-#' 
-#' @description Extends \code{\link{TraitA-class}} 
+#'
+#' @description Extends \code{\link{TraitA-class}}
 #' to add epistasis
-#' 
+#'
 #' @slot epiEff epistatic effects
 #'
 #' @export
@@ -141,10 +141,10 @@ isTraitAE = function(x) {
 
 #TraitAD----
 #' @title Additive and dominance trait
-#' 
-#' @description Extends \code{\link{TraitA-class}} 
+#'
+#' @description Extends \code{\link{TraitA-class}}
 #' to add dominance
-#' 
+#'
 #' @slot domEff dominance effects
 #'
 #' @export
@@ -172,10 +172,10 @@ isTraitAD = function(x) {
 
 #TraitA2D----
 #' @title Sex specific additive and dominance trait
-#' 
-#' @description Extends \code{\link{TraitA2-class}} 
-#' to add dominance 
-#' 
+#'
+#' @description Extends \code{\link{TraitA2-class}}
+#' to add dominance
+#'
 #' @slot domEff dominance effects
 #'
 #' @export
@@ -203,10 +203,10 @@ isTraitA2D = function(x) {
 
 #TraitADE----
 #' @title Additive, dominance, and epistatic trait
-#' 
-#' @description Extends \code{\link{TraitAD-class}} 
+#'
+#' @description Extends \code{\link{TraitAD-class}}
 #' to add epistasis
-#' 
+#'
 #' @slot epiEff epistatic effects
 #'
 #' @export
@@ -237,10 +237,10 @@ isTraitADE = function(x) {
 
 #TraitAG----
 #' @title Additive and GxE trait
-#' 
-#' @description Extends \code{\link{TraitA-class}} 
+#'
+#' @description Extends \code{\link{TraitA-class}}
 #' to add GxE effects
-#' 
+#'
 #' @slot gxeEff GxE effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
@@ -272,10 +272,10 @@ isTraitAG = function(x) {
 
 #TraitAEG----
 #' @title Additive, epistasis and GxE trait
-#' 
-#' @description Extends \code{\link{TraitAE-class}} 
+#'
+#' @description Extends \code{\link{TraitAE-class}}
 #' to add GxE effects
-#' 
+#'
 #' @slot gxeEff GxE effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
@@ -307,10 +307,10 @@ isTraitAEG = function(x) {
 
 #TraitADG----
 #' @title Additive, dominance and GxE trait
-#' 
-#' @description Extends \code{\link{TraitAD-class}} 
+#'
+#' @description Extends \code{\link{TraitAD-class}}
 #' to add GxE effects
-#' 
+#'
 #' @slot gxeEff GxE effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
@@ -342,10 +342,10 @@ isTraitADG = function(x) {
 
 #TraitADEG----
 #' @title Additive, dominance, epistasis, and GxE trait
-#' 
-#' @description Extends \code{\link{TraitADE-class}} 
+#'
+#' @description Extends \code{\link{TraitADE-class}}
 #' to add GxE effects
-#' 
+#'
 #' @slot gxeEff GxE effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance

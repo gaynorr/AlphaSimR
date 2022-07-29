@@ -27,6 +27,7 @@ The vignette can be viewed using the following command:
 Useful links:
 \itemize{
   \item \url{https://github.com/gaynorr/AlphaSimR}
+  \item \url{https://gaynorr.github.io/AlphaSimR/}
 }
 
 }

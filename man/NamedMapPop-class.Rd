@@ -5,11 +5,14 @@
 \alias{NamedMapPop-class}
 \alias{[,NamedMapPop-method}
 \alias{c,NamedMapPop-method}
+\alias{isNamedMapPop}
 \title{Raw population with genetic map and id}
 \usage{
 \S4method{[}{NamedMapPop}(x, i)
 
 \S4method{c}{NamedMapPop}(x, ...)
+
+isNamedMapPop(x)
 }
 \arguments{
 \item{x}{a 'NamedMapPop' object}
@@ -25,9 +28,14 @@ Extends \code{\link{MapPop-class}} to add id, mother and father.
 \itemize{
 \item \code{[}: Extract NamedMapPop by index
 
-\item \code{c}: Combine multiple NamedMapPops
-}}
+\item \code{c(NamedMapPop)}: Combine multiple NamedMapPops
 
+}}
+\section{Functions}{
+\itemize{
+\item \code{isNamedMapPop()}: Test if object is a NamedMapPop class
+
+}}
 \section{Slots}{
 
 \describe{

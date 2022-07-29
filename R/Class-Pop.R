@@ -1,23 +1,23 @@
 # RawPop ------------------------------------------------------------------
 
 #' @title Raw Population
-#' 
-#' @description 
-#' The raw population class contains only genotype data. 
-#' 
+#'
+#' @description
+#' The raw population class contains only genotype data.
+#'
 #' @param object a 'RawPop' object
 #' @param x a 'RawPop' object
 #' @param i index of individuals
 #' @param ... additional 'RawPop' objects
-#' 
+#'
 #' @slot nInd number of individuals
 #' @slot nChr number of chromosomes
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
 #' @slot geno list of nChr length containing chromosome genotypes.
-#' Each element is a three dimensional array of raw values. 
+#' Each element is a three dimensional array of raw values.
 #' The array dimensions are nLoci by ploidy by nInd.
-#' 
+#'
 #' @export
 setClass("RawPop",
          slots=c(nInd="integer",
@@ -101,7 +101,7 @@ setMethod("c",
 setMethod("show",
           signature(object = "RawPop"),
           function (object){
-            cat("An object of class", 
+            cat("An object of class",
                 classLabel(class(object)), "\n")
             cat("Ploidy:", object@ploidy,"\n")
             cat("Individuals:", object@nInd,"\n")
@@ -111,7 +111,8 @@ setMethod("show",
           }
 )
 
-# Test if object is of RawPop class
+#' @describeIn RawPop Test if object is of a RawPop class
+#' @export
 isRawPop = function(x) {
   ret = is(x, class2 = "RawPop")
   return(ret)
@@ -120,21 +121,21 @@ isRawPop = function(x) {
 # MapPop ------------------------------------------------------------------
 
 #' @title Raw population with genetic map
-#' 
-#' @description 
-#' Extends \code{\link{RawPop-class}} to add a genetic map. 
+#'
+#' @description
+#' Extends \code{\link{RawPop-class}} to add a genetic map.
 #' This is the first object created in a simulation. It is used
-#' for creating initial populations and setting traits in the 
+#' for creating initial populations and setting traits in the
 #' \code{\link{SimParam}}.
-#' 
+#'
 #' @param x a 'MapPop' object
 #' @param i index of individuals
 #' @param ... additional 'MapPop' objects
-#' 
+#'
 #' @slot genMap list of chromosome genetic maps
 #' @slot centromere vector of centromere positions
 #' @slot inbred indicates whether the individuals are fully inbred
-#' 
+#'
 #' @export
 setClass("MapPop",
          slots=c(genMap="list",
@@ -175,7 +176,7 @@ setMethod("[",
           }
 )
 
-#' @describeIn MapPop Combine multiple MapPops 
+#' @describeIn MapPop Combine multiple MapPops
 setMethod("c",
           signature(x = "MapPop"),
           function (x, ...){
@@ -197,7 +198,8 @@ setMethod("c",
           }
 )
 
-# Test if object is of a MapPop class
+#' @describeIn MapPop Test if object is of a MapPop class
+#' @export
 isMapPop = function(x) {
   ret = is(x, class2 = "MapPop")
   return(ret)
@@ -206,18 +208,18 @@ isMapPop = function(x) {
 # NamedMapPop ------------------------------------------------------------------
 
 #' @title Raw population with genetic map and id
-#' 
-#' @description 
-#' Extends \code{\link{MapPop-class}} to add id, mother and father. 
-#' 
+#'
+#' @description
+#' Extends \code{\link{MapPop-class}} to add id, mother and father.
+#'
 #' @param x a 'NamedMapPop' object
 #' @param i index of individuals
 #' @param ... additional 'NamedMapPop' objects
-#' 
+#'
 #' @slot id an individual's identifier
 #' @slot mother the identifier of the individual's mother
 #' @slot father the identifier of the individual's father
-#' 
+#'
 #' @export
 setClass("NamedMapPop",
          slots=c(id="character",
@@ -270,7 +272,7 @@ setMethod("[",
           }
 )
 
-#' @describeIn NamedMapPop Combine multiple NamedMapPops 
+#' @describeIn NamedMapPop Combine multiple NamedMapPops
 setMethod("c",
           signature(x = "NamedMapPop"),
           function (x, ...){
@@ -296,21 +298,21 @@ setMethod("c",
 )
 
 #' @title Combine MapPop chromosomes
-#' 
+#'
 #' @description
-#' Merges the chromosomes of multiple \code{\link{MapPop-class}} or 
-#' \code{\link{NamedMapPop-class}} objects. 
+#' Merges the chromosomes of multiple \code{\link{MapPop-class}} or
+#' \code{\link{NamedMapPop-class}} objects.
 #' Each MapPop must have the same number of chromosomes
 #'
-#' @param ... \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}} 
+#' @param ... \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}
 #' objects to be combined
-#' 
+#'
 #' @return Returns an object of \code{\link{MapPop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' pop1 = quickHaplo(nInd=10, nChr=1, segSites=10)
 #' pop2 = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' combinedPop = cChr(pop1, pop2)
 #'
 #' @export
@@ -337,7 +339,8 @@ cChr = function(...){
   return(x)
 }
 
-# Test if object is a NamedMapPop class
+#' @describeIn NamedMapPop Test if object is a NamedMapPop class
+#' @export
 isNamedMapPop = function(x) {
   ret = is(x, class2 = "NamedMapPop")
   return(ret)
@@ -346,16 +349,16 @@ isNamedMapPop = function(x) {
 # Pop ---------------------------------------------------------------------
 
 #' @title Population
-#' 
-#' @description 
-#' Extends \code{\link{RawPop-class}} to add sex, genetic values, 
+#'
+#' @description
+#' Extends \code{\link{RawPop-class}} to add sex, genetic values,
 #' phenotypes, and pedigrees.
-#' 
+#'
 #' @param object a 'Pop' object
 #' @param x a 'Pop' object
 #' @param i index of individuals
 #' @param ... additional 'Pop' objects
-#' 
+#'
 #' @slot id an individual's identifier
 #' @slot iid an individual's internal identifier
 #' @slot mother the identifier of the individual's mother
@@ -367,18 +370,18 @@ isNamedMapPop = function(x) {
 #' gv reflects gv when p=0.5. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
-#' @slot ebv matrix of estimated breeding values. Dimensions 
+#' @slot ebv matrix of estimated breeding values. Dimensions
 #' are nInd rows and a variable number of columns.
 #' @slot gxe list containing GxE slopes for GxE traits
-#' @slot fixEff a fixed effect relating to the phenotype. 
+#' @slot fixEff a fixed effect relating to the phenotype.
 #' Used by genomic selection models but otherwise ignored.
-#' @slot reps the number of replications used to measure the 
+#' @slot reps the number of replications used to measure the
 #' phenotype. Used by genomic selection models, but otherwise ignored.
-#' @slot misc a list whose elements correspond to individuals in the 
-#' population. This list is normally empty and exists solely as an 
-#' open slot available for uses to store extra information about 
+#' @slot misc a list whose elements correspond to individuals in the
+#' population. This list is normally empty and exists solely as an
+#' open slot available for uses to store extra information about
 #' individuals.
-#' 
+#'
 #' @export
 setClass("Pop",
          slots=c(id="character",
@@ -522,7 +525,7 @@ setMethod("c",
 setMethod("show",
           signature(object = "Pop"),
           function (object){
-            cat("An object of class", 
+            cat("An object of class",
                 classLabel(class(object)), "\n")
             cat("Ploidy:", object@ploidy,"\n")
             cat("Individuals:", object@nInd,"\n")
@@ -534,32 +537,33 @@ setMethod("show",
 )
 
 #' @title Create new population
-#' 
+#'
 #' @description
-#' Creates an initial \code{\link{Pop-class}} from an object of 
-#' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. 
-#' The function is intended for us with output from functions such 
-#' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or 
+#' Creates an initial \code{\link{Pop-class}} from an object of
+#' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
+#' The function is intended for us with output from functions such
+#' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
 #' \code{\link{quickHaplo}}.
 #'
-#' @param rawPop an object of \code{\link{MapPop-class}} or 
+#' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments used internally
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#' isPop(pop)
+#'
 #' @export
 newPop = function(rawPop,simParam=NULL,...){
   if(is.null(simParam)){
@@ -569,10 +573,10 @@ newPop = function(rawPop,simParam=NULL,...){
 }
 
 #' @title Create new population (internal)
-#' 
+#'
 #' @description
-#' Creates a new \code{\link{Pop-class}} from an object of 
-#' of the Pop superclass. 
+#' Creates a new \code{\link{Pop-class}} from an object of
+#' of the Pop superclass.
 #'
 #' @param rawPop an object of the pop superclass
 #' @param id optional id for new individuals
@@ -585,24 +589,24 @@ newPop = function(rawPop,simParam=NULL,...){
 #' @param maleParentPop optional population of male parents
 #' @param hist optional recombination history
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments passed to the finalizePop 
+#' @param ... additional arguments passed to the finalizePop
 #' function in simParam
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 .newPop = function(rawPop, id=NULL, mother=NULL, father=NULL,
                    iMother=NULL, iFather=NULL, isDH=NULL,
-                   femaleParentPop=NULL, maleParentPop=NULL, 
+                   femaleParentPop=NULL, maleParentPop=NULL,
                    hist=NULL, simParam=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
-  
+
   lastId = simParam$lastId
   iid = (1:rawPop@nInd) + lastId
   lastId = max(iid)
-  
+
   if(is.null(id)){
     if(is(rawPop, "NamedMapPop")){
       id = rawPop@id
@@ -610,15 +614,15 @@ newPop = function(rawPop,simParam=NULL,...){
       id = as.character(iid)
     }
   }
-  
+
   if(is.null(iMother)){
     iMother = rep(0L, rawPop@nInd)
   }
-  
+
   if(is.null(iFather)){
     iFather = rep(0L, rawPop@nInd)
   }
-  
+
   if(is.null(isDH)){
     if(is(rawPop, "MapPop")){
       isDH = rawPop@inbred
@@ -626,7 +630,7 @@ newPop = function(rawPop,simParam=NULL,...){
       isDH = FALSE
     }
   }
-  
+
   if(is.null(mother)){
     if(is(rawPop, "NamedMapPop")){
       mother = rawPop@mother
@@ -634,7 +638,7 @@ newPop = function(rawPop,simParam=NULL,...){
       mother = rep("0", rawPop@nInd)
     }
   }
-  
+
   if(is.null(father)){
     if(is(rawPop, "NamedMapPop")){
       father = rawPop@father
@@ -642,10 +646,10 @@ newPop = function(rawPop,simParam=NULL,...){
       father = rep("0", rawPop@nInd)
     }
   }
-  
+
   stopifnot(length(id)==length(mother),
             length(id)==length(father))
-  
+
   if(simParam$sexes=="no"){
     sex = rep("H", rawPop@nInd)
   }else if(simParam$sexes=="yes_rand"){
@@ -655,26 +659,26 @@ newPop = function(rawPop,simParam=NULL,...){
   }else{
     stop(paste("no rules for sex type", simParam$sexes))
   }
-  
+
   gxe = vector("list", simParam$nTraits)
-  
+
   gv = matrix(NA_real_,nrow=rawPop@nInd,
               ncol=simParam$nTraits)
   colnames(gv) = rep(NA_character_, simParam$nTraits)
-  
+
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
       gv[,i] = tmp[[1]]
 
       colnames(gv)[i] = simParam$traits[[i]]@name
-      
+
       if(length(tmp)>1){
         gxe[[i]] = tmp[[2]]
       }
     }
   }
-  
+
   output = new("Pop",
                nInd=rawPop@nInd,
                nChr=rawPop@nChr,
@@ -699,13 +703,13 @@ newPop = function(rawPop,simParam=NULL,...){
                           ncol=0),
                misc=vector("list",rawPop@nInd))
   if(simParam$nTraits>=1){
-    output = setPheno(output, varE=NULL, reps=1, 
-                      fixEff=1L, p=NULL, onlyPheno=FALSE, 
+    output = setPheno(output, varE=NULL, reps=1,
+                      fixEff=1L, p=NULL, onlyPheno=FALSE,
                       simParam=simParam)
   }
-  
+
   output = simParam$finalizePop(output,...)
-  
+
   if(simParam$isTrackPed){
     if(simParam$isTrackRec){
       simParam$addToRec(lastId,id,iMother,iFather,isDH,hist,output@ploidy)
@@ -715,36 +719,36 @@ newPop = function(rawPop,simParam=NULL,...){
   }else{
     simParam$updateLastId(lastId)
   }
-  
+
   return(output)
 }
 
 #' @title Reset population
-#' 
+#'
 #' @description
-#' Recalculates a population's genetic values and 
+#' Recalculates a population's genetic values and
 #' resets phenotypes and EBVs.
-#' 
+#'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
 #'
 #' @return an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Rescale to set mean to 1
 #' SP$rescaleTraits(mean=1)
 #' pop = resetPop(pop, simParam=SP)
-#' 
+#'
 #' @export
 resetPop = function(pop,simParam=NULL){
   if(is.null(simParam)){
@@ -761,7 +765,7 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-  pop@reps = rep(1,pop@nInd) 
+  pop@reps = rep(1,pop@nInd)
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
@@ -775,7 +779,26 @@ resetPop = function(pop,simParam=NULL){
 }
 
 
-# Test if object is of a Pop class
+#' @title Test if object is of a Population class
+#'
+#' @description Utilify function to test if object is of a Population class
+#'
+#' @param x \code{\link{Pop-class}}
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' isPop(pop)
+#' isPop(SP)
+#'
+#' @export
 isPop = function(x) {
   ret = is(x, class2 = "Pop")
   return(ret)
@@ -784,19 +807,19 @@ isPop = function(x) {
 # MegaPop ------------------------------------------------------------------
 
 #' @title Mega-Population
-#' 
-#' @description 
-#' The mega-population represents a population of populations. 
-#' It is designed to behave like a list of populations. 
-#' 
+#'
+#' @description
+#' The mega-population represents a population of populations.
+#' It is designed to behave like a list of populations.
+#'
 #' @param x a 'MegaPop' object
 #' @param i index of populations or mega-populations
 #' @param ... additional 'MegaPop' or 'Pop' objects
-#' 
-#' @slot pops list of \code{\link{Pop-class}} and/or 
+#'
+#' @slot pops list of \code{\link{Pop-class}} and/or
 #' \code{MegaPop-class}
-#' 
-#' 
+#'
+#'
 #' @export
 setClass("MegaPop",
          slots=c(pops="list"))
@@ -805,8 +828,8 @@ setValidity("MegaPop",function(object){
   errors = character()
     # Check that all populations are valid
     for(i in 1:length(object@pops)){
-      if(!validObject(object@pops[[i]]) & 
-         (is(object@pops[[i]], "Pop") | 
+      if(!validObject(object@pops[[i]]) &
+         (is(object@pops[[i]], "Pop") |
                 is(object@pops[[i]],"MegaPop"))){
         errors = c(errors,paste("object",i,"is not a valid pop"))
       }
@@ -856,29 +879,30 @@ setMethod("c",
 )
 
 #' @title Create new Mega Population
-#' 
+#'
 #' @description
 #' Creates a new \code{\link{MegaPop-class}} from one or more
-#' \code{\link{Pop-class}} and/or \code{\link{MegaPop-class}} 
-#' objects.  
+#' \code{\link{Pop-class}} and/or \code{\link{MegaPop-class}}
+#' objects.
 #'
-#' @param ... one or more \code{\link{Pop-class}} and/or 
+#' @param ... one or more \code{\link{Pop-class}} and/or
 #' \code{\link{MegaPop-class}} objects.
 #'
 #' @return Returns an object of \code{\link{MegaPop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' megaPop = newMegaPop(pop=pop)
-#' 
+#' isMegaPop(megaPop)
+#'
 #' @export
 newMegaPop = function(...){
   input = list(...)
@@ -888,7 +912,8 @@ newMegaPop = function(...){
   return(output)
 }
 
-# Test if object is of a MegaPop class
+#' @describeIn MegaPop Test if object is of a MegaPop class
+#' @export
 isMegaPop = function(x) {
   ret = is(x, class2 = "MegaPop")
   return(ret)

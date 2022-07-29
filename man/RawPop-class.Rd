@@ -6,6 +6,7 @@
 \alias{[,RawPop-method}
 \alias{c,RawPop-method}
 \alias{show,RawPop-method}
+\alias{isRawPop}
 \title{Raw Population}
 \usage{
 \S4method{[}{RawPop}(x, i)
@@ -13,6 +14,8 @@
 \S4method{c}{RawPop}(x, ...)
 
 \S4method{show}{RawPop}(object)
+
+isRawPop(x)
 }
 \arguments{
 \item{x}{a 'RawPop' object}
@@ -30,11 +33,16 @@ The raw population class contains only genotype data.
 \itemize{
 \item \code{[}: Extract RawPop by index
 
-\item \code{c}: Combine multiple RawPops
+\item \code{c(RawPop)}: Combine multiple RawPops
 
-\item \code{show}: Show population summary
+\item \code{show(RawPop)}: Show population summary
+
 }}
+\section{Functions}{
+\itemize{
+\item \code{isRawPop()}: Test if object is of a RawPop class
 
+}}
 \section{Slots}{
 
 \describe{
@@ -47,7 +55,7 @@ The raw population class contains only genotype data.
 \item{\code{nLoci}}{number of loci per chromosome}
 
 \item{\code{geno}}{list of nChr length containing chromosome genotypes.
-Each element is a three dimensional array of raw values. 
+Each element is a three dimensional array of raw values.
 The array dimensions are nLoci by ploidy by nInd.}
 }}
 

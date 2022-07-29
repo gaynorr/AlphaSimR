@@ -1,14 +1,14 @@
 #HybridPop----
 #' @title Hybrid population
-#' 
+#'
 #' @description
 #' A lightweight version of \code{\link{Pop-class}} for hybrid lines.
 #' Memory is saved by not storing genotypic data.
-#' 
+#'
 #' @param x a 'HybridPop'
 #' @param i index of individuals
-#' @param ... additional 'HybridPop' objects 
-#' 
+#' @param ... additional 'HybridPop' objects
+#'
 #' @slot nInd number of individuals
 #' @slot id an individual's identifier
 #' @slot mother the identifier of the individual's mother
@@ -19,7 +19,7 @@
 #' @slot pheno matrix of phenotypic values. Dimensions are
 #' nInd by nTraits.
 #' @slot gxe list containing GxE slopes for GxE traits
-#' 
+#'
 #' @export
 setClass("HybridPop",
          slots=c(nInd="integer",
@@ -121,7 +121,8 @@ setMethod("c",
           }
 )
 
-# Test if object is of a HybridPop class
+#' @describeIn HybridPop Test if object is of a HybridPop class
+#' @export
 isHybridPop = function(x) {
   ret = is(x, class2 = "HybridPop")
   return(ret)

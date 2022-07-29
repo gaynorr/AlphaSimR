@@ -5,11 +5,14 @@
 \alias{HybridPop-class}
 \alias{[,HybridPop-method}
 \alias{c,HybridPop-method}
+\alias{isHybridPop}
 \title{Hybrid population}
 \usage{
 \S4method{[}{HybridPop}(x, i)
 
 \S4method{c}{HybridPop}(x, ...)
+
+isHybridPop(x)
 }
 \arguments{
 \item{x}{a 'HybridPop'}
@@ -26,9 +29,14 @@ Memory is saved by not storing genotypic data.
 \itemize{
 \item \code{[}: Extract HybridPop using index or id
 
-\item \code{c}: Combine multiple HybridPops
-}}
+\item \code{c(HybridPop)}: Combine multiple HybridPops
 
+}}
+\section{Functions}{
+\itemize{
+\item \code{isHybridPop()}: Test if object is of a HybridPop class
+
+}}
 \section{Slots}{
 
 \describe{
