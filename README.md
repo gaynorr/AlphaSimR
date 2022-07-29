@@ -1,5 +1,6 @@
 # README #
 
+[![R-CMD-check](https://github.com/gaynorr/AlphaSimR/actions/workflows/r.yaml/badge.svg)](https://github.com/gaynorr/AlphaSimR/actions/workflows/r.yaml)
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
 [![](http://cranlogs.r-pkg.org/badges/grand-total/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
 [![](http://cranlogs.r-pkg.org/badges/AlphaSimR)](https://cran.r-project.org/package=AlphaSimR)
