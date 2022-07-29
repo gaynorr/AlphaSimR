@@ -1,387 +1,399 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>/404.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/404.html</loc>
   </url>
   <url>
-    <loc>/LICENSE-text.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/LICENSE-text.html</loc>
   </url>
   <url>
-    <loc>/articles/index.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/articles/index.html</loc>
   </url>
   <url>
-    <loc>/articles/intro.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/articles/intro.html</loc>
   </url>
   <url>
-    <loc>/articles/traits.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/articles/traits.html</loc>
   </url>
   <url>
-    <loc>/authors.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/authors.html</loc>
   </url>
   <url>
-    <loc>/index.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/index.html</loc>
   </url>
   <url>
-    <loc>/reference/AlphaSimR-package.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/news/index.html</loc>
   </url>
   <url>
-    <loc>/reference/HybridPop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/AlphaSimR-package.html</loc>
   </url>
   <url>
-    <loc>/reference/LociMap-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/HybridPop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/MapPop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/LociMap-class.html</loc>
   </url>
   <url>
-    <loc>/reference/MegaPop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/MapPop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/NamedMapPop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/MegaPop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/Pop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/NamedMapPop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/Pop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUPMemUse.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP2.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_D.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUPMemUse.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_D2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_D.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_GCA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_D2.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_GCA2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_GCA.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_SCA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_GCA2.html</loc>
   </url>
   <url>
-    <loc>/reference/RRBLUP_SCA2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_SCA.html</loc>
   </url>
   <url>
-    <loc>/reference/RRsol-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRBLUP_SCA2.html</loc>
   </url>
   <url>
-    <loc>/reference/RawPop-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RRsol-class.html</loc>
   </url>
   <url>
-    <loc>/reference/SimParam.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/RawPop-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitA-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/SimParam.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitA2-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitA-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitA2D-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitA2-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitAD-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitA2D-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitADE-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitAD-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitADEG-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitADE-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitADG-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitADEG-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitAE-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitADG-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitAEG-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitAE-class.html</loc>
   </url>
   <url>
-    <loc>/reference/TraitAG-class.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitAEG-class.html</loc>
   </url>
   <url>
-    <loc>/reference/aa.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/TraitAG-class.html</loc>
   </url>
   <url>
-    <loc>/reference/attrition.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/aa.html</loc>
   </url>
   <url>
-    <loc>/reference/bv.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/attrition.html</loc>
   </url>
   <url>
-    <loc>/reference/cChr.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/bv.html</loc>
   </url>
   <url>
-    <loc>/reference/calcGCA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/cChr.html</loc>
   </url>
   <url>
-    <loc>/reference/dd.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/calcGCA.html</loc>
   </url>
   <url>
-    <loc>/reference/dot-newPop.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/dd.html</loc>
   </url>
   <url>
-    <loc>/reference/doubleGenome.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/dot-newPop.html</loc>
   </url>
   <url>
-    <loc>/reference/ebv.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/doubleGenome.html</loc>
   </url>
   <url>
-    <loc>/reference/editGenome.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/ebv.html</loc>
   </url>
   <url>
-    <loc>/reference/editGenomeTopQtl.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/editGenome.html</loc>
   </url>
   <url>
-    <loc>/reference/fastRRBLUP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/editGenomeTopQtl.html</loc>
   </url>
   <url>
-    <loc>/reference/genParam.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/fastRRBLUP.html</loc>
   </url>
   <url>
-    <loc>/reference/genicVarA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/genParam.html</loc>
   </url>
   <url>
-    <loc>/reference/genicVarAA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/genicVarA.html</loc>
   </url>
   <url>
-    <loc>/reference/genicVarD.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/genicVarAA.html</loc>
   </url>
   <url>
-    <loc>/reference/genicVarG.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/genicVarD.html</loc>
   </url>
   <url>
-    <loc>/reference/getMisc.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/genicVarG.html</loc>
   </url>
   <url>
-    <loc>/reference/getNumThreads.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getGenMap.html</loc>
   </url>
   <url>
-    <loc>/reference/getQtlMap.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getMisc.html</loc>
   </url>
   <url>
-    <loc>/reference/getSnpMap.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getNumThreads.html</loc>
   </url>
   <url>
-    <loc>/reference/gv.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getPed.html</loc>
   </url>
   <url>
-    <loc>/reference/hybridCross.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getQtlMap.html</loc>
   </url>
   <url>
-    <loc>/reference/importGenMap.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/getSnpMap.html</loc>
   </url>
   <url>
-    <loc>/reference/importHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/gv.html</loc>
   </url>
   <url>
-    <loc>/reference/importInbredGeno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/hybridCross.html</loc>
   </url>
   <url>
-    <loc>/reference/index.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/importGenMap.html</loc>
   </url>
   <url>
-    <loc>/reference/isFemale.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/importHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/makeCross.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/importInbredGeno.html</loc>
   </url>
   <url>
-    <loc>/reference/makeCross2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/index.html</loc>
   </url>
   <url>
-    <loc>/reference/makeDH.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/isFemale.html</loc>
   </url>
   <url>
-    <loc>/reference/meanG.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/isPop.html</loc>
   </url>
   <url>
-    <loc>/reference/meanP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/makeCross.html</loc>
   </url>
   <url>
-    <loc>/reference/mergeGenome.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/makeCross2.html</loc>
   </url>
   <url>
-    <loc>/reference/mergePops.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/makeDH.html</loc>
   </url>
   <url>
-    <loc>/reference/mutate.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/meanG.html</loc>
   </url>
   <url>
-    <loc>/reference/nInd.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/meanP.html</loc>
   </url>
   <url>
-    <loc>/reference/newMapPop.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/mergeGenome.html</loc>
   </url>
   <url>
-    <loc>/reference/newMegaPop.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/mergePops.html</loc>
   </url>
   <url>
-    <loc>/reference/newPop.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/mutate.html</loc>
   </url>
   <url>
-    <loc>/reference/pedigreeCross.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/nInd.html</loc>
   </url>
   <url>
-    <loc>/reference/pheno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/newMapPop.html</loc>
   </url>
   <url>
-    <loc>/reference/popVar.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/newMegaPop.html</loc>
   </url>
   <url>
-    <loc>/reference/pullIbdHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/newPop.html</loc>
   </url>
   <url>
-    <loc>/reference/pullMarkerGeno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pedigreeCross.html</loc>
   </url>
   <url>
-    <loc>/reference/pullMarkerHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pheno.html</loc>
   </url>
   <url>
-    <loc>/reference/pullQtlGeno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/popVar.html</loc>
   </url>
   <url>
-    <loc>/reference/pullQtlHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullIbdHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/pullSegSiteGeno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullMarkerGeno.html</loc>
   </url>
   <url>
-    <loc>/reference/pullSegSiteHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullMarkerHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/pullSnpGeno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullQtlGeno.html</loc>
   </url>
   <url>
-    <loc>/reference/pullSnpHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullQtlHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/quickHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullSegSiteGeno.html</loc>
   </url>
   <url>
-    <loc>/reference/randCross.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullSegSiteHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/randCross2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullSnpGeno.html</loc>
   </url>
   <url>
-    <loc>/reference/reduceGenome.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/pullSnpHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/resetPop.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/quickHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/runMacs.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/randCross.html</loc>
   </url>
   <url>
-    <loc>/reference/runMacs2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/randCross2.html</loc>
   </url>
   <url>
-    <loc>/reference/sampleHaplo.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/reduceGenome.html</loc>
   </url>
   <url>
-    <loc>/reference/selIndex.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/resetPop.html</loc>
   </url>
   <url>
-    <loc>/reference/selInt.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/runMacs.html</loc>
   </url>
   <url>
-    <loc>/reference/selectCross.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/runMacs2.html</loc>
   </url>
   <url>
-    <loc>/reference/selectFam.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/sampleHaplo.html</loc>
   </url>
   <url>
-    <loc>/reference/selectInd.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selIndex.html</loc>
   </url>
   <url>
-    <loc>/reference/selectOP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selInt.html</loc>
   </url>
   <url>
-    <loc>/reference/selectWithinFam.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selectCross.html</loc>
   </url>
   <url>
-    <loc>/reference/self.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selectFam.html</loc>
   </url>
   <url>
-    <loc>/reference/setEBV.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selectInd.html</loc>
   </url>
   <url>
-    <loc>/reference/setMisc.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selectOP.html</loc>
   </url>
   <url>
-    <loc>/reference/setPheno.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/selectWithinFam.html</loc>
   </url>
   <url>
-    <loc>/reference/setPhenoGCA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/self.html</loc>
   </url>
   <url>
-    <loc>/reference/setPhenoProgTest.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setEBV.html</loc>
   </url>
   <url>
-    <loc>/reference/smithHazel.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setMisc.html</loc>
   </url>
   <url>
-    <loc>/reference/solveMKM.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setPheno.html</loc>
   </url>
   <url>
-    <loc>/reference/solveMVM.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setPhenoGCA.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setPhenoProgTest.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUPMK.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/smithHazel.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUPMV.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveMKM.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUP_EM.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveMVM.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUP_EM2.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUP.html</loc>
   </url>
   <url>
-    <loc>/reference/solveRRBLUP_EM3.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUPMK.html</loc>
   </url>
   <url>
-    <loc>/reference/solveUVM.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUPMV.html</loc>
   </url>
   <url>
-    <loc>/reference/transMat.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUP_EM.html</loc>
   </url>
   <url>
-    <loc>/reference/usefulness.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUP_EM2.html</loc>
   </url>
   <url>
-    <loc>/reference/varA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveRRBLUP_EM3.html</loc>
   </url>
   <url>
-    <loc>/reference/varAA.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/solveUVM.html</loc>
   </url>
   <url>
-    <loc>/reference/varD.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/transMat.html</loc>
   </url>
   <url>
-    <loc>/reference/varG.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/usefulness.html</loc>
   </url>
   <url>
-    <loc>/reference/varP.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/varA.html</loc>
   </url>
   <url>
-    <loc>/reference/writePlink.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/varAA.html</loc>
   </url>
   <url>
-    <loc>/reference/writeRecords.html</loc>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/varD.html</loc>
+  </url>
+  <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/varG.html</loc>
+  </url>
+  <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/varP.html</loc>
+  </url>
+  <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/writePlink.html</loc>
+  </url>
+  <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/writeRecords.html</loc>
   </url>
 </urlset>
