@@ -197,7 +197,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
     }
   })
   
-  #Create a data.frame with SNP postions on genetic map
+  #Create a data.frame with SNP positions on genetic map
   output = data.frame(id=getLociNames(snp@lociPerChr, snp@lociLoc, genMap),
                       chr=rep(names(genMap),snp@lociPerChr),
                       site=snp@lociLoc,

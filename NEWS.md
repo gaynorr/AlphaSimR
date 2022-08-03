@@ -1,6 +1,8 @@
-# AlphaSimR 1.2.2
+# AlphaSimR 1.2.2.9990
 
-## Minor improvements and fixes
+*added ability to exclude loci by name in `SimParam$restrSegSites`
+
+# AlphaSimR 1.2.2
 
 *added `getPed` to quick extract a population's pedigree
 
@@ -8,15 +10,11 @@
 
 # AlphaSimR 1.2.1
 
-## Minor improvements and fixes
-
 *fixed bugs relating to `importData` functions
 
-*fixed `writePlin`k errors and no longer requires equal length chromosomes
+*fixed `writePlink` errors and no longer requires equal length chromosomes
 
 # AlphaSimR 1.2.0
-  
-## New features 
 
 *added `importGenMap` to format genetic maps for AlphaSimR
 
@@ -25,8 +23,6 @@
 *added `importSnpChip`, `importTrait` to `SimParam` to make it easier to manually define traits
 
 *added `pullMarkerGeno` and `pullMarkerHaplo` to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip
-    
-## Minor improvements and fixes
 
 *`reduceGenome`, `mergeGenome` and `doubleGenome` should really now work with pedigree and recombination tracking
     
@@ -35,28 +31,20 @@
 *`pedigreeCross` fails without an appropriate warning for some incomplete pedigrees
 
 # AlphaSimR 1.1.2
-    
-## Minor improvements and fixes
 
 *added missing #ifdef _OPENMP to OCS.cpp
 
 # AlphaSimR 1.1.1
-    
-## Minor improvements and fixes
 
 *removed use of PI variable in C++ code which is compiler specific
 
 # AlphaSimR 1.1.0
-  
-## New features
 
 *added snpChip argument to `pullIbdHaplo` for backwards compatibility
 
 *exposed internal mixed model solvers
 
 *all selection functions now return a warning when there are not enough individuals
-    
-## Minor improvements and fixes
 
 *fixed error in `pullIbdHaplo` when chr isn't NULL
 
@@ -68,19 +56,13 @@
 
 # AlphaSimR 1.0.4
 
-## Minor improvements and fixes
-
 *fixed errors in implementation of Gamma Sprinkling model
 
 # AlphaSimR 1.0.3
 
-## Minor improvements and fixes
-
 *fixed formatting error in genetic maps created by runMacs that broke genotype extraction functions
 
 # AlphaSimR 1.0.2
-
-## New features
 
 *added h2 and H2 to `setPhenoGCA`
 
@@ -88,15 +70,11 @@
 
 # AlphaSimR 1.0.1
 
-## Minor improvements and fixes
-
 *removed lazyData field in DESCRIPTION
 
 # AlphaSimR 1.0.0
   
 *AlphaSimR manuscript has been published in G3 (citation added)
-  
-## New features
 
 *changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
 
@@ -114,8 +92,6 @@
 
 # AlphaSimR 0.13.0
 
-## New features
-
 *references to gender have been changed to the more appropriate terms sex or sexes
 
 *added misc slot to populations
@@ -127,32 +103,22 @@
 *you can now use h2 and H2 to specify error variance in `setPheno`
 
 *`SimParam$setVarE` now accepts a matrix for varE
-    
-## Minor improvements and fixes
 
 *fixed a bug in `editGenome` when making multiple edits
 
 *adding merging of centromere vector in `cChr`
 
 # AlphaSimR 0.12.2
-  
-## New features
 
 *GxE traits now default to random sampling of p-values
-  
-## Minor improvements and fixes
 
 *fixed a bug in `restrSegSites`
 
 # AlphaSimR 0.12.1
 
-## Minor improvements and fixes
-
 *fixed a bug in selection of segSites
 
 # AlphaSimR 0.12.0
-  
-## New features
 
 *changed output of `genParam` to match Bulmer, 1976
 
@@ -163,16 +129,12 @@
 *non-overlapping QTL and SNP is now the default
 
 *new interface for `restrSegSites` in `SimParam`
-  
-## Minor improvements and fixes
 
 *fixed subset by id for populations
 
 *fixed major bug in `newMapPop`
 
 # AlphaSimR 0.11.1
-  
-## New features
 
 *switched to a circular design for the balance option in `randCross` and `randCross2`
 
@@ -183,8 +145,6 @@
 *the `c` function now merges individuals for MapPop objects (was chromosomes before)
 
 *the `cChr` function new merges chromosomes for MapPop objects 
-    
-## Minor improvements and fixes
 
 *fixed broken SimParam_addStructuredSnpChip
 
@@ -194,11 +154,7 @@
 
 # AlphaSimR 0.11.0
 
-## Breaking changes
-
 *rework of `setEBV` (breaks some scripts)
-
-## New features
 
 *genotype data now stored as bits (was bytes)
 
@@ -219,8 +175,6 @@
 *added RRBLUP_SCA2
 
 *set methods for the "show" function when applied to populations
-    
-## Minor improvements and fixes
 
 *fixed a bug returning the first individual when selecting 0
 
@@ -231,8 +185,6 @@
 *fixed an error with `pullSegSiteGeno` and `pullSegSiteHaplo` with variable number of sites per chromosome
 
 # AlphaSimR 0.10.0
-  
-## New features
 
 *added traits with epistasis
 
@@ -245,8 +197,6 @@
 *removed `trackHaploPop` (super-ceded by `pullIbdHaplo`)
 
 *added `fastRRBLUP`
-  
-## Minor improvements and fixes
 
 *fixed faulty double crossover logic
 
@@ -258,15 +208,11 @@
 
 # AlphaSimR 0.9.0
 
-## New features
-
 *added support for autopolyploids
 
 *added `RRBLUP_GCA2`
 
 *`randCross2` can now "balance" crossing when not using gender
-  
-## Minor improvements and fixes
 
 *fixed recombination tracking bug in `createDH2`
 
@@ -274,13 +220,9 @@
 
 # AlphaSimR 0.8.2
 
-## Minor improvements and fixes
-
 *fixed ambiguous overloading in optimize.cpp
 
 # AlphaSimR 0.8.1
-
-## Minor improvements and fixes
 
 *`setPheno` (not `setPhenoGCA`) passes the number of reps to populations
 
@@ -297,8 +239,6 @@
 *add error message for no traits in `calcGCA`
 
 # AlphaSimR 0.8.0
-
-## New features
 
 *added GxE traits with zero environmental variance
 
@@ -317,20 +257,14 @@
 *parallelized calculation of genetic values
 
 *variance calculations now account for inbreeding
-    
-## Minor improvements and fixes
 
 *fixes for male selection in `selectOP`
 
 # AlphaSimR 0.7.1
-  
-## Minor improvements and fixes
 
 *add fixEff to `setPhenoGCA`
 
 # AlphaSimR 0.7.0
-
-## New features
 
 *added default `runMacs` option to return all segSites
 
@@ -349,8 +283,6 @@
 *added `pullIbdHaplo`
 
 *added `writePlink`
-    
-## Minor improvements and fixes
 
 *fixed population sub-setting checks to prevent invalid selections
 
@@ -364,27 +296,19 @@
 
 # AlphaSimR 0.6.1
 
-## New features
-
 *`selectFam` now handles half-sib families
 
 *`selectWithinFa`m now handles half-sib families
-    
-## Minor improvements and fixes
 
 *Removed restriction on varE=NULL in `setPhenoGCA`
 
 # AlphaSimR 0.6.0
-
-## New features
 
 *Added NEWS file
 
 *Added `selectOP` to model selection in open pollinating plants
 
 *Added `runMacs2` as a wrapper for `runMacs`
-    
-## Minor improvements and fixes
 
 *Fixed error when using H2 in SimParam_setVarE
     

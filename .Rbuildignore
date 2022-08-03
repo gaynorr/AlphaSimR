@@ -1,11 +1,9 @@
+revdep
+vignettes/web_only/
+docs
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^Notes\.txt$
-^doc$
-^Meta$
-^drafts$
 ^_pkgdown\.yml$
-^docs$
-^pkgdown$
 ^\.github$
-^revdep$
+

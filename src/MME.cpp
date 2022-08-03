@@ -2,8 +2,6 @@
 // solveMKM is based on the mmer function in R/sommer
 #include "alphasimr.h"
 
-#ifdef ARMA_USE_LAPACK
-
 #if !defined(ARMA_BLAS_CAPITALS)
 #define arma_dsyevr dsyevr
 #else
@@ -15,7 +13,6 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
                   double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
                   long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
                   long long int* LIWORK, long long int* INFO);
-#endif
 
 const double pi = 3.14159265358979323846;
 
