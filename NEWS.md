@@ -2,6 +2,10 @@
 
 *added ability to exclude loci by name in `SimParam$restrSegSites`
 
+*`pullMarkerGeno` and `pullMarkerHaplo` can now work with MapPop class
+
+*added `setMarkerHaplo` to manually change genotypes
+
 # AlphaSimR 1.2.2
 
 *added `getPed` to quick extract a population's pedigree

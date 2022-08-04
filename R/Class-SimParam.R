@@ -187,16 +187,14 @@ SimParam = R6Class(
     #' @description Sets restrictions on which segregating sites
     #' can serve as a SNP and/or QTL.
     #'
-    #' @param minQtlPerChr the minimum number of segSites for QTLs.
-    #' Can be a single value or a vector values for each
-    #' chromosome.
-    #' @param minSnpPerChr the minimum number of segSites for SNPs.
-    #' Can be a single value or a vector values for each
-    #' chromosome.
-    #' @param excludeQtl an optional vector of segSite names to exclude
-    #' from consideration as a viable QTL.
-    #' @param excludeSnp an optional vector of segSite names to exclude 
-    #' from consideration as a viable SNP.
+    #' @param minQtlPerChr the minimum number of segregating sites for 
+    #' QTLs. Can be a single value or a vector values for each chromosome.
+    #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
+    #' Can be a single value or a vector values for each chromosome.
+    #' @param excludeQtl an optional vector of segregating site names to 
+    #' exclude from consideration as a viable QTL.
+    #' @param excludeSnp an optional vector of segregating site names to 
+    #' exclude from consideration as a viable SNP.
     #' @param overlap should SNP and QTL sites be allowed to overlap.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
     #' No minimum SNP frequency is used if value is NULL.
@@ -212,7 +210,7 @@ SimParam = R6Class(
                              excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
       # Handle any named QTL exclusions
       if(!is.null(excludeQtl)){
-        matchList = private$.findLociByName(excludeQtl)
+        matchList = private$.findNamedLoci(excludeQtl)
         
         # Make exclusions
         restr = self$invalidQtl
@@ -234,7 +232,7 @@ SimParam = R6Class(
         }
         
         if(findMatch){
-          matchList = private$.findLociByName(excludeSnp)
+          matchList = private$.findNamedLoci(excludeSnp)
         }
         
         # Make exclusions
@@ -252,20 +250,30 @@ SimParam = R6Class(
         invisible(self)
       }else{
         # Check validity of inputs
-        if(length(minSnpPerChr)==1){
-          minSnpPerChr = rep(minSnpPerChr,self$nChr)
+        if(!is.null(minSnpPerChr)){
+          if(length(minSnpPerChr)==1){
+            minSnpPerChr = rep(minSnpPerChr,self$nChr)
+          }else{
+            stopifnot(length(minSnpPerChr)==self$nChr)
+          }
         }
-        if(length(minQtlPerChr)==1){
-          minQtlPerChr = rep(minQtlPerChr,self$nChr)
+        if(!is.null(minQtlPerChr)){
+          if(length(minQtlPerChr)==1){
+            minQtlPerChr = rep(minQtlPerChr,self$nChr)
+          }else{
+            stopifnot(length(minQtlPerChr)==self$nChr)
+          }
         }
-        stopifnot(length(minSnpPerChr)==self$nChr,
-                  length(minQtlPerChr)==self$nChr)
 
         # Restrict SNPs and then QTL
         # SNPs are done first due to  potentially fewer viable loci
         private$.restrSites = TRUE
-        invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
-        invisible(private$.pickLoci(minQtlPerChr))
+        if(!is.null(minSnpPerChr)){
+          invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
+        }
+        if(!is.null(minQtlPerChr)){
+          invisible(private$.pickLoci(minQtlPerChr))
+        }
         invisible(self)
       }
     },
@@ -1971,7 +1979,7 @@ SimParam = R6Class(
       
       # Find positions using an interval search strategy on the cumulative sum
       take = unique(take)
-      pos = vector("list", self$nChr)
+      posList = vector("list", self$nChr)
       cumSumSegSite = cumsum(private$.segSites)
       for(i in take){
         # Identify chromosome
@@ -1985,10 +1993,10 @@ SimParam = R6Class(
         }
         
         # Add site to list
-        pos[[chr]] = c(pos[[chr]], pos)
+        posList[[chr]] = c(posList[[chr]], pos)
       }
       
-      return(pos)
+      return(posList)
     }
 
   ),

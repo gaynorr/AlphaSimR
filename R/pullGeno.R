@@ -47,6 +47,35 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
   return(lociNames)
 }
 
+# Finds loci on a genetic map and return a list of positions
+mapLoci = function(markers, genMap){
+  # Check that the markers are present on the map
+  genMapMarkerNames = unlist(lapply(genMap, names))
+  stopifnot(all(markers%in%genMapMarkerNames))
+  
+  # Create lociPerChr and lociLoc
+  lociPerChr = integer(length(genMap))
+  lociLoc = vector("list", length(genMap))
+  
+  # Loop through chromosomes
+  for(i in 1:length(genMap)){
+    
+    # Initialize lociLoc
+    lociLoc[[i]] = integer()
+    
+    # Find matches if they exist
+    take = match(names(genMap[[i]]), markers)
+    lociPerChr[i] = length(na.omit(take))
+    if(lociPerChr[i]>0L){
+      lociLoc[[i]] = which(!is.na(take))
+    }
+  }
+  lociLoc = unlist(lociLoc)
+  
+  return(list(lociPerChr=lociPerChr,
+              lociLoc=lociLoc))
+}
+
 #' @title Get genetic map
 #' 
 #' @description Retrieves the genetic map for all loci.
@@ -424,12 +453,13 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' @description
 #' Retrieves genotype data for all segregating sites
 #'
-#' @param pop an object of \code{\link{Pop-class}} or
-#' \code{\link{RawPop-class}}
+#' @param pop an object of \code{\link{RawPop-class}} or
+#' \code{\link{MapPop-class}}
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of \code{\link{SimParam}}, not 
+#' used if pop is \code{\link{MapPop-class}}
 #'
 #' @return Returns a matrix of genotypes
 #' 
@@ -665,15 +695,16 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' @description
 #' Retrieves haplotype data for all segregating sites
 #'
-#' @param pop an object of \code{\link{Pop-class}} or
-#' \code{\link{RawPop-class}}
+#' @param pop an object of \code{\link{RawPop-class}} or
+#' \code{\link{MapPop-class}}
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
 #' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of \code{\link{SimParam}}, not 
+#' used if pop is \code{\link{MapPop-class}}
 #'
 #' @return Returns a matrix of haplotypes
 #' 
@@ -839,17 +870,18 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
   return(output)
 }
 
-
 #' @title Pull marker genotypes
 #'
 #' @description Retrieves genotype data for user
 #' specified loci
 #'
-#' @param pop an object of \code{\link{Pop-class}}
+#' @param pop an object of \code{\link{RawPop-class}} or
+#' \code{\link{MapPop-class}}
 #' @param markers a character vector. Indicates the
 #' names of the loci to be retrieved.
 #' @param asRaw return in raw (byte) format
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of \code{\link{SimParam}}, not 
+#' used if pop is \code{\link{MapPop-class}}
 #'
 #' @return Returns a matrix of genotypes.
 #'
@@ -871,37 +903,24 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
 #'
 #' @export
 pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
-  
-  # Extract genetic map and check if names are in map
-  genMap = simParam$genMap
-  genMapMarkerNames = unlist(lapply(genMap, names))
-  stopifnot(all(markers%in%genMapMarkerNames))
-  
-  # Create lociPerChr and lociLoc
-  lociPerChr = integer(length(genMap))
-  lociLoc = vector("list", length(genMap))
-  
-  # Loop through chromosomes
-  for(i in 1:length(genMap)){
-    
-    # Initialize lociLoc
-    lociLoc[[i]] = integer()
-    
-    # Find matches if they exist
-    take = match(names(genMap[[i]]), markers)
-    lociPerChr[i] = length(na.omit(take))
-    if(lociPerChr[i]>0L){
-      lociLoc[[i]] = which(!is.na(take))
+  # Get genetic map and nThreads
+  if(is(pop,"MapPop")){
+    nThreads = getNumThreads()
+    genMap = pop@genMap
+  }else{
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
     }
+    nThreads = simParam$nThreads
+    genMap = simParam$genMap
   }
-  lociLoc = unlist(lociLoc)
+  
+  # Map markers to genetic map
+  lociMap = mapLoci(markers, genMap)
   
   # Get genotypes
-  output = getGeno(pop@geno, lociPerChr, 
-                   lociLoc, simParam$nThreads)
+  output = getGeno(pop@geno, lociMap$lociPerChr, 
+                   lociMap$lociLoc, nThreads)
   
   if(!asRaw){
     output = convToImat(output)
@@ -913,8 +932,8 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
     rownames(output) = as.character(1:pop@nInd)
   }
 
-  colnames(output) = getLociNames(lociPerChr, 
-                                  lociLoc, 
+  colnames(output) = getLociNames(lociMap$lociPerChr, 
+                                  lociMap$lociLoc, 
                                   genMap)
   
   output = output[,match(markers, colnames(output)),drop=FALSE]
@@ -927,14 +946,16 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
 #' @description Retrieves haplotype data for user
 #' specified loci
 #'
-#' @param pop an object of \code{\link{Pop-class}}
+#' @param pop an object of \code{\link{RawPop-class}} or
+#' \code{\link{MapPop-class}}
 #' @param markers a character vector. Indicates the
 #' names of the loci to be retrieved
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
 #' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param asRaw return in raw (byte) format
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of \code{\link{SimParam}}, not 
+#' used if pop is \code{\link{MapPop-class}}
 #'
 #' @return Returns a matrix of genotypes.
 #'
@@ -957,36 +978,23 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
 #'
 #' @export
 pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
-  
-  # Extract genetic map and check if names are in map
-  genMap = simParam$genMap
-  genMapMarkerNames = unlist(lapply(genMap, names))
-  stopifnot(all(markers%in%genMapMarkerNames))
-  
-  # Create lociPerChr and lociLoc
-  lociPerChr = integer(length(genMap))
-  lociLoc = vector("list", length(genMap))
-  
-  # Loop through chromosomes
-  for(i in 1:length(genMap)){
-    
-    # Initialize lociLoc
-    lociLoc[[i]] = integer()
-    
-    # Find matches if they exist
-    take = match(names(genMap[[i]]), markers)
-    lociPerChr[i] = length(na.omit(take))
-    if(lociPerChr[i]>0L){
-      lociLoc[[i]] = which(!is.na(take))
+  # Get genetic map and nThreads
+  if(is(pop,"MapPop")){
+    nThreads = getNumThreads()
+    genMap = pop@genMap
+  }else{
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
     }
+    nThreads = simParam$nThreads
+    genMap = simParam$genMap
   }
-  lociLoc = unlist(lociLoc)
+  
+  # Map markers to genetic map
+  lociMap = mapLoci(markers, genMap)
   
   if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc,simParam$nThreads)
+    output = getHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -1000,8 +1008,8 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE, simParam=NULL
                                rep(1:pop@ploidy,pop@nInd),sep="_")
     }
   }else{
-    output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),simParam$nThreads)
+    output = getOneHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc,
+                         as.integer(haplo), simParam$nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -1014,11 +1022,92 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE, simParam=NULL
     }
   }
   
-  colnames(output) = getLociNames(lociPerChr, 
-                                  lociLoc, 
+  colnames(output) = getLociNames(lociMap$lociPerChr, 
+                                  lociMap$lociLoc, 
                                   genMap)
   
   output = output[,match(markers, colnames(output)),drop=FALSE]
   
   return(output)
+}
+
+#' @title Set marker haplotypes 
+#'
+#' @description Manually sets the haplotypes in a population 
+#' for all individuals at one or more loci.
+#'
+#' @param pop an object of \code{\link{RawPop-class}} or
+#' \code{\link{MapPop-class}}
+#' @param haplo a matrix of haplotypes, see details
+#' @param simParam an object of \code{\link{SimParam}}, not 
+#' used if pop is \code{\link{MapPop-class}}
+#' 
+#' @details The format of the haplotype matrix should match 
+#' the format of the output from \code{\link{pullMarkerHaplo}}
+#' with the option haplo="all". Thus, it is recommended that this 
+#' function is first used to extract the haplotypes and that any 
+#' desired changes be made to the output of pullMarkerHaplo before 
+#' passing the matrix to setMarkerHaplo. Any changes made to QTL 
+#' may potentially result in changes to an individuals genetic 
+#' value. These changes will be reflected in the gv and/or gxe slot. 
+#' All other slots will remain unchanged, so the ebv and pheno slots 
+#' will not reflect the new genotypes.
+#'
+#' @return an object of the same class as the "pop" input
+#'
+#' @examples 
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#' 
+#' # Extract haplotypes for marker "1_1"
+#' H = pullMarkerHaplo(founderPop, markers="1_1")
+#' 
+#' # Set the first haplotype to 1
+#' H[1,1] = 1L
+#' 
+#' # Set marker haplotypes
+#' founderPop = setMarkerHaplo(founderPop, haplo=H)
+#' 
+#' @export
+setMarkerHaplo = function(pop, haplo, simParam=NULL){
+  # Check validity of rows
+  stopifnot(nrow(haplo)==(pop@nInd*pop@ploidy))
+  
+  # Get genetic map
+  if(is(pop,"MapPop")){
+    genMap = pop@genMap
+    nThreads = getNumThreads()
+  }else{
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
+    }
+    genMap = simParam$genMap
+    nThreads = simParam$nThreads
+  }
+  
+  # Map markers to the genetic map
+  markers = colnames(haplo)
+  lociMap = mapLoci(markers, genMap)
+  
+  # Order haplotype data
+  orderedMapNames = getLociNames(lociMap$lociPerChr, 
+                                 lociMap$lociLoc, 
+                                 genMap)
+  haplo = haplo[,match(markers, orderedMapNames), drop=FALSE]
+  
+  # Set haplotypes
+  geno = setHaplo(pop@geno, haplo, lociMap$lociPerChr, 
+                  lociMap$lociLoc, nThreads)
+  dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+  pop@geno = geno
+  
+  if(is(pop, "Pop")){
+    PHENO = pop@pheno
+    EBV = pop@ebv
+    pop = resetPop(pop=pop, simParam=simParam)
+    pop@pheno = PHENO
+    pop@ebv = EBV
+  }
+  
+  return(pop)
 }

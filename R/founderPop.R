@@ -440,3 +440,7 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              centromere=centromere,
              inbred=inbred))
 }
+
+addSegSite = function(mapPop, name, chr, mapPos, haplo){
+  
+}

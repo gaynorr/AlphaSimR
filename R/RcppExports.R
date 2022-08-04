@@ -236,6 +236,10 @@ getOneHaplo <- function(geno, lociPerChr, lociLoc, haplo, nThreads) {
     .Call(`_AlphaSimR_getOneHaplo`, geno, lociPerChr, lociLoc, haplo, nThreads)
 }
 
+setHaplo <- function(geno, haplo, lociPerChr, lociLoc, nThreads) {
+    .Call(`_AlphaSimR_setHaplo`, geno, haplo, lociPerChr, lociLoc, nThreads)
+}
+
 writeGeno <- function(geno, lociPerChr, lociLoc, filePath, nThreads) {
     invisible(.Call(`_AlphaSimR_writeGeno`, geno, lociPerChr, lociLoc, filePath, nThreads))
 }

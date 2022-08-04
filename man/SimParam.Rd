@@ -531,11 +531,13 @@ pop2@id # 1:10
 \if{latex}{\out{\hypertarget{method-SimParam-restrSegSites}{}}}
 \subsection{Method \code{restrSegSites()}}{
 Sets restrictions on which segregating sites
-can serve as SNP and/or QTL.
+can serve as a SNP and/or QTL.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$restrSegSites(
   minQtlPerChr = NULL,
   minSnpPerChr = NULL,
+  excludeQtl = NULL,
+  excludeSnp = NULL,
   overlap = FALSE,
   minSnpFreq = NULL
 )}\if{html}{\out{</div>}}
@@ -544,13 +546,17 @@ can serve as SNP and/or QTL.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{minQtlPerChr}}{the minimum number of segSites for QTLs.
-Can be a single value or a vector values for each
-chromosome.}
+\item{\code{minQtlPerChr}}{the minimum number of segregating sites for 
+QTLs. Can be a single value or a vector values for each chromosome.}
 
-\item{\code{minSnpPerChr}}{the minimum number of segSites for SNPs.
-Can be a single value or a vector values for each
-chromosome.}
+\item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
+Can be a single value or a vector values for each chromosome.}
+
+\item{\code{excludeQtl}}{an optional vector of segregating site names to 
+exclude from consideration as a viable QTL.}
+
+\item{\code{excludeSnp}}{an optional vector of segregating site names to 
+exclude from consideration as a viable SNP.}
 
 \item{\code{overlap}}{should SNP and QTL sites be allowed to overlap.}
 

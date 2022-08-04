@@ -7,15 +7,16 @@
 pullSegSiteGeno(pop, chr = NULL, asRaw = FALSE, simParam = NULL)
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or
-\code{\link{RawPop-class}}}
+\item{pop}{an object of \code{\link{RawPop-class}} or
+\code{\link{MapPop-class}}}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
 all chromosome are retrieved.}
 
 \item{asRaw}{return in raw (byte) format}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of \code{\link{SimParam}}, not 
+used if pop is \code{\link{MapPop-class}}}
 }
 \value{
 Returns a matrix of genotypes
