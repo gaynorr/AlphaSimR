@@ -2,9 +2,11 @@
 
 *added ability to exclude loci by name in `SimParam$restrSegSites`
 
-*`pullMarkerGeno` and `pullMarkerHaplo` can now work with MapPop class
+*`pullMarkerGeno` and `pullMarkerHaplo` now work with a MapPop class
 
-*added `setMarkerHaplo` to manually change genotypes
+*added `setMarkerHaplo` to manually change genotypes in a Pop or MapPop
+
+*add `addSegSite` for manually adding segregating sites to a MapPop class
 
 # AlphaSimR 1.2.2
 

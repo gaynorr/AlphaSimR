@@ -441,6 +441,100 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              inbred=inbred))
 }
 
-addSegSite = function(mapPop, name, chr, mapPos, haplo){
+#' @title Add segregating site to MapPop
+#'
+#' @description This function allows for adding a new 
+#' segregating site with user supplied genotypes to a MapPop. 
+#' The position of the site is set using a genetic map position.
+#' 
+#' @param mapPop an object of \code{\link{MapPop-class}}
+#' @param siteName name to give the segregating site
+#' @param chr which chromosome to add the site
+#' @param mapPos genetic map position of site in Morgans
+#' @param haplo haplotypes for the site
+#'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
+#' @examples 
+#' # Creates a populations of 10 outbred individuals
+#' # Their genome consists of 1 chromosome and 2 segregating sites
+#' founderPop = quickHaplo(nInd=10,nChr=1,segSites=2)
+#' 
+#' # Add a locus a the 0.5 Morgan map position
+#' # 
+#' haplo = matrix(sample(x=0:1, size=20, replace=TRUE), ncol=1)
+#' founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPop=0.5, haplo=haplo)
+#' pullSegSiteHaplo(founderPop2)
+#' 
+#' @export
+addSegSite = function(mapPop, siteName, chr, mapPos, haplo){
+  # Check validity of input data
+  stopifnot(is(mapPop, "MapPop"))
+  stopifnot(length(haplo)==(mapPop@nInd*mapPop@ploidy))
   
+  # Coerce haplo to a raw matrix
+  haplo = matrix(as.raw(haplo), ncol=1)
+  
+  # Convert chr to a number, if needed
+  if(is.character(chr)){
+    chr = match(chr, names(mapPop@genMap))
+  }
+  
+  # Extract temporary map and geno for target chromosome
+  chrMap = mapPop@genMap[[chr]]
+  markerNames = names(chrMap)
+  chrGeno = mapPop@geno[chr] # Leaving in list format for getHaplo
+  
+  # Extract haplotype matrix from the bit array
+  haploMat = getHaplo(chrGeno, 
+                      mapPop@nLoci[chr], 
+                      1:mapPop@nLoci[chr], 
+                      getNumThreads())
+  
+  # Find position of insertion
+  pos = findInterval(x=mapPos, vec=chrMap)
+  
+  # Insert site
+  if(pos==length(chrMap)){
+    # Inserting site at the end
+    chrMap = c(chrMap, mapPos)
+    names(chrMap) = c(markerNames, siteName)
+    haploMat = cbind(haploMat, haplo)
+  }else if(pos==0){
+    # Inserting site at the beginning
+    chrMap = c(mapPos, chrMap)
+    names(chrMap) = c(siteName, markerNames)
+    chrMap = chrMap-chrMap[1]
+    haploMat = cbind(haplo, haploMat)
+  }else{
+    # Inserting site in the middle
+    chrMap = c(chrMap[1:pos], mapPos, 
+               chrMap[(pos+1L):length(chrMap)])
+    names(chrMap) = c(markerNames[1:pos], siteName, 
+                      markerNames[(pos+1L):length(markerNames)])
+    haploMat = cbind(haploMat[,1:pos,drop=FALSE], haplo, 
+                     haploMat[,(pos+1L):ncol(haploMat),drop=FALSE])
+  }
+  
+  # Convert haplotype matrix back to a bit array
+  chrGeno = packHaplo(haploMat, ploidy=mapPop@ploidy, inbred=FALSE)
+  
+  # Return temporary map and geno
+  mapPop@genMap[[chr]] = chrMap
+  mapPop@geno[[chr]] = chrGeno
+  
+  # Add one to locus count
+  mapPop@nLoci[chr] = mapPop@nLoci[chr] + 1L
+  
+  # Check if an inbred population has become outbred
+  if(mapPop@inbred){
+    M = pullMarkerGeno(mapPop, markers=siteName)
+    isHomo0 = M==0L
+    isHomo1 = M==mapPop@ploidy
+    if(!all(isHomo0 | isHomo1)){
+      mapPop@inbred = FALSE
+    }
+  }
+  
+  return(mapPop)
 }
