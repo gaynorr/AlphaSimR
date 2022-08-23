@@ -8,6 +8,12 @@
 
 *add `addSegSite` for manually adding segregating sites to a MapPop class
 
+*`simParam$setCorE` has been deprecated in favor of a corE argument in `simParam$setVarE`
+
+*`setPheno` now takes corE as an argument
+
+*`setPheno` now allows the user to set phenotypes for a subset of traits
+
 # AlphaSimR 1.2.2
 
 *added `getPed` to quick extract a population's pedigree

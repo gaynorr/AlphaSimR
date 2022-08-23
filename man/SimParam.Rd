@@ -1368,10 +1368,14 @@ ignored. Only set to TRUE if you know what you are doing}
 \if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{Method \code{setVarE()}}{
-Defines a default value for error
-variances in the simulation.
+Defines a default values for error
+variances used in \code{\link{setPheno}}. These defaults 
+will be used to automatically generate phenotypes when new 
+populations are created. See the details section of \code{\link{setPheno}}
+for more information about each arguments and how they 
+should be used.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL, corE = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1382,6 +1386,8 @@ variances in the simulation.
 \item{\code{H2}}{a vector of desired broad-sense heritabilities}
 
 \item{\code{varE}}{a vector or matrix of error variances}
+
+\item{\code{corE}}{an optional matrix of error correlations}
 }
 \if{html}{\out{</div>}}
 }

@@ -1404,12 +1404,17 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Defines a default value for error
-    #' variances in the simulation.
+    #' @description Defines a default values for error
+    #' variances used in \code{\link{setPheno}}. These defaults 
+    #' will be used to automatically generate phenotypes when new 
+    #' populations are created. See the details section of \code{\link{setPheno}}
+    #' for more information about each arguments and how they 
+    #' should be used.
     #'
     #' @param h2 a vector of desired narrow-sense heritabilities
     #' @param H2 a vector of desired broad-sense heritabilities
     #' @param varE a vector or matrix of error variances
+    #' @param corE an optional matrix of error correlations
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1419,7 +1424,14 @@ SimParam = R6Class(
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
     #' SP$setVarE(h2=0.5)
-    setVarE = function(h2=NULL,H2=NULL,varE=NULL){
+    setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
+      # Check validity of corE, if supplied
+      if(!is.null(corE)){
+        stopifnot(isSymmetric(corE),
+                  nrow(corE)==self$nTraits)
+      }
+      
+      # Set error variances (.varE)
       if(!is.null(h2)){
         stopifnot(length(h2)==self$nTraits,
                   all(private$.varG>0),
@@ -1450,8 +1462,23 @@ SimParam = R6Class(
         }
         private$.varE = varE
       }else{
-        private$.varE = rep(NA_real_,self$nTraits)
+        private$.varE = rep(NA_real_, self$nTraits)
       }
+      
+      # Set error correlations
+      if(!is.null(corE)){
+        if(is.matrix(private$.varE)){
+          varE = diag(private$.varE)
+        }else{
+          varE = private$.varE
+        }
+        varE = diag(sqrt(varE),
+                    nrow=self$nTraits,
+                    ncol=self$nTraits)
+        varE = varE%*%corE%*%varE
+        private$.varE = varE
+      }
+      
       invisible(self)
     },
 
@@ -1472,6 +1499,7 @@ SimParam = R6Class(
     #' E = 0.5*diag(2)+0.5 #Positively correlated error
     #' SP$setCorE(E)
     setCorE = function(corE){
+      warning("This function has been deprecated. Use simParam$setVarE instead.")
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
                 length(private$.varE)==self$nTraits)

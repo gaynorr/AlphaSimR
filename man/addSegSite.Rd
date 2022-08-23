@@ -31,9 +31,10 @@ The position of the site is set using a genetic map position.
 founderPop = quickHaplo(nInd=10,nChr=1,segSites=2)
 
 # Add a locus a the 0.5 Morgan map position
-# 
 haplo = matrix(sample(x=0:1, size=20, replace=TRUE), ncol=1)
-founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPop=0.5, haplo=haplo)
+
+founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5, haplo=haplo)
+
 pullSegSiteHaplo(founderPop2)
 
 }
