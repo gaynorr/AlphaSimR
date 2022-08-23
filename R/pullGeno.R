@@ -133,17 +133,17 @@ getGenMap = function(object=NULL, sex="A"){
   }
   
   # Loci names
-  id = unlist(lapply(genMap, names))
+  id = unlist(unname(lapply(genMap, names)))
   
   # Chromosome names
   nLoci = sapply(genMap, length)
   chr = rep(names(genMap), nLoci)
   
   # Map positions
-  pos = do.call("c", genMap)
+  pos = unname(do.call("c", genMap))
   
   # Output data.frame
-  return(data.frame(id, chr, pos))
+  return(data.frame(id=id, chr=chr, pos=pos))
 }
 
 #' @title Get SNP genetic map

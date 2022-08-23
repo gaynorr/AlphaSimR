@@ -59,8 +59,8 @@ SimParam = R6Class(
       self$p = 0 # Single pathway gamma model
       self$quadProb = 0 # No quadrivalent pairing
       self$snpChips = list()
-      self$invalidQtl = vector("list", founderPop@nChr) # All eligible
-      self$invalidSnp = vector("list", founderPop@nChr) # All eligible
+      self$invalidQtl = rep(list(integer()), founderPop@nChr) # All eligible
+      self$invalidSnp = rep(list(integer()), founderPop@nChr) # All eligible
       self$founderPop = founderPop
       self$finalizePop = function(pop, ...){return(pop)}
       self$allowEmptyPop = FALSE # Empty populations trigger an error
@@ -1942,11 +1942,7 @@ SimParam = R6Class(
       # Identify potential sites
       pot = vector('list', self$nChr)
       for(i in 1:self$nChr){
-        if(is.null(restr[[i]])){
-          pot[[i]] = 1:private$.segSites[i]
-        }else{
-          pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
-        }
+        pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
       }
 
       # Filter for minimum frequency
@@ -1999,7 +1995,7 @@ SimParam = R6Class(
     # a helper for restrSegSites
     .findNamedLoci = function(lociNames){
       # Loci names
-      id = unlist(lapply(private$.femaleMap, names))
+      id = unlist(unname(lapply(private$.femaleMap, names)))
       take = match(lociNames, id)
       if(any(is.na(take))){
         stop("One or more loci are not on the genetic map. Beware of case sensitivity.")
@@ -2007,7 +2003,7 @@ SimParam = R6Class(
       
       # Find positions using an interval search strategy on the cumulative sum
       take = unique(take)
-      posList = vector("list", self$nChr)
+      posList = rep(list(integer()), self$nChr)
       cumSumSegSite = cumsum(private$.segSites)
       for(i in take){
         # Identify chromosome
