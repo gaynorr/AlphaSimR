@@ -15,7 +15,6 @@ RRBLUP2(
   Ve = NULL,
   useEM = TRUE,
   tol = 1e-06,
-  useReps = FALSE,
   simParam = NULL,
   ...
 )
@@ -50,9 +49,6 @@ the initial values are considered true.}
 
 \item{tol}{tolerance for EM algorithm convergence}
 
-\item{useReps}{should population's reps slot be used to model 
-heterogeneous error variance}
-
 \item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for 
@@ -78,8 +74,8 @@ is approximately equal to or smaller than the number of phenotypic records.
 The RRBLUP2 function is not recommend for cases where the variance components are 
 unknown. This is uses the EM algorithm to solve for unknown variance components, 
 which is generally considerably slower than the EMMA approach of \code{\link{RRBLUP}}. 
-The number of iterations for the EM algorith is set by maxIter. The default value 
-is typically too small for convergence. When the algorithm fails to converage a 
+The number of iterations for the EM algorithm is set by maxIter. The default value 
+is typically too small for convergence. When the algorithm fails to converge a 
 warning is displayed, but results are given for the last iteration. These results may 
 be "good enough". However we make no claim to this effect, because we can not generalize 
 to all possible use cases.

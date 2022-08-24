@@ -163,8 +163,6 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -191,7 +189,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1, 
-                  useQtl=FALSE, maxIter=1000L, useReps=FALSE, 
+                  useQtl=FALSE, maxIter=1000L,  
                   simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -216,11 +214,11 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   if(ncol(y)>1){
-    ans = callRRBLUP_MV(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                        lociLoc, maxIter, useReps, simParam$nThreads)
+    ans = callRRBLUP_MV(y, fixEff, pop@geno, lociPerChr,
+                        lociLoc, maxIter, simParam$nThreads)
   }else{
-    ans = callRRBLUP(y,fixEff,pop@reps,pop@geno,lociPerChr,lociLoc,
-                     useReps, simParam$nThreads)
+    ans = callRRBLUP(y, fixEff, pop@geno, lociPerChr, lociLoc,
+                     simParam$nThreads)
   }
   
   markerEff=ans$u
@@ -284,8 +282,6 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -304,8 +300,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' The RRBLUP2 function is not recommend for cases where the variance components are 
 #' unknown. This is uses the EM algorithm to solve for unknown variance components, 
 #' which is generally considerably slower than the EMMA approach of \code{\link{RRBLUP}}. 
-#' The number of iterations for the EM algorith is set by maxIter. The default value 
-#' is typically too small for convergence. When the algorithm fails to converage a 
+#' The number of iterations for the EM algorithm is set by maxIter. The default value 
+#' is typically too small for convergence. When the algorithm fails to converge a 
 #' warning is displayed, but results are given for the last iteration. These results may 
 #' be "good enough". However we make no claim to this effect, because we can not generalize 
 #' to all possible use cases.
@@ -341,7 +337,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1, 
                    useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL, 
-                   useEM=TRUE, tol=1e-6, useReps=FALSE, simParam=NULL, 
+                   useEM=TRUE, tol=1e-6, simParam=NULL, 
                    ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -389,8 +385,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
   
   #Fit model
-  ans = callRRBLUP2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                    lociLoc,Vu,Ve,tol,maxIter,useEM,useReps,
+  ans = callRRBLUP2(y, fixEff, pop@geno, lociPerChr,
+                    lociLoc, Vu, Ve, tol, maxIter, useEM,
                     simParam$nThreads)
   
   bv = new("TraitA",
@@ -438,8 +434,6 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used 
 #' when number of traits is greater than 1.
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -466,7 +460,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1, 
-                    useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                    useQtl=FALSE, maxIter=40L,  
                     simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -491,8 +485,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_D(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                     lociLoc,maxIter,useReps,simParam$nThreads)
+  ans = callRRBLUP_D(y, fixEff, pop@geno, lociPerChr,
+                     lociLoc, maxIter, simParam$nThreads)
   
   bv = new("TraitA",
            nLoci=nLoci,
@@ -553,8 +547,6 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -582,7 +574,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1, 
                      useQtl=FALSE, maxIter=10, Va=NULL, Vd=NULL, 
-                     Ve=NULL, useEM=TRUE, tol=1e-6, useReps=FALSE, 
+                     Ve=NULL, useEM=TRUE, tol=1e-6,  
                      simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -640,9 +632,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_D2(y,fixEff,pop@reps,pop@geno,lociPerChr,
-                      lociLoc,maxIter,Va,Vd,Ve,tol,useEM,
-                      useReps,simParam$nThreads)
+  ans = callRRBLUP_D2(y, fixEff, pop@geno, lociPerChr,
+                      lociLoc, maxIter, Va, Vd, Ve, tol, useEM,
+                      simParam$nThreads)
   
   bv = new("TraitA",
            nLoci=nLoci,
@@ -691,8 +683,6 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -719,7 +709,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1, 
-                      useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                      useQtl=FALSE, maxIter=40L,  
                       simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -744,9 +734,9 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_GCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter,
-                       useReps,simParam$nThreads)
+  ans = callRRBLUP_GCA(y, fixEff, pop@geno,
+                       lociPerChr, lociLoc, maxIter,
+                       simParam$nThreads)
   
   gv = new("TraitA2",
            nLoci=nLoci,
@@ -813,8 +803,6 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -842,7 +830,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1, 
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL, 
-                       Ve=NULL, useEM=TRUE, tol=1e-6, useReps=FALSE, 
+                       Ve=NULL, useEM=TRUE, tol=1e-6,  
                        simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -901,10 +889,10 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   
-  ans = callRRBLUP_GCA2(y,fixEff,pop@reps,pop@geno,
-                        lociPerChr,lociLoc,maxIter,
-                        VuF,VuM,Ve,tol,useEM,
-                        useReps,simParam$nThreads)
+  ans = callRRBLUP_GCA2(y, fixEff, pop@geno,
+                        lociPerChr, lociLoc, maxIter,
+                        VuF, VuM, Ve, tol, useEM,
+                        simParam$nThreads)
   
   gv = new("TraitA2",
            nLoci=nLoci,
@@ -960,8 +948,6 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -988,7 +974,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1, 
-                      useQtl=FALSE, maxIter=40L, useReps=FALSE, 
+                      useQtl=FALSE, maxIter=40L,  
                       simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -1013,9 +999,9 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_SCA(y,fixEff,pop@reps,pop@geno,
-                       lociPerChr,lociLoc,maxIter,
-                       useReps,simParam$nThreads)
+  ans = callRRBLUP_SCA(y, fixEff, pop@geno,
+                       lociPerChr, lociLoc, maxIter,
+                       simParam$nThreads)
   
   gv = new("TraitA2D",
            nLoci=nLoci,
@@ -1085,8 +1071,6 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false, 
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param useReps should population's reps slot be used to model 
-#' heterogeneous error variance
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for 
 #' traits
@@ -1115,7 +1099,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1, 
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL, 
                        VuD=NULL, Ve=NULL, useEM=TRUE, tol=1e-6, 
-                       useReps=FALSE, simParam=NULL, ...){
+                       simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1181,10 +1165,10 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_SCA2(y,fixEff,pop@reps,pop@geno,
-                        lociPerChr,lociLoc,maxIter,
-                        VuF,VuM,VuD,Ve,tol,useEM,
-                        useReps,simParam$nThreads)
+  ans = callRRBLUP_SCA2(y, fixEff, pop@geno,
+                        lociPerChr, lociLoc, maxIter,
+                        VuF, VuM, VuD, Ve, tol, useEM,
+                        simParam$nThreads)
   
   gv = new("TraitA2D",
            nLoci=nLoci,

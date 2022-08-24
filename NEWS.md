@@ -1,4 +1,4 @@
-# AlphaSimR 1.2.2.9990
+# AlphaSimR 1.3.0
 
 *added ability to exclude loci by name in `SimParam$restrSegSites`
 
@@ -6,13 +6,21 @@
 
 *added `setMarkerHaplo` to manually change genotypes in a Pop or MapPop
 
-*add `addSegSite` for manually adding segregating sites to a MapPop class
+*added `addSegSite` for manually adding segregating sites to a MapPop class
 
 *`simParam$setCorE` has been deprecated in favor of a corE argument in `simParam$setVarE`
 
 *`setPheno` now takes corE as an argument
 
 *`setPheno` now allows the user to set phenotypes for a subset of traits
+
+*add `newEmptyPop` to create populations with zero individuals
+
+*removed reps slot from populations and heterogeneous residual variance GS models
+
+*added h2, H2, and corE to `setPhenoGCA` and `setPhenoProgTest`
+
+*the "EUROPEAN" species history was removed from `runMacs` due to lengthy runtime
 
 # AlphaSimR 1.2.2
 
@@ -48,7 +56,7 @@
 
 # AlphaSimR 1.1.1
 
-*removed use of PI variable in C++ code which is compiler specific
+*removed use of PI variable in C++ code due to it being compiler specific
 
 # AlphaSimR 1.1.0
 
@@ -90,7 +98,7 @@
 
 *changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
 
-*change default interfernce parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)
+*change default interference parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)
 
 *new internal id (iid) that allows user to freely change id slot in populations
 

@@ -1,5 +1,5 @@
 #Adds random error to a matrix of genetic values
-addError = function(gv, varE, reps=1){
+addError = function(gv, varE, reps){
   nTraits = ncol(gv)
   nInd = nrow(gv)
   if(is.matrix(varE)){
@@ -18,7 +18,7 @@ addError = function(gv, varE, reps=1){
     })
     error = do.call("cbind",error)
   }
-  error = error/sqrt(rep(reps,nrow(error)))
+  error = error/sqrt(reps)
   pheno = gv + error
 
   return(pheno)
@@ -139,11 +139,6 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     simParam = get("SP",envir=.GlobalEnv)
   }
   
-  if(length(reps)>1){
-    warning("Only the first value of 'reps' will be used.")
-    reps = reps[1]
-  }
-  
   # Determine which traits are selected
   if(is.null(traits)){
     if(simParam$nTraits>0L){
@@ -158,6 +153,22 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
               max(traits)<=simParam$nTraits) 
   }
   nTraits = length(traits)
+  
+  # Check for valid length of reps vector
+  if(length(reps)==1){
+    reps = rep(reps, nTraits)
+  }else{
+    stopifnot(length(reps)==nTraits)
+  }
+  
+  # Set p-value for GxE traits
+  if(is.null(p)){
+    p = rep(runif(1), nTraits)
+  }else if(length(p)==1){
+    p = rep(p, nTraits)
+  }else{
+    stopifnot(length(p)==nTraits)
+  }
   
   # Calculate varE if using h2 or H2
   if(!is.null(h2)){
@@ -215,14 +226,6 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     varE = varE%*%corE%*%varE
   }
   
-  # Set p-value for GxE traits
-  if(is.null(p)){
-    p = rep(runif(1), nTraits)
-  }else if(length(p)==1){
-    p = rep(p, nTraits)
-  }else{
-    stopifnot(length(p)==nTraits)
-  }
   
   # Use lapply if object is a MegaPop
   # Only passing varE after previous processing
@@ -248,7 +251,6 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   
   if(is(pop,"Pop")){
     pop@fixEff = rep(as.integer(fixEff), pop@nInd)
-    pop@reps = rep(as.numeric(reps), pop@nInd)
   }
   
   return(pop)
