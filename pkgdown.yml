@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   intro: intro.html
   traits: traits.html
-last_built: 2022-07-29T21:05Z
+last_built: 2022-08-24T18:03Z
 urls:
   reference: https://gaynorr.github.io/AlphaSimR/reference
   article: https://gaynorr.github.io/AlphaSimR/articles
