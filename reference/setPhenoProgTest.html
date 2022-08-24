@@ -16,7 +16,7 @@ number of times equal to 'nMatePerInd'."><!-- mathjax --><script src="https://cd
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +72,10 @@ number of times equal to 'nMatePerInd'.</p>
 <span>  <span class="va">testPop</span>,</span>
 <span>  nMatePerInd <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  use <span class="op">=</span> <span class="st">"pheno"</span>,</span>
+<span>  h2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  H2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  varE <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  corE <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reps <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  fixEff <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -100,14 +103,29 @@ individual in testPop</p></dd>
 <dd><p>true genetic value (<code>gv</code>) or phenotypes (<code>pheno</code>, default)</p></dd>
 
 
+<dt>h2</dt>
+<dd><p>a vector of desired narrow-sense heritabilities for
+each trait. See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
+
+
+<dt>H2</dt>
+<dd><p>a vector of desired broad-sense heritabilities for
+each trait. See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
+
+
 <dt>varE</dt>
-<dd><p>error variances for phenotype if <code>use="pheno"</code>. A vector
-of length nTraits for independent error or a square matrix of 
-dimensions nTraits for correlated errors.</p></dd>
+<dd><p>error (co)variances for traits. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
+
+
+<dt>corE</dt>
+<dd><p>an optional matrix for correlations between errors. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>reps</dt>
-<dd><p>number of replications for phenotype. See details.</p></dd>
+<dd><p>number of replications for phenotype. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>fixEff</dt>

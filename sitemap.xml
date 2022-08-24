@@ -115,6 +115,9 @@
     <loc>https://gaynorr.github.io/AlphaSimR/reference/aa.html</loc>
   </url>
   <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/addSegSite.html</loc>
+  </url>
+  <url>
     <loc>https://gaynorr.github.io/AlphaSimR/reference/attrition.html</loc>
   </url>
   <url>
@@ -232,6 +235,9 @@
     <loc>https://gaynorr.github.io/AlphaSimR/reference/nInd.html</loc>
   </url>
   <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/newEmptyPop.html</loc>
+  </url>
+  <url>
     <loc>https://gaynorr.github.io/AlphaSimR/reference/newMapPop.html</loc>
   </url>
   <url>
@@ -326,6 +332,9 @@
   </url>
   <url>
     <loc>https://gaynorr.github.io/AlphaSimR/reference/setEBV.html</loc>
+  </url>
+  <url>
+    <loc>https://gaynorr.github.io/AlphaSimR/reference/setMarkerHaplo.html</loc>
   </url>
   <url>
     <loc>https://gaynorr.github.io/AlphaSimR/reference/setMisc.html</loc>

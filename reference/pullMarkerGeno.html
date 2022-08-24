@@ -12,7 +12,7 @@ specified loci"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/l
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,8 @@ specified loci</p>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>pop</dt>
-<dd><p>an object of <code><a href="Pop-class.html">Pop-class</a></code></p></dd>
+<dd><p>an object of <code><a href="RawPop-class.html">RawPop-class</a></code> or
+<code><a href="MapPop-class.html">MapPop-class</a></code></p></dd>
 
 
 <dt>markers</dt>
@@ -80,7 +81,8 @@ names of the loci to be retrieved.</p></dd>
 
 
 <dt>simParam</dt>
-<dd><p>an object of <code><a href="SimParam.html">SimParam</a></code></p></dd>
+<dd><p>an object of <code><a href="SimParam.html">SimParam</a></code>, not 
+used if pop is <code><a href="MapPop-class.html">MapPop-class</a></code></p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -107,16 +109,16 @@ names of the loci to be retrieved.</p></dd>
 <span class="r-in"><span><span class="co">#Marker name is consistent with default naming in AlphaSimR.</span></span></span>
 <span class="r-in"><span><span class="fu">pullMarkerGeno</span><span class="op">(</span><span class="va">pop</span>, markers<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1_1"</span>,<span class="st">"1_2"</span><span class="op">)</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    1_1 1_2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    2   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    0   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    2   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    0   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    0   2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    1   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    2   1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5    1   1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6    1   1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7    2   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8    0   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9    1   2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10   2   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    1   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9    2   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10   1   1</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,34 +52,36 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.3.0" id="alphasimr-130">AlphaSimR 1.3.0<a class="anchor" aria-label="anchor" href="#alphasimr-130"></a></h2>
+<p>*added ability to exclude loci by name in <code>SimParam$restrSegSites</code></p>
+<p>*<code>pullMarkerGeno</code> and <code>pullMarkerHaplo</code> now work with a MapPop class</p>
+<p>*added <code>setMarkerHaplo</code> to manually change genotypes in a Pop or MapPop</p>
+<p>*added <code>addSegSite</code> for manually adding segregating sites to a MapPop class</p>
+<p>*<code>simParam$setCorE</code> has been deprecated in favor of a corE argument in <code>simParam$setVarE</code></p>
+<p>*<code>setPheno</code> now takes corE as an argument</p>
+<p>*<code>setPheno</code> now allows the user to set phenotypes for a subset of traits</p>
+<p>*add <code>newEmptyPop</code> to create populations with zero individuals</p>
+<p>*removed reps slot from populations and heterogeneous residual variance GS models</p>
+<p>*added h2, H2, and corE to <code>setPhenoGCA</code> and <code>setPhenoProgTest</code></p>
+<p>*the “EUROPEAN” species history was removed from <code>runMacs</code> due to lengthy runtime</p>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.2" id="alphasimr-122">AlphaSimR 1.2.2<a class="anchor" aria-label="anchor" href="#alphasimr-122"></a></h2>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-2-2">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-2-2"></a></h3>
 <p>*added <code>getPed</code> to quick extract a population’s pedigree</p>
 <p>*added <code>getGenMap</code> to pull a genetic map in data.frame format</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.1" id="alphasimr-121">AlphaSimR 1.2.1<a class="anchor" aria-label="anchor" href="#alphasimr-121"></a></h2><p class="text-muted">CRAN release: 2022-07-05</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-2-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-2-1"></a></h3>
 <p>*fixed bugs relating to <code>importData</code> functions</p>
-<p>*fixed <code>writePlin</code>k errors and no longer requires equal length chromosomes</p>
-</div>
+<p>*fixed <code>writePlink</code> errors and no longer requires equal length chromosomes</p>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.0" id="alphasimr-120">AlphaSimR 1.2.0<a class="anchor" aria-label="anchor" href="#alphasimr-120"></a></h2>
-<div class="section level3">
-<h3 id="new-features-1-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-2-0"></a></h3>
 <p>*added <code>importGenMap</code> to format genetic maps for AlphaSimR</p>
 <p>*added <code>importInbredGeno</code> and <code>importHaplo</code> to make it easier to create a simulation from external data</p>
 <p>*added <code>importSnpChip</code>, <code>importTrait</code> to <code>SimParam</code> to make it easier to manually define traits</p>
 <p>*added <code>pullMarkerGeno</code> and <code>pullMarkerHaplo</code> to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-2-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-2-0"></a></h3>
 <p>*<code>reduceGenome</code>, <code>mergeGenome</code> and <code>doubleGenome</code> should really now work with pedigree and recombination tracking</p>
-</div>
 <div class="section level3">
 <h3 id="known-issues-1-2-0">Known issues<a class="anchor" aria-label="anchor" href="#known-issues-1-2-0"></a></h3>
 <p>*<code>pedigreeCross</code> fails without an appropriate warning for some incomplete pedigrees</p>
@@ -87,153 +89,94 @@
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.2" id="alphasimr-112">AlphaSimR 1.1.2<a class="anchor" aria-label="anchor" href="#alphasimr-112"></a></h2><p class="text-muted">CRAN release: 2022-02-17</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-1-2">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-1-2"></a></h3>
 <p>*added missing #ifdef _OPENMP to OCS.cpp</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1" id="alphasimr-111">AlphaSimR 1.1.1<a class="anchor" aria-label="anchor" href="#alphasimr-111"></a></h2>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-1-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-1-1"></a></h3>
-<p>*removed use of PI variable in C++ code which is compiler specific</p>
-</div>
+<p>*removed use of PI variable in C++ code due to it being compiler specific</p>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="alphasimr-110">AlphaSimR 1.1.0<a class="anchor" aria-label="anchor" href="#alphasimr-110"></a></h2>
-<div class="section level3">
-<h3 id="new-features-1-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-1-0"></a></h3>
 <p>*added snpChip argument to <code>pullIbdHaplo</code> for backwards compatibility</p>
 <p>*exposed internal mixed model solvers</p>
 <p>*all selection functions now return a warning when there are not enough individuals</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-1-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-1-0"></a></h3>
 <p>*fixed error in <code>pullIbdHaplo</code> when chr isn’t NULL</p>
 <p>*fixed an error with assigning 1 QTL and/or SNP</p>
 <p>*changed geno slot from matrix to list to support future RcppArmadillo changes</p>
 <p>*<code>doubleGenome</code> and <code>reduceGenome</code> now work with IBD tracking</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.4" id="alphasimr-104">AlphaSimR 1.0.4<a class="anchor" aria-label="anchor" href="#alphasimr-104"></a></h2><p class="text-muted">CRAN release: 2021-09-08</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-0-4">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-0-4"></a></h3>
 <p>*fixed errors in implementation of Gamma Sprinkling model</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.3" id="alphasimr-103">AlphaSimR 1.0.3<a class="anchor" aria-label="anchor" href="#alphasimr-103"></a></h2><p class="text-muted">CRAN release: 2021-07-29</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-0-3">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-0-3"></a></h3>
 <p>*fixed formatting error in genetic maps created by runMacs that broke genotype extraction functions</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.2" id="alphasimr-102">AlphaSimR 1.0.2<a class="anchor" aria-label="anchor" href="#alphasimr-102"></a></h2><p class="text-muted">CRAN release: 2021-07-28</p>
-<div class="section level3">
-<h3 id="new-features-1-0-2">New features<a class="anchor" aria-label="anchor" href="#new-features-1-0-2"></a></h3>
 <p>*added h2 and H2 to <code>setPhenoGCA</code></p>
 <p>*<code>pullGeno</code> and <code>pullHaplo</code> functions now report marker names from the genetic map</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.1" id="alphasimr-101">AlphaSimR 1.0.1<a class="anchor" aria-label="anchor" href="#alphasimr-101"></a></h2><p class="text-muted">CRAN release: 2021-05-14</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-1-0-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-1-0-1"></a></h3>
 <p>*removed lazyData field in DESCRIPTION</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="alphasimr-100">AlphaSimR 1.0.0<a class="anchor" aria-label="anchor" href="#alphasimr-100"></a></h2>
 <p>*AlphaSimR manuscript has been published in G3 (citation added)</p>
-<div class="section level3">
-<h3 id="new-features-1-0-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-0-0"></a></h3>
 <p>*changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model</p>
-<p>*change default interfernce parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)</p>
+<p>*change default interference parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)</p>
 <p>*new internal id (iid) that allows user to freely change id slot in populations</p>
 <p>*<code>runMacs2</code> now adjusts Ne for autopolyploids</p>
 <p>*parent populations are now passed to <code>finalizePop</code></p>
 <p>*check added that throws an error when use of discontinued “gender” argument is detected</p>
 <p>*added experimental <code>MegaPop-class</code></p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.0" id="alphasimr-0130">AlphaSimR 0.13.0<a class="anchor" aria-label="anchor" href="#alphasimr-0130"></a></h2><p class="text-muted">CRAN release: 2020-10-11</p>
-<div class="section level3">
-<h3 id="new-features-0-13-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-13-0"></a></h3>
 <p>*references to gender have been changed to the more appropriate terms sex or sexes</p>
 <p>*added misc slot to populations</p>
 <p>*added <code>finalizePop</code> to <code>SimParam</code></p>
 <p>*added physical positions to <code>getSnpMap</code> and <code>getQtlMap</code></p>
 <p>*you can now use h2 and H2 to specify error variance in <code>setPheno</code></p>
 <p>*<code>SimParam$setVarE</code> now accepts a matrix for varE</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-13-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-13-0"></a></h3>
 <p>*fixed a bug in <code>editGenome</code> when making multiple edits</p>
 <p>*adding merging of centromere vector in <code>cChr</code></p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.12.2" id="alphasimr-0122">AlphaSimR 0.12.2<a class="anchor" aria-label="anchor" href="#alphasimr-0122"></a></h2><p class="text-muted">CRAN release: 2020-05-19</p>
-<div class="section level3">
-<h3 id="new-features-0-12-2">New features<a class="anchor" aria-label="anchor" href="#new-features-0-12-2"></a></h3>
 <p>*GxE traits now default to random sampling of p-values</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-12-2">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-12-2"></a></h3>
 <p>*fixed a bug in <code>restrSegSites</code></p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.12.1" id="alphasimr-0121">AlphaSimR 0.12.1<a class="anchor" aria-label="anchor" href="#alphasimr-0121"></a></h2><p class="text-muted">CRAN release: 2020-03-30</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-12-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-12-1"></a></h3>
 <p>*fixed a bug in selection of segSites</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.12.0" id="alphasimr-0120">AlphaSimR 0.12.0<a class="anchor" aria-label="anchor" href="#alphasimr-0120"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-12-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-12-0"></a></h3>
 <p>*changed output of <code>genParam</code> to match Bulmer, 1976</p>
 <p>*nProgeny added to <code>makeCross</code> and <code>makeCross2</code></p>
 <p>*all <code>SimParam</code> documentation is now in <code><a href="../reference/SimParam.html">?SimParam</a></code></p>
 <p>*non-overlapping QTL and SNP is now the default</p>
 <p>*new interface for <code>restrSegSites</code> in <code>SimParam</code></p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-12-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-12-0"></a></h3>
 <p>*fixed subset by id for populations</p>
 <p>*fixed major bug in <code>newMapPop</code></p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.11.1" id="alphasimr-0111">AlphaSimR 0.11.1<a class="anchor" aria-label="anchor" href="#alphasimr-0111"></a></h2><p class="text-muted">CRAN release: 2020-01-13</p>
-<div class="section level3">
-<h3 id="new-features-0-11-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-11-1"></a></h3>
 <p>*switched to a circular design for the balance option in <code>randCross</code> and <code>randCross2</code></p>
 <p>*added <code>reduceGenome</code> and <code>doubleGenome</code> for changing ploidy levels</p>
 <p>*added minSnpFreq to SimParam_addSnpChip for any reference population</p>
 <p>*the <code>c</code> function now merges individuals for MapPop objects (was chromosomes before)</p>
 <p>*the <code>cChr</code> function new merges chromosomes for MapPop objects</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-11-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-11-1"></a></h3>
 <p>*fixed broken SimParam_addStructuredSnpChip</p>
 <p>*removed broken <code>pullMultipleSnpGeno</code> and <code>pullMultipleSnpHaplo</code></p>
 <p>*fixed broken <code>writePlink</code></p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.11.0" id="alphasimr-0110">AlphaSimR 0.11.0<a class="anchor" aria-label="anchor" href="#alphasimr-0110"></a></h2><p class="text-muted">CRAN release: 2019-10-11</p>
-<div class="section level3">
-<h3 id="breaking-changes-0-11-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-11-0"></a></h3>
 <p>*rework of <code>setEBV</code> (breaks some scripts)</p>
-</div>
-<div class="section level3">
-<h3 id="new-features-0-11-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-11-0"></a></h3>
 <p>*genotype data now stored as bits (was bytes)</p>
 <p>*implemented a gamma model for crossover interference</p>
 <p>*added the mutate function to model random mutations</p>
@@ -244,59 +187,38 @@
 <p>*added keepParents option to makeDH and self (indirectly extends <code>selectFam</code> and <code>selectWithinFam</code>)</p>
 <p>*added RRBLUP_SCA2</p>
 <p>*set methods for the “show” function when applied to populations</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-11-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-11-0"></a></h3>
 <p>*fixed a bug returning the first individual when selecting 0</p>
 <p>*fixed error in recombination track when using <code>makeDH</code></p>
 <p>*fixed error causing epistatic effects to mask GxE effects</p>
 <p>*fixed an error with <code>pullSegSiteGeno</code> and <code>pullSegSiteHaplo</code> with variable number of sites per chromosome</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.0" id="alphasimr-0100">AlphaSimR 0.10.0<a class="anchor" aria-label="anchor" href="#alphasimr-0100"></a></h2><p class="text-muted">CRAN release: 2019-03-15</p>
-<div class="section level3">
-<h3 id="new-features-0-10-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-10-0"></a></h3>
 <p>*added traits with epistasis</p>
 <p>*Max number of threads automatically detected</p>
 <p>*added RRBLUP_D2</p>
 <p>*added version tracking to <code>SimParam</code></p>
 <p>*removed <code>trackHaploPop</code> (super-ceded by <code>pullIbdHaplo</code>)</p>
 <p>*added <code>fastRRBLUP</code></p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-10-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-10-0"></a></h3>
 <p>*fixed faulty double crossover logic</p>
 <p>*fixed broken <code>writePlink</code></p>
 <p>*fixed broken <code>pullIbdHaplo</code></p>
 <p>*<code>mergePops</code> no longer assumes diploidy</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.0" id="alphasimr-090">AlphaSimR 0.9.0<a class="anchor" aria-label="anchor" href="#alphasimr-090"></a></h2><p class="text-muted">CRAN release: 2019-02-07</p>
-<div class="section level3">
-<h3 id="new-features-0-9-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-9-0"></a></h3>
 <p>*added support for autopolyploids</p>
 <p>*added <code>RRBLUP_GCA2</code></p>
 <p>*<code>randCross2</code> can now “balance” crossing when not using gender</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-9-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-9-0"></a></h3>
 <p>*fixed recombination tracking bug in <code>createDH2</code></p>
 <p>*removed bug in <code>setEBV</code> with append=TRUE</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.2" id="alphasimr-082">AlphaSimR 0.8.2<a class="anchor" aria-label="anchor" href="#alphasimr-082"></a></h2><p class="text-muted">CRAN release: 2018-10-15</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-8-2">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-8-2"></a></h3>
 <p>*fixed ambiguous overloading in optimize.cpp</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.1" id="alphasimr-081">AlphaSimR 0.8.1<a class="anchor" aria-label="anchor" href="#alphasimr-081"></a></h2><p class="text-muted">CRAN release: 2018-10-12</p>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-8-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-8-1"></a></h3>
 <p>*<code>setPheno</code> (not <code>setPhenoGCA</code>) passes the number of reps to populations</p>
 <p>*fixed bug in <code>editGenomeTopQtl</code></p>
 <p>*fixed bug in <code>RRBLUP_D</code></p>
@@ -305,11 +227,8 @@
 <p>*removed unimplemented SimParam_restrSnpSites and SimParam_restrQtlSites</p>
 <p>*add error message for no traits in <code>calcGCA</code></p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.0" id="alphasimr-080">AlphaSimR 0.8.0<a class="anchor" aria-label="anchor" href="#alphasimr-080"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-8-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-8-0"></a></h3>
 <p>*added GxE traits with zero environmental variance</p>
 <p>*faster trait scaling</p>
 <p>*faster calculation of genetic values</p>
@@ -319,23 +238,14 @@
 <p>*parallelized <code>runMacs</code></p>
 <p>*parallelized calculation of genetic values</p>
 <p>*variance calculations now account for inbreeding</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-8-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-8-0"></a></h3>
 <p>*fixes for male selection in <code>selectOP</code></p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.7.1" id="alphasimr-071">AlphaSimR 0.7.1<a class="anchor" aria-label="anchor" href="#alphasimr-071"></a></h2>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-7-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-7-1"></a></h3>
 <p>*add fixEff to <code>setPhenoGCA</code></p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.7.0" id="alphasimr-070">AlphaSimR 0.7.0<a class="anchor" aria-label="anchor" href="#alphasimr-070"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-7-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-7-0"></a></h3>
 <p>*added default <code>runMacs</code> option to return all segSites</p>
 <p>*added ability to specify separate male and female genetic maps</p>
 <p>*<code>pullGeno</code> and <code>pullHaplo</code> functions can now specify chromosomes</p>
@@ -345,40 +255,24 @@
 <p>*GS functions now use populations directly</p>
 <p>*added <code>pullIbdHaplo</code></p>
 <p>*added <code>writePlink</code></p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-7-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-7-0"></a></h3>
 <p>*fixed population sub-setting checks to prevent invalid selections</p>
 <p>*fixed slow <code>calcGCA</code></p>
 <p>*fixed error in <code>addTraitAG</code> preventing multiple traits</p>
 <p>*fixed bug with <code>mergePops</code> when merging ebv</p>
 <p>*fixed bug in <code>setVarE</code> when using H2 and multiple traits</p>
 </div>
-</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.1" id="alphasimr-061">AlphaSimR 0.6.1<a class="anchor" aria-label="anchor" href="#alphasimr-061"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-6-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-6-1"></a></h3>
 <p>*<code>selectFam</code> now handles half-sib families</p>
 <p>*<code>selectWithinFa</code>m now handles half-sib families</p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-6-1">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-6-1"></a></h3>
 <p>*Removed restriction on varE=NULL in <code>setPhenoGCA</code></p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="alphasimr-060">AlphaSimR 0.6.0<a class="anchor" aria-label="anchor" href="#alphasimr-060"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-6-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-6-0"></a></h3>
 <p>*Added NEWS file</p>
 <p>*Added <code>selectOP</code> to model selection in open pollinating plants</p>
 <p>*Added <code>runMacs2</code> as a wrapper for <code>runMacs</code></p>
-</div>
-<div class="section level3">
-<h3 id="minor-improvements-and-fixes-0-6-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-6-0"></a></h3>
 <p>*Fixed error when using H2 in SimParam_setVarE</p>
-</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>

@@ -12,7 +12,7 @@ returns these values as phenotypes for a population."><!-- mathjax --><script sr
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,6 +68,7 @@ returns these values as phenotypes for a population.</p>
 <span>  h2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  H2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  varE <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  corE <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reps <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  fixEff <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -93,20 +94,27 @@ returns these values as phenotypes for a population.</p>
 
 <dt>h2</dt>
 <dd><p>a vector of desired narrow-sense heritabilities for
-each trait. See details.</p></dd>
+each trait. See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>H2</dt>
 <dd><p>a vector of desired broad-sense heritabilities for
-each trait. See details.</p></dd>
+each trait. See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>varE</dt>
-<dd><p>error (co)variances for traits. See details.</p></dd>
+<dd><p>error (co)variances for traits. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
+
+
+<dt>corE</dt>
+<dd><p>an optional matrix for correlations between errors. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>reps</dt>
-<dd><p>number of replications for phenotype. See details.</p></dd>
+<dd><p>number of replications for phenotype. 
+See details in <code><a href="setPheno.html">setPheno</a></code>.</p></dd>
 
 
 <dt>fixEff</dt>
@@ -140,31 +148,6 @@ or by the <code><a href="makeDH.html">makeDH</a></code> function</p></dd>
 
 <p>Returns an object of <code><a href="Pop-class.html">Pop-class</a></code> or 
 a matrix if onlyPheno=TRUE</p>
-    </div>
-    <div class="section level2">
-    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>There are three arguments for setting the error variance of a 
-phenotype: h2, H2, and varE. The user should only use one of these 
-arguments. If the user supplies values for more than one, only one 
-will be used according to order in which they are listed above.</p>
-<p>The h2 argument allows the user to specify the error variance 
-according to narrow-sense heritability. This calculation uses the
-additive genetic variance and total genetic variance in the founder 
-population. Thus, the heritability relates to the founder population 
-and not the current population.</p>
-<p>The H2 argument allows the user to specify the error variance 
-according to broad-sense heritability. This calculation uses the
-total genetic variance in the founder population. Thus, the heritability 
-relates to the founder population and not the current population.</p>
-<p>The varE argument allows the user to specify the error variance
-directly. The user may supply a vector describing the error variance 
-for each trait or supply a matrix that specify the covariance of 
-the errors.</p>
-<p>The reps parameter is for convenient representation of replicated data. 
-It is intended to represent replicated yield trials in plant 
-breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number of plots per entry. The resulting phenotype 
-represents the entry-means.</p>
     </div>
 
     <div class="section level2">

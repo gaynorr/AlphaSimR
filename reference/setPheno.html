@@ -12,7 +12,7 @@ from a multivariate normal distribution."><!-- mathjax --><script src="https://c
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,10 +66,12 @@ from a multivariate normal distribution.</p>
 <span>  h2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  H2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  varE <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  corE <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reps <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  fixEff <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  onlyPheno <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  traits <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  simParam <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -95,6 +97,11 @@ each trait. See details.</p></dd>
 <dd><p>error (co)variances for traits. See details.</p></dd>
 
 
+<dt>corE</dt>
+<dd><p>an optional matrix for correlations between errors. 
+See details.</p></dd>
+
+
 <dt>reps</dt>
 <dd><p>number of replications for phenotype. See details.</p></dd>
 
@@ -112,6 +119,11 @@ sampled at random.</p></dd>
 
 <dt>onlyPheno</dt>
 <dd><p>should only the phenotype be returned, see return</p></dd>
+
+
+<dt>traits</dt>
+<dd><p>an integer vector indicate which traits to set. If NULL,
+all traits will be set.</p></dd>
 
 
 <dt>simParam</dt>
@@ -145,6 +157,12 @@ relates to the founder population and not the current population.</p>
 directly. The user may supply a vector describing the error variance 
 for each trait or supply a matrix that specify the covariance of 
 the errors.</p>
+<p>The corE argument allows the user to specify correlations for the 
+error covariance matrix. These correlations are be supplied in addition 
+to the h2, H2, or varE arguments. These correlations will be used to 
+construct a covariance matrix from a vector of variances. If the user 
+supplied a covariance matrix to varE, these correlations will supercede 
+values provided in that matrix.</p>
 <p>The reps parameter is for convenient representation of replicated data. 
 It is intended to represent replicated yield trials in plant 
 breeding programs. In this case, varE is set to the plot error and 
