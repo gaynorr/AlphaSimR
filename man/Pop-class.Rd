@@ -66,9 +66,6 @@ are nInd rows and a variable number of columns.}
 \item{\code{fixEff}}{a fixed effect relating to the phenotype.
 Used by genomic selection models but otherwise ignored.}
 
-\item{\code{reps}}{the number of replications used to measure the
-phenotype. Used by genomic selection models, but otherwise ignored.}
-
 \item{\code{misc}}{a list whose elements correspond to individuals in the
 population. This list is normally empty and exists solely as an
 open slot available for uses to store extra information about

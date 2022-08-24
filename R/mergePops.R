@@ -76,10 +76,6 @@ mergePops = function(popList){
   fixEff= do.call("c",
                   lapply(popList,
                          function(x) x@fixEff))
-  #reps
-  reps= do.call("c",
-                lapply(popList,
-                       function(x) x@reps))
   
   #misc
   misc = do.call("c",
@@ -143,7 +139,6 @@ mergePops = function(popList){
              mother=mother,
              father=father,
              fixEff=fixEff,
-             reps=reps,
              nTraits=nTraits,
              gv=gv,
              gxe=gxe,

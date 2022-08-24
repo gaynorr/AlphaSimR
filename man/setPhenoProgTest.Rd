@@ -9,7 +9,10 @@ setPhenoProgTest(
   testPop,
   nMatePerInd = 1L,
   use = "pheno",
+  h2 = NULL,
+  H2 = NULL,
   varE = NULL,
+  corE = NULL,
   reps = 1,
   fixEff = 1L,
   p = NULL,
@@ -27,11 +30,20 @@ individual in testPop}
 
 \item{use}{true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)}
 
-\item{varE}{error variances for phenotype if \code{use="pheno"}. A vector
-of length nTraits for independent error or a square matrix of 
-dimensions nTraits for correlated errors.}
+\item{h2}{a vector of desired narrow-sense heritabilities for
+each trait. See details in \code{\link{setPheno}}.}
 
-\item{reps}{number of replications for phenotype. See details.}
+\item{H2}{a vector of desired broad-sense heritabilities for
+each trait. See details in \code{\link{setPheno}}.}
+
+\item{varE}{error (co)variances for traits. 
+See details in \code{\link{setPheno}}.}
+
+\item{corE}{an optional matrix for correlations between errors. 
+See details in \code{\link{setPheno}}.}
+
+\item{reps}{number of replications for phenotype. 
+See details in \code{\link{setPheno}}.}
 
 \item{fixEff}{fixed effect to assign to the population. Used 
 by genomic selection models only.}

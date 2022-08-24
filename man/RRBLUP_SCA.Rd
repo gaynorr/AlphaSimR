@@ -11,7 +11,6 @@ RRBLUP_SCA(
   snpChip = 1,
   useQtl = FALSE,
   maxIter = 40L,
-  useReps = FALSE,
   simParam = NULL,
   ...
 )
@@ -33,9 +32,6 @@ If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations for convergence.}
-
-\item{useReps}{should population's reps slot be used to model 
-heterogeneous error variance}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

@@ -11,7 +11,6 @@ RRBLUP_D(
   snpChip = 1,
   useQtl = FALSE,
   maxIter = 40L,
-  useReps = FALSE,
   simParam = NULL,
   ...
 )
@@ -34,9 +33,6 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations. Only used 
 when number of traits is greater than 1.}
-
-\item{useReps}{should population's reps slot be used to model 
-heterogeneous error variance}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 

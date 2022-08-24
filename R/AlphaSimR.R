@@ -7,6 +7,7 @@
 #' @importFrom stats model.matrix rbinom runif cov2cor
 #' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
+#' @importFrom Rdpack reprompt
 
 #' @description
 #' The successor to the 'AlphaSim' software for breeding program 
