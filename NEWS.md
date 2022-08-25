@@ -1,3 +1,7 @@
+# AlphaSimR 1.3.1
+
+*updated link to Gaynor, 2017
+
 # AlphaSimR 1.3.0
 
 *added ability to exclude loci by name in `SimParam$restrSegSites`
