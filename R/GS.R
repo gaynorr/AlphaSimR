@@ -1266,6 +1266,9 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
                nrow=pop@nInd,
                ncol=nTraits)
   
+  # Placeholder names
+  colnames(ebv) = as.character(1:nTraits)
+  
   value = tolower(value)
   
   if(value=="gv"){
