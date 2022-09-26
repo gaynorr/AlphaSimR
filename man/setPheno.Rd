@@ -9,10 +9,12 @@ setPheno(
   h2 = NULL,
   H2 = NULL,
   varE = NULL,
+  corE = NULL,
   reps = 1,
   fixEff = 1L,
   p = NULL,
   onlyPheno = FALSE,
+  traits = NULL,
   simParam = NULL
 )
 }
@@ -28,6 +30,9 @@ each trait. See details.}
 
 \item{varE}{error (co)variances for traits. See details.}
 
+\item{corE}{an optional matrix for correlations between errors. 
+See details.}
+
 \item{reps}{number of replications for phenotype. See details.}
 
 \item{fixEff}{fixed effect to assign to the population. Used 
@@ -38,6 +43,9 @@ used by GxE traits. If NULL, a value is
 sampled at random.}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
+
+\item{traits}{an integer vector indicate which traits to set. If NULL,
+all traits will be set.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
@@ -71,6 +79,13 @@ The varE argument allows the user to specify the error variance
 directly. The user may supply a vector describing the error variance 
 for each trait or supply a matrix that specify the covariance of 
 the errors.
+
+The corE argument allows the user to specify correlations for the 
+error covariance matrix. These correlations are be supplied in addition 
+to the h2, H2, or varE arguments. These correlations will be used to 
+construct a covariance matrix from a vector of variances. If the user 
+supplied a covariance matrix to varE, these correlations will supercede 
+values provided in that matrix.
 
 The reps parameter is for convenient representation of replicated data. 
 It is intended to represent replicated yield trials in plant 

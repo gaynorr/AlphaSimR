@@ -5,7 +5,7 @@
 \alias{TraitAE-class}
 \title{Additive and epistatic trait}
 \description{
-Extends \code{\link{TraitA-class}} 
+Extends \code{\link{TraitA-class}}
 to add epistasis
 }
 \section{Slots}{

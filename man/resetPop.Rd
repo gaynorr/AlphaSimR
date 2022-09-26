@@ -15,7 +15,7 @@ resetPop(pop, simParam = NULL)
 an object of \code{\link{Pop-class}}
 }
 \description{
-Recalculates a population's genetic values and 
+Recalculates a population's genetic values and
 resets phenotypes and EBVs.
 }
 \examples{

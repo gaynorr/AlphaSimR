@@ -591,9 +591,7 @@ void GraphBuilder::printHaplotypes(){
 void GraphBuilder::printDataStructures(){
   Rcpp::Rcerr<<endl<<"*** Begin printing structures ***"<<endl;
   
-  double trueLen = 0.0;
   Rcpp::Rcerr<<"Full ARG (list of edges)\n";
-  trueLen = 0.0;
   for (EdgePtrList::iterator it=pEdgeListInARG->begin();it!=pEdgeListInARG->end();it++){
     EdgePtr curEdge = *it;
     Rcpp::Rcerr<<"low:ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
@@ -604,12 +602,10 @@ void GraphBuilder::printDataStructures(){
               ",pop:"<<curEdge->getTopNodeRef()->getPopulation()<<
                 ",del:"<<curEdge->bDeleted<<
                   ";hist:"<<curEdge->iGraphIteration<<endl;
-    trueLen+=curEdge->getLength();
   }
   
   
   Rcpp::Rcerr<<"Last tree (list of edges)\n";
-  trueLen = 0.0;
   EdgePtrVector::iterator it=pEdgeVectorInTree->begin();
   unsigned int count=0;
   while(count<iTotalTreeEdges){
@@ -621,7 +617,6 @@ void GraphBuilder::printDataStructures(){
           ";high_ht:"<<curEdge->getTopNodeRef()->getHeight()<<
             ",type:"<<curEdge->getTopNodeRef()->getTypeStr()<<
               ",pop:"<<curEdge->getTopNodeRef()->getPopulation()<<endl;
-    trueLen+=curEdge->getLength();
     ++count;
     ++it;
   }

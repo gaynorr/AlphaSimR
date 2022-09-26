@@ -375,8 +375,6 @@ isNamedMapPop = function(x) {
 #' @slot gxe list containing GxE slopes for GxE traits
 #' @slot fixEff a fixed effect relating to the phenotype.
 #' Used by genomic selection models but otherwise ignored.
-#' @slot reps the number of replications used to measure the
-#' phenotype. Used by genomic selection models, but otherwise ignored.
 #' @slot misc a list whose elements correspond to individuals in the
 #' population. This list is normally empty and exists solely as an
 #' open slot available for uses to store extra information about
@@ -395,7 +393,6 @@ setClass("Pop",
                  ebv="matrix",
                  gxe="list",
                  fixEff="integer",
-                 reps="numeric",
                  misc="list"),
          contains="RawPop")
 
@@ -455,9 +452,6 @@ setValidity("Pop",function(object){
   if(object@nInd!=length(object@fixEff)){
     errors = c(errors,"nInd!=length(fixEff)")
   }
-  if(object@nInd!=length(object@reps)){
-    errors = c(errors,"nInd!=length(reps)")
-  }
   if(object@nInd!=length(object@misc)){
     errors = c(errors,"nInd!=length(misc)")
   }
@@ -490,7 +484,6 @@ setMethod("[",
             x@mother = x@mother[i]
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
-            x@reps = x@reps[i]
             x@misc = x@misc[i]
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
@@ -665,6 +658,7 @@ newPop = function(rawPop,simParam=NULL,...){
   gv = matrix(NA_real_,nrow=rawPop@nInd,
               ncol=simParam$nTraits)
   colnames(gv) = rep(NA_character_, simParam$nTraits)
+  pheno = gv
 
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
@@ -691,13 +685,10 @@ newPop = function(rawPop,simParam=NULL,...){
                mother=mother,
                father=father,
                fixEff=rep(1L,rawPop@nInd),
-               reps=rep(1,rawPop@nInd),
                nTraits=simParam$nTraits,
                gv=gv,
                gxe=gxe,
-               pheno=matrix(NA_real_,
-                            nrow=rawPop@nInd,
-                            ncol=simParam$nTraits),
+               pheno=pheno,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
                           ncol=0),
@@ -765,7 +756,6 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-  pop@reps = rep(1,pop@nInd)
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
@@ -802,6 +792,84 @@ resetPop = function(pop,simParam=NULL){
 isPop = function(x) {
   ret = is(x, class2 = "Pop")
   return(ret)
+}
+
+#' @title Creates an empty population
+#'
+#' @description
+#' Creates an empty \code{\link{Pop-class}} object with user 
+#' defined ploidy and other parameters taken from simParam. 
+#'
+#' @param ploidy the ploidy of the population
+#' @param simParam an object of \code{\link{SimParam}}
+#'
+#' @return Returns an object of \code{\link{Pop-class}} with
+#' zero individuals
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#'
+#' #Create empty population
+#' pop = newEmptyPop(simParam=SP)
+#' isPop(pop)
+#'
+#' @export
+newEmptyPop = function(ploidy=2L, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP", envir=.GlobalEnv)
+  }
+  
+  # Create 0 x nTrait matrix with trait names
+  # For pheno and gv slots
+  traitMat = matrix(NA_real_,
+                    nrow = 0L,
+                    ncol = simParam$nTraits)
+  
+  traitNames = character(simParam$nTraits)
+  
+  if(simParam$nTraits > 0L){
+    # Get trait names
+    for(i in 1:simParam$nTraits){
+      traitNames[i] = simParam$traits[[i]]@name
+    }
+  }
+  
+  colnames(traitMat) = traitNames
+  
+  # Create empty geno list
+  nLoci = unname(sapply(simParam$genMap, length))
+  geno = vector("list", simParam$nChr)
+  for(i in 1:simParam$nChr){
+    DIM1 = nLoci[i]%/%8L + (nLoci[i]%%8L > 0L)
+    geno[[i]] = array(as.raw(0), dim=c(DIM1, ploidy, 0))
+  }
+  
+  output = new("Pop",
+               nInd = 0L,
+               nChr = simParam$nChr,
+               ploidy = as.integer(ploidy),
+               nLoci = nLoci,
+               sex = character(),
+               geno = geno,
+               id = character(),
+               iid = integer(),
+               mother = character(),
+               father = character(),
+               fixEff = integer(),
+               nTraits = simParam$nTraits,
+               gv = traitMat,
+               gxe = vector("list", simParam$nTraits),
+               pheno = traitMat,
+               ebv = matrix(NA_real_,
+                            nrow=0L,
+                            ncol=0L),
+               misc = list())
+  return(output)
 }
 
 # MegaPop ------------------------------------------------------------------

@@ -85,7 +85,8 @@ hybridCross = function(females, males,
     }
   }
   if(simParam$nTraits>0){
-    pheno = addError(gv,simParam$varE)
+    pheno = addError(gv, simParam$varE, 
+                     reps=rep(1, simParam$nTraits))
   }else{
     pheno = gv
   }
@@ -227,11 +228,15 @@ calcGCA = function(pop,use="pheno"){
 #' @param testers an object of \code{\link{Pop-class}}
 #' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
 #' @param h2 a vector of desired narrow-sense heritabilities for
-#' each trait. See details.
+#' each trait. See details in \code{\link{setPheno}}.
 #' @param H2 a vector of desired broad-sense heritabilities for
-#' each trait. See details.
-#' @param varE error (co)variances for traits. See details.
-#' @param reps number of replications for phenotype. See details.
+#' each trait. See details in \code{\link{setPheno}}.
+#' @param varE error (co)variances for traits. 
+#' See details in \code{\link{setPheno}}.
+#' @param corE an optional matrix for correlations between errors. 
+#' See details in \code{\link{setPheno}}.
+#' @param reps number of replications for phenotype. 
+#' See details in \code{\link{setPheno}}.
 #' @param fixEff fixed effect to assign to the population. Used 
 #' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
@@ -243,33 +248,6 @@ calcGCA = function(pop,use="pheno"){
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
 #' 
-#' @details
-#' There are three arguments for setting the error variance of a 
-#' phenotype: h2, H2, and varE. The user should only use one of these 
-#' arguments. If the user supplies values for more than one, only one 
-#' will be used according to order in which they are listed above.
-#' 
-#' The h2 argument allows the user to specify the error variance 
-#' according to narrow-sense heritability. This calculation uses the
-#' additive genetic variance and total genetic variance in the founder 
-#' population. Thus, the heritability relates to the founder population 
-#' and not the current population.
-#' 
-#' The H2 argument allows the user to specify the error variance 
-#' according to broad-sense heritability. This calculation uses the
-#' total genetic variance in the founder population. Thus, the heritability 
-#' relates to the founder population and not the current population.
-#' 
-#' The varE argument allows the user to specify the error variance
-#' directly. The user may supply a vector describing the error variance 
-#' for each trait or supply a matrix that specify the covariance of 
-#' the errors.
-#' 
-#' The reps parameter is for convenient representation of replicated data. 
-#' It is intended to represent replicated yield trials in plant 
-#' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number of plots per entry. The resulting phenotype 
-#' represents the entry-means.
 #' 
 #' @return Returns an object of \code{\link{Pop-class}} or 
 #' a matrix if onlyPheno=TRUE
@@ -289,18 +267,18 @@ calcGCA = function(pop,use="pheno"){
 #' pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
 #' 
 #' @export
-setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
-                       varE=NULL,reps=1,fixEff=1L,p=NULL,inbred=FALSE,
-                       onlyPheno=FALSE,simParam=NULL){
+setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
+                       varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL, 
+                       inbred=FALSE, onlyPheno=FALSE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   if(is(pop,"MegaPop")){
     stopifnot(class(testers)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers, 
-                      use=use, varE=varE, reps=reps, fixEff=fixEff,
-                      p=p, inbred=inbred, onlyPheno=FALSE, 
-                      simParam=simParam)
+                      use=use, h2=h2, H2=H2, varE=varE, corE=corE, 
+                      reps=reps, fixEff=fixEff, p=p, inbred=inbred, 
+                      onlyPheno=FALSE, simParam=simParam)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -309,39 +287,12 @@ setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
   stopifnot(class(pop)=="Pop",class(testers)=="Pop")
   use = tolower(use)
   #Make hybrids
-  tmp = hybridCross(females=pop,males=testers,crossPlan="testcross",
-                    returnHybridPop=inbred,simParam=simParam)
+  tmp = hybridCross(females=pop, males=testers, crossPlan="testcross",
+                    returnHybridPop=inbred, simParam=simParam)
   #Get response
   if(use=="pheno"){
-    # Calculate varE if using h2 or H2
-    if(!is.null(h2)){
-      if(length(h2)==1){
-        h2 = rep(h2, simParam$nTraits)
-      }
-      stopifnot(length(h2)==simParam$nTraits,
-                all(simParam$varG>0),
-                all(simParam$varA>0))
-      varE = numeric(simParam$nTraits)
-      for(i in 1:length(h2)){
-        tmp = simParam$varA[i]/h2[i]-simParam$varG[i]
-        if(tmp<0){
-          stop(paste0("h2=",h2[i]," is not possible for trait ",i))
-        }
-        varE[i] = tmp
-      }
-    }else if(!is.null(H2)){
-      if(length(H2)==1){
-        H2 = rep(H2, simParam$nTraits)
-      }
-      stopifnot(length(H2)==simParam$nTraits)
-      varE = numeric(simParam$nTraits)
-      for(i in 1:length(H2)){
-        tmp = simParam$varG[i]/H2[i]-simParam$varG[i]
-        varE[i] = tmp
-      }
-    }
-    y = setPheno(tmp,varE=varE,p=p,reps=reps,
-                 onlyPheno=TRUE,simParam=simParam)
+    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE, 
+                 p=p, reps=reps, onlyPheno=TRUE, simParam=simParam)
   }else if(use=="gv"){
     y = tmp@gv
   }else{
@@ -383,10 +334,16 @@ setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
 #' @param nMatePerInd number of times an individual in 'pop' is mated to an 
 #' individual in testPop
 #' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
-#' @param varE error variances for phenotype if \code{use="pheno"}. A vector
-#' of length nTraits for independent error or a square matrix of 
-#' dimensions nTraits for correlated errors.
-#' @param reps number of replications for phenotype. See details.
+#' @param h2 a vector of desired narrow-sense heritabilities for
+#' each trait. See details in \code{\link{setPheno}}.
+#' @param H2 a vector of desired broad-sense heritabilities for
+#' each trait. See details in \code{\link{setPheno}}.
+#' @param varE error (co)variances for traits. 
+#' See details in \code{\link{setPheno}}.
+#' @param corE an optional matrix for correlations between errors. 
+#' See details in \code{\link{setPheno}}.
+#' @param reps number of replications for phenotype. 
+#' See details in \code{\link{setPheno}}.
 #' @param fixEff fixed effect to assign to the population. Used 
 #' by genomic selection models only.
 #' @param p the p-value for the environmental covariate 
@@ -421,17 +378,19 @@ setPhenoGCA = function(pop,testers,use="pheno",h2=NULL,H2=NULL,
 #' pop3 = setPhenoProgTest(pop1, pop2, use="gv", simParam=SP)
 #' 
 #' @export
-setPhenoProgTest = function(pop,testPop,nMatePerInd=1L,use="pheno",varE=NULL,reps=1,
-                            fixEff=1L,p=NULL,onlyPheno=FALSE,simParam=NULL){
+setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno", 
+                            h2=NULL, H2=NULL, varE=NULL, corE=NULL, 
+                            reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE, 
+                            simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
   if(is(pop,"MegaPop")){
     stopifnot(class(testPop)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop, 
-                      nMatePerInd=nMatePerInd, use=use, varE=varE, reps=reps, 
-                      fixEff=fixEff, p=p, onlyPheno=FALSE, 
-                      simParam=simParam)
+                      nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2, 
+                      varE=varE, corE=corE, reps=reps, fixEff=fixEff, 
+                      p=p, onlyPheno=FALSE, simParam=simParam)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -444,8 +403,8 @@ setPhenoProgTest = function(pop,testPop,nMatePerInd=1L,use="pheno",varE=NULL,rep
                    balance=TRUE, simParam=simParam)
   #Get response
   if(use=="pheno"){
-    y = setPheno(tmp, varE=varE, p=p, reps=reps,
-                 onlyPheno=TRUE, simParam=simParam)
+    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE, 
+                 reps=reps, p=p, onlyPheno=TRUE, simParam=simParam)
   }else if(use=="gv"){
     y = tmp@gv
   }else{

@@ -62,10 +62,11 @@ the manualCommand argument of \code{\link{runMacs}}.
 }
 \description{
 A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
-to be easier to use than supply custom comands to manualCommand in 
-\code{\link{runMacs}}. It effectively automates the creation of an 
-appropriate manualCommand using user supplied variables, but only deals  
-with a subset of the possibilities. The defaults were chosen to match 
+to provide a more intuitive interface for writing custom commands
+in MaCS \insertCite{MaCS}{AlphaSimR}. It effectively automates the creation 
+of an appropriate line for the manualCommand argument in \code{\link{runMacs}} 
+using user supplied variables, but only allows for a subset of the functionality 
+offered by this argument. The default arguments of this function were chosen to match 
 species="GENERIC" in \code{\link{runMacs}}.
 }
 \examples{
@@ -74,4 +75,7 @@ species="GENERIC" in \code{\link{runMacs}}.
 # The command is equivalent to using species="GENERIC" in runMacs
 founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
 
+}
+\references{
+\insertAllCited{}
 }

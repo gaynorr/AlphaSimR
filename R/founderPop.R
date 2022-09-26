@@ -93,7 +93,8 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 
 #' @title Create founder haplotypes using MaCS
 #'
-#' @description Uses the MaCS software to produce founder haplotypes.
+#' @description Uses the MaCS software to produce founder haplotypes 
+#' \insertCite{MaCS}{AlphaSimR}.
 #' 
 #' @param nInd number of individuals to simulate
 #' @param nChr number of chromosomes to simulate
@@ -113,10 +114,26 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' If the value is NULL, the number of threads is automatically detected.
 #' 
 #' @details
-#' The current species histories are included: GENERIC, CATTLE, WHEAT, MAIZE,  
-#' and EUROPEAN. 
+#' There are currently three species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
+#' 
+#' The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and 
+#' models a population with an effective populations size that has gone through several historic 
+#' bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}} 
+#' function, so the user should examine this function for the details of how the species is modeled.
+#' 
+#' The CATTLE history is based off of real genome sequence data \insertCite{cattle}{AlphaSimR}.
+#' 
+#' The WHEAT \insertCite{gaynor_2017}{AlphaSimR} and MAIZE \insertCite{hickey_2014}{AlphaSimR} 
+#' histories have been included due to their use in previous simulations. However, it should 
+#' be noted that neither faithfully simulates its respective species. This is apparent by 
+#' the low number of segregating sites simulated by each history relative to their real-world 
+#' analogs. Adjusting these histories to better represent their real-world analogs would result 
+#' in a drastic increase to runtime.
 #'
 #' @return an object of \code{\link{MapPop-class}}
+#' 
+#' @references 
+#' \insertAllCited{}
 #' 
 #' @examples 
 #' # Creates a populations of 10 outbred individuals
@@ -180,15 +197,17 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
       Ne = 100
       speciesParams = "2E8 -t 5E-6 -r 4E-6"
       speciesHist = "-eN 0.03 1 -eN 0.05 2 -eN 0.10 4 -eN 0.15 6 -eN 0.20 8 -eN 0.25 10 -eN 0.30 12 -eN 0.35 14 -eN 0.40 16 -eN 0.45 18 -eN 0.50 20 -eN 2.00 40 -eN 3.00 60 -eN 4.00 80 -eN 5.00 100" 
-    }else if(species=="EUROPEAN"){ 
-      #EUROPEAN----
-      genLen = 1.3
-      Ne = 512000
-      speciesParams = "1.3E8 -t 0.0483328 -r 0.02054849"
-      speciesHist = "-G 1.0195 -eG 0.0001000977 1.0031 -eN 0.0004492188 0.002015625 -eN 0.000449707 0.003634766"
     }else{
       stop(paste("No rules for species",species))
     }
+    
+    # Removed due to very long run time
+    # #EUROPEAN
+    # genLen = 1.3
+    # Ne = 512000
+    # speciesParams = "1.3E8 -t 0.0483328 -r 0.02054849"
+    # speciesHist = "-G 1.0195 -eG 0.0001000977 1.0031 -eN 0.0004492188 0.002015625 -eN 0.000449707 0.003634766"
+    
     if(is.null(split)){
       splitI = ""
       splitJ = ""
@@ -231,10 +250,11 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #'
 #' @description 
 #' A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
-#' to be easier to use than supply custom comands to manualCommand in 
-#' \code{\link{runMacs}}. It effectively automates the creation of an 
-#' appropriate manualCommand using user supplied variables, but only deals  
-#' with a subset of the possibilities. The defaults were chosen to match 
+#' to provide a more intuitive interface for writing custom commands
+#' in MaCS \insertCite{MaCS}{AlphaSimR}. It effectively automates the creation 
+#' of an appropriate line for the manualCommand argument in \code{\link{runMacs}} 
+#' using user supplied variables, but only allows for a subset of the functionality 
+#' offered by this argument. The default arguments of this function were chosen to match 
 #' species="GENERIC" in \code{\link{runMacs}}.
 #' 
 #' @param nInd number of individuals to simulate
@@ -260,6 +280,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #' @return an object of \code{\link{MapPop-class}} or if 
 #' returnCommand is true a string giving the MaCS command passed to  
 #' the manualCommand argument of \code{\link{runMacs}}.
+#' 
+#' @references 
+#' \insertAllCited{}
 #' 
 #' @examples 
 #' # Creates a populations of 10 outbred individuals
@@ -439,4 +462,110 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              genMap=genMap,
              centromere=centromere,
              inbred=inbred))
+}
+
+#' @title Add segregating site to MapPop
+#'
+#' @description This function allows for adding a new 
+#' segregating site with user supplied genotypes to a MapPop. 
+#' The position of the site is set using a genetic map position.
+#' 
+#' @param mapPop an object of \code{\link{MapPop-class}}
+#' @param siteName name to give the segregating site
+#' @param chr which chromosome to add the site
+#' @param mapPos genetic map position of site in Morgans
+#' @param haplo haplotypes for the site
+#'
+#' @return an object of \code{\link{MapPop-class}}
+#' 
+#' @examples 
+#' # Creates a populations of 10 outbred individuals
+#' # Their genome consists of 1 chromosome and 2 segregating sites
+#' founderPop = quickHaplo(nInd=10,nChr=1,segSites=2)
+#' 
+#' # Add a locus a the 0.5 Morgan map position
+#' haplo = matrix(sample(x=0:1, size=20, replace=TRUE), ncol=1)
+#'
+#' founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5, haplo=haplo)
+#'
+#' pullSegSiteHaplo(founderPop2)
+#' 
+#' @export
+addSegSite = function(mapPop, siteName, chr, mapPos, haplo){
+  # Check validity of input data
+  stopifnot(is(mapPop, "MapPop"))
+  stopifnot(length(haplo)==(mapPop@nInd*mapPop@ploidy))
+  
+  # Check that name isn't already present
+  allSiteNames = unlist(unname(lapply(mapPop@genMap, names)))
+  if(siteName%in%allSiteNames){
+    stop("The siteName '",siteName, "' is already in use.")
+  }
+  
+  # Coerce haplo to a raw matrix
+  haplo = matrix(as.raw(haplo), ncol=1)
+  
+  # Convert chr to a number, if needed
+  if(is.character(chr)){
+    chr = match(chr, names(mapPop@genMap))
+  }
+  
+  # Extract temporary map and geno for target chromosome
+  chrMap = mapPop@genMap[[chr]]
+  markerNames = names(chrMap)
+  chrGeno = mapPop@geno[chr] # Leaving in list format for getHaplo
+  
+  # Extract haplotype matrix from the bit array
+  haploMat = getHaplo(chrGeno, 
+                      mapPop@nLoci[chr], 
+                      1:mapPop@nLoci[chr], 
+                      getNumThreads())
+  
+  # Find position of insertion
+  pos = findInterval(x=mapPos, vec=chrMap)
+  
+  # Insert site
+  if(pos==length(chrMap)){
+    # Inserting site at the end
+    chrMap = c(chrMap, mapPos)
+    names(chrMap) = c(markerNames, siteName)
+    haploMat = cbind(haploMat, haplo)
+  }else if(pos==0){
+    # Inserting site at the beginning
+    chrMap = c(mapPos, chrMap)
+    names(chrMap) = c(siteName, markerNames)
+    chrMap = chrMap-chrMap[1]
+    haploMat = cbind(haplo, haploMat)
+  }else{
+    # Inserting site in the middle
+    chrMap = c(chrMap[1:pos], mapPos, 
+               chrMap[(pos+1L):length(chrMap)])
+    names(chrMap) = c(markerNames[1:pos], siteName, 
+                      markerNames[(pos+1L):length(markerNames)])
+    haploMat = cbind(haploMat[,1:pos,drop=FALSE], haplo, 
+                     haploMat[,(pos+1L):ncol(haploMat),drop=FALSE])
+  }
+  
+  # Convert haplotype matrix back to a bit array
+  chrGeno = packHaplo(haploMat, ploidy=mapPop@ploidy, inbred=FALSE)
+  
+  # Return temporary map and geno
+  mapPop@genMap[[chr]] = chrMap
+  mapPop@geno[[chr]] = chrGeno
+  
+  # Add one to locus count
+  mapPop@nLoci[chr] = mapPop@nLoci[chr] + 1L
+  
+  # Check if an inbred population has become outbred
+  if(mapPop@inbred){
+    M = pullMarkerGeno(mapPop, markers=siteName)
+    isHomo0 = M==0L
+    isHomo1 = M==mapPop@ploidy
+    isHet = !(isHomo0 | isHomo1)
+    if(any(isHet)){
+      mapPop@inbred = FALSE
+    }
+  }
+  
+  return(mapPop)
 }

@@ -7,7 +7,8 @@
 pullMarkerHaplo(pop, markers, haplo = "all", asRaw = FALSE, simParam = NULL)
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}}}
+\item{pop}{an object of \code{\link{RawPop-class}} or
+\code{\link{MapPop-class}}}
 
 \item{markers}{a character vector. Indicates the
 names of the loci to be retrieved}
@@ -18,7 +19,8 @@ haplotypes and a value of 2 for male haplotypes in diploids.}
 
 \item{asRaw}{return in raw (byte) format}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of \code{\link{SimParam}}, not 
+used if pop is \code{\link{MapPop-class}}}
 }
 \value{
 Returns a matrix of genotypes.

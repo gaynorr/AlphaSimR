@@ -27,6 +27,8 @@ The vignette can be viewed using the following command:
 Useful links:
 \itemize{
   \item \url{https://github.com/gaynorr/AlphaSimR}
+  \item \url{https://gaynorr.github.io/AlphaSimR/}
+  \item \url{https://www.edx.org/course/breeding-programme-modelling-with-alphasimr?utm_source=breeding_alphasimr&utm_medium=partner-marketing&utm_campaign=edinburghx}
 }
 
 }

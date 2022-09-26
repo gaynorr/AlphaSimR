@@ -59,8 +59,8 @@ SimParam = R6Class(
       self$p = 0 # Single pathway gamma model
       self$quadProb = 0 # No quadrivalent pairing
       self$snpChips = list()
-      self$invalidQtl = vector("list",founderPop@nChr) # All eligible
-      self$invalidSnp = vector("list",founderPop@nChr) # All eligible
+      self$invalidQtl = rep(list(integer()), founderPop@nChr) # All eligible
+      self$invalidSnp = rep(list(integer()), founderPop@nChr) # All eligible
       self$founderPop = founderPop
       self$finalizePop = function(pop, ...){return(pop)}
       self$allowEmptyPop = FALSE # Empty populations trigger an error
@@ -185,14 +185,16 @@ SimParam = R6Class(
     },
 
     #' @description Sets restrictions on which segregating sites
-    #' can serve as SNP and/or QTL.
+    #' can serve as a SNP and/or QTL.
     #'
-    #' @param minQtlPerChr the minimum number of segSites for QTLs.
-    #' Can be a single value or a vector values for each
-    #' chromosome.
-    #' @param minSnpPerChr the minimum number of segSites for SNPs.
-    #' Can be a single value or a vector values for each
-    #' chromosome.
+    #' @param minQtlPerChr the minimum number of segregating sites for 
+    #' QTLs. Can be a single value or a vector values for each chromosome.
+    #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
+    #' Can be a single value or a vector values for each chromosome.
+    #' @param excludeQtl an optional vector of segregating site names to 
+    #' exclude from consideration as a viable QTL.
+    #' @param excludeSnp an optional vector of segregating site names to 
+    #' exclude from consideration as a viable SNP.
     #' @param overlap should SNP and QTL sites be allowed to overlap.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
     #' No minimum SNP frequency is used if value is NULL.
@@ -204,26 +206,74 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
-    restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, overlap=FALSE,
-                             minSnpFreq=NULL){
+    restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, excludeQtl=NULL,
+                             excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
+      # Handle any named QTL exclusions
+      if(!is.null(excludeQtl)){
+        matchList = private$.findNamedLoci(excludeQtl)
+        
+        # Make exclusions
+        restr = self$invalidQtl
+        for(i in 1:self$nChr){
+          restr[[i]] = sort(union(restr[[i]], matchList[[i]]))
+        }
+        self$invalidQtl = restr
+      }
+      
+      # Handle any named SNP exclusions
+      if(!is.null(excludeSnp)){
+        # Check if the SNP list matches the QTL list
+        # If so, save time by using the previously determined exclusions
+        findMatch = TRUE
+        if(!is.null(excludeQtl)){
+          if(all(excludeSnp==excludeQtl)){
+            findMatch = FALSE
+          }
+        }
+        
+        if(findMatch){
+          matchList = private$.findNamedLoci(excludeSnp)
+        }
+        
+        # Make exclusions
+        restr = self$invalidSnp
+        for(i in 1:self$nChr){
+          restr[[i]] = sort(union(restr[[i]], matchList[[i]]))
+        }
+        self$invalidSnp = restr
+      }
+      
       if(overlap){
+        # Not setting any restrictions if overlap is allow
+        # Existing restrictions will be left in place
         private$.restrSites = FALSE
         invisible(self)
       }else{
-        # Check inputs
-        if(length(minSnpPerChr)==1){
-          minSnpPerChr = rep(minSnpPerChr,self$nChr)
+        # Check validity of inputs
+        if(!is.null(minSnpPerChr)){
+          if(length(minSnpPerChr)==1){
+            minSnpPerChr = rep(minSnpPerChr,self$nChr)
+          }else{
+            stopifnot(length(minSnpPerChr)==self$nChr)
+          }
         }
-        if(length(minQtlPerChr)==1){
-          minQtlPerChr = rep(minQtlPerChr,self$nChr)
+        if(!is.null(minQtlPerChr)){
+          if(length(minQtlPerChr)==1){
+            minQtlPerChr = rep(minQtlPerChr,self$nChr)
+          }else{
+            stopifnot(length(minQtlPerChr)==self$nChr)
+          }
         }
-        stopifnot(length(minSnpPerChr)==self$nChr,
-                  length(minQtlPerChr)==self$nChr)
 
         # Restrict SNPs and then QTL
+        # SNPs are done first due to  potentially fewer viable loci
         private$.restrSites = TRUE
-        invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
-        invisible(private$.pickLoci(minQtlPerChr))
+        if(!is.null(minSnpPerChr)){
+          invisible(private$.pickLoci(minSnpPerChr, FALSE, minSnpFreq))
+        }
+        if(!is.null(minQtlPerChr)){
+          invisible(private$.pickLoci(minQtlPerChr))
+        }
         invisible(self)
       }
     },
@@ -1354,12 +1404,17 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Defines a default value for error
-    #' variances in the simulation.
+    #' @description Defines a default values for error
+    #' variances used in \code{\link{setPheno}}. These defaults 
+    #' will be used to automatically generate phenotypes when new 
+    #' populations are created. See the details section of \code{\link{setPheno}}
+    #' for more information about each arguments and how they 
+    #' should be used.
     #'
     #' @param h2 a vector of desired narrow-sense heritabilities
     #' @param H2 a vector of desired broad-sense heritabilities
     #' @param varE a vector or matrix of error variances
+    #' @param corE an optional matrix of error correlations
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1369,7 +1424,14 @@ SimParam = R6Class(
     #' SP = SimParam$new(founderPop)
     #' SP$addTraitA(10)
     #' SP$setVarE(h2=0.5)
-    setVarE = function(h2=NULL,H2=NULL,varE=NULL){
+    setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
+      # Check validity of corE, if supplied
+      if(!is.null(corE)){
+        stopifnot(isSymmetric(corE),
+                  nrow(corE)==self$nTraits)
+      }
+      
+      # Set error variances (.varE)
       if(!is.null(h2)){
         stopifnot(length(h2)==self$nTraits,
                   all(private$.varG>0),
@@ -1400,8 +1462,23 @@ SimParam = R6Class(
         }
         private$.varE = varE
       }else{
-        private$.varE = rep(NA_real_,self$nTraits)
+        private$.varE = rep(NA_real_, self$nTraits)
       }
+      
+      # Set error correlations
+      if(!is.null(corE)){
+        if(is.matrix(private$.varE)){
+          varE = diag(private$.varE)
+        }else{
+          varE = private$.varE
+        }
+        varE = diag(sqrt(varE),
+                    nrow=self$nTraits,
+                    ncol=self$nTraits)
+        varE = varE%*%corE%*%varE
+        private$.varE = varE
+      }
+      
       invisible(self)
     },
 
@@ -1422,6 +1499,7 @@ SimParam = R6Class(
     #' E = 0.5*diag(2)+0.5 #Positively correlated error
     #' SP$setCorE(E)
     setCorE = function(corE){
+      warning("This function has been deprecated. Use simParam$setVarE instead.")
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
                 length(private$.varE)==self$nTraits)
@@ -1828,7 +1906,8 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
-
+    
+    # Determines whether not a simulation has started using lastId as an indicator
     .isRunning = function(){
       if(private$.lastId==0L){
         invisible(self)
@@ -1836,7 +1915,8 @@ SimParam = R6Class(
         stop("lastId doesn't equal 0, you must run resetPed to proceed")
       }
     },
-
+    
+    # Adds a trait to simulation and ensures all fields are propagated
     .addTrait = function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
       stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
                 length(varA)==1,length(varG)==1,length(varE)==1)
@@ -1846,7 +1926,9 @@ SimParam = R6Class(
       private$.varE = c(private$.varE,varE)
       invisible(self)
     },
-
+    
+    # Samples eligible loci for traits or SNP chips and ensures that they 
+    # are added to the exclusion list when applicable
     .pickLoci = function(nSitesPerChr, QTL=TRUE, minFreq=NULL, refPop=NULL){
       stopifnot(length(nSitesPerChr)==self$nChr)
 
@@ -1860,11 +1942,7 @@ SimParam = R6Class(
       # Identify potential sites
       pot = vector('list', self$nChr)
       for(i in 1:self$nChr){
-        if(is.null(restr[[i]])){
-          pot[[i]] = 1:private$.segSites[i]
-        }else{
-          pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
-        }
+        pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
       }
 
       # Filter for minimum frequency
@@ -1910,6 +1988,39 @@ SimParam = R6Class(
                  lociPerChr=as.integer(nSitesPerChr),
                  lociLoc=as.integer(lociLoc))
       return(loci)
+    },
+    
+    # Returns physical positions of named loci in a list format
+    # Input order is not preserved. This function is intended as 
+    # a helper for restrSegSites
+    .findNamedLoci = function(lociNames){
+      # Loci names
+      id = unlist(unname(lapply(private$.femaleMap, names)))
+      take = match(lociNames, id)
+      if(any(is.na(take))){
+        stop("One or more loci are not on the genetic map. Beware of case sensitivity.")
+      }
+      
+      # Find positions using an interval search strategy on the cumulative sum
+      take = unique(take)
+      posList = rep(list(integer()), self$nChr)
+      cumSumSegSite = cumsum(private$.segSites)
+      for(i in take){
+        # Identify chromosome
+        chr = findInterval(i, cumSumSegSite) + 1L
+        
+        # Identify position
+        if(chr>1L){
+          pos = i - cumSumSegSite[chr-1L]
+        }else{
+          pos = i
+        }
+        
+        # Add site to list
+        posList[[chr]] = c(posList[[chr]], pos)
+      }
+      
+      return(posList)
     }
 
   ),
@@ -2223,8 +2334,7 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   return(epiEff)
 }
 
-#' @describeIn SimParam Test if object is of a SimParam class
-#' @export
+# Test if object is of SimParam class
 isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)

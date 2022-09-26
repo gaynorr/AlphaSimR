@@ -34,8 +34,7 @@ setValidity("LociMap",function(object){
   }
 })
 
-#' @describeIn LociMap Test if object is of a LociMap class
-#' @export
+# Test if object is of LociMap class
 isLociMap = function(x) {
   ret = is(x, class2 = "LociMap")
   return(ret)

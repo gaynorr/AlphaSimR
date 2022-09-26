@@ -2,20 +2,11 @@
 % Please edit documentation in R/Class-SimParam.R
 \name{SimParam}
 \alias{SimParam}
-\alias{isSimParam}
 \title{Simulation parameters}
-\usage{
-isSimParam(x)
-}
 \description{
 Container for global simulation parameters. Saving this object
 as SP will allow it to be accessed by function defaults.
 }
-\section{Functions}{
-\itemize{
-\item \code{isSimParam()}: Test if object is of a SimParam class
-
-}}
 \note{
 By default the founder population is the population used to
 initalize the SimParam object. This population can be changed by
@@ -540,11 +531,13 @@ pop2@id # 1:10
 \if{latex}{\out{\hypertarget{method-SimParam-restrSegSites}{}}}
 \subsection{Method \code{restrSegSites()}}{
 Sets restrictions on which segregating sites
-can serve as SNP and/or QTL.
+can serve as a SNP and/or QTL.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$restrSegSites(
   minQtlPerChr = NULL,
   minSnpPerChr = NULL,
+  excludeQtl = NULL,
+  excludeSnp = NULL,
   overlap = FALSE,
   minSnpFreq = NULL
 )}\if{html}{\out{</div>}}
@@ -553,13 +546,17 @@ can serve as SNP and/or QTL.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{minQtlPerChr}}{the minimum number of segSites for QTLs.
-Can be a single value or a vector values for each
-chromosome.}
+\item{\code{minQtlPerChr}}{the minimum number of segregating sites for 
+QTLs. Can be a single value or a vector values for each chromosome.}
 
-\item{\code{minSnpPerChr}}{the minimum number of segSites for SNPs.
-Can be a single value or a vector values for each
-chromosome.}
+\item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
+Can be a single value or a vector values for each chromosome.}
+
+\item{\code{excludeQtl}}{an optional vector of segregating site names to 
+exclude from consideration as a viable QTL.}
+
+\item{\code{excludeSnp}}{an optional vector of segregating site names to 
+exclude from consideration as a viable SNP.}
 
 \item{\code{overlap}}{should SNP and QTL sites be allowed to overlap.}
 
@@ -1371,10 +1368,14 @@ ignored. Only set to TRUE if you know what you are doing}
 \if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{Method \code{setVarE()}}{
-Defines a default value for error
-variances in the simulation.
+Defines a default values for error
+variances used in \code{\link{setPheno}}. These defaults 
+will be used to automatically generate phenotypes when new 
+populations are created. See the details section of \code{\link{setPheno}}
+for more information about each arguments and how they 
+should be used.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL, corE = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1385,6 +1386,8 @@ variances in the simulation.
 \item{\code{H2}}{a vector of desired broad-sense heritabilities}
 
 \item{\code{varE}}{a vector or matrix of error variances}
+
+\item{\code{corE}}{an optional matrix of error correlations}
 }
 \if{html}{\out{</div>}}
 }
