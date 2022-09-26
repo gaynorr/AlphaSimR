@@ -219,28 +219,29 @@ genParam = function(pop,simParam=NULL){
       covAD_L[i] = 0
       covAAA_L[i] = 0
       covDAA_L[i] = 0
-    } else {
+    }else{
       covAD_L[i] = popVar(cbind(bv[,i],dd[,i]))[1,2]
       covAAA_L[i] = popVar(cbind(bv[,i],aa[,i]))[1,2]
       covDAA_L[i] = popVar(cbind(dd[,i],aa[,i]))[1,2]
     }
   }
-  
-  varA = popVar(bv)
+
+  if(nInd==1){
+    varA = varD = varAA = varG = matrix(0, nrow=nTraits, ncol=nTraits)
+  }else{
+    varA = popVar(bv)
+    varD = popVar(dd)
+    varAA = popVar(aa)
+    varG = popVar(gv)
+  }
   rownames(varA) = colnames(varA) = traitNames
-  
-  varD = popVar(dd)
   rownames(varD) = colnames(varD) = traitNames
-  
-  varAA = popVar(aa)
   rownames(varAA) = colnames(varAA) = traitNames
-  
-  varG = popVar(gv)
   rownames(varG) = colnames(varG) = traitNames
-  
+
   genicVarG = genicVarA + genicVarD + genicVarAA
   covG_HW = covA_HW + covD_HW + covAA_HW
-  
+
   output = list(varA=varA,
                 varD=varD,
                 varAA=varAA,
