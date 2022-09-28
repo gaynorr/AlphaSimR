@@ -730,7 +730,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     arma::uvec selSites;
     if(maxSites(chr)>0){
       if(nSites<maxSites(chr)){
-        Rcpp::stop("Not enough segregating sites generated");
+        maxSites(chr) = nSites;
       }
       selSites = sampleInt(maxSites(chr),nSites);
       nSites = maxSites(chr);
