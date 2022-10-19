@@ -1,6 +1,7 @@
 # AlphaSimR 1.3.1.9990
 
 *fixed column name bug with multiple traits in `setEBV`
+*fixed CTD caused by `runMacs` when too many segSites are requested
 
 # AlphaSimR 1.3.1
 
