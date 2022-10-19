@@ -1247,7 +1247,7 @@ SimParam = R6Class(
         useDom = TRUE
         domEff = as.matrix(domEff)
         stopifnot(nrow(addEff)==nrow(domEff),
-                  ncol(addEff)==nrow(domEff))
+                  ncol(addEff)==ncol(domEff))
       }
 
       # Prepare the intercept
