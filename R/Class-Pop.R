@@ -746,6 +746,11 @@ resetPop = function(pop,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   pop@nTraits = simParam$nTraits
+  
+  # Extract names to add back at the end
+  traitNames = colnames(pop@gv)
+  
+  # Create empty slots for traits
   pop@pheno = matrix(NA_real_,
                      nrow=pop@nInd,
                      ncol=simParam$nTraits)
@@ -756,6 +761,8 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
+  
+  # Calculate genetic values
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
@@ -765,6 +772,10 @@ resetPop = function(pop,simParam=NULL){
       }
     }
   }
+  
+  # Add back trait names
+  colnames(pop@pheno) = colnames(pop@gv) = traitNames
+  
   return(pop)
 }
 
