@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,9 +73,10 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Introduction to AlphaSimR</h1>
-                        <h4 data-toc-skip class="author">Chris Gaynor</h4>
+                        <h4 data-toc-skip class="author">Chris
+Gaynor</h4>
             
-            <h4 data-toc-skip class="date">2022-08-25</h4>
+            <h4 data-toc-skip class="date">2022-11-02</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/HEAD/vignettes/intro.Rmd" class="external-link"><code>vignettes/intro.Rmd</code></a></small>
       <div class="d-none name"><code>intro.Rmd</code></div>
@@ -83,59 +84,175 @@
 
     
     
-<p>AlphaSimR is a package for performing stochastic simulations of plant and animal breeding programs. It is the successor to the AlphaSim software for breeding program simulation <span class="citation">(Faux et al. 2016)</span>. AlphaSimR combines the features of its predecessor with the R software environment to create a flexible and easy-to-use software environment capable of simulating very complex plant and animal breeding programs.</p>
-<p>There is no single way to construct a simulation in AlphaSimR. This is an intentional design aspect of AlphaSimR, because it frees users from the constraints of predefined simulation structures. However, most simulations follow a general structure consisting of four steps:</p>
+<p>AlphaSimR is a package for performing stochastic simulations of plant
+and animal breeding programs. It is the successor to the AlphaSim
+software for breeding program simulation <span class="citation">(Faux et
+al. 2016)</span>. AlphaSimR combines the features of its predecessor
+with the R software environment to create a flexible and easy-to-use
+software environment capable of simulating very complex plant and animal
+breeding programs.</p>
+<p>There is no single way to construct a simulation in AlphaSimR. This
+is an intentional design aspect of AlphaSimR, because it frees users
+from the constraints of predefined simulation structures. However, most
+simulations follow a general structure consisting of four steps:</p>
 <ol style="list-style-type: decimal">
 <li>Creating Founder Haplotypes</li>
 <li>Setting Simulation Parameters</li>
 <li>Modeling the Breeding Program</li>
 <li>Examining the Results</li>
 </ol>
-<p>The easiest way to learn how to use AlphaSimR is to learn about these steps. The easiest way to learn about these steps is to look at an example, so this vignette will introduce AlphaSimR by working through a small example simulation. The example will begin with a description of the breeding program being simulated. This will be followed by sections for each of the above steps and conclude with the full code for the example simulation.</p>
+<p>The easiest way to learn how to use AlphaSimR is to learn about these
+steps. The easiest way to learn about these steps is to look at an
+example, so this vignette will introduce AlphaSimR by working through a
+small example simulation. The example will begin with a description of
+the breeding program being simulated. This will be followed by sections
+for each of the above steps and conclude with the full code for the
+example simulation.</p>
 <div class="section level3">
 <h3 id="example-breeding-program">Example Breeding Program<a class="anchor" aria-label="anchor" href="#example-breeding-program"></a>
 </h3>
-<p>A simplified animal breeding program modeling 20 discrete generations of selection. Each generation consists of 1000 animals, of which 500 are male and 500 are female. In each generation, the best 25 males are selected on the basis of their genetic value for a single polygenic trait and mated to the females to produce 1000 replacement animals. The quantitative trait under selection is modeled as being controlled by 10,000 QTL. These QTL are equally split across 10 chromosome groups so that there are 1,000 QTL per chromosome. The mean genetic value of all individuals in a generation is recorded to construct a plot for the genetic gain per generation.</p>
+<p>A simplified animal breeding program modeling 20 discrete generations
+of selection. Each generation consists of 1000 animals, of which 500 are
+male and 500 are female. In each generation, the best 25 males are
+selected on the basis of their genetic value for a single polygenic
+trait and mated to the females to produce 1000 replacement animals. The
+quantitative trait under selection is modeled as being controlled by
+10,000 QTL. These QTL are equally split across 10 chromosome groups so
+that there are 1,000 QTL per chromosome. The mean genetic value of all
+individuals in a generation is recorded to construct a plot for the
+genetic gain per generation.</p>
 </div>
 <div class="section level3">
 <h3 id="creating-founder-haplotypes">Creating Founder Haplotypes<a class="anchor" aria-label="anchor" href="#creating-founder-haplotypes"></a>
 </h3>
-<p>The first step in the simulation is creating a set of founder haplotypes. The founder haplotypes are used to form the genome and genotypes of animals in the first generation. The genotypes of their descendants are then derived from these haplotypes using simulated mating and genetic recombination. For this simulation, only a single line of code is needed to create the haplotypes, and it is given below.</p>
+<p>The first step in the simulation is creating a set of founder
+haplotypes. The founder haplotypes are used to form the genome and
+genotypes of animals in the first generation. The genotypes of their
+descendants are then derived from these haplotypes using simulated
+mating and genetic recombination. For this simulation, only a single
+line of code is needed to create the haplotypes, and it is given
+below.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">1000</span>, nChr<span class="op">=</span><span class="fl">10</span>, segSites<span class="op">=</span><span class="fl">1000</span><span class="op">)</span></span></code></pre></div>
-<p>The code above uses the <code>quickHaplo</code> function to generate the initial haplotypes. The <code>quickHaplo</code> function generates haplotypes by randomly sampling 1s and 0s. This approach is equivalent to modeling a population in linkage and Hardy-Weinberg equilibrium with allele frequencies of 0.5. This approach is very rapid but does not generate realistic haplotypes. This makes the approach great for prototyping code, but ill-suited for some types of simulations.</p>
-<p>The preferred choice for simulating realistic haplotypes is to use the <code>runMacs</code> function. The <code>runMacs</code> function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR <span class="citation">(Chen, Marjoram, and Wall 2009)</span>. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. The <code>runMacs</code> function allows the user to specify one of several predefined population histories or supply their own population history. A list of currently available population histories can be found in the <code>runMacs</code> help document.</p>
-<p>An alternative choice for providing realistic initial haplotypes is to import them with the <code>newMapPop</code> function. This function allows the user to import their own haplotypes that can be generated in another software package or taken directly from real marker data.</p>
+<p>The code above uses the <code>quickHaplo</code> function to generate
+the initial haplotypes. The <code>quickHaplo</code> function generates
+haplotypes by randomly sampling 1s and 0s. This approach is equivalent
+to modeling a population in linkage and Hardy-Weinberg equilibrium with
+allele frequencies of 0.5. This approach is very rapid but does not
+generate realistic haplotypes. This makes the approach great for
+prototyping code, but ill-suited for some types of simulations.</p>
+<p>The preferred choice for simulating realistic haplotypes is to use
+the <code>runMacs</code> function. The <code>runMacs</code> function is
+a wrapper for the MaCS software, a coalescent simulation program
+included within the distribution of AlphaSimR <span class="citation">(Chen, Marjoram, and Wall 2009)</span>. The MaCS
+software is used by AlphaSimR to simulate bi-allelic genome sequences
+according to a population demographic history. The <code>runMacs</code>
+function allows the user to specify one of several predefined population
+histories or supply their own population history. A list of currently
+available population histories can be found in the <code>runMacs</code>
+help document.</p>
+<p>An alternative choice for providing realistic initial haplotypes is
+to import them with the <code>newMapPop</code> function. This function
+allows the user to import their own haplotypes that can be generated in
+another software package or taken directly from real marker data.</p>
 </div>
 <div class="section level3">
 <h3 id="setting-simulation-parameters">Setting Simulation Parameters<a class="anchor" aria-label="anchor" href="#setting-simulation-parameters"></a>
 </h3>
-<p>The second step is setting global parameters for the simulation. This can be done with three lines of code. The first line initializes an object containing the simulation parameters. The object must be initialized with the founder haplotypes created in the previous step and the code for doing so is given below.</p>
+<p>The second step is setting global parameters for the simulation. This
+can be done with three lines of code. The first line initializes an
+object containing the simulation parameters. The object must be
+initialized with the founder haplotypes created in the previous step and
+the code for doing so is given below.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></code></pre></div>
-<p>The output from this function is an object of class <code>SimParam</code> and it is saved with the name <code>SP</code>. The name <code>SP</code> should almost always be used, because many AlphaSimR functions use an argument called “simParam” with a default value of <code>NULL</code>. If you leave this value as <code>NULL</code>, those functions will search your global environment for an object called <code>SP</code> and use it as the function’s argument. This means that if you use <code>SP</code>, you won’t need to specify a value for the “simParam” argument.</p>
-<p>The next line of code defines the quantitative trait used for selection. As mentioned in the previous section, this trait is controlled by 1000 QTL per chromosome. The rest of the function arguments are left as their defaults, which include a trait mean of zero and a variance of one unit.</p>
+<p>The output from this function is an object of class
+<code>SimParam</code> and it is saved with the name <code>SP</code>. The
+name <code>SP</code> should almost always be used, because many
+AlphaSimR functions use an argument called “simParam” with a default
+value of <code>NULL</code>. If you leave this value as
+<code>NULL</code>, those functions will search your global environment
+for an object called <code>SP</code> and use it as the function’s
+argument. This means that if you use <code>SP</code>, you won’t need to
+specify a value for the “simParam” argument.</p>
+<p>The next line of code defines the quantitative trait used for
+selection. As mentioned in the previous section, this trait is
+controlled by 1000 QTL per chromosome. The rest of the function
+arguments are left as their defaults, which include a trait mean of zero
+and a variance of one unit.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span>nQtlPerChr<span class="op">=</span><span class="fl">1000</span><span class="op">)</span></span></code></pre></div>
-<p>The ‘A’ at the end of <code>SP$addTraitA</code> indicates that the trait’s QTL only have additive effects. All traits in AlphaSimR will include additive effects. Traits may also include any combination of three additional types of effects: dominance (“D”), epistasis (“E”), and genotype-by-environment (“G”). A specific combination of trait effects is requested by using a function with the appropriate letter ending. For example, a trait with additive and epistasis effects can be requested using <code>SP$addTraitAE</code>. The following trait types are currently offered: “A”, “AD”, “AE”, “AG”, “ADE”, “ADG”, “AEG”, and “ADEG”.</p>
-<p>The final line of code defines how sexes are determined in the simulation. Sex will be systematically assigned (i.e. male, female, male, …). Systematic assignment is used to ensure that there is always equal numbers of males and females.</p>
+<p>The ‘A’ at the end of <code>SP$addTraitA</code> indicates that the
+trait’s QTL only have additive effects. All traits in AlphaSimR will
+include additive effects. Traits may also include any combination of
+three additional types of effects: dominance (“D”), epistasis (“E”), and
+genotype-by-environment (“G”). A specific combination of trait effects
+is requested by using a function with the appropriate letter ending. For
+example, a trait with additive and epistasis effects can be requested
+using <code>SP$addTraitAE</code>. The following trait types are
+currently offered: “A”, “AD”, “AE”, “AG”, “ADE”, “ADG”, “AEG”, and
+“ADEG”.</p>
+<p>The final line of code defines how sexes are determined in the
+simulation. Sex will be systematically assigned (i.e. male, female,
+male, …). Systematic assignment is used to ensure that there is always
+equal numbers of males and females.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setSexes</span><span class="op">(</span><span class="st">"yes_sys"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="modeling-the-breeding-program">Modeling the Breeding Program<a class="anchor" aria-label="anchor" href="#modeling-the-breeding-program"></a>
 </h3>
-<p>We are now ready to start modeling the breeding program. To begin, we need to generate the initial population of animals. This step will take the haplotypes in <code>founderPop</code> and the information in <code>SP</code> to create an object of <code>Pop-class</code>.</p>
+<p>We are now ready to start modeling the breeding program. To begin, we
+need to generate the initial population of animals. This step will take
+the haplotypes in <code>founderPop</code> and the information in
+<code>SP</code> to create an object of <code>Pop-class</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></code></pre></div>
-<p>A <code>Pop-class</code> object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations.</p>
-<p>Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used “directly”. For example, you can pull individuals out to form new (sub-)populations using <code>[]</code> and you can merge populations together using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. This functionality is particularly useful for performing tasks in AlphaSimR that lacks a built-in function. However, the example breeding program presented here is easily modeled using built-in functions.</p>
-<p>Before continuing to model the breeding program, you should first think about the data you’ll need for examining the results in the next stage. This is because you must expressly request that the relevant data is saved. AlphaSimR is designed this way for increased speed and reduced memory usage.</p>
-<p>In this example a plot of the generation mean over time is desired. All that is needed to construct this plot is a vector containing the mean in each generation. To start this vector, the mean in the current generation is saved as “genMean”. In each subsequent generation, the mean of that generation will be added to “genMean”. Measuring the mean in the current generation is accomplished with the code below.</p>
+<p>A <code>Pop-class</code> object represents a population of
+individuals. A population is the most important units in AlphaSimR,
+because most AlphaSimR functions use one or more populations as an
+argument. In this regard, AlphaSimR can be thought of as modeling
+discrete populations as its basic unit. This contrasts with its
+predecessor, which used discrete generations.</p>
+<p>Populations are not a fixed unit in AlphaSimR. Many functions in
+AlphaSimR take a population as an argument, modify the population, and
+then return the modified population. Populations can also be used
+“directly”. For example, you can pull individuals out to form new
+(sub-)populations using <code>[]</code> and you can merge populations
+together using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. This functionality is particularly
+useful for performing tasks in AlphaSimR that lacks a built-in function.
+However, the example breeding program presented here is easily modeled
+using built-in functions.</p>
+<p>Before continuing to model the breeding program, you should first
+think about the data you’ll need for examining the results in the next
+stage. This is because you must expressly request that the relevant data
+is saved. AlphaSimR is designed this way for increased speed and reduced
+memory usage.</p>
+<p>In this example a plot of the generation mean over time is desired.
+All that is needed to construct this plot is a vector containing the
+mean in each generation. To start this vector, the mean in the current
+generation is saved as “genMean”. In each subsequent generation, the
+mean of that generation will be added to “genMean”. Measuring the mean
+in the current generation is accomplished with the code below.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">genMean</span> <span class="op">=</span> <span class="fu"><a href="../reference/meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span></code></pre></div>
-<p>The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the <code>selectCross</code> function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate function in AlphaSimR, <code>selectInd</code> and <code>randCross</code> for selection and mating, respectively.</p>
-<p>To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. The code for the loop is given below.</p>
+<p>The final lines of code are for modeling 20 generations of selection
+and mating. AlphaSimR has a host of functions for modeling both
+selection and mating. In this example the <code>selectCross</code>
+function is used, because it efficiently combines both selection and
+mating in a single function call. The function itself actually uses two
+separate function in AlphaSimR, <code>selectInd</code> and
+<code>randCross</code> for selection and mating, respectively.</p>
+<p>To model multiple generations of selection, the function call is
+placed within a loop with a line of code for tracking the population
+mean. Using a loop makes code easier to read and avoids needless
+duplication. In this loop “pop” is overwritten in each generation. Doing
+this keeps memory usage low and keeps the code simple. However, if the
+user needed to retain older populations there are several alternative
+approaches that could be adopted. These approaches include giving each
+population a unique name, storing populations as elements in a list, or
+dynamically growing populations with <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. The code for the
+loop is given below.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span><span class="op">(</span><span class="va">generation</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="../reference/selectCross.html">selectCross</a></span><span class="op">(</span>pop<span class="op">=</span><span class="va">pop</span>, nFemale<span class="op">=</span><span class="fl">500</span>, nMale<span class="op">=</span><span class="fl">25</span>, use<span class="op">=</span><span class="st">"gv"</span>, nCrosses<span class="op">=</span><span class="fl">1000</span><span class="op">)</span></span>
@@ -145,7 +262,10 @@
 <div class="section level3">
 <h3 id="examining-the-results">Examining the Results<a class="anchor" aria-label="anchor" href="#examining-the-results"></a>
 </h3>
-<p>The last step to a simulation is examining the results. In this example there is only one result: a vector of population means for each generation. To examine this result, the code below will produce a basic line plot.</p>
+<p>The last step to a simulation is examining the results. In this
+example there is only one result: a vector of population means for each
+generation. To examine this result, the code below will produce a basic
+line plot.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fl">0</span><span class="op">:</span><span class="fl">20</span>, <span class="va">genMean</span>, xlab<span class="op">=</span><span class="st">"Generation"</span>, ylab<span class="op">=</span><span class="st">"Mean Genetic Value"</span>, type<span class="op">=</span><span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -180,10 +300,15 @@
 </h2>
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-MaCS" class="csl-entry">
-Chen, Gary K., Paul Marjoram, and Jeffery D. Wall. 2009. <span>“Fast and Flexible Simulation of DNA Sequence Data.”</span> <em>Genome Research</em> 19: 136–42. <a href="http://genome.cshlp.org/content/19/1/136" class="external-link">http://genome.cshlp.org/content/19/1/136</a>.
+Chen, Gary K., Paul Marjoram, and Jeffery D. Wall. 2009. <span>“Fast and
+Flexible Simulation of DNA Sequence Data.”</span> <em>Genome
+Research</em> 19: 136–42. <a href="http://genome.cshlp.org/content/19/1/136" class="external-link">http://genome.cshlp.org/content/19/1/136</a>.
 </div>
 <div id="ref-AlphaSim" class="csl-entry">
-Faux, Anne-Michelle, Gregor Gorjanc, R. Chris Gaynor, Mara Battagin, Stefan M. Edwards, David L. Wilson, Sarah J. Hearne, Serap Gonen, and John M. Hickey. 2016. <span>“AlphaSim: Software for Breeding Program Simulation.”</span> <em>The Plant Genome</em> 9 (3). <a href="https://doi.org/10.3835/plantgenome2016.02.0013" class="external-link">https://doi.org/10.3835/plantgenome2016.02.0013</a>.
+Faux, Anne-Michelle, Gregor Gorjanc, R. Chris Gaynor, Mara Battagin,
+Stefan M. Edwards, David L. Wilson, Sarah J. Hearne, Serap Gonen, and
+John M. Hickey. 2016. <span>“AlphaSim: Software for Breeding Program
+Simulation.”</span> <em>The Plant Genome</em> 9 (3). <a href="https://doi.org/10.3835/plantgenome2016.02.0013" class="external-link">https://doi.org/10.3835/plantgenome2016.02.0013</a>.
 </div>
 </div>
 </div>

@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,7 +52,15 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.3.1" id="alphasimr-131">AlphaSimR 1.3.1<a class="anchor" aria-label="anchor" href="#alphasimr-131"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.3.2" id="alphasimr-132">AlphaSimR 1.3.2<a class="anchor" aria-label="anchor" href="#alphasimr-132"></a></h2>
+<p>*fixed column name bug with multiple traits in <code>setEBV</code></p>
+<p>*fixed CTD caused by <code>runMacs</code> when too many segSites are requested</p>
+<p>*fixed missing names in GV when using <code>resetPop</code></p>
+<p>*fixed bug in <code>importTrait</code></p>
+<p>*<code>popVar</code> now deals with matrices having 1 row</p>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.3.1" id="alphasimr-131">AlphaSimR 1.3.1<a class="anchor" aria-label="anchor" href="#alphasimr-131"></a></h2><p class="text-muted">CRAN release: 2022-08-25</p>
 <p>*updated link to Gaynor, 2017</p>
 </div>
     <div class="section level2">
@@ -86,10 +94,6 @@
 <p>*added <code>importSnpChip</code>, <code>importTrait</code> to <code>SimParam</code> to make it easier to manually define traits</p>
 <p>*added <code>pullMarkerGeno</code> and <code>pullMarkerHaplo</code> to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip</p>
 <p>*<code>reduceGenome</code>, <code>mergeGenome</code> and <code>doubleGenome</code> should really now work with pedigree and recombination tracking</p>
-<div class="section level3">
-<h3 id="known-issues-1-2-0">Known issues<a class="anchor" aria-label="anchor" href="#known-issues-1-2-0"></a></h3>
-<p>*<code>pedigreeCross</code> fails without an appropriate warning for some incomplete pedigrees</p>
-</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.2" id="alphasimr-112">AlphaSimR 1.1.2<a class="anchor" aria-label="anchor" href="#alphasimr-112"></a></h2><p class="text-muted">CRAN release: 2022-02-17</p>

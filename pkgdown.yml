@@ -1,10 +1,10 @@
-pandoc: 2.14.2
+pandoc: 2.19.2
 pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   intro: intro.html
   traits: traits.html
-last_built: 2022-08-25T12:19Z
+last_built: 2022-11-02T14:16Z
 urls:
   reference: https://gaynorr.github.io/AlphaSimR/reference
   article: https://gaynorr.github.io/AlphaSimR/articles
