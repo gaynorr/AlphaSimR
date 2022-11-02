@@ -1,3 +1,15 @@
+# AlphaSimR 1.3.2
+
+*fixed column name bug with multiple traits in `setEBV`
+
+*fixed CTD caused by `runMacs` when too many segSites are requested
+
+*fixed missing names in GV when using `resetPop`
+
+*fixed bug in `importTrait`
+
+*`popVar` now deals with matrices having 1 row
+
 # AlphaSimR 1.3.1
 
 *updated link to Gaynor, 2017
@@ -49,10 +61,6 @@
 *added `pullMarkerGeno` and `pullMarkerHaplo` to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip
 
 *`reduceGenome`, `mergeGenome` and `doubleGenome` should really now work with pedigree and recombination tracking
-    
-## Known issues
-
-*`pedigreeCross` fails without an appropriate warning for some incomplete pedigrees
 
 # AlphaSimR 1.1.2
 

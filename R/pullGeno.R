@@ -1,7 +1,3 @@
-convToImat = function(X){
-  return(matrix(as.integer(X), nrow=nrow(X) ,ncol=ncol(X)))
-}
-
 selectLoci = function(chr, inLociPerChr, inLociLoc){
   if(is.null(chr)){
     return(list(lociPerChr=inLociPerChr,

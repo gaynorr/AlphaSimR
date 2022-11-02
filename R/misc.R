@@ -1,3 +1,9 @@
+# Converts a matrix to integer type
+# Intended for genotype matrices of raw type
+convToImat = function(X){
+  return(matrix(as.integer(X), nrow=nrow(X) ,ncol=ncol(X)))
+}
+
 #' @rdname isFemale
 #' @title Test if individuals of a population are female or male
 #'

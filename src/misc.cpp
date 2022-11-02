@@ -25,7 +25,11 @@ unsigned char toByte(std::bitset<8> bits){
 //' @export
 // [[Rcpp::export]]
 arma::mat popVar(const arma::mat& X) {
-  return arma::cov(X,1);
+  if(X.n_rows==1){
+    return(arma::mat(X.n_cols,X.n_cols,arma::fill::zeros));
+  }else{
+    return arma::cov(X,1);
+  }
 }
 
 // Merges geno objects, i.e. fields containing cubes of unsigned char

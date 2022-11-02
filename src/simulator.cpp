@@ -699,7 +699,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   //Check input
   string t = args;
   if (t == "") {
-    Rcpp::stop("error");
+    Rcpp::stop("error passing argument string");
   }
   
   // Output objects
@@ -715,9 +715,6 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     // Run MaCS and check for valid output
     vector<AlphaSimRReturn> macsOutput;
     macsOutput = runFromAlphaSimR(args+seed(chr));
-    if(macsOutput.empty()){
-      Rcpp::stop("Macs has failed to run.");
-    }
     
     arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
@@ -730,7 +727,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     arma::uvec selSites;
     if(maxSites(chr)>0){
       if(nSites<maxSites(chr)){
-        Rcpp::stop("Not enough segregating sites generated");
+        maxSites(chr) = nSites;
       }
       selSites = sampleInt(maxSites(chr),nSites);
       nSites = maxSites(chr);
