@@ -1,3 +1,5 @@
+# AlphaSimR 1.3.2.9990
+
 # AlphaSimR 1.3.2
 
 *fixed column name bug with multiple traits in `setEBV`
