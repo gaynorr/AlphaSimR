@@ -1,5 +1,9 @@
 # AlphaSimR 1.3.2.9990
 
+*fixed bug in calculation of genic variance
+
+*fixed `importHaplo` not passing ploidy to `newMapPop`
+
 # AlphaSimR 1.3.2
 
 *fixed column name bug with multiple traits in `setEBV`

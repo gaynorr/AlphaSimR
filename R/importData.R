@@ -252,7 +252,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   }
   
   founderPop = newMapPop(genMap=genMap,
-                         haplotypes=haplotypes)
+                         haplotypes=haplotypes,
+                         ploidy=ploidy)
   
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",
