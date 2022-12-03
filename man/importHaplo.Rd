@@ -17,9 +17,7 @@ coerced using as.character. See \code{\link{importGenMap}}}
 \item{ploidy}{ploidy level of the organism}
 
 \item{ped}{an optional pedigree for the supplied 
-genotypes. The first three columns must be: id, 
-mother, and father. All values are coerced using 
-as.character.}
+genotypes. See details.}
 }
 \value{
 a \code{\link{MapPop-class}} if ped is NULL,
@@ -31,6 +29,15 @@ AlphaSimR population that can be used to
 initialize a simulation. This function serves 
 as wrapper for \code{\link{newMapPop}} that 
 utilizes a more user friendly input format.
+}
+\details{
+The optional pedigree can be a data.frame, matrix or a vector. 
+If the object is a data.frame or matrix, the first three 
+columns must include information in the following order: id, 
+mother, and father. All values are coerced using 
+as.character. If the object is a vector, it is assumed to only 
+include the id. In this case, the mother and father will be set 
+to "0" for all individuals.
 }
 \examples{
 haplo = rbind(c(1,1,0,1,0),

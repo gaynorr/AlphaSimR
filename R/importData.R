@@ -239,12 +239,12 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   if(!is.null(ped)){
     if(is.vector(ped)){
       id = as.character(ped[,1])
-      stopifnot(length(id)==nrow(geno),
+      stopifnot(length(id)==(nrow(haplo)/ploidy),
                 !any(duplicated(id)))
       mother = father = rep("0", length(id))
     }else{
       id = as.character(ped[,1])
-      stopifnot(length(id)==nrow(geno),
+      stopifnot(length(id)==(nrow(haplo)/ploidy),
                 !any(duplicated(id)))
       mother = as.character(ped[,2])
       father = as.character(ped[,3])

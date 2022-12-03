@@ -1,8 +1,10 @@
-# AlphaSimR 1.3.2.9990
+# AlphaSimR 1.3.3
 
 *fixed bug in calculation of genic variance
 
 *fixed `importHaplo` not passing ploidy to `newMapPop`
+
+*fixed bug with correlated error variances
 
 # AlphaSimR 1.3.2
 

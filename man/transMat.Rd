@@ -13,7 +13,7 @@ transMat(R)
 Creates an m by m linear transformation matrix that 
 can be applied to n by m uncorrelated deviates 
 sampled from a standard normal distribution to produce
-create correlated deviates with an arbitrary correlation 
+correlated deviates with an arbitrary correlation 
 of R. If R is not positive semi-definite, the function 
 returns smoothing and returns a warning (see details).
 }
@@ -22,11 +22,12 @@ An eigendecomposition is applied to the correlation
 matrix and used to test if it is positive semi-definite. 
 If the matrix is not positive semi-definite, it is not a 
 valid correlation matrix. In this case, smoothing is 
-applied to the matrix (as described in the 'psych' library) 
-to obtain a valid correlation matrix. The resulting 
-deviates will thus not exactly match the desired correlation, 
-but will hopefully be close if the the input matrix wasn't 
-too far removed from a valid correlation matrix.
+applied to the matrix (as described in the 'cor.smooth' of 
+the 'psych' library) to obtain a valid correlation matrix. 
+The resulting deviates will thus not exactly match the 
+desired correlation, but will hopefully be close if the 
+input matrix wasn't too far removed from a valid 
+correlation matrix.
 }
 \examples{
 # Create an 2x2 correlation matrix
