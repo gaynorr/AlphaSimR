@@ -1,7 +1,7 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 1.3.3
+Version: 1.3.3.9990
 Date: 2022-12-3
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
@@ -35,7 +35,7 @@ Depends: R (>= 4.0.0), methods, R6
 Imports: Rcpp (>= 0.12.7), Rdpack
 RdMacros: Rdpack
 LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true
