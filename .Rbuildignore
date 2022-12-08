@@ -1,6 +1,4 @@
-revdep
-vignettes/web_only/
-docs
+^vignettes/web_only$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^Notes\.txt$

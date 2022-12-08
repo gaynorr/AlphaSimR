@@ -1,3 +1,7 @@
+# AlphaSimR 1.3.3.9990
+
+*changed C++ using `sprintf` to use `snprintf`
+
 # AlphaSimR 1.3.3
 
 *fixed bug in calculation of genic variance
