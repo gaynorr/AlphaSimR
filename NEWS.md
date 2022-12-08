@@ -1,4 +1,4 @@
-# AlphaSimR 1.3.3.9990
+# AlphaSimR 1.3.4
 
 *changed C++ using `sprintf` to use `snprintf`
 
