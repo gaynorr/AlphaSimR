@@ -209,7 +209,11 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       stopifnot(length(varE)==nTraits)
     }
   }else{
-    varE = simParam$varE[traits]
+    if(is.matrix(simParam$varE)){
+      varE = simParam$varE[traits, traits]
+    }else{
+      varE = simParam$varE[traits]
+    }
   }
   
   # Set error correlations

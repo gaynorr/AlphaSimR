@@ -338,6 +338,7 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     arma::vec bvE(ploidy+1), ddE(ploidy+1); //Expected for random mating
     double gvMu, gvEMu, genoMu, p, q, dK, alpha, alphaE;
     
+    // Compute genotype frequencies
     for(arma::uword j=0; j<nInd; ++j){
       freq(genoMat(j,i)) += 1;
     }
@@ -346,7 +347,14 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     p = genoMu/dP;
     q = 1-p;
     
-    // Set effects, means and expected frequencies
+    // Expected genotype frequencies
+    freqE.zeros();
+    for(arma::uword k=0; k<(ploidy+1); ++k){
+      dK = double(k);
+      freqE(k) = choose(dP,dK)*std::pow(p,dK)*std::pow(q,dP-dK);
+    }
+    
+    // Set genetic values
     aEff = xa*a(i);
     if(hasD){
       dEff = xd*d(i);
@@ -354,24 +362,22 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     }else{
       gv = aEff;
     }
+    
+    // Mean genetic values
     gvMu = accu(freq%gv);
+    gvEMu =  accu(freqE%gv);
     mu(tid) += gvMu;
-    freqE.zeros();
-    for(arma::uword k=0; k<(ploidy+1); ++k){
-      dK = double(k);
-      freqE(k) = choose(dP,dK)*std::pow(p,dK)*std::pow(q,dP-dK);
-    }
+    eMu(tid) += gvEMu;
+    
+    // Average effect
     alpha = accu(freq%(gv-gvMu)%(x-genoMu))/
       accu(freq%(x-genoMu)%(x-genoMu));
-    alphaE = accu(freqE%(gv-gvMu)%(x-genoMu))/
+    alphaE = accu(freqE%(gv-gvEMu)%(x-genoMu))/
       accu(freqE%(x-genoMu)%(x-genoMu)); 
     
-    //Check for divide by zero
+    // Check for divide by zero
     if(!std::isfinite(alpha)) alpha=0;
     if(!std::isfinite(alphaE)) alphaE=0;
-    
-    gvEMu =  accu(freqE%gv);
-    eMu(tid) += gvEMu;
     
     // Set additive genic variances
     bv = (x-genoMu)*alpha; //Breeding values

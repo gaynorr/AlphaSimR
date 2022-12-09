@@ -15,9 +15,7 @@ map position (Morgans). Marker name and chromosome are
 coerced using as.character. See \link{importGenMap}}
 
 \item{ped}{an optional pedigree for the supplied 
-genotypes. The first three columns must be: id, 
-mother, and father. All values are coerced using 
-as.character.}
+genotypes. See details.}
 }
 \value{
 a \code{\link{MapPop-class}} if ped is NULL,
@@ -33,6 +31,15 @@ but will be coerced to the nearest homozygote. Pedigree
 information is optional and when provided will be 
 passed to the population for easier identification 
 in the simulation.
+}
+\details{
+The optional pedigree can be a data.frame, matrix or a vector. 
+If the object is a data.frame or matrix, the first three 
+columns must include information in the following order: id, 
+mother, and father. All values are coerced using 
+as.character. If the object is a vector, it is assumed to only 
+include the id. In this case, the mother and father will be set 
+to "0" for all individuals.
 }
 \examples{
 geno = rbind(c(2,2,0,2,0),

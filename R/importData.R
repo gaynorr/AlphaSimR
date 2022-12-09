@@ -70,10 +70,17 @@ importGenMap = function(genMap){
 #' map position (Morgans). Marker name and chromosome are 
 #' coerced using as.character. See \link{importGenMap}
 #' @param ped an optional pedigree for the supplied 
-#' genotypes. The first three columns must be: id, 
-#' mother, and father. All values are coerced using 
-#' as.character.
+#' genotypes. See details. 
 #'
+#' @details 
+#' The optional pedigree can be a data.frame, matrix or a vector. 
+#' If the object is a data.frame or matrix, the first three 
+#' columns must include information in the following order: id, 
+#' mother, and father. All values are coerced using 
+#' as.character. If the object is a vector, it is assumed to only 
+#' include the id. In this case, the mother and father will be set 
+#' to "0" for all individuals.
+#' 
 #' @return a \code{\link{MapPop-class}} if ped is NULL,
 #' otherwise a \code{\link{NamedMapPop-class}}
 #' 
@@ -98,11 +105,18 @@ importGenMap = function(genMap){
 importInbredGeno = function(geno, genMap, ped=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
-    id = as.character(ped[,1])
-    stopifnot(length(id)==nrow(geno),
-              !any(duplicated(id)))
-    mother = as.character(ped[,2])
-    father = as.character(ped[,3])
+    if(is.vector(ped)){
+      id = as.character(ped[,1])
+      stopifnot(length(id)==nrow(geno),
+                !any(duplicated(id)))
+      mother = father = rep("0", length(id))
+    }else{
+      id = as.character(ped[,1])
+      stopifnot(length(id)==nrow(geno),
+                !any(duplicated(id)))
+      mother = as.character(ped[,2])
+      father = as.character(ped[,3])
+    }
   }
   
   genMap = importGenMap(genMap)
@@ -185,9 +199,16 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' coerced using as.character. See \code{\link{importGenMap}}
 #' @param ploidy ploidy level of the organism
 #' @param ped an optional pedigree for the supplied 
-#' genotypes. The first three columns must be: id, 
+#' genotypes. See details. 
+#' 
+#' @details 
+#' The optional pedigree can be a data.frame, matrix or a vector. 
+#' If the object is a data.frame or matrix, the first three 
+#' columns must include information in the following order: id, 
 #' mother, and father. All values are coerced using 
-#' as.character.
+#' as.character. If the object is a vector, it is assumed to only 
+#' include the id. In this case, the mother and father will be set 
+#' to "0" for all individuals.
 #'
 #' @return a \code{\link{MapPop-class}} if ped is NULL,
 #' otherwise a \code{\link{NamedMapPop-class}}
@@ -216,11 +237,18 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
-    id = as.character(ped[,1])
-    stopifnot(length(id)==(nrow(haplo)/ploidy),
-              !any(duplicated(id)))
-    mother = as.character(ped[,2])
-    father = as.character(ped[,3])
+    if(is.vector(ped)){
+      id = as.character(ped[,1])
+      stopifnot(length(id)==(nrow(haplo)/ploidy),
+                !any(duplicated(id)))
+      mother = father = rep("0", length(id))
+    }else{
+      id = as.character(ped[,1])
+      stopifnot(length(id)==(nrow(haplo)/ploidy),
+                !any(duplicated(id)))
+      mother = as.character(ped[,2])
+      father = as.character(ped[,3])
+    }
   }
   
   genMap = importGenMap(genMap)
@@ -252,7 +280,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   }
   
   founderPop = newMapPop(genMap=genMap,
-                         haplotypes=haplotypes)
+                         haplotypes=haplotypes,
+                         ploidy=ploidy)
   
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",

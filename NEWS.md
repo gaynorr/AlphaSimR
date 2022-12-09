@@ -1,3 +1,15 @@
+# AlphaSimR 1.3.4
+
+*changed C++ using `sprintf` to use `snprintf`
+
+# AlphaSimR 1.3.3
+
+*fixed bug in calculation of genic variance
+
+*fixed `importHaplo` not passing ploidy to `newMapPop`
+
+*fixed bug with correlated error variances
+
 # AlphaSimR 1.3.2
 
 *fixed column name bug with multiple traits in `setEBV`
