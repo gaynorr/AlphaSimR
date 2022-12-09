@@ -26,7 +26,7 @@ in the simulation."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aj
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.4</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,9 +100,7 @@ coerced using as.character. See <a href="importGenMap.html">importGenMap</a></p>
 
 <dt>ped</dt>
 <dd><p>an optional pedigree for the supplied 
-genotypes. The first three columns must be: id, 
-mother, and father. All values are coerced using 
-as.character.</p></dd>
+genotypes. See details.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -113,6 +111,16 @@ as.character.</p></dd>
 otherwise a <code><a href="NamedMapPop-class.html">NamedMapPop-class</a></code></p>
 
 
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The optional pedigree can be a data.frame, matrix or a vector. 
+If the object is a data.frame or matrix, the first three 
+columns must include information in the following order: id, 
+mother, and father. All values are coerced using 
+as.character. If the object is a vector, it is assumed to only 
+include the id. In this case, the mother and father will be set 
+to "0" for all individuals.</p>
     </div>
 
     <div class="section level2">
