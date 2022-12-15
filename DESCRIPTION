@@ -35,7 +35,7 @@ Depends: R (>= 4.0.0), methods, R6
 Imports: Rcpp (>= 0.12.7), Rdpack
 RdMacros: Rdpack
 LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true
