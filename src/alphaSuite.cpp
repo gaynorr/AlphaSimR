@@ -23,7 +23,7 @@ void writeASGenotypes(const arma::Cube<unsigned char> & g,
     
     if (snpchips(i) == 0) {
       selected0 = all0.elem(allLocations - 1);
-      selected1 = all1.elem(allLocations - 1);      
+      selected1 = all1.elem(allLocations - 1);
     }
     else{
       selected0 = all0.elem(locations(snpchips(i) - 1) - 1);

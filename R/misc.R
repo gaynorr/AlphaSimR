@@ -46,11 +46,9 @@ isMale <- function(x) {
   return(ret)
 }
 
-
-#' @rdname setMisc
-#' @title Set miscelaneous information in a population
+#' @title Set miscellaneous information in a population
 #'
-#' @description Set miscelaneous information in a population
+#' @description Set miscellaneous information in a population
 #'
 #' @param x \code{\link{Pop-class}}
 #' @param node character, name of the node to set within the \code{x@misc} slot
@@ -120,10 +118,9 @@ setMisc <- function(x, node = NULL, value = NULL) {
   return(x)
 }
 
-#' @rdname getMisc
-#' @title Get miscelaneous information in a population
+#' @title Get miscellaneous information in a population
 #'
-#' @description Get miscelaneous information in a population
+#' @description Get miscellaneous information in a population
 #'
 #' @param x \code{\link{Pop-class}}
 #' @param node character, name of the node to get from the \code{x@misc} slot;
