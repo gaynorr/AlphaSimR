@@ -333,7 +333,7 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
 #endif
     
     arma::vec freq(ploidy+1,arma::fill::zeros), freqE(ploidy+1); // Genotype frequencies, observed and HWE
-    arma::vec aEff(ploidy+1), dEff(ploidy+1), eff(ploidy+1); // Genetic values, additive and dominance
+    arma::vec aEff(ploidy+1), dEff(ploidy+1); // Additive and dominance effects
     arma::vec bv(ploidy+1), dd(ploidy+1), gv(ploidy+1); // Statistical values, additive and dominance
     arma::vec bvE(ploidy+1), ddE(ploidy+1); //Expected for random mating
     double gvMu, gvEMu, genoMu, p, q, dK, alpha, alphaE;

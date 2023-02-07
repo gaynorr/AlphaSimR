@@ -36,7 +36,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   if(pop@ploidy%%2L){
     stop("You cannot reduce odd ploidy levels")
   }

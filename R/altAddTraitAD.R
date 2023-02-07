@@ -22,12 +22,29 @@
 #' 
 #' @export
 altAddTraitAD = function(nQtlPerChr, mean, varA, varD, inbrDepr, 
-                          limMeanDD = c(0, 2), 
+                          limMeanDD = c(0, 1.5), 
                           limVarDD = c(0, 0.3),
                           name = NULL, simParam = NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  
+  # Check that simParam still has it's founderPop
+  stopifnot("'simParam$founderPop' must have a 'RawPop'" = 
+              is(simParam$founderPop, "RawPop"))
+  
+  # Add a placeholder trait
+  simParam$addTraitAD(nQtlPerChr = nQtlPerChr)
+  
+  # Initialize the tuner object using objects from simParam
+  tuner = TuneAD(LociMap = simParam$traits[[simParam$nTraits]],
+                 Pop = simParam$founderPop,
+                 mean_ = mean,
+                 varA_ = varA,
+                 varD_ = varD,
+                 inbrDepr_ = inbrDepr,
+                 nThreads_ = simParam$nThreads)
+  
   
   
   # a_std, d_mu, d_std

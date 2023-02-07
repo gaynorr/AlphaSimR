@@ -8,7 +8,8 @@ addError = function(gv, varE, reps){
     error = matrix(rnorm(nInd*nTraits),
                    ncol=nTraits)%*%transMat(varE)
   }else{
-    stopifnot(length(varE)==nTraits)
+    stopifnot("Length of varE must equal nTraits" = 
+                length(varE)==nTraits)
     error = lapply(varE,function(x){
       if(is.na(x)){
         return(rep(NA_real_,nInd))
@@ -148,9 +149,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
   }else{
     traits = as.integer(traits)
-    stopifnot(all(traits>0L), 
-              all(!duplicated(traits)), 
-              max(traits)<=simParam$nTraits) 
+    stopifnot("'traits' doesn't have a valid value" = all(traits>0L), 
+              "'traits' cannot have duplicated values" = all(!duplicated(traits)), 
+              "'traits' has a value that is too large" = max(traits)<=simParam$nTraits) 
   }
   nTraits = length(traits)
   
@@ -158,7 +159,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   if(length(reps)==1){
     reps = rep(reps, nTraits)
   }else{
-    stopifnot(length(reps)==nTraits)
+    stopifnot("length of 'reps' must equal nTraits" = length(reps)==nTraits)
   }
   
   # Set p-value for GxE traits
@@ -167,7 +168,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   }else if(length(p)==1){
     p = rep(p, nTraits)
   }else{
-    stopifnot(length(p)==nTraits)
+    stopifnot("length of 'p' must equal nTraits or 1", length(p)==nTraits)
   }
   
   # Calculate varE if using h2 or H2
@@ -178,9 +179,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     varA = simParam$varA[traits]
     varG = simParam$varG[traits]
     
-    stopifnot(length(h2)==nTraits,
-              all(varA>0), 
-              all(varG>0))
+    stopifnot("length of 'h2' must equal nTraits" = length(h2)==nTraits,
+              "all values of 'varA' must be greater than 0" = all(varA>0), 
+              "all values of 'varG' must be greater than 0" = all(varG>0))
     varE = numeric(nTraits)
     for(i in 1:nTraits){
       tmp = varA[i]/h2[i]-varG[i]
@@ -195,7 +196,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     varG = simParam$varG[traits]
     
-    stopifnot(length(H2)==nTraits)
+    stopifnot("length of 'H2' must equal nTraits" = length(H2)==nTraits)
     varE = numeric(nTraits)
     for(i in 1:nTraits){
       tmp = varG[i]/H2[i]-varG[i]
@@ -203,10 +204,10 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
   }else if(!is.null(varE)){
     if(is.matrix(varE)){
-      stopifnot(nTraits==nrow(varE),
-                isSymmetric(varE))
+      stopifnot("'varE' must have dimensions equal to nTraits" = nTraits==nrow(varE),
+                "'varE' must be a symmetric matrix" = isSymmetric(varE))
     }else{
-      stopifnot(length(varE)==nTraits)
+      stopifnot("length of 'varE' must equal nTraits" = length(varE)==nTraits)
     }
   }else{
     if(is.matrix(simParam$varE)){
@@ -221,8 +222,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     if(is.matrix(varE)){
       varE = diag(varE)
     }
-    stopifnot(length(varE)==nrow(corE),
-              isSymmetric(corE))
+    stopifnot("'corE' must have dimensions equal to nTraits" = length(varE)==nrow(corE),
+              "'corE' must be a symmetric matrix" = isSymmetric(corE))
     
     varE = diag(sqrt(varE),
                 nrow=nTraits,
@@ -234,7 +235,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   # Use lapply if object is a MegaPop
   # Only passing varE after previous processing
   if(is(pop,"MegaPop")){
-    stopifnot(!onlyPheno)
+    stopifnot("you cannot use 'onlyPheno' with a MegaPop" = !onlyPheno)
     pop@pops = lapply(pop@pops, setPheno, h2=NULL, H2=NULL,
                       varE=varE, corE=NULL, reps=reps, fixEff=fixEff, 
                       p=p, traits=traits, simParam=simParam)
