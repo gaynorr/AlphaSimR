@@ -88,7 +88,7 @@ public:
     stdDevDD = stdDevDD_;
     
     // Compute new values of d
-    d = abs(a)*(domDegDev*stdDevDD + meanDD);
+    d = abs(a)%(domDegDev*stdDevDD + meanDD);
     
     // calcParam will scale additive and dominance effects
     // to achieve the desired varA
@@ -107,7 +107,7 @@ public:
     stdDevDD = stdDevDD_;
     
     // Compute new values of d
-    d = abs(a)*(domDegDev*stdDevDD + meanDD);
+    d = abs(a)%(domDegDev*stdDevDD + meanDD);
     
     // calcParam will scale additive and dominance effects
     // to achieve the desired varA

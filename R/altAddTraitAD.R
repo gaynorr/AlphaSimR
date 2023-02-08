@@ -37,13 +37,13 @@ altAddTraitAD = function(nQtlPerChr, mean, varA, varD, inbrDepr,
   simParam$addTraitAD(nQtlPerChr = nQtlPerChr)
   
   # Initialize the tuner object using objects from simParam
-  tuner = TuneAD(LociMap = simParam$traits[[simParam$nTraits]],
-                 Pop = simParam$founderPop,
-                 mean_ = mean,
-                 varA_ = varA,
-                 varD_ = varD,
-                 inbrDepr_ = inbrDepr,
-                 nThreads_ = simParam$nThreads)
+  tuner = TuneAD$new(LociMap = simParam$traits[[simParam$nTraits]],
+                     Pop = simParam$founderPop,
+                     mean_ = mean,
+                     varA_ = varA,
+                     varD_ = varD,
+                     inbrDepr_ = inbrDepr,
+                     nThreads_ = simParam$nThreads)
   
   
   
