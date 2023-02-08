@@ -804,6 +804,8 @@ BEGIN_RCPP
 END_RCPP
 }
 
+RcppExport SEXP _rcpp_module_boot_TuneAD_module();
+
 static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveRRBLUP", (DL_FUNC) &_AlphaSimR_solveRRBLUP, 3},
     {"_AlphaSimR_solveRRBLUPMV", (DL_FUNC) &_AlphaSimR_solveRRBLUPMV, 5},
@@ -856,6 +858,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
     {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
+    {"_rcpp_module_boot_TuneAD_module", (DL_FUNC) &_rcpp_module_boot_TuneAD_module, 0},
     {NULL, NULL, 0}
 };
 
