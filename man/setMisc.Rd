@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{setMisc}
 \alias{setMisc}
-\title{Set miscelaneous information in a population}
+\title{Set miscellaneous information in a population}
 \usage{
 setMisc(x, node = NULL, value = NULL)
 }
@@ -50,7 +50,7 @@ getMisc(x = basePop, node = "location")
 getMisc(x = basePop)
 }
 \description{
-Set miscelaneous information in a population
+Set miscellaneous information in a population
 }
 \details{
 A \code{NULL} in \code{value} is ignored

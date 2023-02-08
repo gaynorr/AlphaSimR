@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{getMisc}
 \alias{getMisc}
-\title{Get miscelaneous information in a population}
+\title{Get miscellaneous information in a population}
 \usage{
 getMisc(x, node = NULL)
 }
@@ -16,7 +16,7 @@ if \code{NULL} the whole \code{x@misc} slot is returned}
 The \code{x@misc} slot or its nodes \code{x@misc[[*]][[node]]}
 }
 \description{
-Get miscelaneous information in a population
+Get miscellaneous information in a population
 }
 \examples{
 founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)

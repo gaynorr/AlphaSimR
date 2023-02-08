@@ -82,10 +82,10 @@ public:
   // Objective function for optimization
   // Returns distance between desired inbrDepr and stdDevDom and 
   // calculated values using supplied meanDD and stdDevDD
-  double objective(double meanDD_, double stdDevDD_){
+  double objective(arma::vec x){
     // Assign new values of meanDD and stdDevDD
-    meanDD = meanDD_;
-    stdDevDD = stdDevDD_;
+    meanDD = x(0);
+    stdDevDD = x(1);
     
     // Compute new values of d
     d = abs(a)%(domDegDev*stdDevDD + meanDD);
@@ -193,8 +193,8 @@ private:
     }
     
     // Calculate additive and dominance genetic variances for population
-    obsVarA = accu(sum(bvMat,1)%sum(bvMat,1));
-    obsVarD = accu(sum(ddMat,1)%sum(ddMat,1));
+    obsVarA = accu(sum(bvMat,1)%sum(bvMat,1)) / nInd;
+    obsVarD = accu(sum(ddMat,1)%sum(ddMat,1)) / nInd;
     
     // Scale effects to hit target additive variance
     double scale = sqrt(tarVarA) / sqrt(obsVarA);
@@ -209,7 +209,6 @@ private:
   }
 };
 
-RCPP_EXPOSED_CLASS(TuneAD)
 RCPP_MODULE(TuneAD_module) {
   Rcpp::class_<TuneAD>("TuneAD")
   .constructor<Rcpp::S4, Rcpp::S4, double, double, double, double, int>()

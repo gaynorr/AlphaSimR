@@ -4,7 +4,7 @@
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate rnorm qnorm var
 #' @importFrom stats coef dnorm lm pnorm qgamma na.omit
-#' @importFrom stats model.matrix rbinom runif cov2cor
+#' @importFrom stats model.matrix rbinom runif cov2cor optim
 #' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
 #' @importFrom Rdpack reprompt
