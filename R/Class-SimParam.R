@@ -315,6 +315,18 @@ SimParam = R6Class(
       }
       invisible(self)
     },
+    
+    #' @description 
+    #' Allows for the manual setting of founder haplotypes. This functionality 
+    #' is not fully documented, because it is still experimental.
+    #' 
+    #' @param hapMap a list of founder haplotypes
+    setFounderHap = function(hapMap){
+      private$.hap = hapMap
+      private$.hasHap = rep(TRUE, length(hapMap))
+      private$.isFounder = rep(FALSE, length(hapMap))
+      invisible(self)
+    },
 
     #' @description
     #' Randomly assigns eligible SNPs to a SNP chip
@@ -344,6 +356,64 @@ SimParam = R6Class(
       }else{
         snpChip@name = name
       }
+      self$snpChips[[self$nSnpChips + 1L]] = snpChip
+      invisible(self)
+    },
+    
+    #' @description
+    #' Assigns SNPs to a SNP chip by supplying marker names. This function does 
+    #' check against excluded SNPs and will not add the SNPs to the list of 
+    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL. 
+    #' Excluding these SNPs from being used as QTL can be accomplished using 
+    #' the excludeQtl argument in SimParam's restrSegSites function.
+    #'
+    #' @param markers a vector of names for the markers
+    #' @param name optional name for chip
+    #'
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' SP$addSnpChipByName(c("1_1","1_3"))
+    addSnpChipByName = function(markers, name=NULL){
+      genMap = private$.femaleMap
+      
+      # Check that the markers are present on the map
+      genMapMarkerNames = unlist(lapply(genMap, names))
+      stopifnot(all(markers%in%genMapMarkerNames))
+      
+      # Create lociPerChr and lociLoc
+      lociPerChr = integer(length(genMap))
+      lociLoc = vector("list", length(genMap))
+      
+      # Loop through chromosomes
+      for(i in 1:length(genMap)){
+        
+        # Initialize lociLoc
+        lociLoc[[i]] = integer()
+        
+        # Find matches if they exist
+        take = match(names(genMap[[i]]), markers)
+        lociPerChr[i] = length(na.omit(take))
+        if(lociPerChr[i]>0L){
+          lociLoc[[i]] = which(!is.na(take))
+        }
+      }
+      lociLoc = unlist(lociLoc)
+      
+      snpChip = new("LociMap",
+                    nLoci=sum(lociPerChr),
+                    lociPerChr=lociPerChr,
+                    lociLoc=lociLoc)
+      
+      if(is.null(name)){
+        snpChip@name = paste0("Chip",self$nSnpChips + 1L)
+      }else{
+        snpChip@name = name
+      }
+      
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },

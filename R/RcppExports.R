@@ -264,12 +264,12 @@ getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThre
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }
 
-getFounderIbd <- function(founder, nChr) {
-    .Call(`_AlphaSimR_getFounderIbd`, founder, nChr)
-}
-
 getNonFounderIbd <- function(recHist, mother, father) {
     .Call(`_AlphaSimR_getNonFounderIbd`, recHist, mother, father)
+}
+
+getFounderIbd <- function(founder, nChr) {
+    .Call(`_AlphaSimR_getFounderIbd`, founder, nChr)
 }
 
 createIbdMat <- function(ibd, chr, nLoci, ploidy, nThreads) {
