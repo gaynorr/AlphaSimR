@@ -42,6 +42,7 @@ Other contributors:
   \item Daniel Money (\href{https://orcid.org/0000-0001-5151-3648}{ORCID}) [contributor]
   \item David Wilson [contributor]
   \item Thiago Oliveira (\href{https://orcid.org/0000-0002-4555-2584}{ORCID}) [contributor]
+  \item Audrey Martin [contributor]
 }
 
 }
