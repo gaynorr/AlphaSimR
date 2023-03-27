@@ -101,6 +101,17 @@ SP = SimParam$new(founderPop)
 SP$addSnpChip(10)
 
 ## ------------------------------------------------
+## Method `SimParam$addSnpChipByName`
+## ------------------------------------------------
+
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addSnpChipByName(c("1_1","1_3"))
+
+## ------------------------------------------------
 ## Method `SimParam$addTraitA`
 ## ------------------------------------------------
 
@@ -344,7 +355,9 @@ genetic map}
 \item \href{#method-SimParam-resetPed}{\code{SimParam$resetPed()}}
 \item \href{#method-SimParam-restrSegSites}{\code{SimParam$restrSegSites()}}
 \item \href{#method-SimParam-setSexes}{\code{SimParam$setSexes()}}
+\item \href{#method-SimParam-setFounderHap}{\code{SimParam$setFounderHap()}}
 \item \href{#method-SimParam-addSnpChip}{\code{SimParam$addSnpChip()}}
+\item \href{#method-SimParam-addSnpChipByName}{\code{SimParam$addSnpChipByName()}}
 \item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
 \item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
 \item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
@@ -621,6 +634,24 @@ SP$setSexes("yes_sys")
 
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SimParam-setFounderHap"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-setFounderHap}{}}}
+\subsection{Method \code{setFounderHap()}}{
+Allows for the manual setting of founder haplotypes. This functionality 
+is not fully documented, because it is still experimental.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$setFounderHap(hapMap)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{hapMap}}{a list of founder haplotypes}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addSnpChip"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addSnpChip}{}}}
 \subsection{Method \code{addSnpChip()}}{
@@ -653,6 +684,42 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addSnpChip(10)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SimParam-addSnpChipByName"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-addSnpChipByName}{}}}
+\subsection{Method \code{addSnpChipByName()}}{
+Assigns SNPs to a SNP chip by supplying marker names. This function does 
+check against excluded SNPs and will not add the SNPs to the list of 
+excluded QTL for the purpose of avoiding overlap between SNPs and QTL. 
+Excluding these SNPs from being used as QTL can be accomplished using 
+the excludeQtl argument in SimParam's restrSegSites function.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChipByName(markers, name = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{markers}}{a vector of names for the markers}
+
+\item{\code{name}}{optional name for chip}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addSnpChipByName(c("1_1","1_3"))
 }
 \if{html}{\out{</div>}}
 

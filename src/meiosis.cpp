@@ -244,7 +244,7 @@ arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double
 
 // Searches for an interval in x containing value
 // Result reported as left most element of the interval
-// Returns -1 if value is smaller than the values of x
+// Returns an error if value is smaller than the values of x
 // Returns last element if value is greater than values of x
 // Set left to the smallest value of the interval to search
 arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0){

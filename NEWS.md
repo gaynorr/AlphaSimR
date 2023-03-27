@@ -1,3 +1,19 @@
+# AlphaSimR 1.4.2
+
+* updated MaCS citation to https site
+
+# AlphaSimR 1.4.1
+
+* Changed citation to use `bibentry` instead of `citEntry`
+
+# AlphaSimR 1.4.0
+
+*fixed a bug in IBD tracking
+
+*add `setFounderHap` to SimParam for applying custom haplotypes to founders
+
+*added `addSnpChipByName` to SimParam for defining SNP chips by marker names
+
 # AlphaSimR 1.3.4
 
 *changed C++ using `sprintf` to use `snprintf`
