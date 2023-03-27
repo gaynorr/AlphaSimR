@@ -1,3 +1,7 @@
+# AlphaSimR 1.4.1
+
+* Changed citation to use `bibentry` instead of `citEntry`
+
 # AlphaSimR 1.4.0
 
 *fixed a bug in IBD tracking
