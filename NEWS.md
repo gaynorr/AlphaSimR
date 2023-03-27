@@ -1,3 +1,7 @@
+# AlphaSimR 1.4.2
+
+* updated MaCS citation to https site
+
 # AlphaSimR 1.4.1
 
 * Changed citation to use `bibentry` instead of `citEntry`
