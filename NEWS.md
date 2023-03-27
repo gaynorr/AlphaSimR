@@ -1,3 +1,7 @@
+# AlphaSimR 1.4.3
+
+* another citation fix
+
 # AlphaSimR 1.4.2
 
 * updated MaCS citation to https site
