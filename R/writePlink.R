@@ -126,7 +126,7 @@ writePlink = function(pop, baseName, traits=1, use="pheno",
   ## Make .map file
   map = rbind(map$chr, # Chromosome
               map$id, # Variant id
-              as.character(map$pos*10), # Genetic map position (cM)
+              as.character(map$pos*100), # Genetic map position (cM)
               as.character(map$site) # Physical map position
               )
   
