@@ -1,10 +1,6 @@
-# AlphaSimR 1.4.3.9990
+# AlphaSimR 1.4.2.9990
 
 * fixed bug in `writePlink` to correctly export map positions in cM
-
-# AlphaSimR 1.4.3
-
-* another citation fix
 
 # AlphaSimR 1.4.2
 
