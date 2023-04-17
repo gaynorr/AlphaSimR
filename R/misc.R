@@ -29,6 +29,8 @@ isFemale <- function(x) {
   return(ret)
 }
 
+##Test
+
 #' @describeIn isFemale Test if individuals of a population are female or male
 #' @export
 isMale <- function(x) {
