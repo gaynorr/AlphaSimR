@@ -106,7 +106,7 @@ importInbredGeno = function(geno, genMap, ped=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
-      id = as.character(ped[,1])
+      id = as.character(ped)
       stopifnot(length(id)==nrow(geno),
                 !any(duplicated(id)))
       mother = father = rep("0", length(id))
@@ -238,7 +238,7 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
-      id = as.character(ped[,1])
+      id = as.character(ped)
       stopifnot(length(id)==(nrow(haplo)/ploidy),
                 !any(duplicated(id)))
       mother = father = rep("0", length(id))
