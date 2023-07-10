@@ -1,36 +1,36 @@
 #' @title Merge list of populations
-#' 
+#'
 #' @description Rapidly merges a list of populations into a
 #' single population
-#' 
-#' @param popList a list containing \code{\link{Pop-class}} elements 
-#' or a \code{\link{MegaPop-class}}
-#' 
+#'
+#' @param popList a list containing \code{\link{Pop-class}} elements
+#' or a \code{\link{MultiPop-class}}
+#'
 #' @return Returns a \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#'
 #' #Create a list of populations and merge list
 #' pop = newPop(founderPop, simParam=SP)
 #' popList = list(pop, pop)
 #' pop2 = mergePops(popList)
-#' 
+#'
 #' @export
 mergePops = function(popList){
-  if(is(popList,"MegaPop")){
+  if(is(popList,"MultiPop")){
     for(i in 1:length(popList@pops)){
-      if(is(popList@pops[i],"MegaPop")){
+      if(is(popList@pops[i],"MultiPop")){
         popList@pops[i] = mergePops(popList@pops[i])
       }
     }
     popList = popList@pops
   }
-  
+
   classes = do.call("c",lapply(popList,
                                function(x) class(x)))
   if(any(classes=="NULL")){
@@ -76,12 +76,12 @@ mergePops = function(popList){
   fixEff= do.call("c",
                   lapply(popList,
                          function(x) x@fixEff))
-  
+
   #misc
   misc = do.call("c",
                  lapply(popList,
                         function(x) x@misc))
-  
+
   #sex
   sex = do.call("c",
                    lapply(popList,

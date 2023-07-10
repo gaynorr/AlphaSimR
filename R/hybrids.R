@@ -1,35 +1,35 @@
 #' @title Hybrid crossing
-#' 
-#' @description 
-#' A convience function for hybrid plant breeding simulations. Allows for 
-#' easy specification of a test cross scheme and/or creation of an object 
-#' of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}} 
-#' should only be used if the parents were created using the \code{\link{makeDH}} 
-#' function or \code{\link{newPop}} using inbred founders. The id for 
+#'
+#' @description
+#' A convience function for hybrid plant breeding simulations. Allows for
+#' easy specification of a test cross scheme and/or creation of an object
+#' of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
+#' should only be used if the parents were created using the \code{\link{makeDH}}
+#' function or \code{\link{newPop}} using inbred founders. The id for
 #' new individuals is [mother_id]_[father_id]
-#' 
+#'
 #' @param females female population, an object of \code{\link{Pop-class}}
 #' @param males male population, an object of \code{\link{Pop-class}}
-#' @param crossPlan either "testcross" for all possible combinantions 
+#' @param crossPlan either "testcross" for all possible combinantions
 #' or a matrix with two columns for designed crosses
-#' @param returnHybridPop should results be returned as 
-#' \code{\link{HybridPop-class}}. If false returns results as 
+#' @param returnHybridPop should results be returned as
+#' \code{\link{HybridPop-class}}. If false returns results as
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Make crosses for full diallele
 #' pop2 = hybridCross(pop, pop, simParam=SP)
-#' 
+#'
 #' @export
 hybridCross = function(females, males,
                        crossPlan="testcross",
@@ -38,7 +38,7 @@ hybridCross = function(females, males,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if((females@ploidy%%2L != 0L) | 
+  if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
     stop("You can not cross indiviuals with odd ploidy levels")
   }
@@ -51,12 +51,12 @@ hybridCross = function(females, males,
       stop(paste0("crossPlan=",crossPlan," is not a valid option"))
     }
   }
-  
+
   #Set id
   femaleParents = females@id[crossPlan[,1]]
   maleParents = males@id[crossPlan[,2]]
   id = paste(femaleParents, maleParents, sep="_")
-  
+
   #Return Pop-class
   if(!returnHybridPop){
     return(makeCross2(females=females,
@@ -64,7 +64,7 @@ hybridCross = function(females, males,
                       crossPlan=crossPlan,
                       simParam=simParam))
   }
-  
+
   #Return HybridPop-class
   gv = matrix(NA_real_,
               nrow=length(id),
@@ -85,7 +85,7 @@ hybridCross = function(females, males,
     }
   }
   if(simParam$nTraits>0){
-    pheno = addError(gv, simParam$varE, 
+    pheno = addError(gv, simParam$varE,
                      reps=rep(1, simParam$nTraits))
   }else{
     pheno = gv
@@ -103,32 +103,32 @@ hybridCross = function(females, males,
 }
 
 #' @title Calculate GCA
-#' 
-#' @description 
-#' Calculate general combining ability of test crosses. Intended for 
-#' output from hybridCross using the "testcross" option, but will work 
+#'
+#' @description
+#' Calculate general combining ability of test crosses. Intended for
+#' output from hybridCross using the "testcross" option, but will work
 #' for any population.
-#' 
-#' @param pop an object of \code{\link{Pop-class}} or 
+#'
+#' @param pop an object of \code{\link{Pop-class}} or
 #' \code{\link{HybridPop-class}}
 #' @param use tabulate either genetic values "gv", estimated
 #' breeding values "ebv", or phenotypes "pheno"
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Make crosses for full diallele
 #' pop2 = hybridCross(pop, pop, simParam=SP)
 #' GCA = calcGCA(pop2, use="gv")
-#' 
+#'
 #' @export
 calcGCA = function(pop,use="pheno"){
   if(use=="pheno"){
@@ -219,11 +219,11 @@ calcGCA = function(pop,use="pheno"){
 }
 
 #' @title Set GCA as phenotype
-#' 
-#' @description 
-#' Calculates general combining ability from a set of testers and 
+#'
+#' @description
+#' Calculates general combining ability from a set of testers and
 #' returns these values as phenotypes for a population.
-#' 
+#'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param testers an object of \code{\link{Pop-class}}
 #' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
@@ -231,53 +231,53 @@ calcGCA = function(pop,use="pheno"){
 #' each trait. See details in \code{\link{setPheno}}.
 #' @param H2 a vector of desired broad-sense heritabilities for
 #' each trait. See details in \code{\link{setPheno}}.
-#' @param varE error (co)variances for traits. 
+#' @param varE error (co)variances for traits.
 #' See details in \code{\link{setPheno}}.
-#' @param corE an optional matrix for correlations between errors. 
+#' @param corE an optional matrix for correlations between errors.
 #' See details in \code{\link{setPheno}}.
-#' @param reps number of replications for phenotype. 
+#' @param reps number of replications for phenotype.
 #' See details in \code{\link{setPheno}}.
-#' @param fixEff fixed effect to assign to the population. Used 
+#' @param fixEff fixed effect to assign to the population. Used
 #' by genomic selection models only.
-#' @param p the p-value for the environmental covariate 
+#' @param p the p-value for the environmental covariate
 #' used by GxE traits. If NULL, a value is
 #' sampled at random.
-#' @param inbred are both pop and testers fully inbred. They are only 
-#' fully inbred if created by \code{\link{newPop}} using inbred founders 
+#' @param inbred are both pop and testers fully inbred. They are only
+#' fully inbred if created by \code{\link{newPop}} using inbred founders
 #' or by the \code{\link{makeDH}} function
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
-#' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
+#'
+#'
+#' @return Returns an object of \code{\link{Pop-class}} or
 #' a matrix if onlyPheno=TRUE
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Set phenotype to average per
 #' pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
-#' 
+#'
 #' @export
 setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
-                       varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL, 
+                       varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL,
                        inbred=FALSE, onlyPheno=FALSE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(class(testers)=="Pop", !onlyPheno)
-    pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers, 
-                      use=use, h2=h2, H2=H2, varE=varE, corE=corE, 
-                      reps=reps, fixEff=fixEff, p=p, inbred=inbred, 
+    pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers,
+                      use=use, h2=h2, H2=H2, varE=varE, corE=corE,
+                      reps=reps, fixEff=fixEff, p=p, inbred=inbred,
                       onlyPheno=FALSE, simParam=simParam)
     return(pop)
   }
@@ -291,7 +291,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
                     returnHybridPop=inbred, simParam=simParam)
   #Get response
   if(use=="pheno"){
-    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE, 
+    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,
                  p=p, reps=reps, onlyPheno=TRUE, simParam=simParam)
   }else if(use=="gv"){
     y = tmp@gv
@@ -322,74 +322,74 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 }
 
 #' @title Set progeny test as phenotype
-#' 
-#' @description 
-#' Models a progeny test of individuals in 'pop'. Returns 'pop' with a phenotype 
+#'
+#' @description
+#' Models a progeny test of individuals in 'pop'. Returns 'pop' with a phenotype
 #' representing the average performance of their progeny. The phenotype is generated
-#' by mating individuals in 'pop' to randomly chosen individuals in testPop a 
+#' by mating individuals in 'pop' to randomly chosen individuals in testPop a
 #' number of times equal to 'nMatePerInd'.
-#' 
+#'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param testPop an object of \code{\link{Pop-class}}
-#' @param nMatePerInd number of times an individual in 'pop' is mated to an 
+#' @param nMatePerInd number of times an individual in 'pop' is mated to an
 #' individual in testPop
 #' @param use true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)
 #' @param h2 a vector of desired narrow-sense heritabilities for
 #' each trait. See details in \code{\link{setPheno}}.
 #' @param H2 a vector of desired broad-sense heritabilities for
 #' each trait. See details in \code{\link{setPheno}}.
-#' @param varE error (co)variances for traits. 
+#' @param varE error (co)variances for traits.
 #' See details in \code{\link{setPheno}}.
-#' @param corE an optional matrix for correlations between errors. 
+#' @param corE an optional matrix for correlations between errors.
 #' See details in \code{\link{setPheno}}.
-#' @param reps number of replications for phenotype. 
+#' @param reps number of replications for phenotype.
 #' See details in \code{\link{setPheno}}.
-#' @param fixEff fixed effect to assign to the population. Used 
+#' @param fixEff fixed effect to assign to the population. Used
 #' by genomic selection models only.
-#' @param p the p-value for the environmental covariate 
+#' @param p the p-value for the environmental covariate
 #' used by GxE traits. If NULL, a value is
 #' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @details
-#' The reps parameter is for convenient representation of replicated data. 
-#' It was intended for representation of replicated yield trials in plant 
-#' breeding programs. In this case, varE is set to the plot error and 
-#' reps is set to the number plots per entry. The resulting phenotype 
+#' The reps parameter is for convenient representation of replicated data.
+#' It was intended for representation of replicated yield trials in plant
+#' breeding programs. In this case, varE is set to the plot error and
+#' reps is set to the number plots per entry. The resulting phenotype
 #' would reflect the mean of all replications.
-#' 
-#' @return Returns an object of \code{\link{Pop-class}} or 
+#'
+#' @return Returns an object of \code{\link{Pop-class}} or
 #' a matrix if onlyPheno=TRUE
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' 
+#'
 #' #Create two populations of 5 individuals
 #' pop1 = newPop(founderPop[1:5], simParam=SP)
 #' pop2 = newPop(founderPop[6:10], simParam=SP)
-#' 
+#'
 #' #Set phenotype according to a progeny test
 #' pop3 = setPhenoProgTest(pop1, pop2, use="gv", simParam=SP)
-#' 
+#'
 #' @export
-setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno", 
-                            h2=NULL, H2=NULL, varE=NULL, corE=NULL, 
-                            reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE, 
+setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
+                            h2=NULL, H2=NULL, varE=NULL, corE=NULL,
+                            reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
                             simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(class(testPop)=="Pop", !onlyPheno)
-    pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop, 
-                      nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2, 
-                      varE=varE, corE=corE, reps=reps, fixEff=fixEff, 
+    pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop,
+                      nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2,
+                      varE=varE, corE=corE, reps=reps, fixEff=fixEff,
                       p=p, onlyPheno=FALSE, simParam=simParam)
     return(pop)
   }
@@ -403,7 +403,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
                    balance=TRUE, simParam=simParam)
   #Get response
   if(use=="pheno"){
-    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE, 
+    y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,
                  reps=reps, p=p, onlyPheno=TRUE, simParam=simParam)
   }else if(use=="gv"){
     y = tmp@gv
@@ -417,7 +417,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
   #Calculate simple means
   tmp = aggregate(y~female, FUN=mean)
   GCAf = unname(as.matrix(tmp[,-1,drop=F]))
-  
+
   if(onlyPheno){
     return(GCAf)
   }
