@@ -1,3 +1,7 @@
+# AlphaSimR TBD
+
+* Changed 'MegaPop' to 'MultiPop'
+
 # AlphaSimR 1.4.2
 
 * updated MaCS citation to https site
