@@ -1,14 +1,16 @@
 # AlphaSimR 1.4.2.9990
 
-* fixed bug in `writePlink` to correctly export map positions in cM
+*renamed `MegaPop` to `MultiPop`
+
+*fixed bug in `writePlink` to correctly export map positions in cM
 
 # AlphaSimR 1.4.2
 
-* updated MaCS citation to https site
+*updated MaCS citation to https site
 
 # AlphaSimR 1.4.1
 
-* Changed citation to use `bibentry` instead of `citEntry`
+*Changed citation to use `bibentry` instead of `citEntry`
 
 # AlphaSimR 1.4.0
 

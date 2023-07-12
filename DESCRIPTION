@@ -15,7 +15,9 @@ Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   person("Thiago", "Oliveira", role = "ctb",
   comment = c(ORCID = "0000-0002-4555-2584")),
   person("Audrey", "Martin", role = "ctb",
-  comment = c(ORCID = "0000-0003-2235-0098")))
+  comment = c(ORCID = "0000-0003-2235-0098")),
+  person("Philip", "Greenspoon", role = "ctb",
+  comment = c(ORCID = "0000-0001-6284-7248")))
 Description: The successor to the 'AlphaSim' software for breeding program 
   simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>]. 
   Used for stochastic simulations of breeding programs to the level of DNA 
