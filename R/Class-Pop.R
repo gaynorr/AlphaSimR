@@ -808,8 +808,8 @@ isPop = function(x) {
 #' @title Creates an empty population
 #'
 #' @description
-#' Creates an empty \code{\link{Pop-class}} object with user 
-#' defined ploidy and other parameters taken from simParam. 
+#' Creates an empty \code{\link{Pop-class}} object with user
+#' defined ploidy and other parameters taken from simParam.
 #'
 #' @param ploidy the ploidy of the population
 #' @param simParam an object of \code{\link{SimParam}}
@@ -834,24 +834,24 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP", envir=.GlobalEnv)
   }
-  
+
   # Create 0 x nTrait matrix with trait names
   # For pheno and gv slots
   traitMat = matrix(NA_real_,
                     nrow = 0L,
                     ncol = simParam$nTraits)
-  
+
   traitNames = character(simParam$nTraits)
-  
+
   if(simParam$nTraits > 0L){
     # Get trait names
     for(i in 1:simParam$nTraits){
       traitNames[i] = simParam$traits[[i]]@name
     }
   }
-  
+
   colnames(traitMat) = traitNames
-  
+
   # Create empty geno list
   nLoci = unname(sapply(simParam$genMap, length))
   geno = vector("list", simParam$nChr)
@@ -859,7 +859,7 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
     DIM1 = nLoci[i]%/%8L + (nLoci[i]%%8L > 0L)
     geno[[i]] = array(as.raw(0), dim=c(DIM1, ploidy, 0))
   }
-  
+
   output = new("Pop",
                nInd = 0L,
                nChr = simParam$nChr,
@@ -883,33 +883,33 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
   return(output)
 }
 
-# MegaPop ------------------------------------------------------------------
+# MultiPop ------------------------------------------------------------------
 
-#' @title Mega-Population
+#' @title Multi-Population
 #'
 #' @description
 #' The mega-population represents a population of populations.
 #' It is designed to behave like a list of populations.
 #'
-#' @param x a 'MegaPop' object
+#' @param x a 'MultiPop' object
 #' @param i index of populations or mega-populations
-#' @param ... additional 'MegaPop' or 'Pop' objects
+#' @param ... additional 'MultiPop' or 'Pop' objects
 #'
 #' @slot pops list of \code{\link{Pop-class}} and/or
-#' \code{MegaPop-class}
+#' \code{MultiPop-class}
 #'
 #'
 #' @export
-setClass("MegaPop",
+setClass("MultiPop",
          slots=c(pops="list"))
 
-setValidity("MegaPop",function(object){
+setValidity("MultiPop",function(object){
   errors = character()
     # Check that all populations are valid
     for(i in 1:length(object@pops)){
       if(!validObject(object@pops[[i]]) &
          (is(object@pops[[i]], "Pop") |
-                is(object@pops[[i]],"MegaPop"))){
+                is(object@pops[[i]],"MultiPop"))){
         errors = c(errors,paste("object",i,"is not a valid pop"))
       }
     }
@@ -920,26 +920,26 @@ setValidity("MegaPop",function(object){
   }
 })
 
-#' @describeIn MegaPop Extract MegaPop by index
+#' @describeIn MultiPop Extract MultiPop by index
 setMethod("[",
-          signature(x = "MegaPop"),
+          signature(x = "MultiPop"),
           function(x, i){
             x@pops = x@pops[i]
             return(x)
           }
 )
 
-#' @describeIn MegaPop Extract Pop by index
+#' @describeIn MultiPop Extract Pop by index
 setMethod("[[",
-          signature(x = "MegaPop"),
+          signature(x = "MultiPop"),
           function (x, i){
             return(x@pops[[i]])
           }
 )
 
-#' @describeIn MegaPop Combine multiple MegaPops
+#' @describeIn MultiPop Combine multiple MultiPops
 setMethod("c",
-          signature(x = "MegaPop"),
+          signature(x = "MultiPop"),
           function (x, ...){
             for(y in list(...)){
               if(is(y,"NULL")){
@@ -948,7 +948,7 @@ setMethod("c",
                 if(is(y,"Pop")){
                   x@pops = c(x@pops, y)
                 }else{
-                  stopifnot(is(y,"MegaPop"))
+                  stopifnot(is(y,"MultiPop"))
                   x@pops = c(x@pops, y@pops)
                 }
               }
@@ -957,17 +957,17 @@ setMethod("c",
           }
 )
 
-#' @title Create new Mega Population
+#' @title Create new Multi Population
 #'
 #' @description
-#' Creates a new \code{\link{MegaPop-class}} from one or more
-#' \code{\link{Pop-class}} and/or \code{\link{MegaPop-class}}
+#' Creates a new \code{\link{MultiPop-class}} from one or more
+#' \code{\link{Pop-class}} and/or \code{\link{MultiPop-class}}
 #' objects.
 #'
 #' @param ... one or more \code{\link{Pop-class}} and/or
-#' \code{\link{MegaPop-class}} objects.
+#' \code{\link{MultiPop-class}} objects.
 #'
-#' @return Returns an object of \code{\link{MegaPop-class}}
+#' @return Returns an object of \code{\link{MultiPop-class}}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -979,21 +979,21 @@ setMethod("c",
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' megaPop = newMegaPop(pop=pop)
-#' isMegaPop(megaPop)
+#' megaPop = newMultiPop(pop=pop)
+#' isMultiPop(megaPop)
 #'
 #' @export
-newMegaPop = function(...){
+newMultiPop = function(...){
   input = list(...)
   class = sapply(input, "class")
-  stopifnot(all(class=="Pop" | class=="MegaPop"))
-  output = new("MegaPop", pops=input)
+  stopifnot(all(class=="Pop" | class=="MultiPop"))
+  output = new("MultiPop", pops=input)
   return(output)
 }
 
-#' @describeIn MegaPop Test if object is of a MegaPop class
+#' @describeIn MultiPop Test if object is of a MultiPop class
 #' @export
-isMegaPop = function(x) {
-  ret = is(x, class2 = "MegaPop")
+isMultiPop = function(x) {
+  ret = is(x, class2 = "MultiPop")
   return(ret)
 }

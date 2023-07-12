@@ -45,7 +45,7 @@ genParam(pop, simParam = NULL)
 }
 }
 \description{
-Calculates genetic and genic additive and dominance variances 
+Calculates genetic and genic additive and dominance variances
 for an object of \code{\link{Pop-class}}
 }
 \examples{

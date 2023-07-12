@@ -91,49 +91,49 @@ getFam = function(pop,famType){
 }
 
 #' @title Select individuals
-#' 
-#' @description Selects a subset of nInd individuals from a 
+#'
+#' @description Selects a subset of nInd individuals from a
 #' population.
-#' 
-#' @param pop and object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
+#'
+#' @param pop and object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select
-#' @param trait the trait for selection. Either a number indicating 
+#' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
-#' @param sex which sex to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using sexes, 
+#' @param sex which sex to select. Use "B" for both, "F" for
+#' females and "M" for males. If the simulation is not using sexes,
 #' the argument is ignored.
-#' @param selectTop selects highest values if true. 
+#' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
-#' @param returnPop should results be returned as a 
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' @param returnPop should results be returned as a
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected
 #' individuals is returned.
-#' @param candidates an optional vector of eligible selection candidates. 
+#' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
+#' @param ... additional arguments if using a function for
 #' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
-#' 
-#' @examples 
+#'
+#' @return Returns an object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Select best 5
 #' pop2 = selectInd(pop, 5, simParam=SP)
-#' 
+#'
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
@@ -142,11 +142,11 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
-                      use=use, sex=sex, selectTop=selectTop, 
-                      returnPop=TRUE, candidates=NULL, 
+                      use=use, sex=sex, selectTop=selectTop,
+                      returnPop=TRUE, candidates=NULL,
                       simParam=simParam, ...)
     return(pop)
   }
@@ -173,55 +173,55 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 }
 
 #' @title Select families
-#' 
-#' @description Selects a subset of full-sib families from a 
+#'
+#' @description Selects a subset of full-sib families from a
 #' population.
-#' 
-#' @param pop and object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
+#'
+#' @param pop and object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nFam the number of families to select
-#' @param trait the trait for selection. Either a number indicating 
+#' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
-#' @param sex which sex to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using sexes, 
+#' @param sex which sex to select. Use "B" for both, "F" for
+#' females and "M" for males. If the simulation is not using sexes,
 #' the argument is ignored.
-#' @param famType which type of family to select. Use "B" for 
-#' full-sib families, "F" for half-sib families on female side and "M" 
+#' @param famType which type of family to select. Use "B" for
+#' full-sib families, "F" for half-sib families on female side and "M"
 #' for half-sib families on the male side.
-#' @param selectTop selects highest values if true. 
+#' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
-#' @param returnPop should results be returned as a 
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' @param returnPop should results be returned as a
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected
 #' individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
+#' @param ... additional arguments if using a function for
 #' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
-#' 
-#' @examples 
+#'
+#' @return Returns an object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Create 3 biparental families with 10 progeny
 #' pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
-#' 
+#'
 #' #Select best 2 families
 #' pop3 = selectFam(pop2, 2, simParam=SP)
-#' 
+#'
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
@@ -230,11 +230,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
-                      use=use, sex=sex, famType=famType, 
-                      selectTop=selectTop, returnPop=TRUE, 
+                      use=use, sex=sex, famType=famType,
+                      selectTop=selectTop, returnPop=TRUE,
                       candidates=NULL, simParam=simParam, ...)
     return(pop)
   }
@@ -270,56 +270,56 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 }
 
 #' @title Select individuals within families
-#' 
-#' @description Selects a subset of nInd individuals from each  
-#' full-sib family within a population. Will return all individuals 
+#'
+#' @description Selects a subset of nInd individuals from each
+#' full-sib family within a population. Will return all individuals
 #' from a full-sib family if it has less than or equal to nInd individuals.
-#' 
-#' @param pop and object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
+#'
+#' @param pop and object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select within a family
-#' @param trait the trait for selection. Either a number indicating 
+#' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
-#' @param sex which sex to select. Use "B" for both, "F" for 
-#' females and "M" for males. If the simulation is not using sexes, 
+#' @param sex which sex to select. Use "B" for both, "F" for
+#' females and "M" for males. If the simulation is not using sexes,
 #' the argument is ignored.
-#' @param famType which type of family to select. Use "B" for 
-#' full-sib families, "F" for half-sib families on female side and "M" 
+#' @param famType which type of family to select. Use "B" for
+#' full-sib families, "F" for half-sib families on female side and "M"
 #' for half-sib families on the male side.
-#' @param selectTop selects highest values if true. 
+#' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
-#' @param returnPop should results be returned as a 
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected 
+#' @param returnPop should results be returned as a
+#' \code{\link{Pop-class}}. If FALSE, only the index of selected
 #' individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
+#' @param ... additional arguments if using a function for
 #' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}}, 
-#' \code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
-#' 
-#' @examples 
+#'
+#' @return Returns an object of \code{\link{Pop-class}},
+#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Create 3 biparental families with 10 progeny
 #' pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
-#' 
+#'
 #' #Select best individual per family
 #' pop3 = selectWithinFam(pop2, 1, simParam=SP)
-#' 
+#'
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
@@ -328,11 +328,11 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
-                      use=use, sex=sex, selectTop=selectTop, 
-                      returnPop=TRUE, candidates=NULL, 
+                      use=use, sex=sex, selectTop=selectTop,
+                      returnPop=TRUE, candidates=NULL,
                       simParam=simParam, ...)
     return(pop)
   }
@@ -371,51 +371,51 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 }
 
 #' @title Select open pollinating plants
-#' 
-#' @description 
-#' This function models selection in an open pollinating 
-#' plant population. It allows for varying the percentage of 
-#' selfing. The function also provides an option for modeling 
+#'
+#' @description
+#' This function models selection in an open pollinating
+#' plant population. It allows for varying the percentage of
+#' selfing. The function also provides an option for modeling
 #' selection as occuring before or after pollination.
-#' 
-#' @param pop and object of \code{\link{Pop-class}} 
-#' or \code{\link{MegaPop-class}}
+#'
+#' @param pop and object of \code{\link{Pop-class}}
+#' or \code{\link{MultiPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
-#' @param probSelf percentage of seeds expected from selfing. 
+#' @param probSelf percentage of seeds expected from selfing.
 #' Value ranges from 0 to 1.
 #' @param pollenControl are plants selected before pollination
-#' @param trait the trait for selection. Either a number indicating 
+#' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
-#' @param selectTop selects highest values if true. 
+#' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
+#' @param ... additional arguments if using a function for
 #' trait
-#' 
-#' @return Returns an object of \code{\link{Pop-class}} 
-#' or \code{\link{MegaPop-class}}
-#' 
-#' @examples 
+#'
+#' @return Returns an object of \code{\link{Pop-class}}
+#' or \code{\link{MultiPop-class}}
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Create new population by selecting the best 3 plant
 #' #Assuming 50% selfing in plants and 10 seeds per plant
 #' pop2 = selectOP(pop, nInd=3, nSeeds=10, probSelf=0.5, simParam=SP)
-#' 
+#'
 #' @export
 selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
@@ -425,11 +425,11 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(is.null(candidates))
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
                       pollenControl=pollenControl, trait=trait, use=use,
-                      selectTop=selectTop, candidates=NULL, 
+                      selectTop=selectTop, candidates=NULL,
                       simParam=simParam, ...)
     return(pop)
   }

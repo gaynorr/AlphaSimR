@@ -32,6 +32,8 @@
 
 # AlphaSimR 1.3.2
 
+*changed name of `MegaPop` to `MultiPop`
+
 *fixed column name bug with multiple traits in `setEBV`
 
 *fixed CTD caused by `runMacs` when too many segSites are requested

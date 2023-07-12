@@ -22,51 +22,51 @@ selectCross(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{nInd}{the number of individuals to select. These individuals 
-are selected without regards to sex and it supercedes values 
-for nFemale and nMale. Thus if the simulation uses sexes, it is 
-likely better to leave this value as NULL and use nFemale and nMale 
+\item{nInd}{the number of individuals to select. These individuals
+are selected without regards to sex and it supercedes values
+for nFemale and nMale. Thus if the simulation uses sexes, it is
+likely better to leave this value as NULL and use nFemale and nMale
 instead.}
 
-\item{nFemale}{the number of females to select. This value is ignored 
+\item{nFemale}{the number of females to select. This value is ignored
 if nInd is set.}
 
-\item{nMale}{the number of males to select. This value is ignored 
+\item{nMale}{the number of males to select. This value is ignored
 if nInd is set.}
 
 \item{nCrosses}{total number of crosses to make}
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{trait}{the trait for selection. Either a number indicating 
+\item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.}
 
 \item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+breeding values "ebv", breeding values "bv", phenotypes "pheno",
 or randomly "rand"}
 
-\item{selectTop}{selects highest values if true. 
+\item{selectTop}{selects highest values if true.
 Selects lowest values if false.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 trait}
 
-\item{balance}{if using sexes, this option will balance the number 
-of progeny per parent. This argument occurs after ..., so the argument 
+\item{balance}{if using sexes, this option will balance the number
+of progeny per parent. This argument occurs after ..., so the argument
 name must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-This is a wrapper that combines the functionalities of 
-\code{\link{randCross}} and \code{\link{selectInd}}. The 
-purpose of this wrapper is to combine both selection and 
-crossing in one function call that minimized the amount 
-of intermediate populations created. This reduces RAM usage 
-and simplifies code writing. Note that this wrapper does not 
+This is a wrapper that combines the functionalities of
+\code{\link{randCross}} and \code{\link{selectInd}}. The
+purpose of this wrapper is to combine both selection and
+crossing in one function call that minimized the amount
+of intermediate populations created. This reduces RAM usage
+and simplifies code writing. Note that this wrapper does not
 provide the full functionality of either function.
 }
 \examples{
