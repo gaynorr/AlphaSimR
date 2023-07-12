@@ -21,7 +21,7 @@ randCross(
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{balance}{if using sexes, this option will balance the number 
+\item{balance}{if using sexes, this option will balance the number
 of progeny per parent}
 
 \item{parents}{an optional vector of indices for allowable parents}
@@ -34,7 +34,7 @@ of progeny per parent}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-A wrapper for \code{\link{makeCross}} that randomly 
+A wrapper for \code{\link{makeCross}} that randomly
 selects parental combinations for all possible combinantions.
 }
 \examples{

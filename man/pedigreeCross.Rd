@@ -20,43 +20,43 @@ pedigreeCross(
 \arguments{
 \item{founderPop}{a \code{\link{Pop-class}}}
 
-\item{id}{a vector of unique identifiers for individuals 
-in the pedigree. The values of these IDs are seperate from   
+\item{id}{a vector of unique identifiers for individuals
+in the pedigree. The values of these IDs are seperate from
 the IDs in the founderPop if matchID=FALSE.}
 
-\item{mother}{a vector of identifiers for the mothers 
-of individuals in the pedigree. Must match one of the 
+\item{mother}{a vector of identifiers for the mothers
+of individuals in the pedigree. Must match one of the
 elements in the id vector or they will be treated as unknown.}
 
-\item{father}{a vector of identifiers for the fathers 
-of individuals in the pedigree. Must match one of the 
+\item{father}{a vector of identifiers for the fathers
+of individuals in the pedigree. Must match one of the
 elements in the id vector or they will be treated as unknown.}
 
-\item{matchID}{indicates if the IDs in founderPop should be 
+\item{matchID}{indicates if the IDs in founderPop should be
 matched to the id argument. See details.}
 
-\item{maxCycle}{the maximum number of loops to make over the pedigree 
+\item{maxCycle}{the maximum number of loops to make over the pedigree
 to sort it.}
 
-\item{DH}{an optional vector indicating if an individual 
+\item{DH}{an optional vector indicating if an individual
 should be made a doubled haploid.}
 
-\item{nSelf}{an optional vector indicating how many generations an 
+\item{nSelf}{an optional vector indicating how many generations an
 individual should be selfed.}
 
-\item{useFemale}{If creating DH lines, should female recombination 
+\item{useFemale}{If creating DH lines, should female recombination
 rates be used. This parameter has no effect if, recombRatio=1.}
 
 \item{simParam}{an object of 'SimParam' class}
 }
 \description{
-Creates a \code{\link{Pop-class}} from a generic 
+Creates a \code{\link{Pop-class}} from a generic
 pedigree and a set of founder individuals.
 
-The way in which the user supplied pedigree is used depends on 
-the value of matchID. If matchID is TRUE, the IDs in the user 
-supplied pedigree are matched against founderNames. If matchID 
-is FALSE, founder individuals in the user supplied pedigree are 
+The way in which the user supplied pedigree is used depends on
+the value of matchID. If matchID is TRUE, the IDs in the user
+supplied pedigree are matched against founderNames. If matchID
+is FALSE, founder individuals in the user supplied pedigree are
 randomly sampled from founderPop.
 }
 \examples{

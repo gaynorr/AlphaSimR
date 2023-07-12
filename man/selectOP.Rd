@@ -19,43 +19,43 @@ selectOP(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}} 
-or \code{\link{MegaPop-class}}}
+\item{pop}{and object of \code{\link{Pop-class}}
+or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of plants to select}
 
 \item{nSeeds}{number of seeds per plant}
 
-\item{probSelf}{percentage of seeds expected from selfing. 
+\item{probSelf}{percentage of seeds expected from selfing.
 Value ranges from 0 to 1.}
 
 \item{pollenControl}{are plants selected before pollination}
 
-\item{trait}{the trait for selection. Either a number indicating 
+\item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.}
 
 \item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+breeding values "ebv", breeding values "bv", phenotypes "pheno",
 or randomly "rand"}
 
-\item{selectTop}{selects highest values if true. 
+\item{selectTop}{selects highest values if true.
 Selects lowest values if false.}
 
 \item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 trait}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} 
-or \code{\link{MegaPop-class}}
+Returns an object of \code{\link{Pop-class}}
+or \code{\link{MultiPop-class}}
 }
 \description{
-This function models selection in an open pollinating 
-plant population. It allows for varying the percentage of 
-selfing. The function also provides an option for modeling 
+This function models selection in an open pollinating
+plant population. It allows for varying the percentage of
+selfing. The function also provides an option for modeling
 selection as occuring before or after pollination.
 }
 \examples{

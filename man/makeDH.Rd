@@ -13,7 +13,7 @@ makeDH(pop, nDH = 1, useFemale = TRUE, keepParents = TRUE, simParam = NULL)
 
 \item{useFemale}{should female recombination rates be used.}
 
-\item{keepParents}{should previous parents be used for mother and 
+\item{keepParents}{should previous parents be used for mother and
 father.}
 
 \item{simParam}{an object of 'SimParam' class}
@@ -22,8 +22,8 @@ father.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Creates DH lines from each individual in a population. 
-Only works with diploid individuals. For polyploids, use 
+Creates DH lines from each individual in a population.
+Only works with diploid individuals. For polyploids, use
 \code{\link{reduceGenome}} and \code{\link{doubleGenome}}.
 }
 \examples{

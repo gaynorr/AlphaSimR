@@ -1,5 +1,7 @@
 # AlphaSimR 1.3.1.9990
 
+*changed name of `MegaPop` to `MultiPop`
+
 *fixed column name bug with multiple traits in `setEBV`
 
 # AlphaSimR 1.3.1

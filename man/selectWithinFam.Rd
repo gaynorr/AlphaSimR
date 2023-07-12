@@ -19,47 +19,47 @@ selectWithinFam(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}}, 
-\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}}
+\item{pop}{and object of \code{\link{Pop-class}},
+\code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of individuals to select within a family}
 
-\item{trait}{the trait for selection. Either a number indicating 
+\item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.}
 
 \item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+breeding values "ebv", breeding values "bv", phenotypes "pheno",
 or randomly "rand"}
 
-\item{sex}{which sex to select. Use "B" for both, "F" for 
-females and "M" for males. If the simulation is not using sexes, 
+\item{sex}{which sex to select. Use "B" for both, "F" for
+females and "M" for males. If the simulation is not using sexes,
 the argument is ignored.}
 
-\item{famType}{which type of family to select. Use "B" for 
-full-sib families, "F" for half-sib families on female side and "M" 
+\item{famType}{which type of family to select. Use "B" for
+full-sib families, "F" for half-sib families on female side and "M"
 for half-sib families on the male side.}
 
-\item{selectTop}{selects highest values if true. 
+\item{selectTop}{selects highest values if true.
 Selects lowest values if false.}
 
-\item{returnPop}{should results be returned as a 
-\code{\link{Pop-class}}. If FALSE, only the index of selected 
+\item{returnPop}{should results be returned as a
+\code{\link{Pop-class}}. If FALSE, only the index of selected
 individuals is returned.}
 
 \item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 trait}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}, 
-\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
+Returns an object of \code{\link{Pop-class}},
+\code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 }
 \description{
-Selects a subset of nInd individuals from each  
-full-sib family within a population. Will return all individuals 
+Selects a subset of nInd individuals from each
+full-sib family within a population. Will return all individuals
 from a full-sib family if it has less than or equal to nInd individuals.
 }
 \examples{

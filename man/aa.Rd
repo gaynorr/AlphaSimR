@@ -12,7 +12,7 @@ aa(pop, simParam = NULL)
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-Returns additive-by-additive epistatic 
+Returns additive-by-additive epistatic
 deviations for all traits
 }
 \examples{
