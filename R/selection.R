@@ -100,6 +100,8 @@ getFam = function(pop,famType){
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
+#' The function must work on a vector or matrix of \code{use} values.
+#' See the examples and \code{\link{selIndex}}.
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
@@ -131,8 +133,21 @@ getFam = function(pop,famType){
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Select best 5
+#' #Select top 5 (directional selection)
 #' pop2 = selectInd(pop, 5, simParam=SP)
+#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+#' abline(v = pop2@pheno, col = "red", lwd = 2)
+#'
+#' #Select 5 most deviating from an optima (disruptive selection)
+#' squaredDeviation = function(x, optima = 0) (x - optima)^2
+#' pop3 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = TRUE)
+#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+#' abline(v = pop3@pheno, col = "red", lwd = 2)
+#'
+#' #Select 5 least deviating from an optima (stabilising selection)
+#' pop4 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = FALSE)
+#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+#' abline(v = pop4@pheno, col = "red", lwd = 2)
 #'
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
@@ -182,6 +197,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
+#' The function must work on a vector or matrix of \code{use} values.
+#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
@@ -280,6 +297,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
+#' The function must work on a vector or matrix of \code{use} values.
+#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
@@ -387,6 +406,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param pollenControl are plants selected before pollination
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
+#' The function must work on a vector or matrix of \code{use} values.
+#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
 #' @param use select on genetic values "gv", estimated
 #' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
