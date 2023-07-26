@@ -24,7 +24,9 @@ selectInd(
 \item{nInd}{the number of individuals to select}
 
 \item{trait}{the trait for selection. Either a number indicating
-a single trait or a function returning a vector of length nInd.}
+a single trait or a function returning a vector of length nInd.
+The function must work on a vector or matrix of \code{use} values.
+See the examples and \code{\link{selIndex}}.}
 
 \item{use}{select on genetic values "gv", estimated
 breeding values "ebv", breeding values "bv", phenotypes "pheno",
@@ -68,7 +70,20 @@ SP$setVarE(h2=0.5)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Select best 5
+#Select top 5 (directional selection)
 pop2 = selectInd(pop, 5, simParam=SP)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop2@pheno, col = "red", lwd = 2)
+
+#Select 5 most deviating from an optima (disruptive selection)
+squaredDeviation = function(x, optima = 0) (x - optima)^2
+pop3 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = TRUE)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop3@pheno, col = "red", lwd = 2)
+
+#Select 5 least deviating from an optima (stabilising selection)
+pop4 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = FALSE)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop4@pheno, col = "red", lwd = 2)
 
 }

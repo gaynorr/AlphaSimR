@@ -25,7 +25,9 @@ selectWithinFam(
 \item{nInd}{the number of individuals to select within a family}
 
 \item{trait}{the trait for selection. Either a number indicating
-a single trait or a function returning a vector of length nInd.}
+a single trait or a function returning a vector of length nInd.
+The function must work on a vector or matrix of \code{use} values.
+See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.}
 
 \item{use}{select on genetic values "gv", estimated
 breeding values "ebv", breeding values "bv", phenotypes "pheno",
