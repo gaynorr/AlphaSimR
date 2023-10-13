@@ -1,3 +1,4 @@
+
 #' @title Simulation parameters
 #'
 #' @description
@@ -465,7 +466,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive traits.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated additive effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -474,6 +475,8 @@ SimParam = R6Class(
     #' @param corA a matrix of correlations between additive effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -525,7 +528,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more traits with dominance.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -539,6 +542,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -606,8 +611,8 @@ SimParam = R6Class(
     },
 
     #' @description
-    #' Randomly assigns eligible QTLs for one ore more additive GxE traits.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' Randomly assigns eligible QTLs for one or more additive GxE traits.
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -619,6 +624,8 @@ SimParam = R6Class(
     #' @param corGxE a matrix of correlations between GxE effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -718,6 +725,8 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -820,7 +829,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' traits. If simulating more than one trait, all traits will be pleiotrophic
+    #' traits. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated additive effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -834,6 +843,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -902,7 +913,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more traits with dominance and
-    #' epistasis. If simulating more than one trait, all traits will be pleiotrophic
+    #' epistasis. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -919,6 +930,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -1001,7 +1014,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic
+    #' GxE traits. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -1018,6 +1031,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -1142,6 +1157,8 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
