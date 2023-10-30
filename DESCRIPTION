@@ -1,7 +1,7 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 1.5.0
+Version: 1.5.1
 Date: 2023-10-30
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
@@ -32,8 +32,7 @@ Description: The successor to the 'AlphaSim' software for breeding program
   demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 License: MIT + file LICENSE
 URL: https://github.com/gaynorr/AlphaSimR,
-    https://gaynorr.github.io/AlphaSimR/,
-    https://www.edx.org/course/breeding-programme-modelling-with-alphasimr?utm_source=breeding_alphasimr&utm_medium=partner-marketing&utm_campaign=edinburghx
+    https://gaynorr.github.io/AlphaSimR/
 Encoding: UTF-8
 Depends: R (>= 4.0.0), methods, R6
 Imports: Rcpp (>= 0.12.7), Rdpack

@@ -75,9 +75,9 @@ isMale <- function(x) {
 #' 
 #' n <- nInd(basePop)
 #' location <- vector(mode = "list", length = n)
-#' for (ind in seq_len(n)) {
+#' for (ind in seq_len(n)) 
 #'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
-#' }
+#' 
 #' location
 #' basePop <- setMisc(basePop, node = "location", value = location)
 #' basePop@misc
@@ -85,9 +85,9 @@ isMale <- function(x) {
 #' 
 #' n <- nInd(basePop)
 #' location <- vector(mode = "list", length = n)
-#' for (ind in c(1, 3)) {
+#' for (ind in c(1, 3)) 
 #'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
-#' }
+#' 
 #' location
 #' basePop <- setMisc(basePop, node = "location", value = location)
 #' basePop@misc
