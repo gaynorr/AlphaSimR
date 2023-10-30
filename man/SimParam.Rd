@@ -134,6 +134,17 @@ SP = SimParam$new(founderPop)
 SP$addTraitAD(10, meanDD=0.5)
 
 ## ------------------------------------------------
+## Method `SimParam$altAddTraitAD`
+## ------------------------------------------------
+
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
+
+## ------------------------------------------------
 ## Method `SimParam$addTraitAG`
 ## ------------------------------------------------
 
@@ -361,6 +372,7 @@ genetic map}
 \item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
 \item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
 \item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
+\item \href{#method-SimParam-altAddTraitAD}{\code{SimParam$altAddTraitAD()}}
 \item \href{#method-SimParam-addTraitAG}{\code{SimParam$addTraitAG()}}
 \item \href{#method-SimParam-addTraitADG}{\code{SimParam$addTraitADG()}}
 \item \href{#method-SimParam-addTraitAE}{\code{SimParam$addTraitAE()}}
@@ -756,7 +768,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitA}{}}}
 \subsection{Method \code{addTraitA()}}{
 Randomly assigns eligible QTLs for one or more additive traits.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitA(
@@ -784,7 +796,9 @@ with correlated additive effects.
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -812,7 +826,7 @@ SP$addTraitA(10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAD}{}}}
 \subsection{Method \code{addTraitAD()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAD(
@@ -853,7 +867,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -877,11 +893,111 @@ SP$addTraitAD(10, meanDD=0.5)
 
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
+\subsection{Method \code{altAddTraitAD()}}{
+An alternative method for adding a trait with additive  and dominance effects 
+to an AlphaSimR simulation. The function attempts to create a trait matching 
+user defined values for number of QTL, inbreeding depression, additive genetic 
+variance and dominance genetic variance.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$altAddTraitAD(
+  nQtlPerChr,
+  mean = 0,
+  varA = 1,
+  varD = 0,
+  inbrDepr = 0,
+  limMeanDD = c(0, 1.5),
+  limVarDD = c(0, 0.5),
+  silent = FALSE,
+  force = FALSE,
+  name = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{nQtlPerChr}}{number of QTLs per chromosome. 
+Can be a single value or nChr values.}
+
+\item{\code{mean}}{desired mean of the trait}
+
+\item{\code{varA}}{desired additive variance}
+
+\item{\code{varD}}{desired dominance variance}
+
+\item{\code{inbrDepr}}{desired inbreeding depression, see details}
+
+\item{\code{limMeanDD}}{limits for meanDD, see details}
+
+\item{\code{limVarDD}}{limits for varDD, see details}
+
+\item{\code{silent}}{should summary details be printed to the console}
+
+\item{\code{force}}{should the check for a running simulation be
+ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Details}{
+This function will always add a trait to 'SimParam', unless an error occurs 
+with picking QTLs. The resulting trait will always have the desired mean and 
+additive genetic variance. However, it may not have the desired values for 
+inbreeding depression and dominance variance. Thus, it is strongly recommended 
+to check the output printed to the console to determine how close the trait's 
+parameters came to these desired values.
+
+The mean and additive genetic variance will always be achieved exactly. The 
+function attempts to achieve the desired dominance variance and inbreeding 
+depression while staying within the user supplied constraints for the 
+acceptable range of dominance degree mean and variance. If the desired values
+are not being achieved, the acceptable range need to be increased and/or the 
+number of QTL may need to be increased. There are not limits to setting the 
+range for dominance degree mean and variance, but care should be taken to 
+with regards to the biological feasibility of the limits that are supplied. 
+The default limits were somewhat arbitrarily set, so I make not claim to 
+how reasonable these limits are for routine use.
+
+Inbreeding depression in this function is defined as the difference in mean 
+genetic value between a population with the same allele frequency as the 
+reference population (population used to initialize SimParam) in 
+Hardy-Weinberg equilibrium compared to a population with the same allele 
+frequency that is fully inbred. This is equivalent to the amount the mean of 
+a population increases when going from an inbreeding coefficient of 1 (fully 
+inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
+equilibrium). Note that the sign of the value should (usually) be positive. 
+This corresponds to a detrimental effect of inbreeding when higher values of 
+the trait are considered biologically beneficial.
+
+Summary information on this trait is printed to the console when silent=FALSE. 
+The summary information reports the inbreeding depression and dominance 
+variance for the population as well as the dominance degree mean and variance 
+applied to the trait.
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitAG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAG}{}}}
 \subsection{Method \code{addTraitAG()}}{
-Randomly assigns eligible QTLs for one ore more additive GxE traits.
-If simulating more than one trait, all traits will be pleiotrophic
+Randomly assigns eligible QTLs for one or more additive GxE traits.
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAG(
@@ -918,7 +1034,9 @@ with correlated effects.
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -994,7 +1112,9 @@ value or nChr values.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1022,7 +1142,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAE}{}}}
 \subsection{Method \code{addTraitAE()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis
-traits. If simulating more than one trait, all traits will be pleiotrophic
+traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAE(
@@ -1061,7 +1181,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1085,7 +1207,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitADE}{}}}
 \subsection{Method \code{addTraitADE()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance and
-epistasis. If simulating more than one trait, all traits will be pleiotrophic
+epistasis. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADE(
@@ -1133,7 +1255,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1161,7 +1285,7 @@ SP$addTraitADE(10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAEG}{}}}
 \subsection{Method \code{addTraitAEG()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis
-GxE traits. If simulating more than one trait, all traits will be pleiotrophic
+GxE traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAEG(
@@ -1209,7 +1333,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1293,7 +1419,9 @@ to additive variance in a diploid organism with allele frequency 0.5}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}

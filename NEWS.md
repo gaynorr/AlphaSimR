@@ -4,6 +4,12 @@
 
 *fixed bug in `writePlink` to correctly export map positions in cM
 
+*fixed bug in `writeRecords` due to removed reps slot in pops
+
+*added `altAddTraitAD` for specifying traits with dominance effects using dominance variance and inbreeding depression
+
+*add miscPop slot to class `Pop`
+
 # AlphaSimR 1.4.2
 
 *updated MaCS citation to https site
@@ -33,8 +39,6 @@
 *fixed bug with correlated error variances
 
 # AlphaSimR 1.3.2
-
-*changed name of `MegaPop` to `MultiPop`
 
 *fixed column name bug with multiple traits in `setEBV`
 

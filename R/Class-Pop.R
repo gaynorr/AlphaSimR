@@ -379,6 +379,8 @@ isNamedMapPop = function(x) {
 #' population. This list is normally empty and exists solely as an
 #' open slot available for uses to store extra information about
 #' individuals.
+#' @slot miscPop a list of any length containing optional meta data for the 
+#' populations. This list is empty unless information is supplied by the user.
 #'
 #' @export
 setClass("Pop",
@@ -393,7 +395,8 @@ setClass("Pop",
                  ebv="matrix",
                  gxe="list",
                  fixEff="integer",
-                 misc="list"),
+                 misc="list",
+                 miscPop="list"),
          contains="RawPop")
 
 setValidity("Pop",function(object){
@@ -500,6 +503,7 @@ setMethod("[",
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
+            x@miscPop = list()
             return(x)
           }
 )
@@ -692,7 +696,8 @@ newPop = function(rawPop,simParam=NULL,...){
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
                           ncol=0),
-               misc=vector("list",rawPop@nInd))
+               misc=vector("list",rawPop@nInd),
+               miscPop=list())
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1,
                       fixEff=1L, p=NULL, onlyPheno=FALSE,
@@ -879,7 +884,8 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                ebv = matrix(NA_real_,
                             nrow=0L,
                             ncol=0L),
-               misc = list())
+               misc = list(),
+               miscPop = list())
   return(output)
 }
 

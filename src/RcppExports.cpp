@@ -381,6 +381,47 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// argAltAD
+Rcpp::List argAltAD(Rcpp::S4 LociMap, Rcpp::S4 Pop, double mean, double varA, double varD, double inbrDepr, int nThreads);
+RcppExport SEXP _AlphaSimR_argAltAD(SEXP LociMapSEXP, SEXP PopSEXP, SEXP meanSEXP, SEXP varASEXP, SEXP varDSEXP, SEXP inbrDeprSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type LociMap(LociMapSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type Pop(PopSEXP);
+    Rcpp::traits::input_parameter< double >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< double >::type varA(varASEXP);
+    Rcpp::traits::input_parameter< double >::type varD(varDSEXP);
+    Rcpp::traits::input_parameter< double >::type inbrDepr(inbrDeprSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(argAltAD(LociMap, Pop, mean, varA, varD, inbrDepr, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// objAltAD
+double objAltAD(arma::vec input, const Rcpp::List& args);
+RcppExport SEXP _AlphaSimR_objAltAD(SEXP inputSEXP, SEXP argsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type input(inputSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type args(argsSEXP);
+    rcpp_result_gen = Rcpp::wrap(objAltAD(input, args));
+    return rcpp_result_gen;
+END_RCPP
+}
+// finAltAD
+Rcpp::List finAltAD(arma::vec input, const Rcpp::List& args);
+RcppExport SEXP _AlphaSimR_finAltAD(SEXP inputSEXP, SEXP argsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type input(inputSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type args(argsSEXP);
+    rcpp_result_gen = Rcpp::wrap(finAltAD(input, args));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calcGenParam
 Rcpp::List calcGenParam(const Rcpp::S4& trait, const Rcpp::S4& pop, int nThreads);
 RcppExport SEXP _AlphaSimR_calcGenParam(SEXP traitSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
@@ -826,6 +867,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveMKM", (DL_FUNC) &_AlphaSimR_solveMKM, 6},
     {"_AlphaSimR_writeASGenotypes", (DL_FUNC) &_AlphaSimR_writeASGenotypes, 7},
     {"_AlphaSimR_writeASHaplotypes", (DL_FUNC) &_AlphaSimR_writeASHaplotypes, 7},
+    {"_AlphaSimR_argAltAD", (DL_FUNC) &_AlphaSimR_argAltAD, 7},
+    {"_AlphaSimR_objAltAD", (DL_FUNC) &_AlphaSimR_objAltAD, 2},
+    {"_AlphaSimR_finAltAD", (DL_FUNC) &_AlphaSimR_finAltAD, 2},
     {"_AlphaSimR_calcGenParam", (DL_FUNC) &_AlphaSimR_calcGenParam, 3},
     {"_AlphaSimR_getGeno", (DL_FUNC) &_AlphaSimR_getGeno, 4},
     {"_AlphaSimR_getMaternalGeno", (DL_FUNC) &_AlphaSimR_getMaternalGeno, 4},

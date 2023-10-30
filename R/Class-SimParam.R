@@ -609,6 +609,124 @@ SimParam = R6Class(
       }
       invisible(self)
     },
+    
+    #' @description 
+    #' An alternative method for adding a trait with additive  and dominance effects 
+    #' to an AlphaSimR simulation. The function attempts to create a trait matching 
+    #' user defined values for number of QTL, inbreeding depression, additive genetic 
+    #' variance and dominance genetic variance.
+    #' 
+    #' @param nQtlPerChr number of QTLs per chromosome. 
+    #' Can be a single value or nChr values.
+    #' @param mean desired mean of the trait
+    #' @param varA desired additive variance
+    #' @param varD desired dominance variance
+    #' @param inbrDepr desired inbreeding depression, see details
+    #' @param limMeanDD limits for meanDD, see details
+    #' @param limVarDD limits for varDD, see details
+    #' @param silent should summary details be printed to the console
+    #' @param force should the check for a running simulation be
+    #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait
+    #' 
+    #' @details 
+    #' This function will always add a trait to 'SimParam', unless an error occurs 
+    #' with picking QTLs. The resulting trait will always have the desired mean and 
+    #' additive genetic variance. However, it may not have the desired values for 
+    #' inbreeding depression and dominance variance. Thus, it is strongly recommended 
+    #' to check the output printed to the console to determine how close the trait's 
+    #' parameters came to these desired values.
+    #' 
+    #' The mean and additive genetic variance will always be achieved exactly. The 
+    #' function attempts to achieve the desired dominance variance and inbreeding 
+    #' depression while staying within the user supplied constraints for the 
+    #' acceptable range of dominance degree mean and variance. If the desired values
+    #' are not being achieved, the acceptable range need to be increased and/or the 
+    #' number of QTL may need to be increased. There are not limits to setting the 
+    #' range for dominance degree mean and variance, but care should be taken to 
+    #' with regards to the biological feasibility of the limits that are supplied. 
+    #' The default limits were somewhat arbitrarily set, so I make not claim to 
+    #' how reasonable these limits are for routine use.
+    #' 
+    #' Inbreeding depression in this function is defined as the difference in mean 
+    #' genetic value between a population with the same allele frequency as the 
+    #' reference population (population used to initialize SimParam) in 
+    #' Hardy-Weinberg equilibrium compared to a population with the same allele 
+    #' frequency that is fully inbred. This is equivalent to the amount the mean of 
+    #' a population increases when going from an inbreeding coefficient of 1 (fully 
+    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
+    #' equilibrium). Note that the sign of the value should (usually) be positive. 
+    #' This corresponds to a detrimental effect of inbreeding when higher values of 
+    #' the trait are considered biologically beneficial.
+    #' 
+    #' Summary information on this trait is printed to the console when silent=FALSE. 
+    #' The summary information reports the inbreeding depression and dominance 
+    #' variance for the population as well as the dominance degree mean and variance 
+    #' applied to the trait.
+    #' 
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
+    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0, 
+                             limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
+                             silent=FALSE,force=FALSE,name=NULL){
+      if(!force){
+        private$.isRunning()
+      }
+      if(length(nQtlPerChr)==1){
+        nQtlPerChr = rep(nQtlPerChr,self$nChr)
+      }
+      if(is.null(name)){
+        name = paste0("Trait",self$nTraits+1)
+      }
+      
+      # Pick QTL
+      qtlLoci = private$.pickLoci(nQtlPerChr)
+      
+      # Create list of arguments for optimization
+      argsList = argAltAD(LociMap = qtlLoci,
+                          Pop = self$founderPop,
+                          mean = mean,
+                          varA = varA,
+                          varD = varD,
+                          inbrDepr = inbrDepr,
+                          nThreads = self$nThreads)
+      
+      # Run optim to optimize meanDD and varDD
+      optOut = optim(par = c(mean(limMeanDD), mean(sqrt(limVarDD))),
+                     fn = objAltAD, 
+                     gr = NULL,
+                     method = "L-BFGS-B",
+                     lower = c(limMeanDD[1], sqrt(limVarDD[1])),
+                     upper = c(limMeanDD[2], sqrt(limVarDD[2])),
+                     args = argsList)
+      
+      # Finalize creation of trait
+      output = finAltAD(input = optOut$par, args = argsList)
+      trait = new("TraitAD",
+                  qtlLoci,
+                  addEff=c(output$a),
+                  domEff=c(output$d),
+                  intercept=c(output$intercept),
+                  name=name)
+      private$.addTrait(trait,varA,output$varG)
+      
+      # Report trait details
+      if(!silent){
+        cat("A new trait called", name, "was added. \n")
+        cat("   varD =", output$varD, "\n")
+        cat("   inbrDepr =", output$inbrDepr, "\n")
+        cat("   meanDD =", output$meanDD, "\n")
+        cat("   varDD =", output$varDD, "\n")
+      }
+      
+      invisible(self)
+    },
+    
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive GxE traits.

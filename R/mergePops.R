@@ -144,5 +144,6 @@ mergePops = function(popList){
              gxe=gxe,
              pheno=pheno,
              ebv=ebv,
-             misc=misc))
+             misc=misc,
+             miscPop=list()))
 }

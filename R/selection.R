@@ -56,6 +56,27 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   return(response)
 }
 
+# Converts candidates to a vector of positive numbers
+# for the individuals that are candidates. This function
+# handle indexing by id and negative value indexing
+getCandidates = function(pop, candidates){
+  if(is.character(candidates)){
+    candidates = match(candidates, pop@id)
+    if(any(is.na(candidates))){
+      stop("Trying to select invalid individuals")
+    }
+    if(any(is.null(candidates))){
+      stop("Not valid ids")
+    }
+  }else{
+    if(any(abs(candidates)>pop@nInd)){
+      stop("Trying to select invalid individuals")
+    }
+    candidates = (1:pop@nInd)[candidates]
+  }
+  return(candidates)
+}
+
 # Returns a vector of individuals in a population with the required sex
 checkSexes = function(pop,sex,simParam,...){
   sex = toupper(sex)
@@ -167,6 +188,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
+    candidates = getCandidates(pop=pop,candidates=candidates)
     eligible = eligible[eligible%in%candidates]
   }
   if(length(eligible)<nInd){
@@ -257,6 +279,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
+    candidates = getCandidates(pop=pop,candidates=candidates)
     eligible = eligible[eligible%in%candidates]
   }
   allFam = getFam(pop=pop,famType=famType)
@@ -357,6 +380,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
+    candidates = getCandidates(pop=pop,candidates=candidates)
     eligible = eligible[eligible%in%candidates]
   }
   families = getFam(pop=pop,famType=famType)
