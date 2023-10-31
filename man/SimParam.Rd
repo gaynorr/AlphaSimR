@@ -35,6 +35,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackPed(TRUE)
 
 ## ------------------------------------------------
@@ -46,6 +47,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackRec(TRUE)
 
 ## ------------------------------------------------
@@ -57,6 +59,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
@@ -76,6 +79,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 ## ------------------------------------------------
@@ -87,6 +91,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setSexes("yes_sys")
 
 ## ------------------------------------------------
@@ -98,6 +103,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChip(10)
 
 ## ------------------------------------------------
@@ -216,6 +222,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
@@ -277,6 +284,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \section{Public fields}{
@@ -479,6 +487,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackPed(TRUE)
 }
 \if{html}{\out{</div>}}
@@ -517,6 +526,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackRec(TRUE)
 }
 \if{html}{\out{</div>}}
@@ -551,6 +561,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
@@ -612,6 +623,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 }
 \if{html}{\out{</div>}}
@@ -653,6 +665,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setSexes("yes_sys")
 }
 \if{html}{\out{</div>}}
@@ -710,6 +723,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChip(10)
 }
 \if{html}{\out{</div>}}
@@ -1464,6 +1478,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1748,6 +1763,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \if{html}{\out{</div>}}

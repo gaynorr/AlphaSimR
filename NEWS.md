@@ -1,3 +1,7 @@
+# AlphaSimR 1.5.2
+
+*fix SimParam examples for CRAN
+
 # AlphaSimR 1.5.1
 
 *deleted bad example code for `setMisc`

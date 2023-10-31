@@ -110,6 +110,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackPed(TRUE)
     setTrackPed = function(isTrackPed, force=FALSE){
       stopifnot(is.logical(isTrackPed))
@@ -140,6 +141,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackRec(TRUE)
     setTrackRec = function(isTrackRec, force=FALSE){
       stopifnot(is.logical(isTrackRec))
@@ -167,6 +169,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #'
     #' #Create population
     #' pop = newPop(founderPop, simParam=SP)
@@ -206,6 +209,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
     restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, excludeQtl=NULL,
                              excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
@@ -299,6 +303,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setSexes("yes_sys")
     setSexes = function(sexes, force=FALSE){
       if(!force){
@@ -346,6 +351,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addSnpChip(10)
     addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL, name=NULL){
       if(length(nSnpPerChr)==1){
@@ -1299,6 +1305,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
     addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
@@ -1857,6 +1864,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setRecombRatio(2) #Twice as much recombination in females
     setRecombRatio = function(femaleRatio){
       stopifnot(femaleRatio>0)
