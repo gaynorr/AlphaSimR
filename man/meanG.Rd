@@ -20,6 +20,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

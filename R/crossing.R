@@ -19,6 +19,7 @@
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -112,6 +113,7 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -219,6 +221,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #'
@@ -282,6 +285,7 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -381,6 +385,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -469,6 +474,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -570,6 +576,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -733,6 +740,7 @@ sortPed = function(id, mother, father, maxCycle=100){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)

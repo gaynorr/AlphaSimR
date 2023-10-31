@@ -72,6 +72,7 @@ open slot available for uses to store extra information about
 individuals.}
 
 \item{\code{miscPop}}{a list of any length containing optional meta data for the 
-populations. This list is empty unless information is supplied by the user.}
+population. This list is empty unless information is supplied by the user.
+Note that the list is emptied every time the population is subsetted.}
 }}
 

@@ -16,38 +16,7 @@ setMisc(x, node = NULL, value = NULL)
 it is repeated using \code{rep} (see examples)}
 }
 \value{
-\code{\link{Pop-class}} with \code{x@misc[[*]][[node]]} set
-basePop <- newPop(founderGenomes)
-
-basePop <- setMisc(basePop, node = "info", value = 1)
-basePop@misc
-getMisc(x = basePop, node = "info")
-
-basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
-basePop@misc
-getMisc(x = basePop, node = "info2")
-
-n <- nInd(basePop)
-location <- vector(mode = "list", length = n)
-for (ind in seq_len(n)) {
-  location[[ind]] <- runif(n = 2, min = 0, max = 100)
-}
-location
-basePop <- setMisc(basePop, node = "location", value = location)
-basePop@misc
-getMisc(x = basePop, node = "location")
-
-n <- nInd(basePop)
-location <- vector(mode = "list", length = n)
-for (ind in c(1, 3)) {
-  location[[ind]] <- runif(n = 2, min = 0, max = 100)
-}
-location
-basePop <- setMisc(basePop, node = "location", value = location)
-basePop@misc
-getMisc(x = basePop, node = "location")
-
-getMisc(x = basePop)
+\code{\link{Pop-class}}
 }
 \description{
 Set miscelaneous information in a population

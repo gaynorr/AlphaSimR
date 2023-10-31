@@ -138,8 +138,9 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' @examples 
 #' # Creates a populations of 10 outbred individuals
 #' # Their genome consists of 1 chromosome and 100 segregating sites
+#' \dontrun{
 #' founderPop = runMacs(nInd=10,nChr=1,segSites=100)
-#' 
+#' }
 #' @export
 runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
                    split=NULL, ploidy=2L, manualCommand=NULL, manualGenLen=NULL,
@@ -300,8 +301,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #' # Creates a populations of 10 outbred individuals
 #' # Their genome consists of 1 chromosome and 100 segregating sites
 #' # The command is equivalent to using species="GENERIC" in runMacs
+#' \dontrun{
 #' founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
-#' 
+#' }
 #' @export
 runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     bp=1e8,genLen=1,mutRate=2.5e-8,
@@ -361,7 +363,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
 #' @return an object of \code{\link{MapPop-class}}
 #' 
 #' @examples 
-#' founderPop = quickHaplo(nInd=2,nChr=2,segSites=11,inbred=TRUE)
+#' founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
 #' founderPop = sampleHaplo(mapPop=founderPop,nInd=20)
 #' 
 #' @export

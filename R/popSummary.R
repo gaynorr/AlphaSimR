@@ -18,6 +18,7 @@ meanEBV = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -42,6 +43,7 @@ meanG = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -66,6 +68,7 @@ meanP = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -92,6 +95,7 @@ varG = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -154,6 +158,7 @@ varP = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -288,6 +293,7 @@ genParam = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -313,6 +319,7 @@ varA = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -339,6 +346,7 @@ varD = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -364,6 +372,7 @@ varAA = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -389,6 +398,7 @@ bv = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -415,6 +425,7 @@ dd = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -440,6 +451,7 @@ aa = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -465,6 +477,7 @@ genicVarA = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -491,6 +504,7 @@ genicVarD = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -516,6 +530,7 @@ genicVarAA = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -540,6 +555,7 @@ genicVarG = function(pop,simParam=NULL){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -564,6 +580,7 @@ gv = function(pop){
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -586,6 +603,7 @@ pheno = function(pop){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #'
@@ -611,6 +629,7 @@ ebv = function(pop){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #'

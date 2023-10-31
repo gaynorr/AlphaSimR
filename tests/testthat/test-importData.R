@@ -28,6 +28,7 @@ test_that("importTrait",{
                            ped = ped)
   
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   
   # Import trait
   SP$importTrait(markerNames = myTrait$marker,

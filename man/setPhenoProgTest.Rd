@@ -79,6 +79,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create two populations of 5 individuals

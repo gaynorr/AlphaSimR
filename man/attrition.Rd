@@ -26,6 +26,7 @@ founderPop = quickHaplo(nInd=100, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

@@ -120,6 +120,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 ## ------------------------------------------------
@@ -131,6 +132,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAD(10, meanDD=0.5)
 
 ## ------------------------------------------------
@@ -142,6 +144,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 
 ## ------------------------------------------------
@@ -153,6 +156,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAG(10, varGxE=2)
 
 ## ------------------------------------------------
@@ -164,6 +168,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
@@ -172,6 +177,11 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAE(10, relAA=0.1)
 
 ## ------------------------------------------------
 ## Method `SimParam$addTraitADE`
@@ -182,6 +192,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADE(10)
 
 ## ------------------------------------------------
@@ -193,6 +204,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAEG(10, varGxE=2)
 
 ## ------------------------------------------------
@@ -215,6 +227,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 
@@ -227,6 +240,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
 SP$setVarE(varE=c(1,1))
 E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -249,6 +263,7 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
+\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
@@ -814,6 +829,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 }
 \if{html}{\out{</div>}}
@@ -885,6 +901,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAD(10, meanDD=0.5)
 }
 \if{html}{\out{</div>}}
@@ -985,6 +1002,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 }
 \if{html}{\out{</div>}}
@@ -1052,6 +1070,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAG(10, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1130,6 +1149,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1196,6 +1216,11 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAE(10, relAA=0.1)
 }
 \if{html}{\out{</div>}}
 
@@ -1273,6 +1298,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADE(10)
 }
 \if{html}{\out{</div>}}
@@ -1351,6 +1377,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAEG(10, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1593,6 +1620,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 }
@@ -1626,6 +1654,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
 SP$setVarE(varE=c(1,1))
 E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -1682,6 +1711,7 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
+\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)

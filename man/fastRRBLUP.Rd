@@ -60,6 +60,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 SP$addSnpChip(10)

@@ -23,6 +23,7 @@
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -125,6 +126,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -215,6 +217,7 @@ doubleGenome = function(pop, keepParents=TRUE,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)

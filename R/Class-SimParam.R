@@ -487,6 +487,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
                          gamma=FALSE,shape=1,force=FALSE,name=NULL){
@@ -554,6 +555,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAD(10, meanDD=0.5)
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
@@ -670,6 +672,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
     altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0, 
                              limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
@@ -754,6 +757,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAG(10, varGxE=2)
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
@@ -855,6 +859,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
     addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
@@ -970,6 +975,11 @@ SimParam = R6Class(
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #' 
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #' SP$addTraitAE(10, relAA=0.1)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
                           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
                           name=NULL){
@@ -1060,6 +1070,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADE(10)
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
@@ -1161,6 +1172,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAEG(10, varGxE=2)
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
@@ -1627,6 +1639,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     #' SP$setVarE(h2=0.5)
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
@@ -1699,6 +1712,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
     #' SP$setVarE(varE=c(1,1))
     #' E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -1752,6 +1766,7 @@ SimParam = R6Class(
     #'
     #' #Change mean to 1
     #' SP$rescaleTraits(mean=1)
+    #' \dontshow{SP$nThreads = 1L}
     #' #Run resetPop for change to take effect
     #' pop = resetPop(pop, simParam=SP)
     #' meanG(pop)

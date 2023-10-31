@@ -6,6 +6,7 @@ founderPop = newMapPop(list(c(0)),
 
 test_that("makeCross",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)
@@ -27,6 +28,7 @@ test_that("makeCross",{
 
 test_that("makeCross2",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)
@@ -48,6 +50,7 @@ test_that("makeCross2",{
 
 test_that("randCross",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   SP$setSexes("yes_sys")
@@ -62,6 +65,7 @@ test_that("randCross",{
 
 test_that("randCross2",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   SP$setSexes("yes_sys")
@@ -76,6 +80,7 @@ test_that("randCross2",{
 
 test_that("self",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)
@@ -90,6 +95,7 @@ test_that("self",{
 
 test_that("makeDH",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)
@@ -104,6 +110,7 @@ test_that("makeDH",{
 
 test_that("selectCross",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   SP$setSexes("yes_sys")
@@ -117,6 +124,7 @@ test_that("selectCross",{
 
 test_that("selectOP",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)

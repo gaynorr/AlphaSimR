@@ -21,6 +21,7 @@ Get miscelaneous information in a population
 \examples{
 founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
 SP <- SimParam$new(founderGenomes)
+\dontshow{SP$nThreads = 1L}
 basePop <- newPop(founderGenomes)
 
 basePop <- setMisc(basePop, node = "info", value = 1)

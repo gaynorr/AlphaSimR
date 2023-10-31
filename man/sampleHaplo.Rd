@@ -27,7 +27,7 @@ Creates a new \code{\link{MapPop-class}} from an existing
 \code{\link{MapPop-class}} by randomly sampling haplotypes.
 }
 \examples{
-founderPop = quickHaplo(nInd=2,nChr=2,segSites=11,inbred=TRUE)
+founderPop = quickHaplo(nInd=2,nChr=1,segSites=11,inbred=TRUE)
 founderPop = sampleHaplo(mapPop=founderPop,nInd=20)
 
 }

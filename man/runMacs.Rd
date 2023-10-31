@@ -71,8 +71,9 @@ in a drastic increase to runtime.
 \examples{
 # Creates a populations of 10 outbred individuals
 # Their genome consists of 1 chromosome and 100 segregating sites
+\dontrun{
 founderPop = runMacs(nInd=10,nChr=1,segSites=100)
-
+}
 }
 \references{
 \insertAllCited{}

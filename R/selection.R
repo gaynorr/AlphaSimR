@@ -148,6 +148,7 @@ getFam = function(pop,famType){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #'
@@ -249,6 +250,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #'
@@ -350,6 +352,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #'
@@ -451,6 +454,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #'

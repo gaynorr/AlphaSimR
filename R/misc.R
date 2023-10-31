@@ -62,38 +62,7 @@ isMale <- function(x) {
 #'
 #' @details A \code{NULL} in \code{value} is ignored
 #' 
-#' @return \code{\link{Pop-class}} with \code{x@misc[[*]][[node]]} set
-#' basePop <- newPop(founderGenomes)
-#'
-#' basePop <- setMisc(basePop, node = "info", value = 1)
-#' basePop@misc
-#' getMisc(x = basePop, node = "info")
-#'
-#' basePop <- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
-#' basePop@misc
-#' getMisc(x = basePop, node = "info2")
-#' 
-#' n <- nInd(basePop)
-#' location <- vector(mode = "list", length = n)
-#' for (ind in seq_len(n)) 
-#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
-#' 
-#' location
-#' basePop <- setMisc(basePop, node = "location", value = location)
-#' basePop@misc
-#' getMisc(x = basePop, node = "location")
-#' 
-#' n <- nInd(basePop)
-#' location <- vector(mode = "list", length = n)
-#' for (ind in c(1, 3)) 
-#'   location[[ind]] <- runif(n = 2, min = 0, max = 100)
-#' 
-#' location
-#' basePop <- setMisc(basePop, node = "location", value = location)
-#' basePop@misc
-#' getMisc(x = basePop, node = "location")
-#' 
-#' getMisc(x = basePop)
+#' @return \code{\link{Pop-class}} 
 #'
 #' @export
 setMisc <- function(x, node = NULL, value = NULL) {
@@ -136,6 +105,7 @@ setMisc <- function(x, node = NULL, value = NULL) {
 #' @examples
 #' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
 #' SP <- SimParam$new(founderGenomes)
+#' \dontshow{SP$nThreads = 1L}
 #' basePop <- newPop(founderGenomes)
 #'
 #' basePop <- setMisc(basePop, node = "info", value = 1)
@@ -285,6 +255,7 @@ smithHazel = function(econWt,varG,varP){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' #Model two genetically correlated traits
 #' G = 1.5*diag(2)-0.5 #Genetic correlation matrix
 #' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=G)
@@ -334,6 +305,7 @@ selIndex = function(Y,b,scale=FALSE){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' 
 #' #Create population
@@ -407,6 +379,7 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' 
 #' #Create population
@@ -530,6 +503,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' 
 #' #Create population
@@ -653,6 +627,7 @@ transMat = function(R){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' 
 #' #Create population
@@ -758,6 +733,7 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)

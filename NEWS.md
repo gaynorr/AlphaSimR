@@ -1,4 +1,10 @@
-# AlphaSimR 1.4.2.9990
+# AlphaSimR 1.5.1
+
+*deleted bad example code for `setMisc`
+
+*changed examples to use a single thread for CRAN testing this change is not shown in the documentation
+
+# AlphaSimR 1.5.0
 
 *renamed `MegaPop` to `MultiPop`
 

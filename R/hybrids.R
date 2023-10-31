@@ -23,6 +23,7 @@
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
@@ -120,6 +121,7 @@ hybridCross = function(females, males,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create population
@@ -258,6 +260,7 @@ calcGCA = function(pop,use="pheno"){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create population
@@ -368,6 +371,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create two populations of 5 individuals

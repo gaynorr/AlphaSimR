@@ -8,6 +8,7 @@ founderPop = newMapPop(list(c(0)),
 
 test_that("addTraitA",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(abs(SP$traits[[1]]@addEff),1,tolerance=1e-6)
@@ -25,6 +26,7 @@ test_that("addTraitA",{
 
 test_that("addTraitAD",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitAD(nQtlPerChr=1,mean=0,var=1,meanDD=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(abs(SP$traits[[1]]@addEff),1,tolerance=1e-6)
@@ -43,6 +45,7 @@ test_that("addTraitAD",{
 
 test_that("addTraitAG",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitAG(nQtlPerChr=1,mean=0,var=1,varEnv=1,varGxE=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(abs(SP$traits[[1]]@addEff),1,tolerance=1e-6)
@@ -54,6 +57,7 @@ test_that("addTraitAG",{
 
 test_that("addTraitADG",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitADG(nQtlPerChr=1,mean=0,var=1,meanDD=1,varEnv=1,varGxE=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(abs(SP$traits[[1]]@addEff),1,tolerance=1e-6)
@@ -71,6 +75,7 @@ founderPop = newMapPop(list(c(0,0)),
 
 test_that("addTraitAE",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitAE(nQtlPerChr=2,mean=0,var=1,relAA=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(SP$varA,1,tolerance=1e-6)
@@ -80,6 +85,7 @@ test_that("addTraitAE",{
 
 test_that("addTraitADE",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitADE(nQtlPerChr=2,mean=0,var=1,meanDD=1,relAA=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(SP$varA,1,tolerance=1e-6)
@@ -89,6 +95,7 @@ test_that("addTraitADE",{
 
 test_that("addTraitAEG",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitAEG(nQtlPerChr=2,mean=0,var=1,varEnv=1,varGxE=1,relAA=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(SP$varA,1,tolerance=1e-6)
@@ -98,6 +105,7 @@ test_that("addTraitAEG",{
 
 test_that("addTraitADEG",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitADEG(nQtlPerChr=2,mean=0,var=1,meanDD=1,varEnv=1,varGxE=1,relAA=1)
   pop = newPop(founderPop,simParam=SP)
   expect_equal(SP$varA,1,tolerance=1e-6)

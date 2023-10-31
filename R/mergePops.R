@@ -14,6 +14,7 @@
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create a list of populations and merge list
 #' pop = newPop(founderPop, simParam=SP)
