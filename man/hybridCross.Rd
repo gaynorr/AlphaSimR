@@ -17,21 +17,21 @@ hybridCross(
 
 \item{males}{male population, an object of \code{\link{Pop-class}}}
 
-\item{crossPlan}{either "testcross" for all possible combinantions 
+\item{crossPlan}{either "testcross" for all possible combinantions
 or a matrix with two columns for designed crosses}
 
-\item{returnHybridPop}{should results be returned as 
-\code{\link{HybridPop-class}}. If false returns results as 
+\item{returnHybridPop}{should results be returned as
+\code{\link{HybridPop-class}}. If false returns results as
 \code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-A convience function for hybrid plant breeding simulations. Allows for 
-easy specification of a test cross scheme and/or creation of an object 
-of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}} 
-should only be used if the parents were created using the \code{\link{makeDH}} 
-function or \code{\link{newPop}} using inbred founders. The id for 
+A convience function for hybrid plant breeding simulations. Allows for
+easy specification of a test cross scheme and/or creation of an object
+of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
+should only be used if the parents were created using the \code{\link{makeDH}}
+function or \code{\link{newPop}} using inbred founders. The id for
 new individuals is [mother_id]_[father_id]
 }
 \examples{
@@ -40,6 +40,7 @@ founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

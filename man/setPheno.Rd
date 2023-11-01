@@ -19,7 +19,7 @@ setPheno(
 )
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or 
+\item{pop}{an object of \code{\link{Pop-class}} or
 \code{\link{HybridPop-class}}}
 
 \item{h2}{a vector of desired narrow-sense heritabilities for
@@ -30,15 +30,15 @@ each trait. See details.}
 
 \item{varE}{error (co)variances for traits. See details.}
 
-\item{corE}{an optional matrix for correlations between errors. 
+\item{corE}{an optional matrix for correlations between errors.
 See details.}
 
 \item{reps}{number of replications for phenotype. See details.}
 
-\item{fixEff}{fixed effect to assign to the population. Used 
+\item{fixEff}{fixed effect to assign to the population. Used
 by genomic selection models only.}
 
-\item{p}{the p-value for the environmental covariate 
+\item{p}{the p-value for the environmental covariate
 used by GxE traits. If NULL, a value is
 sampled at random.}
 
@@ -50,47 +50,47 @@ all traits will be set.}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
-\code{\link{HybridPop-class}} if onlyPheno=FALSE, if 
+Returns an object of \code{\link{Pop-class}} or
+\code{\link{HybridPop-class}} if onlyPheno=FALSE, if
 onlyPheno=TRUE a matrix is returned
 }
 \description{
-Sets phenotypes for all traits by adding random error 
+Sets phenotypes for all traits by adding random error
 from a multivariate normal distribution.
 }
 \details{
-There are three arguments for setting the error variance of a 
-phenotype: h2, H2, and varE. The user should only use one of these 
-arguments. If the user supplies values for more than one, only one 
+There are three arguments for setting the error variance of a
+phenotype: h2, H2, and varE. The user should only use one of these
+arguments. If the user supplies values for more than one, only one
 will be used according to order in which they are listed above.
 
-The h2 argument allows the user to specify the error variance 
+The h2 argument allows the user to specify the error variance
 according to narrow-sense heritability. This calculation uses the
-additive genetic variance and total genetic variance in the founder 
-population. Thus, the heritability relates to the founder population 
+additive genetic variance and total genetic variance in the founder
+population. Thus, the heritability relates to the founder population
 and not the current population.
 
-The H2 argument allows the user to specify the error variance 
+The H2 argument allows the user to specify the error variance
 according to broad-sense heritability. This calculation uses the
-total genetic variance in the founder population. Thus, the heritability 
+total genetic variance in the founder population. Thus, the heritability
 relates to the founder population and not the current population.
 
 The varE argument allows the user to specify the error variance
-directly. The user may supply a vector describing the error variance 
-for each trait or supply a matrix that specify the covariance of 
+directly. The user may supply a vector describing the error variance
+for each trait or supply a matrix that specify the covariance of
 the errors.
 
-The corE argument allows the user to specify correlations for the 
-error covariance matrix. These correlations are be supplied in addition 
-to the h2, H2, or varE arguments. These correlations will be used to 
-construct a covariance matrix from a vector of variances. If the user 
-supplied a covariance matrix to varE, these correlations will supercede 
+The corE argument allows the user to specify correlations for the
+error covariance matrix. These correlations are be supplied in addition
+to the h2, H2, or varE arguments. These correlations will be used to
+construct a covariance matrix from a vector of variances. If the user
+supplied a covariance matrix to varE, these correlations will supercede
 values provided in that matrix.
 
-The reps parameter is for convenient representation of replicated data. 
-It is intended to represent replicated yield trials in plant 
-breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number of plots per entry. The resulting phenotype 
+The reps parameter is for convenient representation of replicated data.
+It is intended to represent replicated yield trials in plant
+breeding programs. In this case, varE is set to the plot error and
+reps is set to the number of plots per entry. The resulting phenotype
 represents the entry-means.
 }
 \examples{
@@ -99,6 +99,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population

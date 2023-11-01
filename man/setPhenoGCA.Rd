@@ -33,24 +33,24 @@ each trait. See details in \code{\link{setPheno}}.}
 \item{H2}{a vector of desired broad-sense heritabilities for
 each trait. See details in \code{\link{setPheno}}.}
 
-\item{varE}{error (co)variances for traits. 
+\item{varE}{error (co)variances for traits.
 See details in \code{\link{setPheno}}.}
 
-\item{corE}{an optional matrix for correlations between errors. 
+\item{corE}{an optional matrix for correlations between errors.
 See details in \code{\link{setPheno}}.}
 
-\item{reps}{number of replications for phenotype. 
+\item{reps}{number of replications for phenotype.
 See details in \code{\link{setPheno}}.}
 
-\item{fixEff}{fixed effect to assign to the population. Used 
+\item{fixEff}{fixed effect to assign to the population. Used
 by genomic selection models only.}
 
-\item{p}{the p-value for the environmental covariate 
+\item{p}{the p-value for the environmental covariate
 used by GxE traits. If NULL, a value is
 sampled at random.}
 
-\item{inbred}{are both pop and testers fully inbred. They are only 
-fully inbred if created by \code{\link{newPop}} using inbred founders 
+\item{inbred}{are both pop and testers fully inbred. They are only
+fully inbred if created by \code{\link{newPop}} using inbred founders
 or by the \code{\link{makeDH}} function}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
@@ -58,11 +58,11 @@ or by the \code{\link{makeDH}} function}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
+Returns an object of \code{\link{Pop-class}} or
 a matrix if onlyPheno=TRUE
 }
 \description{
-Calculates general combining ability from a set of testers and 
+Calculates general combining ability from a set of testers and
 returns these values as phenotypes for a population.
 }
 \examples{
@@ -71,6 +71,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population

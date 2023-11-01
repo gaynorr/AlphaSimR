@@ -6,6 +6,7 @@ founderPop = newMapPop(list(c(0)),
 
 test_that("hybridCross",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
   pop = newPop(founderPop,simParam=SP)
   #2x2
@@ -30,6 +31,7 @@ test_that("hybridCross",{
 
 test_that("calcGCA",{
   SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=1,mean=c(0,0),var=c(1,1))
   SP$setVarE(varE=c(1,1))
   pop = newPop(founderPop,simParam=SP)

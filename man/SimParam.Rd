@@ -35,6 +35,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackPed(TRUE)
 
 ## ------------------------------------------------
@@ -46,6 +47,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackRec(TRUE)
 
 ## ------------------------------------------------
@@ -57,6 +59,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
@@ -76,6 +79,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 ## ------------------------------------------------
@@ -87,6 +91,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setSexes("yes_sys")
 
 ## ------------------------------------------------
@@ -98,6 +103,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChip(10)
 
 ## ------------------------------------------------
@@ -120,6 +126,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 ## ------------------------------------------------
@@ -131,7 +138,20 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAD(10, meanDD=0.5)
+
+## ------------------------------------------------
+## Method `SimParam$altAddTraitAD`
+## ------------------------------------------------
+
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 
 ## ------------------------------------------------
 ## Method `SimParam$addTraitAG`
@@ -142,6 +162,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAG(10, varGxE=2)
 
 ## ------------------------------------------------
@@ -153,6 +174,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
@@ -161,6 +183,11 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAE(10, relAA=0.1)
 
 ## ------------------------------------------------
 ## Method `SimParam$addTraitADE`
@@ -171,6 +198,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADE(10)
 
 ## ------------------------------------------------
@@ -182,6 +210,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAEG(10, varGxE=2)
 
 ## ------------------------------------------------
@@ -193,6 +222,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
@@ -204,6 +234,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 
@@ -216,6 +247,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
 SP$setVarE(varE=c(1,1))
 E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -238,6 +270,7 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
+\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
@@ -251,6 +284,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \section{Public fields}{
@@ -361,6 +395,7 @@ genetic map}
 \item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
 \item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
 \item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
+\item \href{#method-SimParam-altAddTraitAD}{\code{SimParam$altAddTraitAD()}}
 \item \href{#method-SimParam-addTraitAG}{\code{SimParam$addTraitAG()}}
 \item \href{#method-SimParam-addTraitADG}{\code{SimParam$addTraitADG()}}
 \item \href{#method-SimParam-addTraitAE}{\code{SimParam$addTraitAE()}}
@@ -452,6 +487,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackPed(TRUE)
 }
 \if{html}{\out{</div>}}
@@ -490,6 +526,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setTrackRec(TRUE)
 }
 \if{html}{\out{</div>}}
@@ -524,6 +561,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
@@ -585,6 +623,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 }
 \if{html}{\out{</div>}}
@@ -626,6 +665,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setSexes("yes_sys")
 }
 \if{html}{\out{</div>}}
@@ -683,6 +723,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChip(10)
 }
 \if{html}{\out{</div>}}
@@ -756,7 +797,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitA}{}}}
 \subsection{Method \code{addTraitA()}}{
 Randomly assigns eligible QTLs for one or more additive traits.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitA(
@@ -784,7 +825,9 @@ with correlated additive effects.
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -800,6 +843,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 }
 \if{html}{\out{</div>}}
@@ -812,7 +856,7 @@ SP$addTraitA(10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAD}{}}}
 \subsection{Method \code{addTraitAD()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAD(
@@ -853,7 +897,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -869,7 +915,109 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAD(10, meanDD=0.5)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
+\subsection{Method \code{altAddTraitAD()}}{
+An alternative method for adding a trait with additive  and dominance effects 
+to an AlphaSimR simulation. The function attempts to create a trait matching 
+user defined values for number of QTL, inbreeding depression, additive genetic 
+variance and dominance genetic variance.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$altAddTraitAD(
+  nQtlPerChr,
+  mean = 0,
+  varA = 1,
+  varD = 0,
+  inbrDepr = 0,
+  limMeanDD = c(0, 1.5),
+  limVarDD = c(0, 0.5),
+  silent = FALSE,
+  force = FALSE,
+  name = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{nQtlPerChr}}{number of QTLs per chromosome. 
+Can be a single value or nChr values.}
+
+\item{\code{mean}}{desired mean of the trait}
+
+\item{\code{varA}}{desired additive variance}
+
+\item{\code{varD}}{desired dominance variance}
+
+\item{\code{inbrDepr}}{desired inbreeding depression, see details}
+
+\item{\code{limMeanDD}}{limits for meanDD, see details}
+
+\item{\code{limVarDD}}{limits for varDD, see details}
+
+\item{\code{silent}}{should summary details be printed to the console}
+
+\item{\code{force}}{should the check for a running simulation be
+ignored. Only set to TRUE if you know what you are doing.}
+
+\item{\code{name}}{optional name for trait}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Details}{
+This function will always add a trait to 'SimParam', unless an error occurs 
+with picking QTLs. The resulting trait will always have the desired mean and 
+additive genetic variance. However, it may not have the desired values for 
+inbreeding depression and dominance variance. Thus, it is strongly recommended 
+to check the output printed to the console to determine how close the trait's 
+parameters came to these desired values.
+
+The mean and additive genetic variance will always be achieved exactly. The 
+function attempts to achieve the desired dominance variance and inbreeding 
+depression while staying within the user supplied constraints for the 
+acceptable range of dominance degree mean and variance. If the desired values
+are not being achieved, the acceptable range need to be increased and/or the 
+number of QTL may need to be increased. There are not limits to setting the 
+range for dominance degree mean and variance, but care should be taken to 
+with regards to the biological feasibility of the limits that are supplied. 
+The default limits were somewhat arbitrarily set, so I make not claim to 
+how reasonable these limits are for routine use.
+
+Inbreeding depression in this function is defined as the difference in mean 
+genetic value between a population with the same allele frequency as the 
+reference population (population used to initialize SimParam) in 
+Hardy-Weinberg equilibrium compared to a population with the same allele 
+frequency that is fully inbred. This is equivalent to the amount the mean of 
+a population increases when going from an inbreeding coefficient of 1 (fully 
+inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
+equilibrium). Note that the sign of the value should (usually) be positive. 
+This corresponds to a detrimental effect of inbreeding when higher values of 
+the trait are considered biologically beneficial.
+
+Summary information on this trait is printed to the console when silent=FALSE. 
+The summary information reports the inbreeding depression and dominance 
+variance for the population as well as the dominance degree mean and variance 
+applied to the trait.
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 }
 \if{html}{\out{</div>}}
 
@@ -880,8 +1028,8 @@ SP$addTraitAD(10, meanDD=0.5)
 \if{html}{\out{<a id="method-SimParam-addTraitAG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAG}{}}}
 \subsection{Method \code{addTraitAG()}}{
-Randomly assigns eligible QTLs for one ore more additive GxE traits.
-If simulating more than one trait, all traits will be pleiotrophic
+Randomly assigns eligible QTLs for one or more additive GxE traits.
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAG(
@@ -918,7 +1066,9 @@ with correlated effects.
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -934,6 +1084,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAG(10, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -994,7 +1145,9 @@ value or nChr values.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1010,6 +1163,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1022,7 +1176,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAE}{}}}
 \subsection{Method \code{addTraitAE()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis
-traits. If simulating more than one trait, all traits will be pleiotrophic
+traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAE(
@@ -1061,7 +1215,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1074,6 +1230,11 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAE(10, relAA=0.1)
 }
 \if{html}{\out{</div>}}
 
@@ -1085,7 +1246,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitADE}{}}}
 \subsection{Method \code{addTraitADE()}}{
 Randomly assigns eligible QTLs for one or more traits with dominance and
-epistasis. If simulating more than one trait, all traits will be pleiotrophic
+epistasis. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADE(
@@ -1133,7 +1294,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1149,6 +1312,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADE(10)
 }
 \if{html}{\out{</div>}}
@@ -1161,7 +1325,7 @@ SP$addTraitADE(10)
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAEG}{}}}
 \subsection{Method \code{addTraitAEG()}}{
 Randomly assigns eligible QTLs for one or more additive and epistasis
-GxE traits. If simulating more than one trait, all traits will be pleiotrophic
+GxE traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAEG(
@@ -1209,7 +1373,9 @@ FALSE, tuning is performed according to total genetic variance.}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1225,6 +1391,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitAEG(10, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1293,7 +1460,9 @@ to additive variance in a diploid organism with allele frequency 0.5}
 
 \item{\code{gamma}}{should a gamma distribution be used instead of normal}
 
-\item{\code{shape}}{the shape parameter for the gamma distribution}
+\item{\code{shape}}{the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1309,6 +1478,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 }
 \if{html}{\out{</div>}}
@@ -1465,6 +1635,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 }
@@ -1498,6 +1669,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
 SP$setVarE(varE=c(1,1))
 E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -1554,6 +1726,7 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
+\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
@@ -1590,6 +1763,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \if{html}{\out{</div>}}

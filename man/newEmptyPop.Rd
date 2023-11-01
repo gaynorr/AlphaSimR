@@ -16,7 +16,7 @@ Returns an object of \code{\link{Pop-class}} with
 zero individuals
 }
 \description{
-Creates an empty \code{\link{Pop-class}} object with user 
+Creates an empty \code{\link{Pop-class}} object with user
 defined ploidy and other parameters taken from simParam.
 }
 \examples{

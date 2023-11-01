@@ -32,6 +32,7 @@
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$setSexes(sex="yes_rand")
 #' SP$addTraitA(nQtlPerChr=10)
 #' SP$addSnpChip(nSnpPerChr=5)
@@ -126,7 +127,7 @@ writePlink = function(pop, baseName, traits=1, use="pheno",
   ## Make .map file
   map = rbind(map$chr, # Chromosome
               map$id, # Variant id
-              as.character(map$pos*10), # Genetic map position (cM)
+              as.character(map$pos*100), # Genetic map position (cM)
               as.character(map$site) # Physical map position
               )
   

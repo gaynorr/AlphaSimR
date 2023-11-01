@@ -11,8 +11,8 @@ makeCross2(females, males, crossPlan, nProgeny = 1, simParam = NULL)
 
 \item{males}{an object of \code{\link{Pop-class}} for male parents.}
 
-\item{crossPlan}{a matrix with two column representing 
-female and male parents. Either integers for the position in 
+\item{crossPlan}{a matrix with two column representing
+female and male parents. Either integers for the position in
 population or character strings for the IDs.}
 
 \item{nProgeny}{number of progeny per cross}
@@ -23,7 +23,7 @@ population or character strings for the IDs.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Makes crosses between two populations using a user supplied 
+Makes crosses between two populations using a user supplied
 crossing plan.
 }
 \examples{
@@ -32,6 +32,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

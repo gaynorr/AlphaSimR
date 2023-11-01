@@ -12,7 +12,7 @@ genicVarAA(pop, simParam = NULL)
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-Returns additive-by-additive epistatic 
+Returns additive-by-additive epistatic
 genic variance for all traits
 }
 \examples{
@@ -23,6 +23,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
 SP$addTraitAD(10, meanDD=0.5)
 SP$setVarE(h2=0.5)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

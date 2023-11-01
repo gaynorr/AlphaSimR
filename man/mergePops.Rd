@@ -7,8 +7,8 @@
 mergePops(popList)
 }
 \arguments{
-\item{popList}{a list containing \code{\link{Pop-class}} elements 
-or a \code{\link{MegaPop-class}}}
+\item{popList}{a list containing \code{\link{Pop-class}} elements
+or a \code{\link{MultiPop-class}}}
 }
 \value{
 Returns a \code{\link{Pop-class}}
@@ -23,6 +23,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create a list of populations and merge list
 pop = newPop(founderPop, simParam=SP)

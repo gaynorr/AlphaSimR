@@ -28,7 +28,7 @@ Useful links:
 \itemize{
   \item \url{https://github.com/gaynorr/AlphaSimR}
   \item \url{https://gaynorr.github.io/AlphaSimR/}
-  \item \url{https://www.edx.org/course/breeding-programme-modelling-with-alphasimr?utm_source=breeding_alphasimr&utm_medium=partner-marketing&utm_campaign=edinburghx}
+  \item \url{https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr}
 }
 
 }
@@ -43,6 +43,7 @@ Other contributors:
   \item David Wilson [contributor]
   \item Thiago Oliveira (\href{https://orcid.org/0000-0002-4555-2584}{ORCID}) [contributor]
   \item Audrey Martin (\href{https://orcid.org/0000-0003-2235-0098}{ORCID}) [contributor]
+  \item Philip Greenspoon (\href{https://orcid.org/0000-0001-6284-7248}{ORCID}) [contributor]
 }
 
 }

@@ -49,6 +49,7 @@ convertTraitsToNames = function(traits, simParam){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -173,6 +174,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -320,6 +322,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -444,6 +447,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -557,6 +561,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -693,6 +698,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -813,6 +819,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -958,6 +965,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -1081,6 +1089,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)
@@ -1239,6 +1248,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' SP$addSnpChip(10)

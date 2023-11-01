@@ -25,13 +25,13 @@ randCross2(
 
 \item{nProgeny}{number of progeny per cross}
 
-\item{balance}{this option will balance the number 
+\item{balance}{this option will balance the number
 of progeny per parent}
 
-\item{femaleParents}{an optional vector of indices for allowable 
+\item{femaleParents}{an optional vector of indices for allowable
 female parents}
 
-\item{maleParents}{an optional vector of indices for allowable 
+\item{maleParents}{an optional vector of indices for allowable
 male parents}
 
 \item{ignoreSexes}{should sex be ignored}
@@ -42,8 +42,8 @@ male parents}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-A wrapper for \code{\link{makeCross2}} that randomly 
-selects parental combinations for all possible combinantions between 
+A wrapper for \code{\link{makeCross2}} that randomly
+selects parental combinations for all possible combinantions between
 two populations.
 }
 \examples{
@@ -52,6 +52,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

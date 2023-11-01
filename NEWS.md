@@ -1,10 +1,32 @@
+# AlphaSimR 1.5.2
+
+*fix SimParam examples for CRAN
+
+# AlphaSimR 1.5.1
+
+*deleted bad example code for `setMisc`
+
+*changed examples to use a single thread for CRAN testing this change is not shown in the documentation
+
+# AlphaSimR 1.5.0
+
+*renamed `MegaPop` to `MultiPop`
+
+*fixed bug in `writePlink` to correctly export map positions in cM
+
+*fixed bug in `writeRecords` due to removed reps slot in pops
+
+*added `altAddTraitAD` for specifying traits with dominance effects using dominance variance and inbreeding depression
+
+*add miscPop slot to class `Pop`
+
 # AlphaSimR 1.4.2
 
-* updated MaCS citation to https site
+*updated MaCS citation to https site
 
 # AlphaSimR 1.4.1
 
-* Changed citation to use `bibentry` instead of `citEntry`
+*Changed citation to use `bibentry` instead of `citEntry`
 
 # AlphaSimR 1.4.0
 

@@ -61,8 +61,7 @@ writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
   }
   #Write info.txt
   info = data.frame(id=pop@id,mother=pop@mother,father=pop@father,
-                    reps=pop@reps,fixEff=pop@fixEff,
-                    stringsAsFactors=FALSE)
+                    fixEff=pop@fixEff,stringsAsFactors=FALSE)
   filePath = file.path(dir,"info.txt")
   if(file.exists(filePath)){
     write.table(info,filePath,append=TRUE,col.names=FALSE,

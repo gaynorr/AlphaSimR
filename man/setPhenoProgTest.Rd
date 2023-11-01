@@ -25,7 +25,7 @@ setPhenoProgTest(
 
 \item{testPop}{an object of \code{\link{Pop-class}}}
 
-\item{nMatePerInd}{number of times an individual in 'pop' is mated to an 
+\item{nMatePerInd}{number of times an individual in 'pop' is mated to an
 individual in testPop}
 
 \item{use}{true genetic value (\code{gv}) or phenotypes (\code{pheno}, default)}
@@ -36,19 +36,19 @@ each trait. See details in \code{\link{setPheno}}.}
 \item{H2}{a vector of desired broad-sense heritabilities for
 each trait. See details in \code{\link{setPheno}}.}
 
-\item{varE}{error (co)variances for traits. 
+\item{varE}{error (co)variances for traits.
 See details in \code{\link{setPheno}}.}
 
-\item{corE}{an optional matrix for correlations between errors. 
+\item{corE}{an optional matrix for correlations between errors.
 See details in \code{\link{setPheno}}.}
 
-\item{reps}{number of replications for phenotype. 
+\item{reps}{number of replications for phenotype.
 See details in \code{\link{setPheno}}.}
 
-\item{fixEff}{fixed effect to assign to the population. Used 
+\item{fixEff}{fixed effect to assign to the population. Used
 by genomic selection models only.}
 
-\item{p}{the p-value for the environmental covariate 
+\item{p}{the p-value for the environmental covariate
 used by GxE traits. If NULL, a value is
 sampled at random.}
 
@@ -57,20 +57,20 @@ sampled at random.}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-Returns an object of \code{\link{Pop-class}} or 
+Returns an object of \code{\link{Pop-class}} or
 a matrix if onlyPheno=TRUE
 }
 \description{
-Models a progeny test of individuals in 'pop'. Returns 'pop' with a phenotype 
+Models a progeny test of individuals in 'pop'. Returns 'pop' with a phenotype
 representing the average performance of their progeny. The phenotype is generated
-by mating individuals in 'pop' to randomly chosen individuals in testPop a 
+by mating individuals in 'pop' to randomly chosen individuals in testPop a
 number of times equal to 'nMatePerInd'.
 }
 \details{
-The reps parameter is for convenient representation of replicated data. 
-It was intended for representation of replicated yield trials in plant 
-breeding programs. In this case, varE is set to the plot error and 
-reps is set to the number plots per entry. The resulting phenotype 
+The reps parameter is for convenient representation of replicated data.
+It was intended for representation of replicated yield trials in plant
+breeding programs. In this case, varE is set to the plot error and
+reps is set to the number plots per entry. The resulting phenotype
 would reflect the mean of all replications.
 }
 \examples{
@@ -79,6 +79,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create two populations of 5 individuals

@@ -169,6 +169,7 @@ getGenMap = function(object=NULL, sex="A"){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addSnpChip(5)
 #' 
 #' #Pull SNP map
@@ -256,6 +257,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(5)
 #' 
 #' #Pull SNP map
@@ -336,6 +338,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' 
@@ -400,6 +403,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' 
@@ -532,6 +536,7 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' 
@@ -620,6 +625,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' 
@@ -710,6 +716,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' 
@@ -801,6 +808,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' SP$setTrackRec(TRUE)
@@ -887,6 +895,7 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #'
@@ -961,6 +970,7 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
 #' SP$setTrackRec(TRUE)

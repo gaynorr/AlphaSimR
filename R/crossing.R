@@ -1,28 +1,29 @@
 #' @title Make designed crosses
-#' 
+#'
 #' @description
-#' Makes crosses within a population using a user supplied 
+#' Makes crosses within a population using a user supplied
 #' crossing plan.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param crossPlan a matrix with two column representing 
-#' female and male parents. Either integers for the position in 
+#' @param crossPlan a matrix with two column representing
+#' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Cross individual 1 with individual 10
 #' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
 #' pop2 = makeCross(pop, crossPlan, simParam=SP)
@@ -90,35 +91,36 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 }
 
 #' @title Make random crosses
-#' 
-#' @description 
-#' A wrapper for \code{\link{makeCross}} that randomly 
-#' selects parental combinations for all possible combinantions. 
-#' 
+#'
+#' @description
+#' A wrapper for \code{\link{makeCross}} that randomly
+#' selects parental combinations for all possible combinantions.
+#'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param balance if using sexes, this option will balance the number 
+#' @param balance if using sexes, this option will balance the number
 #' of progeny per parent
 #' @param parents an optional vector of indices for allowable parents
 #' @param ignoreSexes should sexes be ignored
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Make 10 crosses
 #' pop2 = randCross(pop, 10, simParam=SP)
-#' 
+#'
 #' @export
 randCross = function(pop,nCrosses,nProgeny=1,
                      balance=TRUE,parents=NULL,
@@ -175,59 +177,60 @@ randCross = function(pop,nCrosses,nProgeny=1,
 }
 
 #' @title Select and randomly cross
-#' 
-#' @description 
-#' This is a wrapper that combines the functionalities of 
-#' \code{\link{randCross}} and \code{\link{selectInd}}. The 
-#' purpose of this wrapper is to combine both selection and 
-#' crossing in one function call that minimized the amount 
-#' of intermediate populations created. This reduces RAM usage 
-#' and simplifies code writing. Note that this wrapper does not 
-#' provide the full functionality of either function. 
-#' 
+#'
+#' @description
+#' This is a wrapper that combines the functionalities of
+#' \code{\link{randCross}} and \code{\link{selectInd}}. The
+#' purpose of this wrapper is to combine both selection and
+#' crossing in one function call that minimized the amount
+#' of intermediate populations created. This reduces RAM usage
+#' and simplifies code writing. Note that this wrapper does not
+#' provide the full functionality of either function.
+#'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param nInd the number of individuals to select. These individuals 
-#' are selected without regards to sex and it supercedes values 
-#' for nFemale and nMale. Thus if the simulation uses sexes, it is 
-#' likely better to leave this value as NULL and use nFemale and nMale 
+#' @param nInd the number of individuals to select. These individuals
+#' are selected without regards to sex and it supercedes values
+#' for nFemale and nMale. Thus if the simulation uses sexes, it is
+#' likely better to leave this value as NULL and use nFemale and nMale
 #' instead.
-#' @param nFemale the number of females to select. This value is ignored 
+#' @param nFemale the number of females to select. This value is ignored
 #' if nInd is set.
-#' @param nMale the number of males to select. This value is ignored 
+#' @param nMale the number of males to select. This value is ignored
 #' if nInd is set.
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param trait the trait for selection. Either a number indicating 
+#' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
 #' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
 #' or randomly "rand"
-#' @param selectTop selects highest values if true. 
+#' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
+#' @param ... additional arguments if using a function for
 #' trait
-#' @param balance if using sexes, this option will balance the number 
-#' of progeny per parent. This argument occurs after ..., so the argument 
+#' @param balance if using sexes, this option will balance the number
+#' of progeny per parent. This argument occurs after ..., so the argument
 #' name must be matched exactly.
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Select 4 individuals and make 8 crosses
 #' pop2 = selectCross(pop, nInd=4, nCrosses=8, simParam=SP)
-#' 
+#'
 #' @export
 selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
                        nProgeny=1,trait=1,use="pheno",selectTop=TRUE,
@@ -254,48 +257,49 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
                       returnPop=FALSE,simParam=simParam,...)
     parents = c(females,males)
   }
-  
+
   return(randCross(pop=pop,nCrosses=nCrosses,nProgeny=nProgeny,
                    balance=balance,parents=parents,
                    ignoreSexes=FALSE,simParam=simParam))
 }
 
 #' @title Make designed crosses
-#' 
+#'
 #' @description
-#' Makes crosses between two populations using a user supplied 
+#' Makes crosses between two populations using a user supplied
 #' crossing plan.
 #'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
 #' @param males an object of \code{\link{Pop-class}} for male parents.
-#' @param crossPlan a matrix with two column representing 
-#' female and male parents. Either integers for the position in 
+#' @param crossPlan a matrix with two column representing
+#' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
-#' @examples 
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Cross individual 1 with individual 10
 #' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
 #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
-#' 
+#'
 #' @export
 makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if((females@ploidy%%2L != 0L) | 
+  if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
     stop("You can not cross indiviuals with odd ploidy levels")
   }
@@ -306,7 +310,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
       stop("Failed to match supplied IDs")
     }
   }
-  if((max(crossPlan[,1])>nInd(females)) | 
+  if((max(crossPlan[,1])>nInd(females)) |
      (max(crossPlan[,2])>nInd(males)) |
      (min(crossPlan)<1L)){
     stop("Invalid crossPlan")
@@ -354,40 +358,41 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 }
 
 #' @title Make random crosses
-#' 
-#' @description 
-#' A wrapper for \code{\link{makeCross2}} that randomly 
-#' selects parental combinations for all possible combinantions between 
+#'
+#' @description
+#' A wrapper for \code{\link{makeCross2}} that randomly
+#' selects parental combinations for all possible combinantions between
 #' two populations.
-#' 
+#'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
 #' @param males an object of \code{\link{Pop-class}} for male parents.
 #' @param nCrosses total number of crosses to make
 #' @param nProgeny number of progeny per cross
-#' @param balance this option will balance the number 
+#' @param balance this option will balance the number
 #' of progeny per parent
-#' @param femaleParents an optional vector of indices for allowable 
+#' @param femaleParents an optional vector of indices for allowable
 #' female parents
-#' @param maleParents an optional vector of indices for allowable 
+#' @param maleParents an optional vector of indices for allowable
 #' male parents
 #' @param ignoreSexes should sex be ignored
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Make 10 crosses
 #' pop2 = randCross2(pop, pop, 10, simParam=SP)
-#' 
+#'
 #' @export
 randCross2 = function(females,males,nCrosses,nProgeny=1,
                       balance=TRUE,femaleParents=NULL,
@@ -411,12 +416,12 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     female = femaleParents
     male = maleParents
   }else{
-    female = which(females@sex=="F" & 
+    female = which(females@sex=="F" &
                      (1:females@nInd)%in%femaleParents)
     if(length(female)==0){
       stop("population doesn't contain any females")
     }
-    male = which(males@sex=="M" & 
+    male = which(males@sex=="M" &
                    (1:males@nInd)%in%maleParents)
     if(length(male)==0){
       stop("population doesn't contain any males")
@@ -449,43 +454,44 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 }
 
 #' @title Self individuals
-#' 
-#' @description 
-#' Creates selfed progeny from each individual in a 
+#'
+#' @description
+#' Creates selfed progeny from each individual in a
 #' population. Only works when sexes is "no".
-#' 
+#'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nProgeny total number of selfed progeny per individual
 #' @param parents an optional vector of indices for allowable parents
-#' @param keepParents should previous parents be used for mother and 
-#' father. 
+#' @param keepParents should previous parents be used for mother and
+#' father.
 #' @param simParam an object of \code{\link{SimParam}}
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Self pollinate each individual
 #' pop2 = self(pop, simParam=SP)
-#' 
+#'
 #' @export
 self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                 simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     stopifnot(is.null(parents))
-    pop@pops = lapply(pop@pops, self, nProgeny=nProgeny, 
-                      parents=NULL, keepParents=keepParents, 
+    pop@pops = lapply(pop@pops, self, nProgeny=nProgeny,
+                      parents=NULL, keepParents=keepParents,
                       simParam=simParam)
     return(pop)
   }
@@ -550,40 +556,41 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 }
 
 #' @title Generates DH lines
-#' 
-#' @description Creates DH lines from each individual in a population. 
-#' Only works with diploid individuals. For polyploids, use 
+#'
+#' @description Creates DH lines from each individual in a population.
+#' Only works with diploid individuals. For polyploids, use
 #' \code{\link{reduceGenome}} and \code{\link{doubleGenome}}.
-#' 
+#'
 #' @param pop an object of 'Pop' superclass
 #' @param nDH total number of DH lines per individual
-#' @param useFemale should female recombination rates be used. 
-#' @param keepParents should previous parents be used for mother and 
-#' father. 
+#' @param useFemale should female recombination rates be used.
+#' @param keepParents should previous parents be used for mother and
+#' father.
 #' @param simParam an object of 'SimParam' class
-#' 
+#'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Create 1 DH for each individual
 #' pop2 = makeDH(pop, simParam=SP)
-#' 
+#'
 #' @export
 makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                   simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  if(is(pop,"MegaPop")){
+  if(is(pop,"MultiPop")){
     pop@pops = lapply(pop@pops, makeDH, nDH=nDH, useFemale=useFemale,
                       keepParents=keepParents, simParam=simParam)
     return(pop)
@@ -693,69 +700,70 @@ sortPed = function(id, mother, father, maxCycle=100){
 }
 
 #' @title Pedigree cross
-#' 
+#'
 #' @description
-#' Creates a \code{\link{Pop-class}} from a generic 
-#' pedigree and a set of founder individuals. 
+#' Creates a \code{\link{Pop-class}} from a generic
+#' pedigree and a set of founder individuals.
 #'
 #' @param founderPop a \code{\link{Pop-class}}
-#' @param id a vector of unique identifiers for individuals 
-#' in the pedigree. The values of these IDs are seperate from   
+#' @param id a vector of unique identifiers for individuals
+#' in the pedigree. The values of these IDs are seperate from
 #' the IDs in the founderPop if matchID=FALSE.
-#' @param mother a vector of identifiers for the mothers 
-#' of individuals in the pedigree. Must match one of the 
+#' @param mother a vector of identifiers for the mothers
+#' of individuals in the pedigree. Must match one of the
 #' elements in the id vector or they will be treated as unknown.
-#' @param father a vector of identifiers for the fathers 
-#' of individuals in the pedigree. Must match one of the 
+#' @param father a vector of identifiers for the fathers
+#' of individuals in the pedigree. Must match one of the
 #' elements in the id vector or they will be treated as unknown.
-#' @param matchID indicates if the IDs in founderPop should be 
+#' @param matchID indicates if the IDs in founderPop should be
 #' matched to the id argument. See details.
-#' @param maxCycle the maximum number of loops to make over the pedigree 
+#' @param maxCycle the maximum number of loops to make over the pedigree
 #' to sort it.
-#' @param DH an optional vector indicating if an individual 
+#' @param DH an optional vector indicating if an individual
 #' should be made a doubled haploid.
-#' @param nSelf an optional vector indicating how many generations an 
+#' @param nSelf an optional vector indicating how many generations an
 #' individual should be selfed.
-#' @param useFemale If creating DH lines, should female recombination 
+#' @param useFemale If creating DH lines, should female recombination
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
-#' 
-#' @description 
-#' The way in which the user supplied pedigree is used depends on 
-#' the value of matchID. If matchID is TRUE, the IDs in the user 
-#' supplied pedigree are matched against founderNames. If matchID 
-#' is FALSE, founder individuals in the user supplied pedigree are 
+#'
+#' @description
+#' The way in which the user supplied pedigree is used depends on
+#' the value of matchID. If matchID is TRUE, the IDs in the user
+#' supplied pedigree are matched against founderNames. If matchID
+#' is FALSE, founder individuals in the user supplied pedigree are
 #' randomly sampled from founderPop.
-#' 
-#' @examples 
+#'
+#' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#' 
+#'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' 
+#' \dontshow{SP$nThreads = 1L}
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' 
+#'
 #' #Pedigree for a biparental cross with 7 generations of selfing
 #' id = 1:10
 #' mother = c(0,0,1,3:9)
 #' father = c(0,0,2,3:9)
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
-#' 
-#' 
+#'
+#'
 #' @export
-pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE, 
-                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE, 
+pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
+                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE,
                          simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   if(simParam$sexes!="no"){
     stop("pedigreeCross currently only works with sex='no'")
   }
-  
+
   # Coerce input data
   id = as.character(id)
   mother = as.character(mother)
@@ -768,22 +776,22 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(is.null(nSelf)){
     nSelf = rep(0, length(id))
   }
-  
+
   # Check input data
   stopifnot(!any(duplicated(id)),
             length(id)==length(mother),
             length(id)==length(father),
             length(id)==length(DH),
             length(id)==length(nSelf))
-  
+
   # Sort pedigree (identifies potential problems)
-  ped = sortPed(id=id, mother=mother, father=father, 
+  ped = sortPed(id=id, mother=mother, father=father,
                 maxCycle=maxCycle)
-  
+
   # Create list for new population
   output = vector("list", length=length(id))
-  
-  # Order and assign founders 
+
+  # Order and assign founders
   isFounder = is.na(ped$father) & is.na(ped$mother)
   motherIsFounder = is.na(ped$mother) & !is.na(ped$father)
   fatherIsFounder = is.na(ped$father) & !is.na(ped$mother)
@@ -802,17 +810,17 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     if(nFounder>founderPop@nInd){
       stop(paste("Pedigree requires",nFounder,"founders, but only",founderPop@nInd,"were supplied"))
     }
-    
+
     # Randomly assign individuals as founders
     founderPop = founderPop[sample.int(founderPop@nInd,nFounder)]
-    
+
     # isFounder
     n1 = 1
     n2 = sum(isFounder)
     founderPop@id[n1:n2] = id[isFounder]
     founderPop@mother[n1:n2] = mother[isFounder]
     founderPop@father[n1:n2] = father[isFounder]
-    
+
     # motherIsFounder
     n = sum(motherIsFounder)
     if(n>=1){
@@ -822,7 +830,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       founderPop@mother[n1:n2] = rep("0", n2-n1+1)
       founderPop@father[n1:n2] = rep("0", n2-n1+1)
     }
-    
+
     # fatherIsFounder
     n = sum(fatherIsFounder)
     if(n>=1){
@@ -833,7 +841,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       founderPop@father[n1:n2] = rep("0", n2-n1+1)
     }
   }
-  
+
   # Create individuals
   crossPlan = matrix(c(1,1),ncol=2)
   for(gen in 1:max(ped$gen)){
@@ -862,7 +870,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    simParam=simParam)
         }
       }
-      
+
       # Self?
       if(nSelf[i]>0){
         for(j in 1:nSelf[i]){
@@ -870,7 +878,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                              simParam=simParam)
         }
       }
-      
+
       # Make the individual a DH?
       if(DH[i]){
         output[[i]] = makeDH(output[[i]],
@@ -879,15 +887,15 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       }
     }
   }
-  
+
   # Collapse list to a population
   output = mergePops(output)
-  
+
   # Copy over names
   output@id = id
   output@mother = mother
   output@father = father
-  
+
   return(output)
 }
 

@@ -1,8 +1,8 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 1.4.2
-Date: 2023-3-27
+Version: 1.5.2
+Date: 2023-10-31
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
   person("Gregor", "Gorjanc", role = "ctb", 
@@ -12,10 +12,12 @@ Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   person("Daniel", "Money", role = "ctb", 
   comment = c(ORCID = "0000-0001-5151-3648")),
   person("David", "Wilson", role = "ctb"),
-  person("Thiago","Oliveira", role = "ctb",
+  person("Thiago", "Oliveira", role = "ctb",
   comment = c(ORCID = "0000-0002-4555-2584")),
   person("Audrey", "Martin", role = "ctb",
-  comment = c(ORCID = "0000-0003-2235-0098")))
+  comment = c(ORCID = "0000-0003-2235-0098")),
+  person("Philip", "Greenspoon", role = "ctb",
+  comment = c(ORCID = "0000-0001-6284-7248")))
 Description: The successor to the 'AlphaSim' software for breeding program 
   simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>]. 
   Used for stochastic simulations of breeding programs to the level of DNA 
@@ -31,7 +33,7 @@ Description: The successor to the 'AlphaSim' software for breeding program
 License: MIT + file LICENSE
 URL: https://github.com/gaynorr/AlphaSimR,
     https://gaynorr.github.io/AlphaSimR/,
-    https://www.edx.org/course/breeding-programme-modelling-with-alphasimr?utm_source=breeding_alphasimr&utm_medium=partner-marketing&utm_campaign=edinburghx
+    https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr
 Encoding: UTF-8
 Depends: R (>= 4.0.0), methods, R6
 Imports: Rcpp (>= 0.12.7), Rdpack

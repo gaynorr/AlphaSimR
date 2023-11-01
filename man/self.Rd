@@ -13,7 +13,7 @@ self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE, simParam = NULL)
 
 \item{parents}{an optional vector of indices for allowable parents}
 
-\item{keepParents}{should previous parents be used for mother and 
+\item{keepParents}{should previous parents be used for mother and
 father.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
@@ -22,7 +22,7 @@ father.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Creates selfed progeny from each individual in a 
+Creates selfed progeny from each individual in a
 population. Only works when sexes is "no".
 }
 \examples{
@@ -31,6 +31,7 @@ founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)

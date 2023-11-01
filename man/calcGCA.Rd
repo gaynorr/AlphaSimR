@@ -7,15 +7,15 @@
 calcGCA(pop, use = "pheno")
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or 
+\item{pop}{an object of \code{\link{Pop-class}} or
 \code{\link{HybridPop-class}}}
 
 \item{use}{tabulate either genetic values "gv", estimated
 breeding values "ebv", or phenotypes "pheno"}
 }
 \description{
-Calculate general combining ability of test crosses. Intended for 
-output from hybridCross using the "testcross" option, but will work 
+Calculate general combining ability of test crosses. Intended for
+output from hybridCross using the "testcross" option, but will work
 for any population.
 }
 \examples{
@@ -24,6 +24,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10, inbred=TRUE)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population

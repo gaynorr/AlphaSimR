@@ -70,5 +70,9 @@ Used by genomic selection models but otherwise ignored.}
 population. This list is normally empty and exists solely as an
 open slot available for uses to store extra information about
 individuals.}
+
+\item{\code{miscPop}}{a list of any length containing optional meta data for the 
+population. This list is empty unless information is supplied by the user.
+Note that the list is emptied every time the population is subsetted.}
 }}
 

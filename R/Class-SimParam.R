@@ -1,3 +1,4 @@
+
 #' @title Simulation parameters
 #'
 #' @description
@@ -109,6 +110,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackPed(TRUE)
     setTrackPed = function(isTrackPed, force=FALSE){
       stopifnot(is.logical(isTrackPed))
@@ -139,6 +141,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackRec(TRUE)
     setTrackRec = function(isTrackRec, force=FALSE){
       stopifnot(is.logical(isTrackRec))
@@ -166,6 +169,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #'
     #' #Create population
     #' pop = newPop(founderPop, simParam=SP)
@@ -205,6 +209,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
     restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, excludeQtl=NULL,
                              excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
@@ -298,6 +303,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setSexes("yes_sys")
     setSexes = function(sexes, force=FALSE){
       if(!force){
@@ -345,6 +351,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addSnpChip(10)
     addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL, name=NULL){
       if(length(nSnpPerChr)==1){
@@ -465,7 +472,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive traits.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated additive effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -474,6 +481,8 @@ SimParam = R6Class(
     #' @param corA a matrix of correlations between additive effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -484,6 +493,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
                          gamma=FALSE,shape=1,force=FALSE,name=NULL){
@@ -525,7 +535,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more traits with dominance.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -539,6 +549,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -549,6 +561,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAD(10, meanDD=0.5)
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
@@ -604,10 +617,129 @@ SimParam = R6Class(
       }
       invisible(self)
     },
+    
+    #' @description 
+    #' An alternative method for adding a trait with additive  and dominance effects 
+    #' to an AlphaSimR simulation. The function attempts to create a trait matching 
+    #' user defined values for number of QTL, inbreeding depression, additive genetic 
+    #' variance and dominance genetic variance.
+    #' 
+    #' @param nQtlPerChr number of QTLs per chromosome. 
+    #' Can be a single value or nChr values.
+    #' @param mean desired mean of the trait
+    #' @param varA desired additive variance
+    #' @param varD desired dominance variance
+    #' @param inbrDepr desired inbreeding depression, see details
+    #' @param limMeanDD limits for meanDD, see details
+    #' @param limVarDD limits for varDD, see details
+    #' @param silent should summary details be printed to the console
+    #' @param force should the check for a running simulation be
+    #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait
+    #' 
+    #' @details 
+    #' This function will always add a trait to 'SimParam', unless an error occurs 
+    #' with picking QTLs. The resulting trait will always have the desired mean and 
+    #' additive genetic variance. However, it may not have the desired values for 
+    #' inbreeding depression and dominance variance. Thus, it is strongly recommended 
+    #' to check the output printed to the console to determine how close the trait's 
+    #' parameters came to these desired values.
+    #' 
+    #' The mean and additive genetic variance will always be achieved exactly. The 
+    #' function attempts to achieve the desired dominance variance and inbreeding 
+    #' depression while staying within the user supplied constraints for the 
+    #' acceptable range of dominance degree mean and variance. If the desired values
+    #' are not being achieved, the acceptable range need to be increased and/or the 
+    #' number of QTL may need to be increased. There are not limits to setting the 
+    #' range for dominance degree mean and variance, but care should be taken to 
+    #' with regards to the biological feasibility of the limits that are supplied. 
+    #' The default limits were somewhat arbitrarily set, so I make not claim to 
+    #' how reasonable these limits are for routine use.
+    #' 
+    #' Inbreeding depression in this function is defined as the difference in mean 
+    #' genetic value between a population with the same allele frequency as the 
+    #' reference population (population used to initialize SimParam) in 
+    #' Hardy-Weinberg equilibrium compared to a population with the same allele 
+    #' frequency that is fully inbred. This is equivalent to the amount the mean of 
+    #' a population increases when going from an inbreeding coefficient of 1 (fully 
+    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
+    #' equilibrium). Note that the sign of the value should (usually) be positive. 
+    #' This corresponds to a detrimental effect of inbreeding when higher values of 
+    #' the trait are considered biologically beneficial.
+    #' 
+    #' Summary information on this trait is printed to the console when silent=FALSE. 
+    #' The summary information reports the inbreeding depression and dominance 
+    #' variance for the population as well as the dominance degree mean and variance 
+    #' applied to the trait.
+    #' 
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
+    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0, 
+                             limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
+                             silent=FALSE,force=FALSE,name=NULL){
+      if(!force){
+        private$.isRunning()
+      }
+      if(length(nQtlPerChr)==1){
+        nQtlPerChr = rep(nQtlPerChr,self$nChr)
+      }
+      if(is.null(name)){
+        name = paste0("Trait",self$nTraits+1)
+      }
+      
+      # Pick QTL
+      qtlLoci = private$.pickLoci(nQtlPerChr)
+      
+      # Create list of arguments for optimization
+      argsList = argAltAD(LociMap = qtlLoci,
+                          Pop = self$founderPop,
+                          mean = mean,
+                          varA = varA,
+                          varD = varD,
+                          inbrDepr = inbrDepr,
+                          nThreads = self$nThreads)
+      
+      # Run optim to optimize meanDD and varDD
+      optOut = optim(par = c(mean(limMeanDD), mean(sqrt(limVarDD))),
+                     fn = objAltAD, 
+                     gr = NULL,
+                     method = "L-BFGS-B",
+                     lower = c(limMeanDD[1], sqrt(limVarDD[1])),
+                     upper = c(limMeanDD[2], sqrt(limVarDD[2])),
+                     args = argsList)
+      
+      # Finalize creation of trait
+      output = finAltAD(input = optOut$par, args = argsList)
+      trait = new("TraitAD",
+                  qtlLoci,
+                  addEff=c(output$a),
+                  domEff=c(output$d),
+                  intercept=c(output$intercept),
+                  name=name)
+      private$.addTrait(trait,varA,output$varG)
+      
+      # Report trait details
+      if(!silent){
+        cat("A new trait called", name, "was added. \n")
+        cat("   varD =", output$varD, "\n")
+        cat("   inbrDepr =", output$inbrDepr, "\n")
+        cat("   meanDD =", output$meanDD, "\n")
+        cat("   varDD =", output$varDD, "\n")
+      }
+      
+      invisible(self)
+    },
+    
 
     #' @description
-    #' Randomly assigns eligible QTLs for one ore more additive GxE traits.
-    #' If simulating more than one trait, all traits will be pleiotrophic
+    #' Randomly assigns eligible QTLs for one or more additive GxE traits.
+    #' If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -619,6 +751,8 @@ SimParam = R6Class(
     #' @param corGxE a matrix of correlations between GxE effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -629,6 +763,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAG(10, varGxE=2)
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
@@ -718,6 +853,8 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -728,6 +865,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
     addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
@@ -820,7 +958,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' traits. If simulating more than one trait, all traits will be pleiotrophic
+    #' traits. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated additive effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -834,6 +972,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -841,6 +981,11 @@ SimParam = R6Class(
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #' 
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #' SP$addTraitAE(10, relAA=0.1)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
                           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
                           name=NULL){
@@ -902,7 +1047,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more traits with dominance and
-    #' epistasis. If simulating more than one trait, all traits will be pleiotrophic
+    #' epistasis. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -919,6 +1064,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -929,6 +1076,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADE(10)
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
@@ -1001,7 +1149,7 @@ SimParam = R6Class(
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' GxE traits. If simulating more than one trait, all traits will be pleiotrophic
+    #' GxE traits. If simulating more than one trait, all traits will be pleiotropic
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
@@ -1018,6 +1166,8 @@ SimParam = R6Class(
     #' FALSE, tuning is performed according to total genetic variance.
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -1028,6 +1178,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitAEG(10, varGxE=2)
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
@@ -1142,6 +1293,8 @@ SimParam = R6Class(
     #' @param useVarA tune according to additive genetic variance if true
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
@@ -1152,6 +1305,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
     addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
@@ -1492,6 +1646,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     #' SP$setVarE(h2=0.5)
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
@@ -1564,6 +1719,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
     #' SP$setVarE(varE=c(1,1))
     #' E = 0.5*diag(2)+0.5 #Positively correlated error
@@ -1617,6 +1773,7 @@ SimParam = R6Class(
     #'
     #' #Change mean to 1
     #' SP$rescaleTraits(mean=1)
+    #' \dontshow{SP$nThreads = 1L}
     #' #Run resetPop for change to take effect
     #' pop = resetPop(pop, simParam=SP)
     #' meanG(pop)
@@ -1707,6 +1864,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$setRecombRatio(2) #Twice as much recombination in females
     setRecombRatio = function(femaleRatio){
       stopifnot(femaleRatio>0)

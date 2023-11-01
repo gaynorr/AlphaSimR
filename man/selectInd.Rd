@@ -18,42 +18,44 @@ selectInd(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}}, 
-\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}}
+\item{pop}{and object of \code{\link{Pop-class}},
+\code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of individuals to select}
 
-\item{trait}{the trait for selection. Either a number indicating 
-a single trait or a function returning a vector of length nInd.}
+\item{trait}{the trait for selection. Either a number indicating
+a single trait or a function returning a vector of length nInd.
+The function must work on a vector or matrix of \code{use} values.
+See the examples and \code{\link{selIndex}}.}
 
 \item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno", 
+breeding values "ebv", breeding values "bv", phenotypes "pheno",
 or randomly "rand"}
 
-\item{sex}{which sex to select. Use "B" for both, "F" for 
-females and "M" for males. If the simulation is not using sexes, 
+\item{sex}{which sex to select. Use "B" for both, "F" for
+females and "M" for males. If the simulation is not using sexes,
 the argument is ignored.}
 
-\item{selectTop}{selects highest values if true. 
+\item{selectTop}{selects highest values if true.
 Selects lowest values if false.}
 
-\item{returnPop}{should results be returned as a 
-\code{\link{Pop-class}}. If FALSE, only the index of selected 
+\item{returnPop}{should results be returned as a
+\code{\link{Pop-class}}. If FALSE, only the index of selected
 individuals is returned.}
 
 \item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 trait}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}, 
-\code{\link{HybridPop-class}} or \code{\link{MegaPop-class}}
+Returns an object of \code{\link{Pop-class}},
+\code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 }
 \description{
-Selects a subset of nInd individuals from a 
+Selects a subset of nInd individuals from a
 population.
 }
 \examples{
@@ -62,13 +64,27 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Select best 5
+#Select top 5 (directional selection)
 pop2 = selectInd(pop, 5, simParam=SP)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop2@pheno, col = "red", lwd = 2)
+
+#Select 5 most deviating from an optima (disruptive selection)
+squaredDeviation = function(x, optima = 0) (x - optima)^2
+pop3 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = TRUE)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop3@pheno, col = "red", lwd = 2)
+
+#Select 5 least deviating from an optima (stabilising selection)
+pop4 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = FALSE)
+hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
+abline(v = pop4@pheno, col = "red", lwd = 2)
 
 }

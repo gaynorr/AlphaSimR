@@ -34,6 +34,11 @@ founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 
 # Setting Simulation Parameters
 SP = SimParam$new(founderPop)
+
+## ----include=FALSE------------------------------------------------------------
+SP$nThreads = 1L
+
+## -----------------------------------------------------------------------------
 SP$addTraitA(nQtlPerChr=1000)
 SP$setSexes("yes_sys")
 

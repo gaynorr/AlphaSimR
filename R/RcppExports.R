@@ -212,6 +212,18 @@ writeASHaplotypes <- function(g, locations, allLocations, snpchips, names, missi
     invisible(.Call(`_AlphaSimR_writeASHaplotypes`, g, locations, allLocations, snpchips, names, missing, fname))
 }
 
+argAltAD <- function(LociMap, Pop, mean, varA, varD, inbrDepr, nThreads) {
+    .Call(`_AlphaSimR_argAltAD`, LociMap, Pop, mean, varA, varD, inbrDepr, nThreads)
+}
+
+objAltAD <- function(input, args) {
+    .Call(`_AlphaSimR_objAltAD`, input, args)
+}
+
+finAltAD <- function(input, args) {
+    .Call(`_AlphaSimR_finAltAD`, input, args)
+}
+
 calcGenParam <- function(trait, pop, nThreads) {
     .Call(`_AlphaSimR_calcGenParam`, trait, pop, nThreads)
 }

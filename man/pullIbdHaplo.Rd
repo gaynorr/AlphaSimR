@@ -29,6 +29,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$addSnpChip(5)
 SP$setTrackRec(TRUE)
