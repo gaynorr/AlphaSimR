@@ -12,7 +12,7 @@ given SNP chip."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,14 +108,15 @@ equivalent if not using sex specific maps.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Pull SNP map</span></span></span>
 <span class="r-in"><span><span class="fu">getSnpMap</span><span class="op">(</span>snpChip<span class="op">=</span><span class="fl">1</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      id chr site       pos</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1_3 1_3   1    3 0.2222222</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_4 1_4   1    4 0.3333333</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_6 1_6   1    6 0.5555556</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1_7 1_7   1    7 0.6666667</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_8 1_8   1    8 0.7777778</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1_9 1_9   1    9 0.8888889</span>
 <span class="r-in"><span></span></span>

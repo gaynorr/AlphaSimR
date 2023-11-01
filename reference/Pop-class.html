@@ -12,7 +12,7 @@ phenotypes, and pedigrees."><!-- mathjax --><script src="https://cdnjs.cloudflar
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -154,6 +154,12 @@ Used by genomic selection models but otherwise ignored.</p></dd>
 population. This list is normally empty and exists solely as an
 open slot available for uses to store extra information about
 individuals.</p></dd>
+
+
+<dt><code>miscPop</code></dt>
+<dd><p>a list of any length containing optional meta data for the 
+population. This list is empty unless information is supplied by the user.
+Note that the list is emptied every time the population is subsetted.</p></dd>
 
 
 </dl></div>

@@ -12,7 +12,7 @@ specified loci"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/l
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,6 +99,7 @@ used if pop is <code><a href="MapPop-class.html">MapPop-class</a></code></p></dd
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -109,16 +110,16 @@ used if pop is <code><a href="MapPop-class.html">MapPop-class</a></code></p></dd
 <span class="r-in"><span><span class="co">#Marker name is consistent with default naming in AlphaSimR.</span></span></span>
 <span class="r-in"><span><span class="fu">pullMarkerGeno</span><span class="op">(</span><span class="va">pop</span>, markers<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1_1"</span>,<span class="st">"1_2"</span><span class="op">)</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    1_1 1_2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    1   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    1   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3    0   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    2   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    0   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    2   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    2   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8    0   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    2   2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    1   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    1   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    1   2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    2   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    1   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    1   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    1   2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9    0   1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10   1   1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10   0   1</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

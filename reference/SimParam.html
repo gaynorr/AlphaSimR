@@ -12,7 +12,7 @@ as SP will allow it to be accessed by function defaults."><!-- mathjax --><scrip
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -247,6 +247,7 @@ genetic map</p></dd>
 <li><p><a href="#method-SimParam-addStructuredSnpChip"><code>SimParam$addStructuredSnpChip()</code></a></p></li>
 <li><p><a href="#method-SimParam-addTraitA"><code>SimParam$addTraitA()</code></a></p></li>
 <li><p><a href="#method-SimParam-addTraitAD"><code>SimParam$addTraitAD()</code></a></p></li>
+<li><p><a href="#method-SimParam-altAddTraitAD"><code>SimParam$altAddTraitAD()</code></a></p></li>
 <li><p><a href="#method-SimParam-addTraitAG"><code>SimParam$addTraitAG()</code></a></p></li>
 <li><p><a href="#method-SimParam-addTraitADG"><code>SimParam$addTraitADG()</code></a></p></li>
 <li><p><a href="#method-SimParam-addTraitAE"><code>SimParam$addTraitAE()</code></a></p></li>
@@ -328,12 +329,14 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-1">Examples<a class="anchor" aria-label="anchor" href="#examples-1"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setTrackPed</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$setTrackPed(TRUE)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -364,12 +367,14 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-2">Examples<a class="anchor" aria-label="anchor" href="#examples-2"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setTrackRec</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$setTrackRec(TRUE)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -394,20 +399,22 @@ the deleted portion of the pedigree.</p><div class="section">
 </div>
 <div class="section">
 <h4 id="examples-3">Examples<a class="anchor" aria-label="anchor" href="#examples-3"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Create population</span></span>
-<span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span><span class="va">pop</span><span class="op">@</span><span class="va">id</span> <span class="co"># 1:10</span></span>
-<span></span>
-<span><span class="co">#Create another population after reseting pedigree</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">resetPed</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">pop2</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span><span class="va">pop2</span><span class="op">@</span><span class="va">id</span> <span class="co"># 1:10</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+pop@id # 1:10
+
+#Create another population after reseting pedigree
+SP$resetPed()
+pop2 = newPop(founderPop, simParam=SP)
+pop2@id # 1:10
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -461,12 +468,14 @@ No minimum SNP frequency is used if value is NULL.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-4">Examples<a class="anchor" aria-label="anchor" href="#examples-4"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">restrSegSites</span><span class="op">(</span>minQtlPerChr<span class="op">=</span><span class="fl">5</span>, minSnpPerChr<span class="op">=</span><span class="fl">5</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -500,12 +509,14 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-5">Examples<a class="anchor" aria-label="anchor" href="#examples-5"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setSexes</span><span class="op">(</span><span class="st">"yes_sys"</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$setSexes("yes_sys")
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -558,12 +569,14 @@ frequency. If NULL, the founder population is used.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-6">Examples<a class="anchor" aria-label="anchor" href="#examples-6"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addSnpChip(10)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -632,7 +645,7 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div><p></p><hr><a id="method-SimParam-addTraitA"></a><div class="section">
 <h3 id="method-addtraita-">Method <code>addTraitA()</code><a class="anchor" aria-label="anchor" href="#method-addtraita-"></a></h3>
 <p>Randomly assigns eligible QTLs for one or more additive traits.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.</p><div class="section">
 <h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span></span>
@@ -670,7 +683,9 @@ with correlated additive effects.</p><div class="section">
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -686,19 +701,21 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-8">Examples<a class="anchor" aria-label="anchor" href="#examples-8"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitA(10)
+</code></pre></div><p></p></div>
 </div>
 
 
 </div><p></p><hr><a id="method-SimParam-addTraitAD"></a><div class="section">
 <h3 id="method-addtraitad-">Method <code>addTraitAD()</code><a class="anchor" aria-label="anchor" href="#method-addtraitad-"></a></h3>
 <p>Randomly assigns eligible QTLs for one or more traits with dominance.
-If simulating more than one trait, all traits will be pleiotrophic
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.</p><div class="section">
 <h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitAD</span><span class="op">(</span></span>
@@ -757,7 +774,9 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -773,21 +792,137 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-9">Examples<a class="anchor" aria-label="anchor" href="#examples-9"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAD</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAD(10, meanDD=0.5)
+</code></pre></div><p></p></div>
+</div>
+
+
+</div><p></p><hr><a id="method-SimParam-altAddTraitAD"></a><div class="section">
+<h3 id="method-altaddtraitad-">Method <code>altAddTraitAD()</code><a class="anchor" aria-label="anchor" href="#method-altaddtraitad-"></a></h3>
+<p>An alternative method for adding a trait with additive  and dominance effects 
+to an AlphaSimR simulation. The function attempts to create a trait matching 
+user defined values for number of QTL, inbreeding depression, additive genetic 
+variance and dominance genetic variance.</p><div class="section">
+<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">altAddTraitAD</span><span class="op">(</span></span>
+<span>  <span class="va">nQtlPerChr</span>,</span>
+<span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  varA <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  varD <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  inbrDepr <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  limMeanDD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span>,</span>
+<span>  limVarDD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>  silent <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-12">Arguments<a class="anchor" aria-label="anchor" href="#arguments-12"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
+<dd><p>number of QTLs per chromosome. 
+Can be a single value or nChr values.</p></dd>
+
+
+<dt><code>mean</code></dt>
+<dd><p>desired mean of the trait</p></dd>
+
+
+<dt><code>varA</code></dt>
+<dd><p>desired additive variance</p></dd>
+
+
+<dt><code>varD</code></dt>
+<dd><p>desired dominance variance</p></dd>
+
+
+<dt><code>inbrDepr</code></dt>
+<dd><p>desired inbreeding depression, see details</p></dd>
+
+
+<dt><code>limMeanDD</code></dt>
+<dd><p>limits for meanDD, see details</p></dd>
+
+
+<dt><code>limVarDD</code></dt>
+<dd><p>limits for varDD, see details</p></dd>
+
+
+<dt><code>silent</code></dt>
+<dd><p>should summary details be printed to the console</p></dd>
+
+
+<dt><code>force</code></dt>
+<dd><p>should the check for a running simulation be
+ignored. Only set to TRUE if you know what you are doing.</p></dd>
+
+
+<dt><code>name</code></dt>
+<dd><p>optional name for trait</p></dd>
+
+
+</dl><p></p></div>
+</div>
+<div class="section">
+<h4 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h4>
+<p>This function will always add a trait to 'SimParam', unless an error occurs 
+with picking QTLs. The resulting trait will always have the desired mean and 
+additive genetic variance. However, it may not have the desired values for 
+inbreeding depression and dominance variance. Thus, it is strongly recommended 
+to check the output printed to the console to determine how close the trait's 
+parameters came to these desired values.</p>
+<p>The mean and additive genetic variance will always be achieved exactly. The 
+function attempts to achieve the desired dominance variance and inbreeding 
+depression while staying within the user supplied constraints for the 
+acceptable range of dominance degree mean and variance. If the desired values
+are not being achieved, the acceptable range need to be increased and/or the 
+number of QTL may need to be increased. There are not limits to setting the 
+range for dominance degree mean and variance, but care should be taken to 
+with regards to the biological feasibility of the limits that are supplied. 
+The default limits were somewhat arbitrarily set, so I make not claim to 
+how reasonable these limits are for routine use.</p>
+<p>Inbreeding depression in this function is defined as the difference in mean 
+genetic value between a population with the same allele frequency as the 
+reference population (population used to initialize SimParam) in 
+Hardy-Weinberg equilibrium compared to a population with the same allele 
+frequency that is fully inbred. This is equivalent to the amount the mean of 
+a population increases when going from an inbreeding coefficient of 1 (fully 
+inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
+equilibrium). Note that the sign of the value should (usually) be positive. 
+This corresponds to a detrimental effect of inbreeding when higher values of 
+the trait are considered biologically beneficial.</p>
+<p>Summary information on this trait is printed to the console when silent=FALSE. 
+The summary information reports the inbreeding depression and dominance 
+variance for the population as well as the dominance degree mean and variance 
+applied to the trait.</p>
+</div>
+
+<div class="section">
+<h4 id="examples-10">Examples<a class="anchor" aria-label="anchor" href="#examples-10"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
+</code></pre></div><p></p></div>
 </div>
 
 
 </div><p></p><hr><a id="method-SimParam-addTraitAG"></a><div class="section">
 <h3 id="method-addtraitag-">Method <code>addTraitAG()</code><a class="anchor" aria-label="anchor" href="#method-addtraitag-"></a></h3>
-<p>Randomly assigns eligible QTLs for one ore more additive GxE traits.
-If simulating more than one trait, all traits will be pleiotrophic
+<p>Randomly assigns eligible QTLs for one or more additive GxE traits.
+If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.</p><div class="section">
-<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
+<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitAG</span><span class="op">(</span></span>
 <span>  <span class="va">nQtlPerChr</span>,</span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -804,7 +939,7 @@ with correlated effects.</p><div class="section">
 </div>
 
 <div class="section">
-<h4 id="arguments-12">Arguments<a class="anchor" aria-label="anchor" href="#arguments-12"></a></h4>
+<h4 id="arguments-13">Arguments<a class="anchor" aria-label="anchor" href="#arguments-13"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
 <dd><p>number of QTLs per chromosome. Can be a single value or nChr values.</p></dd>
 
@@ -838,7 +973,9 @@ with correlated effects.</p><div class="section">
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -853,20 +990,22 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-10">Examples<a class="anchor" aria-label="anchor" href="#examples-10"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAG</span><span class="op">(</span><span class="fl">10</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-11">Examples<a class="anchor" aria-label="anchor" href="#examples-11"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAG(10, varGxE=2)
+</code></pre></div><p></p></div>
 </div>
 
 
 </div><p></p><hr><a id="method-SimParam-addTraitADG"></a><div class="section">
 <h3 id="method-addtraitadg-">Method <code>addTraitADG()</code><a class="anchor" aria-label="anchor" href="#method-addtraitadg-"></a></h3>
 <p>Randomly assigns eligible QTLs for a trait with dominance and GxE.</p><div class="section">
-<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
+<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitADG</span><span class="op">(</span></span>
 <span>  <span class="va">nQtlPerChr</span>,</span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -887,7 +1026,7 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 
 <div class="section">
-<h4 id="arguments-13">Arguments<a class="anchor" aria-label="anchor" href="#arguments-13"></a></h4>
+<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
 <dd><p>number of QTLs per chromosome. Can be a single
 value or nChr values.</p></dd>
@@ -938,90 +1077,9 @@ value or nChr values.</p></dd>
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
-
-
-<dt><code>force</code></dt>
-<dd><p>should the check for a running simulation be
-ignored. Only set to TRUE if you know what you are doing.</p></dd>
-
-
-<dt><code>name</code></dt>
-<dd><p>optional name for trait(s)</p></dd>
-
-
-</dl><p></p></div>
-</div>
-<div class="section">
-<h4 id="examples-11">Examples<a class="anchor" aria-label="anchor" href="#examples-11"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADG</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-
-</div><p></p><hr><a id="method-SimParam-addTraitAE"></a><div class="section">
-<h3 id="method-addtraitae-">Method <code>addTraitAE()</code><a class="anchor" aria-label="anchor" href="#method-addtraitae-"></a></h3>
-<p>Randomly assigns eligible QTLs for one or more additive and epistasis
-traits. If simulating more than one trait, all traits will be pleiotrophic
-with correlated additive effects.</p><div class="section">
-<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitAE</span><span class="op">(</span></span>
-<span>  <span class="va">nQtlPerChr</span>,</span>
-<span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  var <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  relAA <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  corA <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  corAA <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  useVarA <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  gamma <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  shape <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  name <span class="op">=</span> <span class="cn">NULL</span></span>
-<span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-<div class="section">
-<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
-<dd><p>number of QTLs per chromosome. Can be a single value or nChr values.</p></dd>
-
-
-<dt><code>mean</code></dt>
-<dd><p>a vector of desired mean genetic values for one or more traits</p></dd>
-
-
-<dt><code>var</code></dt>
-<dd><p>a vector of desired genetic variances for one or more traits</p></dd>
-
-
-<dt><code>relAA</code></dt>
-<dd><p>the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5</p></dd>
-
-
-<dt><code>corA</code></dt>
-<dd><p>a matrix of correlations between additive effects</p></dd>
-
-
-<dt><code>corAA</code></dt>
-<dd><p>a matrix of correlations between additive-by-additive effects</p></dd>
-
-
-<dt><code>useVarA</code></dt>
-<dd><p>tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.</p></dd>
-
-
-<dt><code>gamma</code></dt>
-<dd><p>should a gamma distribution be used instead of normal</p></dd>
-
-
-<dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -1037,26 +1095,29 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </div>
 <div class="section">
 <h4 id="examples-12">Examples<a class="anchor" aria-label="anchor" href="#examples-12"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitADG(10, meanDD=0.5, varGxE=2)
+</code></pre></div><p></p></div>
 </div>
 
 
-</div><p></p><hr><a id="method-SimParam-addTraitADE"></a><div class="section">
-<h3 id="method-addtraitade-">Method <code>addTraitADE()</code><a class="anchor" aria-label="anchor" href="#method-addtraitade-"></a></h3>
-<p>Randomly assigns eligible QTLs for one or more traits with dominance and
-epistasis. If simulating more than one trait, all traits will be pleiotrophic
-with correlated effects.</p><div class="section">
+</div><p></p><hr><a id="method-SimParam-addTraitAE"></a><div class="section">
+<h3 id="method-addtraitae-">Method <code>addTraitAE()</code><a class="anchor" aria-label="anchor" href="#method-addtraitae-"></a></h3>
+<p>Randomly assigns eligible QTLs for one or more additive and epistasis
+traits. If simulating more than one trait, all traits will be pleiotropic
+with correlated additive effects.</p><div class="section">
 <h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitADE</span><span class="op">(</span></span>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitAE</span><span class="op">(</span></span>
 <span>  <span class="va">nQtlPerChr</span>,</span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  var <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  meanDD <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  varDD <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  relAA <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  corA <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  corDD <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  corAA <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  useVarA <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  gamma <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -1080,6 +1141,96 @@ with correlated effects.</p><div class="section">
 <dd><p>a vector of desired genetic variances for one or more traits</p></dd>
 
 
+<dt><code>relAA</code></dt>
+<dd><p>the relative value of additive-by-additive variance compared
+to additive variance in a diploid organism with allele frequency 0.5</p></dd>
+
+
+<dt><code>corA</code></dt>
+<dd><p>a matrix of correlations between additive effects</p></dd>
+
+
+<dt><code>corAA</code></dt>
+<dd><p>a matrix of correlations between additive-by-additive effects</p></dd>
+
+
+<dt><code>useVarA</code></dt>
+<dd><p>tune according to additive genetic variance if true. If
+FALSE, tuning is performed according to total genetic variance.</p></dd>
+
+
+<dt><code>gamma</code></dt>
+<dd><p>should a gamma distribution be used instead of normal</p></dd>
+
+
+<dt><code>shape</code></dt>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
+
+
+<dt><code>force</code></dt>
+<dd><p>should the check for a running simulation be
+ignored. Only set to TRUE if you know what you are doing.</p></dd>
+
+
+<dt><code>name</code></dt>
+<dd><p>optional name for trait(s)</p></dd>
+
+
+</dl><p></p></div>
+</div>
+<div class="section">
+<h4 id="examples-13">Examples<a class="anchor" aria-label="anchor" href="#examples-13"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAE(10, relAA=0.1)
+</code></pre></div><p></p></div>
+</div>
+
+
+</div><p></p><hr><a id="method-SimParam-addTraitADE"></a><div class="section">
+<h3 id="method-addtraitade-">Method <code>addTraitADE()</code><a class="anchor" aria-label="anchor" href="#method-addtraitade-"></a></h3>
+<p>Randomly assigns eligible QTLs for one or more traits with dominance and
+epistasis. If simulating more than one trait, all traits will be pleiotropic
+with correlated effects.</p><div class="section">
+<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitADE</span><span class="op">(</span></span>
+<span>  <span class="va">nQtlPerChr</span>,</span>
+<span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  var <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  meanDD <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  varDD <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  relAA <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  corA <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  corDD <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  corAA <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  useVarA <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  gamma <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  shape <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-16">Arguments<a class="anchor" aria-label="anchor" href="#arguments-16"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
+<dd><p>number of QTLs per chromosome. Can be a single value or nChr values.</p></dd>
+
+
+<dt><code>mean</code></dt>
+<dd><p>a vector of desired mean genetic values for one or more traits</p></dd>
+
+
+<dt><code>var</code></dt>
+<dd><p>a vector of desired genetic variances for one or more traits</p></dd>
+
+
 <dt><code>meanDD</code></dt>
 <dd><p>mean dominance degree</p></dd>
 
@@ -1115,7 +1266,9 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -1130,22 +1283,24 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-13">Examples<a class="anchor" aria-label="anchor" href="#examples-13"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADE</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-14">Examples<a class="anchor" aria-label="anchor" href="#examples-14"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitADE(10)
+</code></pre></div><p></p></div>
 </div>
 
 
 </div><p></p><hr><a id="method-SimParam-addTraitAEG"></a><div class="section">
 <h3 id="method-addtraitaeg-">Method <code>addTraitAEG()</code><a class="anchor" aria-label="anchor" href="#method-addtraitaeg-"></a></h3>
 <p>Randomly assigns eligible QTLs for one or more additive and epistasis
-GxE traits. If simulating more than one trait, all traits will be pleiotrophic
+GxE traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.</p><div class="section">
-<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
+<h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitAEG</span><span class="op">(</span></span>
 <span>  <span class="va">nQtlPerChr</span>,</span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -1165,7 +1320,7 @@ with correlated effects.</p><div class="section">
 </div>
 
 <div class="section">
-<h4 id="arguments-16">Arguments<a class="anchor" aria-label="anchor" href="#arguments-16"></a></h4>
+<h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
 <dd><p>number of QTLs per chromosome. Can be a single value or nChr values.</p></dd>
 
@@ -1213,7 +1368,9 @@ FALSE, tuning is performed according to total genetic variance.</p></dd>
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -1228,13 +1385,15 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-14">Examples<a class="anchor" aria-label="anchor" href="#examples-14"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAEG</span><span class="op">(</span><span class="fl">10</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-15">Examples<a class="anchor" aria-label="anchor" href="#examples-15"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitAEG(10, varGxE=2)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -1242,7 +1401,7 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 <h3 id="method-addtraitadeg-">Method <code>addTraitADEG()</code><a class="anchor" aria-label="anchor" href="#method-addtraitadeg-"></a></h3>
 <p>Randomly assigns eligible QTLs for a trait with dominance,
 epistasis and GxE.</p><div class="section">
-<h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
+<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addTraitADEG</span><span class="op">(</span></span>
 <span>  <span class="va">nQtlPerChr</span>,</span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -1265,7 +1424,7 @@ epistasis and GxE.</p><div class="section">
 </div>
 
 <div class="section">
-<h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
+<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>nQtlPerChr</code></dt>
 <dd><p>number of QTLs per chromosome. Can be a single
 value or nChr values.</p></dd>
@@ -1325,7 +1484,9 @@ to additive variance in a diploid organism with allele frequency 0.5</p></dd>
 
 
 <dt><code>shape</code></dt>
-<dd><p>the shape parameter for the gamma distribution</p></dd>
+<dd><p>the shape parameter for the gamma distribution
+(the rate/scale parameter of the gamma distribution is accounted
+for via the desired level of genetic variance, the var argument)</p></dd>
 
 
 <dt><code>force</code></dt>
@@ -1340,13 +1501,15 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-15">Examples<a class="anchor" aria-label="anchor" href="#examples-15"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADEG</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-16">Examples<a class="anchor" aria-label="anchor" href="#examples-16"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -1355,12 +1518,12 @@ ignored. Only set to TRUE if you know what you are doing.</p></dd>
 <p>Manually add a new trait to the simulation. Trait must
 be formatted as a <code><a href="LociMap-class.html">LociMap-class</a></code>. If the
 trait is not already formatted, consider using importTrait.</p><div class="section">
-<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">manAddTrait</span><span class="op">(</span><span class="va">lociMap</span>, varE <span class="op">=</span> <span class="cn">NA_real_</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
+<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lociMap</code></dt>
 <dd><p>a new object descended from
 <code><a href="LociMap-class.html">LociMap-class</a></code></p></dd>
@@ -1386,7 +1549,7 @@ formatting the trait as a <code><a href="LociMap-class.html">LociMap-class</a></
 The formatting is performed automatically for the user,
 with more user friendly data.frames or matrices taken as
 inputs. This function only works for A and AD trait types.</p><div class="section">
-<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
+<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">importTrait</span><span class="op">(</span></span>
 <span>  <span class="va">markerNames</span>,</span>
 <span>  <span class="va">addEff</span>,</span>
@@ -1399,7 +1562,7 @@ inputs. This function only works for A and AD trait types.</p><div class="sectio
 </div>
 
 <div class="section">
-<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
+<h4 id="arguments-20">Arguments<a class="anchor" aria-label="anchor" href="#arguments-20"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>markerNames</code></dt>
 <dd><p>a vector of names for the QTL</p></dd>
 
@@ -1437,12 +1600,12 @@ ignored. Only set to TRUE if you know what you are doing</p></dd>
 </div><p></p><hr><a id="method-SimParam-switchTrait"></a><div class="section">
 <h3 id="method-switchtrait-">Method <code>switchTrait()</code><a class="anchor" aria-label="anchor" href="#method-switchtrait-"></a></h3>
 <p>Switch a trait in the simulation.</p><div class="section">
-<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
+<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchTrait</span><span class="op">(</span><span class="va">traitPos</span>, <span class="va">lociMap</span>, varE <span class="op">=</span> <span class="cn">NA_real_</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-20">Arguments<a class="anchor" aria-label="anchor" href="#arguments-20"></a></h4>
+<h4 id="arguments-21">Arguments<a class="anchor" aria-label="anchor" href="#arguments-21"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>traitPos</code></dt>
 <dd><p>an integer indicate which trait to switch</p></dd>
 
@@ -1467,12 +1630,12 @@ ignored. Only set to TRUE if you know what you are doing</p></dd>
 </div><p></p><hr><a id="method-SimParam-removeTrait"></a><div class="section">
 <h3 id="method-removetrait-">Method <code>removeTrait()</code><a class="anchor" aria-label="anchor" href="#method-removetrait-"></a></h3>
 <p>Remove a trait from the simulation</p><div class="section">
-<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
+<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">removeTrait</span><span class="op">(</span><span class="va">traits</span>, force <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-21">Arguments<a class="anchor" aria-label="anchor" href="#arguments-21"></a></h4>
+<h4 id="arguments-22">Arguments<a class="anchor" aria-label="anchor" href="#arguments-22"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>traits</code></dt>
 <dd><p>an integer vector indicating which traits to remove</p></dd>
 
@@ -1493,12 +1656,12 @@ will be used to automatically generate phenotypes when new
 populations are created. See the details section of <code><a href="setPheno.html">setPheno</a></code>
 for more information about each arguments and how they 
 should be used.</p><div class="section">
-<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
+<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2 <span class="op">=</span> <span class="cn">NULL</span>, H2 <span class="op">=</span> <span class="cn">NULL</span>, varE <span class="op">=</span> <span class="cn">NULL</span>, corE <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-22">Arguments<a class="anchor" aria-label="anchor" href="#arguments-22"></a></h4>
+<h4 id="arguments-23">Arguments<a class="anchor" aria-label="anchor" href="#arguments-23"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>h2</code></dt>
 <dd><p>a vector of desired narrow-sense heritabilities</p></dd>
 
@@ -1518,14 +1681,16 @@ should be used.</p><div class="section">
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-16">Examples<a class="anchor" aria-label="anchor" href="#examples-16"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-17">Examples<a class="anchor" aria-label="anchor" href="#examples-17"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitA(10)
+SP$setVarE(h2=0.5)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -1534,12 +1699,12 @@ should be used.</p><div class="section">
 <p>Defines a correlation structure for default
 error variances. You must call <code>setVarE</code> first to define
 the default error variances.</p><div class="section">
-<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
+<h4 id="usage-24">Usage<a class="anchor" aria-label="anchor" href="#usage-24"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">setCorE</span><span class="op">(</span><span class="va">corE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-23">Arguments<a class="anchor" aria-label="anchor" href="#arguments-23"></a></h4>
+<h4 id="arguments-24">Arguments<a class="anchor" aria-label="anchor" href="#arguments-24"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>corE</code></dt>
 <dd><p>a correlation matrix for the error variances</p></dd>
 
@@ -1547,16 +1712,18 @@ the default error variances.</p><div class="section">
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-17">Examples<a class="anchor" aria-label="anchor" href="#examples-17"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span>, mean<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span><span class="op">)</span>, var<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>, corA<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>varE<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">E</span> <span class="op">=</span> <span class="fl">0.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">+</span><span class="fl">0.5</span> <span class="co">#Positively correlated error</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setCorE</span><span class="op">(</span><span class="va">E</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-18">Examples<a class="anchor" aria-label="anchor" href="#examples-18"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
+SP$setVarE(varE=c(1,1))
+E = 0.5*diag(2)+0.5 #Positively correlated error
+SP$setCorE(E)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -1564,7 +1731,7 @@ the default error variances.</p><div class="section">
 <h3 id="method-rescaletraits-">Method <code>rescaleTraits()</code><a class="anchor" aria-label="anchor" href="#method-rescaletraits-"></a></h3>
 <p>Linearly scales all traits to achieve desired
 values of means and variances in the founder population.</p><div class="section">
-<h4 id="usage-24">Usage<a class="anchor" aria-label="anchor" href="#usage-24"></a></h4>
+<h4 id="usage-25">Usage<a class="anchor" aria-label="anchor" href="#usage-25"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">rescaleTraits</span><span class="op">(</span></span>
 <span>  mean <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  var <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -1575,7 +1742,7 @@ values of means and variances in the founder population.</p><div class="section"
 </div>
 
 <div class="section">
-<h4 id="arguments-24">Arguments<a class="anchor" aria-label="anchor" href="#arguments-24"></a></h4>
+<h4 id="arguments-25">Arguments<a class="anchor" aria-label="anchor" href="#arguments-25"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>mean</code></dt>
 <dd><p>a vector of new trait means</p></dd>
 
@@ -1599,23 +1766,25 @@ values of means and variances in the founder population.</p><div class="section"
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-18">Examples<a class="anchor" aria-label="anchor" href="#examples-18"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Create population</span></span>
-<span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Change mean to 1</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">rescaleTraits</span><span class="op">(</span>mean<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#Run resetPop for change to take effect</span></span>
-<span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="../reference/resetPop.html">resetPop</a></span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<h4 id="examples-19">Examples<a class="anchor" aria-label="anchor" href="#examples-19"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+
+#Create population
+pop = newPop(founderPop, simParam=SP)
+meanG(pop)
+
+#Change mean to 1
+SP$rescaleTraits(mean=1)
+\dontshow{SP$nThreads = 1L}
+#Run resetPop for change to take effect
+pop = resetPop(pop, simParam=SP)
+meanG(pop)
+</code></pre></div><p></p></div>
 </div>
 
 
@@ -1624,12 +1793,12 @@ values of means and variances in the founder population.</p><div class="section"
 <p>Set the relative recombination rates between males
 and females. This allows for sex-specific recombination rates,
 under the assumption of equivalent recombination landscapes.</p><div class="section">
-<h4 id="usage-25">Usage<a class="anchor" aria-label="anchor" href="#usage-25"></a></h4>
+<h4 id="usage-26">Usage<a class="anchor" aria-label="anchor" href="#usage-26"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">setRecombRatio</span><span class="op">(</span><span class="va">femaleRatio</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-25">Arguments<a class="anchor" aria-label="anchor" href="#arguments-25"></a></h4>
+<h4 id="arguments-26">Arguments<a class="anchor" aria-label="anchor" href="#arguments-26"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>femaleRatio</code></dt>
 <dd><p>relative ratio of recombination in females compared to
 males. A value of 2 indicate twice as much recombination in females. The
@@ -1639,45 +1808,23 @@ value must be greater than 0. (default is 1)</p></dd>
 </dl><p></p></div>
 </div>
 <div class="section">
-<h4 id="examples-19">Examples<a class="anchor" aria-label="anchor" href="#examples-19"></a></h4>
-<p></p><div class="r example copy"><div class="sourceCode"><pre><code><span><span class="co">#Create founder haplotypes</span></span>
-<span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Set simulation parameters</span></span>
-<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span>
-<span><span class="va">SP</span><span class="op">$</span><span class="fu">setRecombRatio</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="co">#Twice as much recombination in females</span></span></code></pre></div><p></p></div>
+<h4 id="examples-20">Examples<a class="anchor" aria-label="anchor" href="#examples-20"></a></h4>
+<p></p><div class="r example copy"><div class="sourceCode"><pre><code>#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$setRecombRatio(2) #Twice as much recombination in females
+</code></pre></div><p></p></div>
 </div>
 
 
 </div><p></p><hr><a id="method-SimParam-switchGenMap"></a><div class="section">
 <h3 id="method-switchgenmap-">Method <code>switchGenMap()</code><a class="anchor" aria-label="anchor" href="#method-switchgenmap-"></a></h3>
 <p>Replaces existing genetic map.</p><div class="section">
-<h4 id="usage-26">Usage<a class="anchor" aria-label="anchor" href="#usage-26"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchGenMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-<div class="section">
-<h4 id="arguments-26">Arguments<a class="anchor" aria-label="anchor" href="#arguments-26"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>genMap</code></dt>
-<dd><p>a list of length nChr containing
-numeric vectors for the position of each segregating
-site on a chromosome.</p></dd>
-
-
-<dt><code>centromere</code></dt>
-<dd><p>a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
-be metacentric.</p></dd>
-
-
-</dl><p></p></div>
-</div>
-
-</div><p></p><hr><a id="method-SimParam-switchFemaleMap"></a><div class="section">
-<h3 id="method-switchfemalemap-">Method <code>switchFemaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchfemalemap-"></a></h3>
-<p>Replaces existing female genetic map.</p><div class="section">
 <h4 id="usage-27">Usage<a class="anchor" aria-label="anchor" href="#usage-27"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchFemaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchGenMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -1697,11 +1844,11 @@ be metacentric.</p></dd>
 </dl><p></p></div>
 </div>
 
-</div><p></p><hr><a id="method-SimParam-switchMaleMap"></a><div class="section">
-<h3 id="method-switchmalemap-">Method <code>switchMaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchmalemap-"></a></h3>
-<p>Replaces existing male genetic map.</p><div class="section">
+</div><p></p><hr><a id="method-SimParam-switchFemaleMap"></a><div class="section">
+<h3 id="method-switchfemalemap-">Method <code>switchFemaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchfemalemap-"></a></h3>
+<p>Replaces existing female genetic map.</p><div class="section">
 <h4 id="usage-28">Usage<a class="anchor" aria-label="anchor" href="#usage-28"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchMaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchFemaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -1721,15 +1868,39 @@ be metacentric.</p></dd>
 </dl><p></p></div>
 </div>
 
-</div><p></p><hr><a id="method-SimParam-addToRec"></a><div class="section">
-<h3 id="method-addtorec-">Method <code>addToRec()</code><a class="anchor" aria-label="anchor" href="#method-addtorec-"></a></h3>
-<p>For internal use only.</p><div class="section">
+</div><p></p><hr><a id="method-SimParam-switchMaleMap"></a><div class="section">
+<h3 id="method-switchmalemap-">Method <code>switchMaleMap()</code><a class="anchor" aria-label="anchor" href="#method-switchmalemap-"></a></h3>
+<p>Replaces existing male genetic map.</p><div class="section">
 <h4 id="usage-29">Usage<a class="anchor" aria-label="anchor" href="#usage-29"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToRec</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span>, <span class="va">hist</span>, <span class="va">ploidy</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">switchMaleMap</span><span class="op">(</span><span class="va">genMap</span>, centromere <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
 <h4 id="arguments-29">Arguments<a class="anchor" aria-label="anchor" href="#arguments-29"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>genMap</code></dt>
+<dd><p>a list of length nChr containing
+numeric vectors for the position of each segregating
+site on a chromosome.</p></dd>
+
+
+<dt><code>centromere</code></dt>
+<dd><p>a numeric vector of centromere
+positions. If NULL, the centromere are assumed to
+be metacentric.</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div><p></p><hr><a id="method-SimParam-addToRec"></a><div class="section">
+<h3 id="method-addtorec-">Method <code>addToRec()</code><a class="anchor" aria-label="anchor" href="#method-addtorec-"></a></h3>
+<p>For internal use only.</p><div class="section">
+<h4 id="usage-30">Usage<a class="anchor" aria-label="anchor" href="#usage-30"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToRec</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span>, <span class="va">hist</span>, <span class="va">ploidy</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+<div class="section">
+<h4 id="arguments-30">Arguments<a class="anchor" aria-label="anchor" href="#arguments-30"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>ID of last individual</p></dd>
 
@@ -1764,12 +1935,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-SimParam-ibdHaplo"></a><div class="section">
 <h3 id="method-ibdhaplo-">Method <code>ibdHaplo()</code><a class="anchor" aria-label="anchor" href="#method-ibdhaplo-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-30">Usage<a class="anchor" aria-label="anchor" href="#usage-30"></a></h4>
+<h4 id="usage-31">Usage<a class="anchor" aria-label="anchor" href="#usage-31"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">ibdHaplo</span><span class="op">(</span><span class="va">iid</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-30">Arguments<a class="anchor" aria-label="anchor" href="#arguments-30"></a></h4>
+<h4 id="arguments-31">Arguments<a class="anchor" aria-label="anchor" href="#arguments-31"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>iid</code></dt>
 <dd><p>internal ID</p></dd>
 
@@ -1780,12 +1951,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-SimParam-updateLastId"></a><div class="section">
 <h3 id="method-updatelastid-">Method <code>updateLastId()</code><a class="anchor" aria-label="anchor" href="#method-updatelastid-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-31">Usage<a class="anchor" aria-label="anchor" href="#usage-31"></a></h4>
+<h4 id="usage-32">Usage<a class="anchor" aria-label="anchor" href="#usage-32"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">updateLastId</span><span class="op">(</span><span class="va">lastId</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-31">Arguments<a class="anchor" aria-label="anchor" href="#arguments-31"></a></h4>
+<h4 id="arguments-32">Arguments<a class="anchor" aria-label="anchor" href="#arguments-32"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>last ID assigned</p></dd>
 
@@ -1796,12 +1967,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-SimParam-addToPed"></a><div class="section">
 <h3 id="method-addtoped-">Method <code>addToPed()</code><a class="anchor" aria-label="anchor" href="#method-addtoped-"></a></h3>
 <p>For internal use only.</p><div class="section">
-<h4 id="usage-32">Usage<a class="anchor" aria-label="anchor" href="#usage-32"></a></h4>
+<h4 id="usage-33">Usage<a class="anchor" aria-label="anchor" href="#usage-33"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">addToPed</span><span class="op">(</span><span class="va">lastId</span>, <span class="va">id</span>, <span class="va">mother</span>, <span class="va">father</span>, <span class="va">isDH</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-32">Arguments<a class="anchor" aria-label="anchor" href="#arguments-32"></a></h4>
+<h4 id="arguments-33">Arguments<a class="anchor" aria-label="anchor" href="#arguments-33"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>lastId</code></dt>
 <dd><p>ID of last individual</p></dd>
 
@@ -1828,12 +1999,12 @@ be metacentric.</p></dd>
 </div><p></p><hr><a id="method-SimParam-clone"></a><div class="section">
 <h3 id="method-clone-">Method <code>clone()</code><a class="anchor" aria-label="anchor" href="#method-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-33">Usage<a class="anchor" aria-label="anchor" href="#usage-33"></a></h4>
+<h4 id="usage-34">Usage<a class="anchor" aria-label="anchor" href="#usage-34"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SimParam</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
-<h4 id="arguments-33">Arguments<a class="anchor" aria-label="anchor" href="#arguments-33"></a></h4>
+<h4 id="arguments-34">Arguments<a class="anchor" aria-label="anchor" href="#arguments-34"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 
@@ -1867,6 +2038,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setTrackPed</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1878,6 +2050,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setTrackRec</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1889,6 +2062,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Create population</span></span></span>
 <span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
@@ -1910,6 +2084,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">restrSegSites</span><span class="op">(</span>minQtlPerChr<span class="op">=</span><span class="fl">5</span>, minSnpPerChr<span class="op">=</span><span class="fl">5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1921,6 +2096,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setSexes</span><span class="op">(</span><span class="st">"yes_sys"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1932,6 +2108,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1954,6 +2131,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1965,7 +2143,25 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAD</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
+<span class="r-in"><span><span class="co">## Method `SimParam$altAddTraitAD`</span></span></span>
+<span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
+<span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">altAddTraitAD</span><span class="op">(</span>nQtlPerChr<span class="op">=</span><span class="fl">10</span>, mean<span class="op">=</span><span class="fl">0</span>, varA<span class="op">=</span><span class="fl">1</span>, varD<span class="op">=</span><span class="fl">0.05</span>, inbrDepr<span class="op">=</span><span class="fl">0.2</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A new trait called Trait1 was added. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    varD = 0.04999996 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    inbrDepr = 0.2000003 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    meanDD = 0.06233757 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    varDD = 0.1143442 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Method `SimParam$addTraitAG`</span></span></span>
@@ -1976,6 +2172,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAG</span><span class="op">(</span><span class="fl">10</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1987,6 +2184,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADG</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -1995,6 +2193,11 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Create founder haplotypes</span></span></span>
 <span class="r-in"><span><span class="va">founderPop</span> <span class="op">=</span> <span class="fu"><a href="quickHaplo.html">quickHaplo</a></span><span class="op">(</span>nInd<span class="op">=</span><span class="fl">10</span>, nChr<span class="op">=</span><span class="fl">1</span>, segSites<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
+<span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAE</span><span class="op">(</span><span class="fl">10</span>, relAA<span class="op">=</span><span class="fl">0.1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Method `SimParam$addTraitADE`</span></span></span>
@@ -2005,6 +2208,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADE</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -2016,6 +2220,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitAEG</span><span class="op">(</span><span class="fl">10</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -2027,6 +2232,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitADEG</span><span class="op">(</span><span class="fl">10</span>, meanDD<span class="op">=</span><span class="fl">0.5</span>, varGxE<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## ------------------------------------------------</span></span></span>
@@ -2038,6 +2244,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>h2<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -2050,6 +2257,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span><span class="fl">10</span>, mean<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span><span class="op">)</span>, var<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>, corA<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setVarE</span><span class="op">(</span>varE<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">E</span> <span class="op">=</span> <span class="fl">0.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">+</span><span class="fl">0.5</span> <span class="co">#Positively correlated error</span></span></span>
@@ -2071,10 +2279,11 @@ be metacentric.</p></dd>
 <span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderPop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       Trait1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3.330669e-17 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1.110223e-17 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Change mean to 1</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">rescaleTraits</span><span class="op">(</span>mean<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="co">#Run resetPop for change to take effect</span></span></span>
 <span class="r-in"><span><span class="va">pop</span> <span class="op">=</span> <span class="fu"><a href="resetPop.html">resetPop</a></span><span class="op">(</span><span class="va">pop</span>, simParam<span class="op">=</span><span class="va">SP</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="meanG.html">meanG</a></span><span class="op">(</span><span class="va">pop</span><span class="op">)</span></span></span>
@@ -2090,6 +2299,7 @@ be metacentric.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#Set simulation parameters</span></span></span>
 <span class="r-in"><span><span class="va">SP</span> <span class="op">=</span> <span class="va">SimParam</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderPop</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="va">nThreads</span> <span class="op">=</span> <span class="fl">1L</span></span></span>
 <span class="r-in"><span><span class="va">SP</span><span class="op">$</span><span class="fu">setRecombRatio</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="co">#Twice as much recombination in females</span></span></span>
 </code></pre></div>
     </div>

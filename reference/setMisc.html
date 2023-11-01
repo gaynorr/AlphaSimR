@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,45 +81,9 @@ it is repeated using <code>rep</code> (see examples)</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     
 
-<p><code><a href="Pop-class.html">Pop-class</a></code> with <code>x@misc[[*]][[node]]</code> set
-basePop &lt;- newPop(founderGenomes)</p>
+<p><code><a href="Pop-class.html">Pop-class</a></code></p>
 
 
-<p>basePop &lt;- setMisc(basePop, node = "info", value = 1)
-basePop@misc
-getMisc(x = basePop, node = "info")</p>
-
-
-<p>basePop &lt;- setMisc(basePop, node = "info2", value = c("A", "B", "C"))
-basePop@misc
-getMisc(x = basePop, node = "info2")</p>
-
-
-<p>n &lt;- nInd(basePop)
-location &lt;- vector(mode = "list", length = n)
-for (ind in seq_len(n)) 
-  location[[ind]] &lt;- runif(n = 2, min = 0, max = 100)</p>
-
-
-<p>location
-basePop &lt;- setMisc(basePop, node = "location", value = location)
-basePop@misc
-getMisc(x = basePop, node = "location")</p>
-
-
-<p>n &lt;- nInd(basePop)
-location &lt;- vector(mode = "list", length = n)
-for (ind in c(1, 3)) 
-  location[[ind]] &lt;- runif(n = 2, min = 0, max = 100)</p>
-
-
-<p>location
-basePop &lt;- setMisc(basePop, node = "location", value = location)
-basePop@misc
-getMisc(x = basePop, node = "location")</p>
-
-
-<p>getMisc(x = basePop)</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
