@@ -689,6 +689,7 @@ SimParam = R6Class(
                     name=name[i])
         tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
+        print(tmp)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{

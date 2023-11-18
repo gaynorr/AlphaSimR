@@ -170,6 +170,37 @@ isTraitAD = function(x) {
   return(ret)
 }
 
+#TraitAI----
+#' @title Additive and imprinting trait
+#'
+#' @description Extends \code{\link{TraitA-class}}
+#' to add imprinting
+#'
+#' @slot impEff imprinting effects
+#'
+#' @export
+setClass("TraitAI",
+         slots=c(impEff="numeric"),
+         contains="TraitA")
+
+setValidity("TraitAI",function(object){
+  errors = character()
+  if(object@nLoci!=length(object@impEff)){
+    errors = c(errors,"nLoci!=length(impEff)")
+  }
+  if(length(errors)==0){
+    return(TRUE)
+  }else{
+    return(errors)
+  }
+})
+
+# Test if object is of a TraitAI class
+isTraitAI = function(x) {
+  ret = is(x, class2 = "TraitAI")
+  return(ret)
+}
+
 #TraitA2D----
 #' @title Sex specific additive and dominance trait
 #'

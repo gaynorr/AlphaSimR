@@ -273,9 +273,9 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   }
 }
 
-// Calculates breeding values, dominance deviations and genic
-// variances. Additive and dominance genetic variances are calculated
-// from breeding values and dominance deviations.
+// Calculates breeding values, dominance and imprinting deviations and genic
+// variances. Additive, dominance, and imprinting genetic variances are calculated
+// from breeding values, dominance, and imprinting deviations.
 // [[Rcpp::export]]
 Rcpp::List calcGenParam(const Rcpp::S4& trait,
                         const Rcpp::S4& pop,
@@ -283,6 +283,7 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
   if(trait.hasSlot("epiEff")){
     return calcGenParamE(trait, pop, nThreads);
   }
+
   //Information from pop
   bool hasD = trait.hasSlot("domEff");
   bool hasS = trait.hasSlot("impEff"); // Imprinting (=silencing) but using s since i is an iterator
