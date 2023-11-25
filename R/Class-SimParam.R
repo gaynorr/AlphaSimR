@@ -642,17 +642,24 @@ SimParam = R6Class(
     #'
     #' @examples
     #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+    #' devtools::load_all()
+    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=1)
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' SP$addTraitAI(1, meanID=0.5)
+    #' SP$traits[[1]]@impEff
+    #' pop = newPop(founderPop)
+    #' pop[[1]]
+    #' genParam(pop)
+    #' gv(pop) - genParam(pop)$gv_a
     #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitAI(10, meanID=0.5)
+
     addTraitAI = function(nQtlPerChr,mean=0,var=1,meanID=0,
                           varID=0,corA=NULL,corID=NULL,useVarA=TRUE,
                           gamma=FALSE,shape=1,force=FALSE,name=NULL){
       if(self$founderPop@ploidy > 2){
-        stop("Imprinting is not yet implemented for polyploids!")
+        stop("ERROR: Imprinting is not yet implemented for polyploids!")
       }
       if(!force){
         private$.isRunning()
@@ -689,7 +696,7 @@ SimParam = R6Class(
                     name=name[i])
         tmp = calcGenParam(trait, self$founderPop,
                            self$nThreads)
-        print(tmp)
+
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -703,6 +710,10 @@ SimParam = R6Class(
         }else{
           private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
         }
+        tmp$gv = tmp$gv*scale
+        tmp$gv_a = tmp$gv_a*scale
+        tmp$gv_i = tmp$gv_i*scale
+        print(tmp)
       }
       invisible(self)
     },

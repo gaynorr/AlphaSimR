@@ -379,7 +379,7 @@ isNamedMapPop = function(x) {
 #' population. This list is normally empty and exists solely as an
 #' open slot available for uses to store extra information about
 #' individuals.
-#' @slot miscPop a list of any length containing optional meta data for the 
+#' @slot miscPop a list of any length containing optional meta data for the
 #' population. This list is empty unless information is supplied by the user.
 #' Note that the list is emptied every time the population is subsetted.
 #'
@@ -668,6 +668,8 @@ newPop = function(rawPop,simParam=NULL,...){
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
+      return(tmp)
+      stop()
       gv[,i] = tmp[[1]]
 
       colnames(gv)[i] = simParam$traits[[i]]@name
@@ -752,10 +754,10 @@ resetPop = function(pop,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   pop@nTraits = simParam$nTraits
-  
+
   # Extract names to add back at the end
   traitNames = colnames(pop@gv)
-  
+
   # Create empty slots for traits
   pop@pheno = matrix(NA_real_,
                      nrow=pop@nInd,
@@ -767,7 +769,7 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-  
+
   # Calculate genetic values
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
@@ -778,10 +780,10 @@ resetPop = function(pop,simParam=NULL){
       }
     }
   }
-  
+
   # Add back trait names
   colnames(pop@pheno) = colnames(pop@gv) = traitNames
-  
+
   return(pop)
 }
 
