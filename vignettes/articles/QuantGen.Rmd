@@ -1,0 +1,30 @@
+---
+title: "Quantitative Genetics"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Introduction
+  Point to vignette on traits as first step
+  History
+    Fisher (response to selection, variance components)
+    Bulmer (genic variance)
+  
+Decomposition of genetic values
+  Reference population (HWE vs non-HWE)
+  Breeding value
+  Dominance deviations
+  Epistatic deviations
+  Variance, genic variance, LD covariance
