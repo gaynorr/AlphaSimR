@@ -1,3 +1,7 @@
+# AlphaSimR 1.5.3
+
+*fixed bug in `SimParam$restrSegSites` with excluding sites at end of chromosome
+
 # AlphaSimR 1.5.2
 
 *fix SimParam examples for CRAN
