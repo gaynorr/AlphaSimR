@@ -1,21 +1,32 @@
 #include "alphasimr.h"
 
-// Calculates genetic values for genomic predictions using parental origin
-arma::field<arma::vec> getGvA2(const Rcpp::S4& trait, 
-                               const Rcpp::S4& pop, 
+// Calculates genetic values using parental origin
+// Useful for imprinting or genomic predictions
+// TODO: we should add GxE to this function too?!
+arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
+                               const Rcpp::S4& pop,
                                int nThreads){
   arma::field<arma::vec> output;
   bool hasD = trait.hasSlot("domEff");
+  bool hasS = trait.hasSlot("impEff");
   arma::uword nInd = pop.slot("nInd");
   arma::uword ploidy = pop.slot("ploidy");
   double dP = double(ploidy);
   const arma::Col<int>& lociPerChr = trait.slot("lociPerChr");
   arma::uvec lociLoc = trait.slot("lociLoc");
-  arma::vec a1,a2,d;
+  arma::vec a1,a2,d,s;
   a1 = Rcpp::as<arma::vec>(trait.slot("addEff"));
-  a2 = Rcpp::as<arma::vec>(trait.slot("addEffMale"));
+  if(trait.hasSlot("addEffMale")){
+    a2 = Rcpp::as<arma::vec>(trait.slot("addEffMale"));
+  }else{
+    a1 = a1 / 2; // the a1 and a2 in addEffMale are for a full dosage, but not with impEff
+    a2 = a1;
+  }
   if(hasD){
     d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+  }
+  if(hasS){
+    s = Rcpp::as<arma::vec>(trait.slot("impEff"));
   }
   arma::mat gv(nInd,nThreads);
   gv.fill(double(trait.slot("intercept"))/double(nThreads));
@@ -24,18 +35,21 @@ arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
   // Half ploidy for xa
   arma::vec xa(ploidy/2+1);
   for(arma::uword i=0; i<xa.n_elem; ++i)
-    xa(i) = (double(i)-dP/4.0)*(4.0/dP);
+    xa(i) = (double(i)-dP/4.0)*(4.0/dP); // -1, 1 for diploids
   // Full ploidy level for xd
   arma::vec xd(ploidy+1);
   for(arma::uword i=0; i<xd.n_elem; ++i)
-    xd(i) = double(i)*(dP-double(i))*(2.0/dP)*(2.0/dP);
-  
-  
-  arma::Mat<unsigned char> maternalGeno = getMaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+    xd(i) = double(i)*(dP-double(i))*(2.0/dP)*(2.0/dP); // 0, 1, 0 for diploids
+  // TODO expand to polyploids
+  arma::vec xsM = xd; // 0, -1, 0 for diploids
+  xsM(1) = -xsM(1);
+  arma::vec xsP = xd; // 0, +1, 0 for diploids
+
+  arma::Mat<unsigned char> maternalGeno = getMaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                                           lociPerChr, lociLoc, nThreads);
-  arma::Mat<unsigned char> paternalGeno = getPaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+  arma::Mat<unsigned char> paternalGeno = getPaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                                           lociPerChr, lociLoc, nThreads);
-  
+
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -46,16 +60,32 @@ arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
 #else
     tid = 0;
 #endif
-    arma::vec aEff1,aEff2,dEff;
+    arma::vec aEff1,aEff2,dEff,sEffM,sEffP;
+    int tmpM,tmpP,tmp;
     aEff1 = xa*a1(i);
     aEff2 = xa*a2(i);
     if(hasD){
       dEff = xd*d(i);
     }
+    if(hasS){
+      sEffM = xsM*s(i);
+      sEffP = xsP*s(i);
+    }
     for(arma::uword j=0; j<nInd; ++j){
       gv(j,tid) += aEff1(maternalGeno(j,i)) + aEff2(paternalGeno(j,i));
       if(hasD){
         gv(j,tid) += dEff(maternalGeno(j,i)+paternalGeno(j,i));
+      }
+      if(hasS){
+        tmpM = maternalGeno(j,i);
+        tmpP = paternalGeno(j,i);
+        tmp = tmpM + tmpP;
+        if(0 < tmp && tmp < ploidy){ // we only work with hets here
+          gv(j,tid) += sEffM(tmp) * double(tmpM) +
+          // -i for maternal het (=10 for diploids, maternal allele is silenced when i>0)
+                       sEffP(tmp) * double(tmpP);
+          // +i for paternal het (=01 for diploids, maternal allele is silenced when i>0)
+        }
       }
     }
   }
@@ -64,8 +94,9 @@ arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
 }
 
 // Calculates genetic values for traits with epistasis
-arma::field<arma::vec> getGvE(const Rcpp::S4& trait, 
-                              const Rcpp::S4& pop, 
+// TODO: we should add imprinting to this function too?!
+arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
+                              const Rcpp::S4& pop,
                               int nThreads){
   arma::field<arma::vec> output;
   bool hasD = trait.hasSlot("domEff");
@@ -102,10 +133,10 @@ arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
     x(i) = double(i);
   arma::vec xa = (x-dP/2.0)*(2.0/dP);
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
-  
-  arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+
+  arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                              lociPerChr, lociLoc, nThreads);
-  
+
   //Loop through loci pairs
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -119,18 +150,18 @@ arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
 #endif
     for(arma::uword j=0; j<nInd; ++j){
       if(hasD){
-        gv(j,tid) += a(E(i,0))*xa(genoMat(j,(E(i,0)))) + 
-          d(E(i,0))*xd(genoMat(j,(E(i,0)))) + 
-          a(E(i,1))*xa(genoMat(j,(E(i,1)))) + 
-          d(E(i,1))*xd(genoMat(j,(E(i,1)))) + 
+        gv(j,tid) += a(E(i,0))*xa(genoMat(j,(E(i,0)))) +
+          d(E(i,0))*xd(genoMat(j,(E(i,0)))) +
+          a(E(i,1))*xa(genoMat(j,(E(i,1)))) +
+          d(E(i,1))*xd(genoMat(j,(E(i,1)))) +
           E(i,2)*xa(genoMat(j,(E(i,0))))*xa(genoMat(j,(E(i,1))));
       }else{
-        gv(j,tid) += a(E(i,0))*xa(genoMat(j,(E(i,0)))) + 
-          a(E(i,1))*xa(genoMat(j,(E(i,1)))) + 
+        gv(j,tid) += a(E(i,0))*xa(genoMat(j,(E(i,0)))) +
+          a(E(i,1))*xa(genoMat(j,(E(i,1)))) +
           E(i,2)*xa(genoMat(j,(E(i,0))))*xa(genoMat(j,(E(i,1))));
       }
       if(hasGxe){
-        gxe(j,tid) += g(E(i,0))*xa(genoMat(j,(E(i,0)))) + 
+        gxe(j,tid) += g(E(i,0))*xa(genoMat(j,(E(i,0)))) +
           g(E(i,1))*xa(genoMat(j,(E(i,1))));
       }
     }
@@ -147,11 +178,11 @@ arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
 //   The first item contains genetic values
 //   The second item contains GxE effects (optional)
 // [[Rcpp::export]]
-arma::field<arma::vec> getGv(const Rcpp::S4& trait, 
-                             const Rcpp::S4& pop, 
+arma::field<arma::vec> getGv(const Rcpp::S4& trait,
+                             const Rcpp::S4& pop,
                              int nThreads){
-  if(trait.hasSlot("addEffMale")){
-    // Genomic prediction
+  if(trait.hasSlot("impEff") || trait.hasSlot("addEffMale")){
+    // Imprinting or genomic prediction
     return getGvA2(trait, pop, nThreads);
   }
   if(trait.hasSlot("epiEff")){
@@ -183,15 +214,15 @@ arma::field<arma::vec> getGv(const Rcpp::S4& trait,
     output.set_size(1);
     output(0).set_size(nInd);
   }
-  arma::vec x(ploidy+1); // Genotype dossage
+  arma::vec x(ploidy+1); // Genotype dosage
   for(arma::uword i=0; i<x.n_elem; ++i)
     x(i) = double(i);
   arma::vec xa = (x-dP/2.0)*(2.0/dP);
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
-  
-  arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
+
+  arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                              lociPerChr, lociLoc, nThreads);
-  
+
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif

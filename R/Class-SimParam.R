@@ -191,13 +191,13 @@ SimParam = R6Class(
     #' @description Sets restrictions on which segregating sites
     #' can serve as a SNP and/or QTL.
     #'
-    #' @param minQtlPerChr the minimum number of segregating sites for 
+    #' @param minQtlPerChr the minimum number of segregating sites for
     #' QTLs. Can be a single value or a vector values for each chromosome.
     #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
     #' Can be a single value or a vector values for each chromosome.
-    #' @param excludeQtl an optional vector of segregating site names to 
+    #' @param excludeQtl an optional vector of segregating site names to
     #' exclude from consideration as a viable QTL.
-    #' @param excludeSnp an optional vector of segregating site names to 
+    #' @param excludeSnp an optional vector of segregating site names to
     #' exclude from consideration as a viable SNP.
     #' @param overlap should SNP and QTL sites be allowed to overlap.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
@@ -216,7 +216,7 @@ SimParam = R6Class(
       # Handle any named QTL exclusions
       if(!is.null(excludeQtl)){
         matchList = private$.findNamedLoci(excludeQtl)
-        
+
         # Make exclusions
         restr = self$invalidQtl
         for(i in 1:self$nChr){
@@ -224,7 +224,7 @@ SimParam = R6Class(
         }
         self$invalidQtl = restr
       }
-      
+
       # Handle any named SNP exclusions
       if(!is.null(excludeSnp)){
         # Check if the SNP list matches the QTL list
@@ -235,11 +235,11 @@ SimParam = R6Class(
             findMatch = FALSE
           }
         }
-        
+
         if(findMatch){
           matchList = private$.findNamedLoci(excludeSnp)
         }
-        
+
         # Make exclusions
         restr = self$invalidSnp
         for(i in 1:self$nChr){
@@ -247,7 +247,7 @@ SimParam = R6Class(
         }
         self$invalidSnp = restr
       }
-      
+
       if(overlap){
         # Not setting any restrictions if overlap is allow
         # Existing restrictions will be left in place
@@ -321,11 +321,11 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Allows for the manual setting of founder haplotypes. This functionality 
+
+    #' @description
+    #' Allows for the manual setting of founder haplotypes. This functionality
     #' is not fully documented, because it is still experimental.
-    #' 
+    #'
     #' @param hapMap a list of founder haplotypes
     setFounderHap = function(hapMap){
       private$.hap = hapMap
@@ -366,12 +366,12 @@ SimParam = R6Class(
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
-    
+
     #' @description
-    #' Assigns SNPs to a SNP chip by supplying marker names. This function does 
-    #' check against excluded SNPs and will not add the SNPs to the list of 
-    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL. 
-    #' Excluding these SNPs from being used as QTL can be accomplished using 
+    #' Assigns SNPs to a SNP chip by supplying marker names. This function does
+    #' check against excluded SNPs and will not add the SNPs to the list of
+    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL.
+    #' Excluding these SNPs from being used as QTL can be accomplished using
     #' the excludeQtl argument in SimParam's restrSegSites function.
     #'
     #' @param markers a vector of names for the markers
@@ -386,21 +386,21 @@ SimParam = R6Class(
     #' SP$addSnpChipByName(c("1_1","1_3"))
     addSnpChipByName = function(markers, name=NULL){
       genMap = private$.femaleMap
-      
+
       # Check that the markers are present on the map
       genMapMarkerNames = unlist(lapply(genMap, names))
       stopifnot(all(markers%in%genMapMarkerNames))
-      
+
       # Create lociPerChr and lociLoc
       lociPerChr = integer(length(genMap))
       lociLoc = vector("list", length(genMap))
-      
+
       # Loop through chromosomes
       for(i in 1:length(genMap)){
-        
+
         # Initialize lociLoc
         lociLoc[[i]] = integer()
-        
+
         # Find matches if they exist
         take = match(names(genMap[[i]]), markers)
         lociPerChr[i] = length(na.omit(take))
@@ -409,18 +409,18 @@ SimParam = R6Class(
         }
       }
       lociLoc = unlist(lociLoc)
-      
+
       snpChip = new("LociMap",
                     nLoci=sum(lociPerChr),
                     lociPerChr=lociPerChr,
                     lociLoc=lociLoc)
-      
+
       if(is.null(name)){
         snpChip@name = paste0("Chip",self$nSnpChips + 1L)
       }else{
         snpChip@name = name
       }
-      
+
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
@@ -617,14 +617,103 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' An alternative method for adding a trait with additive  and dominance effects 
-    #' to an AlphaSimR simulation. The function attempts to create a trait matching 
-    #' user defined values for number of QTL, inbreeding depression, additive genetic 
+
+    #' @description
+    #' Randomly assigns eligible QTLs for one or more traits with imprinting (silencing)
+    #' If simulating more than one trait, all traits will be pleiotropic
+    #' with correlated effects.
+    #'
+    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
+    #' @param mean a vector of desired mean genetic values for one or more traits
+    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param meanID mean imprinting degree
+    #' @param varID variance of imprinting degree
+    #' @param corA a matrix of correlations between additive effects
+    #' @param corID a matrix of correlations between imprinting degrees
+    #' @param useVarA tune according to additive genetic variance if true. If
+    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param gamma should a gamma distribution be used instead of normal
+    #' @param shape the shape parameter for the gamma distribution
+    #'   (the rate/scale parameter of the gamma distribution is accounted
+    #'   for via the desired level of genetic variance, the var argument)
+    #' @param force should the check for a running simulation be
+    #' ignored. Only set to TRUE if you know what you are doing.
+    #' @param name optional name for trait(s)
+    #'
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=1)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #' SP$addTraitAI(1, meanID=0.5)
+    addTraitAI = function(nQtlPerChr,mean=0,var=1,meanID=0,
+                          varID=0,corA=NULL,corID=NULL,useVarA=TRUE,
+                          gamma=FALSE,shape=1,force=FALSE,name=NULL){
+      if(self$founderPop@ploidy > 2){
+        stop("ERROR: Imprinting is not yet implemented for polyploids!")
+      }
+      if(!force){
+        private$.isRunning()
+      }
+      if(length(nQtlPerChr)==1){
+        nQtlPerChr = rep(nQtlPerChr,self$nChr)
+      }
+      nTraits = length(mean)
+      if(length(meanID)==1) meanID = rep(meanID,nTraits)
+      if(length(varID)==1) varID = rep(varID,nTraits)
+      if(length(gamma)==1) gamma = rep(gamma,nTraits)
+      if(length(shape)==1) shape = rep(shape,nTraits)
+      if(is.null(corA)) corA=diag(nTraits)
+      if(is.null(corID)) corID=diag(nTraits)
+      if(is.null(name)){
+        name = paste0("Trait",1:nTraits+self$nTraits)
+      }
+      stopifnot(length(mean)==length(var),
+                isSymmetric(corA),
+                isSymmetric(corID),
+                length(mean)==nrow(corA),
+                length(mean)==length(name))
+      qtlLoci = private$.pickLoci(nQtlPerChr)
+      addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
+                          corr=corA,gamma=gamma,shape=shape)
+      impEff = sampImpEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
+                          corID=corID,meanID=meanID,varID=varID)
+      for(i in 1:nTraits){
+        trait = new("TraitAI",
+                    qtlLoci,
+                    addEff=addEff[,i],
+                    impEff=impEff[,i],
+                    intercept=0,
+                    name=name[i])
+        tmp = calcGenParam(trait, self$founderPop,
+                           self$nThreads)
+
+        if(useVarA){
+          scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
+        }else{
+          scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
+        }
+        trait@addEff = trait@addEff*scale
+        trait@impEff = trait@impEff*scale
+        trait@intercept = mean[i]-mean(tmp$gv*scale)
+        if(useVarA){
+          private$.addTrait(trait,var[i],popVar(tmp$gv*scale)[1])
+        }else{
+          private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
+        }
+      }
+      invisible(self)
+    },
+
+    #' @description
+    #' An alternative method for adding a trait with additive  and dominance effects
+    #' to an AlphaSimR simulation. The function attempts to create a trait matching
+    #' user defined values for number of QTL, inbreeding depression, additive genetic
     #' variance and dominance genetic variance.
-    #' 
-    #' @param nQtlPerChr number of QTLs per chromosome. 
+    #'
+    #' @param nQtlPerChr number of QTLs per chromosome.
     #' Can be a single value or nChr values.
     #' @param mean desired mean of the trait
     #' @param varA desired additive variance
@@ -636,42 +725,42 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait
-    #' 
-    #' @details 
-    #' This function will always add a trait to 'SimParam', unless an error occurs 
-    #' with picking QTLs. The resulting trait will always have the desired mean and 
-    #' additive genetic variance. However, it may not have the desired values for 
-    #' inbreeding depression and dominance variance. Thus, it is strongly recommended 
-    #' to check the output printed to the console to determine how close the trait's 
+    #'
+    #' @details
+    #' This function will always add a trait to 'SimParam', unless an error occurs
+    #' with picking QTLs. The resulting trait will always have the desired mean and
+    #' additive genetic variance. However, it may not have the desired values for
+    #' inbreeding depression and dominance variance. Thus, it is strongly recommended
+    #' to check the output printed to the console to determine how close the trait's
     #' parameters came to these desired values.
-    #' 
-    #' The mean and additive genetic variance will always be achieved exactly. The 
-    #' function attempts to achieve the desired dominance variance and inbreeding 
-    #' depression while staying within the user supplied constraints for the 
+    #'
+    #' The mean and additive genetic variance will always be achieved exactly. The
+    #' function attempts to achieve the desired dominance variance and inbreeding
+    #' depression while staying within the user supplied constraints for the
     #' acceptable range of dominance degree mean and variance. If the desired values
-    #' are not being achieved, the acceptable range need to be increased and/or the 
-    #' number of QTL may need to be increased. There are not limits to setting the 
-    #' range for dominance degree mean and variance, but care should be taken to 
-    #' with regards to the biological feasibility of the limits that are supplied. 
-    #' The default limits were somewhat arbitrarily set, so I make not claim to 
+    #' are not being achieved, the acceptable range need to be increased and/or the
+    #' number of QTL may need to be increased. There are not limits to setting the
+    #' range for dominance degree mean and variance, but care should be taken to
+    #' with regards to the biological feasibility of the limits that are supplied.
+    #' The default limits were somewhat arbitrarily set, so I make not claim to
     #' how reasonable these limits are for routine use.
-    #' 
-    #' Inbreeding depression in this function is defined as the difference in mean 
-    #' genetic value between a population with the same allele frequency as the 
-    #' reference population (population used to initialize SimParam) in 
-    #' Hardy-Weinberg equilibrium compared to a population with the same allele 
-    #' frequency that is fully inbred. This is equivalent to the amount the mean of 
-    #' a population increases when going from an inbreeding coefficient of 1 (fully 
-    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
-    #' equilibrium). Note that the sign of the value should (usually) be positive. 
-    #' This corresponds to a detrimental effect of inbreeding when higher values of 
+    #'
+    #' Inbreeding depression in this function is defined as the difference in mean
+    #' genetic value between a population with the same allele frequency as the
+    #' reference population (population used to initialize SimParam) in
+    #' Hardy-Weinberg equilibrium compared to a population with the same allele
+    #' frequency that is fully inbred. This is equivalent to the amount the mean of
+    #' a population increases when going from an inbreeding coefficient of 1 (fully
+    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg
+    #' equilibrium). Note that the sign of the value should (usually) be positive.
+    #' This corresponds to a detrimental effect of inbreeding when higher values of
     #' the trait are considered biologically beneficial.
-    #' 
-    #' Summary information on this trait is printed to the console when silent=FALSE. 
-    #' The summary information reports the inbreeding depression and dominance 
-    #' variance for the population as well as the dominance degree mean and variance 
+    #'
+    #' Summary information on this trait is printed to the console when silent=FALSE.
+    #' The summary information reports the inbreeding depression and dominance
+    #' variance for the population as well as the dominance degree mean and variance
     #' applied to the trait.
-    #' 
+    #'
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -680,7 +769,7 @@ SimParam = R6Class(
     #' SP = SimParam$new(founderPop)
     #' \dontshow{SP$nThreads = 1L}
     #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
-    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0, 
+    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0,
                              limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
                              silent=FALSE,force=FALSE,name=NULL){
       if(!force){
@@ -692,10 +781,10 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",self$nTraits+1)
       }
-      
+
       # Pick QTL
       qtlLoci = private$.pickLoci(nQtlPerChr)
-      
+
       # Create list of arguments for optimization
       argsList = argAltAD(LociMap = qtlLoci,
                           Pop = self$founderPop,
@@ -704,16 +793,16 @@ SimParam = R6Class(
                           varD = varD,
                           inbrDepr = inbrDepr,
                           nThreads = self$nThreads)
-      
+
       # Run optim to optimize meanDD and varDD
       optOut = optim(par = c(mean(limMeanDD), mean(sqrt(limVarDD))),
-                     fn = objAltAD, 
+                     fn = objAltAD,
                      gr = NULL,
                      method = "L-BFGS-B",
                      lower = c(limMeanDD[1], sqrt(limVarDD[1])),
                      upper = c(limMeanDD[2], sqrt(limVarDD[2])),
                      args = argsList)
-      
+
       # Finalize creation of trait
       output = finAltAD(input = optOut$par, args = argsList)
       trait = new("TraitAD",
@@ -723,7 +812,7 @@ SimParam = R6Class(
                   intercept=c(output$intercept),
                   name=name)
       private$.addTrait(trait,varA,output$varG)
-      
+
       # Report trait details
       if(!silent){
         cat("A new trait called", name, "was added. \n")
@@ -732,10 +821,10 @@ SimParam = R6Class(
         cat("   meanDD =", output$meanDD, "\n")
         cat("   varDD =", output$varDD, "\n")
       }
-      
+
       invisible(self)
     },
-    
+
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive GxE traits.
@@ -981,7 +1070,7 @@ SimParam = R6Class(
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' \dontshow{SP$nThreads = 1L}
@@ -1629,10 +1718,10 @@ SimParam = R6Class(
     },
 
     #' @description Defines a default values for error
-    #' variances used in \code{\link{setPheno}}. These defaults 
-    #' will be used to automatically generate phenotypes when new 
+    #' variances used in \code{\link{setPheno}}. These defaults
+    #' will be used to automatically generate phenotypes when new
     #' populations are created. See the details section of \code{\link{setPheno}}
-    #' for more information about each arguments and how they 
+    #' for more information about each arguments and how they
     #' should be used.
     #'
     #' @param h2 a vector of desired narrow-sense heritabilities
@@ -1655,7 +1744,7 @@ SimParam = R6Class(
         stopifnot(isSymmetric(corE),
                   nrow(corE)==self$nTraits)
       }
-      
+
       # Set error variances (.varE)
       if(!is.null(h2)){
         stopifnot(length(h2)==self$nTraits,
@@ -1689,7 +1778,7 @@ SimParam = R6Class(
       }else{
         private$.varE = rep(NA_real_, self$nTraits)
       }
-      
+
       # Set error correlations
       if(!is.null(corE)){
         if(is.matrix(private$.varE)){
@@ -1703,7 +1792,7 @@ SimParam = R6Class(
         varE = varE%*%corE%*%varE
         private$.varE = varE
       }
-      
+
       invisible(self)
     },
 
@@ -2134,7 +2223,7 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
-    
+
     # Determines whether not a simulation has started using lastId as an indicator
     .isRunning = function(){
       if(private$.lastId==0L){
@@ -2143,7 +2232,7 @@ SimParam = R6Class(
         stop("lastId doesn't equal 0, you must run resetPed to proceed")
       }
     },
-    
+
     # Adds a trait to simulation and ensures all fields are propagated
     .addTrait = function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
       stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
@@ -2154,8 +2243,8 @@ SimParam = R6Class(
       private$.varE = c(private$.varE,varE)
       invisible(self)
     },
-    
-    # Samples eligible loci for traits or SNP chips and ensures that they 
+
+    # Samples eligible loci for traits or SNP chips and ensures that they
     # are added to the exclusion list when applicable
     .pickLoci = function(nSitesPerChr, QTL=TRUE, minFreq=NULL, refPop=NULL){
       stopifnot(length(nSitesPerChr)==self$nChr)
@@ -2217,9 +2306,9 @@ SimParam = R6Class(
                  lociLoc=as.integer(lociLoc))
       return(loci)
     },
-    
+
     # Returns physical positions of named loci in a list format
-    # Input order is not preserved. This function is intended as 
+    # Input order is not preserved. This function is intended as
     # a helper for restrSegSites
     .findNamedLoci = function(lociNames){
       # Loci names
@@ -2228,7 +2317,7 @@ SimParam = R6Class(
       if(any(is.na(take))){
         stop("One or more loci are not on the genetic map. Beware of case sensitivity.")
       }
-      
+
       # Find positions using an interval search strategy on the cumulative sum
       take = unique(take)
       posList = rep(list(integer()), self$nChr)
@@ -2236,18 +2325,17 @@ SimParam = R6Class(
       for(i in take){
         # Identify chromosome
         chr = findInterval(i, cumSumSegSite, left.open = TRUE) + 1L
-        
         # Identify position
         if(chr>1L){
           pos = i - cumSumSegSite[chr-1L]
         }else{
           pos = i
         }
-        
+
         # Add site to list
         posList[[chr]] = c(posList[[chr]], pos)
       }
-      
+
       return(posList)
     }
 
@@ -2547,6 +2635,16 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
   domEff = sweep(domEff,2,meanDD,"+")
   domEff = abs(addEff)*domEff
   return(domEff)
+}
+
+sampImpEff = function(qtlLoci,nTraits,addEff,corID,
+                      meanID,varID){
+  impEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
+                  ncol=nTraits)%*%transMat(corID)
+  impEff = sweep(impEff,2,sqrt(varID),"*")
+  impEff = sweep(impEff,2,meanID,"+")
+  impEff = abs(addEff)*impEff
+  return(impEff)
 }
 
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
