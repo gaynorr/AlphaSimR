@@ -2324,8 +2324,7 @@ SimParam = R6Class(
       cumSumSegSite = cumsum(private$.segSites)
       for(i in take){
         # Identify chromosome
-        chr = findInterval(i, cumSumSegSite) + 1L
-
+        chr = findInterval(i, cumSumSegSite, left.open = TRUE) + 1L
         # Identify position
         if(chr>1L){
           pos = i - cumSumSegSite[chr-1L]
