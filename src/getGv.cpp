@@ -2,6 +2,7 @@
 
 // Calculates genetic values using parental origin
 // Useful for imprinting or genomic predictions
+// TODO: we should add GxE to this function too?!
 arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
                                const Rcpp::S4& pop,
                                int nThreads){
@@ -18,6 +19,7 @@ arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
   if(trait.hasSlot("addEffMale")){
     a2 = Rcpp::as<arma::vec>(trait.slot("addEffMale"));
   }else{
+    a1 = a1 / 2; // the a1 and a2 in addEffMale are for a full dosage, but not with impEff
     a2 = a1;
   }
   if(hasD){
@@ -39,26 +41,25 @@ arma::field<arma::vec> getGvA2(const Rcpp::S4& trait,
   for(arma::uword i=0; i<xd.n_elem; ++i)
     xd(i) = double(i)*(dP-double(i))*(2.0/dP)*(2.0/dP); // 0, 1, 0 for diploids
   // TODO expand to polyploids
-  arma::vec xsM = xd; // 0,  1, 0 for diploids
-  arma::vec xsP = xd; // 0, -1, 0 for diploids
-  xsP(1) = -xsP(1);
+  arma::vec xsM = xd; // 0, -1, 0 for diploids
+  xsM(1) = -xsM(1);
+  arma::vec xsP = xd; // 0, +1, 0 for diploids
 
   arma::Mat<unsigned char> maternalGeno = getMaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                                           lociPerChr, lociLoc, nThreads);
   arma::Mat<unsigned char> paternalGeno = getPaternalGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")),
                                                           lociPerChr, lociLoc, nThreads);
 
-//#ifdef _OPENMP
-//#pragma omp parallel for schedule(static) num_threads(nThreads)
-//#endif
-//  for(arma::uword i=0; i<a1.n_elem; ++i){
-arma::uword i=0;
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword i=0; i<a1.n_elem; ++i){
     arma::uword tid;
-//#ifdef _OPENMP
-//    tid = omp_get_thread_num();
-//#else
+#ifdef _OPENMP
+    tid = omp_get_thread_num();
+#else
     tid = 0;
-//#endif
+#endif
     arma::vec aEff1,aEff2,dEff,sEffM,sEffP;
     int tmpM,tmpP,tmp;
     aEff1 = xa*a1(i);
@@ -72,9 +73,6 @@ arma::uword i=0;
     }
     for(arma::uword j=0; j<nInd; ++j){
       gv(j,tid) += aEff1(maternalGeno(j,i)) + aEff2(paternalGeno(j,i));
-      output(0) = gv(j,tid);
-      return output;
-
       if(hasD){
         gv(j,tid) += dEff(maternalGeno(j,i)+paternalGeno(j,i));
       }
@@ -82,24 +80,21 @@ arma::uword i=0;
         tmpM = maternalGeno(j,i);
         tmpP = paternalGeno(j,i);
         tmp = tmpM + tmpP;
-        if(0 < tmp && tmp < ploidy){
+        if(0 < tmp && tmp < ploidy){ // we only work with hets here
           gv(j,tid) += sEffM(tmp) * double(tmpM) +
+          // -i for maternal het (=10 for diploids, maternal allele is silenced when i>0)
                        sEffP(tmp) * double(tmpP);
+          // +i for paternal het (=01 for diploids, maternal allele is silenced when i>0)
         }
-        output(0) = sEffM(tmp) * double(tmpM) + sEffP(tmp) * double(tmpP);
-        return output;
-//        output(0) = gv(j,tid);
-//        return output;
-        //gv(j,tid) += sEffM(maternalGeno(j,i) + paternalGeno(j,i)) * maternalGeno(j,i) +
-        //             sEffP(maternalGeno(j,i) + paternalGeno(j,i)) * paternalGeno(j,i);
       }
     }
-//  }
+  }
   output(0) = sum(gv,1);
   return output;
 }
 
 // Calculates genetic values for traits with epistasis
+// TODO: we should add imprinting to this function too?!
 arma::field<arma::vec> getGvE(const Rcpp::S4& trait,
                               const Rcpp::S4& pop,
                               int nThreads){

@@ -642,19 +642,12 @@ SimParam = R6Class(
     #'
     #' @examples
     #' #Create founder haplotypes
-    #' devtools::load_all()
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=1)
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
-    #' SP$addTraitAI(1, meanID=0.5)
-    #' SP$traits[[1]]@impEff
-    #' pop = newPop(founderPop)
-    #' pop[[1]]
-    #' genParam(pop)
-    #' gv(pop) - genParam(pop)$gv_a
     #' \dontshow{SP$nThreads = 1L}
-
+    #' SP$addTraitAI(1, meanID=0.5)
     addTraitAI = function(nQtlPerChr,mean=0,var=1,meanID=0,
                           varID=0,corA=NULL,corID=NULL,useVarA=TRUE,
                           gamma=FALSE,shape=1,force=FALSE,name=NULL){
@@ -710,10 +703,6 @@ SimParam = R6Class(
         }else{
           private$.addTrait(trait,popVar(tmp$bv*scale)[1],var[i])
         }
-        tmp$gv = tmp$gv*scale
-        tmp$gv_a = tmp$gv_a*scale
-        tmp$gv_i = tmp$gv_i*scale
-        print(tmp)
       }
       invisible(self)
     },

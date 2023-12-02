@@ -668,8 +668,6 @@ newPop = function(rawPop,simParam=NULL,...){
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
       tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
-      return(tmp)
-      stop()
       gv[,i] = tmp[[1]]
 
       colnames(gv)[i] = simParam$traits[[i]]@name

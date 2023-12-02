@@ -302,9 +302,9 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
   arma::vec xa = (x-dP/2.0)*(2.0/dP); // -1, 0, 1 for diploids
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP); // 0, 1, 0 for diploids
   // TODO expand to polyploids
-  arma::vec xsM = xd; // 0,  1, 0 for diploids
-  arma::vec xsP = xd; // 0, -1, 0 for diploids
-  xsP(1) = -xsP(1);
+  arma::vec xsM = xd; // 0, -1, 0 for diploids
+  xsM(1) = -xsM(1);
+  arma::vec xsP = xd; // 0, +1, 0 for diploids
   double intercept = trait.slot("intercept");
   arma::mat bvMat(nInd,nThreads,arma::fill::zeros); // "Breeding value"
   arma::mat bvMatM(nInd,nThreads,arma::fill::zeros); // "Breeding value" (maternal)
@@ -423,8 +423,8 @@ for(arma::uword i=0; i<a.n_elem; ++i){
     if(hasS){
       sEffM = xsM*s(i);
       sEffP = xsP*s(i);
-      gvM = gv+sEffM; // -a, d+i, a for diploids
-      gvP = gv+sEffP; // -a, d-i, a for diploids
+      gvM = gv+sEffM; // -a, d-i, a for diploids
+      gvP = gv+sEffP; // -a, d+i, a for diploids
     }
 
     // Mean genetic values
@@ -433,8 +433,8 @@ for(arma::uword i=0; i<a.n_elem; ++i){
     if(hasS){
       // the above is gvMu = freq(0)*gv(0) + freq(1)*gv(1) + freq(2)*gv(2) for diploids
       // TODO expand to polyploids
-      gvMu  = freq(0) *gv(0) + freqHetM(0) *gvP(1) + freqHetM(1) *gvM(1) + freq(2) *gv(2);
-      gvEMu = freqE(0)*gv(0) + freqHetME(0)*gvP(1) + freqHetME(1)*gvM(1) + freqE(2)*gv(2);
+      gvMu  = freq(0) *gv(0) + freqHetM(1) *gvM(1) + freqHetM(0) *gvP(1) + freq(2) *gv(2);
+      gvEMu = freqE(0)*gv(0) + freqHetME(1)*gvM(1) + freqHetME(0)*gvP(1) + freqE(2)*gv(2);
     }
     mu(tid) += gvMu;
     eMu(tid) += gvEMu;
@@ -445,10 +445,10 @@ for(arma::uword i=0; i<a.n_elem; ++i){
     alphaE = accu(freqE%(gv-gvEMu)%(x-genoMu))/
       accu(freqE%(x-genoMu)%(x-genoMu));
     if(hasS){
-      alphaM  = alpha  + s(i);
-      alphaP  = alpha  - s(i);
-      alphaME = alphaE + s(i);
-      alphaPE = alphaE - s(i);
+      alphaM  = alpha  - s(i);
+      alphaP  = alpha  + s(i);
+      alphaME = alphaE - s(i);
+      alphaPE = alphaE + s(i);
     }
 
     // Check for division by zero
@@ -509,8 +509,10 @@ for(arma::uword i=0; i<a.n_elem; ++i){
       }
       if(hasS){
         // TODO expand to polyploids!
-        gv_s(j,tid) += sEffM(genoMat(j,i)) *      genoMatM(j,i)+
+        gv_s(j,tid) += sEffM(genoMat(j,i)) *      genoMatM(j,i) +
+        // -i for maternal het (=10 for diploids, maternal allele is silenced when i>0)
                        sEffP(genoMat(j,i)) * (1 - genoMatM(j,i));
+        // +i for paternal het (=01 for diploids, maternal allele is silenced when i>0)
         // no need for sdMat since it would be zero (by definition)
         sdMatM(j,tid) += sdM(genoMat(j,i));
         sdMatP(j,tid) += sdP(genoMat(j,i));
