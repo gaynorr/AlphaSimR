@@ -182,7 +182,7 @@ arma::field<arma::vec> getGv(const Rcpp::S4& trait,
                              const Rcpp::S4& pop,
                              int nThreads){
   if(trait.hasSlot("impEff") || trait.hasSlot("addEffMale")){
-    // Imprinting of genomic prediction
+    // Imprinting or genomic prediction
     return getGvA2(trait, pop, nThreads);
   }
   if(trait.hasSlot("epiEff")){
