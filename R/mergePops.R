@@ -18,6 +18,9 @@
 #'
 #' #Create a list of populations and merge list
 #' pop = newPop(founderPop, simParam=SP)
+#' pop@misc$tmp = rnorm(n=10)
+#' pop@misc$tmp2 = rnorm(n=10)
+#'
 #' popList = list(pop, pop)
 #' pop2 = mergePops(popList)
 #'
@@ -77,12 +80,21 @@ mergePops = function(popList){
   fixEff= do.call("c",
                   lapply(popList,
                          function(x) x@fixEff))
-
   #misc
-  misc = do.call("c",
-                 lapply(popList,
-                        function(x) x@misc))
-
+  tmp = sapply(popList, function(x) length(x@misc))
+  if(any(tmp > 0)) {
+    if(!any(tmp == tmp[1])){
+      stop("misc list must have the same number of nodes in all populations")
+    }
+    tmp = sapply(popList, function(x) names(x@misc))
+    if(!any(apply(tmp, MARGIN = 1, function(x) all(x == x[1])))){
+      stop("misc list must have the same nodes in the same order for all populations")
+    }
+    misc = .mapply("c", lapply(popList, function(x) x@misc), MoreArgs = NULL)
+    names(misc) = names(popList[[1]]@misc)
+  } else {
+    misc = list()
+  }
   #sex
   sex = do.call("c",
                    lapply(popList,
@@ -127,6 +139,7 @@ mergePops = function(popList){
   nBin = as.integer(nLoci%/%8L + (nLoci%%8L > 0L))
   geno = mergeMultGeno(popList,nInd=nInd,nBin=nBin,ploidy=ploidy)
   dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+  #wrap it all up into a Pop
   nInd = sum(nInd)
   return(new("Pop",
              nInd=nInd,
@@ -140,11 +153,11 @@ mergePops = function(popList){
              mother=mother,
              father=father,
              fixEff=fixEff,
+             misc=misc,
+             miscPop=list(),
              nTraits=nTraits,
              gv=gv,
              gxe=gxe,
              pheno=pheno,
-             ebv=ebv,
-             misc=misc,
-             miscPop=list()))
+             ebv=ebv))
 }

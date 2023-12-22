@@ -76,5 +76,4 @@ mother = c(0,0,1,3:9)
 father = c(0,0,2,3:9)
 pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
-
 }

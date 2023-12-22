@@ -1,3 +1,8 @@
+# AlphaSimR 1.6.0
+
+*changed order in the misc slot from a list organised as ind x nodes to to a list organised as nodes x ind (this simplified code and increased speed) - this now means
+we don't need `setMisc` and `getMisc` anymore.
+
 # AlphaSimR 1.5.3
 
 *fixed bug in `SimParam$restrSegSites` with excluding sites at end of chromosome

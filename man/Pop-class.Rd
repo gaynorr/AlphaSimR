@@ -66,13 +66,20 @@ are nInd rows and a variable number of columns.}
 \item{\code{fixEff}}{a fixed effect relating to the phenotype.
 Used by genomic selection models but otherwise ignored.}
 
-\item{\code{misc}}{a list whose elements correspond to individuals in the
-population. This list is normally empty and exists solely as an
+\item{\code{misc}}{a list whose elements correspond to additional miscellaneous
+nodes with the items for individuals in the population (see example in
+\code{\link{newPop}}).
+This list is normally empty and exists solely as an
 open slot available for uses to store extra information about
 individuals.}
 
-\item{\code{miscPop}}{a list of any length containing optional meta data for the 
-population. This list is empty unless information is supplied by the user.
-Note that the list is emptied every time the population is subsetted.}
+\item{\code{miscPop}}{a list of any length containing optional meta data for the
+population (see example in \code{\link{newPop}}).
+This list is empty unless information is supplied by the user.
+Note that the list is emptied every time the population is subsetted or
+combined because the meta data for old population might not be valid anymore.}
 }}
 
+\seealso{
+\code{\link{newPop}}, \code{\link{newEmptyPop}}, \code{\link{resetPop}}
+}

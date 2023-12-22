@@ -16,8 +16,8 @@ be lost to attrition.}
 an object of \code{\link{Pop-class}}
 }
 \description{
-Samples individuals at random to remove from the population. 
-The user supplies a probability for the individuals to be 
+Samples individuals at random to remove from the population.
+The user supplies a probability for the individuals to be
 removed from the population.
 }
 \examples{
