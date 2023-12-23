@@ -30,7 +30,7 @@ test_that("misc_and_miscPop",{
   expect_equal(popSub@misc$vec, numeric(0))
   expect_equal(popSub@misc$mtP, newEmptyPop(simParam=SP))
   expect_equal(popSub@misc$mtLP, list())
-  # expect_equal(popSub@misc$mtMP, ???) # what should we test here against?
+  expect_equal(popSub@misc$mtMP, new("MultiPop", pops=list()))
   expect_equal(popSub@miscPop, list())
 
   popC = c(pop, pop)

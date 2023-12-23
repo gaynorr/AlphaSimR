@@ -6,6 +6,7 @@
 \alias{[,Pop-method}
 \alias{c,Pop-method}
 \alias{show,Pop-method}
+\alias{length,Pop-method}
 \title{Population}
 \usage{
 \S4method{[}{Pop}(x, i)
@@ -13,6 +14,8 @@
 \S4method{c}{Pop}(x, ...)
 
 \S4method{show}{Pop}(object)
+
+\S4method{length}{Pop}(x)
 }
 \arguments{
 \item{x}{a 'Pop' object}
@@ -34,6 +37,8 @@ phenotypes, and pedigrees.
 \item \code{c(Pop)}: Combine multiple Pops
 
 \item \code{show(Pop)}: Show population summary
+
+\item \code{length(Pop)}: Number of individuals in Pop (the same as nInd())
 
 }}
 \section{Slots}{
