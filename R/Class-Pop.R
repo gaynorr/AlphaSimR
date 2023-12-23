@@ -540,6 +540,14 @@ setMethod("show",
           }
 )
 
+#' @describeIn Pop Number of individuals in Pop (the same as nInd())
+setMethod("length",
+          signature(x = "Pop"),
+          function (x){
+            return(x@nInd)
+          }
+)
+
 #' @title Create new population
 #'
 #' @description

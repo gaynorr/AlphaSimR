@@ -33,24 +33,10 @@ test_that("misc_and_miscPop",{
   # expect_equal(popSub@misc$mtMP, ???) # what should we test here against?
   expect_equal(popSub@miscPop, list())
 
-  popC = c(pop, pop) # this now breaks with validity check
-  # Error in validObject(.Object) :
-  #   invalid class “Pop” object: any(nInd!=sapply(misc, length))
-  # --> because length(pop@misc$vec) is 2, but length(pop@misc$mtP) is 1
-
-  pop@misc$mtP = NULL # removing mtP for now to test how it works with mtLP and mtMP
-  popC = c(pop, pop) # this now breaks with validity check
-  # Error in validObject(.Object) :
-  #   invalid class “Pop” object: any(nInd!=sapply(misc, length))
-  # --> because length(pop@misc$vec) is 2, but length(pop@misc$mtMP) is 1
-  # the later should really be 2!
-
-  pop@misc$mtMP = NULL # removing mtMP for now to test how it works with mtLP
-  popC = c(pop, pop) # this now breaks with validity check
-
+  popC = c(pop, pop)
   expect_equal(popC@misc$vec, c(pop@misc$vec, pop@misc$vec))
-  expect_equal(popC@misc$mtP, c(pop@misc$mtP, pop@misc$mtP)) # failing atm
-  expect_equal(popC@misc$mtLP, c(pop@misc$mtLP, pop@misc$mtLP)) # failing atm
-  expect_equal(popC@misc$mtMP, c(pop@misc$mtMP, pop@misc$mtMP)) # failing atm
+  expect_equal(popC@misc$mtP, c(pop@misc$mtP, pop@misc$mtP))
+  expect_equal(popC@misc$mtLP, c(pop@misc$mtLP, pop@misc$mtLP))
+  expect_equal(popC@misc$mtMP, c(pop@misc$mtMP, pop@misc$mtMP))
   expect_equal(popC@miscPop, list())
 })

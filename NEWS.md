@@ -4,6 +4,8 @@
 
 *removed `setMisc` and `getMisc`
 
+*added `length` method for Pop class that returns number of individuals (like `nInd`)
+
 *added `length` method for MultiPop class that returns number of populations
 
 # AlphaSimR 1.5.3
