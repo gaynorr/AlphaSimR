@@ -17,7 +17,7 @@ smithHazel(econWt, varG, varP)
 a vector of weight for calculating index values
 }
 \description{
-Calculates weights for Smith-Hazel index given economice weights 
+Calculates weights for Smith-Hazel index given economice weights
 and phenotypic and genotypic variance-covariance matrices.
 }
 \examples{

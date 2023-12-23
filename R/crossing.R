@@ -751,7 +751,6 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' father = c(0,0,2,3:9)
 #' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 #'
-#'
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                          maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE,

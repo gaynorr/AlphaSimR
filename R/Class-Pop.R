@@ -375,13 +375,19 @@ isNamedMapPop = function(x) {
 #' @slot gxe list containing GxE slopes for GxE traits
 #' @slot fixEff a fixed effect relating to the phenotype.
 #' Used by genomic selection models but otherwise ignored.
-#' @slot misc a list whose elements correspond to individuals in the
-#' population. This list is normally empty and exists solely as an
+#' @slot misc a list whose elements correspond to additional miscellaneous
+#' nodes with the items for individuals in the population (see example in
+#' \code{\link{newPop}}).
+#' This list is normally empty and exists solely as an
 #' open slot available for uses to store extra information about
 #' individuals.
-#' @slot miscPop a list of any length containing optional meta data for the 
-#' population. This list is empty unless information is supplied by the user.
-#' Note that the list is emptied every time the population is subsetted.
+#' @slot miscPop a list of any length containing optional meta data for the
+#' population (see example in \code{\link{newPop}}).
+#' This list is empty unless information is supplied by the user.
+#' Note that the list is emptied every time the population is subsetted or
+#' combined because the meta data for old population might not be valid anymore.
+#'
+#' @seealso \code{\link{newPop}}, \code{\link{newEmptyPop}}, \code{\link{resetPop}}
 #'
 #' @export
 setClass("Pop",
@@ -456,8 +462,8 @@ setValidity("Pop",function(object){
   if(object@nInd!=length(object@fixEff)){
     errors = c(errors,"nInd!=length(fixEff)")
   }
-  if(object@nInd!=length(object@misc)){
-    errors = c(errors,"nInd!=length(misc)")
+  if(any(object@nInd!=sapply(object@misc, length))){
+    errors = c(errors,"any(nInd!=sapply(misc, length))")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -488,7 +494,8 @@ setMethod("[",
             x@mother = x@mother[i]
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
-            x@misc = x@misc[i]
+            x@misc = lapply(x@misc, FUN = function(z) z[i])
+            x@miscPop = list()
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
             x@ebv = x@ebv[i,,drop=FALSE]
@@ -504,7 +511,6 @@ setMethod("[",
             for(chr in 1:x@nChr){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
-            x@miscPop = list()
             return(x)
           }
 )
@@ -531,6 +537,14 @@ setMethod("show",
             cat("Loci:", sum(object@nLoci),"\n")
             cat("Traits:", object@nTraits,"\n")
             invisible()
+          }
+)
+
+#' @describeIn Pop Number of individuals in Pop (the same as nInd())
+setMethod("length",
+          signature(x = "Pop"),
+          function (x){
+            return(x@nInd)
           }
 )
 
@@ -562,6 +576,13 @@ setMethod("show",
 #' pop = newPop(founderPop, simParam=SP)
 #' isPop(pop)
 #'
+#' #Misc
+#' pop@misc$tmp1 = rnorm(n=2)
+#' pop@misc$tmp2 = rnorm(n=2)
+#'
+#' #MiscPop
+#' pop@miscPop$tmp1 = sum(pop@misc$tmp1)
+#' pop@miscPop$tmp2 = sum(pop@misc$tmp2)
 #' @export
 newPop = function(rawPop,simParam=NULL,...){
   if(is.null(simParam)){
@@ -690,15 +711,15 @@ newPop = function(rawPop,simParam=NULL,...){
                mother=mother,
                father=father,
                fixEff=rep(1L,rawPop@nInd),
+               misc=list(),
+               miscPop=list(),
                nTraits=simParam$nTraits,
                gv=gv,
                gxe=gxe,
                pheno=pheno,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=0),
-               misc=vector("list",rawPop@nInd),
-               miscPop=list())
+                          ncol=0))
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1,
                       fixEff=1L, p=NULL, onlyPheno=FALSE,
@@ -752,10 +773,10 @@ resetPop = function(pop,simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   pop@nTraits = simParam$nTraits
-  
+
   # Extract names to add back at the end
   traitNames = colnames(pop@gv)
-  
+
   # Create empty slots for traits
   pop@pheno = matrix(NA_real_,
                      nrow=pop@nInd,
@@ -767,7 +788,7 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-  
+
   # Calculate genetic values
   if(simParam$nTraits>=1){
     for(i in 1:simParam$nTraits){
@@ -778,10 +799,10 @@ resetPop = function(pop,simParam=NULL){
       }
     }
   }
-  
+
   # Add back trait names
   colnames(pop@pheno) = colnames(pop@gv) = traitNames
-  
+
   return(pop)
 }
 
@@ -878,15 +899,15 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                mother = character(),
                father = character(),
                fixEff = integer(),
+               misc = list(),
+               miscPop = list(),
                nTraits = simParam$nTraits,
                gv = traitMat,
                gxe = vector("list", simParam$nTraits),
                pheno = traitMat,
                ebv = matrix(NA_real_,
                             nrow=0L,
-                            ncol=0L),
-               misc = list(),
-               miscPop = list())
+                            ncol=0L))
   return(output)
 }
 
@@ -913,7 +934,7 @@ setClass("MultiPop",
 setValidity("MultiPop",function(object){
   errors = character()
     # Check that all populations are valid
-    for(i in 1:length(object@pops)){
+    for(i in seq_len(length(object@pops))){
       if(!validObject(object@pops[[i]]) &
          (is(object@pops[[i]], "Pop") |
                 is(object@pops[[i]],"MultiPop"))){
@@ -961,6 +982,15 @@ setMethod("c",
               }
             }
             return(x)
+          }
+)
+
+#' @describeIn MultiPop Number of pops in MultiPop
+setMethod("length",
+          signature(x = "MultiPop"),
+          function (x){
+            n = length(x@pops)
+            return(n)
           }
 )
 

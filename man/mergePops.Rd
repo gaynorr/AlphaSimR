@@ -27,6 +27,9 @@ SP = SimParam$new(founderPop)
 
 #Create a list of populations and merge list
 pop = newPop(founderPop, simParam=SP)
+pop@misc$tmp = rnorm(n=10)
+pop@misc$tmp2 = rnorm(n=10)
+
 popList = list(pop, pop)
 pop2 = mergePops(popList)
 

@@ -36,4 +36,11 @@ SP$addTraitA(10)
 pop = newPop(founderPop, simParam=SP)
 isPop(pop)
 
+#Misc
+pop@misc$tmp1 = rnorm(n=2)
+pop@misc$tmp2 = rnorm(n=2)
+
+#MiscPop
+pop@miscPop$tmp1 = sum(pop@misc$tmp1)
+pop@miscPop$tmp2 = sum(pop@misc$tmp2)
 }

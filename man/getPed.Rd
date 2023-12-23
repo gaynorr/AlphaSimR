@@ -10,8 +10,8 @@ getPed(pop)
 \item{pop}{a population}
 }
 \description{
-Returns the population's pedigree as stored in the 
-id, mother and father slots. NULL is returned if the 
+Returns the population's pedigree as stored in the
+id, mother and father slots. NULL is returned if the
 input population lacks the required.
 }
 \examples{
