@@ -977,6 +977,15 @@ setMethod("c",
           }
 )
 
+#' @describeIn MultiPop Number of pops in MultiPop
+setMethod("length",
+          signature(x = "MultiPop"),
+          function (x){
+            n = length(x@pops)
+            return(n)
+          }
+)
+
 #' @title Create new Multi Population
 #'
 #' @description

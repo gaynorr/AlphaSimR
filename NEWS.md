@@ -1,7 +1,10 @@
 # AlphaSimR 1.6.0
 
-*changed order in the misc slot from a list organised as ind x nodes to to a list organised as nodes x ind (this simplified code and increased speed) - this now means
-we don't need `setMisc` and `getMisc` anymore.
+*changed misc slot in Pop class from a list organised as ind x nodes to to a list organised as nodes x ind (this simplified code and increased speed)
+
+*removed `setMisc` and `getMisc`
+
+*added `length` method for MultiPop class that returns number of populations
 
 # AlphaSimR 1.5.3
 

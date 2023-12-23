@@ -6,6 +6,7 @@
 \alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
 \alias{c,MultiPop-method}
+\alias{length,MultiPop-method}
 \alias{isMultiPop}
 \title{Multi-Population}
 \usage{
@@ -14,6 +15,8 @@
 \S4method{[[}{MultiPop}(x, i)
 
 \S4method{c}{MultiPop}(x, ...)
+
+\S4method{length}{MultiPop}(x)
 
 isMultiPop(x)
 }
@@ -35,6 +38,8 @@ It is designed to behave like a list of populations.
 \item \code{[[}: Extract Pop by index
 
 \item \code{c(MultiPop)}: Combine multiple MultiPops
+
+\item \code{length(MultiPop)}: Number of pops in MultiPop
 
 }}
 \section{Functions}{

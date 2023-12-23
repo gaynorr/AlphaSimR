@@ -1,3 +1,5 @@
+context("misc")
+
 test_that("misc_and_miscPop",{
   founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
@@ -15,7 +17,7 @@ test_that("misc_and_miscPop",{
   pop@misc$mtLP = list(popOrig, popOrig)
   pop@misc$mtMP = multiPop
   pop@miscPop$vec = sum(pop@misc$vec)
-  pop@miscPop$af = colMeans(pullSegSiteGeno(pop))
+  pop@miscPop$af = colMeans(pullSegSiteGeno(pop, simParam=SP))
 
   popSub = pop[1]
   expect_equal(popSub@misc$vec, pop@misc$vec[1])
@@ -26,9 +28,9 @@ test_that("misc_and_miscPop",{
 
   popSub = pop[0]
   expect_equal(popSub@misc$vec, numeric(0))
-  expect_equal(popSub@misc$mtP, newEmptyPop())
+  expect_equal(popSub@misc$mtP, newEmptyPop(simParam=SP))
   expect_equal(popSub@misc$mtLP, list())
-  expect_equal(popSub@misc$mtMP, ???) # what should we test here against?
+  # expect_equal(popSub@misc$mtMP, ???) # what should we test here against?
   expect_equal(popSub@miscPop, list())
 
   popC = c(pop, pop) # this now breaks with validity check
