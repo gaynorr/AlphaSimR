@@ -21,8 +21,8 @@ addSegSite(mapPop, siteName, chr, mapPos, haplo)
 an object of \code{\link{MapPop-class}}
 }
 \description{
-This function allows for adding a new 
-segregating site with user supplied genotypes to a MapPop. 
+This function allows for adding a new
+segregating site with user supplied genotypes to a MapPop.
 The position of the site is set using a genetic map position.
 }
 \examples{
