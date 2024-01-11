@@ -36,10 +36,10 @@ runMacs2(
 
 \item{mutRate}{per base pair mutation rate}
 
-\item{histNe}{effective population size in previous 
+\item{histNe}{effective population size in previous
 generations}
 
-\item{histGen}{number of generations ago for effective 
+\item{histGen}{number of generations ago for effective
 population sizes given in histNe}
 
 \item{inbred}{should founder individuals be inbred}
@@ -48,25 +48,25 @@ population sizes given in histNe}
 
 \item{ploidy}{ploidy level of organism}
 
-\item{returnCommand}{should the command passed to manualCommand in 
-\code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and 
+\item{returnCommand}{should the command passed to manualCommand in
+\code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and
 the command is returned instead.}
 
-\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel.
 If the value is NULL, the number of threads is automatically detected.}
 }
 \value{
-an object of \code{\link{MapPop-class}} or if 
-returnCommand is true a string giving the MaCS command passed to  
+an object of \code{\link{MapPop-class}} or if
+returnCommand is true a string giving the MaCS command passed to
 the manualCommand argument of \code{\link{runMacs}}.
 }
 \description{
-A wrapper function for \code{\link{runMacs}}. This wrapper is designed 
+A wrapper function for \code{\link{runMacs}}. This wrapper is designed
 to provide a more intuitive interface for writing custom commands
-in MaCS \insertCite{MaCS}{AlphaSimR}. It effectively automates the creation 
-of an appropriate line for the manualCommand argument in \code{\link{runMacs}} 
-using user supplied variables, but only allows for a subset of the functionality 
-offered by this argument. The default arguments of this function were chosen to match 
+in MaCS \insertCite{MaCS}{AlphaSimR}. It effectively automates the creation
+of an appropriate line for the manualCommand argument in \code{\link{runMacs}}
+using user supplied variables, but only allows for a subset of the functionality
+offered by this argument. The default arguments of this function were chosen to match
 species="GENERIC" in \code{\link{runMacs}}.
 }
 \examples{
@@ -75,6 +75,19 @@ species="GENERIC" in \code{\link{runMacs}}.
 # The command is equivalent to using species="GENERIC" in runMacs
 \dontrun{
 founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
+
+# runMacs() Implementation of the cattle demography following
+#  Macleod et al. (2013) https://doi.org/10.1093/molbev/mst125
+cattleChrSum = 2.8e9 # https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_002263795.3/
+(cattleChrBp = cattleChrSum / 30)
+recRate = 9.26e-09
+(cattleGenLen = recRate * cattleChrBp)
+mutRate = 1.20e-08
+runMacs2(nInd = 10, nChr = 1, Ne = 90, bp = cattleChrBp,
+         genLen = cattleGenLen, mutRate = 1.20e-08,
+         histNe  = c(120, 250, 350, 1000, 1500, 2000, 2500, 3500, 7000, 10000, 17000, 62000),
+         histGen = c(  3,   6,  12,   18,   24,  154,  454,  654, 1754,  2354,  3354, 33154),
+         returnCommand = TRUE)
 }
 }
 \references{

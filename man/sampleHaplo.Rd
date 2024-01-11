@@ -7,14 +7,14 @@
 sampleHaplo(mapPop, nInd, inbred = FALSE, ploidy = NULL, replace = TRUE)
 }
 \arguments{
-\item{mapPop}{the \code{\link{MapPop-class}} used to 
+\item{mapPop}{the \code{\link{MapPop-class}} used to
 sample haplotypes}
 
 \item{nInd}{the number of individuals to create}
 
 \item{inbred}{should new individuals be fully inbred}
 
-\item{ploidy}{new ploidy level for organism. If NULL, 
+\item{ploidy}{new ploidy level for organism. If NULL,
 the ploidy level of the mapPop is used.}
 
 \item{replace}{should haplotypes be sampled with replacement}
@@ -23,7 +23,7 @@ the ploidy level of the mapPop is used.}
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Creates a new \code{\link{MapPop-class}} from an existing 
+Creates a new \code{\link{MapPop-class}} from an existing
 \code{\link{MapPop-class}} by randomly sampling haplotypes.
 }
 \examples{
