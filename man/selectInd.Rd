@@ -25,12 +25,17 @@ selectInd(
 
 \item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.
-The function must work on a vector or matrix of \code{use} values.
+The function must work on a vector or matrix of \code{use} values as
+\code{trait(pop@use, ...)} - depending on what \code{use} is.
 See the examples and \code{\link{selIndex}}.}
 
-\item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno",
-or randomly "rand"}
+\item{use}{the selection criterion. Either a character
+(genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+phenotypes "pheno", or randomly "rand") or
+a function returning a vector of length nInd.
+The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+See the examples.}
 
 \item{sex}{which sex to select. Use "B" for both, "F" for
 females and "M" for males. If the simulation is not using sexes,
@@ -48,7 +53,7 @@ individuals is returned.}
 \item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for
-trait}
+\code{trait} or \code{use}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}},
@@ -73,18 +78,30 @@ pop = newPop(founderPop, simParam=SP)
 
 #Select top 5 (directional selection)
 pop2 = selectInd(pop, 5, simParam=SP)
-hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-abline(v = pop2@pheno, col = "red", lwd = 2)
+hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+abline(v=pop2@pheno, col="red", lwd=2)
 
 #Select 5 most deviating from an optima (disruptive selection)
-squaredDeviation = function(x, optima = 0) (x - optima)^2
-pop3 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = TRUE)
-hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-abline(v = pop3@pheno, col = "red", lwd = 2)
+squaredDeviation = function(x, optima=0) (x - optima)^2
+pop3 = selectInd(pop, 5, trait=squaredDeviation, selectTop=TRUE, simParam=SP)
+hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+abline(v=pop3@pheno, col="red", lwd=2)
 
 #Select 5 least deviating from an optima (stabilising selection)
-pop4 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = FALSE)
-hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-abline(v = pop4@pheno, col = "red", lwd = 2)
+pop4 = selectInd(pop, 5, trait=squaredDeviation, selectTop=FALSE, simParam=SP)
+hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+abline(v=pop4@pheno, col="red", lwd=2)
+
+#Select 5 individuals based on miscelaneous information with use function
+pop@misc = list(smth=rnorm(10), smth2=rnorm(10))
+useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
+pop5 = selectInd(pop, 5, use=useFunc, simParam=SP)
+pop5@id
+
+#... equivalent result with the use & trait function
+useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
+trtFunc = function(x) rowSums(x)
+pop6 = selectInd(pop, 5, trait=trtFunc, use=useFunc2, simParam=SP)
+pop6@id
 
 }
