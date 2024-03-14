@@ -20,9 +20,18 @@ Returns an object of \code{\link{Pop-class}}
 \description{
 Creates an initial \code{\link{Pop-class}} from an object of
 \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
-The function is intended for us with output from functions such
+The function is intended for use with output from functions such
 as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
 \code{\link{quickHaplo}}.
+}
+\details{
+Note that \code{newPop} takes genomes from the
+  \code{rawPop} and uses them without recombination! Hence, if you
+  call \code{newPop(rawPop = founderGenomes)} twice, you will get
+  two sets of individuals with different id but the same genomes.
+  To get genetically different sets of individuals you can subset the
+  \code{rawPop} input, say first half for one set and the second half
+  for the other set.
 }
 \examples{
 #Create founder haplotypes

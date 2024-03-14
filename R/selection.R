@@ -101,15 +101,17 @@ checkSexes = function(pop,sex,simParam,...){
   if(simParam$sexes=="no"){
     return(eligible)
   }else{
+    # Check in gender is incorrectly being used
+    args = list(...)
+    if(any(names(args)=="gender")){
+      stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
+    }
     if(sex=="B"){
-      # Check in gender is incorrectly being used
-      args = list(...)
-      if(any(names(args)=="gender")){
-        stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
-      }
       return(eligible)
-    }else{
+    }else if(sex=="F" | sex=="M"){
       return(eligible[pop@sex%in%sex])
+    }else{
+      stop("Invalid option supplied for 'sex'")
     }
   }
 }
