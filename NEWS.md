@@ -10,6 +10,8 @@
 
 *added `length` method for MultiPop class that returns number of populations
 
+*fixed bug in quadrivalent pairing resulting in distribution of double reductions not respecting the centromere
+
 # AlphaSimR 1.5.3
 
 *fixed bug in `SimParam$restrSegSites` with excluding sites at end of chromosome
