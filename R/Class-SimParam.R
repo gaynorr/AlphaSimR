@@ -1597,12 +1597,10 @@ SimParam = R6Class(
       private$.varA[traitPos] = popVar(tmp$bv)[1]
       private$.varG[traitPos] = popVar(tmp$gv)[1]
       if(is.matrix(private$.varE)){
-        private$.varE[traitPos,] = 0
-        private$.varE[,traitPos] = 0
-        private$.varE[traitPos,traitPos] = varE
-      }else{
-        private$.varE[traitPos] = varE
+        warning("Error correlations have been removed, use setVarE to reinstate")
+        private$.varE = diag(private$.varE)
       }
+      private$.varE[traitPos] = varE
       invisible(self)
     },
 
