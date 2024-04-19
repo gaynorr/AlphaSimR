@@ -1726,7 +1726,8 @@ SimParam = R6Class(
       warning("This function has been deprecated. Use simParam$setVarE instead.")
       stopifnot(isSymmetric(corE),
                 nrow(corE)==self$nTraits,
-                length(private$.varE)==self$nTraits)
+                length(private$.varE)==self$nTraits,
+                !any(is.na(private$.varE)))
       if(is.matrix(private$.varE)){
         varE = diag(private$.varE)
       }else{
