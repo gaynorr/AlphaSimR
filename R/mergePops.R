@@ -43,16 +43,19 @@ mergePops = function(popList){
     classes = classes[-remove]
   }
   stopifnot(all(classes=="Pop"))
+  
   #nChr
   nChr = do.call("c",lapply(popList,
                             function(x) x@nChr))
   stopifnot(all(nChr==nChr[1]))
   nChr = nChr[1]
+  
   #ploidy
   ploidy = do.call("c",lapply(popList,
                               function(x) x@ploidy))
   stopifnot(all(ploidy==ploidy[1]))
   ploidy = ploidy[1]
+  
   #nLoci
   nLoci = do.call("c",lapply(popList,
                              function(x){
@@ -60,59 +63,82 @@ mergePops = function(popList){
                              }))
   stopifnot(all(nLoci))
   nLoci = popList[[1]]@nLoci
+  
   #id
   id = do.call("c",
                lapply(popList,
                       function(x) x@id))
+  
   #iid
   iid = do.call("c",
                 lapply(popList,
                        function(x) x@iid))
+  
   #mother
   mother = do.call("c",
                    lapply(popList,
                           function(x) x@mother))
+  
   #father
   father= do.call("c",
                   lapply(popList,
                          function(x) x@father))
+  
   #fixEff
   fixEff= do.call("c",
                   lapply(popList,
                          function(x) x@fixEff))
+  
   #misc
   tmp = sapply(popList, function(x) length(x@misc))
-  if(any(tmp > 0)) {
-    if(!any(tmp == tmp[1])){
-      stop("misc list must have the same number of nodes in all populations")
+  if(all(tmp == tmp[1]) & tmp[1]>0) {
+    tmp = lapply(popList, function(x) names(x@misc))
+    allMatch = TRUE
+    if(length(tmp)>1){
+      for(i in 2:length(tmp)){
+        if(!all(tmp[[1]]==tmp[[i]])){
+          allMatch = FALSE
+          break
+        }
+      }
     }
-    tmp = sapply(popList, function(x) names(x@misc))
-    if(!any(apply(tmp, MARGIN = 1, function(x) all(x == x[1])))){
-      stop("misc list must have the same nodes in the same order for all populations")
+    if(allMatch){
+      misc = vector("list", length=length(tmp[[1]]))
+      for(i in 1:length(tmp[[1]])){
+        miscTmp = lapply(popList, function(x) x@misc[[i]])
+        misc[[i]] = do.call("c", miscTmp)
+      }
+      names(misc) = tmp[[1]]
+    }else{
+      misc = list()
     }
-    misc = .mapply("c", lapply(popList, function(x) x@misc), MoreArgs = NULL)
-    names(misc) = names(popList[[1]]@misc)
   } else {
     misc = list()
   }
+  
   #sex
   sex = do.call("c",
                    lapply(popList,
                           function(x) x@sex))
+  
   #nTraits
   nTraits = do.call("c",lapply(popList,
                                function(x) x@nTraits))
   stopifnot(all(nTraits==nTraits[1]))
   nTraits = nTraits[1]
+  
   #nInd
   nInd = do.call("c",lapply(popList,
                             function(x) x@nInd))
+  
   #gv
   gv = do.call("rbind",lapply(popList,
                               function(x) x@gv))
+  
   #pheno
   pheno = do.call("rbind",lapply(popList,
                                  function(x) x@pheno))
+  
   #ebv
   ebv = do.call("c",lapply(popList,
                            function(x) ncol(x@ebv)))
@@ -122,6 +148,7 @@ mergePops = function(popList){
   }else{
     ebv = matrix(NA_real_,nrow=sum(nInd),ncol=0)
   }
+  
   #gxe
   if(nTraits>=1){
     gxe = vector("list",length=nTraits)
@@ -135,10 +162,12 @@ mergePops = function(popList){
   }else{
     gxe = list()
   }
+  
   #geno
   nBin = as.integer(nLoci%/%8L + (nLoci%%8L > 0L))
   geno = mergeMultGeno(popList,nInd=nInd,nBin=nBin,ploidy=ploidy)
   dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+  
   #wrap it all up into a Pop
   nInd = sum(nInd)
   return(new("Pop",
