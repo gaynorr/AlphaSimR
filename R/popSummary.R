@@ -148,6 +148,8 @@ varP = function(pop){
 #' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 #' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 #' \item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
+#' \item{alpha}{a list of average allele subsitution effects with length nTraits}
+#' \item{alpha_HW}{a list of average allele subsitution effects at Hardy-Weinberg equilibrium with length nTraits}
 #' }
 #'
 #' @examples
@@ -185,7 +187,12 @@ genParam = function(pop,simParam=NULL){
   genicVarD = genicVarAA = covA_HW = covD_HW = covAA_HW =
     covG_HW = mu = mu_HW = gv_mu = covAAA_L = covDAA_L =
     covAD_L = genicVarA
-
+  
+  # Average effect of an allele substitution
+  alpha = vector("list", length=nTraits)
+  names(alpha) = traitNames
+  alpha_HW = alpha
+  
   #Loop through trait calculations
   for(i in 1:nTraits){
     trait = simParam$traits[[i]]
@@ -229,6 +236,8 @@ genParam = function(pop,simParam=NULL){
       covAAA_L[i] = popVar(cbind(bv[,i],aa[,i]))[1,2]
       covDAA_L[i] = popVar(cbind(dd[,i],aa[,i]))[1,2]
     }
+    alpha[[i]] = tmp$alpha
+    alpha_HW[[i]] = tmp$alpha_HW
   }
 
   varA = popVar(bv)
@@ -274,7 +283,9 @@ genParam = function(pop,simParam=NULL){
                 gv_mu=gv_mu,
                 gv_a=gv_a,
                 gv_d=gv_d,
-                gv_aa=gv_aa)
+                gv_aa=gv_aa,
+                alpha=alpha,
+                alpha_HW=alpha_HW)
   return(output)
 }
 
