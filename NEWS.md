@@ -1,10 +1,12 @@
 # AlphaSimR 1.6.0
 
-*Fixed all parameters of the CATTLE demographic model to Macleod et al. (2013) - specifically reducing the mutation rate from 2.5e-8 (from human literature) to 1.2e-8 (used in Macleod et al., 2013) and recombination rate from 1e-8 (generic) to 9.26e-9 (used in Macleod et al., 2013). These changes will reduce number of segregating sites to ~240K per chromosome for 100 samples and will be run faster.
+*exported `meanEBV` and added `varEBV` to complement `meanP`/`varP` and `meanG`/`varG`
+
+*Changed all parameters of the CATTLE demographic model to exactly match Macleod et al. (2013) - specifically reducing the mutation rate from 2.5e-8 (from human literature) to 1.2e-8 (used in Macleod et al., 2013) and recombination rate from 1e-8 (generic) to 9.26e-9 (used in Macleod et al., 2013). These changes will reduce number of segregating sites to ~240K per chromosome for 100 samples and will run faster.
 
 *changed misc slot in Pop class from a list organised as ind x nodes to to a list organised as nodes x ind (this simplified code and increased speed)
 
-*removed `setMisc` and `getMisc`
+*removed `setMisc` and `getMisc` because the new misc slot structure makes it easy to set and get misc components with base R code
 
 *added `length` method for Pop class that returns number of individuals (like `nInd`)
 
