@@ -27,7 +27,7 @@
 #' @export
 mergePops = function(popList){
   if(is(popList,"MultiPop")){
-    for(i in 1:length(popList@pops)){
+    for(i in seq_len(length(popList@pops))){
       if(is(popList@pops[i],"MultiPop")){
         popList@pops[i] = mergePops(popList@pops[i])
       }
@@ -104,7 +104,7 @@ mergePops = function(popList){
     }
     if(allMatch){
       misc = vector("list", length=length(tmp[[1]]))
-      for(i in 1:length(tmp[[1]])){
+      for(i in seq_len(length(tmp[[1]]))){
         miscTmp = lapply(popList, function(x) x@misc[[i]])
         misc[[i]] = do.call("c", miscTmp)
       }
@@ -152,7 +152,7 @@ mergePops = function(popList){
   #gxe
   if(nTraits>=1){
     gxe = vector("list",length=nTraits)
-    for(trait in 1:nTraits){
+    for(trait in seq_len(nTraits)){
       if(!is.null(popList[[1]]@gxe[[trait]])){
         tmp = lapply(popList,function(x) x@gxe[[trait]])
         tmp = do.call("c",tmp)

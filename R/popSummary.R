@@ -171,7 +171,7 @@ genParam = function(pop,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  stopifnot(class(pop)=="Pop")
+  
   nInd = nInd(pop)
   nTraits = simParam$nTraits
   traitNames = simParam$traitNames
@@ -194,7 +194,7 @@ genParam = function(pop,simParam=NULL){
   alpha_HW = alpha
   
   #Loop through trait calculations
-  for(i in 1:nTraits){
+  for(i in seq_len(nTraits)){
     trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop,simParam$nThreads)
     genicVarA[i] = tmp$genicVarA2

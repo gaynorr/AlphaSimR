@@ -227,7 +227,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   
   bv = gv = vector("list",ncol(y))
   
-  for(i in 1:ncol(y)){
+  for(i in seq_len(ncol(y))){
     bv[[i]] = new("TraitA",
                   nLoci=nLoci,
                   lociPerChr=lociPerChr,
@@ -1283,7 +1283,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
   
   if(value=="gv"){
     
-    for(i in 1:nTraits){
+    for(i in seq_len(nTraits)){
       tmp = getGv(solution@gv[[i]],pop,simParam$nThreads)
       ebv[,i] = tmp[[1]]
       colnames(ebv)[i] = solution@gv[[i]]@name
@@ -1297,7 +1297,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         stop("This genomic selection model does not produce breeding value estimates.")
       }
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         tmp = getGv(solution@bv[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@bv[[i]]@name
@@ -1305,7 +1305,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       
     }else{
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = solution@gv[[i]]
         if(.hasSlot(trait,"addEffMale")){
           stop("This genomic selection model does not produce breeding value estimates. Try value='male' or value='female' instead.")
@@ -1354,7 +1354,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         stop("This genomic selection model does not produce GCA estimates for females.")
       }
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         tmp = getGv(solution@female[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@female[[i]]@name
@@ -1362,7 +1362,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       
     }else{
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = solution@gv[[i]]
         p = calcGenoFreq(targetPop@geno, 
                          trait@lociPerChr, 
@@ -1407,7 +1407,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         stop("This genomic selection model does not produce GCA estimates for males.")
       }
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         tmp = getGv(solution@male[[i]],pop,simParam$nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@male[[i]]@name
@@ -1415,7 +1415,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       
     }else{
       
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = solution@gv[[i]]
         p = calcGenoFreq(targetPop@geno, 
                          trait@lociPerChr, 

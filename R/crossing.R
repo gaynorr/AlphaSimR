@@ -159,7 +159,7 @@ randCross = function(pop,nCrosses,nProgeny=1,
       tmp = male[sample.int(nMale, nMale)]
       n = nCrosses%/%nMale + 1
       male = NULL
-      for(i in 1:n){
+      for(i in seq_len(n)){
         take = nMale - (i:(nMale+i-1))%%nMale
         male = c(male, tmp[take])
       }
@@ -435,7 +435,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
     tmp = male[sample.int(nMale, nMale)]
     n = nCrosses%/%nMale + 1
     male = NULL
-    for(i in 1:n){
+    for(i in seq_len(n)){
       take = nMale - (i:(nMale+i-1))%%nMale
       male = c(male, tmp[take])
     }
@@ -666,7 +666,7 @@ sortPed = function(id, mother, father, maxCycle=100){
                       motherID=as.character(mother),
                       fatherID=as.character(father))
   unsorted = rep(TRUE, nInd)
-  for(gen in 1:maxCycle){
+  for(gen in seq_len(maxCycle)){
     for(i in which(unsorted)){
       if(is.na(output$mother[i])&is.na(output$father[i])){
         # Is a founder
@@ -843,7 +843,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
 
   # Create individuals
   crossPlan = matrix(c(1,1),ncol=2)
-  for(gen in 1:max(ped$gen)){
+  for(gen in seq_len(max(ped$gen))){
     for(i in which(ped$gen==gen)){
       if(isFounder[i]){
         # Copy over founder individual
@@ -869,13 +869,11 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                    simParam=simParam)
         }
       }
-
+      
       # Self?
-      if(nSelf[i]>0){
-        for(j in 1:nSelf[i]){
-          output[[i]] = self(output[[i]],
-                             simParam=simParam)
-        }
+      for(j in seq_len(nSelf[i])){
+        output[[i]] = self(output[[i]],
+                           simParam=simParam)
       }
 
       # Make the individual a DH?

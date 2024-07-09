@@ -17,7 +17,7 @@ hybridCross(
 
 \item{males}{male population, an object of \code{\link{Pop-class}}}
 
-\item{crossPlan}{either "testcross" for all possible combinantions
+\item{crossPlan}{either "testcross" for all possible combinations
 or a matrix with two columns for designed crosses}
 
 \item{returnHybridPop}{should results be returned as
@@ -27,7 +27,7 @@ or a matrix with two columns for designed crosses}
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \description{
-A convience function for hybrid plant breeding simulations. Allows for
+A convenient function for hybrid plant breeding simulations. Allows for
 easy specification of a test cross scheme and/or creation of an object
 of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
 should only be used if the parents were created using the \code{\link{makeDH}}

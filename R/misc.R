@@ -229,7 +229,7 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
       BYTE = (segSites[i] - 1L)%/%8L + 1L
       BIT = (segSites[i] - 1L)%%8L + 1L
       for (selInd in ind) {
-        for (j in 1:pop@ploidy) {
+        for (j in seq_len(pop@ploidy)) {
           TMP = pop@geno[[selChr]][BYTE, j, selInd]
           TMP = rawToBits(TMP)
           TMP[BIT] = allele[i]
@@ -348,7 +348,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 
     # Locate QTL segsite to chromosomes
     tmp = cumsum(simParam$traits[[trait]]@lociPerChr)
-    for (Qtl in 1:nQtl) {
+    for (Qtl in seq_len(nQtl)) {
       ret[[3]][Qtl] = which(ret[[1]][Qtl] <= tmp)[1]
     }
     ret
