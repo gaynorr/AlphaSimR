@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Placeholder for future development
+
 Introduction
   Point to vignette on traits as first step
   History

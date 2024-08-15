@@ -11,7 +11,7 @@ RRBLUPMemUse(nInd, nMarker, model = "REG")
 
 \item{nMarker}{the number of markers per individual}
 
-\item{model}{either "REG", "GCA", or "SCA" for \code{\link{RRBLUP}} 
+\item{model}{either "REG", "GCA", or "SCA" for \code{\link{RRBLUP}}
 \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} respectively.}
 }
 \value{
@@ -19,7 +19,7 @@ Returns an estimate for the required gigabytes of RAM
 }
 \description{
 Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
-and its related functions for a given training population size. 
+and its related functions for a given training population size.
 Note that this function may underestimate total usage.
 }
 \examples{

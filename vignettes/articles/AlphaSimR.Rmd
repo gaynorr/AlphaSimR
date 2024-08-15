@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Placeholder for future development
+
 Explain the package
 
 Point to important pages for further information (introduction)

@@ -21,26 +21,26 @@ RRBLUP_SCA(
 \item{traits}{an integer indicating the trait to model, a trait name, or a
 function of the traits returning a single value.}
 
-\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+\item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{snpChip}{an integer indicating which SNP chip genotype 
+\item{snpChip}{an integer indicating which SNP chip genotype
 to use}
 
-\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
-If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip.
+If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations for convergence.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 traits}
 }
 \description{
-An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects. 
-Note that we have not seen any consistent benefit of this model over 
+An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects.
+Note that we have not seen any consistent benefit of this model over
 \code{\link{RRBLUP_GCA}}.
 }
 \examples{
