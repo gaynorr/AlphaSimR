@@ -1,7 +1,7 @@
 #' @title Hybrid crossing
 #'
 #' @description
-#' A convience function for hybrid plant breeding simulations. Allows for
+#' A convenient function for hybrid plant breeding simulations. Allows for
 #' easy specification of a test cross scheme and/or creation of an object
 #' of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
 #' should only be used if the parents were created using the \code{\link{makeDH}}
@@ -10,7 +10,7 @@
 #'
 #' @param females female population, an object of \code{\link{Pop-class}}
 #' @param males male population, an object of \code{\link{Pop-class}}
-#' @param crossPlan either "testcross" for all possible combinantions
+#' @param crossPlan either "testcross" for all possible combinations
 #' or a matrix with two columns for designed crosses
 #' @param returnHybridPop should results be returned as
 #' \code{\link{HybridPop-class}}. If false returns results as

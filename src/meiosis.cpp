@@ -127,6 +127,7 @@ arma::vec sampleChiasmata(double start, double end, double v,
     return sort(join_cols(type1, type2));
   }
 }
+
 // Samples the locations for chiasmata via a gamma process for a quadrivalent
 // CO interference is assumed to occur between all arms
 // The first arm is sampled at random
@@ -381,18 +382,27 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   // Sample the exchange point
   arma::vec u(1, arma::fill::randu);
   double exchange = u(0)*genLen;
+  
+  // Sample start point for gamma model
   u.randu();
   double start = u(0)-10;
   
-  // Determine crossover postions
+  // Determine crossover positions
+  // Returns field with crossover positions in each arm of the quadrivalent
   arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v, p);
   
-  // Set chromatid configuration for chiasmata
-  arma::field<arma::umat> chromatidPairs(4);
+  // Set chromatid configuration for each chiasmata
+  arma::field<arma::umat> chromatidPairs(4); // matches posCO
   for(arma::uword i=0; i<4; ++i){
+    // Create table for chromatid pairs on an arm
     chromatidPairs(i).set_size(posCO(i).n_elem,2);
+    
+    // Assign pairs if there are chiasmata
     if(chromatidPairs(i).n_rows>0){
+      // Initializing with "0" chromatid
       chromatidPairs(i).zeros();
+      
+      // Randomly switch to "1" chromatid
       for(arma::uword j=0; j<chromatidPairs(i).n_elem; ++j){
         u.randu();
         if(u(0)>0.5){
@@ -400,6 +410,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
         }
       }
     }
+    
   }
   
   // Allocate output with a naive maximum number of COs
@@ -412,30 +423,38 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   output(1).set_size(maxCO+1,2);
   
   // Select centromeres (which chromosome and chromatid)
+  // Always taking chromosome 1 (1-4) and chromatid 1 (0-1) 
   arma::uvec chromosome(2, arma::fill::ones);
   arma::uvec chromatid(2, arma::fill::ones);
-  chromosome(1) = sampleInt(1,3)(0) + 2;
-  chromatid(1) = sampleInt(1,2)(0);
+  chromosome(1) = sampleInt(1,3)(0) + 2; // 2-4
+  chromatid(1) = sampleInt(1,2)(0); // 0-1
   
-  // Loop through each of the selected centromeres
+  // Find starting chromosomes and chromatids by working backwards
+  // from selected centromeres to start of chromosome (head)
   arma::uword currentChromosome, currentChromatid;
   for(arma::uword i=0; i<2; ++i){
     // Identify starting chromosome and chromatid
     currentChromosome = chromosome(i);
     currentChromatid = chromatid(i);
-    if(exchange<centromere){ // Centromere is in the head
+    
+    if(exchange>centromere){ // Centromere is in the head 
+      
       if(currentChromosome<3){ // currentChromosome is 1 or 2
-        // Account for all crossovers prior to the centromere
+        
+        // Loop through all chiasmata on arm 0
         for(arma::uword j=posCO(0).n_elem; j>0; --j){
+          
+          // Check if chiasmata is before centromere, ignore if not
           if(posCO(0)(j-1)<centromere){
+            
             switch(currentChromosome){
-            case 1:
+            case 1: // Check if there's a switch between chr 1 and 2
               if(chromatidPairs(0)(j-1,0) == currentChromatid){
                 currentChromosome = 2;
                 currentChromatid = chromatidPairs(0)(j-1,1);
               }
               break;
-            case 2:
+            case 2: // Check if there is a switch between chr 2 and 1
               if(chromatidPairs(0)(j-1,1) == currentChromatid){
                 currentChromosome = 1;
                 currentChromatid = chromatidPairs(0)(j-1,0);
@@ -443,18 +462,23 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
         }
+        
       }else{ // currentChromosome is 3 or 4
-        // Account for all crossovers prior to the centromere
+        
+        // Loop through all chiasmata on arm 2
         for(arma::uword j=posCO(2).n_elem; j>0; --j){
+          
+          // Check if chiasmata is before centromere, ignore if not
           if(posCO(2)(j-1)<centromere){
+            
             switch(currentChromosome){
-            case 3:
+            case 3: // Check if there's a switch between chr 3 and 4
               if(chromatidPairs(2)(j-1,0) == currentChromatid){
                 currentChromosome = 4;
                 currentChromatid = chromatidPairs(2)(j-1,1);
               }
               break;
-            case 4:
+            case 4: // Check if there's a switch between chr 4 and 3
               if(chromatidPairs(2)(j-1,1) == currentChromatid){
                 currentChromosome = 3;
                 currentChromatid = chromatidPairs(2)(j-1,0);
@@ -463,19 +487,25 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           }
         }
       }
+      
     }else{ // Centromere is in the tail
-      if((currentChromosome==1) | (currentChromosome==4)){ 
-        // Find chromosome and chromatid before transition
+      
+      if((currentChromosome==1) | (currentChromosome==4)){ // Working on arm 3
+        
+        // Find chromosome and chromatid before transition by looping 
+        // through chiasmata on arm 3
         for(arma::uword j=posCO(3).n_elem; j>0; --j){
+          
+          // Check if chiasmata is before centromere, ignore if not
           if(posCO(3)(j-1)<centromere){
             switch(currentChromosome){
-            case 1:
+            case 1: // Check if there's a switch between chr 1 and 4
               if(chromatidPairs(3)(j-1,0) == currentChromatid){
                 currentChromosome = 4;
                 currentChromatid = chromatidPairs(3)(j-1,1);
               }
               break;
-            case 4:
+            case 4: // Check if there's a switch between chr 4 and 1
               if(chromatidPairs(3)(j-1,1) == currentChromatid){
                 currentChromosome = 1;
                 currentChromatid = chromatidPairs(3)(j-1,0);
@@ -483,18 +513,19 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
         }
-        // Find starting chromosome and chromatid
+        
+        // Find starting chromosome and chromatid by working back through head
         switch(currentChromosome){
-        case 1:
+        case 1: // Work through arm 0
           for(arma::uword j=posCO(0).n_elem; j>0; --j){
             switch(currentChromosome){
-            case 1:
+            case 1: // Check if there's a switch between chr 1 and 2
               if(chromatidPairs(0)(j-1,0) == currentChromatid){
                 currentChromosome = 2;
                 currentChromatid = chromatidPairs(0)(j-1,1);
               }
               break;
-            case 2:
+            case 2: // Check if there's a switch between chr 2 and 1
               if(chromatidPairs(0)(j-1,1) == currentChromatid){
                 currentChromosome = 1;
                 currentChromatid = chromatidPairs(0)(j-1,0);
@@ -502,16 +533,16 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
           break;
-        case 4:
+        case 4: // Work through arm 2
           for(arma::uword j=posCO(2).n_elem; j>0; --j){
             switch(currentChromosome){
-            case 3:
+            case 3: // Check if there's a switch between chr 3 and 4
               if(chromatidPairs(2)(j-1,0) == currentChromatid){
                 currentChromosome = 4;
                 currentChromatid = chromatidPairs(2)(j-1,1);
               }
               break;
-            case 4:
+            case 4: // Check if there's a switch between chr 4 and 3
               if(chromatidPairs(2)(j-1,1) == currentChromatid){
                 currentChromosome = 3;
                 currentChromatid = chromatidPairs(2)(j-1,0);
@@ -520,18 +551,22 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           }
         }
         
-      }else{ // currentChromosome is 2 or 3
-        // Find chromosome and chromatid before transition
+      }else{ // Working on arm 1
+        
+        // Find chromosome and chromatid before transition by looping 
+        // through chiasmata on arm 1
         for(arma::uword j=posCO(1).n_elem; j>0; --j){
+          
+          // Check if chiasmata is before centromere, ignore if not
           if(posCO(1)(j-1)<centromere){
             switch(currentChromosome){
-            case 2:
+            case 2: // Check if there's a switch between chr 2 and 3
               if(chromatidPairs(1)(j-1,0) == currentChromatid){
                 currentChromosome = 3;
                 currentChromatid = chromatidPairs(1)(j-1,1);
               }
               break;
-            case 3:
+            case 3: // Check if there's a switch between chr 3 and 2
               if(chromatidPairs(1)(j-1,1) == currentChromatid){
                 currentChromosome = 2;
                 currentChromatid = chromatidPairs(1)(j-1,0);
@@ -539,18 +574,19 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
         }
-        // Find starting chromosome and chromatid
+        
+        // Find starting chromosome and chromatid by working back through head
         switch(currentChromosome){
-        case 2:
+        case 2: // Work through arm 0
           for(arma::uword j=posCO(0).n_elem; j>0; --j){
             switch(currentChromosome){
-            case 1:
+            case 1: // Check if there's a switch between chr 1 and 2
               if(chromatidPairs(0)(j-1,0) == currentChromatid){
                 currentChromosome = 2;
                 currentChromatid = chromatidPairs(0)(j-1,1);
               }
               break;
-            case 2:
+            case 2: // Check if there's a switch between chr 2 and 1
               if(chromatidPairs(0)(j-1,1) == currentChromatid){
                 currentChromosome = 1;
                 currentChromatid = chromatidPairs(0)(j-1,0);
@@ -558,16 +594,16 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
           break;
-        case 3:
+        case 3: // Work through arm 2
           for(arma::uword j=posCO(2).n_elem; j>0; --j){
             switch(currentChromosome){
-            case 3:
+            case 3: // Check if there's a switch between chr 3 and 4
               if(chromatidPairs(2)(j-1,0) == currentChromatid){
                 currentChromosome = 4;
                 currentChromatid = chromatidPairs(2)(j-1,1);
               }
               break;
-            case 4:
+            case 4: // Check if there's a switch between chr 4 and 3
               if(chromatidPairs(2)(j-1,1) == currentChromatid){
                 currentChromosome = 3;
                 currentChromatid = chromatidPairs(2)(j-1,0);
@@ -578,15 +614,19 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
       }
     }
     
-    // Fill in crossover map
+    // Fill in crossover map by working from head to tail
     arma::uword startPos=0, endPos, nCO=0;
     output(i)(0,0) = currentChromosome;
     output(i)(0,1) = 1;
-    if(currentChromosome<3){
+    
+    if(currentChromosome<3){ // Start in arm 0
+      
       // Fill crossovers in the head
       for(arma::uword j=0; j<posCO(0).n_elem; ++j){
+        
+        // Check if chiasmata involves current chromatid
         switch(currentChromosome){
-        case 1:
+        case 1: 
           if(chromatidPairs(0)(j,0) == currentChromatid){
             currentChromosome = 2;
             currentChromatid = chromatidPairs(0)(j,1);
@@ -609,8 +649,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           }
         }
       }
+      
       // Fill crossovers in the tail
-      if(currentChromosome==1){
+      if(currentChromosome==1){ // Move to arm 3
         for(arma::uword j=0; j<posCO(3).n_elem; ++j){
           switch(currentChromosome){
           case 1:
@@ -636,7 +677,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
         }
-      }else{ // currentChromosome = 2
+      }else{ // currentChromosome = 2, move to arm 1
         for(arma::uword j=0; j<posCO(1).n_elem; ++j){
           switch(currentChromosome){
           case 2:
@@ -663,7 +704,8 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           }
         }
       }
-    }else{
+    }else{ // currentChromosome>2, start in arm 2
+      
       // Fill crossovers in the head
       for(arma::uword j=0; j<posCO(2).n_elem; ++j){
         switch(currentChromosome){
@@ -690,8 +732,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           }
         }
       }
+      
       // Fill crossovers in the tail
-      if(currentChromosome==4){
+      if(currentChromosome==4){ // Move to arm 3
         for(arma::uword j=0; j<posCO(3).n_elem; ++j){
           switch(currentChromosome){
           case 1:
@@ -717,7 +760,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             }
           }
         }
-      }else{ // currentChromosome = 3
+      }else{ // currentChromosome = 3, move to arm 1
         for(arma::uword j=0; j<posCO(1).n_elem; ++j){
           switch(currentChromosome){
           case 2:
@@ -748,6 +791,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
     output(i) = output(i).rows(arma::span(0,nCO));
     output(i) = removeDoubleCO(output(i));
   }
+  
   return output;
 }
 

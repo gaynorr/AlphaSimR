@@ -11,10 +11,10 @@ editGenome(pop, ind, chr, segSites, allele, simParam = NULL)
 
 \item{ind}{a vector of individuals to edit}
 
-\item{chr}{a vector of chromosomes to edit. 
+\item{chr}{a vector of chromosomes to edit.
 Length must match length of segSites.}
 
-\item{segSites}{a vector of segregating sites to edit. Length must 
+\item{segSites}{a vector of segregating sites to edit. Length must
 match length of chr.}
 
 \item{allele}{either 0 or 1 for desired allele}
@@ -25,8 +25,8 @@ match length of chr.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Edits selected loci of selected individuals to a homozygous 
-state for either the 1 or 0 allele. The gv slot is recalculated to 
+Edits selected loci of selected individuals to a homozygous
+state for either the 1 or 0 allele. The gv slot is recalculated to
 reflect the any changes due to editing, but other slots remain the same.
 }
 \examples{
@@ -41,9 +41,9 @@ SP$addTraitA(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Change individual 1 to homozygous for the 1 allele 
+#Change individual 1 to homozygous for the 1 allele
 #at locus 1, chromosome 1
-pop2 = editGenome(pop, ind=1, chr=1, segSites=1, 
+pop2 = editGenome(pop, ind=1, chr=1, segSites=1,
                   allele=1, simParam=SP)
 
 }

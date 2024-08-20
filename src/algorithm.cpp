@@ -1219,9 +1219,9 @@ void GraphBuilder::build(){
   // gene conversion stuff
   GeneConversionPtr newGC;
   double dLogTractRatio = log((pConfig->iGeneConvTract-1.)/pConfig->iGeneConvTract);
-  const int XOVER=0,GCSTART=1,GCEND=2;
-  int xovers=0,gcstarts=0,gcends=0;
-  int lastRE;
+  // const int XOVER=0,GCSTART=1,GCEND=2;
+  //int xovers=0,gcstarts=0,gcends=0;
+  //int lastRE;
   int iHistoryMax = 0;
   do{
     if (iGraphIteration==0){
@@ -1232,14 +1232,14 @@ void GraphBuilder::build(){
       // at this point decide whether we invoke a plain x-over
       // or a new gene conversion event
       this->bBeginGeneConversion = false;
-      lastRE=XOVER;
+      //lastRE=XOVER;
       if (this->bEndGeneConversion){
-        lastRE=GCEND;
+        //lastRE=GCEND;
       }else{
         this->bBeginGeneConversion = pRandNumGenerator->unifRV()<
           (pConfig->dGeneConvRatio/(pConfig->dGeneConvRatio+1))?true:false;
         if (bBeginGeneConversion){
-          lastRE=GCSTART;
+          //lastRE=GCSTART;
           double dTractLen = (1.+log(pRandNumGenerator->unifRV())/
                               dLogTractRatio)/pConfig->dSeqLength;
           newGC = GeneConversionPtr(new GeneConversion(
@@ -1248,17 +1248,17 @@ void GraphBuilder::build(){
         }
       }
       invokeRecombination(newGC);
-      switch(lastRE){
-      case XOVER:
-        ++xovers;
-        break;
-      case GCSTART:
-        ++gcstarts;
-        break;
-      case GCEND:
-        ++gcends;
-        break;
-      }
+      // switch(lastRE){
+      // case XOVER:
+      //   ++xovers;
+      //   break;
+      // case GCSTART:
+      //   ++gcstarts;
+      //   break;
+      // case GCEND:
+      //   ++gcends;
+      //   break;
+      // }
       // mark the graph edges as the local tree
       markCurrentTree();
       if (!bIncrementHistory){

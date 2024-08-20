@@ -10,7 +10,7 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
   outLociPerChr[chr] = inLociPerChr[chr]
   outLociLoc = numeric(sum(outLociPerChr))
   inStart = outStart = inEnd = outEnd = 0L
-  for(i in 1:nChr){
+  for(i in seq_len(nChr)){
     inStart = inStart + 1L
     inEnd = inEnd + inLociPerChr[i]
     if(outLociPerChr[i]>0){
@@ -32,7 +32,7 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
 getLociNames = function(lociPerChr, lociLoc, genMap){
   lociNames = character(length(lociLoc))
   start = end = 0L
-  for(chr in 1:length(lociPerChr)){
+  for(chr in seq_len(length(lociPerChr))){
     if(lociPerChr[chr]>0){
       start = end + 1L
       end = end + lociPerChr[chr]
@@ -54,7 +54,7 @@ mapLoci = function(markers, genMap){
   lociLoc = vector("list", length(genMap))
   
   # Loop through chromosomes
-  for(i in 1:length(genMap)){
+  for(i in seq_len(length(genMap))){
     
     # Initialize lociLoc
     lociLoc[[i]] = integer()

@@ -16,17 +16,17 @@ mutate(pop, mutRate = 2.5e-08, returnPos = FALSE, simParam = NULL)
 \item{simParam}{an object of \code{\link{SimParam}}}
 }
 \value{
-an object of \code{\link{Pop-class}} if 
-returnPos=FALSE or a list containing a 
-\code{\link{Pop-class}} and a data.frame containing the 
+an object of \code{\link{Pop-class}} if
+returnPos=FALSE or a list containing a
+\code{\link{Pop-class}} and a data.frame containing the
 postions of mutations if returnPos=TRUE
 }
 \description{
-Adds random mutations to individuals in a 
-population. Note that any existing phenotypes 
-or EBVs are kept. Thus, the user will need to run 
-\code{\link{setPheno}} and/or \code{\link{setEBV}} 
-to generate new phenotypes or EBVs that reflect 
+Adds random mutations to individuals in a
+population. Note that any existing phenotypes
+or EBVs are kept. Thus, the user will need to run
+\code{\link{setPheno}} and/or \code{\link{setEBV}}
+to generate new phenotypes or EBVs that reflect
 changes introduced by the new mutations.
 }
 \examples{

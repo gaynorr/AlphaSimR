@@ -2,7 +2,7 @@
 % Please edit documentation in R/GS.R
 \name{setEBV}
 \alias{setEBV}
-\title{Set EBV}
+\title{Set estimated breeding values (EBV)}
 \usage{
 setEBV(
   pop,
@@ -18,17 +18,17 @@ setEBV(
 
 \item{solution}{an object of \code{\link{RRsol-class}}}
 
-\item{value}{the genomic value to be estimated. Can be 
+\item{value}{the genomic value to be estimated. Can be
 either "gv", "bv", "female", or "male".}
 
-\item{targetPop}{an optional target population that can 
-be used when value is "bv", "female", or "male". When 
-supplied, the allele frequency in the targetPop is used 
+\item{targetPop}{an optional target population that can
+be used when value is "bv", "female", or "male". When
+supplied, the allele frequency in the targetPop is used
 to set these values.}
 
-\item{append}{should estimated values be appended to 
-existing data in the EBV slot. If TRUE, a new column is 
-added. If FALSE, existing data is replaced with the 
+\item{append}{should estimated values be appended to
+existing data in the EBV slot. If TRUE, a new column is
+added. If FALSE, existing data is replaced with the
 new estimates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
@@ -37,10 +37,10 @@ new estimates.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Adds genomic estimated values to a populations's EBV 
-slot using output from a genomic selection functions. 
-The genomic estimated values can be either estimated 
-breeding values, estimated genetic values, or 
+Adds genomic estimated values to a populations's EBV
+slot using output from a genomic selection functions.
+The genomic estimated values can be either estimated
+breeding values, estimated genetic values, or
 estimated general combining values.
 }
 \examples{

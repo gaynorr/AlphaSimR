@@ -20,38 +20,38 @@ fastRRBLUP(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model, a trait name, 
-or a function of the traits returning a single value. Only univariate models 
+\item{traits}{an integer indicating the trait to model, a trait name,
+or a function of the traits returning a single value. Only univariate models
 are supported.}
 
-\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+\item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{snpChip}{an integer indicating which SNP chip genotype 
+\item{snpChip}{an integer indicating which SNP chip genotype
 to use}
 
-\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
-If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip.
+If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations.}
 
-\item{Vu}{marker effect variance. If value is NULL, a 
+\item{Vu}{marker effect variance. If value is NULL, a
 reasonable value is chosen automatically.}
 
-\item{Ve}{error variance. If value is NULL, a 
+\item{Ve}{error variance. If value is NULL, a
 reasonable value is chosen automatically.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 traits}
 }
 \description{
-Solves an RR-BLUP model for genomic predictions given known variance 
-components. This implementation is meant as a fast and low memory 
-alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike 
-the those functions, the fastRRBLUP does not fit fixed effects (other 
+Solves an RR-BLUP model for genomic predictions given known variance
+components. This implementation is meant as a fast and low memory
+alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike
+the those functions, the fastRRBLUP does not fit fixed effects (other
 than the intercept) or account for unequal replication.
 }
 \examples{

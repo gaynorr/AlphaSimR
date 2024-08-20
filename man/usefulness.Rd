@@ -15,24 +15,24 @@ usefulness(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}} or 
+\item{pop}{and object of \code{\link{Pop-class}} or
 \code{\link{HybridPop-class}}}
 
-\item{trait}{the trait for selection. Either a number indicating 
+\item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.}
 
 \item{use}{select on genetic values (\code{gv}, default), estimated
-breeding values (\code{ebv}), breeding values (\code{bv}), 
+breeding values (\code{ebv}), breeding values (\code{bv}),
 or phenotypes (\code{pheno})}
 
 \item{p}{the proportion of individuals selected}
 
-\item{selectTop}{selects highest values if true. 
+\item{selectTop}{selects highest values if true.
 Selects lowest values if false.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 trait}
 }
 \value{
@@ -53,7 +53,7 @@ SP$addTraitA(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Determine usefulness of population 
+#Determine usefulness of population
 usefulness(pop, simParam=SP)
 
 #Should be equivalent to GV of best individual

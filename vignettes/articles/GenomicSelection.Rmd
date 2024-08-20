@@ -1,0 +1,39 @@
+---
+title: "Genomic Selection"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Placeholder for future development
+
+Introduction
+  Point to genome (QTL/SNP) and trait
+
+How to build a training population
+  Mention fixed effect
+
+How to fit a model
+
+How to get GEBVs
+  Accuracy of selection (vs BV or GV, train vs pred)
+
+How to do selections
+
+Explain models
+  Use Guilherme's paper
+  Explain 1 vs 2
+  
+How to use external software
+

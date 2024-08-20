@@ -1,53 +1,70 @@
 # Returns a vector response from a population
 # pop is an object of class Pop or HybridPop
 # trait is a vector of traits or a function
-# use is "rand", "gv", "ebv", "pheno", or "bv"
-#  "bv" doesn't work on class HybridPop
+#   (must work like trait(pop@use, ...) or trait(use(pop, ...), ...)).
+#   See examples in \code{selectInd}.
+# use is a character ("rand", "gv", "ebv", "pheno", or "bv"; note that
+#  "bv" doesn't work on class HybridPop)
+#  or a function (must work like use(pop, trait, ...)).
+#  See examples in \code{selectInd}.
 # simParam is an object of class SimParam, it is only called when use="bv"
 # ... are additional arguments passed to trait when trait is a function
 getResponse = function(pop,trait,use,simParam=NULL,...){
-  use = tolower(use)
-  if(use=="rand"){
-    return(rnorm(pop@nInd))
-  }
   if(is(trait,"function")){
-    if(use=="gv"){
-      response = trait(pop@gv,...)
-    }else if(use=="ebv"){
-      response = trait(pop@ebv,...)
-    }else if(use=="pheno"){
-      response = trait(pop@pheno,...)
-    }else if(use=="bv"){
-      if(is(pop,"HybridPop")){
-        stop("Use='bv' is not a valid option for HybridPop")
+    if(is.character(use)){
+      use = tolower(use)
+      if(use=="rand"){
+        return(rnorm(pop@nInd))
+      }else if(use=="gv"){
+        response = trait(pop@gv,...)
+      }else if(use=="ebv"){
+        response = trait(pop@ebv,...)
+      }else if(use=="pheno"){
+        response = trait(pop@pheno,...)
+      }else if(use=="bv"){
+        if(is(pop,"HybridPop")){
+          stop("Use='bv' is not a valid option for HybridPop")
+        }
+        response = genParam(pop,simParam=simParam)$bv
+        response = trait(response,...)
+      }else{
+        stop(paste0("Use=",use," is not an option"))
       }
-      response = genParam(pop,simParam=simParam)$bv
-      response = trait(response,...)
+    }else if(is(use,"function")){
+      response = trait(use(pop, ...), ...)
     }else{
-      stop(paste0("Use=",use," is not an option"))
+      stop("use must be a character or a function")
     }
-  }else{
-    if(is.character(trait)){
-      # Suspect trait is a name
+  }else{ # trait is not a function, so must be numeric or character
+    if(is.character(trait)){ # Suspect trait is a name
       take = match(trait, simParam$traitNames)
       if(is.na(take)){
         stop("'",trait,"' did not match any trait names")
       }
       trait = take
     }
-    if(use == "gv"){
-      response = pop@gv[,trait,drop=FALSE]
-    }else if(use=="ebv"){
-      response = pop@ebv[,trait,drop=FALSE]
-    }else if(use=="pheno"){
-      response = pop@pheno[,trait,drop=FALSE]
-    }else if(use=="bv"){
-      if(is(pop,"HybridPop")){
-        stop("Use='bv' is not a valid option for HybridPop")
+    if(is.character(use)){
+      use = tolower(use)
+      if(use=="rand"){
+        return(rnorm(pop@nInd))
+      }else if(use == "gv"){
+        response = pop@gv[,trait,drop=FALSE]
+      }else if(use=="ebv"){
+        response = pop@ebv[,trait,drop=FALSE]
+      }else if(use=="pheno"){
+        response = pop@pheno[,trait,drop=FALSE]
+      }else if(use=="bv"){
+        if(is(pop,"HybridPop")){
+          stop("Use='bv' is not a valid option for HybridPop")
+        }
+        response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
+      }else{
+        stop(paste0("Use=",use," is not an option"))
       }
-      response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
+    }else if(is(use,"function")){
+      response = use(pop, trait=trait, ...)
     }else{
-      stop(paste0("Use=",use," is not an option"))
+      stop("use must be a character or a function")
     }
   }
   if(any(is.na(response))){
@@ -84,15 +101,17 @@ checkSexes = function(pop,sex,simParam,...){
   if(simParam$sexes=="no"){
     return(eligible)
   }else{
+    # Check in gender is incorrectly being used
+    args = list(...)
+    if(any(names(args)=="gender")){
+      stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
+    }
     if(sex=="B"){
-      # Check in gender is incorrectly being used
-      args = list(...)
-      if(any(names(args)=="gender")){
-        stop("The discontinued 'gender' argument appears to be in use. This argument was renamed as 'sex' in AlphaSimR version 0.13.0.")
-      }
       return(eligible)
-    }else{
+    }else if(sex=="F" | sex=="M"){
       return(eligible[pop@sex%in%sex])
+    }else{
+      stop("Invalid option supplied for 'sex'")
     }
   }
 }
@@ -117,27 +136,32 @@ getFam = function(pop,famType){
 #' population.
 #'
 #' @param pop and object of \code{\link{Pop-class}},
-#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating
-#' a single trait or a function returning a vector of length nInd.
-#' The function must work on a vector or matrix of \code{use} values.
-#' See the examples and \code{\link{selIndex}}.
-#' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
-#' or randomly "rand"
+#'   a single trait or a function returning a vector of length nInd.
+#'   The function must work on a vector or matrix of \code{use} values as
+#'   \code{trait(pop@use, ...)} - depending on what \code{use} is.
+#'   See the examples and \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+#'   phenotypes "pheno", or randomly "rand") or
+#'   a function returning a vector of length nInd.
+#'   The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+#'   as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+#'   See the examples.
 #' @param sex which sex to select. Use "B" for both, "F" for
-#' females and "M" for males. If the simulation is not using sexes,
-#' the argument is ignored.
+#'   females and "M" for males. If the simulation is not using sexes,
+#'   the argument is ignored.
 #' @param selectTop selects highest values if true.
-#' Selects lowest values if false.
+#'   Selects lowest values if false.
 #' @param returnPop should results be returned as a
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected
-#' individuals is returned.
+#'   \code{\link{Pop-class}}. If FALSE, only the index of selected
+#'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for
-#' trait
+#'   \code{trait} or \code{use}
 #'
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
@@ -157,19 +181,31 @@ getFam = function(pop,famType){
 #'
 #' #Select top 5 (directional selection)
 #' pop2 = selectInd(pop, 5, simParam=SP)
-#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-#' abline(v = pop2@pheno, col = "red", lwd = 2)
+#' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+#' abline(v=pop2@pheno, col="red", lwd=2)
 #'
 #' #Select 5 most deviating from an optima (disruptive selection)
-#' squaredDeviation = function(x, optima = 0) (x - optima)^2
-#' pop3 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = TRUE)
-#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-#' abline(v = pop3@pheno, col = "red", lwd = 2)
+#' squaredDeviation = function(x, optima=0) (x - optima)^2
+#' pop3 = selectInd(pop, 5, trait=squaredDeviation, selectTop=TRUE, simParam=SP)
+#' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+#' abline(v=pop3@pheno, col="red", lwd=2)
 #'
 #' #Select 5 least deviating from an optima (stabilising selection)
-#' pop4 = selectInd(pop, 5, simParam=SP, trait = squaredDeviation, selectTop = FALSE)
-#' hist(pop@pheno); abline(v = pop@pheno, lwd = 2)
-#' abline(v = pop4@pheno, col = "red", lwd = 2)
+#' pop4 = selectInd(pop, 5, trait=squaredDeviation, selectTop=FALSE, simParam=SP)
+#' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
+#' abline(v=pop4@pheno, col="red", lwd=2)
+#'
+#' #Select 5 individuals based on miscelaneous information with use function
+#' pop@misc = list(smth=rnorm(10), smth2=rnorm(10))
+#' useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
+#' pop5 = selectInd(pop, 5, use=useFunc, simParam=SP)
+#' pop5@id
+#'
+#' #... equivalent result with the use & trait function
+#' useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
+#' trtFunc = function(x) rowSums(x)
+#' pop6 = selectInd(pop, 5, trait=trtFunc, use=useFunc2, simParam=SP)
+#' pop6@id
 #'
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
@@ -216,30 +252,35 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' population.
 #'
 #' @param pop and object of \code{\link{Pop-class}},
-#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating
-#' a single trait or a function returning a vector of length nInd.
-#' The function must work on a vector or matrix of \code{use} values.
-#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
-#' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
-#' or randomly "rand"
+#'   a single trait or a function returning a vector of length nInd.
+#'   The function must work on a vector or matrix of \code{use} values as
+#'   \code{trait(pop@use, ...)} - depending on what \code{use} is.
+#'   See the examples and \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+#'   phenotypes "pheno", or randomly "rand") or
+#'   a function returning a vector of length nInd.
+#'   The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+#'   as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+#'   See the examples.
 #' @param sex which sex to select. Use "B" for both, "F" for
-#' females and "M" for males. If the simulation is not using sexes,
-#' the argument is ignored.
+#'   females and "M" for males. If the simulation is not using sexes,
+#'   the argument is ignored.
 #' @param famType which type of family to select. Use "B" for
-#' full-sib families, "F" for half-sib families on female side and "M"
-#' for half-sib families on the male side.
+#'   full-sib families, "F" for half-sib families on female side and "M"
+#'   for half-sib families on the male side.
 #' @param selectTop selects highest values if true.
-#' Selects lowest values if false.
+#'   Selects lowest values if false.
 #' @param returnPop should results be returned as a
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected
-#' individuals is returned.
+#'   \code{\link{Pop-class}}. If FALSE, only the index of selected
+#'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for
-#' trait
+#'   \code{trait} and \code{use}
 #'
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
@@ -318,30 +359,35 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' from a full-sib family if it has less than or equal to nInd individuals.
 #'
 #' @param pop and object of \code{\link{Pop-class}},
-#' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
+#'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating
-#' a single trait or a function returning a vector of length nInd.
-#' The function must work on a vector or matrix of \code{use} values.
-#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
-#' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
-#' or randomly "rand"
+#'   a single trait or a function returning a vector of length nInd.
+#'   The function must work on a vector or matrix of \code{use} values as
+#'   \code{trait(pop@use, ...)} - depending on what \code{use} is.
+#'   See the examples and \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+#'   phenotypes "pheno", or randomly "rand") or
+#'   a function returning a vector of length nInd.
+#'   The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+#'   as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+#'   See the examples.
 #' @param sex which sex to select. Use "B" for both, "F" for
-#' females and "M" for males. If the simulation is not using sexes,
-#' the argument is ignored.
+#'   females and "M" for males. If the simulation is not using sexes,
+#'   the argument is ignored.
 #' @param famType which type of family to select. Use "B" for
-#' full-sib families, "F" for half-sib families on female side and "M"
-#' for half-sib families on the male side.
+#'   full-sib families, "F" for half-sib families on female side and "M"
+#'   for half-sib families on the male side.
 #' @param selectTop selects highest values if true.
-#' Selects lowest values if false.
+#'   Selects lowest values if false.
 #' @param returnPop should results be returned as a
-#' \code{\link{Pop-class}}. If FALSE, only the index of selected
-#' individuals is returned.
+#'   \code{\link{Pop-class}}. If FALSE, only the index of selected
+#'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for
-#' trait
+#'   \code{trait} and \code{use}
 #'
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
@@ -425,25 +471,30 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' selection as occuring before or after pollination.
 #'
 #' @param pop and object of \code{\link{Pop-class}}
-#' or \code{\link{MultiPop-class}}
+#'   or \code{\link{MultiPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
 #' @param probSelf percentage of seeds expected from selfing.
-#' Value ranges from 0 to 1.
+#'   Value ranges from 0 to 1.
 #' @param pollenControl are plants selected before pollination
 #' @param trait the trait for selection. Either a number indicating
-#' a single trait or a function returning a vector of length nInd.
-#' The function must work on a vector or matrix of \code{use} values.
-#' See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.
-#' @param use select on genetic values "gv", estimated
-#' breeding values "ebv", breeding values "bv", phenotypes "pheno",
-#' or randomly "rand"
+#'   a single trait or a function returning a vector of length nInd.
+#'   The function must work on a vector or matrix of \code{use} values as
+#'   \code{trait(pop@use, ...)} - depending on what \code{use} is.
+#'   See the examples and \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+#'   phenotypes "pheno", or randomly "rand") or
+#'   a function returning a vector of length nInd.
+#'   The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+#'   as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+#'   See the examples.
 #' @param selectTop selects highest values if true.
-#' Selects lowest values if false.
+#'   Selects lowest values if false.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param ... additional arguments if using a function for
-#' trait
+#'   \code{trait} and \code{use}
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #' or \code{\link{MultiPop-class}}

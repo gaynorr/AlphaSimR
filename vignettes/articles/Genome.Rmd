@@ -1,0 +1,26 @@
+---
+title: "Genome"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Placeholder for future development
+
+Introduction
+  Pull from MOOC
+  Explain the genome and its representation
+  Haplotypes / genotypes
+  QTL/SNP
+  Genetic map vs physical map

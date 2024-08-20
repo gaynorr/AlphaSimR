@@ -14,9 +14,9 @@ selIndex(Y, b, scale = FALSE)
 \item{scale}{should Y be scaled and centered}
 }
 \description{
-Calculates values of a selection index given trait values and 
-weights. This function is intended to be used in combination with 
-selection functions working on populations such as 
+Calculates values of a selection index given trait values and
+weights. This function is intended to be used in combination with
+selection functions working on populations such as
 \code{\link{selectInd}}.
 }
 \examples{
@@ -40,7 +40,7 @@ b = smithHazel(econWt, varG(pop), varP(pop))
 
 #Selection 2 best individuals using Smith-Hazel index
 #selIndex is used as a trait
-pop2 = selectInd(pop, nInd=2, trait=selIndex, 
+pop2 = selectInd(pop, nInd=2, trait=selIndex,
                  simParam=SP, b=b)
 
 }

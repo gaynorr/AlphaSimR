@@ -32,6 +32,9 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   arma::vec genicAA2(nThreads,arma::fill::zeros); // No LD and HWE
   arma::vec mu(nThreads,arma::fill::zeros); // Observed mean
   arma::vec eMu(nThreads,arma::fill::zeros); // Expected mean with HWE
+  arma::vec alpha(a.n_elem);
+  arma::vec alphaHW(a.n_elem);
+  
   arma::mat ddMat, gv_d;
   if(hasD){
     d = Rcpp::as<arma::vec>(trait.slot("domEff"));
@@ -54,7 +57,6 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   for(arma::uword i=0; i<E.n_rows; ++i){
     double gvMu1, gvMu2, gvEMu1, gvEMu2, 
     genoMu1, genoMu2, p1, p2, q1, q2, dK, 
-    alpha1, alpha2, alphaE1, alphaE2, 
     gvMu, gvEMu, gvNoLDMu;
     
     arma::uword tid; //Thread ID
@@ -140,27 +142,27 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
     gvEMu1 = accu(freqE1%gvE1);
     gvEMu2 = accu(freqE2%gvE2);
     
-    alpha1 = accu(freq1%(gv1-gvMu1)%(x-genoMu1))/
+    alpha(E(i,0)) = accu(freq1%(gv1-gvMu1)%(x-genoMu1))/
       accu(freq1%(x-genoMu1)%(x-genoMu1));
-    alphaE1 = accu(freqE1%(gvE1-gvEMu1)%(x-genoMu1))/
+    alphaHW(E(i,0)) = accu(freqE1%(gvE1-gvEMu1)%(x-genoMu1))/
       accu(freqE1%(x-genoMu1)%(x-genoMu1));
-    alpha2 = accu(freq2%(gv2-gvMu2)%(x-genoMu2))/
+    alpha(E(i,1)) = accu(freq2%(gv2-gvMu2)%(x-genoMu2))/
       accu(freq2%(x-genoMu2)%(x-genoMu2));
-    alphaE2 = accu(freqE2%(gvE2-gvEMu2)%(x-genoMu2))/
+    alphaHW(E(i,1)) = accu(freqE2%(gvE2-gvEMu2)%(x-genoMu2))/
       accu(freqE2%(x-genoMu2)%(x-genoMu2));
     
     //Check for divide by zero
-    if(!std::isfinite(alpha1)) alpha1=0;
-    if(!std::isfinite(alphaE1)) alphaE1=0;
-    if(!std::isfinite(alpha2)) alpha2=0;
-    if(!std::isfinite(alphaE2)) alphaE2=0;
+    if(!std::isfinite(alpha(E(i,0)))) alpha(E(i,0))=0;
+    if(!std::isfinite(alphaHW(E(i,0)))) alphaHW(E(i,0))=0;
+    if(!std::isfinite(alpha(E(i,1)))) alpha(E(i,1))=0;
+    if(!std::isfinite(alphaHW(E(i,1)))) alphaHW(E(i,0))=0;
     
     //Breeding values
     arma::vec bv1, bv2, bvE1, bvE2;
-    bv1 = (x-genoMu1)*alpha1; //Breeding values
-    bvE1 = (x-genoMu1)*alphaE1; //Random mating breeding value
-    bv2 = (x-genoMu2)*alpha2; //Breeding values
-    bvE2 = (x-genoMu2)*alphaE2; //Random mating breeding value
+    bv1 = (x-genoMu1)*alpha(E(i,0)); //Breeding values
+    bvE1 = (x-genoMu1)*alphaHW(E(i,0)); //Random mating breeding value
+    bv2 = (x-genoMu2)*alpha(E(i,1)); //Breeding values
+    bvE2 = (x-genoMu2)*alphaHW(E(i,0)); //Random mating breeding value
     genicA(tid) += accu(freq1%bv1%bv1);
     genicA2(tid) += accu(freqE1%bvE1%bvE1);
     genicA(tid) += accu(freq2%bv2%bv2);
@@ -255,7 +257,9 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("gv_a")=sum(gv_a,1),
                               Rcpp::Named("gv_d")=sum(gv_d,1),
                               Rcpp::Named("gv_aa")=sum(gv_aa,1),
-                              Rcpp::Named("gv_mu")=intercept);
+                              Rcpp::Named("gv_mu")=intercept,
+                              Rcpp::Named("alpha")=alpha,
+                              Rcpp::Named("alpha_HW")=alphaHW);
   }else{
     gv_t = gv_a + gv_aa;
     return Rcpp::List::create(Rcpp::Named("gv")=sum(gv_t,1)+intercept,
@@ -269,7 +273,9 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
                               Rcpp::Named("gv_a")=sum(gv_a,1),
                               Rcpp::Named("gv_aa")=sum(gv_aa,1),
-                              Rcpp::Named("gv_mu")=intercept);
+                              Rcpp::Named("gv_mu")=intercept,
+                              Rcpp::Named("alpha")=alpha,
+                              Rcpp::Named("alpha_HW")=alphaHW);
   }
 }
 
@@ -316,6 +322,8 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     gv_d.set_size(nInd,nThreads);
     gv_d.zeros();
   }
+  arma::vec alpha(a.n_elem);
+  arma::vec alphaHW(a.n_elem);
   
   arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
                                              lociPerChr, lociLoc, nThreads);
@@ -336,7 +344,7 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     arma::vec aEff(ploidy+1), dEff(ploidy+1), eff(ploidy+1); // Genetic values, additive and dominance
     arma::vec bv(ploidy+1), dd(ploidy+1), gv(ploidy+1); // Statistical values, additive and dominance
     arma::vec bvE(ploidy+1), ddE(ploidy+1); //Expected for random mating
-    double gvMu, gvEMu, genoMu, p, q, dK, alpha, alphaE;
+    double gvMu, gvEMu, genoMu, p, q, dK;
     
     // Compute genotype frequencies
     for(arma::uword j=0; j<nInd; ++j){
@@ -370,18 +378,18 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
     eMu(tid) += gvEMu;
     
     // Average effect
-    alpha = accu(freq%(gv-gvMu)%(x-genoMu))/
+    alpha(i) = accu(freq%(gv-gvMu)%(x-genoMu))/
       accu(freq%(x-genoMu)%(x-genoMu));
-    alphaE = accu(freqE%(gv-gvEMu)%(x-genoMu))/
+    alphaHW(i) = accu(freqE%(gv-gvEMu)%(x-genoMu))/
       accu(freqE%(x-genoMu)%(x-genoMu)); 
     
     // Check for divide by zero
-    if(!std::isfinite(alpha)) alpha=0;
-    if(!std::isfinite(alphaE)) alphaE=0;
+    if(!std::isfinite(alpha(i))) alpha(i)=0;
+    if(!std::isfinite(alphaHW(i))) alphaHW(i)=0;
     
     // Set additive genic variances
-    bv = (x-genoMu)*alpha; //Breeding values
-    bvE = (x-genoMu)*alphaE; //Random mating breeding value
+    bv = (x-genoMu)*alpha(i); //Breeding values
+    bvE = (x-genoMu)*alphaHW(i); //Random mating breeding value
     genicA(tid) += accu(freq%bv%bv);
     genicA2(tid) += accu(freqE%bvE%bvE);
     
@@ -416,7 +424,9 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
                               Rcpp::Named("gv_a")=sum(gv_a,1),
                               Rcpp::Named("gv_d")=sum(gv_d,1),
-                              Rcpp::Named("gv_mu")=intercept);
+                              Rcpp::Named("gv_mu")=intercept,
+                              Rcpp::Named("alpha")=alpha,
+                              Rcpp::Named("alpha_HW")=alphaHW);
   }else{
     return Rcpp::List::create(Rcpp::Named("gv")=sum(gv_a,1)+intercept,
                               Rcpp::Named("bv")=sum(bvMat,1),
@@ -425,6 +435,8 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
                               Rcpp::Named("gv_a")=sum(gv_a,1),
-                              Rcpp::Named("gv_mu")=intercept);
+                              Rcpp::Named("gv_mu")=intercept,
+                              Rcpp::Named("alpha")=alpha,
+                              Rcpp::Named("alpha_HW")=alphaHW);
   }
 }

@@ -26,12 +26,17 @@ selectFam(
 
 \item{trait}{the trait for selection. Either a number indicating
 a single trait or a function returning a vector of length nInd.
-The function must work on a vector or matrix of \code{use} values.
-See the examples in \code{\link{selectInd}} and \code{\link{selIndex}}.}
+The function must work on a vector or matrix of \code{use} values as
+\code{trait(pop@use, ...)} - depending on what \code{use} is.
+See the examples and \code{\link{selIndex}}.}
 
-\item{use}{select on genetic values "gv", estimated
-breeding values "ebv", breeding values "bv", phenotypes "pheno",
-or randomly "rand"}
+\item{use}{the selection criterion. Either a character
+(genetic values "gv", estimated breeding values "ebv", breeding values "bv",
+phenotypes "pheno", or randomly "rand") or
+a function returning a vector of length nInd.
+The function must work on \code{pop} as \code{use(pop, trait, ...)} or
+as \code{trait(pop@use, ...)} depending on what \code{trait} is.
+See the examples.}
 
 \item{sex}{which sex to select. Use "B" for both, "F" for
 females and "M" for males. If the simulation is not using sexes,
@@ -53,7 +58,7 @@ individuals is returned.}
 \item{simParam}{an object of \code{\link{SimParam}}}
 
 \item{...}{additional arguments if using a function for
-trait}
+\code{trait} and \code{use}}
 }
 \value{
 Returns an object of \code{\link{Pop-class}},

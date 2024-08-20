@@ -22,7 +22,7 @@ runMacs(
 
 \item{nChr}{number of chromosomes to simulate}
 
-\item{segSites}{number of segregating sites to keep per chromosome. A 
+\item{segSites}{number of segregating sites to keep per chromosome. A
 value of NULL results in all sites being retained.}
 
 \item{inbred}{should founder individuals be inbred}
@@ -35,37 +35,37 @@ value of NULL results in all sites being retained.}
 
 \item{manualCommand}{user provided MaCS options. For advanced users only.}
 
-\item{manualGenLen}{user provided genetic length. This must be supplied if using 
-manualCommand. If not using manualCommand, this value will replace the predefined 
-genetic length for the species. However, this the genetic length is only used by 
-AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length. 
+\item{manualGenLen}{user provided genetic length. This must be supplied if using
+manualCommand. If not using manualCommand, this value will replace the predefined
+genetic length for the species. However, this the genetic length is only used by
+AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length.
 For advanced users only.}
 
-\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel. 
+\item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel.
 If the value is NULL, the number of threads is automatically detected.}
 }
 \value{
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Uses the MaCS software to produce founder haplotypes 
+Uses the MaCS software to produce founder haplotypes
 \insertCite{MaCS}{AlphaSimR}.
 }
 \details{
 There are currently three species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
 
-The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and 
-models a population with an effective populations size that has gone through several historic 
-bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}} 
+The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and
+models a population with an effective populations size that has gone through several historic
+bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}}
 function, so the user should examine this function for the details of how the species is modeled.
 
 The CATTLE history is based off of real genome sequence data \insertCite{cattle}{AlphaSimR}.
 
-The WHEAT \insertCite{gaynor_2017}{AlphaSimR} and MAIZE \insertCite{hickey_2014}{AlphaSimR} 
-histories have been included due to their use in previous simulations. However, it should 
-be noted that neither faithfully simulates its respective species. This is apparent by 
-the low number of segregating sites simulated by each history relative to their real-world 
-analogs. Adjusting these histories to better represent their real-world analogs would result 
+The WHEAT \insertCite{gaynor_2017}{AlphaSimR} and MAIZE \insertCite{hickey_2014}{AlphaSimR}
+histories have been included due to their use in previous simulations. However, it should
+be noted that neither faithfully simulates its respective species. This is apparent by
+the low number of segregating sites simulated by each history relative to their real-world
+analogs. Adjusting these histories to better represent their real-world analogs would result
 in a drastic increase to runtime.
 }
 \examples{

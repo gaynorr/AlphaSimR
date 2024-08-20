@@ -51,7 +51,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
   }else{
     # Create dummy map with zero genetic distance
     map = vector("list",pop@nChr)
-    for(i in 1:pop@nChr){
+    for(i in seq_len(pop@nChr)){
       map[[i]] = rep(0,pop@nLoci[i])
     }
     map = as.matrix(map)
@@ -142,7 +142,7 @@ doubleGenome = function(pop, keepParents=TRUE,
   }
   
   geno = pop@geno
-  for(i in 1:pop@nChr){
+  for(i in seq_len(pop@nChr)){
     geno[[i]] = geno[[i]][,rep(1:pop@ploidy,each=2),,drop=FALSE]
   }
   
@@ -156,7 +156,7 @@ doubleGenome = function(pop, keepParents=TRUE,
   if(simParam$isTrackRec){
     # Match haplotypes according to original ploidy
     hist = vector("list", pop@ploidy)
-    for(i in 1:pop@ploidy){
+    for(i in seq_len(pop@ploidy)){
       hist[[i]] = cbind(i, 1L)
     }
     
@@ -248,12 +248,12 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
   
   # Merge genotype data
   geno = vector("list", females@nChr)
-  for(i in 1:females@nChr){
+  for(i in seq_len(females@nChr)){
     geno[[i]] = array(as.raw(0), 
                       dim = c(dim(females@geno[[i]])[1],
                               females@ploidy+males@ploidy,
                               nrow(crossPlan)))
-    for(j in 1:nrow(crossPlan)){
+    for(j in seq_len(nrow(crossPlan))){
       # Add female gametes
       geno[[i]][,1:females@ploidy,j] = 
         females@geno[[i]][,,crossPlan[j,1]]
@@ -277,12 +277,12 @@ mergeGenome = function(females,males,crossPlan,simParam=NULL){
     hist = vector("list", rPop@ploidy)
     
     # Add female contribution
-    for(i in 1:females@ploidy){
+    for(i in seq_len(females@ploidy)){
       hist[[i]] = cbind(i, 1L)
     }
     
     # Add male contribution
-    for(i in 1:males@ploidy){
+    for(i in seq_len(males@ploidy)){
       hist[[i+females@ploidy]] = cbind(i, 1L)
     }
     

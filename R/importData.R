@@ -34,7 +34,7 @@ importGenMap = function(genMap){
   names(genMap) = uniqueChr
 
   # Iterate through chromosomes
-  for(i in 1:length(uniqueChr)){
+  for(i in seq_len(length(uniqueChr))){
 
     take = (chromosome==uniqueChr[i])
     tmpPos = position[take]
@@ -155,7 +155,7 @@ importInbredGeno = function(geno, genMap, ped=NULL){
   haplotypes = vector("list", length=length(genMap))
 
   # Order haplotypes by chromosome
-  for(i in 1:length(genMap)){
+  for(i in seq_len(length(genMap))){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
@@ -267,7 +267,7 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   haplotypes = vector("list", length=length(genMap))
   
   # Order haplotypes by chromosome
-  for(i in 1:length(genMap)){
+  for(i in seq_len(length(genMap))){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
@@ -276,7 +276,7 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
       genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
       take = na.omit(take)
     }
-    haplotypes[[i]] = haplo[,take]
+    haplotypes[[i]] = haplo[,take,drop=FALSE]
   }
   
   founderPop = newMapPop(genMap=genMap,

@@ -23,8 +23,8 @@ quickHaplo(nInd, nChr, segSites, genLen = 1, ploidy = 2L, inbred = FALSE)
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Rapidly simulates founder haplotypes by randomly 
-sampling 0s and 1s. This is equivalent to having all loci with 
+Rapidly simulates founder haplotypes by randomly
+sampling 0s and 1s. This is equivalent to having all loci with
 allele frequency 0.5 and being in linkage equilibrium.
 }
 \examples{

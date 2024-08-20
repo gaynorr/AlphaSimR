@@ -33,7 +33,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam){
   }
 
   gv = pop@gv
-  for(i in 1:nTraits){
+  for(i in seq_len(nTraits)){
     if(.hasSlot(simParam$traits[[traits[i]]], "envVar")){
       stdDev = sqrt(simParam$traits[[traits[i]]]@envVar)
       gv[,traits[i]] = gv[,traits[i]] +
@@ -183,7 +183,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
               all(varA>0),
               all(varG>0))
     varE = numeric(nTraits)
-    for(i in 1:nTraits){
+    for(i in seq_len(nTraits)){
       tmp = varA[i]/h2[i]-varG[i]
       if(tmp<0){
         stop(paste0("h2=",h2[i]," is not possible for trait ",traits[i]))
@@ -198,7 +198,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 
     stopifnot(length(H2)==nTraits)
     varE = numeric(nTraits)
-    for(i in 1:nTraits){
+    for(i in seq_len(nTraits)){
       tmp = varG[i]/H2[i]-varG[i]
       varE[i] = tmp
     }

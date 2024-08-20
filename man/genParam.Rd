@@ -42,6 +42,8 @@ genParam(pop, simParam = NULL)
 \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 \item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
+\item{alpha}{a list of average allele subsitution effects with length nTraits}
+\item{alpha_HW}{a list of average allele subsitution effects at Hardy-Weinberg equilibrium with length nTraits}
 }
 }
 \description{
