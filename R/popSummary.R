@@ -1,8 +1,3 @@
-# Internal function for calculating mean EBV of populations
-# Used selectPop MultiPop-class
-meanEBV = function(pop){
-  colMeans(pop@ebv)
-}
 
 #' @title Mean genetic values
 #'
@@ -52,6 +47,33 @@ meanG = function(pop){
 #' @export
 meanP = function(pop){
   colMeans(pop@pheno)
+}
+
+#' @title Mean estimated breeding values
+#'
+#' @description Returns the mean estimated breeding values for all traits
+#'
+#' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' trtH2 = 0.5
+#' SP$setVarE(h2=trtH2)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
+#' meanEBV(pop)
+#'
+#' @export
+meanEBV = function(pop){
+  colMeans(pop@ebv)
 }
 
 #' @title Total genetic variance
@@ -106,6 +128,36 @@ varP = function(pop){
   P = popVar(pop@pheno)
   rownames(P) = colnames(P) = colnames(pop@pheno)
   return(P)
+}
+
+#' @title Variance of estimated breeding values
+#'
+#' @description Returns variance of estimated breeding values for all traits
+#'
+#' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' trtH2 = 0.5
+#' SP$setVarE(h2=trtH2)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
+#' varA(pop)
+#' varEBV(pop)
+#'
+#' @export
+varEBV = function(pop){
+  ebv = popVar(pop@ebv)
+  rownames(ebv) = colnames(ebv) = colnames(pop@ebv)
+  return(ebv)
 }
 
 #' @title Sumarize genetic parameters
@@ -171,7 +223,7 @@ genParam = function(pop,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  stopifnot(class(pop)=="Pop")
+  
   nInd = nInd(pop)
   nTraits = simParam$nTraits
   traitNames = simParam$traitNames
@@ -187,14 +239,14 @@ genParam = function(pop,simParam=NULL){
   genicVarD = genicVarAA = covA_HW = covD_HW = covAA_HW =
     covG_HW = mu = mu_HW = gv_mu = covAAA_L = covDAA_L =
     covAD_L = genicVarA
-  
+
   # Average effect of an allele substitution
   alpha = vector("list", length=nTraits)
   names(alpha) = traitNames
   alpha_HW = alpha
-  
+
   #Loop through trait calculations
-  for(i in 1:nTraits){
+  for(i in seq_len(nTraits)){
     trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop,simParam$nThreads)
     genicVarA[i] = tmp$genicVarA2

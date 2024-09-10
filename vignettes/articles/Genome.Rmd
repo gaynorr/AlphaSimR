@@ -155,7 +155,6 @@ basePop = newPop(founderGenome, simParam = SP)
 basePop
 ```
 
-
 The SNPs can be read with `pullSnpGeno` or, if the location in the genome is known, `pullMarkerGeno` can be used.
 
 ```{r}
@@ -197,3 +196,4 @@ getSnpMap(snpChip = 1, simParam = SP)
 By understanding the genome, breeders can produce crop and livestock with desirable traits for use in specific production systems. For example, a breeder may desire to have polled cattle to increase animal welfare and human safety. When considering the breeding design for a species, breed, and or system, there are many factors to consider with potential to introduce unintended consequences. These include balancing the trade off between short-term genetic gain and long-term loss in genetic variation as well as antagonistic relationships between desired traits commonly observed between production and functional traits in animals. **AlphaSimR** provides a fast and inexpensive way to explore and test a wide range of breeding designs for long term genetic improvement across plants and animals through forward-in-time stochastic simulations.
 
 For a more detailed overview of AlphaSimR in plant and animal breeding with exercises, please see the edx course: Breeding Programme Modelling with AlphaSimR. Available at: https://learning.edx.org/course/course-v1:EdinburghX+ISB001+1T2021/home
+

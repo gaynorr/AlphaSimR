@@ -219,7 +219,7 @@ SimParam = R6Class(
         
         # Make exclusions
         restr = self$invalidQtl
-        for(i in 1:self$nChr){
+        for(i in seq_len(self$nChr)){
           restr[[i]] = sort(union(restr[[i]], matchList[[i]]))
         }
         self$invalidQtl = restr
@@ -242,7 +242,7 @@ SimParam = R6Class(
         
         # Make exclusions
         restr = self$invalidSnp
-        for(i in 1:self$nChr){
+        for(i in seq_len(self$nChr)){
           restr[[i]] = sort(union(restr[[i]], matchList[[i]]))
         }
         self$invalidSnp = restr
@@ -396,7 +396,7 @@ SimParam = R6Class(
       lociLoc = vector("list", length(genMap))
       
       # Loop through chromosomes
-      for(i in 1:length(genMap)){
+      for(i in seq_len(length(genMap))){
         
         # Initialize lociLoc
         lociLoc[[i]] = integer()
@@ -450,11 +450,11 @@ SimParam = R6Class(
       })
       lociLoc = do.call("c",lociLoc)
 
-      for (i in 1:nrow(structure)){
+      for (i in seq_len(nrow(structure))){
         snps = lociLoc[structure[i,]]
         start = 1
         numChr = numeric(length(nSnpPerChr))
-        for (j in 1:length(nSnpPerChr)){
+        for (j in seq_len(length(nSnpPerChr))){
           end = start + nSnpPerChr[j] - 1
           numChr[j] = sum(structure[i,start:end])
           start = end + 1
@@ -517,7 +517,7 @@ SimParam = R6Class(
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitA",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -592,7 +592,7 @@ SimParam = R6Class(
                           corr=corA,gamma=gamma,shape=shape)
       domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
                           corDD=corDD,meanDD=meanDD,varDD=varDD)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitAD",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -796,7 +796,7 @@ SimParam = R6Class(
                           corr=corA,gamma=gamma,shape=shape)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corGxE,gamma=FALSE,shape=NULL)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitA",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -906,7 +906,7 @@ SimParam = R6Class(
                           corDD=corDD,meanDD=meanDD,varDD=varDD)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corGxE,gamma=FALSE,shape=NULL)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitAD",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -1019,7 +1019,7 @@ SimParam = R6Class(
                           corr=corA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitAE",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -1119,7 +1119,7 @@ SimParam = R6Class(
                           corr=corA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitADE",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -1222,7 +1222,7 @@ SimParam = R6Class(
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corGxE,gamma=FALSE,shape=NULL)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitAE",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -1357,7 +1357,7 @@ SimParam = R6Class(
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corGxE,gamma=FALSE,shape=NULL)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         trait = new("TraitADE",
                     qtlLoci,
                     addEff=addEff[,i],
@@ -1505,12 +1505,12 @@ SimParam = R6Class(
       lociPerChr = integer(self$nChr)
       lociLoc = vector("list", self$nChr)
       addEffList = domEffList = vector("list", nTraits)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
       }
 
       # Loop through chromosomes
-      for(i in 1:self$nChr){
+      for(i in seq_len(self$nChr)){
         # Working on trait 1
         # Initialize variables
         addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
@@ -1546,7 +1546,7 @@ SimParam = R6Class(
       nLoci = sum(lociPerChr)
 
       # Create Trait(s)
-      for(i in 1:nTraits){
+      for(i in seq_len(nTraits)){
         addEff = unlist(addEffList[[i]])
         if(useDom){
           domEff = unlist(domEffList[[i]])
@@ -1660,7 +1660,7 @@ SimParam = R6Class(
                   all(private$.varG>0),
                   all(private$.varA>0))
         varE = numeric(self$nTraits)
-        for(i in 1:length(h2)){
+        for(i in seq_len(length(h2))){
           tmp = private$.varA[i]/h2[i]-private$.varG[i]
           if(tmp<0){
             stop(paste0("h2=",h2[i]," is not possible for trait ",i))
@@ -1671,7 +1671,7 @@ SimParam = R6Class(
       }else if(!is.null(H2)){
         stopifnot(length(H2)==self$nTraits)
         varE = numeric(self$nTraits)
-        for(i in 1:length(H2)){
+        for(i in seq_len(length(H2))){
           tmp = private$.varG[i]/H2[i]-private$.varG[i]
           varE[i] = tmp
         }
@@ -1782,7 +1782,7 @@ SimParam = R6Class(
                 length(var)==self$nTraits,
                 length(varEnv)==self$nTraits,
                 length(varGxE)==self$nTraits)
-      for(i in 1:self$nTraits){
+      for(i in seq_len(self$nTraits)){
         trait = private$.traits[[i]]
         trait@intercept = 0
         tmp = calcGenParam(trait,
@@ -1993,12 +1993,12 @@ SimParam = R6Class(
         newRecHist = vector("list",nNewInd)
         tmpLastHaplo = private$.lastHaplo
         if(all(isDH==1L)){
-          for(i in 1:nNewInd){
+          for(i in seq_len(nNewInd)){
             tmpLastHaplo = tmpLastHaplo + 1L
             newRecHist[[i]] = rep(tmpLastHaplo, ploidy)
           }
         }else{
-          for(i in 1:nNewInd){
+          for(i in seq_len(nNewInd)){
             newRecHist[[i]] = (tmpLastHaplo+1L):(tmpLastHaplo+ploidy)
             tmpLastHaplo = tmpLastHaplo + ploidy
           }
@@ -2168,7 +2168,7 @@ SimParam = R6Class(
 
       # Identify potential sites
       pot = vector('list', self$nChr)
-      for(i in 1:self$nChr){
+      for(i in seq_len(self$nChr)){
         pot[[i]] = setdiff(1:private$.segSites[i], restr[[i]])
       }
 
@@ -2177,7 +2177,7 @@ SimParam = R6Class(
         if(is.null(refPop)){
           refPop = self$founderPop
         }
-        for(chr in 1:self$nChr){
+        for(chr in seq_len(self$nChr)){
           q = calcChrFreq(refPop@geno[[chr]])
           q = 0.5-abs(q-0.5) #Convert to minor allele frequency
           tmp = which(q>=minFreq)
@@ -2266,7 +2266,7 @@ SimParam = R6Class(
         if(length(value)!=self$nTraits){
           stop("length of traitNames vector must equal ",self$nTraits)
         }
-        for(i in 1:self$nTraits){
+        for(i in seq_len(self$nTraits)){
           private$.traits[[i]]@name = value[i]
         }
       }
@@ -2284,7 +2284,7 @@ SimParam = R6Class(
         if(length(value)!=self$nSnpChips){
           stop("length of snpChipNames vector must equal ",self$nSnpChips)
         }
-        for(i in 1:self$nSnpChips){
+        for(i in seq_len(self$nSnpChips)){
           self$snpChips[[i]]@name = value[i]
         }
       }
@@ -2359,7 +2359,7 @@ SimParam = R6Class(
       if(missing(value)){
         if(private$.sepMap){
           genMap = vector("list",self$nChr)
-          for(i in 1:self$nChr){
+          for(i in seq_len(self$nChr)){
             genMap[[i]] = (private$.femaleMap[[i]]+
                              private$.maleMap[[i]])/2
           }

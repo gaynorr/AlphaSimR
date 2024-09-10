@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Placeholder for future development
+
 Background from existing vignette
   altAddTraitAD (its own section?)
 

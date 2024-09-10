@@ -26,42 +26,42 @@ RRBLUP_GCA2(
 \item{traits}{an integer indicating the trait to model, a trait name, or a
 function of the traits returning a single value.}
 
-\item{use}{train model using phenotypes "pheno", genetic values "gv", 
+\item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
 
-\item{snpChip}{an integer indicating which SNP chip genotype 
+\item{snpChip}{an integer indicating which SNP chip genotype
 to use}
 
-\item{useQtl}{should QTL genotypes be used instead of a SNP chip. 
-If TRUE, snpChip specifies which trait's QTL to use, and thus these 
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip.
+If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations for convergence.}
 
-\item{VuF}{marker effect variance for females. If value is NULL, a 
+\item{VuF}{marker effect variance for females. If value is NULL, a
 reasonable starting point is chosen automatically.}
 
-\item{VuM}{marker effect variance for males. If value is NULL, a 
+\item{VuM}{marker effect variance for males. If value is NULL, a
 reasonable starting point is chosen automatically.}
 
-\item{Ve}{error variance. If value is NULL, a 
+\item{Ve}{error variance. If value is NULL, a
 reasonable starting point is chosen automatically.}
 
-\item{useEM}{use EM to solve variance components. If false, 
+\item{useEM}{use EM to solve variance components. If false,
 the initial values are considered true.}
 
 \item{tol}{tolerance for EM algorithm convergence}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments if using a function for 
+\item{...}{additional arguments if using a function for
 traits}
 }
 \description{
 Fits an RR-BLUP model that estimates seperate marker effects for
-females and males. This implementation is meant for situations where 
-\code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2 
-is only faster in certain situations. Most users should use 
+females and males. This implementation is meant for situations where
+\code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2
+is only faster in certain situations. Most users should use
 \code{\link{RRBLUP_GCA}}.
 }
 \examples{

@@ -68,7 +68,7 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
     stop("Number of segregating sites in haplotypes and genMap don't match")
   }
   output = vector("list",length(genMap))
-  for(chr in 1:length(genMap)){
+  for(chr in seq_len(length(genMap))){
     geno = packHaplo(as.matrix(haplotypes[[chr]]),
                      ploidy=ploidy,inbred=inbred)
     output[[chr]] = new("MapPop",
@@ -195,7 +195,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
       histNe = histNe/Ne
       histGen = histGen/(4*Ne)
       speciesHist = NULL
-      for(i in 1:length(histNe)){
+      for(i in seq_len(length(histNe))){
         speciesHist = paste(speciesHist,"-eN",
                             histGen[i],histNe[i])
       }
@@ -254,7 +254,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   }
 
   genMap = vector("list",nChr)
-  for(i in 1:nChr){
+  for(i in seq_len(nChr)){
     genMap[[i]] = genLen[i]*c(macsOut$genMap[[i]]-macsOut$genMap[[i]][1])
     names(genMap[[i]]) = paste(i,1:length(genMap[[i]]),sep="_")
   }
@@ -349,7 +349,7 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
   if(length(histNe)>0){
     histNe = histNe/Ne
     histGen = histGen/(4*Ne)
-    for(i in 1:length(histNe)){
+    for(i in seq_len(length(histNe))){
       speciesHist = paste(speciesHist,"-eN",
                       histGen[i],histNe[i])
     }
@@ -404,18 +404,18 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
   nBin = mapPop@nLoci%/%8L + (mapPop@nLoci%%8L > 0L)
   if(!replace) stopifnot(nHaplo>=nSamp)
   output = vector("list",mapPop@nChr)
-  for(chr in 1:mapPop@nChr){
+  for(chr in seq_len(mapPop@nChr)){
     haplo = sample.int(nHaplo,nSamp,replace=replace)
     geno = array(data=as.raw(0),
                  dim=c(nBin[chr],
                        ploidy,nInd))
     outHap = 1L
     outInd = 1L
-    for(i in 1:length(haplo)){
+    for(i in seq_len(length(haplo))){
       inHap = (haplo[i]-1L)%%mapPop@ploidy + 1L
       inInd = (haplo[i]-1L)%/%mapPop@ploidy + 1L
       if(inbred){
-        for(outHap in 1:ploidy){
+        for(outHap in seq_len(ploidy)){
           geno[,outHap,outInd] =
             mapPop@geno[[chr]][,inHap,inInd]
         }
@@ -476,7 +476,7 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 
   genMap = vector("list",nChr)
   geno = vector("list",nChr)
-  for(i in 1:nChr){
+  for(i in seq_len(nChr)){
     genMap[[i]] = seq(0,genLen[i],length.out=segSites[i])
     names(genMap[[i]]) = paste(i, 1:segSites[i], sep="_")
     geno[[i]] = array(sample(as.raw(0:255),

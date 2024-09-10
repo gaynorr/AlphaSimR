@@ -148,7 +148,7 @@ setValidity("MapPop",function(object){
   if(object@nChr!=length(object@genMap)){
     errors = c(errors,"nInd!=length(id)")
   }
-  for(i in 1:object@nChr){
+  for(i in seq_len(object@nChr)){
     if(object@nLoci[i]!=length(object@genMap[[i]])){
       errors = c(errors,
                  paste0("nLoci[",i,"]!=length(genMap[[",i,"]]"))
@@ -168,7 +168,7 @@ setMethod("[",
             if(any(abs(i)>x@nInd)){
               stop("Trying to select invalid individuals")
             }
-            for(chr in 1:x@nChr){
+            for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
@@ -631,7 +631,7 @@ newPop = function(rawPop,simParam=NULL,...){
   stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
 
   lastId = simParam$lastId
-  iid = (1:rawPop@nInd) + lastId
+  iid = seq_len(rawPop@nInd) + lastId
   lastId = max(iid)
 
   if(is.null(id)){
@@ -695,7 +695,7 @@ newPop = function(rawPop,simParam=NULL,...){
   pheno = gv
 
   if(simParam$nTraits>=1){
-    for(i in 1:simParam$nTraits){
+    for(i in seq_len(simParam$nTraits)){
       tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
       gv[,i] = tmp[[1]]
 
@@ -796,18 +796,16 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-
+  
   # Calculate genetic values
-  if(simParam$nTraits>=1){
-    for(i in 1:simParam$nTraits){
-      tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
-      pop@gv[,i] = tmp[[1]]
-      if(length(tmp)>1){
-        pop@gxe[[i]] = tmp[[2]]
-      }
+  for(i in seq_len(simParam$nTraits)){
+    tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
+    pop@gv[,i] = tmp[[1]]
+    if(length(tmp)>1){
+      pop@gxe[[i]] = tmp[[2]]
     }
   }
-
+  
   # Add back trait names
   colnames(pop@pheno) = colnames(pop@gv) = traitNames
 
@@ -877,20 +875,18 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                     ncol = simParam$nTraits)
 
   traitNames = character(simParam$nTraits)
-
-  if(simParam$nTraits > 0L){
-    # Get trait names
-    for(i in 1:simParam$nTraits){
-      traitNames[i] = simParam$traits[[i]]@name
-    }
+  
+  # Get trait names
+  for(i in seq_len(simParam$nTraits)){
+    traitNames[i] = simParam$traits[[i]]@name
   }
-
+  
   colnames(traitMat) = traitNames
 
   # Create empty geno list
   nLoci = unname(sapply(simParam$genMap, length))
   geno = vector("list", simParam$nChr)
-  for(i in 1:simParam$nChr){
+  for(i in seq_len(simParam$nChr)){
     DIM1 = nLoci[i]%/%8L + (nLoci[i]%%8L > 0L)
     geno[[i]] = array(as.raw(0), dim=c(DIM1, ploidy, 0))
   }
