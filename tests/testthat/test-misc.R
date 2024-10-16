@@ -7,6 +7,9 @@ test_that("misc_and_miscPop",{
   popOrig = newPop(founderPop, simParam=SP)
   multiPop = newMultiPop(popOrig, popOrig)
 
+  expect_equal(popOrig@misc, list())
+  expect_equal(popOrig@miscPop, list())
+
   popSub = popOrig[1]
   expect_equal(popSub@misc, list())
   expect_equal(popSub@miscPop, list())
@@ -38,5 +41,12 @@ test_that("misc_and_miscPop",{
   expect_equal(popC@misc$mtP, c(pop@misc$mtP, pop@misc$mtP))
   expect_equal(popC@misc$mtLP, c(pop@misc$mtLP, pop@misc$mtLP))
   expect_equal(popC@misc$mtMP, c(pop@misc$mtMP, pop@misc$mtMP))
+  expect_equal(popC@miscPop, list())
+
+  popC = c(pop, pop[1])
+  expect_equal(popC@misc$vec, c(pop@misc$vec, pop@misc$vec[1]))
+  expect_equal(popC@misc$mtP, c(pop@misc$mtP, pop@misc$mtP[1]))
+  expect_equal(popC@misc$mtLP, c(pop@misc$mtLP, pop@misc$mtLP[1]))
+  expect_equal(popC@misc$mtMP, c(pop@misc$mtMP, pop@misc$mtMP[1]))
   expect_equal(popC@miscPop, list())
 })
