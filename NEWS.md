@@ -1,3 +1,7 @@
+# AlphaSimR 1.6.1
+
+*fixed bug in `mergePops` and `[` (subset) methods - they were failing for populations that had a misc slot with a matrix - we now check if a misc slot element is a matrix and rbind them for `mergePops` and subset rows for `[` (assuming the first dimension represents individuals)
+
 # AlphaSimR 1.6.0
 
 *exported `meanEBV` and added `varEBV` to complement `meanP`/`varP` and `meanG`/`varG`

@@ -2,7 +2,7 @@
 % Please edit documentation in R/pullGeno.R
 \name{mapLoci}
 \alias{mapLoci}
-\title{Find positions of loci by marker name}
+\title{Finds positions of loci by marker name}
 \usage{
 mapLoci(markers, genMap)
 }
@@ -17,7 +17,8 @@ A list containing lociPerChr and lociLoc
 that can be
 }
 \description{
-Retrieves the genetic map for a 
-given SNP chip.
+Used to generate lociPerChr and lociLoc 
+objects for a set of markers. These objects can be passed 
+other functions for pulling genotypes or haplotypes.
 }
 \keyword{internal}
