@@ -9,7 +9,7 @@ phenotypes, and pedigrees."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@ phenotypes, and pedigrees."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Population</h1>
-      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/v1.6.0/R/Class-Pop.R" class="external-link"><code>R/Class-Pop.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/master/R/Class-Pop.R" class="external-link"><code>R/Class-Pop.R</code></a></small>
       <div class="d-none name"><code>Pop-class.Rd</code></div>
     </div>
 
@@ -152,7 +152,8 @@ Used by genomic selection models but otherwise ignored.</p></dd>
 <dt><code>misc</code></dt>
 <dd><p>a list whose elements correspond to additional miscellaneous
 nodes with the items for individuals in the population (see example in
-<code><a href="newPop.html">newPop</a></code>).
+<code><a href="newPop.html">newPop</a></code>) - we support vectors and matrices or objects that
+have a generic length and subset method.
 This list is normally empty and exists solely as an
 open slot available for uses to store extra information about
 individuals.</p></dd>
@@ -181,7 +182,7 @@ combined because the meta data for old population might not be valid anymore.</p
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer></div>

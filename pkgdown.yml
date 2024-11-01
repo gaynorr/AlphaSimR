@@ -1,5 +1,5 @@
 pandoc: 3.1.11
-pkgdown: 2.1.0
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   articles/AlphaSimR: AlphaSimR.html
@@ -12,7 +12,7 @@ articles:
   articles/QuantGen: QuantGen.html
   traits: traits.html
   articles/Traits: Traits.html
-last_built: 2024-08-20T12:06Z
+last_built: 2024-11-01T18:53Z
 urls:
   reference: https://gaynorr.github.io/AlphaSimR/reference
   article: https://gaynorr.github.io/AlphaSimR/articles

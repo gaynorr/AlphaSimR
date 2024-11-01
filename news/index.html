@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,9 +42,13 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/v1.6.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.6.1" id="alphasimr-161">AlphaSimR 1.6.1<a class="anchor" aria-label="anchor" href="#alphasimr-161"></a></h2><p class="text-muted">CRAN release: 2024-11-01</p>
+<p>*fixed bug in <code>mergePops</code> and <code>[</code> (subset) methods - they were failing for populations that had a misc slot with a matrix - we now check if a misc slot element is a matrix and rbind them for <code>mergePops</code> and subset rows for <code>[</code> (assuming the first dimension represents individuals)</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.6.0" id="alphasimr-160">AlphaSimR 1.6.0<a class="anchor" aria-label="anchor" href="#alphasimr-160"></a></h2><p class="text-muted">CRAN release: 2024-08-17</p>
 <p>*exported <code>meanEBV</code> and added <code>varEBV</code> to complement <code>meanP</code>/<code>varP</code> and <code>meanG</code>/<code>varG</code></p>
@@ -340,7 +344,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer></div>
