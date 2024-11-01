@@ -43,7 +43,20 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
   return(lociNames)
 }
 
-# Finds loci on a genetic map and return a list of positions
+#' Finds positions of loci by marker name
+#' 
+#' @description Used to generate lociPerChr and lociLoc 
+#' objects for a set of markers. These objects can be passed 
+#' other functions for pulling genotypes or haplotypes.
+#' 
+#' @param markers a vector of marker names
+#' @param genMap a genetic map in AlphaSimR's internal 
+#' genetic map format
+#'
+#' @return A list containing lociPerChr and lociLoc 
+#' that can be
+#' 
+#' @keywords internal
 mapLoci = function(markers, genMap){
   # Check that the markers are present on the map
   genMapMarkerNames = unlist(lapply(genMap, names))

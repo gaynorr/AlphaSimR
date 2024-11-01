@@ -321,7 +321,6 @@ void GraphBuilder::markCurrentTree(){
     pTreeEdgesToCoalesceArray[i]=node->getTopEdgeByIndex(0);
   }
   unsigned int iIndex = 0;
-  int iIterations = 0;
   bool bFirstSample = true;
   while(iIndex<iTotalSamples){
     EdgePtr & curEdge = pTreeEdgesToCoalesceArray[iIndex];
@@ -332,7 +331,6 @@ void GraphBuilder::markCurrentTree(){
       iIndex = 0;
     }
     bFirstSample = false;
-    ++iIterations;
   }
 }
 

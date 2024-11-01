@@ -73,7 +73,8 @@ Used by genomic selection models but otherwise ignored.}
 
 \item{\code{misc}}{a list whose elements correspond to additional miscellaneous
 nodes with the items for individuals in the population (see example in
-\code{\link{newPop}}).
+\code{\link{newPop}}) - we support vectors and matrices or objects that
+have a generic length and subset method.
 This list is normally empty and exists solely as an
 open slot available for uses to store extra information about
 individuals.}
