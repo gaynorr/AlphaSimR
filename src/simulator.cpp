@@ -169,7 +169,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
         if (inFile.is_open()) {
           pConfig->pAlleleFreqBinPtrSet = new AlleleFreqBinPtrSet;
           string line;
-          int total=0;
           double lastStart=0.;
           double cumFreq=0.;
           double maxFreq = flipAllele?0.5:1.;
@@ -183,7 +182,6 @@ void Simulator::readInputParameters(CommandArguments arguments){
             AlleleFreqBinPtr bin = AlleleFreqBinPtr(new AlleleFreqBin(start,end,freq));
             pConfig->pAlleleFreqBinPtrSet->insert(bin);
             lastStart = end;
-            ++total;
           }
           inFile.close();
           pConfig->bSNPAscertainment = true;
@@ -230,14 +228,12 @@ void Simulator::readInputParameters(CommandArguments arguments){
         if (inFile.is_open()) {
           pConfig->pHotSpotBinPtrList = new HotSpotBinPtrList;
           string line;
-          int total=0;
           while(getline(inFile,line)){
             istringstream inStr(line);
             double start,end,ratio;
             inStr>>start>>end>>ratio;
             HotSpotBinPtr bin(new HotSpotBin(start,end,ratio));
             pConfig->pHotSpotBinPtrList->push_back(bin);
-            ++total;
           }
           inFile.close();
           pConfig->bVariableRecomb = true;
