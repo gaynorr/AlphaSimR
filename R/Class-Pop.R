@@ -377,7 +377,8 @@ isNamedMapPop = function(x) {
 #' Used by genomic selection models but otherwise ignored.
 #' @slot misc a list whose elements correspond to additional miscellaneous
 #' nodes with the items for individuals in the population (see example in
-#' \code{\link{newPop}}).
+#' \code{\link{newPop}}) - we support vectors and matrices or objects that
+#' have a generic length and subset method.
 #' This list is normally empty and exists solely as an
 #' open slot available for uses to store extra information about
 #' individuals.
@@ -462,8 +463,16 @@ setValidity("Pop",function(object){
   if(object@nInd!=length(object@fixEff)){
     errors = c(errors,"nInd!=length(fixEff)")
   }
-  if(any(object@nInd!=sapply(object@misc, length))){
-    errors = c(errors,"any(nInd!=sapply(misc, length))")
+  length2 = function(x){
+    if(is.matrix(x)){
+      ret = dim(x)[1]
+    }else{
+      ret = length(x)
+    }
+    return(ret)
+  }
+  if(any(object@nInd!=sapply(object@misc, length2))){
+    errors = c(errors,"any(nInd!=sapply(misc, length(x) or dim(x)[1]))")
   }
   if(length(errors)==0){
     return(TRUE)
@@ -489,12 +498,19 @@ setMethod("[",
                 stop("Trying to select invalid individuals")
               }
             }
+            subset2 = function(z){
+              if(is.matrix(z)){
+                return(z[i,,drop=FALSE])
+              }else{
+                return(z[i])
+              }
+            }
             x@id = x@id[i]
             x@iid = x@iid[i]
             x@mother = x@mother[i]
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
-            x@misc = lapply(x@misc, FUN = function(z) z[i])
+            x@misc = lapply(x@misc, FUN = subset2)
             x@miscPop = list()
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
@@ -796,7 +812,7 @@ resetPop = function(pop,simParam=NULL){
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
-  
+
   # Calculate genetic values
   for(i in seq_len(simParam$nTraits)){
     tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
@@ -805,7 +821,7 @@ resetPop = function(pop,simParam=NULL){
       pop@gxe[[i]] = tmp[[2]]
     }
   }
-  
+
   # Add back trait names
   colnames(pop@pheno) = colnames(pop@gv) = traitNames
 
@@ -875,12 +891,12 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                     ncol = simParam$nTraits)
 
   traitNames = character(simParam$nTraits)
-  
+
   # Get trait names
   for(i in seq_len(simParam$nTraits)){
     traitNames[i] = simParam$traits[[i]]@name
   }
-  
+
   colnames(traitMat) = traitNames
 
   # Create empty geno list
