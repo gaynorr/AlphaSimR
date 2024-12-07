@@ -261,4 +261,110 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   return(pop)
 }
 
+#' @title Convert a normal (Gaussian) trait to an ordered categorical (threshold)
+#'   trait
+#' @param x matrix, values for one or more traits (if not a matrix,
+#'   we cast to a matrix)
+#' @param threshold numeric or list, when numeric, provide a vector of threshold
+#'   values to convert continuous values into categories for a single trait
+#'   (the thresholds specify left-closed and right-opened intervals [t1, t2),
+#'   which can be changed with \code{include.lowest} and \code{right};
+#'   ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
+#'   range of values; otherwise you will get \code{NA} values);
+#'   when list, provide a list of numeric thresholds with \code{NULL} to skip
+#'   conversion for a specific trait (see examples)
+#' @param include.lowest logical, see \code{\link{cut}}
+#' @param right logical, see \code{\link{cut}}
+#' @details If input trait is normal (Gaussian) then this function generates a
+#'   categorical trait according to the ordered probit model.
+#' @return matrix of values with some traits recorded as ordered categories
+#'  in the form of 1:nC with nC being the number of categories.
+#' @examples
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$addTraitA(nQtlPerChr = 10, mean = c(0, 0), var = c(1, 2),
+#'              corA = matrix(data = c(1.0, 0.6,
+#'                                     0.6, 1.0), ncol = 2))
+#' pop = newPop(founderPop)
+#' pop = setPheno(pop, varE = c(1, 1))
+#' pheno(pop)
+#' #Convert a single input trait
+#' asCategorical(x = pheno(pop)[, 2])
+#' #Demonstrate threshold argument
+#' asCategorical(x = pheno(pop)[, 2], threshold = c(-1, 0, 1))
+#' asCategorical(x = pheno(pop)[, 2], threshold = c(-Inf, -1, 0, 1, Inf))
+#' #Convert multiple input traits
+#' try(asCategorical(x = pheno(pop)))
+#' asCategorical(x = pheno(pop),
+#'               threshold = list(NULL,
+#'                                c(-Inf, 0, Inf)))
+#' asCategorical(x = pheno(pop),
+#'               threshold = list(c(-Inf, -2, -1, 0, 1, 2, Inf),
+#'                                c(-Inf, 0, Inf)))
+#' @export
+asCategorical = function(x, threshold = c(-Inf, 0, Inf),
+                         include.lowest = TRUE, right = FALSE) {
+  if (!is.matrix(x)) {
+    x = as.matrix(x)
+  }
+  if (is.numeric(threshold)) {
+    if (ncol(x) > 1) {
+      stop("When x contains more than one column, you must supply a list of thresholds! See examples.")
+    }
+    threshold = list(threshold)
+  }
+  for (trt in 1:ncol(x)) {
+    if (!is.null(threshold[[trt]])) {
+      x[, trt] = as.numeric(cut(x = x[, trt], breaks = threshold[[trt]],
+                                include.lowest = include.lowest, right = right))
+    }
+  }
+  return(x)
+}
 
+#' @title Convert a normal (Gaussian) trait to a count (Poisson) trait
+#' @param x matrix, values for one or more traits (if not a matrix,
+#'   we cast to a matrix)
+#' @param TODO numeric or list, when numeric, provide a vector of TODO
+#' @return matrix of values with some traits recoded as counts
+#' @details If input trait is normal (Gaussian) then this function generates a
+#'   count trait according to the Poisson generalised linear model.
+#' @examples
+#' founderPop = quickHaplo(nInd=20, nChr=1, segSites=10)
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$addTraitA(nQtlPerChr = 10, mean = c(0, 0), var = c(1, 2),
+#'              corA = matrix(data = c(1.0, 0.6,
+#'                                     0.6, 1.0), ncol = 2))
+#' pop = newPop(founderPop)
+#' pop = setPheno(pop, varE = c(1, 1))
+#' pheno(pop)
+#' #Convert a single input trait
+#' asCount(x = pheno(pop)[, 2])
+#' asCount(x = pheno(pop)[, 2], TODO = c(-1, 0, 1))
+#' asCount(x = pheno(pop)[, 2], TODO = c(-Inf, -1, 0, 1, Inf))
+#' #Convert multiple input traits
+#' try(asCount(x = pheno(pop)))
+#' asCount(x = pheno(pop),
+#'           TODO = list(NULL,
+#'                       ???))
+#' TODO export
+# asCount = function(x, TODO = 10) {
+#   if (!is.matrix(x)) {
+#     x = as.matrix(x)
+#   }
+#   if (is.numeric(TODO)) {
+#     if (ncol(x) > 1) {
+#       stop("When x contains more than one column, you must supply a list of TODO! See examples.")
+#     }
+#     TODO = list(TODO)
+#   }
+#   for (trt in 1:ncol(x)) {
+#     if (!is.null(TODO[[trt]])) {
+# TODO: need to think what to do with an intercept and lambda
+#       x[, trt] = round(exp(x[, trt]))
+#     }
+#   }
+#   return(x)
+# }
