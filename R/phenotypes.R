@@ -265,14 +265,26 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   trait
 #' @param x matrix, values for one or more traits (if not a matrix,
 #'   we cast to a matrix)
-#' @param threshold numeric or list, when numeric, provide a vector of threshold
-#'   values to convert continuous values into categories for a single trait
+#' @param p NULL, numeric or list, when \code{NULL} the \code{threshold} argument
+#'   takes precedence; when numeric, provide a vector of probabilities of
+#'   categories to convert continuous values into categories for a single trait
+#'   (if probabilities do not sum to 1, another category is added and a warning
+#'   is raised); when list, provide a list of numeric probabilities - list node
+#'   with \code{NULL} will skip conversion for a specific trait (see examples);
+#'   internally \code{p} is converted to \code{threshold} hence input
+#'   \code{threshold} is overwritten
+#' @param mean numeric, assumed mean(s) of the normal (Gaussian) trait(s);
+#'   used only when \code{p} is given
+#' @param var numeric, assumed variance(s) of the normal (Gaussian) trait(s);
+#'   used only when \code{p} is given
+#' @param threshold NULL, numeric or list, when numeric, provide a vector of
+#'   threshold values to convert continuous values into categories for a single trait
 #'   (the thresholds specify left-closed and right-opened intervals [t1, t2),
 #'   which can be changed with \code{include.lowest} and \code{right};
 #'   ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
 #'   range of values; otherwise you will get \code{NA} values);
-#'   when list, provide a list of numeric thresholds with \code{NULL} to skip
-#'   conversion for a specific trait (see examples)
+#'   when list, provide a list of numeric thresholds - list node with \code{NULL}
+#'   will skip conversion for a specific trait (see examples)
 #' @param include.lowest logical, see \code{\link{cut}}
 #' @param right logical, see \code{\link{cut}}
 #' @details If input trait is normal (Gaussian) then this function generates a
@@ -283,38 +295,104 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(nQtlPerChr = 10, mean = c(0, 0), var = c(1, 2),
+#' trtMean = c(0, 0)
+#' trtVarG = c(1, 2)
+#' SP$addTraitA(nQtlPerChr = 10, mean = trtMean, var = trtVarG,
 #'              corA = matrix(data = c(1.0, 0.6,
 #'                                     0.6, 1.0), ncol = 2))
 #' pop = newPop(founderPop)
-#' pop = setPheno(pop, varE = c(1, 1))
+#' trtVarE = c(1, 1)
+#' trtVarP = trtVarG + trtVarE
+#' pop = setPheno(pop, varE = trtVarE)
 #' pheno(pop)
+#'
 #' #Convert a single input trait
-#' asCategorical(x = pheno(pop)[, 2])
-#' #Demonstrate threshold argument
-#' asCategorical(x = pheno(pop)[, 2], threshold = c(-1, 0, 1))
-#' asCategorical(x = pheno(pop)[, 2], threshold = c(-Inf, -1, 0, 1, Inf))
-#' #Convert multiple input traits
+#' asCategorical(x = pheno(pop)[, 1])
+#'
+#' #Demonstrate threshold argument (in units of pheno SD)
+#' asCategorical(x = pheno(pop)[, 1], threshold = c(-1, 0, 1) * sqrt(trtVarP[1]))
+#' asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, -1, 0, 1, Inf) * sqrt(trtVarP[1]))
+#' asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, 0, Inf))
+#'
+#' #Demonstrate p argument
+#' asCategorical(x = pheno(pop)[, 1], p = 0.5, var = trtVarP[1])
+#' asCategorical(x = pheno(pop)[, 1], p = c(0.5, 0.5), var = trtVarP[1])
+#' asCategorical(x = pheno(pop)[, 1], p = c(0.25, 0.5, 0.25), var = trtVarP[1])
+#'
+#' #Convert multiple input traits (via threshold or p argument)
 #' try(asCategorical(x = pheno(pop)))
 #' asCategorical(x = pheno(pop),
-#'               threshold = list(NULL,
-#'                                c(-Inf, 0, Inf)))
+#'               threshold = list(c(-Inf, 0, Inf),
+#'                                NULL))
+#' try(asCategorical(x = pheno(pop), p = c(0.5, 0.5)))
 #' asCategorical(x = pheno(pop),
-#'               threshold = list(c(-Inf, -2, -1, 0, 1, 2, Inf),
-#'                                c(-Inf, 0, Inf)))
+#'               p = list(c(0.5, 0.5),
+#'                        NULL),
+#'               mean = trtMean, var = trtVarP)
+#'
+#' asCategorical(x = pheno(pop),
+#'               threshold = list(c(-Inf, 0, Inf),
+#'                                c(-Inf, -2, -1, 0, 1, 2, Inf) * sqrt(trtVarP[2])))
+#' q = c(-2, -1, 0, 1, 2)
+#' p = pnorm(q)
+#' p = c(p[1], p[2]-p[1], p[3]-p[2], p[4]-p[3], p[5]-p[4], 1-p[5])
+#' asCategorical(x = pheno(pop),
+#'               p = list(c(0.5, 0.5),
+#'                        p),
+#'               mean = trtMean, var = trtVarP)
 #' @export
-asCategorical = function(x, threshold = c(-Inf, 0, Inf),
+asCategorical = function(x, p = NULL, mean = 0, var = 1,
+                         threshold = c(-Inf, 0, Inf),
                          include.lowest = TRUE, right = FALSE) {
   if (!is.matrix(x)) {
     x = as.matrix(x)
   }
+  nTraits = ncol(x)
+  if (!is.null(p)) {
+    if (is.numeric(p)) {
+      if (nTraits > 1) {
+        stop("When x contains more than one column, you must supply a list of probabilities! See examples.")
+      }
+      p = list(p)
+    }
+    if (length(p) != nTraits) {
+      stop("You must supply probabilities for all traits in x !")
+    }
+    if (length(mean) != nTraits) {
+      stop("You must supply means for all traits in x !")
+    }
+    if (length(var) != nTraits) {
+      stop("You must supply variances for all traits in x !")
+    }
+    threshold = p
+    for (trt in 1:nTraits) {
+      if (!is.null(p[[trt]])) {
+        pSum = sum(p[[trt]])
+        if (!(pSum == 1)) { # TODO: how can we do floating point aware comparison?
+          warning("Probabilities do not sum to 1 - creating one more category!")
+          p[[trt]] = c(p[[trt]], 1 - pSum)
+        }
+        tmp = qnorm(p = cumsum(p[[trt]]), mean = mean[trt], sd = sqrt(var[trt]))
+        if (!(-Inf %in% tmp)) {
+          tmp = c(-Inf, tmp)
+        }
+        if (!(Inf %in% tmp)) {
+          tmp = c(tmp, Inf)
+        }
+        threshold[[trt]] = tmp
+      }
+    }
+  }
   if (is.numeric(threshold)) {
-    if (ncol(x) > 1) {
+    if (nTraits > 1) {
       stop("When x contains more than one column, you must supply a list of thresholds! See examples.")
     }
     threshold = list(threshold)
   }
-  for (trt in 1:ncol(x)) {
+  if (length(threshold) != nTraits) {
+    stop("You must supply thresholds for all traits in x !")
+  }
+  for (trt in 1:nTraits) {
     if (!is.null(threshold[[trt]])) {
       x[, trt] = as.numeric(cut(x = x[, trt], breaks = threshold[[trt]],
                                 include.lowest = include.lowest, right = right))
@@ -354,13 +432,14 @@ asCategorical = function(x, threshold = c(-Inf, 0, Inf),
 #   if (!is.matrix(x)) {
 #     x = as.matrix(x)
 #   }
+#   nTraits = ncol(x)
 #   if (is.numeric(TODO)) {
-#     if (ncol(x) > 1) {
+#     if (nTraits > 1) {
 #       stop("When x contains more than one column, you must supply a list of TODO! See examples.")
 #     }
 #     TODO = list(TODO)
 #   }
-#   for (trt in 1:ncol(x)) {
+#   for (trt in 1:nTraits) {
 #     if (!is.null(TODO[[trt]])) {
 # TODO: need to think what to do with an intercept and lambda
 #       x[, trt] = round(exp(x[, trt]))
