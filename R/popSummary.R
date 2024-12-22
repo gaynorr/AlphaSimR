@@ -223,7 +223,7 @@ genParam = function(pop,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   nInd = nInd(pop)
   nTraits = simParam$nTraits
   traitNames = simParam$traitNames
@@ -678,6 +678,104 @@ pheno = function(pop){
 #' @export
 ebv = function(pop){
   pop@ebv
+}
+
+#' @title Calculate parent average
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#'
+#' @return a matrix of parent averages with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' parentAverage(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+# TODO: Should we call this `parentAverage()`, `pa()`, or something else?
+# TODO: Should we pass in `mothers` and `fathers` as arguments or `parents`?
+#       Using `parents` is convenient for monoecious species (we pass in just one pop).
+#       Using `mothers` and `fathers` is convenient for dioecious species (we would not have to combine pops).
+parentAverage = function(pop, mothers, fathers, use = "gv", simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  matchMothers = match(x = pop@mother, table = mothers@id)
+  matchFathers = match(x = pop@father, table = fathers@id)
+  if (use %in% c("gv", "ebv", "pheno")) {
+    tmp = 0.5 * (slot(object = mothers, name = use)[matchMothers, , drop = FALSE] +
+                 slot(object = fathers, name = use)[matchFathers, , drop = FALSE])
+  } else if (use == "bv") {
+    tmp = 0.5 * (bv(mothers, simParam = simParam)[matchMothers, , drop = FALSE] +
+                 bv(fathers, simParam = simParam)[matchFathers, , drop = FALSE])
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(tmp)
+}
+
+#' @title Calculate Mendelian sampling
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#'
+#' @return a matrix of Mendelian samplings with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' mendelianSampling(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+# TODO: Should we call this `mendelianSampling()`, `ms()`, or something else?
+# TODO: Should we pass in `mothers` and `fathers` as arguments or `parents`?
+#       Using `parents` is convenient for monoecious species (we pass in just one pop).
+#       Using `mothers` and `fathers` is convenient for dioecious species (we would not have to combine pops).
+mendelianSampling = function(pop, mothers, fathers, use = "gv", simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  pa = parentAverage(pop = pop, mothers = mothers, fathers = fathers, use = use,
+                     simParam = simParam)
+  if (use %in% c("gv", "ebv", "pheno")) {
+    tmp = slot(object = pop, name = use) - pa
+  } else if (use == "bv") {
+    tmp = bv(pop, simParam = simParam) - pa
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(tmp)
 }
 
 #' @title Number of individuals

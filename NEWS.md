@@ -1,5 +1,7 @@
 # AlphaSimR 1.6.2
 
+*added `parentAverage` and `mendelianSampling` functions
+
 *added `asCategorical` to convert a normal (Gaussian) trait to an ordered categorical (threshold) trait
 
 # AlphaSimR 1.6.1
