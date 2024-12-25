@@ -1,4 +1,4 @@
-# AlphaSimR 1.6.2
+# AlphaSimR 1.6.1.9990
 
 *added `asCategorical` to convert a normal (Gaussian) trait to an ordered categorical (threshold) trait
 
