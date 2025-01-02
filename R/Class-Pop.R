@@ -615,7 +615,7 @@ newPop = function(rawPop,simParam=NULL,...){
   return(.newPop(rawPop=rawPop,simParam=simParam,...))
 }
 
-#' @title Create new population (internal)
+#' @title Create new population
 #'
 #' @description
 #' Creates a new \code{\link{Pop-class}} from an object of
@@ -636,6 +636,8 @@ newPop = function(rawPop,simParam=NULL,...){
 #' function in simParam
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @keywords internal
 .newPop = function(rawPop, id=NULL, mother=NULL, father=NULL,
                    iMother=NULL, iFather=NULL, isDH=NULL,
                    femaleParentPop=NULL, maleParentPop=NULL,

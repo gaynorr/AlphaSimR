@@ -29,21 +29,4 @@ desired correlation, but will hopefully be close if the
 input matrix wasn't too far removed from a valid
 correlation matrix.
 }
-\examples{
-# Create an 2x2 correlation matrix
-R = 0.5*diag(2) + 0.5
-
-# Sample 1000 uncorrelated deviates from a
-# bivariate standard normal distribution
-X = matrix(rnorm(2*1000), ncol=2)
-
-# Compute the transformation matrix
-T = transMat(R)
-
-# Apply the transformation to the deviates
-Y = X\%*\%T
-
-# Measure the sample correlation
-cor(Y)
-
-}
+\keyword{internal}

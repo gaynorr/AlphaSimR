@@ -2,7 +2,7 @@
 % Please edit documentation in R/Class-Pop.R
 \name{.newPop}
 \alias{.newPop}
-\title{Create new population (internal)}
+\title{Create new population}
 \usage{
 .newPop(
   rawPop,
@@ -52,3 +52,4 @@ Returns an object of \code{\link{Pop-class}}
 Creates a new \code{\link{Pop-class}} from an object of
 of the Pop superclass.
 }
+\keyword{internal}

@@ -1,4 +1,10 @@
-#Adds random error to a matrix of genetic values
+#' Add residual error to genetic values
+#'
+#' @param gv matrix of genetic values
+#' @param varE residual variances, vector or matrix
+#' @param reps number of reps for phenotype
+#'
+#' @keywords internal
 addError = function(gv, varE, reps){
   nTraits = ncol(gv)
   nInd = nrow(gv)
@@ -24,7 +30,17 @@ addError = function(gv, varE, reps){
   return(pheno)
 }
 
-#See setPheno documentation
+
+#' Calculate phenotypes
+#'
+#' @param pop an object of class Pop
+#' @param varE a vector or matrix of residual variances
+#' @param reps number of reps for phenotype
+#' @param p p-value for environment
+#' @param traits number of traits
+#' @param simParam simulation parameters object
+#'
+#' @keywords internal
 calcPheno = function(pop, varE, reps, p, traits, simParam){
   nTraits = length(traits)
 

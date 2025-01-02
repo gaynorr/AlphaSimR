@@ -442,24 +442,8 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' input matrix wasn't too far removed from a valid
 #' correlation matrix.
 #'
-#' @examples
-#' # Create an 2x2 correlation matrix
-#' R = 0.5*diag(2) + 0.5
 #'
-#' # Sample 1000 uncorrelated deviates from a
-#' # bivariate standard normal distribution
-#' X = matrix(rnorm(2*1000), ncol=2)
-#'
-#' # Compute the transformation matrix
-#' T = transMat(R)
-#'
-#' # Apply the transformation to the deviates
-#' Y = X%*%T
-#'
-#' # Measure the sample correlation
-#' cor(Y)
-#'
-#' @export
+#' @keywords internal
 transMat = function(R){
   # Check if matrix is symmetric
   # Stop if it is not
@@ -637,10 +621,18 @@ attrition = function(pop, p){
   return(pop[take])
 }
 
-# Sample deviates from a standard normal distribution
-# n is the number of deviates
-# u is a deviate from a uniform distribution [0,1]
-# Seed is generated from u
+
+#' Sample normal deviates using a seed
+#' 
+#' This function is designed for future expansion. The intent is to use it 
+#' to develop a GxE model based on compound symmetry. In this model, the 
+#' p-value used in the current GxE model will serve a a seed for sampling 
+#' environmental effects.
+#'
+#' @param n number of deviates to sample
+#' @param u seed
+#'
+#' @keywords internal
 rnormWithSeed = function(n, u){
   glbEnv = globalenv()
   origSeed = glbEnv$.Random.seed

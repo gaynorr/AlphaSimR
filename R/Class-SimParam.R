@@ -2526,6 +2526,21 @@ SimParam = R6Class(
 )
 
 #### External helpers ----
+
+#' @title Sample additive effects
+#' 
+#' @description Samples deviates from a normal distribution or gamma distribution 
+#' with a random sign
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param corr correlation between traits
+#' @param gamma indicator of trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#' 
+#' @keywords internal
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%transMat(corr)
@@ -2538,6 +2553,22 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   return(addEff)
 }
 
+#' @title Sample dominance effects
+#' 
+#' @description Samples dominance deviation effects from a normal distribution 
+#' and uses previously sampled additive effects to form dominance 
+#' effects
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param addEff previously sampled additive effects
+#' @param corDD correlation between dominance degrees
+#' @param meanDD mean value of dominance degrees
+#' @param varDD variance of dominance degrees
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#' 
+#' @keywords internal
 sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
                       meanDD,varDD){
   domEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
@@ -2548,6 +2579,21 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
   return(domEff)
 }
 
+#' @title Sample epistatic effects
+#' 
+#' @description Samples epistatic effects from a normal distribution or gamma distribution
+#' with a variance relative to the variance of the additive effects
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param corr correlation between epistatic effects
+#' @param gamma indicator of trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#' @param relVar desired variance for epistatic effects
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#' 
+#' @keywords internal
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
                   ncol=nTraits)%*%transMat(corr)
