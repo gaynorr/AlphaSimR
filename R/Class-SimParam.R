@@ -188,8 +188,26 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Sets restrictions on which segregating sites
-    #' can serve as a SNP and/or QTL.
+    #' @description Sets restrictions on which segregating sites can
+    #' serve as a SNP and/or QTL. The default behavior of AlphaSimR is 
+    #' to randomly sample QTL or SNP from all eligible sites and then 
+    #' mark the sampled sites ineligible to be sampled as the other 
+    #' type (e.g. if a site is sampled as a QTL it will be marked as 
+    #' ineligible to be sampled as a SNP). This behavior is designed 
+    #' to produce the most challenging scenario for genomic selection 
+    #' when the markers used for prediction are not causal.
+    #' 
+    #' Setting overlap=TRUE will prevent the addition of loci to the 
+    #' ineligible list, but it won't remove sites already added to these 
+    #' lists. Thus, timing of when restrSegSites is called matters. It 
+    #' should be called before any addTrait or addSnpChip functions with 
+    #' the overlap=TRUE argument to freely allow loci to overlap.
+    #' 
+    #' The minQtlPerChr and minSnpPerChr arguments can be used with 
+    #' overlap=FALSE to preallocate sites as QTL and SNP respectively. This 
+    #' option is useful when simulating multiple traits and/or SNP chips, 
+    #' because it can be used to guarantee that enough eligible sites are 
+    #' available when running addTrait and or addSnpChip functions.
     #'
     #' @param minQtlPerChr the minimum number of segregating sites for 
     #' QTLs. Can be a single value or a vector values for each chromosome.
@@ -2184,7 +2202,8 @@ SimParam = R6Class(
           pot[[chr]] = tmp[tmp%in%pot[[chr]]]
         }
       }
-      stopifnot(sapply(pot,length)>=nSitesPerChr)
+      
+      stopifnot("Not enough eligible sites, see ?SimParam and method restrSegSites()" = sapply(pot,length)>=nSitesPerChr)
 
       # Sample sites
       lociLoc = lapply(1:self$nChr,function(x){
