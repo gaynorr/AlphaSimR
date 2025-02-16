@@ -1621,6 +1621,10 @@ SimParam = R6Class(
         private$.varE = diag(private$.varE)
       }
       private$.varE[traitPos] = varE
+      
+      # Update activeQtl
+      private$.setActiveQtl()
+      
       invisible(self)
     },
 
@@ -1635,14 +1639,18 @@ SimParam = R6Class(
         private$.isRunning()
       }
       stopifnot(max(traits)<=self$nTraits, min(traits)>0)
-      private$.traits[-traits]
-      private$.varA[-traits]
-      private$.varG[-traits]
+      private$.traits = private$.traits[-traits]
+      private$.varA = private$.varA[-traits]
+      private$.varG = private$.varG[-traits]
       if(is.matrix(private$.varE)){
-        private$.varE[-traits,-traits]
+        private$.varE = private$.varE[-traits,-traits]
       }else{
-        private$.varE[-traits]
+        private$.varE = private$.varE[-traits]
       }
+      
+      # Update activeQtl
+      private$.setActiveQtl()
+      
       invisible(self)
     },
 
@@ -2299,6 +2307,43 @@ SimParam = R6Class(
       }
       
       return(posList)
+    },
+    
+    # Sets activeQtl and qtlIndex slots
+    # Run after removing or modifying existing traits
+    .setActiveQtl = function(){
+      
+      private$.activeQtl = NULL
+      private$.qtlIndex = list()
+      
+      if(self$nTraits > 0L){
+        # Set activeQtl using trait 1
+        private$.activeQtl = new("LociMap",
+                                 nLoci = self$traits[[1L]]@nLoci,
+                                 lociPerChr = self$traits[[1L]]@lociPerChr,
+                                 lociLoc = self$traits[[1L]]@lociLoc)
+        
+        private$.qtlIndex[[1L]] = seq_len(private$.activeQtl@nLoci)
+      }
+      
+      if(self$nTraits > 1L){
+        # Update activeQtl, if needed
+        for(i in 2:self$nTraits){
+          testSet = findLociMapSuperset(private$.activeQtl, 
+                                        self$traits[[i]])
+          if(!is.null(testSet)){
+            private$.activeQtl = testSet
+          }
+        }
+        
+        # Update qtlIndex
+        for(i in seq_len(self$nTraits)){
+          private$.qtlIndex[[i]] = findQtlIndex(private$.activeQtl, 
+                                                self$traits[[i]])
+        }
+      }
+      
+      invisible(self)
     }
 
   ),
@@ -2571,6 +2616,25 @@ SimParam = R6Class(
         private$.version
       }else{
         stop("`$version` is read only",call.=FALSE)
+      }
+    }, 
+    
+    #' @field activeQtl a LociMap representing all active QTL in simulation
+    activeQtl=function(value){
+      if(missing(value)){
+        private$.activeQtl
+      }else{
+        stop("`$activeQtl` is read only",call.=FALSE)
+      }
+    },
+    
+    #' @field qtlIndex a list of vectors giving trait specific QTL indices 
+    #' relative to all active QTL
+    qtlIndex=function(value){
+      if(missing(value)){
+        private$.qtlIndex
+      }else{
+        stop("`$qtlIndex` is read only",call.=FALSE)
       }
     }
   )

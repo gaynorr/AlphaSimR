@@ -377,6 +377,11 @@ genetic map}
 \item{\code{varE}}{default error variance}
 
 \item{\code{version}}{the version of AlphaSimR used to generate this object}
+
+\item{\code{activeQtl}}{a LociMap representing all active QTL in simulation}
+
+\item{\code{qtlIndex}}{a list of vectors giving trait specific QTL indices 
+relative to all active QTL}
 }
 \if{html}{\out{</div>}}
 }
