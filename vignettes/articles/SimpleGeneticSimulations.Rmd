@@ -16,14 +16,36 @@ knitr::opts_chunk$set(
 )
 ```
 
+In this vignette I will show how genetic simulations work using a simple examples. 
+I will start by showing how to simulate phenotypes from genotypes. I will then 
+show how to simulate new genotypes from existing genotypes.
+
+## Simulating phenotypes from genotypes
+
+Simulating phenotypes from genotypes is a straightforward process that can be 
+done fairly easily using just base R functionality. 
 
 
 
-## Genotypes to phenotypes
+-Simulate inbred genotypes
+
+-Simulate QTL effects
+
+-Calculate genetic values
+-Scale genetic values to desired variance
+-Shift mean
+
+-Simulate phenotypes
 
 
-## Creating new genotypes
+## Simulating new genotypes
 
+-Describe meiosis
+-Break genotypes into haplotypes
+-Create F1 by pairing chromosomes
+-Assign loci to a genetic map
+-Randomly choose a starting chromosome
+-Model recombination
 
 
 

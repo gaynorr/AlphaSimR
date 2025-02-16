@@ -89,6 +89,8 @@ SimParam = R6Class(
       private$.hasHap = logical()
       private$.hap = list()
       private$.isFounder = logical()
+      private$.activeQtl = NULL
+      private$.qtlIndex = list()
 
       invisible(self)
     },
@@ -2151,6 +2153,8 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
+    .activeQtl = "LociMap",
+    .qtlIndex = "integer",
     
     # Determines whether not a simulation has started using lastId as an indicator
     .isRunning = function(){
@@ -2165,6 +2169,34 @@ SimParam = R6Class(
     .addTrait = function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
       stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
                 length(varA)==1,length(varG)==1,length(varE)==1)
+      
+      if(self$nTraits == 0L){
+        # Initializing .activeQtl
+        private$.activeQtl = new("LociMap",
+                                 nLoci = lociMap@nLoci,
+                                 lociPerChr = lociMap@lociPerChr,
+                                 lociLoc = lociMap@lociLoc)
+        private$.qtlIndex[[1L]] = seq_len(private$.activeQtl@nLoci)
+      }else{
+        # Check if exiting activeQtl is a superset
+        testSet = findLociMapSuperset(private$.activeQtl, 
+                                      lociMap)
+        if(is.null(testSet)){
+          # Existing activeQtl is a superset, just add qtlIndex
+          private$.qtlIndex[[self$nTraits + 1L]] = findQtlIndex(private$.activeQtl, lociMap)
+        }else{
+          # New activeQtl object required, recompute all values for qtlIndex
+          private$.activeQtl = testSet
+          
+          for(i in seq_len(self$nTraits)){
+            private$.qtlIndex[[i]] = findQtlIndex(private$.activeQtl, self$traits[[i]])
+          }
+          
+          private$.qtlIndex[[self$nTraits + 1L]] = 
+            findQtlIndex(private$.activeQtl, lociMap)
+        }
+      }
+      
       private$.traits[[self$nTraits + 1L]] = lociMap
       private$.varA = c(private$.varA,varA)
       private$.varG = c(private$.varG,varG)
@@ -2631,3 +2663,82 @@ isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)
 }
+
+#' @title Find LociMap superset
+#' 
+#' @description Compares to a \code{\link{LociMap-class}} objects to determine if 
+#' the first one is a superset of the second. If it is, the function returns NULL. 
+#' If it is not, the function return a \code{\link{LociMap-class}} object that is
+#' a superset of both a \code{\link{LociMap-class}} objects.
+#'
+#' @param lociMap1 a \code{\link{LociMap-class}} that is tested to determine if 
+#' it is a superset
+#' @param lociMap2 a second \code{\link{LociMap-class}} that is tested
+#'
+#' @returns NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it 
+#' is not
+#' 
+#' @keywords internal
+findLociMapSuperset = function(lociMap1, lociMap2){
+  
+  loc1 = paste(rep(x = seq_len(length(lociMap1@lociPerChr)),
+                   times = lociMap1@lociPerChr),
+               lociMap1@lociLoc, sep="_")
+  
+  loc2 = paste(rep(x = seq_len(length(lociMap2@lociPerChr)),
+                   times = lociMap2@lociPerChr),
+               lociMap2@lociLoc, sep="_")
+  
+  inSet1 = loc2 %in% loc1
+  
+  if(all(inSet1)){
+    # lociMap1 is a superset of lociMap2, no action needed
+    return(NULL)
+  }
+  
+  # Create an ordered matrix with columns chr and lociLoc for loci superset
+  loc = unique(c(loc1, loc2))
+  tab = sapply(loc, function(x){
+    y = strsplit(x, split="_", fixed=TRUE)
+    return(as.integer(unlist(y)))
+  })
+  tab = t(tab)
+  tab = tab[order(tab[,1],tab[,2]),]
+  
+  # Return LociMap for superset of loci
+  return(new("LociMap", 
+             nLoci = nrow(tab),
+             lociPerChr = tabulate(tab[,1], nbins=length(lociMap1@lociPerChr)),
+             lociLoc = unname(tab[,2])))
+}
+
+
+#' @title Find trait QTL index
+#' 
+#' @description Compares to a \code{\link{LociMap-class}} objects to determine if 
+#' the first one is a superset of the second. If it is, the function returns NULL. 
+#' If it is not, the function return a \code{\link{LociMap-class}} object that is
+#' a superset of both a \code{\link{LociMap-class}} objects.
+#'
+#' @param activeQtl a \code{\link{LociMap-class}} representing all active QTL
+#' @param traitQtl a \code{\link{LociMap-class}} representing QTL for a trait of 
+#' interest
+#'
+#' @returns an integer vector for relative positions of traitQtl on activeQtl
+#' 
+#' @keywords internal
+findQtlIndex = function(activeQtl, traitQtl){
+  
+  activeLoci = paste(rep(x = seq_len(length(activeQtl@lociPerChr)),
+                         times = activeQtl@lociPerChr),
+                     activeQtl@lociLoc, sep="_")
+  
+  traitLoci = paste(rep(x = seq_len(length(traitQtl@lociPerChr)),
+                        times = traitQtl@lociPerChr),
+                    traitQtl@lociLoc, sep="_")
+  
+  return(match(traitLoci, activeLoci))
+}
+
+
+
