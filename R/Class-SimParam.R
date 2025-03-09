@@ -2162,7 +2162,7 @@ SimParam = R6Class(
     .hap="list",
     .isFounder="logical",
     .activeQtl = "LociMap",
-    .qtlIndex = "integer",
+    .qtlIndex = "list",
     
     # Determines whether not a simulation has started using lastId as an indicator
     .isRunning = function(){

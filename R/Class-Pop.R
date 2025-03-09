@@ -713,14 +713,19 @@ newPop = function(rawPop,simParam=NULL,...){
   pheno = gv
 
   if(simParam$nTraits>=1){
+    tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl, 
+                     simParam$qtlIndex, simParam$nTraits, simParam$nThreads)
+    
+    gv = tmp[[1]]
+    colnames(gv) = simParam$traitNames
+    
+    gxeTmp = tmp[[2]]
+    dim(gxeTmp) = NULL # Account for matrix bug in RcppArmadillo
+    
+    # Move over gxeTmp for traits with GxE
     for(i in seq_len(simParam$nTraits)){
-      tmp = getGv(simParam$traits[[i]], rawPop, simParam$nThreads)
-      gv[,i] = tmp[[1]]
-
-      colnames(gv)[i] = simParam$traits[[i]]@name
-
-      if(length(tmp)>1){
-        gxe[[i]] = tmp[[2]]
+      if(.hasSlot(simParam$traits[[i]], "gxeEff")){
+        gxe[[i]] = gxeTmp[[i]]
       }
     }
   }
