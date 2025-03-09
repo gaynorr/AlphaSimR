@@ -1,10 +1,10 @@
 ---
-title: "Meiosis"
-author: "Vignette Author"
+title: "Genetic Recombination"
+author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{Genetic Recombination}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,26 +18,24 @@ knitr::opts_chunk$set(
 
 ## Placeholder for future development
 
-Introduction
-  Pull from MOOC
-  Explain the genome and its representation
-  Recombination / meiosis
-    Stages of meiosis
+Introduction with basic of inheritance
+Review meiosis
+  Stages of meiosis
     Chromosome pairing
     Chiasma (crossovers)
       Crossover interference
     Segregation
     Diploids first and then polyploids
       Centromeres for polyploids
-    
-  Implementation
-    Gamma sprinkling model
-      Crossover interference
-    recHist
-      pedigree
-    Sex specific recombination rates
-
-
-
-
+Review genetic maps
+  Morgan's fly lab
+  Haldane mapping function
+  Kosambi mapping function
+Recombination models
+  Count-location model
+  Gamma model
+  Gamma sprinkling model
+  recHist
+    pedigree
+  Sex specific recombination rates
 
