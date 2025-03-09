@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Genome • AlphaSimR</title>
+<title>The Genome • AlphaSimR</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Genome">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="The Genome">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1.9006</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,15 +34,9 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/DataImport.html">Data Import</a></li>
-    <li><a class="dropdown-item" href="../articles/Genome.html">Genome</a></li>
-    <li><a class="dropdown-item" href="../articles/GenomicSelection.html">Genomic Selection</a></li>
-    <li><a class="dropdown-item" href="../articles/intro.html">Introduction to AlphaSimR</a></li>
-    <li><a class="dropdown-item" href="../articles/Meiosis.html">Meiosis</a></li>
-    <li><a class="dropdown-item" href="../articles/Misc.html">Misc</a></li>
-    <li><a class="dropdown-item" href="../articles/QuantGen.html">Quantitative Genetics</a></li>
+<li><a class="dropdown-item" href="../articles/GeneticRecombination.html">Genetic Recombination</a></li>
+    <li><a class="dropdown-item" href="../articles/Genome.html">The Genome</a></li>
     <li><a class="dropdown-item" href="../articles/traits.html">Traits in AlphaSimR</a></li>
-    <li><a class="dropdown-item" href="../articles/Traits.html">Traits</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -65,23 +59,465 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Genome</h1>
-                        <h4 data-toc-skip class="author">Vignette
-Author</h4>
+      <h1>The Genome</h1>
+                        <h4 data-toc-skip class="author">Rosalind
+Craddock</h4>
             
-            <h4 data-toc-skip class="date">2024-11-01</h4>
+            <h4 data-toc-skip class="date">2025-03-09</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/v1.6.1/vignettes/articles/Genome.Rmd" class="external-link"><code>vignettes/articles/Genome.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/devel/vignettes/articles/Genome.Rmd" class="external-link"><code>vignettes/articles/Genome.Rmd</code></a></small>
       <div class="d-none name"><code>Genome.Rmd</code></div>
     </div>
 
     
     
+<p><strong>AlphaSimR</strong> is built upon the basics of genetics for
+the stochastic simulation of crop and animal breeding programmes. This
+vignette will provide an overview of the genome, it’s inheritance, and
+the tools used to read it with supporting examples and code.</p>
 <div class="section level2">
-<h2 id="placeholder-for-future-development">Placeholder for future development<a class="anchor" aria-label="anchor" href="#placeholder-for-future-development"></a>
+<h2 id="what-is-a-genome">What is a genome?<a class="anchor" aria-label="anchor" href="#what-is-a-genome"></a>
 </h2>
-<p>Introduction Pull from MOOC Explain the genome and its representation
-Haplotypes / genotypes QTL/SNP Genetic map vs physical map</p>
+<p>The genome is the complete set of genetic information within an
+organism. It is made up of deoxyribonucleic acid (DNA), consisting of
+sequences of four types of nucleotide bases: adenine (A), cytosine (C),
+guanine (G), and thymine (T). Within one DNA molecule, there are two
+strands joined by base-pairs: A binds with T and C binds with G. This
+forms a double helix structure which can be visualised as a spiral
+ladder. These DNA molecules are condensed around supporting protein to
+form a thread-like structure known as chromosomes. Due to the different
+demographic history across species, how the DNA is package can vary
+substantial including the number of chromosome and the number of
+chromosome copies (ploidy). For example, humans have 23 pairs of
+chromosomes (22 autosomnal, one non-autosomnal) for ~three billion
+base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer
+base-pairs at ~2.7 billion. As these species are both diploid, in each
+chromosome pair, one has been inherited from the father (paternal) and
+one has been inherited from the mother (maternal).</p>
+<div class="section level3">
+<h3 id="genes-alleles-loci-genotypes-and-haplotypes-">Genes, alleles, loci, genotypes, and haplotypes.<a class="anchor" aria-label="anchor" href="#genes-alleles-loci-genotypes-and-haplotypes-"></a>
+</h3>
+<p>Although similar, there are essential differences in the terminology
+used. This next section will provide a short glossary for genes, allele,
+loci, genotypes, and haplotypes.</p>
+<p>Genes are segments of DNA that are translated to proteins. Typically
+they will contain a few hundred to more than two billion bases-pairs
+with a codon (triplet base-pair) coding for either an amino acid or to
+start/stop.</p>
+<p>An allele in a gene is a gene variant. More generally, an allele
+represents a possible sequence of bases at a particular site on a genome
+(known as a locus). When biallelic (two variants per gene) the allele is
+either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new
+alleles arise from mutation.</p>
+<p>A genotype is the combination of alleles across chromosome copies
+that an organism has at a specified locus or across loci. For instance,
+there are three possible genotypes for a diploid at a biallelic locus
+with ancestral allele A and mutant allele a: ancestral homozygous (aa)
+with allele dosage 0, heterozygous (aA or Aa) with allele dosage 1, and
+mutant homozygous (AA) with allele dosage 2. Genotypes can differ
+between individuals due to random segregation in inheritance.</p>
+<p>A haplotype (haploid genotype) describes the physical grouping of
+alleles along the same chromosome. This means that these group of
+alleles tend to be inherited together. New haplotypes are created
+through recombination.</p>
+<p>What does this look like in <strong>AlphaSimR</strong>?</p>
+<p>Let’s start with creating the founding genome using
+<code>runMacs</code>. As mentioned, cattle have 30 pairs of chromosomes,
+but for the purpose of this simulation we are only interested in three.
+When we inspect the founderGenome we see that it has a ploidy of two
+with 12 loci across three chromosomes (with four segregating sites on
+each).</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">founderGenome</span> <span class="op">=</span> <span class="fu"><a href="../reference/runMacs.html">runMacs</a></span><span class="op">(</span>nInd <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>                        nChr <span class="op">=</span> <span class="fl">3</span>, </span>
+<span>                        segSites <span class="op">=</span> <span class="fl">4</span>, </span>
+<span>                        species <span class="op">=</span> <span class="st">"CATTLE"</span><span class="op">)</span></span>
+<span><span class="co"># Set simulation parameters</span></span>
+<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderGenome</span><span class="op">)</span></span>
+<span><span class="va">SP</span><span class="op">$</span><span class="fu">setTrackRec</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co"># Inspect the founderGenome</span></span>
+<span><span class="va">founderGenome</span></span>
+<span><span class="co">#&gt; An object of class "MapPop" </span></span>
+<span><span class="co">#&gt; Ploidy: 2 </span></span>
+<span><span class="co">#&gt; Individuals: 10 </span></span>
+<span><span class="co">#&gt; Chromosomes: 3 </span></span>
+<span><span class="co">#&gt; Loci: 12</span></span></code></pre></div>
+<p>Then we can observe the genotypes with <code>pullSegSiteGeno</code>.
+Each row represents one of the ten individuals and each column
+represents a defined loci labelled as the Chromosome_Locus. All will
+have a value of zero to two equivalent to the allele dosage. Commonly,
+this would be homozygous ancestral (0), heterozygous (1), and homozygous
+mutant (2). Since this is a diploid, we are observing these genotypes
+across the pair of chromosomes. Where the ancestral allele is not known,
+the allele dosage will be randomly assigned.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullSegSiteGeno.html">pullSegSiteGeno</a></span><span class="op">(</span><span class="va">founderGenome</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 1    0   2   2   2   1   1   2   1   2   0   2   0</span></span>
+<span><span class="co">#&gt; 2    0   0   2   2   0   0   2   0   1   0   0   0</span></span>
+<span><span class="co">#&gt; 3    1   1   1   2   0   2   2   0   1   0   1   1</span></span>
+<span><span class="co">#&gt; 4    0   2   2   2   0   1   2   1   2   0   1   1</span></span>
+<span><span class="co">#&gt; 5    1   2   2   2   1   1   1   0   2   1   2   0</span></span>
+<span><span class="co">#&gt; 6    0   1   2   2   1   2   1   0   1   0   2   0</span></span>
+<span><span class="co">#&gt; 7    1   1   1   1   0   0   2   1   2   0   1   0</span></span>
+<span><span class="co">#&gt; 8    0   1   2   2   1   1   2   2   1   1   1   0</span></span>
+<span><span class="co">#&gt; 9    2   0   1   1   0   1   2   1   1   0   2   0</span></span>
+<span><span class="co">#&gt; 10   1   1   1   2   1   2   2   1   1   0   2   0</span></span></code></pre></div>
+<p>The haplotypes can be observed with <code>pullSegSiteHaplo</code>.
+Each row represents the sequence of alleles on each chromosome per
+individual. Since this is diploid, we observe two for each individual:
+one maternal (id_1) and the other paternal (id_2). All will have a value
+of 0 or 1 for either ancestral or mutant allele respectingly. As before,
+each column represents a defined loci.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullSegSiteHaplo.html">pullSegSiteHaplo</a></span><span class="op">(</span><span class="va">founderGenome</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 1_1    0   1   1   1   1   1   1   1   1   0   1   0</span></span>
+<span><span class="co">#&gt; 1_2    0   1   1   1   0   0   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 2_1    0   0   1   1   0   0   1   0   1   0   0   0</span></span>
+<span><span class="co">#&gt; 2_2    0   0   1   1   0   0   1   0   0   0   0   0</span></span>
+<span><span class="co">#&gt; 3_1    0   0   0   1   0   1   1   0   0   0   1   0</span></span>
+<span><span class="co">#&gt; 3_2    1   1   1   1   0   1   1   0   1   0   0   1</span></span>
+<span><span class="co">#&gt; 4_1    0   1   1   1   0   1   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 4_2    0   1   1   1   0   0   1   1   1   0   0   1</span></span>
+<span><span class="co">#&gt; 5_1    1   1   1   1   0   0   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 5_2    0   1   1   1   1   1   0   0   1   1   1   0</span></span>
+<span><span class="co">#&gt; 6_1    0   1   1   1   1   1   0   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 6_2    0   0   1   1   0   1   1   0   0   0   1   0</span></span>
+<span><span class="co">#&gt; 7_1    0   1   1   1   0   0   1   1   1   0   0   0</span></span>
+<span><span class="co">#&gt; 7_2    1   0   0   0   0   0   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 8_1    0   0   1   1   1   0   1   1   0   1   0   0</span></span>
+<span><span class="co">#&gt; 8_2    0   1   1   1   0   1   1   1   1   0   1   0</span></span>
+<span><span class="co">#&gt; 9_1    1   0   0   0   0   1   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 9_2    1   0   1   1   0   0   1   1   0   0   1   0</span></span>
+<span><span class="co">#&gt; 10_1   0   0   0   1   0   1   1   0   0   0   1   0</span></span>
+<span><span class="co">#&gt; 10_2   1   1   1   1   1   1   1   1   1   0   1   0</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="how-are-genomes-inherited">How are genomes inherited?<a class="anchor" aria-label="anchor" href="#how-are-genomes-inherited"></a>
+</h2>
+<p>Genetic code is inherited from an individuals mother and father. This
+involves cells known as gametes: eggs (from mother) and sperm (from
+father). These cells have half the number of chromosomes to other cells
+in the species. For example, in diploid species like humans gametes are
+haploid cells. These have been developed through interphase (DNA
+replication) and meiosis (cell division). The mechanism of interphase
+and meiosis are outside the scope of this vignette, however is important
+due to their contribution to genetic variation.</p>
+<div class="section level3">
+<h3 id="genetic-variation-the-dna-lottery">Genetic Variation: the DNA lottery<a class="anchor" aria-label="anchor" href="#genetic-variation-the-dna-lottery"></a>
+</h3>
+<p>Broadly speaking, there are three contributions to genetic variation:
+mutation, crossing over (or recombination), and independent
+assortment.</p>
+<p>Mutation occurs during DNA replication in interphase. Although the
+rate is very small (~2.5x10<sup>-8</sup> mutation per nucleotide), when
+considering the whole genome mutation is not negligible.</p>
+<p>Both crossing over and independent assortment occurs in the first
+part of meiosis known as the reductional division. Crossing over refers
+to the swapping of genetic material at random between chromatids
+resulting in variation. Independent Assortment refers to the random
+orientation of homologous chromosome pairs resulting in gametes with
+many different assortments of chromosomes. (recall there are 23 pairs in
+a human).</p>
+<p>Within genetics, albeit quantitative or population, we are interested
+in how individual’s genomes differ to the next. Thus, it is this
+variation we wish to capture to understand how genetics influence
+desired (or undesired) traits in crop and animal breeding.</p>
+<p>In <strong>AlphaSimR</strong>:</p>
+<ol style="list-style-type: decimal">
+<li>Random mutations can be added to individuals in populations with
+<code>mutate</code>. For the purpose of demonstration, the mutation is
+at a much higher rate than would be expected.</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">basePop</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderGenome</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">mutatedBasePop</span> <span class="op">=</span> <span class="fu"><a href="../reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">basePop</span>, mutRate <span class="op">=</span> <span class="fl">0.1</span>, simParam <span class="op">=</span> <span class="va">SP</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/pullSegSiteGeno.html">pullSegSiteGeno</a></span><span class="op">(</span><span class="va">basePop</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 1    0   2   2   2   1   1   2   1   2   0   2   0</span></span>
+<span><span class="co">#&gt; 2    0   0   2   2   0   0   2   0   1   0   0   0</span></span>
+<span><span class="co">#&gt; 3    1   1   1   2   0   2   2   0   1   0   1   1</span></span>
+<span><span class="co">#&gt; 4    0   2   2   2   0   1   2   1   2   0   1   1</span></span>
+<span><span class="co">#&gt; 5    1   2   2   2   1   1   1   0   2   1   2   0</span></span>
+<span><span class="co">#&gt; 6    0   1   2   2   1   2   1   0   1   0   2   0</span></span>
+<span><span class="co">#&gt; 7    1   1   1   1   0   0   2   1   2   0   1   0</span></span>
+<span><span class="co">#&gt; 8    0   1   2   2   1   1   2   2   1   1   1   0</span></span>
+<span><span class="co">#&gt; 9    2   0   1   1   0   1   2   1   1   0   2   0</span></span>
+<span><span class="co">#&gt; 10   1   1   1   2   1   2   2   1   1   0   2   0</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/pullSegSiteGeno.html">pullSegSiteGeno</a></span><span class="op">(</span><span class="va">mutatedBasePop</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 1    0   2   1   1   1   2   2   1   1   1   2   0</span></span>
+<span><span class="co">#&gt; 2    0   1   2   2   0   0   2   0   1   1   0   1</span></span>
+<span><span class="co">#&gt; 3    1   1   1   1   0   2   2   0   2   0   1   1</span></span>
+<span><span class="co">#&gt; 4    1   2   1   1   0   0   2   2   2   0   1   2</span></span>
+<span><span class="co">#&gt; 5    1   2   2   2   0   1   1   0   2   1   2   0</span></span>
+<span><span class="co">#&gt; 6    0   2   2   1   2   2   1   0   1   1   2   0</span></span>
+<span><span class="co">#&gt; 7    1   1   1   1   0   0   2   1   2   0   1   0</span></span>
+<span><span class="co">#&gt; 8    0   1   2   2   1   1   1   2   1   1   1   1</span></span>
+<span><span class="co">#&gt; 9    2   0   1   0   0   1   1   1   1   0   2   0</span></span>
+<span><span class="co">#&gt; 10   1   1   1   2   1   1   2   1   0   0   2   1</span></span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>Independent assortment and recombination can be observed across
+generations.</li>
+</ol>
+<p>The first step is to make the cross in the base population to produce
+the second generation. For this, <code>randCross</code> can be used to
+create one cross, producing a pair of full siblings.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">secondGenPop</span> <span class="op">=</span> <span class="fu"><a href="../reference/randCross.html">randCross</a></span><span class="op">(</span>pop <span class="op">=</span> <span class="va">basePop</span>, nCrosses <span class="op">=</span> <span class="fl">1</span>, nProgeny <span class="op">=</span> <span class="fl">2</span>, simParam <span class="op">=</span> <span class="va">SP</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">secondGenPop</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Formal class 'Pop' [package "AlphaSimR"] with 18 slots</span></span>
+<span><span class="co">#&gt;   ..@ id     : chr [1:2] "11" "12"</span></span>
+<span><span class="co">#&gt;   ..@ iid    : int [1:2] 11 12</span></span>
+<span><span class="co">#&gt;   ..@ mother : chr [1:2] "4" "4"</span></span>
+<span><span class="co">#&gt;   ..@ father : chr [1:2] "6" "6"</span></span>
+<span><span class="co">#&gt;   ..@ sex    : chr [1:2] "H" "H"</span></span>
+<span><span class="co">#&gt;   ..@ nTraits: int 0</span></span>
+<span><span class="co">#&gt;   ..@ gv     : num[1:2, 0 ] </span></span>
+<span><span class="co">#&gt;   .. ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">#&gt;   .. .. ..$ : NULL</span></span>
+<span><span class="co">#&gt;   .. .. ..$ : NULL</span></span>
+<span><span class="co">#&gt;   ..@ pheno  : num[1:2, 0 ] </span></span>
+<span><span class="co">#&gt;   .. ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">#&gt;   .. .. ..$ : NULL</span></span>
+<span><span class="co">#&gt;   .. .. ..$ : NULL</span></span>
+<span><span class="co">#&gt;   ..@ ebv    : num[1:2, 0 ] </span></span>
+<span><span class="co">#&gt;   ..@ gxe    : list()</span></span>
+<span><span class="co">#&gt;   ..@ fixEff : int [1:2] 1 1</span></span>
+<span><span class="co">#&gt;   ..@ misc   : list()</span></span>
+<span><span class="co">#&gt;   ..@ miscPop: list()</span></span>
+<span><span class="co">#&gt;   ..@ nInd   : int 2</span></span>
+<span><span class="co">#&gt;   ..@ nChr   : int 3</span></span>
+<span><span class="co">#&gt;   ..@ ploidy : int 2</span></span>
+<span><span class="co">#&gt;   ..@ nLoci  : int [1:3] 4 4 4</span></span>
+<span><span class="co">#&gt;   ..@ geno   :List of 3</span></span>
+<span><span class="co">#&gt;   .. ..$ : raw [1, 1:2, 1:2] 0e 0e 0e 0c</span></span>
+<span><span class="co">#&gt;   .. ..$ : raw [1, 1:2, 1:2] 04 03 0c 06</span></span>
+<span><span class="co">#&gt;   .. ..$ : raw [1, 1:2, 1:2] 09 05 09 05</span></span>
+<span></span>
+<span><span class="co"># Collect the iid for mother and father</span></span>
+<span><span class="va">mother</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">secondGenPop</span><span class="op">@</span><span class="va">mother</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">father</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">secondGenPop</span><span class="op">@</span><span class="va">father</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>Then, the haplotypes can be extracted for the mother, father, and two
+progeny to observe the inheritance. Recall that id_1 is the maternal
+haplotype (inherited from mother) and id_2 is the paternal haplotype
+(inherited from father). For clarity, no mutation is included in this
+example. All variation observed is due to independent assortment and/or
+recombination.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullSegSiteHaplo.html">pullSegSiteHaplo</a></span><span class="op">(</span><span class="va">basePop</span><span class="op">[</span><span class="va">basePop</span><span class="op">@</span><span class="va">iid</span> <span class="op">==</span> <span class="va">mother</span>,<span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 4_1   0   1   1   1   0   1   1   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 4_2   0   1   1   1   0   0   1   1   1   0   0   1</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullSegSiteHaplo.html">pullSegSiteHaplo</a></span><span class="op">(</span><span class="va">basePop</span><span class="op">[</span><span class="va">basePop</span><span class="op">@</span><span class="va">iid</span> <span class="op">==</span> <span class="va">father</span>,<span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 6_1   0   1   1   1   1   1   0   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 6_2   0   0   1   1   0   1   1   0   0   0   1   0</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullSegSiteHaplo.html">pullSegSiteHaplo</a></span><span class="op">(</span><span class="va">secondGenPop</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 11_1   0   1   1   1   0   0   1   0   1   0   0   1</span></span>
+<span><span class="co">#&gt; 11_2   0   1   1   1   1   1   0   0   1   0   1   0</span></span>
+<span><span class="co">#&gt; 12_1   0   1   1   1   0   0   1   1   1   0   0   1</span></span>
+<span><span class="co">#&gt; 12_2   0   0   1   1   0   1   1   0   1   0   1   0</span></span></code></pre></div>
+<p>In the above, independent assortment will always be observed. This is
+clear since despite being full siblings they inherit a different
+arrangement of haplotypes from the mother and the father. We may observe
+changes to the haplotypes via recombination between the four sites
+across a chromosome (either chromosome one, two, and/or three). However,
+this depends on the rate of recombination. Nevertheless, even if present
+it can be hard or even impossible to observe through the haplotypes
+alone, even in this small sample size. Instead we can use the
+<code>pullIbdHaplo</code> to observe this. For further details on
+recombination, please see the vignette on Recombination.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pullIbdHaplo.html">pullIbdHaplo</a></span><span class="op">(</span><span class="va">basePop</span><span class="op">[</span><span class="va">basePop</span><span class="op">@</span><span class="va">iid</span> <span class="op">==</span> <span class="va">mother</span>,<span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 4_1   7   7   7   7   7   7   7   7   7   7   7   7</span></span>
+<span><span class="co">#&gt; 4_2   8   8   8   8   8   8   8   8   8   8   8   8</span></span>
+<span><span class="fu"><a href="../reference/pullIbdHaplo.html">pullIbdHaplo</a></span><span class="op">(</span><span class="va">basePop</span><span class="op">[</span><span class="va">basePop</span><span class="op">@</span><span class="va">iid</span> <span class="op">==</span> <span class="va">father</span>,<span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 6_1  11  11  11  11  11  11  11  11  11  11  11  11</span></span>
+<span><span class="co">#&gt; 6_2  12  12  12  12  12  12  12  12  12  12  12  12</span></span>
+<span><span class="fu"><a href="../reference/pullIbdHaplo.html">pullIbdHaplo</a></span><span class="op">(</span><span class="va">secondGenPop</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      1_1 1_2 1_3 1_4 2_1 2_2 2_3 2_4 3_1 3_2 3_3 3_4</span></span>
+<span><span class="co">#&gt; 11_1   8   8   7   7   8   8   7   7   7   7   8   8</span></span>
+<span><span class="co">#&gt; 11_2  11  11  12  12  11  11  11  11  11  11  12  12</span></span>
+<span><span class="co">#&gt; 12_1   8   7   7   7   8   8   7   8   7   7   8   8</span></span>
+<span><span class="co">#&gt; 12_2  12  12  12  12  12  12  12  12  11  11  12  12</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="how-are-genomes-read">How are genomes read?<a class="anchor" aria-label="anchor" href="#how-are-genomes-read"></a>
+</h2>
+<p>For a genome to be read, first it needs to be sequenced. The
+techniques for this include Sanger sequencing or next-generation
+sequencing. These are then used to identify single nucleotide
+polymorphisms (SNPs). SNPs highlight variation at specific loci;
+equivalent to markers. Other terminology include traits and QTL:
+Quantitative Trait Locus. Traits are characteristics of interest such as
+milk yield or growth rate that have a genetic component. QTL are a
+region of DNA that’s associated with a specific trait that varies in the
+population. This could be identifiable by a marker (eg. SNP) or could
+only be correlated.</p>
+<p>In <strong>AlphaSimR</strong>:</p>
+<p>Let’s start a new population.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">founderGenome</span> <span class="op">=</span> <span class="fu"><a href="../reference/runMacs.html">runMacs</a></span><span class="op">(</span>nInd <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>                        nChr <span class="op">=</span> <span class="fl">3</span>, </span>
+<span>                        segSites <span class="op">=</span> <span class="fl">4</span>, </span>
+<span>                        species <span class="op">=</span> <span class="st">"CATTLE"</span><span class="op">)</span></span>
+<span><span class="co"># Set simulation parameters</span></span>
+<span><span class="va">SP</span> <span class="op">=</span> <span class="va"><a href="../reference/SimParam.html">SimParam</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">founderGenome</span><span class="op">)</span></span></code></pre></div>
+<p>Then, add an additive trait with three QTLs per chromosome using
+<code>SP$addTraitA</code> and one SNP per chromosome with
+<code>SP$addSnpChip</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">SP</span><span class="op">$</span><span class="fu">addTraitA</span><span class="op">(</span>nQtlPerChr <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">SP</span><span class="op">$</span><span class="fu">addSnpChip</span><span class="op">(</span>nSnpPerChr <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>After, create a base population.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">basePop</span> <span class="op">=</span> <span class="fu"><a href="../reference/newPop.html">newPop</a></span><span class="op">(</span><span class="va">founderGenome</span>, simParam <span class="op">=</span> <span class="va">SP</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Inspect basePop</span></span>
+<span><span class="va">basePop</span></span>
+<span><span class="co">#&gt; An object of class "Pop" </span></span>
+<span><span class="co">#&gt; Ploidy: 2 </span></span>
+<span><span class="co">#&gt; Individuals: 10 </span></span>
+<span><span class="co">#&gt; Chromosomes: 3 </span></span>
+<span><span class="co">#&gt; Loci: 12 </span></span>
+<span><span class="co">#&gt; Traits: 1</span></span></code></pre></div>
+<p>The SNPs can be read with <code>pullSnpGeno</code> or, if the
+location in the genome is known, <code>pullMarkerGeno</code> can be
+used.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># From SNP</span></span>
+<span><span class="va">SNP</span> <span class="op">=</span> <span class="fu"><a href="../reference/pullSnpGeno.html">pullSnpGeno</a></span><span class="op">(</span>pop <span class="op">=</span> <span class="va">basePop</span>, snpChip <span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">SNP</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    1_2 2_2 3_4</span></span>
+<span><span class="co">#&gt; 1    2   1   1</span></span>
+<span><span class="co">#&gt; 2    2   0   0</span></span>
+<span><span class="co">#&gt; 3    2   1   1</span></span>
+<span><span class="co">#&gt; 4    2   2   0</span></span>
+<span><span class="co">#&gt; 5    2   1   1</span></span>
+<span><span class="co">#&gt; 6    1   1   0</span></span>
+<span><span class="co">#&gt; 7    1   1   0</span></span>
+<span><span class="co">#&gt; 8    1   2   0</span></span>
+<span><span class="co">#&gt; 9    2   1   1</span></span>
+<span><span class="co">#&gt; 10   2   0   1</span></span>
+<span></span>
+<span><span class="co"># From marker</span></span>
+<span><span class="va">location</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">SNP</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pullMarkerGeno.html">pullMarkerGeno</a></span><span class="op">(</span><span class="va">basePop</span>, markers <span class="op">=</span> <span class="va">location</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    1_2 2_2 3_4</span></span>
+<span><span class="co">#&gt; 1    2   1   1</span></span>
+<span><span class="co">#&gt; 2    2   0   0</span></span>
+<span><span class="co">#&gt; 3    2   1   1</span></span>
+<span><span class="co">#&gt; 4    2   2   0</span></span>
+<span><span class="co">#&gt; 5    2   1   1</span></span>
+<span><span class="co">#&gt; 6    1   1   0</span></span>
+<span><span class="co">#&gt; 7    1   1   0</span></span>
+<span><span class="co">#&gt; 8    1   2   0</span></span>
+<span><span class="co">#&gt; 9    2   1   1</span></span>
+<span><span class="co">#&gt; 10   2   0   1</span></span></code></pre></div>
+<p>The defined trait (Trait 1) can be inspected via the genetic values
+calculated for each individual.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">basePop</span><span class="op">@</span><span class="va">gv</span></span>
+<span><span class="co">#&gt;            Trait1</span></span>
+<span><span class="co">#&gt;  [1,]  0.67763080</span></span>
+<span><span class="co">#&gt;  [2,] -0.50739888</span></span>
+<span><span class="co">#&gt;  [3,]  0.88013470</span></span>
+<span><span class="co">#&gt;  [4,] -0.20293014</span></span>
+<span><span class="co">#&gt;  [5,] -0.30383140</span></span>
+<span><span class="co">#&gt;  [6,]  0.16827305</span></span>
+<span><span class="co">#&gt;  [7,] -2.06067306</span></span>
+<span><span class="co">#&gt;  [8,]  1.92008559</span></span>
+<span><span class="co">#&gt;  [9,] -0.63964190</span></span>
+<span><span class="co">#&gt; [10,]  0.06835126</span></span></code></pre></div>
+<p>The genetic map for the QTLs can be retrieved via
+<code>getQtlMap</code>. Here the site of each QTL is identified per
+chromosome. The pos notes the position of the QTL on each chromosome in
+Morgans.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getQtlMap.html">getQtlMap</a></span><span class="op">(</span>trait <span class="op">=</span> <span class="fl">1</span>, simParam <span class="op">=</span> <span class="va">SP</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      id chr site       pos</span></span>
+<span><span class="co">#&gt; 1_1 1_1   1    1 0.0000000</span></span>
+<span><span class="co">#&gt; 1_3 1_3   1    3 0.4738446</span></span>
+<span><span class="co">#&gt; 1_4 1_4   1    4 0.5179529</span></span>
+<span><span class="co">#&gt; 2_1 2_1   2    1 0.0000000</span></span>
+<span><span class="co">#&gt; 2_3 2_3   2    3 0.1559803</span></span>
+<span><span class="co">#&gt; 2_4 2_4   2    4 0.4044692</span></span>
+<span><span class="co">#&gt; 3_1 3_1   3    1 0.0000000</span></span>
+<span><span class="co">#&gt; 3_2 3_2   3    2 0.1965774</span></span>
+<span><span class="co">#&gt; 3_3 3_3   3    3 0.3314247</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="what-is-a-genetic-map">What is a genetic map?<a class="anchor" aria-label="anchor" href="#what-is-a-genetic-map"></a>
+</h3>
+<p>A genetic map (also known as linkage map) provides the genetic
+distance in Morgans between genetic markers, QTLs, and/or segregating
+sites on a chromosome. This differs from a physical map which gives the
+physical distance in the DNA sequence by the number of nucleotides.
+Thus, is based on the actual structure of the genetic material. Although
+<strong>AlphaSimR</strong> can import a physical map for all loci
+through the <code>lociMap-class</code>, it can only output genetic maps
+of defined segregating sites, including QTLs, SNPs, and all defined
+loci. For this, the observed recombination frequencies between loci are
+used to show how genetic information is shuffled in chromosomes. Thus,
+highlighting how markers are inherited.</p>
+<p>For a genetic map of all defined loci (or segregating sites),
+<code>getGenMap</code> is used. <code>getSnpMap</code> can be used for
+the genetic map of the SNP(s) on each chromosome. As hinted previously,
+<code>getQtlMap</code> can be used for the genetic map of the
+QTL(s).</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getGenMap.html">getGenMap</a></span><span class="op">(</span><span class="va">SP</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     id chr        pos</span></span>
+<span><span class="co">#&gt; 1  1_1   1 0.00000000</span></span>
+<span><span class="co">#&gt; 2  1_2   1 0.38038081</span></span>
+<span><span class="co">#&gt; 3  1_3   1 0.47384462</span></span>
+<span><span class="co">#&gt; 4  1_4   1 0.51795289</span></span>
+<span><span class="co">#&gt; 5  2_1   2 0.00000000</span></span>
+<span><span class="co">#&gt; 6  2_2   2 0.01723463</span></span>
+<span><span class="co">#&gt; 7  2_3   2 0.15598034</span></span>
+<span><span class="co">#&gt; 8  2_4   2 0.40446916</span></span>
+<span><span class="co">#&gt; 9  3_1   3 0.00000000</span></span>
+<span><span class="co">#&gt; 10 3_2   3 0.19657736</span></span>
+<span><span class="co">#&gt; 11 3_3   3 0.33142468</span></span>
+<span><span class="co">#&gt; 12 3_4   3 0.60763015</span></span>
+<span><span class="fu"><a href="../reference/getSnpMap.html">getSnpMap</a></span><span class="op">(</span>snpChip <span class="op">=</span> <span class="fl">1</span>, simParam <span class="op">=</span> <span class="va">SP</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      id chr site        pos</span></span>
+<span><span class="co">#&gt; 1_2 1_2   1    2 0.38038081</span></span>
+<span><span class="co">#&gt; 2_2 2_2   2    2 0.01723463</span></span>
+<span><span class="co">#&gt; 3_4 3_4   3    4 0.60763015</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="how-is-this-used-in-plant-and-animal-breeding">How is this used in plant and animal breeding?<a class="anchor" aria-label="anchor" href="#how-is-this-used-in-plant-and-animal-breeding"></a>
+</h2>
+<p>By understanding the genome, breeders can produce crop and livestock
+with desirable traits for use in specific production systems. For
+example, a breeder may desire to have polled cattle to increase animal
+welfare and human safety. When considering the breeding design for a
+species, breed, and or system, there are many factors to consider with
+potential to introduce unintended consequences. These include balancing
+the trade off between short-term genetic gain and long-term loss in
+genetic variation as well as antagonistic relationships between desired
+traits commonly observed between production and functional traits in
+animals. <strong>AlphaSimR</strong> provides a fast and inexpensive way
+to explore and test a wide range of breeding designs for long term
+genetic improvement across plants and animals through forward-in-time
+stochastic simulations.</p>
+<p>For a more detailed overview of AlphaSimR in plant and animal
+breeding with exercises, please see the edx course: Breeding Programme
+Modelling with AlphaSimR. Available at: <a href="https://learning.edx.org/course/course-v1:EdinburghX+ISB001+1T2021/home" class="external-link uri">https://learning.edx.org/course/course-v1:EdinburghX+ISB001+1T2021/home</a></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

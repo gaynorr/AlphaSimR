@@ -2,17 +2,11 @@ pandoc: 3.1.11
 pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
-  articles/AlphaSimR: AlphaSimR.html
-  articles/DataImport: DataImport.html
+  AlphaSimR: AlphaSimR.html
+  articles/GeneticRecombination: GeneticRecombination.html
   articles/Genome: Genome.html
-  articles/GenomicSelection: GenomicSelection.html
-  intro: intro.html
-  articles/Meiosis: Meiosis.html
-  articles/Misc: Misc.html
-  articles/QuantGen: QuantGen.html
   traits: traits.html
-  articles/Traits: Traits.html
-last_built: 2024-11-01T18:58Z
+last_built: 2025-03-09T19:09Z
 urls:
   reference: https://gaynorr.github.io/AlphaSimR/reference
   article: https://gaynorr.github.io/AlphaSimR/articles
