@@ -18,7 +18,8 @@ knitr::opts_chunk$set(
 
 ## Placeholder for future development
 
-Introduction with basic of inheritance
+Introduction including basic details of inheritance
+
 Review meiosis
   Stages of meiosis
     Chromosome pairing
@@ -27,15 +28,16 @@ Review meiosis
     Segregation
     Diploids first and then polyploids
       Centromeres for polyploids
+
 Review genetic maps
-  Morgan's fly lab
+  Development of maps in Morgan's fly lab
   Haldane mapping function
   Kosambi mapping function
+
 Recombination models
   Count-location model
   Gamma model
   Gamma sprinkling model
-  recHist
-    pedigree
-  Sex specific recombination rates
+  
+Recombination tracking in AlphaSimR
 
