@@ -291,7 +291,7 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' pop = newPop(founderPop, simParam=SP)
 #'
 #' #Cross individual 1 with individual 10
-#' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' crossPlan = matrix(c("1","10"), nrow=1, ncol=2)
 #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
 #'
 #' @export
