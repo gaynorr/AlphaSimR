@@ -4,6 +4,10 @@
 
 *improved computational performance of simulations with multiple traits
 
+*added support for data.frames in SimParam genetic map switching functions
+
+*changed finalizePop function call in `.newPop` to pass simParam as an argument
+
 # AlphaSimR 1.6.1
 
 *fixed bug in `mergePops` and `[` (subset) methods - they were failing for populations that had a misc slot with a matrix - we now check if a misc slot element is a matrix and rbind them for `mergePops` and subset rows for `[` (assuming the first dimension represents individuals)

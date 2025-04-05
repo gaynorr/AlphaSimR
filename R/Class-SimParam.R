@@ -1922,14 +1922,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchGenMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+      
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+      
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+      
       private$.sepMap = FALSE
       private$.femaleMap = genMap
       private$.maleMap = NULL
@@ -1948,14 +1955,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchFemaleMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+      
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+      
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+      
       if(private$.sepMap){
         private$.femaleMap = genMap
         private$.femaleCentromere = centromere
@@ -1979,14 +1993,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchMaleMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+      
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+      
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+      
       private$.sepMap = TRUE
       private$.maleMap = genMap
       private$.maleCentromere = centromere
@@ -2450,7 +2471,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field genMap "matrix" of chromosome genetic maps
+    #' @field genMap list of chromosome genetic maps
     genMap=function(value){
       if(missing(value)){
         if(private$.sepMap){
@@ -2459,7 +2480,7 @@ SimParam = R6Class(
             genMap[[i]] = (private$.femaleMap[[i]]+
                              private$.maleMap[[i]])/2
           }
-          as.matrix(genMap)
+          genMap
         }else{
           private$.femaleMap
         }
@@ -2468,7 +2489,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field femaleMap "matrix" of chromosome genetic maps for
+    #' @field femaleMap list of chromosome genetic maps for
     #' females
     femaleMap=function(value){
       if(missing(value)){
@@ -2478,7 +2499,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field maleMap "matrix" of chromosome genetic maps for
+    #' @field maleMap list of chromosome genetic maps for
     #' males
     maleMap=function(value){
       if(missing(value)){

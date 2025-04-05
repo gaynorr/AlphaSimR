@@ -342,12 +342,12 @@ autopolyploid. (default is 0)}
 \item{\code{sepMap}}{are there seperate genetic maps for
 males and females}
 
-\item{\code{genMap}}{"matrix" of chromosome genetic maps}
+\item{\code{genMap}}{list of chromosome genetic maps}
 
-\item{\code{femaleMap}}{"matrix" of chromosome genetic maps for
+\item{\code{femaleMap}}{list of chromosome genetic maps for
 females}
 
-\item{\code{maleMap}}{"matrix" of chromosome genetic maps for
+\item{\code{maleMap}}{list of chromosome genetic maps for
 males}
 
 \item{\code{centromere}}{position of centromeres genetic map}

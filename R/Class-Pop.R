@@ -757,7 +757,7 @@ newPop = function(rawPop,simParam=NULL,...){
                       simParam=simParam)
   }
 
-  output = simParam$finalizePop(output,...)
+  output = simParam$finalizePop(output, simParam=simParam, ...)
 
   if(simParam$isTrackPed){
     if(simParam$isTrackRec){
