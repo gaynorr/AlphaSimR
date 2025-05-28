@@ -21,7 +21,7 @@ sampAddEff(qtlLoci, nTraits, corr, gamma, shape)
 a matrix with dimensions qtlLoci by nTraits
 }
 \description{
-Samples deviates from a normal distribution or gamma distribution 
+Samples deviates from a normal distribution or gamma distribution
 with a random sign
 }
 \keyword{internal}

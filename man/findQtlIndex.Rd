@@ -9,15 +9,15 @@ findQtlIndex(activeQtl, traitQtl)
 \arguments{
 \item{activeQtl}{a \code{\link{LociMap-class}} representing all active QTL}
 
-\item{traitQtl}{a \code{\link{LociMap-class}} representing QTL for a trait of 
+\item{traitQtl}{a \code{\link{LociMap-class}} representing QTL for a trait of
 interest}
 }
 \value{
 an integer vector for relative positions of traitQtl on activeQtl
 }
 \description{
-Compares to a \code{\link{LociMap-class}} objects to determine if 
-the first one is a superset of the second. If it is, the function returns NULL. 
+Compares to a \code{\link{LociMap-class}} objects to determine if
+the first one is a superset of the second. If it is, the function returns NULL.
 If it is not, the function return a \code{\link{LociMap-class}} object that is
 a superset of both a \code{\link{LociMap-class}} objects.
 }

@@ -380,7 +380,7 @@ genetic map}
 
 \item{\code{activeQtl}}{a LociMap representing all active QTL in simulation}
 
-\item{\code{qtlIndex}}{a list of vectors giving trait specific QTL indices 
+\item{\code{qtlIndex}}{a list of vectors giving trait specific QTL indices
 relative to all active QTL}
 }
 \if{html}{\out{</div>}}
@@ -587,24 +587,24 @@ pop2@id # 1:10
 \if{latex}{\out{\hypertarget{method-SimParam-restrSegSites}{}}}
 \subsection{Method \code{restrSegSites()}}{
 Sets restrictions on which segregating sites can
-serve as a SNP and/or QTL. The default behavior of AlphaSimR is 
-to randomly sample QTL or SNP from all eligible sites and then 
-mark the sampled sites ineligible to be sampled as the other 
-type (e.g. if a site is sampled as a QTL it will be marked as 
-ineligible to be sampled as a SNP). This behavior is designed 
-to produce the most challenging scenario for genomic selection 
+serve as a SNP and/or QTL. The default behavior of AlphaSimR is
+to randomly sample QTL or SNP from all eligible sites and then
+mark the sampled sites ineligible to be sampled as the other
+type (e.g. if a site is sampled as a QTL it will be marked as
+ineligible to be sampled as a SNP). This behavior is designed
+to produce the most challenging scenario for genomic selection
 when the markers used for prediction are not causal.
 
-Setting overlap=TRUE will prevent the addition of loci to the 
-ineligible list, but it won't remove sites already added to these 
-lists. Thus, timing of when restrSegSites is called matters. It 
-should be called before any addTrait or addSnpChip functions with 
+Setting overlap=TRUE will prevent the addition of loci to the
+ineligible list, but it won't remove sites already added to these
+lists. Thus, timing of when restrSegSites is called matters. It
+should be called before any addTrait or addSnpChip functions with
 the overlap=TRUE argument to freely allow loci to overlap.
 
-The minQtlPerChr and minSnpPerChr arguments can be used with 
-overlap=FALSE to preallocate sites as QTL and SNP respectively. This 
-option is useful when simulating multiple traits and/or SNP chips, 
-because it can be used to guarantee that enough eligible sites are 
+The minQtlPerChr and minSnpPerChr arguments can be used with
+overlap=FALSE to preallocate sites as QTL and SNP respectively. This
+option is useful when simulating multiple traits and/or SNP chips,
+because it can be used to guarantee that enough eligible sites are
 available when running addTrait and or addSnpChip functions.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$restrSegSites(
@@ -620,16 +620,16 @@ available when running addTrait and or addSnpChip functions.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{minQtlPerChr}}{the minimum number of segregating sites for 
+\item{\code{minQtlPerChr}}{the minimum number of segregating sites for
 QTLs. Can be a single value or a vector values for each chromosome.}
 
 \item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
 Can be a single value or a vector values for each chromosome.}
 
-\item{\code{excludeQtl}}{an optional vector of segregating site names to 
+\item{\code{excludeQtl}}{an optional vector of segregating site names to
 exclude from consideration as a viable QTL.}
 
-\item{\code{excludeSnp}}{an optional vector of segregating site names to 
+\item{\code{excludeSnp}}{an optional vector of segregating site names to
 exclude from consideration as a viable SNP.}
 
 \item{\code{overlap}}{should SNP and QTL sites be allowed to overlap.}
@@ -700,7 +700,7 @@ SP$setSexes("yes_sys")
 \if{html}{\out{<a id="method-SimParam-setFounderHap"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setFounderHap}{}}}
 \subsection{Method \code{setFounderHap()}}{
-Allows for the manual setting of founder haplotypes. This functionality 
+Allows for the manual setting of founder haplotypes. This functionality
 is not fully documented, because it is still experimental.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$setFounderHap(hapMap)}\if{html}{\out{</div>}}
@@ -758,10 +758,10 @@ SP$addSnpChip(10)
 \if{html}{\out{<a id="method-SimParam-addSnpChipByName"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addSnpChipByName}{}}}
 \subsection{Method \code{addSnpChipByName()}}{
-Assigns SNPs to a SNP chip by supplying marker names. This function does 
-check against excluded SNPs and will not add the SNPs to the list of 
-excluded QTL for the purpose of avoiding overlap between SNPs and QTL. 
-Excluding these SNPs from being used as QTL can be accomplished using 
+Assigns SNPs to a SNP chip by supplying marker names. This function does
+check against excluded SNPs and will not add the SNPs to the list of
+excluded QTL for the purpose of avoiding overlap between SNPs and QTL.
+Excluding these SNPs from being used as QTL can be accomplished using
 the excludeQtl argument in SimParam's restrSegSites function.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChipByName(markers, name = NULL)}\if{html}{\out{</div>}}
@@ -950,9 +950,9 @@ SP$addTraitAD(10, meanDD=0.5)
 \if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
 \subsection{Method \code{altAddTraitAD()}}{
-An alternative method for adding a trait with additive  and dominance effects 
-to an AlphaSimR simulation. The function attempts to create a trait matching 
-user defined values for number of QTL, inbreeding depression, additive genetic 
+An alternative method for adding a trait with additive  and dominance effects
+to an AlphaSimR simulation. The function attempts to create a trait matching
+user defined values for number of QTL, inbreeding depression, additive genetic
 variance and dominance genetic variance.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$altAddTraitAD(
@@ -972,7 +972,7 @@ variance and dominance genetic variance.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. 
+\item{\code{nQtlPerChr}}{number of QTLs per chromosome.
 Can be a single value or nChr values.}
 
 \item{\code{mean}}{desired mean of the trait}
@@ -997,38 +997,38 @@ ignored. Only set to TRUE if you know what you are doing.}
 \if{html}{\out{</div>}}
 }
 \subsection{Details}{
-This function will always add a trait to 'SimParam', unless an error occurs 
-with picking QTLs. The resulting trait will always have the desired mean and 
-additive genetic variance. However, it may not have the desired values for 
-inbreeding depression and dominance variance. Thus, it is strongly recommended 
-to check the output printed to the console to determine how close the trait's 
+This function will always add a trait to 'SimParam', unless an error occurs
+with picking QTLs. The resulting trait will always have the desired mean and
+additive genetic variance. However, it may not have the desired values for
+inbreeding depression and dominance variance. Thus, it is strongly recommended
+to check the output printed to the console to determine how close the trait's
 parameters came to these desired values.
 
-The mean and additive genetic variance will always be achieved exactly. The 
-function attempts to achieve the desired dominance variance and inbreeding 
-depression while staying within the user supplied constraints for the 
+The mean and additive genetic variance will always be achieved exactly. The
+function attempts to achieve the desired dominance variance and inbreeding
+depression while staying within the user supplied constraints for the
 acceptable range of dominance degree mean and variance. If the desired values
-are not being achieved, the acceptable range need to be increased and/or the 
-number of QTL may need to be increased. There are not limits to setting the 
-range for dominance degree mean and variance, but care should be taken to 
-with regards to the biological feasibility of the limits that are supplied. 
-The default limits were somewhat arbitrarily set, so I make not claim to 
+are not being achieved, the acceptable range need to be increased and/or the
+number of QTL may need to be increased. There are not limits to setting the
+range for dominance degree mean and variance, but care should be taken to
+with regards to the biological feasibility of the limits that are supplied.
+The default limits were somewhat arbitrarily set, so I make not claim to
 how reasonable these limits are for routine use.
 
-Inbreeding depression in this function is defined as the difference in mean 
-genetic value between a population with the same allele frequency as the 
-reference population (population used to initialize SimParam) in 
-Hardy-Weinberg equilibrium compared to a population with the same allele 
-frequency that is fully inbred. This is equivalent to the amount the mean of 
-a population increases when going from an inbreeding coefficient of 1 (fully 
-inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
-equilibrium). Note that the sign of the value should (usually) be positive. 
-This corresponds to a detrimental effect of inbreeding when higher values of 
+Inbreeding depression in this function is defined as the difference in mean
+genetic value between a population with the same allele frequency as the
+reference population (population used to initialize SimParam) in
+Hardy-Weinberg equilibrium compared to a population with the same allele
+frequency that is fully inbred. This is equivalent to the amount the mean of
+a population increases when going from an inbreeding coefficient of 1 (fully
+inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg
+equilibrium). Note that the sign of the value should (usually) be positive.
+This corresponds to a detrimental effect of inbreeding when higher values of
 the trait are considered biologically beneficial.
 
-Summary information on this trait is printed to the console when silent=FALSE. 
-The summary information reports the inbreeding depression and dominance 
-variance for the population as well as the dominance degree mean and variance 
+Summary information on this trait is printed to the console when silent=FALSE.
+The summary information reports the inbreeding depression and dominance
+variance for the population as well as the dominance degree mean and variance
 applied to the trait.
 }
 
@@ -1629,10 +1629,10 @@ ignored. Only set to TRUE if you know what you are doing}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{Method \code{setVarE()}}{
 Defines a default values for error
-variances used in \code{\link{setPheno}}. These defaults 
-will be used to automatically generate phenotypes when new 
+variances used in \code{\link{setPheno}}. These defaults
+will be used to automatically generate phenotypes when new
 populations are created. See the details section of \code{\link{setPheno}}
-for more information about each arguments and how they 
+for more information about each arguments and how they
 should be used.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL, corE = NULL)}\if{html}{\out{</div>}}

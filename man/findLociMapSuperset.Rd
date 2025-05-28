@@ -7,18 +7,18 @@
 findLociMapSuperset(lociMap1, lociMap2)
 }
 \arguments{
-\item{lociMap1}{a \code{\link{LociMap-class}} that is tested to determine if 
+\item{lociMap1}{a \code{\link{LociMap-class}} that is tested to determine if
 it is a superset}
 
 \item{lociMap2}{a second \code{\link{LociMap-class}} that is tested}
 }
 \value{
-NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it 
+NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it
 is not
 }
 \description{
-Compares to a \code{\link{LociMap-class}} objects to determine if 
-the first one is a superset of the second. If it is, the function returns NULL. 
+Compares to a \code{\link{LociMap-class}} objects to determine if
+the first one is a superset of the second. If it is, the function returns NULL.
 If it is not, the function return a \code{\link{LociMap-class}} object that is
 a superset of both a \code{\link{LociMap-class}} objects.
 }
