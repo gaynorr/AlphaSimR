@@ -1,5 +1,5 @@
 bibentry(
-  bibtype    = "Article",
+  bibtype  = "Article",
   title    = "AlphaSimR: an R package for breeding program simulations",
   author   = "R Chris Gaynor, Gregor Gorjanc, John M Hickey",
   journal  = "G3 Gene|Genomes|Genetics",
@@ -8,4 +8,15 @@ bibentry(
   number   = "jkaa07",
   issue    = "2",
   url      = "https://doi.org/10.1093/g3journal/jkaa017"
+)
+
+bibentry(
+  bibtype  = "Article",
+  title    = "Plant breeding simulations with AlphaSimR",
+  author   = "Jon Bančič, Philip Greenspoon, R Chris Gaynor, Gregor Gorjanc",
+  journal  = "Crop Science",
+  year     = "2025",
+  volume   = "65",
+  number   = "e21312",
+  url      = "https://doi.org/10.1002/csc2.21312"
 )
