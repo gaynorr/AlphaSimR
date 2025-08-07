@@ -23,8 +23,8 @@ sampDomEff(qtlLoci, nTraits, addEff, corDD, meanDD, varDD)
 a matrix with dimensions qtlLoci by nTraits
 }
 \description{
-Samples dominance deviation effects from a normal distribution 
-and uses previously sampled additive effects to form dominance 
+Samples dominance deviation effects from a normal distribution
+and uses previously sampled additive effects to form dominance
 effects
 }
 \keyword{internal}

@@ -1,5 +1,7 @@
 # AlphaSimR 1.6.1.9990
 
+*added names to `SP$recHist`
+
 *added `asCategorical` to convert a normal (Gaussian) trait to an ordered categorical (threshold) trait
 
 *improved computational performance of simulations with multiple traits
