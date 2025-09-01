@@ -1,4 +1,4 @@
-# AlphaSimR 1.6.1.9990
+# AlphaSimR 2.0.0
 
 *added names to `SP$recHist`
 
@@ -9,6 +9,8 @@
 *added support for data.frames in SimParam genetic map switching functions
 
 *changed finalizePop function call in `.newPop` to pass simParam as an argument
+
+*updated version numbering to follow tidyverse format with a major version indicating backwards compatibility has been broken
 
 # AlphaSimR 1.6.1
 
