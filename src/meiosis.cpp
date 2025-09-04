@@ -54,94 +54,101 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 }
 
 // Samples the locations for chiasmata via a gamma process
-// start, the position downstream to start the gamma process (should be a negative value)
 // end, the length of the interval used to sample
 // v, the interference parameter
 // p, the proportion of non-interfering crossovers
 // n, the number of gamma deviates sampled at a time (affects performance, not results)
-arma::vec sampleChiasmata(double start, double end, double v, 
+arma::vec sampleChiasmata(double end, double v, 
                           double p, arma::uword n=40){
   if((1-p)<1e-6){
-    // All chiasmata from type 2 pathway
-    // Changing v and p to model type 2 with gamma model
-    p = 0;
-    v = 1;
-  }
-  
-  if(p<1e-6){ // Gamma model
-    // Sample deviates from a gamma distribution
-    arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+    // No crossover interference
+    // Switching to count-location model
+    n = samplePoisson(2*end);
+    arma::vec x(n, arma::fill::randu);
+    return sort(x);
     
-    // Find locations on genetic map
-    output = cumsum(output)+start;
+  }else{
+    // Using gamma or gamma-sprinkling model
     
-    // Add additional values if max position less than end
-    while(output(output.n_elem-1)<end){
-      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
-      tmp = cumsum(tmp) + output(output.n_elem-1);
-      output = join_cols(output, tmp);
+    // Choose a starting location 9-10 Morgans away
+    arma::vec u(1, arma::fill::randu);
+    double start = u(0)-10;
+    
+    if(p<1e-6){ // Gamma model
+      // Sample deviates from a gamma distribution
+      arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+      
+      // Find locations on genetic map
+      output = cumsum(output)+start;
+      
+      // Add additional values if max position less than end
+      while(output(output.n_elem-1)<end){
+        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+        tmp = cumsum(tmp) + output(output.n_elem-1);
+        output = join_cols(output, tmp);
+      }
+      
+      // Remove values less than 0
+      output = output(find(output>0));
+      
+      // Select values less than the end
+      return output(find(output<end));
+    }else{ // Gamma sprinkling model
+      // Sample type 1 deviates from a gamma distribution
+      arma::vec type1 = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+      
+      // Find locations on genetic map
+      type1 = cumsum(type1)+start;
+      
+      // Add additional values if max position less than end
+      while(type1(type1.n_elem-1)<end){
+        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+        tmp = cumsum(tmp) + type1(type1.n_elem-1);
+        type1 = join_cols(type1, tmp);
+      }
+      
+      // Remove values less than 0
+      type1 = type1(find(type1>0));
+      
+      // Select values less than the end
+      type1 = type1(find(type1<end));
+      
+      // Sample type 2 deviates from a gamma distribution
+      arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
+      
+      // Find locations on genetic map
+      type2 = cumsum(type2);
+      
+      // Add additional values if max position less than end
+      while(type2(type2.n_elem-1)<end){
+        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
+        tmp = cumsum(tmp) + type2(type2.n_elem-1);
+        type2 = join_cols(type2, tmp);
+      }
+      
+      // Select values less than the end
+      type2 = type2(find(type2<end));
+      
+      // Return sorted vector of type 1 and type 2 crossovers
+      return sort(join_cols(type1, type2));
     }
-    
-    // Remove values less than 0
-    output = output(find(output>0));
-    
-    // Select values less than the end
-    return output(find(output<end));
-  }else{ // Gamma sprinkling model
-    // Sample type 1 deviates from a gamma distribution
-    arma::vec type1 = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
-    
-    // Find locations on genetic map
-    type1 = cumsum(type1)+start;
-    
-    // Add additional values if max position less than end
-    while(type1(type1.n_elem-1)<end){
-      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
-      tmp = cumsum(tmp) + type1(type1.n_elem-1);
-      type1 = join_cols(type1, tmp);
-    }
-    
-    // Remove values less than 0
-    type1 = type1(find(type1>0));
-    
-    // Select values less than the end
-    type1 = type1(find(type1<end));
-    
-    // Sample type 2 deviates from a gamma distribution
-    arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
-    
-    // Find locations on genetic map
-    type2 = cumsum(type2);
-    
-    // Add additional values if max position less than end
-    while(type2(type2.n_elem-1)<end){
-      arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
-      tmp = cumsum(tmp) + type2(type2.n_elem-1);
-      type2 = join_cols(type2, tmp);
-    }
-    
-    // Select values less than the end
-    type2 = type2(find(type2<end));
-    
-    // Return sorted vector of type 1 and type 2 crossovers
-    return sort(join_cols(type1, type2));
   }
 }
 
 // Samples the locations for chiasmata via a gamma process for a quadrivalent
 // CO interference is assumed to occur between all arms
 // The first arm is sampled at random
-// start, the position downstream to start the gamma process (should be a negative value)
 // exchange, the positions where chromosomes switch
 // end, the length of the interval used to sample
 // v, the interference parameter
 // p, the proportion of non-interfering crossovers
 // n1, the number of gamma deviates sampled for the first arm 
 // n2, the number of gamma deviates sampled for all other arms
-arma::field<arma::vec> sampleQuadChiasmata(double start, double exchange, double end, 
-                                           double v, double p, arma::uword n1=40, arma::uword n2=8){
+arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v, 
+                                           double p, arma::uword n1=40, arma::uword n2=8){
   arma::field<arma::vec> output(4);
   arma::vec u(1, arma::fill::randu);
+  double start = u(0)-10;
   
   // Randomly set order of chromosome arms
   arma::uvec arm = {0, 1, 2, 3};
@@ -326,18 +333,15 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  // Choose a starting location 9-10 Morgans away
-  arma::vec u(1, arma::fill::randu);
-  double start = u(0)-10;
   
   // Find crossover positions
-  arma::vec posCO = sampleChiasmata(start, genLen, v, p);
+  arma::vec posCO = sampleChiasmata(genLen, v, p);
   if(posCO.n_elem==0){
     arma::Mat<int> output(1,2,arma::fill::ones);
     return output;
   }
   
-  // Thin crossovers
+  // Thin crossovers 
   arma::vec thin(posCO.n_elem, arma::fill::randu);
   posCO = posCO(find(thin>0.5));
   nCO = posCO.n_elem;
@@ -383,13 +387,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   arma::vec u(1, arma::fill::randu);
   double exchange = u(0)*genLen;
   
-  // Sample start point for gamma model
-  u.randu();
-  double start = u(0)-10;
-  
   // Determine crossover positions
   // Returns field with crossover positions in each arm of the quadrivalent
-  arma::field<arma::vec> posCO = sampleQuadChiasmata(start, exchange, genLen, v, p);
+  arma::field<arma::vec> posCO = sampleQuadChiasmata(exchange, genLen, v, p);
   
   // Set chromatid configuration for each chiasmata
   arma::field<arma::umat> chromatidPairs(4); // matches posCO

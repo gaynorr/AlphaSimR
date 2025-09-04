@@ -1,3 +1,15 @@
+#' Find loci on specific chromosomes
+#' 
+#' This function alters the lociPerChr and lociLoc vectors to reflect 
+#' only loci on a specific chromosomes.
+#'
+#' @param chr chromosomes to select
+#' @param inLociPerChr original lociPerChr vector
+#' @param inLociLoc original lociLoc vector
+#' 
+#' @return a list with lociPerChr and lociLoc
+#'
+#' @keywords internal
 selectLoci = function(chr, inLociPerChr, inLociLoc){
   if(is.null(chr)){
     return(list(lociPerChr=inLociPerChr,
@@ -25,10 +37,13 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
               lociLoc=outLociLoc))
 }
 
-# Retrieves Marker names from genMap
-# lociPerChr, number of loci per chromosome
-# lociLoc, position of loci on chromosome
-# genMap, genetic map with names
+#' Retrieves marker names from genMap
+#'
+#' @param lociPerChr number of loci per chromosome
+#' @param lociLoc position of loci on chromosome
+#' @param genMap internal AlphaSimR genetic map with names
+#'
+#' @keywords internal
 getLociNames = function(lociPerChr, lociLoc, genMap){
   lociNames = character(length(lociLoc))
   start = end = 0L

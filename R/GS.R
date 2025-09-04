@@ -1,3 +1,15 @@
+#' @title Convert traits to a vector of names
+#' 
+#' @description This function processes the traits arguments from GS models. It usually 
+#' receives a number indicating the trait, but may also be the trait name 
+#' itself or a custom function.
+#'
+#' @param traits the traits argument from a GS model
+#' @param simParam the simulation parameters object
+#'
+#' @returns a vector of names for traits
+#' 
+#' @keywords internal
 convertTraitsToNames = function(traits, simParam){
   if(is.character(traits)){
     # Suspect trait is a name

@@ -588,6 +588,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getGvIndex
+Rcpp::List getGvIndex(const Rcpp::S4& pop, const Rcpp::List& traitList, const Rcpp::S4& activeQtl, const arma::field<arma::Col<int> >& qtlIndex, arma::uword nTraits, int nThreads);
+RcppExport SEXP _AlphaSimR_getGvIndex(SEXP popSEXP, SEXP traitListSEXP, SEXP activeQtlSEXP, SEXP qtlIndexSEXP, SEXP nTraitsSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type traitList(traitListSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type activeQtl(activeQtlSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Col<int> >& >::type qtlIndex(qtlIndexSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type nTraits(nTraitsSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getGvIndex(pop, traitList, activeQtl, qtlIndex, nTraits, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getHybridGv
 arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait, const Rcpp::S4& females, arma::uvec femaleParents, const Rcpp::S4& males, arma::uvec maleParents, int nThreads);
 RcppExport SEXP _AlphaSimR_getHybridGv(SEXP traitSEXP, SEXP femalesSEXP, SEXP femaleParentsSEXP, SEXP malesSEXP, SEXP maleParentsSEXP, SEXP nThreadsSEXP) {
@@ -882,6 +898,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcGenoFreq", (DL_FUNC) &_AlphaSimR_calcGenoFreq, 4},
     {"_AlphaSimR_calcChrFreq", (DL_FUNC) &_AlphaSimR_calcChrFreq, 1},
     {"_AlphaSimR_getGv", (DL_FUNC) &_AlphaSimR_getGv, 3},
+    {"_AlphaSimR_getGvIndex", (DL_FUNC) &_AlphaSimR_getGvIndex, 6},
     {"_AlphaSimR_getHybridGv", (DL_FUNC) &_AlphaSimR_getHybridGv, 6},
     {"_AlphaSimR_getNonFounderIbd", (DL_FUNC) &_AlphaSimR_getNonFounderIbd, 3},
     {"_AlphaSimR_getFounderIbd", (DL_FUNC) &_AlphaSimR_getFounderIbd, 2},

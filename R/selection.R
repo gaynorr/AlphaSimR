@@ -1,14 +1,13 @@
-# Returns a vector response from a population
-# pop is an object of class Pop or HybridPop
-# trait is a vector of traits or a function
-#   (must work like trait(pop@use, ...) or trait(use(pop, ...), ...)).
-#   See examples in \code{selectInd}.
-# use is a character ("rand", "gv", "ebv", "pheno", or "bv"; note that
-#  "bv" doesn't work on class HybridPop)
-#  or a function (must work like use(pop, trait, ...)).
-#  See examples in \code{selectInd}.
-# simParam is an object of class SimParam, it is only called when use="bv"
-# ... are additional arguments passed to trait when trait is a function
+#' Returns a vector response from a population
+#'
+#' @param pop an object of class Pop or HybirdPop
+#' @param trait a vector or custom function
+#' @param use a character ("rand", "gv", "ebv", "pheno", or "bv"; 
+#' note that "bv" doesn't work on class HybridPop)
+#' @param simParam simulation parameters are only used when use="bv"
+#' @param ... are additional arguments passed to trait when trait is a function
+#'
+#' @keywords internal
 getResponse = function(pop,trait,use,simParam=NULL,...){
   if(is(trait,"function")){
     if(is.character(use)){
@@ -73,9 +72,14 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   return(response)
 }
 
-# Converts candidates to a vector of positive numbers
-# for the individuals that are candidates. This function
-# handle indexing by id and negative value indexing
+#' Identify candidate individuals
+#' 
+#' This function handles indexing by id and negative value indexing
+#'
+#' @param pop a population object
+#' @param candidates a vector of candidates (numeric or character)
+#'
+#' @keywords internal
 getCandidates = function(pop, candidates){
   if(is.character(candidates)){
     candidates = match(candidates, pop@id)
@@ -94,7 +98,16 @@ getCandidates = function(pop, candidates){
   return(candidates)
 }
 
-# Returns a vector of individuals in a population with the required sex
+#' Find individuals of desired sex
+#' 
+#' This function ignores sex if sexes is "no" in SimParam.
+#'
+#' @param pop a population
+#' @param sex the desired sex (M or F)
+#' @param simParam simulation parameters object
+#' @param ...  captures use of old gender argument
+#'
+#' @keywords internal
 checkSexes = function(pop,sex,simParam,...){
   sex = toupper(sex)
   eligible = 1:pop@nInd
@@ -116,7 +129,12 @@ checkSexes = function(pop,sex,simParam,...){
   }
 }
 
-# Returns a vector of families
+#' Determine families
+#'
+#' @param pop a population object
+#' @param famType type of family (fullsib "B", maternal "M", or paternal "F")
+#'
+#' @keywords internal
 getFam = function(pop,famType){
   famType = toupper(famType)
   if(famType=="B"){

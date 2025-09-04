@@ -272,6 +272,10 @@ getGv <- function(trait, pop, nThreads) {
     .Call(`_AlphaSimR_getGv`, trait, pop, nThreads)
 }
 
+getGvIndex <- function(pop, traitList, activeQtl, qtlIndex, nTraits, nThreads) {
+    .Call(`_AlphaSimR_getGvIndex`, pop, traitList, activeQtl, qtlIndex, nTraits, nThreads)
+}
+
 getHybridGv <- function(trait, females, femaleParents, males, maleParents, nThreads) {
     .Call(`_AlphaSimR_getHybridGv`, trait, females, femaleParents, males, maleParents, nThreads)
 }

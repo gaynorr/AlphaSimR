@@ -44,6 +44,7 @@ Other contributors:
   \item Thiago Oliveira (\href{https://orcid.org/0000-0002-4555-2584}{ORCID}) [contributor]
   \item Audrey Martin (\href{https://orcid.org/0000-0003-2235-0098}{ORCID}) [contributor]
   \item Philip Greenspoon (\href{https://orcid.org/0000-0001-6284-7248}{ORCID}) [contributor]
+  \item Ros Craddock (\href{https://orcid.org/0009-0004-1578-1580}{ORCID}) [contributor]
 }
 
 }

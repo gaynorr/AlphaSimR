@@ -1,29 +1,29 @@
 ## ----eval=FALSE---------------------------------------------------------------
-#  founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
+# founderPop = quickHaplo(nInd=1000, nChr=10, segSites=1000)
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  SP = SimParam$new(founderPop)
+# SP = SimParam$new(founderPop)
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  SP$addTraitA(nQtlPerChr=1000)
+# SP$addTraitA(nQtlPerChr=1000)
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  SP$setSexes("yes_sys")
+# SP$setSexes("yes_sys")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  pop = newPop(founderPop)
+# pop = newPop(founderPop)
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  genMean = meanG(pop)
+# genMean = meanG(pop)
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  for(generation in 1:20){
-#    pop = selectCross(pop=pop, nFemale=500, nMale=25, use="gv", nCrosses=1000)
-#    genMean = c(genMean, meanG(pop))
-#  }
+# for(generation in 1:20){
+#   pop = selectCross(pop=pop, nFemale=500, nMale=25, use="gv", nCrosses=1000)
+#   genMean = c(genMean, meanG(pop))
+# }
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
+# plot(0:20, genMean, xlab="Generation", ylab="Mean Genetic Value", type="l")
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
 library(AlphaSimR)

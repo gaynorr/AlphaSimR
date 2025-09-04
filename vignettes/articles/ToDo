@@ -1,0 +1,73 @@
+Vignettes:
+
+Traits
+  Background from existing vignette
+    altAddTraitAD (its own section?)
+  
+  Practical examples
+    How to get effects
+    Manual adjustments 
+    importation
+      Mixture distributions
+    rescaleTrait
+
+
+SimpleGeneticSimulations
+  In this vignette I will show how genetic simulations work using a simple examples. 
+  I will start by showing how to simulate phenotypes from genotypes. I will then 
+  show how to simulate new genotypes from existing genotypes.
+  
+  ## Simulating phenotypes from genotypes
+  
+  Simulating phenotypes from genotypes is a straightforward process that can be 
+  done fairly easily using just base R functionality. 
+
+
+QuantGen
+  Introduction
+    Point to vignette on traits as first step
+    History
+      Fisher (response to selection, variance components)
+      Bulmer (genic variance)
+    
+  Decomposition of genetic values
+    Reference population (HWE vs non-HWE)
+    Breeding value
+    Dominance deviations
+    Epistatic deviations
+    Variance, genic variance, LD covariance
+
+Misc
+  Introduction
+  
+  Explain individual level slot
+    set/get
+  
+  Explain population slot
+  
+  Finalize pop?
+
+
+GenomicSelection
+  Introduction
+    Point to genome (QTL/SNP) and trait
+  
+  How to build a training population
+    Mention fixed effect
+  
+  How to fit a model
+  
+  How to get GEBVs
+    Accuracy of selection (vs BV or GV, train vs pred)
+  
+  How to do selections
+  
+  Explain models
+    Use Guilherme's paper
+    Explain 1 vs 2
+    
+  How to use external software
+
+
+DataImport
+  Pull from example script

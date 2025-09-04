@@ -89,6 +89,8 @@ SimParam = R6Class(
       private$.hasHap = logical()
       private$.hap = list()
       private$.isFounder = logical()
+      private$.activeQtl = NULL
+      private$.qtlIndex = list()
 
       invisible(self)
     },
@@ -188,16 +190,34 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Sets restrictions on which segregating sites
-    #' can serve as a SNP and/or QTL.
+    #' @description Sets restrictions on which segregating sites can
+    #' serve as a SNP and/or QTL. The default behavior of AlphaSimR is
+    #' to randomly sample QTL or SNP from all eligible sites and then
+    #' mark the sampled sites ineligible to be sampled as the other
+    #' type (e.g. if a site is sampled as a QTL it will be marked as
+    #' ineligible to be sampled as a SNP). This behavior is designed
+    #' to produce the most challenging scenario for genomic selection
+    #' when the markers used for prediction are not causal.
     #'
-    #' @param minQtlPerChr the minimum number of segregating sites for 
+    #' Setting overlap=TRUE will prevent the addition of loci to the
+    #' ineligible list, but it won't remove sites already added to these
+    #' lists. Thus, timing of when restrSegSites is called matters. It
+    #' should be called before any addTrait or addSnpChip functions with
+    #' the overlap=TRUE argument to freely allow loci to overlap.
+    #'
+    #' The minQtlPerChr and minSnpPerChr arguments can be used with
+    #' overlap=FALSE to preallocate sites as QTL and SNP respectively. This
+    #' option is useful when simulating multiple traits and/or SNP chips,
+    #' because it can be used to guarantee that enough eligible sites are
+    #' available when running addTrait and or addSnpChip functions.
+    #'
+    #' @param minQtlPerChr the minimum number of segregating sites for
     #' QTLs. Can be a single value or a vector values for each chromosome.
     #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
     #' Can be a single value or a vector values for each chromosome.
-    #' @param excludeQtl an optional vector of segregating site names to 
+    #' @param excludeQtl an optional vector of segregating site names to
     #' exclude from consideration as a viable QTL.
-    #' @param excludeSnp an optional vector of segregating site names to 
+    #' @param excludeSnp an optional vector of segregating site names to
     #' exclude from consideration as a viable SNP.
     #' @param overlap should SNP and QTL sites be allowed to overlap.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
@@ -216,7 +236,7 @@ SimParam = R6Class(
       # Handle any named QTL exclusions
       if(!is.null(excludeQtl)){
         matchList = private$.findNamedLoci(excludeQtl)
-        
+
         # Make exclusions
         restr = self$invalidQtl
         for(i in seq_len(self$nChr)){
@@ -224,7 +244,7 @@ SimParam = R6Class(
         }
         self$invalidQtl = restr
       }
-      
+
       # Handle any named SNP exclusions
       if(!is.null(excludeSnp)){
         # Check if the SNP list matches the QTL list
@@ -235,11 +255,11 @@ SimParam = R6Class(
             findMatch = FALSE
           }
         }
-        
+
         if(findMatch){
           matchList = private$.findNamedLoci(excludeSnp)
         }
-        
+
         # Make exclusions
         restr = self$invalidSnp
         for(i in seq_len(self$nChr)){
@@ -247,7 +267,7 @@ SimParam = R6Class(
         }
         self$invalidSnp = restr
       }
-      
+
       if(overlap){
         # Not setting any restrictions if overlap is allow
         # Existing restrictions will be left in place
@@ -321,11 +341,11 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' Allows for the manual setting of founder haplotypes. This functionality 
+
+    #' @description
+    #' Allows for the manual setting of founder haplotypes. This functionality
     #' is not fully documented, because it is still experimental.
-    #' 
+    #'
     #' @param hapMap a list of founder haplotypes
     setFounderHap = function(hapMap){
       private$.hap = hapMap
@@ -366,12 +386,12 @@ SimParam = R6Class(
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
-    
+
     #' @description
-    #' Assigns SNPs to a SNP chip by supplying marker names. This function does 
-    #' check against excluded SNPs and will not add the SNPs to the list of 
-    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL. 
-    #' Excluding these SNPs from being used as QTL can be accomplished using 
+    #' Assigns SNPs to a SNP chip by supplying marker names. This function does
+    #' check against excluded SNPs and will not add the SNPs to the list of
+    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL.
+    #' Excluding these SNPs from being used as QTL can be accomplished using
     #' the excludeQtl argument in SimParam's restrSegSites function.
     #'
     #' @param markers a vector of names for the markers
@@ -386,21 +406,21 @@ SimParam = R6Class(
     #' SP$addSnpChipByName(c("1_1","1_3"))
     addSnpChipByName = function(markers, name=NULL){
       genMap = private$.femaleMap
-      
+
       # Check that the markers are present on the map
       genMapMarkerNames = unlist(lapply(genMap, names))
       stopifnot(all(markers%in%genMapMarkerNames))
-      
+
       # Create lociPerChr and lociLoc
       lociPerChr = integer(length(genMap))
       lociLoc = vector("list", length(genMap))
-      
+
       # Loop through chromosomes
       for(i in seq_len(length(genMap))){
-        
+
         # Initialize lociLoc
         lociLoc[[i]] = integer()
-        
+
         # Find matches if they exist
         take = match(names(genMap[[i]]), markers)
         lociPerChr[i] = length(na.omit(take))
@@ -409,18 +429,18 @@ SimParam = R6Class(
         }
       }
       lociLoc = unlist(lociLoc)
-      
+
       snpChip = new("LociMap",
                     nLoci=sum(lociPerChr),
                     lociPerChr=lociPerChr,
                     lociLoc=lociLoc)
-      
+
       if(is.null(name)){
         snpChip@name = paste0("Chip",self$nSnpChips + 1L)
       }else{
         snpChip@name = name
       }
-      
+
       self$snpChips[[self$nSnpChips + 1L]] = snpChip
       invisible(self)
     },
@@ -617,14 +637,14 @@ SimParam = R6Class(
       }
       invisible(self)
     },
-    
-    #' @description 
-    #' An alternative method for adding a trait with additive  and dominance effects 
-    #' to an AlphaSimR simulation. The function attempts to create a trait matching 
-    #' user defined values for number of QTL, inbreeding depression, additive genetic 
+
+    #' @description
+    #' An alternative method for adding a trait with additive  and dominance effects
+    #' to an AlphaSimR simulation. The function attempts to create a trait matching
+    #' user defined values for number of QTL, inbreeding depression, additive genetic
     #' variance and dominance genetic variance.
-    #' 
-    #' @param nQtlPerChr number of QTLs per chromosome. 
+    #'
+    #' @param nQtlPerChr number of QTLs per chromosome.
     #' Can be a single value or nChr values.
     #' @param mean desired mean of the trait
     #' @param varA desired additive variance
@@ -636,42 +656,42 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait
-    #' 
-    #' @details 
-    #' This function will always add a trait to 'SimParam', unless an error occurs 
-    #' with picking QTLs. The resulting trait will always have the desired mean and 
-    #' additive genetic variance. However, it may not have the desired values for 
-    #' inbreeding depression and dominance variance. Thus, it is strongly recommended 
-    #' to check the output printed to the console to determine how close the trait's 
+    #'
+    #' @details
+    #' This function will always add a trait to 'SimParam', unless an error occurs
+    #' with picking QTLs. The resulting trait will always have the desired mean and
+    #' additive genetic variance. However, it may not have the desired values for
+    #' inbreeding depression and dominance variance. Thus, it is strongly recommended
+    #' to check the output printed to the console to determine how close the trait's
     #' parameters came to these desired values.
-    #' 
-    #' The mean and additive genetic variance will always be achieved exactly. The 
-    #' function attempts to achieve the desired dominance variance and inbreeding 
-    #' depression while staying within the user supplied constraints for the 
+    #'
+    #' The mean and additive genetic variance will always be achieved exactly. The
+    #' function attempts to achieve the desired dominance variance and inbreeding
+    #' depression while staying within the user supplied constraints for the
     #' acceptable range of dominance degree mean and variance. If the desired values
-    #' are not being achieved, the acceptable range need to be increased and/or the 
-    #' number of QTL may need to be increased. There are not limits to setting the 
-    #' range for dominance degree mean and variance, but care should be taken to 
-    #' with regards to the biological feasibility of the limits that are supplied. 
-    #' The default limits were somewhat arbitrarily set, so I make not claim to 
+    #' are not being achieved, the acceptable range need to be increased and/or the
+    #' number of QTL may need to be increased. There are not limits to setting the
+    #' range for dominance degree mean and variance, but care should be taken to
+    #' with regards to the biological feasibility of the limits that are supplied.
+    #' The default limits were somewhat arbitrarily set, so I make not claim to
     #' how reasonable these limits are for routine use.
-    #' 
-    #' Inbreeding depression in this function is defined as the difference in mean 
-    #' genetic value between a population with the same allele frequency as the 
-    #' reference population (population used to initialize SimParam) in 
-    #' Hardy-Weinberg equilibrium compared to a population with the same allele 
-    #' frequency that is fully inbred. This is equivalent to the amount the mean of 
-    #' a population increases when going from an inbreeding coefficient of 1 (fully 
-    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg 
-    #' equilibrium). Note that the sign of the value should (usually) be positive. 
-    #' This corresponds to a detrimental effect of inbreeding when higher values of 
+    #'
+    #' Inbreeding depression in this function is defined as the difference in mean
+    #' genetic value between a population with the same allele frequency as the
+    #' reference population (population used to initialize SimParam) in
+    #' Hardy-Weinberg equilibrium compared to a population with the same allele
+    #' frequency that is fully inbred. This is equivalent to the amount the mean of
+    #' a population increases when going from an inbreeding coefficient of 1 (fully
+    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg
+    #' equilibrium). Note that the sign of the value should (usually) be positive.
+    #' This corresponds to a detrimental effect of inbreeding when higher values of
     #' the trait are considered biologically beneficial.
-    #' 
-    #' Summary information on this trait is printed to the console when silent=FALSE. 
-    #' The summary information reports the inbreeding depression and dominance 
-    #' variance for the population as well as the dominance degree mean and variance 
+    #'
+    #' Summary information on this trait is printed to the console when silent=FALSE.
+    #' The summary information reports the inbreeding depression and dominance
+    #' variance for the population as well as the dominance degree mean and variance
     #' applied to the trait.
-    #' 
+    #'
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -680,7 +700,7 @@ SimParam = R6Class(
     #' SP = SimParam$new(founderPop)
     #' \dontshow{SP$nThreads = 1L}
     #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
-    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0, 
+    altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0,
                              limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
                              silent=FALSE,force=FALSE,name=NULL){
       if(!force){
@@ -692,10 +712,10 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",self$nTraits+1)
       }
-      
+
       # Pick QTL
       qtlLoci = private$.pickLoci(nQtlPerChr)
-      
+
       # Create list of arguments for optimization
       argsList = argAltAD(LociMap = qtlLoci,
                           Pop = self$founderPop,
@@ -704,16 +724,16 @@ SimParam = R6Class(
                           varD = varD,
                           inbrDepr = inbrDepr,
                           nThreads = self$nThreads)
-      
+
       # Run optim to optimize meanDD and varDD
       optOut = optim(par = c(mean(limMeanDD), mean(sqrt(limVarDD))),
-                     fn = objAltAD, 
+                     fn = objAltAD,
                      gr = NULL,
                      method = "L-BFGS-B",
                      lower = c(limMeanDD[1], sqrt(limVarDD[1])),
                      upper = c(limMeanDD[2], sqrt(limVarDD[2])),
                      args = argsList)
-      
+
       # Finalize creation of trait
       output = finAltAD(input = optOut$par, args = argsList)
       trait = new("TraitAD",
@@ -723,7 +743,7 @@ SimParam = R6Class(
                   intercept=c(output$intercept),
                   name=name)
       private$.addTrait(trait,varA,output$varG)
-      
+
       # Report trait details
       if(!silent){
         cat("A new trait called", name, "was added. \n")
@@ -732,10 +752,10 @@ SimParam = R6Class(
         cat("   meanDD =", output$meanDD, "\n")
         cat("   varDD =", output$varDD, "\n")
       }
-      
+
       invisible(self)
     },
-    
+
 
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive GxE traits.
@@ -981,7 +1001,7 @@ SimParam = R6Class(
     #' @examples
     #' #Create founder haplotypes
     #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #' 
+    #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     #' \dontshow{SP$nThreads = 1L}
@@ -1601,6 +1621,10 @@ SimParam = R6Class(
         private$.varE = diag(private$.varE)
       }
       private$.varE[traitPos] = varE
+
+      # Update activeQtl
+      private$.setActiveQtl()
+
       invisible(self)
     },
 
@@ -1615,22 +1639,26 @@ SimParam = R6Class(
         private$.isRunning()
       }
       stopifnot(max(traits)<=self$nTraits, min(traits)>0)
-      private$.traits[-traits]
-      private$.varA[-traits]
-      private$.varG[-traits]
+      private$.traits = private$.traits[-traits]
+      private$.varA = private$.varA[-traits]
+      private$.varG = private$.varG[-traits]
       if(is.matrix(private$.varE)){
-        private$.varE[-traits,-traits]
+        private$.varE = private$.varE[-traits,-traits]
       }else{
-        private$.varE[-traits]
+        private$.varE = private$.varE[-traits]
       }
+
+      # Update activeQtl
+      private$.setActiveQtl()
+
       invisible(self)
     },
 
     #' @description Defines a default values for error
-    #' variances used in \code{\link{setPheno}}. These defaults 
-    #' will be used to automatically generate phenotypes when new 
+    #' variances used in \code{\link{setPheno}}. These defaults
+    #' will be used to automatically generate phenotypes when new
     #' populations are created. See the details section of \code{\link{setPheno}}
-    #' for more information about each arguments and how they 
+    #' for more information about each arguments and how they
     #' should be used.
     #'
     #' @param h2 a vector of desired narrow-sense heritabilities
@@ -1653,7 +1681,7 @@ SimParam = R6Class(
         stopifnot(isSymmetric(corE),
                   nrow(corE)==self$nTraits)
       }
-      
+
       # Set error variances (.varE)
       if(!is.null(h2)){
         stopifnot(length(h2)==self$nTraits,
@@ -1687,7 +1715,7 @@ SimParam = R6Class(
       }else{
         private$.varE = rep(NA_real_, self$nTraits)
       }
-      
+
       # Set error correlations
       if(!is.null(corE)){
         if(is.matrix(private$.varE)){
@@ -1701,7 +1729,7 @@ SimParam = R6Class(
         varE = varE%*%corE%*%varE
         private$.varE = varE
       }
-      
+
       invisible(self)
     },
 
@@ -1894,14 +1922,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchGenMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+
       private$.sepMap = FALSE
       private$.femaleMap = genMap
       private$.maleMap = NULL
@@ -1920,14 +1955,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchFemaleMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+
       if(private$.sepMap){
         private$.femaleMap = genMap
         private$.femaleCentromere = centromere
@@ -1951,14 +1993,21 @@ SimParam = R6Class(
     #' positions. If NULL, the centromere are assumed to
     #' be metacentric.
     switchMaleMap = function(genMap, centromere=NULL){
-      genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      if(is.data.frame(genMap)){
+        genMap = importGenMap(genMap)
+      }else{
+        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+      }
+
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere<=sapply(genMap,max))
+
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
+
       private$.sepMap = TRUE
       private$.maleMap = genMap
       private$.maleCentromere = centromere
@@ -2005,12 +2054,14 @@ SimParam = R6Class(
         }
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
+        names(newRecHist) = id
         private$.recHist = c(private$.recHist, newRecHist)
         private$.lastHaplo = tmpLastHaplo
       }else{
         # Add hist to recombination history
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
+        names(hist) = id
         private$.recHist = c(private$.recHist, hist)
       }
       private$.pedigree = rbind(private$.pedigree, tmp)
@@ -2133,7 +2184,9 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
-    
+    .activeQtl = "LociMap",
+    .qtlIndex = "list",
+
     # Determines whether not a simulation has started using lastId as an indicator
     .isRunning = function(){
       if(private$.lastId==0L){
@@ -2142,19 +2195,47 @@ SimParam = R6Class(
         stop("lastId doesn't equal 0, you must run resetPed to proceed")
       }
     },
-    
+
     # Adds a trait to simulation and ensures all fields are propagated
     .addTrait = function(lociMap,varA=NA_real_,varG=NA_real_,varE=NA_real_){
       stopifnot(is.numeric(varA),is.numeric(varG),is.numeric(varE),
                 length(varA)==1,length(varG)==1,length(varE)==1)
+
+      if(self$nTraits == 0L){
+        # Initializing .activeQtl
+        private$.activeQtl = new("LociMap",
+                                 nLoci = lociMap@nLoci,
+                                 lociPerChr = lociMap@lociPerChr,
+                                 lociLoc = lociMap@lociLoc)
+        private$.qtlIndex[[1L]] = seq_len(private$.activeQtl@nLoci)
+      }else{
+        # Check if exiting activeQtl is a superset
+        testSet = findLociMapSuperset(private$.activeQtl,
+                                      lociMap)
+        if(is.null(testSet)){
+          # Existing activeQtl is a superset, just add qtlIndex
+          private$.qtlIndex[[self$nTraits + 1L]] = findQtlIndex(private$.activeQtl, lociMap)
+        }else{
+          # New activeQtl object required, recompute all values for qtlIndex
+          private$.activeQtl = testSet
+
+          for(i in seq_len(self$nTraits)){
+            private$.qtlIndex[[i]] = findQtlIndex(private$.activeQtl, self$traits[[i]])
+          }
+
+          private$.qtlIndex[[self$nTraits + 1L]] =
+            findQtlIndex(private$.activeQtl, lociMap)
+        }
+      }
+
       private$.traits[[self$nTraits + 1L]] = lociMap
       private$.varA = c(private$.varA,varA)
       private$.varG = c(private$.varG,varG)
       private$.varE = c(private$.varE,varE)
       invisible(self)
     },
-    
-    # Samples eligible loci for traits or SNP chips and ensures that they 
+
+    # Samples eligible loci for traits or SNP chips and ensures that they
     # are added to the exclusion list when applicable
     .pickLoci = function(nSitesPerChr, QTL=TRUE, minFreq=NULL, refPop=NULL){
       stopifnot(length(nSitesPerChr)==self$nChr)
@@ -2184,7 +2265,8 @@ SimParam = R6Class(
           pot[[chr]] = tmp[tmp%in%pot[[chr]]]
         }
       }
-      stopifnot(sapply(pot,length)>=nSitesPerChr)
+
+      stopifnot("Not enough eligible sites, see ?SimParam and method restrSegSites()" = sapply(pot,length)>=nSitesPerChr)
 
       # Sample sites
       lociLoc = lapply(1:self$nChr,function(x){
@@ -2216,9 +2298,9 @@ SimParam = R6Class(
                  lociLoc=as.integer(lociLoc))
       return(loci)
     },
-    
+
     # Returns physical positions of named loci in a list format
-    # Input order is not preserved. This function is intended as 
+    # Input order is not preserved. This function is intended as
     # a helper for restrSegSites
     .findNamedLoci = function(lociNames){
       # Loci names
@@ -2227,7 +2309,7 @@ SimParam = R6Class(
       if(any(is.na(take))){
         stop("One or more loci are not on the genetic map. Beware of case sensitivity.")
       }
-      
+
       # Find positions using an interval search strategy on the cumulative sum
       take = unique(take)
       posList = rep(list(integer()), self$nChr)
@@ -2235,19 +2317,56 @@ SimParam = R6Class(
       for(i in take){
         # Identify chromosome
         chr = findInterval(i, cumSumSegSite, left.open = TRUE) + 1L
-        
+
         # Identify position
         if(chr>1L){
           pos = i - cumSumSegSite[chr-1L]
         }else{
           pos = i
         }
-        
+
         # Add site to list
         posList[[chr]] = c(posList[[chr]], pos)
       }
-      
+
       return(posList)
+    },
+
+    # Sets activeQtl and qtlIndex slots
+    # Run after removing or modifying existing traits
+    .setActiveQtl = function(){
+
+      private$.activeQtl = NULL
+      private$.qtlIndex = list()
+
+      if(self$nTraits > 0L){
+        # Set activeQtl using trait 1
+        private$.activeQtl = new("LociMap",
+                                 nLoci = self$traits[[1L]]@nLoci,
+                                 lociPerChr = self$traits[[1L]]@lociPerChr,
+                                 lociLoc = self$traits[[1L]]@lociLoc)
+
+        private$.qtlIndex[[1L]] = seq_len(private$.activeQtl@nLoci)
+      }
+
+      if(self$nTraits > 1L){
+        # Update activeQtl, if needed
+        for(i in 2:self$nTraits){
+          testSet = findLociMapSuperset(private$.activeQtl,
+                                        self$traits[[i]])
+          if(!is.null(testSet)){
+            private$.activeQtl = testSet
+          }
+        }
+
+        # Update qtlIndex
+        for(i in seq_len(self$nTraits)){
+          private$.qtlIndex[[i]] = findQtlIndex(private$.activeQtl,
+                                                self$traits[[i]])
+        }
+      }
+
+      invisible(self)
     }
 
   ),
@@ -2354,7 +2473,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field genMap "matrix" of chromosome genetic maps
+    #' @field genMap list of chromosome genetic maps
     genMap=function(value){
       if(missing(value)){
         if(private$.sepMap){
@@ -2363,7 +2482,7 @@ SimParam = R6Class(
             genMap[[i]] = (private$.femaleMap[[i]]+
                              private$.maleMap[[i]])/2
           }
-          as.matrix(genMap)
+          genMap
         }else{
           private$.femaleMap
         }
@@ -2372,7 +2491,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field femaleMap "matrix" of chromosome genetic maps for
+    #' @field femaleMap list of chromosome genetic maps for
     #' females
     femaleMap=function(value){
       if(missing(value)){
@@ -2382,7 +2501,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field maleMap "matrix" of chromosome genetic maps for
+    #' @field maleMap list of chromosome genetic maps for
     #' males
     maleMap=function(value){
       if(missing(value)){
@@ -2521,11 +2640,45 @@ SimParam = R6Class(
       }else{
         stop("`$version` is read only",call.=FALSE)
       }
+    },
+
+    #' @field activeQtl a LociMap representing all active QTL in simulation
+    activeQtl=function(value){
+      if(missing(value)){
+        private$.activeQtl
+      }else{
+        stop("`$activeQtl` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field qtlIndex a list of vectors giving trait specific QTL indices
+    #' relative to all active QTL
+    qtlIndex=function(value){
+      if(missing(value)){
+        private$.qtlIndex
+      }else{
+        stop("`$qtlIndex` is read only",call.=FALSE)
+      }
     }
   )
 )
 
 #### External helpers ----
+
+#' @title Sample additive effects
+#'
+#' @description Samples deviates from a normal distribution or gamma distribution
+#' with a random sign
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param corr correlation between traits
+#' @param gamma indicator of trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#'
+#' @keywords internal
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%transMat(corr)
@@ -2538,6 +2691,22 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   return(addEff)
 }
 
+#' @title Sample dominance effects
+#'
+#' @description Samples dominance deviation effects from a normal distribution
+#' and uses previously sampled additive effects to form dominance
+#' effects
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param addEff previously sampled additive effects
+#' @param corDD correlation between dominance degrees
+#' @param meanDD mean value of dominance degrees
+#' @param varDD variance of dominance degrees
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#'
+#' @keywords internal
 sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
                       meanDD,varDD){
   domEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
@@ -2548,6 +2717,21 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
   return(domEff)
 }
 
+#' @title Sample epistatic effects
+#'
+#' @description Samples epistatic effects from a normal distribution or gamma distribution
+#' with a variance relative to the variance of the additive effects
+#'
+#' @param qtlLoci total number of loci
+#' @param nTraits number of traits
+#' @param corr correlation between epistatic effects
+#' @param gamma indicator of trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#' @param relVar desired variance for epistatic effects
+#'
+#' @returns a matrix with dimensions qtlLoci by nTraits
+#'
+#' @keywords internal
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
                   ncol=nTraits)%*%transMat(corr)
@@ -2566,3 +2750,82 @@ isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)
 }
+
+#' @title Find LociMap superset
+#'
+#' @description Compares to a \code{\link{LociMap-class}} objects to determine if
+#' the first one is a superset of the second. If it is, the function returns NULL.
+#' If it is not, the function return a \code{\link{LociMap-class}} object that is
+#' a superset of both a \code{\link{LociMap-class}} objects.
+#'
+#' @param lociMap1 a \code{\link{LociMap-class}} that is tested to determine if
+#' it is a superset
+#' @param lociMap2 a second \code{\link{LociMap-class}} that is tested
+#'
+#' @returns NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it
+#' is not
+#'
+#' @keywords internal
+findLociMapSuperset = function(lociMap1, lociMap2){
+
+  loc1 = paste(rep(x = seq_len(length(lociMap1@lociPerChr)),
+                   times = lociMap1@lociPerChr),
+               lociMap1@lociLoc, sep="_")
+
+  loc2 = paste(rep(x = seq_len(length(lociMap2@lociPerChr)),
+                   times = lociMap2@lociPerChr),
+               lociMap2@lociLoc, sep="_")
+
+  inSet1 = loc2 %in% loc1
+
+  if(all(inSet1)){
+    # lociMap1 is a superset of lociMap2, no action needed
+    return(NULL)
+  }
+
+  # Create an ordered matrix with columns chr and lociLoc for loci superset
+  loc = unique(c(loc1, loc2))
+  tab = sapply(loc, function(x){
+    y = strsplit(x, split="_", fixed=TRUE)
+    return(as.integer(unlist(y)))
+  })
+  tab = t(tab)
+  tab = tab[order(tab[,1],tab[,2]),]
+
+  # Return LociMap for superset of loci
+  return(new("LociMap",
+             nLoci = nrow(tab),
+             lociPerChr = tabulate(tab[,1], nbins=length(lociMap1@lociPerChr)),
+             lociLoc = unname(tab[,2])))
+}
+
+
+#' @title Find trait QTL index
+#'
+#' @description Compares to a \code{\link{LociMap-class}} objects to determine if
+#' the first one is a superset of the second. If it is, the function returns NULL.
+#' If it is not, the function return a \code{\link{LociMap-class}} object that is
+#' a superset of both a \code{\link{LociMap-class}} objects.
+#'
+#' @param activeQtl a \code{\link{LociMap-class}} representing all active QTL
+#' @param traitQtl a \code{\link{LociMap-class}} representing QTL for a trait of
+#' interest
+#'
+#' @returns an integer vector for relative positions of traitQtl on activeQtl
+#'
+#' @keywords internal
+findQtlIndex = function(activeQtl, traitQtl){
+
+  activeLoci = paste(rep(x = seq_len(length(activeQtl@lociPerChr)),
+                         times = activeQtl@lociPerChr),
+                     activeQtl@lociLoc, sep="_")
+
+  traitLoci = paste(rep(x = seq_len(length(traitQtl@lociPerChr)),
+                        times = traitQtl@lociPerChr),
+                    traitQtl@lociLoc, sep="_")
+
+  return(match(traitLoci, activeLoci))
+}
+
+
+
