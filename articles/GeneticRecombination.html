@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">AlphaSimR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.1.9006</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,17 +63,51 @@
                         <h4 data-toc-skip class="author">Chris
 Gaynor</h4>
             
-            <h4 data-toc-skip class="date">2025-03-09</h4>
+            <h4 data-toc-skip class="date">2025-09-04</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/devel/vignettes/articles/GeneticRecombination.Rmd" class="external-link"><code>vignettes/articles/GeneticRecombination.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/gaynorr/AlphaSimR/blob/master/vignettes/articles/GeneticRecombination.Rmd" class="external-link"><code>vignettes/articles/GeneticRecombination.Rmd</code></a></small>
       <div class="d-none name"><code>GeneticRecombination.Rmd</code></div>
     </div>
 
     
     
+<p>This article provides an overview of the biology of genetic
+recombination and how it is modeled within AlphaSimR. I will first
+provide a brief review of meiosis with special emphasis on how process
+differs between diploid and autopolyploid species. I will then discuss
+genetic maps before concluding with an overview specific models used to
+simulate genetic recombination.</p>
 <div class="section level2">
-<h2 id="placeholder-for-future-development">Placeholder for future development<a class="anchor" aria-label="anchor" href="#placeholder-for-future-development"></a>
+<h2 id="meiosis">Meiosis<a class="anchor" aria-label="anchor" href="#meiosis"></a>
 </h2>
+<p>Usual process of diploids, two copies of each chromosome, one from
+mother and one from father</p>
+<p>Chromosome doubling, sister chromatids</p>
+<p>Chromosome pairing in meiosis I, bivalent pair or tetrad</p>
+<p>Chiasma form which may result in crossovers</p>
+<p>Homologous pairs split</p>
+<p>Sister chromatids split in meiosis II to produce haploid</p>
+<div class="section level3">
+<h3 id="meiosis-in-polypoids">Meiosis in Polypoids<a class="anchor" aria-label="anchor" href="#meiosis-in-polypoids"></a>
+</h3>
+<p>There are two primary types of polyploids: autopolyploids and
+allopolyploids.</p>
+<p>Allopolyploids, such as wheat, have multiple genome copies that come
+from different species.</p>
+<p>Meiosis and recombination proceeds similarly to diploids.</p>
+<p>Autopolyploids have multiple copies of the same genome. This</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="genetic-maps">Genetic Maps<a class="anchor" aria-label="anchor" href="#genetic-maps"></a>
+</h2>
+</div>
+<div class="section level2">
+<h2 id="recombination-models">Recombination Models<a class="anchor" aria-label="anchor" href="#recombination-models"></a>
+</h2>
+<div class="section level3">
+<h3 id="recombination-models-in-autopolyploids">Recombination Models in Autopolyploids<a class="anchor" aria-label="anchor" href="#recombination-models-in-autopolyploids"></a>
+</h3>
 <p>Introduction including basic details of inheritance</p>
 <p>Review meiosis Stages of meiosis Chromosome pairing Chiasma
 (crossovers) Crossover interference Segregation Diploids first and then
@@ -83,6 +117,7 @@ mapping function Kosambi mapping function</p>
 <p>Recombination models Count-location model Gamma model Gamma
 sprinkling model</p>
 <p>Recombination tracking in AlphaSimR</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -95,7 +130,7 @@ sprinkling model</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>
