@@ -45,6 +45,7 @@ Other contributors:
   \item Audrey Martin (\href{https://orcid.org/0000-0003-2235-0098}{ORCID}) [contributor]
   \item Philip Greenspoon (\href{https://orcid.org/0000-0001-6284-7248}{ORCID}) [contributor]
   \item Ros Craddock (\href{https://orcid.org/0009-0004-1578-1580}{ORCID}) [contributor]
+  \item Jana Obsteter (\href{https://orcid.org/0000-0003-1511-3916}{ORCID}) [contributor]
 }
 
 }
