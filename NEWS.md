@@ -4,6 +4,8 @@
 
 *Change order of call to `finalizePop` in `.newPop` to allow access to recombination tracking data
 
+*added `parentAverage` and `mendelianSampling` functions
+
 # AlphaSimR 2.0.0
 
 *added names to `SP$recHist`
