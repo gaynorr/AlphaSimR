@@ -301,23 +301,24 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   if that matrix is empty.
 #' @param traits Integer vector indicating which trait columns to set.
 #'   If \code{NULL} (the default), all traits are used.
-#' @param h2 Numeric vector of individual-level narrow-sense heritabilities (one per trait).
-#'   Only passed to \code{\link{setPheno}()} when \code{force = TRUE}, otherwise not used.
+#' @param h2 Numeric vector of individual-level narrow-sense heritabilities 
+#'   (one per trait). Only passed to \code{\link{setPheno}()} when 
+#'   \code{force=TRUE}, otherwise not used.
 #' @param H2 Numeric vector of broad-sense heritabilities (one per trait).
-#'   Passed to \code{\link{setPheno}()} when \code{force = TRUE}.
-#' @param varE Numeric vector or matrix of residual (co)variances. Passed
-#'   to \code{\link{setPheno}()} when \code{force = TRUE}.
-#' @param corE Optional correlation matrix for residual errors. Passed to
-#'   \code{\link{setPheno}()} when \code{force = TRUE}.
-#' @param reps Integer number of phenotype replications. Passed to
-#'   \code{\link{setPheno}()} when \code{force = TRUE}.
+#'   Only passed to \code{\link{setPheno}()} when \code{force=TRUE}.
+#' @param varE Numeric vector or matrix of residual (co)variances. Only passed
+#'   to \code{\link{setPheno}()} when \code{force=TRUE}.
+#' @param corE Optional correlation matrix for residual errors. Only passed to
+#'   \code{\link{setPheno}()} when \code{force=TRUE}.
+#' @param reps Integer number of phenotype replications. Only passed to
+#'   \code{\link{setPheno}()} when \code{force=TRUE}.
 #' @param fixEff Fixed effect value to assign to the population. Used by
-#'   some genomic-selection models. Passed to \code{\link{setPheno}()}
-#'   when \code{force = TRUE}.
+#'   some genomic-selection models. Only passed to \code{\link{setPheno}()}
+#'   when \code{force=TRUE}.
 #' @param p Numeric or \code{NULL}. The p-value used for environmental
 #'   covariates in GxE traits. If \code{NULL}, a value is sampled
-#'   randomly. Passed to \code{\link{setPheno}()} when
-#'   \code{force = TRUE}.
+#'   randomly. Only passed to \code{\link{setPheno}()} when
+#'   \code{force=TRUE}.
 #' @param onlyPhenoPop Logical. If \code{TRUE} the function returns the
 #'   population-level phenotype matrix (see Details). If \code{FALSE}
 #'   (default) the input \code{x} object is returned with its
