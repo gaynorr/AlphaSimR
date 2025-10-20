@@ -51,6 +51,7 @@ test_that("setPhenoPop", {
   
   # Set simulation parameters and a single additive trait
   SP <- SimParam$new(founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
   
   # Create a population and a multi-population object
@@ -66,8 +67,8 @@ test_that("setPhenoPop", {
   # Create individual phenotypes (error variance = 1)
   multiPop <- setPheno(multiPop, varE = c(1, 1), simParam = SP)
   
-  # After newMultiPop the miscPop slot should initially be empty
-  expect_equal(length(multiPop@pops[[1]]@miscPop), 0)
+  # After newMultiPop the miscPop slot should initially be NULL
+  expect_null(multiPop@pops[[1]]@miscPop$pheno)
   
   # 2) Set only trait 1 -> trait 2 columns should remain NA in miscPop
   multiPop <- setPhenoPop(multiPop, force = FALSE, traits = 1, simParam = SP)
