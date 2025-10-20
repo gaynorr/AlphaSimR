@@ -289,7 +289,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' \code{\link{MultiPop-class}}.
 #' @param FUN A function that accepts the individual-phenotype matrix
 #'   from a population (e.g. \code{pop@pheno} or 
-#'   \code{multiPop@pops[[i]]@pheno}) as its first argument and 
+#'   \code{multiPop@pops[[i]]@miscPop$pheno}) as its first argument and 
 #'   returns a numeric vector of length \code{nTraits} (one value per trait).
 #'   The function will be called as \code{FUN(pop@pheno, ...)}.
 #' @param force Logical. If \code{TRUE}, individual phenotypes will be
@@ -297,7 +297,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   the population summary. When \code{force=TRUE} the other phenotype
 #'   generation arguments (see below) are passed to \code{\link{setPheno}()}.
 #'   If \code{FALSE}, the function requires an existing \code{pop@pheno} 
-#'   (or \code{multiPop@pops[[i]]@pheno}) matrix and will stop with an error 
+#'   (or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with an error 
 #'   if that matrix is empty.
 #' @param traits Integer vector indicating which trait columns to set.
 #'   If \code{NULL} (the default), all traits are used.
@@ -305,25 +305,26 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   (one per trait). Only passed to \code{\link{setPheno}()} when 
 #'   \code{force=TRUE}, otherwise not used.
 #' @param H2 Numeric vector of broad-sense heritabilities (one per trait).
-#'   Only passed to \code{\link{setPheno}()} when \code{force=TRUE}.
+#'   Only passed to \code{\link{setPheno}()} when \code{force=TRUE}, 
+#'   otherwise not used.
 #' @param varE Numeric vector or matrix of residual (co)variances. Only passed
-#'   to \code{\link{setPheno}()} when \code{force=TRUE}.
+#'   to \code{\link{setPheno}()} when \code{force=TRUE}, otherwise not used.
 #' @param corE Optional correlation matrix for residual errors. Only passed to
-#'   \code{\link{setPheno}()} when \code{force=TRUE}.
+#'   \code{\link{setPheno}()} when \code{force=TRUE}, otherwise not used.
 #' @param reps Integer number of phenotype replications. Only passed to
-#'   \code{\link{setPheno}()} when \code{force=TRUE}.
+#'   \code{\link{setPheno}()} when \code{force=TRUE}, otherwise not used.
 #' @param fixEff Fixed effect value to assign to the population. Used by
 #'   some genomic-selection models. Only passed to \code{\link{setPheno}()}
-#'   when \code{force=TRUE}.
+#'   when \code{force=TRUE}, otherwise not used.
 #' @param p Numeric or \code{NULL}. The p-value used for environmental
 #'   covariates in GxE traits. If \code{NULL}, a value is sampled
 #'   randomly. Only passed to \code{\link{setPheno}()} when
-#'   \code{force=TRUE}.
+#'   \code{force=TRUE}, otherwise not used.
 #' @param onlyPhenoPop Logical. If \code{TRUE} the function returns the
 #'   population-level phenotype matrix (see Details). If \code{FALSE}
 #'   (default) the input \code{x} object is returned with its
 #'   \code{pop@miscPop$pheno} or \code{multiPop@pops[[i]]@miscPop$pheno} 
-#'   slot updated.
+#'   slot(s) updated.
 #' @param simParam A \code{\link{SimParam}} object. If \code{NULL}, the
 #'   global \code{SP} is used.
 #' @param ... Additional arguments passed to \code{FUN()}.
@@ -340,22 +341,22 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' replaced) by calling \code{\link{setPheno}()} using the supplied
 #' \code{h2}, \code{H2}, \code{varE}, \code{corE}, \code{reps}, \code{p}
 #' and \code{fixEff} arguments. See \code{\link{setPheno}} documentation
-#' for details about those arguments and their interpretation.
+#' for details about those arguments and how to use them.
 #'
-#' The \code{FUN} argument should return one numeric summary value per
-#' trait. The output produced by applying 
+#' The \code{FUN} argument should return a numeric vector with a single 
+#' summary value per trait. The output produced by applying 
 #' \code{FUN} to \code{pop@pheno} is transposed and stored as a single-row 
 #' matrix with \code{nTraits} columns.
 #'
 #' @return
 #' If \code{onlyPhenoPop=FALSE} (default), the input object
 #' (\code{Pop}, or \code{MultiPop}) is returned with
-#' \code{pop@miscPop$pheno} (or \code{multiPop@pops[[i]]@pheno}) populated 
+#' \code{pop@miscPop$pheno} (or \code{multiPop@pops[[i]]@miscPop$pheno}) populated 
 #' or updated. If \code{onlyPhenoPop=TRUE}, a numeric matrix is returned:
 #' for a single \code{Pop}, a 1-by-\code{nTraits} matrix; and
 #' for a \code{MultiPop}, a \code{length(multiPop)} (rows) by \code{nTraits}
 #' (columns) matrix where each row is the population-level summary for
-#' one constituent population (in the same order as \code{multiPop@pops}).
+#' one constituent population (in the same order as in \code{multiPop@pops}).
 #'
 #' @examples
 #' # Create founder haplotypes
@@ -415,51 +416,51 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L,
   }
 
   # Use lapply if object is a MultiPop
-  if (is(pop, "MultiPop")) {
-    pop@pops = lapply(pop@pops, function(pop) {
-      pop = setPhenoPop(pop = pop, h2=h2, H2=H2, varE=varE, corE=corE, reps=reps, 
+  if (is(x, "MultiPop")) {
+    x@pops = lapply(x@pops, function(x) {
+      x = setPhenoPop(x = x, h2=h2, H2=H2, varE=varE, corE=corE, reps=reps, 
                         fixEff=fixEff, p=p, traits=traits, onlyPhenoPop=F,
                         force=force, simParam=simParam, FUN=FUN, ...)
-      return(pop)
+      return(x)
     })
-  } else if (is(pop, "Pop")) {
+  } else if (is(x, "Pop")) {
     if (force == TRUE) {
       # Create phenotypes
-      pop = setPheno(pop=pop, h2 = h2, H2 = H2,varE = varE, 
+      x = setPheno(pop=x, h2 = h2, H2 = H2,varE = varE, 
                      corE = corE, reps = reps, fixEff = fixEff,
                      p = p, traits = traits, simParam = simParam)
-    } else if (sum(is.na(pop@pheno)) == prod(dim(pop@pheno))) {
+    } else if (sum(is.na(x@pheno)) == prod(dim(x@pheno))) {
       stop("The phenotypic matrix is empty. Use force=TRUE to create it.")
     }
 
-    pheno = pop@pheno
+    pheno = x@pheno
     phenoPop = t(FUN(pheno, ...))
     stopifnot(
       "FUN returned an object of unexpected dimensions" = dim(phenoPop) ==
         c(1, simParam$nTraits)
     )
 
-    if (!is.null(pop@miscPop$pheno)) {
-      pop@miscPop$pheno[, traits] = phenoPop[, traits]
+    if (!is.null(x@miscPop$pheno)) {
+      x@miscPop$pheno[, traits] = phenoPop[, traits]
     } else {
-      pop@miscPop$pheno = matrix(NA_real_, ncol = pop@nTraits)
-      pop@miscPop$pheno[, traits] = phenoPop[, traits]
+      x@miscPop$pheno = matrix(NA_real_, ncol = x@nTraits)
+      x@miscPop$pheno[, traits] = phenoPop[, traits]
     }
-    colnames(pop@miscPop$pheno) = colnames(pop@gv)
+    colnames(x@miscPop$pheno) = colnames(x@gv)
   } else {
-    stop("pop must be an object of Pop, HybridPop or MultiPop class.")
+    stop("x must be an object of Pop, HybridPop or MultiPop class.")
   }
 
   if (onlyPhenoPop) {
-    if (is(pop, "MultiPop")) {
-      pheno = lapply(pop@pops, function(pop) pop@miscPop$pheno)
+    if (is(x, "MultiPop")) {
+      pheno = lapply(x@pops, function(x) x@miscPop$pheno)
       pheno = do.call('rbind', pheno)
     } else {
-      pheno = pop@miscPop$pheno
+      pheno = x@miscPop$pheno
     }
     return(pheno)
   }
-  return(pop)
+  return(x)
 }
 
 #' @title Convert a normal (Gaussian) trait to an ordered categorical (threshold)
