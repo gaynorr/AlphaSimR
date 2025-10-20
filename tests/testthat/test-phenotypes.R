@@ -228,8 +228,6 @@ test_that("setPhenoPop", {
   )
 
   # 9) Invalid input type should error
-  expect_error(
-    setPhenoPop(123, simParam = SP),
-    "x must be an object of Pop, HybridPop or MultiPop class."
-  )
+  expect_error(setPhenoPop(123, simParam = SP), 
+               "x must be an object of Pop or MultiPop class.")
 })
