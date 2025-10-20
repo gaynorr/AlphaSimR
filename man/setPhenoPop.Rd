@@ -8,7 +8,6 @@ setPhenoPop(
   x,
   FUN = colMeans,
   force = FALSE,
-  traits = NULL,
   fixEff = 1L,
   h2 = NULL,
   H2 = NULL,
@@ -17,6 +16,7 @@ setPhenoPop(
   reps = 1,
   p = NULL,
   onlyPhenoPop = FALSE,
+  traits = NULL,
   simParam = NULL,
   ...
 )
@@ -38,9 +38,6 @@ generation arguments (see below) are passed to \code{\link{setPheno}()}.
 If \code{FALSE}, the function requires an existing \code{pop@pheno} 
 (or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with an error 
 if that matrix is empty.}
-
-\item{traits}{Integer vector indicating which trait columns to set.
-If \code{NULL} (the default), all traits are used.}
 
 \item{fixEff}{Fixed effect value to assign to the population. Used by
 some genomic-selection models. Only passed to \code{\link{setPheno}()}
@@ -73,6 +70,9 @@ population-level phenotype matrix (see Details). If \code{FALSE}
 (default) the input \code{x} object is returned with its
 \code{pop@miscPop$pheno} or \code{multiPop@pops[[i]]@miscPop$pheno} 
 slot(s) updated.}
+
+\item{traits}{Integer vector indicating which trait columns to set.
+If \code{NULL} (the default), all traits are used.}
 
 \item{simParam}{A \code{\link{SimParam}} object. If \code{NULL}, the
 global \code{SP} is used.}

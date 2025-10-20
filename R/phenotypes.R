@@ -26,7 +26,7 @@ addError = function(gv, varE, reps){
   }
   error = error/sqrt(reps)
   pheno = gv + error
-
+  
   return(pheno)
 }
 
@@ -43,11 +43,11 @@ addError = function(gv, varE, reps){
 #' @keywords internal
 calcPheno = function(pop, varE, reps, p, traits, simParam){
   nTraits = length(traits)
-
+  
   if(nTraits==0L){
     return(pop@pheno)
   }
-
+  
   gv = pop@gv
   for(i in seq_len(nTraits)){
     if(.hasSlot(simParam$traits[[traits[i]]], "envVar")){
@@ -57,14 +57,14 @@ calcPheno = function(pop, varE, reps, p, traits, simParam){
     }
   }
   gv = gv[,traits,drop=FALSE]
-
+  
   # Calculate new phenotypes
   newPheno = addError(gv=gv, varE=varE, reps=reps)
-
+  
   # Add to old phenotype
   pheno = pop@pheno
   pheno[,traits] = newPheno
-
+  
   return(pheno)
 }
 
@@ -155,7 +155,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-
+  
   # Determine which traits are selected
   if(is.null(traits)){
     if(simParam$nTraits>0L){
@@ -170,14 +170,14 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
               max(traits)<=simParam$nTraits)
   }
   nTraits = length(traits)
-
+  
   # Check for valid length of reps vector
   if(length(reps)==1){
     reps = rep(reps, nTraits)
   }else{
     stopifnot(length(reps)==nTraits)
   }
-
+  
   # Set p-value for GxE traits
   if(is.null(p)){
     p = rep(runif(1), nTraits)
@@ -186,7 +186,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   }else{
     stopifnot(length(p)==nTraits)
   }
-
+  
   # Calculate varE if using h2 or H2
   if(!is.null(h2)){
     if(length(h2)==1){
@@ -194,7 +194,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     varA = simParam$varA[traits]
     varG = simParam$varG[traits]
-
+    
     stopifnot(length(h2)==nTraits,
               all(varA>0),
               all(varG>0))
@@ -211,7 +211,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       H2 = rep(H2, nTraits)
     }
     varG = simParam$varG[traits]
-
+    
     stopifnot(length(H2)==nTraits)
     varE = numeric(nTraits)
     for(i in seq_len(nTraits)){
@@ -232,7 +232,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       varE = simParam$varE[traits]
     }
   }
-
+  
   # Set error correlations
   if(!is.null(corE)){
     if(is.matrix(varE)){
@@ -240,14 +240,14 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     stopifnot(length(varE)==nrow(corE),
               isSymmetric(corE))
-
+    
     varE = diag(sqrt(varE),
                 nrow=nTraits,
                 ncol=nTraits)
     varE = varE%*%corE%*%varE
   }
-
-
+  
+  
   # Use lapply if object is a MultiPop
   # Only passing varE after previous processing
   if(is(pop,"MultiPop")){
@@ -257,23 +257,23 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                       p=p, traits=traits, simParam=simParam)
     return(pop)
   }
-
+  
   # Create phenotypes
   pheno = calcPheno(pop=pop, varE=varE, reps=reps, p=p,
                     traits=traits, simParam=simParam)
-
+  
   colnames(pheno) = colnames(pop@gv)
-
+  
   if(onlyPheno){
     return(pheno)
   }
-
+  
   pop@pheno = pheno
-
+  
   if(is(pop,"Pop")){
     pop@fixEff = rep(as.integer(fixEff), pop@nInd)
   }
-
+  
   return(pop)
 }
 
@@ -299,8 +299,6 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   If \code{FALSE}, the function requires an existing \code{pop@pheno} 
 #'   (or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with an error 
 #'   if that matrix is empty.
-#' @param traits Integer vector indicating which trait columns to set.
-#'   If \code{NULL} (the default), all traits are used.
 #' @param h2 Numeric vector of individual-level narrow-sense heritabilities 
 #'   (one per trait). Only passed to \code{\link{setPheno}()} when 
 #'   \code{force=TRUE}, otherwise not used.
@@ -325,6 +323,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   (default) the input \code{x} object is returned with its
 #'   \code{pop@miscPop$pheno} or \code{multiPop@pops[[i]]@miscPop$pheno} 
 #'   slot(s) updated.
+#' @param traits Integer vector indicating which trait columns to set.
+#'   If \code{NULL} (the default), all traits are used.
 #' @param simParam A \code{\link{SimParam}} object. If \code{NULL}, the
 #'   global \code{SP} is used.
 #' @param ... Additional arguments passed to \code{FUN()}.
@@ -392,13 +392,13 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'
 #' @seealso \code{\link{setPheno}}
 #' @export
-setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L, 
+setPhenoPop = function(x, FUN=colMeans, force=FALSE, fixEff=1L, 
                        h2=NULL, H2=NULL, varE=NULL, corE=NULL, reps=1, p=NULL, 
-                       onlyPhenoPop=FALSE, simParam=NULL, ...){
+                       onlyPhenoPop=FALSE, traits=NULL, simParam=NULL, ...){
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
   }
-
+  
   # Determine which traits are selected
   if (is.null(traits)) {
     if (simParam$nTraits > 0L) {
@@ -414,13 +414,13 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L,
       max(traits) <= simParam$nTraits
     )
   }
-
+  
   # Use lapply if object is a MultiPop
   if (isMultiPop(x)) {
     x@pops = lapply(x@pops, function(x) {
       x = setPhenoPop(x = x, h2=h2, H2=H2, varE=varE, corE=corE, reps=reps, 
-                        fixEff=fixEff, p=p, traits=traits, onlyPhenoPop=F,
-                        force=force, simParam=simParam, FUN=FUN, ...)
+                      fixEff=fixEff, p=p, traits=traits, onlyPhenoPop=F,
+                      force=force, simParam=simParam, FUN=FUN, ...)
       return(x)
     })
   } else if (isHybridPop(x)) {
@@ -429,30 +429,30 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L,
     if (force == TRUE) {
       # Create phenotypes
       x = setPheno(pop=x, h2 = h2, H2 = H2,varE = varE, 
-                     corE = corE, reps = reps, fixEff = fixEff,
-                     p = p, traits = traits, simParam = simParam)
+                   corE = corE, reps = reps, fixEff = fixEff,
+                   p = p, traits = traits, simParam = simParam)
     } else if (sum(is.na(x@pheno)) == prod(dim(x@pheno))) {
       stop("The phenotypic matrix is empty. Use force=TRUE to create it.")
     }
-
+    
     pheno = x@pheno
     phenoPop = t(FUN(pheno, ...))
     stopifnot(
       "FUN returned an object of unexpected dimensions" = dim(phenoPop) ==
         c(1, simParam$nTraits)
     )
-
-    if (!is.null(x@miscPop$pheno)) {
-      x@miscPop$pheno[, traits] = phenoPop[, traits]
-    } else {
+    
+    # TODO: MultiPop: Store population values into MultiPop@pops[[I]]@miscPop or create new slots in MultiPop #240
+    #       https://github.com/gaynorr/AlphaSimR/issues/240
+    if (is.null(x@miscPop$pheno)) {
       x@miscPop$pheno = matrix(NA_real_, ncol = x@nTraits)
-      x@miscPop$pheno[, traits] = phenoPop[, traits]
     }
+    x@miscPop$pheno[, traits] = phenoPop[, traits]
     colnames(x@miscPop$pheno) = colnames(x@gv)
   } else {
     stop("x must be an object of Pop or MultiPop class.")
   }
-
+  
   if (onlyPhenoPop) {
     if (isMultiPop(x)) {
       pheno = lapply(x@pops, function(x) x@miscPop$pheno)
