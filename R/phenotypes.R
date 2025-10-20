@@ -416,14 +416,16 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L,
   }
 
   # Use lapply if object is a MultiPop
-  if (is(x, "MultiPop")) {
+  if (isMultiPop(x)) {
     x@pops = lapply(x@pops, function(x) {
       x = setPhenoPop(x = x, h2=h2, H2=H2, varE=varE, corE=corE, reps=reps, 
                         fixEff=fixEff, p=p, traits=traits, onlyPhenoPop=F,
                         force=force, simParam=simParam, FUN=FUN, ...)
       return(x)
     })
-  } else if (is(x, "Pop")) {
+  } else if (isHybridPop(x)) {
+    stop("HybridPop-class objects are not supported by this function.")
+  } else if (isPop(x)) {
     if (force == TRUE) {
       # Create phenotypes
       x = setPheno(pop=x, h2 = h2, H2 = H2,varE = varE, 
@@ -448,11 +450,11 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, traits=NULL, fixEff=1L,
     }
     colnames(x@miscPop$pheno) = colnames(x@gv)
   } else {
-    stop("x must be an object of Pop, HybridPop or MultiPop class.")
+    stop("x must be an object of Pop or MultiPop class.")
   }
 
   if (onlyPhenoPop) {
-    if (is(x, "MultiPop")) {
+    if (isMultiPop(x)) {
       pheno = lapply(x@pops, function(x) x@miscPop$pheno)
       pheno = do.call('rbind', pheno)
     } else {
