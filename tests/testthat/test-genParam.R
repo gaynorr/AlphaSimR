@@ -115,51 +115,62 @@ test_that("genParam", {
   pop = newPop(founderPop, simParam = SP)
   gp = genParam(pop, simParam = SP)
 
-  # Genetic value
+  # ---- Genetic value ----
+
   # Falconer (1961) https://archive.org/details/introductiontoqu0000falc/page/114
   expect_equal(gp$gv[c(1, 5, 9), 1], c(6, 12, 14), tolerance = 1e-6)
   expect_equal(gp$gv[c(1, 25), 2], c(6, 14), tolerance = 1e-6)
 
-  # Origin
+  # ---- Origin ----
+
   # Falconer (1961) https://archive.org/details/introductiontoqu0000falc/page/114
   expect_equal(unname(gp$gv_mu[1]), 10, tolerance = 1e-6)
   expect_equal(unname(gp$gv_mu[2]), 10, tolerance = 1e-6)
 
-  # Genetic value - part from additive effect (a) only
+  # ---- Genetic value - part from additive effect (a) only ----
+
   # Falconer (1961) https://archive.org/details/introductiontoqu0000falc/page/114
   expect_equal(gp$gv_a[c(1, 5, 9), 1], c(-4, 0, 4), tolerance = 1e-6)
   expect_equal(gp$gv_a[c(1, 25), 2], c(-4, 4), tolerance = 1e-6)
 
-  # Genetic value - part from dominance effect (d) only
+  # ---- Genetic value - part from dominance effect (d) only ----
+
   # Falconer (1961) https://archive.org/details/introductiontoqu0000falc/page/114
   expect_equal(gp$gv_d[c(1, 5, 9), 1], c(0, 2, 0), tolerance = 1e-6)
   expect_equal(gp$gv_d[c(1, 25), 2], c(0, 0), tolerance = 1e-6)
 
-  # Genetic value - part from epistatic effect (aa) only
+  # ---- Genetic value - part from epistatic effect (aa) only ----
+
   expect_equal(gp$gv_aa[c(1, 5, 9), 1], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$gv_aa[c(1, 25), 2], c(0, 0), tolerance = 1e-6)
 
-  # Genetic value - part from imprinting effect (i) only
+  # ---- Genetic value - part from imprinting effect (i) only ----
+
   # TODO
 
-  # Genetic value - part from genotype-by-environment effect (g) only
+  # ---- Genetic value - part from genotype-by-environment effect (g) only ----
+
   # TODO
 
-  # Trait mean (under random mating)
+  # ---- Trait mean (under random mating) ----
+
   # Origin + M in Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/115
   expect_equal(unname(gp$mu_HW[1]), 13.56, tolerance = 1e-6)
   expect_equal(unname(gp$mu_HW[2]), 11.76, tolerance = 1e-6)
 
-  # Trait mean (actual)
+  # ---- Trait mean (actual) ----
+
   expect_equal(unname(gp$mu[1]), mean(gp$gv[, 1]), tolerance = 1e-6)
   expect_equal(unname(gp$mu[2]), mean(gp$gv[, 2]), tolerance = 1e-6)
 
-  # Allele substitution effect (under random mating)
+  # ---- Allele substitution effect (under random mating) ----
+
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/120
   expect_equal(gp$alpha_HW[[1]][1, 1], 2.4, tolerance = 1e-6)
   expect_equal(gp$alpha_HW[[2]][1, 1], 3.6, tolerance = 1e-6)
 
-  # Allele substitution effect (actual)
+  # ---- Allele substitution effect (actual) ----
+
   # ... via regression
   # Fisher (1919) The Correlation between Relatives on the Supposition of Mendelian Inheritance
   # https://doi.org/10.1017/S0080456800012163
@@ -173,6 +184,7 @@ test_that("genParam", {
     cov(gp$gv[, 2], geno[, 2]) / var(geno[, 2]),
     tolerance = 1e-6
   )
+
   # ... via formula
   # Falconer (1985) A note on Fisher’s average effect and average excess
   # https://doi.org/10.1017/S0016672300022825, page 341, formula 11
@@ -180,10 +192,12 @@ test_that("genParam", {
   expect_equal(gp$alpha[[1]][1, 1], unname(alpha[1]), tolerance = 1e-6)
   expect_equal(gp$alpha[[2]][1, 1], unname(alpha[2]), tolerance = 1e-6)
 
-  # Allele substitution effect (actual - under random mating)
+  # ---- Allele substitution effect (actual - under random mating) ----
+
+  # TODO: add gp$alpha_F or gp$alpha_diff to genParam() or just skip it?
   # Antonios et al. (2025): Genetic inbreeding load and its individual prediction for milk yield in French dairy sheep
   # https://doi.org/10.1186/s12711-024-00945-z, page 2
-  # TODO: add gp$alpha_F or gp$alpha_diff to genParam() or just skip it?
+
   alpha_F = -2 * (F / (1 + F)) * d * (q - p)
   expect_equal(
     gp$alpha[[1]][1, 1] - gp$alpha_HW[[1]][1, 1],
@@ -196,9 +210,11 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # Breeding value (under random mating)
-  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/121
+  # ---- Breeding value (under random mating) ----
+
   # TODO: add gp$bv_HW to genParam() or just skip it?
+
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/121
   gp$bv_HW = gp$bv
   gp$bv_HW[] = 0
   gp$bv_HW[, 1] = (geno[, 1] - 2 * p[1]) * gp$alpha_HW[[1]][1, 1]
@@ -234,17 +250,21 @@ test_that("genParam", {
   expect_equal(meanBv, 0, tolerance = 1e-6)
   expect_equal(mean(gp$bv[, 2]), 0, tolerance = 1e-6)
 
-  # Inbreeding depression load
+  # ---- Inbreeding depression load ----
+
+  # TODO: add gp$idl to genParam() or just skip it?
+
   # Antonios et al. (2025): Genetic inbreeding load and its individual prediction for milk yield in French dairy sheep
   # https://doi.org/10.1186/s12711-024-00945-z, page 2 and 3
-  # TODO: add gp$idl to genParam() or just skip it?
+
   gp$idl = gp$bv - gp$bv_HW
   myIdl = unname(c(-2 * p[1], q[1] - p[1], 2 * q[1]) * alpha_F[1])
   expect_equal(gp$idl[c(1, 5, 9), 1], myIdl, tolerance = 1e-6)
   myIdl = unname(c(-2 * p[2], q[2] - p[2], 2 * q[2]) * alpha_F[2])
   expect_equal(gp$idl[c(1, 25), 2], myIdl[c(1, 3)], tolerance = 1e-6)
 
-  # Dominance deviation (random mating)
+  # ---- Dominance deviation (random mating) ----
+
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/123
   gp$dd_HW = gp$dd
   gp$dd_HW[] = 0
@@ -271,7 +291,7 @@ test_that("genParam", {
   # This is c(-2*p[1]^2*d[1], -2*q[1]^2*d[1])
   expect_equal(gp$dd_HW[c(1, 25), 2], c(-1.44, -0.64), tolerance = 1e-6)
 
-  # Dominance deviation (actual)
+  # ---- Dominance deviation (actual) ----
   # gp$gv[c(1, 5, 9), 1]
   # 6 12 14
   # gp$gv[c(1, 5, 9), 1] - gp$mu[1]
@@ -297,11 +317,63 @@ test_that("genParam", {
   # due to inbreeding!
   expect_equal(gp$dd[c(1, 25), 2], myDd, tolerance = 1e-6)
 
+  # ---- Epistatic deviations (actual) ----
+
   # TODO: aa
+  # TODO: HWE?
+
+  # ---- Genetic variance (under random mating) ----
+
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  myVarG = sum(
+    (gp$gv[c(1, 5, 9), 1] - gp$mu_HW[1])^2 * c(Q_HW[1], H_HW[1], P_HW[1])
+  )
+  expect_equal(myVarG, 1.1664, tolerance = 1e-6)
+  myVarG = 2 *
+    p[1] *
+    q[1] *
+    gp$alpha_HW[[1]][1, 1]^2 +
+    (2 * p[1] * q[1] * d[1])^2
+  expect_equal(unname(myVarG), 1.1664, tolerance = 1e-6)
+
+  # Can't compare the 2nd trait VarG to Falconer (1996) because we ommited hets
+  # in the example so values are different
+  # myVarG = sum((gp$gv[c(1, 25), 2] - gp$mu_HW[1])^2 * c(Q_HW[2], P_HW[2]))
+  # myVarG here is 9.214272
+  # Falconer (1966) reports 7.1424
+
+  # ---- Genetic variance (actual) ----
+
+  myVarG = sum((gp$gv[c(1, 5, 9), 1] - gp$mu[1])^2 * c(Q[1], H[1], P[1]))
+  expect_equal(gp$varG[1, 1], myVarG, tolerance = 1e-6)
+  expect_equal(
+    gp$varG[1, 1],
+    popVar(gp$gv[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+
+  myVarG = sum((gp$gv[c(1, 25), 2] - gp$mu[2])^2 * c(Q[2], P[2]))
+  expect_equal(gp$varG[2, 2], myVarG, tolerance = 1e-6)
+  expect_equal(
+    gp$varG[2, 2],
+    popVar(gp$gv[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+
+  # ---- Additive genetic variance (under random mating) ----
+
+  # TODO NEXT: VarA
+  # expect_equal(2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1], myDd, tolerance = 1e-6)
+
+  # ---- Additive genetic variance (actual) ----
+
   # TODO: VarA
+
   # TODO: VarD
   # TODO: varAA
+
   # TODO: varG
+
   # TODO: genicVarA
   # TODO: genicVarD
   # TODO: genicVarAA
