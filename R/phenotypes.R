@@ -297,8 +297,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   the population summary. When \code{force=TRUE} the other phenotype
 #'   generation arguments (see below) are passed to \code{\link{setPheno}()}.
 #'   If \code{FALSE}, the function requires an existing \code{pop@pheno} 
-#'   (or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with an error 
-#'   if that matrix is empty.
+#'   (or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with 
+#'   an error if the requested traits (columns) in the matrix are empty.
 #' @param h2 Numeric vector of individual-level narrow-sense heritabilities 
 #'   (one per trait). Only passed to \code{\link{setPheno}()} when 
 #'   \code{force=TRUE}, otherwise not used.
@@ -431,8 +431,9 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, fixEff=1L,
       x = setPheno(pop=x, h2 = h2, H2 = H2,varE = varE, 
                    corE = corE, reps = reps, fixEff = fixEff,
                    p = p, traits = traits, simParam = simParam)
-    } else if (sum(is.na(x@pheno)) == prod(dim(x@pheno))) {
-      stop("The phenotypic matrix is empty. Use force=TRUE to create it.")
+    } else if (sum(is.na(x@pheno[,traits])) == prod(dim(x@pheno[,traits,drop=F]))) {
+      stop(paste0("The requested traits in the phenotypic matrix are empty. ",
+                  "Use force=TRUE to create them."))
     }
     
     pheno = x@pheno

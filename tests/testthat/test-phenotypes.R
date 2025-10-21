@@ -61,11 +61,12 @@ test_that("setPhenoPop", {
   # 1) Missing individual phenotypes should error when force = FALSE
   expect_error(
     setPhenoPop(multiPop, force = FALSE, simParam = SP),
-    "The phenotypic matrix is empty. Use force=TRUE to create it."
+    paste0("The requested traits in the phenotypic matrix are empty. ",
+           "Use force=TRUE to create them.")
   )
   
-  # Create individual phenotypes (error variance = 1)
-  multiPop <- setPheno(multiPop, varE = c(1, 1), simParam = SP)
+  # Create individual phenotypes for trait 1 (error variance = 1)
+  multiPop <- setPheno(multiPop, varE = 1, traits = 1, simParam = SP)
   
   # After newMultiPop the miscPop slot should initially be NULL
   expect_null(multiPop@pops[[1]]@miscPop$pheno)
@@ -78,6 +79,15 @@ test_that("setPhenoPop", {
   expect_equal(dim(phenoMat1), c(length(multiPop@pops), SP$nTraits))
   # trait 2 should still be NA for all populations
   expect_true(all(is.na(phenoMat1[, 2])))
+  
+  # Trying to set trait 2 should error as trait 2 is empty
+  expect_error(
+    setPhenoPop(multiPop, force = FALSE, traits = 2, simParam = SP),
+    paste0("The requested traits in the phenotypic matrix are empty. ",
+           "Use force=TRUE to create them.")
+  )
+  # Create individual phenotypes for trait 2 (error variance = 1)
+  multiPop <- setPheno(multiPop, varE = 1, traits = 2, simParam = SP)
   
   # 3) Now set trait 2 using a different summary function (colSums),
   #    ensure trait 1 values are preserved

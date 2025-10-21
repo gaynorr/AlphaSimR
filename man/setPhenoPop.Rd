@@ -36,8 +36,8 @@ The function will be called as \code{FUN(pop@pheno, ...)}.}
 the population summary. When \code{force=TRUE} the other phenotype
 generation arguments (see below) are passed to \code{\link{setPheno}()}.
 If \code{FALSE}, the function requires an existing \code{pop@pheno} 
-(or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with an error 
-if that matrix is empty.}
+(or \code{multiPop@pops[[i]]@miscPop$pheno}) matrix and will stop with 
+an error if the requested traits (columns) in the matrix are empty.}
 
 \item{fixEff}{Fixed effect value to assign to the population. Used by
 some genomic-selection models. Only passed to \code{\link{setPheno}()}
