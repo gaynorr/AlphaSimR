@@ -1061,3 +1061,22 @@ isMultiPop = function(x) {
   ret = is(x, class2 = "MultiPop")
   return(ret)
 }
+
+#' @title Creates an empty Multi Population
+#'
+#' @description
+#' Creates an empty \code{\link{MultiPop-class}} object.
+#'
+#' @return Returns an object of \code{\link{MultiPop-class}} where the 
+#'   \code{multipop@pops} slot is an empty list.
+#'
+#' @examples
+#' # Create an empty multi population
+#' multipop = newEmptyMultiPop()
+#' isMultiPop(multipop)
+#' length(multipop)
+#'
+#' @export
+newEmptyMultiPop = function(){
+  new("MultiPop", pops=list())
+}
