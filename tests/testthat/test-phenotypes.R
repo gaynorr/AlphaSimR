@@ -115,8 +115,6 @@ test_that("pop@gv and genParam(pop)@gv match", {
 })
 
 test_that("setPhenoPop", {
-  getPhenoPop <- function(x) x@miscPop$pheno
-
   # Create founder haplotypes
   founderPop <- quickHaplo(nInd = 4, nChr = 1, segSites = 10)
 
