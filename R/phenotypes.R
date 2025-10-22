@@ -26,7 +26,7 @@ addError = function(gv, varE, reps){
   }
   error = error/sqrt(reps)
   pheno = gv + error
-  
+
   return(pheno)
 }
 
@@ -46,11 +46,11 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
     simParam = get("SP",envir=.GlobalEnv)
   }
   nTraits = length(traits)
-  
+
   if(nTraits==0L){
     return(pop@pheno)
   }
-  
+
   gv = pop@gv
   for(i in seq_len(nTraits)){
     if(.hasSlot(simParam$traits[[traits[i]]], "envVar")){
@@ -60,14 +60,14 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
     }
   }
   gv = gv[,traits,drop=FALSE]
-  
+
   # Calculate new phenotypes
   newPheno = addError(gv=gv, varE=varE, reps=reps)
-  
+
   # Add to old phenotype
   pheno = pop@pheno
   pheno[,traits] = newPheno
-  
+
   return(pheno)
 }
 
@@ -158,7 +158,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   # Determine which traits are selected
   if(is.null(traits)){
     if(simParam$nTraits>0L){
@@ -173,14 +173,14 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
               max(traits)<=simParam$nTraits)
   }
   nTraits = length(traits)
-  
+
   # Check for valid length of reps vector
   if(length(reps)==1){
     reps = rep(reps, nTraits)
   }else{
     stopifnot(length(reps)==nTraits)
   }
-  
+
   # Set p-value for GxE traits
   if(is.null(p)){
     p = rep(runif(1), nTraits)
@@ -189,7 +189,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   }else{
     stopifnot(length(p)==nTraits)
   }
-  
+
   # Calculate varE if using h2 or H2
   if(!is.null(h2)){
     if(length(h2)==1){
@@ -197,7 +197,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     varA = simParam$varA[traits]
     varG = simParam$varG[traits]
-    
+
     stopifnot(length(h2)==nTraits,
               all(varA>0),
               all(varG>0))
@@ -214,7 +214,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       H2 = rep(H2, nTraits)
     }
     varG = simParam$varG[traits]
-    
+
     stopifnot(length(H2)==nTraits)
     varE = numeric(nTraits)
     for(i in seq_len(nTraits)){
@@ -235,7 +235,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       varE = simParam$varE[traits]
     }
   }
-  
+
   # Set error correlations
   if(!is.null(corE)){
     if(is.matrix(varE)){
@@ -243,14 +243,14 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     stopifnot(length(varE)==nrow(corE),
               isSymmetric(corE))
-    
+
     varE = diag(sqrt(varE),
                 nrow=nTraits,
                 ncol=nTraits)
     varE = varE%*%corE%*%varE
   }
-  
-  
+
+
   # Use lapply if object is a MultiPop
   # Only passing varE after previous processing
   if(is(pop,"MultiPop")){
@@ -260,23 +260,23 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                       p=p, traits=traits, simParam=simParam)
     return(pop)
   }
-  
+
   # Create phenotypes
   pheno = calcPheno(pop=pop, varE=varE, reps=reps, p=p,
                     traits=traits, simParam=simParam)
-  
+
   colnames(pheno) = colnames(pop@gv)
-  
+
   if(onlyPheno){
     return(pheno)
   }
-  
+
   pop@pheno = pheno
-  
+
   if(is(pop,"Pop")){
     pop@fixEff = rep(as.integer(fixEff), pop@nInd)
   }
-  
+
   return(pop)
 }
 
