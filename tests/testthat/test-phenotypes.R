@@ -59,7 +59,7 @@ test_that("setPhenoPop", {
   # 1) Missing individual phenotypes should error when force = FALSE
   expect_error(
     setPhenoPop(multiPop, force = FALSE, simParam = SP),
-    paste0("The requested traits in the phenotypic matrix are empty. ",
+    paste0("Individual-level phenotypes for the traits are missing. ",
            "Use force=TRUE to create them.")
   )
   
@@ -81,7 +81,7 @@ test_that("setPhenoPop", {
   # Trying to set trait 2 should error as trait 2 is empty
   expect_error(
     setPhenoPop(multiPop, force = FALSE, traits = 2, simParam = SP),
-    paste0("The requested traits in the phenotypic matrix are empty. ",
+    paste0("Individual-level phenotypes for the traits are missing. ",
            "Use force=TRUE to create them.")
   )
   # Create individual phenotypes for trait 2 (error variance = 1)

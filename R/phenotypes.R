@@ -431,8 +431,8 @@ setPhenoPop = function(x, FUN=colMeans, force=FALSE, fixEff=1L,
       x = setPheno(pop=x, h2 = h2, H2 = H2,varE = varE, 
                    corE = corE, reps = reps, fixEff = fixEff,
                    p = p, traits = traits, simParam = simParam)
-    } else if (sum(is.na(x@pheno[,traits])) == prod(dim(x@pheno[,traits,drop=F]))) {
-      stop(paste0("The requested traits in the phenotypic matrix are empty. ",
+    } else if (sum(is.na(x@pheno[,traits])) == prod(dim(x@pheno[,traits,drop=FALSE]))) {
+      stop(paste0("Individual-level phenotypes for the traits are missing. ",
                   "Use force=TRUE to create them."))
     }
     
