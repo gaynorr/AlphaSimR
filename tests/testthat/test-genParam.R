@@ -15,19 +15,19 @@ test_that("genParam", {
   # Haplotypes (a bit more than usual so get desired allele and genotype freqs)
   haplo = matrix(data = 0, nrow = 200, ncol = 3)
 
-  # Locus 1 - in Hardy-Weinberg Equilibrium (=random mating, no inbreeding)
+  # Locus 1 - in Hardy-Weinberg equilibrium (=random mating, no inbreeding)
   # Aiming for q = 0.1 as in Falconer (1996) example 7.1
   haplo[1:2, 1] = 0 # 1 individual with 0/0
   haplo[3:38, 1] = rep(c(0, 1), times = 18) # 18 individuals with 0/1
   haplo[39:200, 1] = 1 # 81 individuals with 1/1
 
-  # Locus 2 - in Hardy-Weinberg Equilibrium (=random mating, no inbreeding)
+  # Locus 2 - in Hardy-Weinberg equilibrium (=random mating, no inbreeding)
   # Aiming for q = 0.4 as in Falconer (1996) example 7.1
   haplo[1:32, 2] = 0 # 16 individuals with 0/0
   haplo[33:128, 2] = rep(c(0, 1), times = 48) # 48 individuals with 0/1
   haplo[129:200, 2] = 1 # 36 individuals with 1/1
 
-  # Locus 3 - not in Hardy-Weinberg Equilibrium (=non-random mating, inbreeding)
+  # Locus 3 - not in Hardy-Weinberg equilibrium (=non-random mating, inbreeding)
   # Aiming for q = 0.4 as in Falconer (1996) example 7.1
   haplo[1:68, 3] = 0 # 34 individuals with 0/0
   haplo[69:92, 3] = rep(c(0, 1), times = 12) # 12 individuals with 0/1
@@ -182,7 +182,7 @@ test_that("genParam", {
   expect_equal(gp$gv_d[genoLoc2, 2], c(0, 2, 0), tolerance = 1e-6)
   expect_equal(gp$gv_d[genoLoc3, 3], c(0, 2, 0), tolerance = 1e-6)
 
-  # ---- Genetic value - part from epistatic effect (aa) only ----
+  # ---- Genetic value - part from additive-by-additive effect (aa) only ----
 
   expect_equal(gp$gv_aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$gv_aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
@@ -196,7 +196,7 @@ test_that("genParam", {
 
   # TODO
 
-  # ---- Trait mean (under Hardy-Weinberg Equilibrium) ----
+  # ---- Trait mean (under Hardy-Weinberg equilibrium) ----
 
   # Origin + M in Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/115
   expect_equal(unname(gp$mu_HW[1]), 13.56, tolerance = 1e-6)
@@ -211,7 +211,7 @@ test_that("genParam", {
   expect_equal(gp$mu[2], gp$mu_HW[2], tolerance = 1e-6) # 11.76
   expect_equal(unname(gp$mu[3]), mean(gp$gv[, 3]), tolerance = 1e-6) # 11.04
 
-  # ---- Allele substitution effect (under Hardy-Weinberg Equilibrium) ----
+  # ---- Allele substitution effect (under Hardy-Weinberg equilibrium) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/120
   expect_equal(gp$alpha_HW[[1]][1, 1], 2.4, tolerance = 1e-6)
@@ -246,7 +246,7 @@ test_that("genParam", {
   expect_equal(gp$alpha[[2]][1, 1], unname(alpha[2]), tolerance = 1e-6) # 3.6
   expect_equal(gp$alpha[[3]][1, 1], unname(alpha[3]), tolerance = 1e-6) # 3.942857
 
-  # ---- Allele substitution effect (actual - under Hardy-Weinberg Equilibrium) ----
+  # ---- Allele substitution effect (actual - under Hardy-Weinberg equilibrium) ----
 
   # TODO: add gp$alpha_F or gp$alpha_diff to genParam() or just skip it?
   # Antonios et al. (2025): Genetic inbreeding load and its individual prediction for milk yield in French dairy sheep
@@ -269,8 +269,9 @@ test_that("genParam", {
     tolerance = 1e-6
   ) # 0.342857 = 3.942857 - 3.6
 
-  # ---- Breeding value (under Hardy-Weinberg Equilibrium) ----
+  # ---- Breeding value (under Hardy-Weinberg equilibrium) ----
 
+  # TODO: Name this as Additive genetic value?
   # TODO: add gp$bv_HW to genParam() or just skip it?
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/121
@@ -320,6 +321,7 @@ test_that("genParam", {
 
   # ---- Breeding value (actual) ----
 
+  # TODO: Name this as Additive genetic value?
   myBv = unname(c(-2 * p[1], q[1] - p[1], 2 * q[1]) * gp$alpha[[1]][1, 1])
   expect_equal(gp$bv[genoLoc1, 1], myBv, tolerance = 1e-6)
   meanBv = sum(myBv * c(Q[1], H[1], P[1]))
@@ -353,7 +355,7 @@ test_that("genParam", {
   myIdl = unname(c(-2 * p[3], q[3] - p[3], 2 * q[3]) * alpha_F[3])
   expect_equal(gp$idl[genoLoc3, 3], myIdl, tolerance = 1e-6)
 
-  # ---- Dominance deviation (under Hardy-Weinberg Equilibrium) ----
+  # ---- Dominance deviation (under Hardy-Weinberg equilibrium) ----
 
   # TODO: add gp$bv_HW to genParam() or just skip it?
 
@@ -446,21 +448,29 @@ test_that("genParam", {
   # This is NOT the same as c(-2*p[3]^2*d[3], 2*p[3]*q[3]*d[3], -2*q[3]^2*d[3]) due to inbreeding
   expect_equal(gp$dd[genoLoc3, 3], myDd, tolerance = 1e-6)
 
-  # ---- Epistatic deviations (under Hardy-Weinberg Equilibrium) ----
+  # ---- Imprinting deviation (under Hardy-Weinberg equilibrium) ----
 
-  # No epistasis in loci 1-3
+  # TODO
+
+  # ---- Imprinting deviation (actual) ----
+
+  # TODO
+
+  # ---- Additive-by-additive deviation (under Hardy-Weinberg equilibrium) ----
+
+  # No AxA epistasis in loci 1-3
   expect_equal(gp$aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$aa[genoLoc3, 2], c(0, 0, 0), tolerance = 1e-6)
 
-  # ---- Epistatic deviations (actual) ----
+  # ---- Additive-by-additive deviation (actual) ----
 
-  # No epistasis in loci 1-3
+  # No AxA epistasis in loci 1-3
   expect_equal(gp$aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
   expect_equal(gp$aa[genoLoc3, 2], c(0, 0, 0), tolerance = 1e-6)
 
-  # ---- Genetic variance (under Hardy-Weinberg Equilibrium) ----
+  # ---- (Total) Genetic variance (under Hardy-Weinberg equilibrium) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
   myVarG = sum(
@@ -496,7 +506,7 @@ test_that("genParam", {
     (2 * p[3] * q[3] * d[3])^2
   expect_equal(unname(myVarG), 7.1424, tolerance = 1e-6)
 
-  # ---- Genetic variance (actual) ----
+  # ---- (Total) Genetic variance (actual) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
   myVarG = sum((gp$gv[genoLoc1, 1] - gp$mu[1])^2 * c(Q[1], H[1], P[1])) # 1.1664
@@ -523,19 +533,23 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # ---- Additive genetic variance (under Hardy-Weinberg Equilibrium) ----
+  # ---- Additive genetic variance (under Hardy-Weinberg equilibrium) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  theoVarA = unname(2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1]^2)
   expect_equal(
-    2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1]^2,
+    theoVarA,
     popVar(gp$bv_HW[, 1, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 1.0368
+  expect_equal(theoVarA, gp$varA[1, 1], tolerance = 1e-6) # 1.0368
+  theoVarA = unname(2 * p[2] * q[2] * gp$alpha_HW[[2]][1, 1]^2)
   expect_equal(
-    2 * p[2] * q[2] * gp$alpha_HW[[2]][1, 1]^2,
+    theoVarA,
     popVar(gp$bv_HW[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 6.2208
+  expect_equal(theoVarA, gp$varA[2, 2], tolerance = 1e-6) # # 6.2208
   myVarA = sum(gp$bv_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 6.2208
   expect_equal(
     unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
@@ -548,38 +562,48 @@ test_that("genParam", {
   # ---- Additive genetic variance (actual) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  theoVarA = unname(2 * p[1] * q[1] * gp$alpha[[1]][1, 1]^2 * (1 + F[1]))
   expect_equal(
-    unname(2 * p[1] * q[1] * gp$alpha[[1]][1, 1]^2),
+    theoVarA,
     popVar(gp$bv[, 1, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 1.0368
+  expect_equal(theoVarA, gp$varA[1, 1], tolerance = 1e-6) # 1.0368
+  theoVarA = unname(2 * p[2] * q[2] * gp$alpha[[2]][1, 1]^2 * (1 + F[2]))
   expect_equal(
-    unname(2 * p[2] * q[2] * gp$alpha[[2]][1, 1]^2),
+    theoVarA,
     popVar(gp$bv[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 6.2208
+  expect_equal(theoVarA, gp$varA[2, 2], tolerance = 1e-6) # 1.0368
   myVarA = sum(gp$bv[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 13.05874
   expect_equal(
     # unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2), # 7.462139
     # We don't have HWE, so the above does not hold
+    unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])), # 13.05874
     popVar(gp$bv[, 3, drop = FALSE])[1, 1], # 13.05874
     myVarA,
     tolerance = 1e-6
   )
+  expect_equal(myVarA, gp$varA[3, 3], tolerance = 1e-6) # 13.05874
 
-  # ---- Dominance variance (under Hardy-Weinberg Equilibrium) ----
+  # ---- Dominance genetic variance (under Hardy-Weinberg equilibrium) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  theoVarD = unname((2 * p[1] * q[1] * d[1])^2)
   expect_equal(
-    unname((2 * p[1] * q[1] * d[1])^2),
+    theoVarD,
     popVar(gp$dd_HW[, 1, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 0.1296
+  expect_equal(theoVarD, gp$varD[1, 1], tolerance = 1e-6) # 0.1296
+  theoVarD = unname((2 * p[2] * q[2] * d[2])^2)
   expect_equal(
-    unname((2 * p[2] * q[2] * d[2])^2),
+    theoVarD,
     popVar(gp$dd_HW[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 0.9216
+  expect_equal(theoVarD, gp$varD[2, 2], tolerance = 1e-6) # 0.9216
   myVarD = sum(gp$dd_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 0.9216
   expect_equal(
     unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
@@ -589,19 +613,23 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # ---- Dominance variance (actual) ----
+  # ---- Dominance genetic variance (actual) ----
 
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  theoVarD = unname((2 * p[1] * q[1] * d[1])^2)
   expect_equal(
-    unname((2 * p[1] * q[1] * d[1])^2),
+    theoVarD,
     popVar(gp$dd[, 1, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 0.1296
+  expect_equal(theoVarD, gp$varD[1, 1], tolerance = 1e-6) # 0.1296
+  theoVarD = unname((2 * p[2] * q[2] * d[2])^2)
   expect_equal(
-    unname((2 * p[2] * q[2] * d[2])^2),
+    theoVarD,
     popVar(gp$dd[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 0.9216
+  expect_equal(theoVarD, gp$varD[2, 2], tolerance = 1e-6) # 0.9216
   myVarD = sum(gp$dd[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 0.4196571
   expect_equal(
     # unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
@@ -611,9 +639,53 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # ---- Epistasis variance (under Hardy-Weinberg Equilibrium) ----
+  # ---- Imprinting genetic variance (under Hardy-Weinberg equilibrium) ----
 
-  # No epistasis in loci 1-3
+  # No imprinting in loci 1-3
+  # expect_equal(gp$varI[1, 1], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[1, 1],
+  #   popVar(gp$i?[, 1, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+  # expect_equal(gp$varI[2, 2], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[2, 2],
+  #   popVar(gp$i?[, 2, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+  # expect_equal(gp$varI[3, 3], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[3, 3],
+  #   popVar(gp$i?[, 3, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+
+  # ---- Imprinting genetic variance (actual) ----
+
+  # No imprinting in loci 1-3
+  # expect_equal(gp$varI[1, 1], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[1, 1],
+  #   popVar(gp$i?[, 1, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+  # expect_equal(gp$varI[2, 2], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[2, 2],
+  #   popVar(gp$i?[, 2, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+  # expect_equal(gp$varI[3, 3], 0, tolerance = 1e-6)
+  # expect_equal(
+  #   gp$varI[3, 3],
+  #   popVar(gp$i?[, 3, drop = FALSE])[1, 1],
+  #   tolerance = 1e-6
+  # )
+
+  # ---- Additive-by-additive genetic variance (under Hardy-Weinberg equilibrium) ----
+
+  # No AxA epistasis in loci 1-3
   expect_equal(gp$varAA[1, 1], 0, tolerance = 1e-6)
   expect_equal(
     gp$varAA[1, 1],
@@ -633,9 +705,9 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # ---- Epistasis variance (actual) ----
+  # ---- Additive-by-additive genetic variance (actual) ----
 
-  # No epistasis in loci 1-3
+  # No AxA epistasis in loci 1-3
   expect_equal(gp$varAA[1, 1], 0, tolerance = 1e-6)
   expect_equal(
     gp$varAA[1, 1],
@@ -655,14 +727,78 @@ test_that("genParam", {
     tolerance = 1e-6
   )
 
-  # TODO: varAA
+  # ---- Additive genic variance (under Hardy-Weinberg) ----
 
-  # TODO: varG
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  # Falconer shows genic variance because it shows one locus only
+  theoVarA = unname(2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1]^2)
+  expect_equal(
+    theoVarA,
+    popVar(gp$bv_HW[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 1.0368
+  expect_equal(theoVarA, unname(gp$genicVarA[1]), tolerance = 1e-6) # 1.0368
+  theoVarA = unname(2 * p[2] * q[2] * gp$alpha_HW[[2]][1, 1]^2)
+  expect_equal(
+    theoVarA,
+    popVar(gp$bv_HW[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 6.2208
+  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # # 6.2208
+  myVarA = sum(gp$bv_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 6.2208
+  expect_equal(
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
+    myVarA,
+    # popVar(gp$bv_HW[, 3, drop = FALSE])[1, 1], # 10.8864
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
+  expect_equal(myVarA, unname(gp$genicVarA[3]), tolerance = 1e-6) # # 6.2208
 
-  # TODO: genicVarA
+  # ---- Additive genic variance (actual) ----
+
+  # TODO check (1 + F) inclusion here and what is in gp$genicVarA vs gp$covA_HW
+
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  # Falconer shows genic variance because it shows one locus only
+  theoVarA = unname(2 * p[1] * q[1] * gp$alpha[[1]][1, 1]^2 * (1 + F[1]))
+  expect_equal(
+    theoVarA,
+    popVar(gp$bv[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 1.0368
+  expect_equal(theoVarA, unname(gp$genicVarA[1]), tolerance = 1e-6) # 1.0368
+  theoVarA = unname(2 * p[2] * q[2] * gp$alpha[[2]][1, 1]^2 * (1 + F[2]))
+  expect_equal(
+    theoVarA,
+    popVar(gp$bv[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 6.2208
+  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # # 6.2208
+  myVarA = sum(gp$bv[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 13.05874
+  expect_equal(
+    # unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2), # 7.462139
+    unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])), # 13.05874
+    myVarA,
+    # popVar(gp$bv_HW[, 3, drop = FALSE])[1, 1], # 10.8864
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
+  expect_equal(myVarA, unname(gp$genicVarA[3]), tolerance = 1e-6) # # 6.2208
+
   # TODO: genicVarD
+
   # TODO: genicVarAA
+
+  # ---- (Total) Genic variance (under Hardy-Weinberg) ----
+
+  # TODO
   # TODO: genicVarG
+
+  # ---- (Total) Genic variance (actual) ----
+
+  # TODO
+
   # TODO: covA_HW
   # TODO: covD_HW
   # TODO: covAA_HW
