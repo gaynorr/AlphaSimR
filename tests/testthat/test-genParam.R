@@ -549,7 +549,8 @@ test_that("genParam", {
     popVar(gp$bv_HW[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 6.2208
-  expect_equal(theoVarA, gp$varA[2, 2], tolerance = 1e-6) # # 6.2208
+  expect_equal(theoVarA, gp$varA[2, 2], tolerance = 1e-6) # 6.2208
+  theoVarA = unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2) # 6.2208
   myVarA = sum(gp$bv_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 6.2208
   expect_equal(
     unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
@@ -558,6 +559,9 @@ test_that("genParam", {
     # Due to deviation from HWE
     tolerance = 1e-6
   )
+  # FAILS expect_equal(myVarA, # 6.2208
+  #                    unname(gp$varA[3,3]), tolerance = 1e-6) # 13.05874
+  # Due to deviation from HWE
 
   # ---- Additive genetic variance (actual) ----
 
@@ -604,6 +608,7 @@ test_that("genParam", {
     tolerance = 1e-6
   ) # 0.9216
   expect_equal(theoVarD, gp$varD[2, 2], tolerance = 1e-6) # 0.9216
+  theoVarD = unname((2 * p[3] * q[3] * d[3])^2) # 0.9216
   myVarD = sum(gp$dd_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 0.9216
   expect_equal(
     unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
@@ -612,6 +617,9 @@ test_that("genParam", {
     # Due to deviation from HWE
     tolerance = 1e-6
   )
+  # FAILS expect_equal(myVarD, # 0.9216
+  #                    unname(gp$varD[3,3]), tolerance = 1e-6) # 0.4196571
+  # Due to deviation from HWE
 
   # ---- Dominance genetic variance (actual) ----
 
@@ -638,6 +646,17 @@ test_that("genParam", {
     myVarD,
     tolerance = 1e-6
   )
+  theoVarD = unname((2 * p[3] * q[3] * d[3])^2) # 0.9216
+  myVarD = sum(gp$dd[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 0.4196571
+  expect_equal(
+    # unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
+    # We don't have HWE, so the above does not hold
+    myVarD,
+    popVar(gp$dd[, 3, drop = FALSE])[1, 1], # 0.4196571
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
+  expect_equal(myVarD, unname(gp$varD[3, 3]), tolerance = 1e-6) # 0.4196571
 
   # ---- Imprinting genetic variance (under Hardy-Weinberg equilibrium) ----
 
@@ -729,8 +748,10 @@ test_that("genParam", {
 
   # ---- Additive genic variance (under Hardy-Weinberg) ----
 
+  # TODO: Add genic covariance between traits when there are multiple traits?
+
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
-  # Falconer shows genic variance because it shows one locus only
+  # Falconer shows genic variance because he shows one locus only
   theoVarA = unname(2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1]^2)
   expect_equal(
     theoVarA,
@@ -744,7 +765,7 @@ test_that("genParam", {
     popVar(gp$bv_HW[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 6.2208
-  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # # 6.2208
+  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # 6.2208
   myVarA = sum(gp$bv_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 6.2208
   expect_equal(
     unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
@@ -753,14 +774,12 @@ test_that("genParam", {
     # Due to deviation from HWE
     tolerance = 1e-6
   )
-  expect_equal(myVarA, unname(gp$genicVarA[3]), tolerance = 1e-6) # # 6.2208
+  expect_equal(myVarA, unname(gp$genicVarA[3]), tolerance = 1e-6) # 6.2208
 
   # ---- Additive genic variance (actual) ----
 
-  # TODO check (1 + F) inclusion here and what is in gp$genicVarA vs gp$covA_HW
-
   # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
-  # Falconer shows genic variance because it shows one locus only
+  # Falconer shows genic variance because he shows one locus only
   theoVarA = unname(2 * p[1] * q[1] * gp$alpha[[1]][1, 1]^2 * (1 + F[1]))
   expect_equal(
     theoVarA,
@@ -774,21 +793,162 @@ test_that("genParam", {
     popVar(gp$bv[, 2, drop = FALSE])[1, 1],
     tolerance = 1e-6
   ) # 6.2208
-  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # # 6.2208
+  expect_equal(theoVarA, unname(gp$genicVarA[2]), tolerance = 1e-6) # 6.2208
+
+  # NOTE: gp$genicVarA is not the actual genic variance, but HWE genic variance;
+  #       this deviates from other variances that are actual variances
+  #       --> see covA_HW below
+  # TODO: Consider changing gp$genicVarA to actual genic variance to match
+  #       other variances, for example, VarA is actual genetic variance,
+  #       not HWE genetic variance
   myVarA = sum(gp$bv[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 13.05874
   expect_equal(
     # unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2), # 7.462139
+    # unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
     unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])), # 13.05874
     myVarA,
-    # popVar(gp$bv_HW[, 3, drop = FALSE])[1, 1], # 10.8864
+    # popVar(gp$bv[, 3, drop = FALSE])[1, 1], # 13.05874
     # Due to deviation from HWE
     tolerance = 1e-6
   )
-  expect_equal(myVarA, unname(gp$genicVarA[3]), tolerance = 1e-6) # # 6.2208
+  # FAILS expect_equal(myVarA, # 13.05874
+  #                    unname(gp$genicVarA[3]), tolerance = 1e-6) # 6.2208
+  expect_equal(
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2),
+    unname(gp$genicVarA[3]),
+    tolerance = 1e-6
+  ) # 6.2208
 
-  # TODO: genicVarD
+  # TODO: why is covA_HW called "additive covariances due to non-random mating"
+  #       why "covariance" in particular?
+  expect_equal(unname(gp$covA_HW[1]), 0, tolerance = 1e-6) # 0
+  expect_equal(unname(gp$covA_HW[2]), 0, tolerance = 1e-6) # 0
+  myGenicVarAHWE_vs_actual = unname(
+    2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])
+  ) -
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2)
+  # 13.05874 - 6.2208 = 6.83794
+  expect_equal(
+    myGenicVarAHWE_vs_actual,
+    unname(gp$covA_HW[3]),
+    tolerance = 1e-6
+  ) # 6.83794
+
+  # ---- Dominance genic variance (under Hardy-Weinberg) ----
+
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  # Falconer shows genic variance because he shows one locus only
+  theoVarD = unname((2 * p[1] * q[1] * d[1])^2)
+  expect_equal(
+    theoVarD,
+    popVar(gp$dd_HW[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.1296
+  expect_equal(theoVarD, unname(gp$genicVarD[1]), tolerance = 1e-6) # 0.1296
+  theoVarD = unname((2 * p[2] * q[2] * d[2])^2)
+  expect_equal(
+    theoVarD,
+    popVar(gp$dd_HW[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.9216
+  expect_equal(theoVarD, unname(gp$genicVarD[2]), tolerance = 1e-6) # 0.9216
+  theoVarD = unname((2 * p[3] * q[3] * d[3])^2) # 0.9216
+  myVarD = sum(gp$dd_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 0.9216
+  expect_equal(
+    unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
+    myVarD, # 0.9216
+    # popVar(gp$dd_HW[, 3, drop = FALSE])[1, 1], # 0.5184
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
+  expect_equal(myVarD, unname(gp$genicVarD[3]), tolerance = 1e-6) # 0.9216
+
+  # ---- Dominance genic variance (actual) ----
+
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  # Falconer shows genic variance because he shows one locus only
+  theoVarD = unname((2 * p[1] * q[1] * d[1])^2)
+  expect_equal(
+    theoVarD,
+    popVar(gp$dd[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.1296
+  expect_equal(theoVarD, unname(gp$genicVarD[1]), tolerance = 1e-6) # 0.1296
+  theoVarD = unname((2 * p[2] * q[2] * d[2])^2)
+  expect_equal(
+    theoVarD,
+    popVar(gp$dd[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.9216
+  expect_equal(theoVarD, unname(gp$genicVarD[2]), tolerance = 1e-6) # 0.9216
+  theoVarD = unname((2 * p[3] * q[3] * d[3])^2) # 0.9216
+  myVarD = sum(gp$dd[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 0.4196571
+  expect_equal(
+    # theoVarD, # 0.9216
+    # We don't have HWE, so the above does not hold
+    popVar(gp$dd[, 3, drop = FALSE])[1, 1], # 0.4196571
+    myVarD,
+    tolerance = 1e-6
+  )
+  expect_equal(myVarD, unname(gp$genicVarD[3]), tolerance = 1e-6) # 0.4196571
+  TODO
+  NEXT:model
+  the
+  dominance
+  work
+  after
+  the
+  additive
+  work
+
+  # NOTE: gp$genicVarA is not the actual genic variance, but HWE genic variance;
+  #       this deviates from other variances that are actual variances
+  #       --> see covA_HW below
+  # TODO: Consider changing gp$genicVarA to actual genic variance to match
+  #       other variances, for example, VarA is actual genetic variance,
+  #       not HWE genetic variance
+  myVarA = sum(gp$bv[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 13.05874
+  expect_equal(
+    # unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2), # 7.462139
+    # unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
+    unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])), # 13.05874
+    myVarA,
+    # popVar(gp$bv[, 3, drop = FALSE])[1, 1], # 13.05874
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
+  # FAILS expect_equal(myVarA, # 13.05874
+  #                    unname(gp$genicVarA[3]), tolerance = 1e-6) # 6.2208
+  expect_equal(
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2),
+    unname(gp$genicVarA[3]),
+    tolerance = 1e-6
+  ) # 6.2208
+
+  # TODO: why is covA_HW called "additive covariances due to non-random mating"
+  #       why "covariance" in particular?
+  expect_equal(unname(gp$covA_HW[1]), 0, tolerance = 1e-6) # 0
+  expect_equal(unname(gp$covA_HW[2]), 0, tolerance = 1e-6) # 0
+  myGenicVarAHWE_vs_actual = unname(
+    2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2 * (1 + F[3])
+  ) -
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2)
+  # 13.05874 - 6.2208 = 6.83794
+  expect_equal(
+    myGenicVarAHWE_vs_actual,
+    unname(gp$covA_HW[3]),
+    tolerance = 1e-6
+  ) # 6.83794
+
+  # ---- Additive-by-additive genic variance (under Hardy-Weinberg) ----
 
   # TODO: genicVarAA
+  # TODO: covAA_HW
+
+  # ---- Additive-by-additive genic variance (actual) ----
+
+  # TODO: genicVarAA
+  # TODO: covAA_HW
 
   # ---- (Total) Genic variance (under Hardy-Weinberg) ----
 
@@ -799,9 +959,10 @@ test_that("genParam", {
 
   # TODO
 
-  # TODO: covA_HW
-  # TODO: covD_HW
-  # TODO: covAA_HW
+  # ---- TODO (under Hardy-Weinberg) ----
+
+  # ---- TODO (actual) ----
+
   # TODO: covA_L
   # TODO: covD_L
   # TODO: covAA_L
