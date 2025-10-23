@@ -493,6 +493,7 @@ test_that("genParam", {
 
   # ---- Genetic variance (actual) ----
 
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
   myVarG = sum((gp$gv[genoLoc1, 1] - gp$mu[1])^2 * c(Q[1], H[1], P[1])) # 1.1664
   expect_equal(gp$varG[1, 1], myVarG, tolerance = 1e-6)
   expect_equal(
@@ -519,14 +520,56 @@ test_that("genParam", {
 
   # ---- Additive genetic variance (under Hardy-Weinberg Equilibrium) ----
 
-  # TODO NEXT: VarA
-  # expect_equal(2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1], myDd, tolerance = 1e-6)
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  expect_equal(
+    2 * p[1] * q[1] * gp$alpha_HW[[1]][1, 1]^2,
+    popVar(gp$bv_HW[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 1.0368
+  expect_equal(
+    2 * p[2] * q[2] * gp$alpha_HW[[2]][1, 1]^2,
+    popVar(gp$bv_HW[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 6.2208
+  myVarA = sum(gp$bv_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 6.2208
+  expect_equal(
+    unname(2 * p[3] * q[3] * gp$alpha_HW[[3]][1, 1]^2), # 6.2208
+    myVarA,
+    # popVar(gp$bv_HW[, 3, drop = FALSE])[1, 1], # 10.8864
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
 
   # ---- Additive genetic variance (actual) ----
 
-  # TODO: VarA
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  expect_equal(
+    unname(2 * p[1] * q[1] * gp$alpha[[1]][1, 1]^2),
+    popVar(gp$bv[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 1.0368
+  expect_equal(
+    unname(2 * p[2] * q[2] * gp$alpha[[2]][1, 1]^2),
+    popVar(gp$bv[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 6.2208
+  myVarA = sum(gp$bv[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 13.05874
+  expect_equal(
+    # unname(2 * p[3] * q[3] * gp$alpha[[3]][1, 1]^2), # 7.462139
+    # We don't have HWE, so the above does not hold
+    popVar(gp$bv[, 3, drop = FALSE])[1, 1], # 13.05874
+    myVarA,
+    tolerance = 1e-6
+  )
+
+  # ---- Dominance variance (under Hardy-Weinberg Equilibrium) ----
 
   # TODO: VarD
+
+  # ---- Dominance variance (actual) ----
+
+  # TODO: VarD
+
   # TODO: varAA
 
   # TODO: varG
