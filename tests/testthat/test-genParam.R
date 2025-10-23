@@ -446,14 +446,19 @@ test_that("genParam", {
   # This is NOT the same as c(-2*p[3]^2*d[3], 2*p[3]*q[3]*d[3], -2*q[3]^2*d[3]) due to inbreeding
   expect_equal(gp$dd[genoLoc3, 3], myDd, tolerance = 1e-6)
 
+  # ---- Epistatic deviations (under Hardy-Weinberg Equilibrium) ----
+
+  # No epistasis in loci 1-3
+  expect_equal(gp$aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
+  expect_equal(gp$aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
+  expect_equal(gp$aa[genoLoc3, 2], c(0, 0, 0), tolerance = 1e-6)
+
   # ---- Epistatic deviations (actual) ----
 
-  # TODO: aa
-  # TODO: HWE?
-
-  expect_equal(gp$gv_aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
-  expect_equal(gp$gv_aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
-  expect_equal(gp$gv_aa[genoLoc3, 2], c(0, 0, 0), tolerance = 1e-6)
+  # No epistasis in loci 1-3
+  expect_equal(gp$aa[genoLoc1, 1], c(0, 0, 0), tolerance = 1e-6)
+  expect_equal(gp$aa[genoLoc2, 2], c(0, 0, 0), tolerance = 1e-6)
+  expect_equal(gp$aa[genoLoc3, 2], c(0, 0, 0), tolerance = 1e-6)
 
   # ---- Genetic variance (under Hardy-Weinberg Equilibrium) ----
 
@@ -564,11 +569,91 @@ test_that("genParam", {
 
   # ---- Dominance variance (under Hardy-Weinberg Equilibrium) ----
 
-  # TODO: VarD
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  expect_equal(
+    unname((2 * p[1] * q[1] * d[1])^2),
+    popVar(gp$dd_HW[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.1296
+  expect_equal(
+    unname((2 * p[2] * q[2] * d[2])^2),
+    popVar(gp$dd_HW[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.9216
+  myVarD = sum(gp$dd_HW[genoLoc3, 3]^2 * c(Q_HW[3], H_HW[3], P_HW[3])) # 0.9216
+  expect_equal(
+    unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
+    myVarD,
+    # popVar(gp$dd_HW[, 3, drop = FALSE])[1, 1], # 0.5184
+    # Due to deviation from HWE
+    tolerance = 1e-6
+  )
 
   # ---- Dominance variance (actual) ----
 
-  # TODO: VarD
+  # Falconer (1996) https://archive.org/details/introductiontoqu0000falc/page/136
+  expect_equal(
+    unname((2 * p[1] * q[1] * d[1])^2),
+    popVar(gp$dd[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.1296
+  expect_equal(
+    unname((2 * p[2] * q[2] * d[2])^2),
+    popVar(gp$dd[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  ) # 0.9216
+  myVarD = sum(gp$dd[genoLoc3, 3]^2 * c(Q[3], H[3], P[3])) # 0.4196571
+  expect_equal(
+    # unname((2 * p[3] * q[3] * d[3])^2), # 0.9216
+    # We don't have HWE, so the above does not hold
+    popVar(gp$dd[, 3, drop = FALSE])[1, 1], # 0.4196571
+    myVarD,
+    tolerance = 1e-6
+  )
+
+  # ---- Epistasis variance (under Hardy-Weinberg Equilibrium) ----
+
+  # No epistasis in loci 1-3
+  expect_equal(gp$varAA[1, 1], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[1, 1],
+    popVar(gp$aa[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+  expect_equal(gp$varAA[2, 2], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[2, 2],
+    popVar(gp$aa[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+  expect_equal(gp$varAA[3, 3], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[3, 3],
+    popVar(gp$aa[, 3, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+
+  # ---- Epistasis variance (actual) ----
+
+  # No epistasis in loci 1-3
+  expect_equal(gp$varAA[1, 1], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[1, 1],
+    popVar(gp$aa[, 1, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+  expect_equal(gp$varAA[2, 2], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[2, 2],
+    popVar(gp$aa[, 2, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
+  expect_equal(gp$varAA[3, 3], 0, tolerance = 1e-6)
+  expect_equal(
+    gp$varAA[3, 3],
+    popVar(gp$aa[, 3, drop = FALSE])[1, 1],
+    tolerance = 1e-6
+  )
 
   # TODO: varAA
 
