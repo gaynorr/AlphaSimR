@@ -1,10 +1,12 @@
-# AlphaSimR 2.0.0.9001
+# AlphaSimR 2.0.0.9002
 
 *changed R6 and methods from Depends to Imports to match current best practices for R packages
 
 *Change order of call to `finalizePop` in `.newPop` to allow access to recombination tracking data
 
 *added `parentAverage` and `mendelianSampling` functions
+
+*fixed bug in `c` for RawPop, MapPop, and NamedMapPop
 
 # AlphaSimR 2.0.0
 

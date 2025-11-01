@@ -782,7 +782,7 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
-#' '
+#' 
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
