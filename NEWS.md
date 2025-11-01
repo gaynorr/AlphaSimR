@@ -1,4 +1,4 @@
-# AlphaSimR 2.0.0.9002
+# AlphaSimR 2.0.0.9003
 
 *changed R6 and methods from Depends to Imports to match current best practices for R packages
 
@@ -7,6 +7,8 @@
 *added `parentAverage` and `mendelianSampling` functions
 
 *fixed bug in `c` for RawPop, MapPop, and NamedMapPop
+
+*changed `popVar` to an R wrapper to automate casting of vectors to matrices
 
 # AlphaSimR 2.0.0
 
