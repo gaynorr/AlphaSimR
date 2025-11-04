@@ -57,4 +57,27 @@ test_that("misc_and_miscPop",{
   expect_equal(popC@misc$mtLP, c(pop@misc$mtLP, pop@misc$mtLP[1]))
   expect_equal(popC@misc$mtMP, c(pop@misc$mtMP, pop@misc$mtMP[1]))
   expect_equal(popC@miscPop, list())
+
+  popA = popB = pop
+  popA@misc = pop@misc[1]
+  popB@misc = pop@misc[2]
+  expect_warning(c(popA, popB)@misc,
+                 regexp = "misc element names do not match - setting misc to an empty list!")
+
+  popA@misc = pop@misc[1:2]
+  popB@misc = pop@misc[2:1]
+  expect_warning(c(popA, popB)@misc,
+                 regexp = "misc element names do not match - setting misc to an empty list!")
+
+  popA@misc = list()
+  popB@misc = pop@misc[2:1]
+
+  popList = list(popA, popB)
+  expect_warning(c(popA, popB)@misc,
+                 regexp = "number of misc elements differs - setting misc to an empty list!")
+
+  popA@misc = pop@misc[2:1]
+  popB@misc = list()
+  expect_warning(c(popA, popB)@misc,
+                 regexp = "number of misc elements differs - setting misc to an empty list!")
 })

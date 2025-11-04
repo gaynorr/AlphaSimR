@@ -10,6 +10,8 @@
 
 *changed `popVar` to an R wrapper to automate casting of vectors to matrices
 
+*warn when misc lists don't match in length or names in `c(pop, pop2)`
+
 # AlphaSimR 2.0.0
 
 *added names to `SP$recHist`
