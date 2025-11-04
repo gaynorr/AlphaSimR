@@ -1,3 +1,5 @@
+# fmt: skip file
+
 #' @title Merge list of populations
 #'
 #' @description Rapidly merges a list of populations into a
@@ -91,33 +93,39 @@ mergePops = function(popList){
 
   #misc
   tmp = sapply(popList, function(x) length(x@misc))
-  if(all(tmp == tmp[1]) & tmp[1]>0) {
-    tmp = lapply(popList, function(x) names(x@misc))
-    allMatch = TRUE
-    if(length(tmp)>1){
-      for(i in 2:length(tmp)){
-        if(!all(tmp[[1]]==tmp[[i]])){
-          allMatch = FALSE
-          break
+  if(!all(tmp == tmp[1])) {
+    warning("number of misc elements differs - setting misc to an empty list!")
+    misc = list()
+  } else {
+    if(tmp[1]>0) {
+      tmp = lapply(popList, function(x) names(x@misc))
+      allMatch = TRUE
+      if(length(tmp)>1){
+        for(i in 2:length(tmp)){
+          if(!all(tmp[[1]]==tmp[[i]])){
+            allMatch = FALSE
+            break
+          }
         }
       }
-    }
-    if(allMatch){
-      misc = vector("list", length=length(tmp[[1]]))
-      for(i in seq_len(length(tmp[[1]]))){
-        miscTmp = lapply(popList, function(x) x@misc[[i]])
-        if (is.matrix(miscTmp[[1]])) {
-          misc[[i]] = do.call("rbind", miscTmp)
-        } else {
-          misc[[i]] = do.call("c", miscTmp)
+      if(allMatch){
+        misc = vector("list", length=length(tmp[[1]]))
+        for(i in seq_len(length(tmp[[1]]))){
+          miscTmp = lapply(popList, function(x) x@misc[[i]])
+          if (is.matrix(miscTmp[[1]])) {
+            misc[[i]] = do.call("rbind", miscTmp)
+          } else {
+            misc[[i]] = do.call("c", miscTmp)
+          }
         }
+        names(misc) = tmp[[1]]
+      }else{
+        warning("misc element names do not match - setting misc to an empty list!")
+        misc = list()
       }
-      names(misc) = tmp[[1]]
-    }else{
+    } else {
       misc = list()
     }
-  } else {
-    misc = list()
   }
 
   #sex

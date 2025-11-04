@@ -10,7 +10,9 @@
 
 *changed `popVar` to an R wrapper to automate casting of vectors to matrices
 
-*corrected bibliography entry month from sept to sep
+* warn when misc lists don't match in length or names in `c(pop, pop2)`
+
+* corrected bibliography entry month from sept to sep
 
 # AlphaSimR 2.0.0
 
@@ -207,7 +209,7 @@
 *removed lazyData field in DESCRIPTION
 
 # AlphaSimR 1.0.0
-  
+
 *AlphaSimR manuscript has been published in G3 (citation added)
 
 *changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
@@ -278,7 +280,7 @@
 
 *the `c` function now merges individuals for MapPop objects (was chromosomes before)
 
-*the `cChr` function new merges chromosomes for MapPop objects 
+*the `cChr` function new merges chromosomes for MapPop objects
 
 *fixed broken SimParam_addStructuredSnpChip
 
@@ -445,4 +447,4 @@
 *Added `runMacs2` as a wrapper for `runMacs`
 
 *Fixed error when using H2 in SimParam_setVarE
-    
+
