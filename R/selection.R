@@ -72,6 +72,103 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   return(response)
 }
 
+#' Returns a summary response from the population
+#' 
+#' Returns a summary response vector from the \code{pop@miscPop} slot 
+#' of a population
+#'
+#' @param pop a \code{\link{Pop-class}} object
+#' @param trait a vector or custom function
+#' @param use a character ("rand", "gv", "ebv", or "pheno")
+#' @param simParam an object of \code{\link{SimParam}}
+#' @param ... are additional arguments passed to trait when trait is a function
+#'
+#' @keywords internal
+getResponsePop = function (pop, trait, use, simParam = NULL, ...) 
+{
+  stopifnot(!isHybridPop(pop))
+  if (is(trait, "function")) {
+    if (is.character(use)) {
+      use = tolower(use)
+      if (use == "rand") {
+        return(rnorm(length(pop)))
+      }
+      else if (use %in% c("gv", "ebv", "pheno")) {
+        values = lapply(pop@pops, function(pop) pop@miscPop[[use]])
+        if (list(NULL) %in% values){
+          stop(paste0("One or more populations does not have a valid pop@miscPop$", 
+                      use, " slot"))
+        }
+        values = do.call('rbind', values)
+        response = trait(values, ...)
+        if (any(is.na(response))){
+          stop(paste0("One or more populations has an emtpy pop@miscPop$", 
+                      use, " matrix"))
+        }
+      }
+      else if (use == "bv") {
+        stop("use='bv' is not supported")
+      }
+      else {
+        stop(paste0("use=", use, " is not a valid option"))
+      }
+    }
+    else if (is(use, "function")) {
+      values = do.call('rbind', lapply(pop@pops, FUN = use, ...))
+      response = trait(values, ...)
+    }
+    else {
+      stop("use must be a character or a function")
+    }
+  } 
+  else {
+    if (is.character(trait)) {
+      take = match(trait, simParam$traitNames)
+      if (is.na(take)) {
+        stop("'", trait, "' did not match any trait names")
+      }
+      trait = take
+    }
+    if (is.character(use)) {
+      use = tolower(use)
+      if (use == "rand") {
+        return(rnorm(length(pop)))
+      }
+      else if (use %in% c("gv", "ebv", "pheno")) {
+        values = lapply(pop@pops, function(pop) pop@miscPop[[use]])
+        if (list(NULL) %in% values){
+          stop(paste0("One or more populations does not have a valid pop@miscPop$", 
+                      use, " slot"))
+        }
+        values = do.call('rbind', values)
+        response = values[, trait, drop = FALSE]
+        if (any(is.na(response))){
+          stop(paste0("One or more populations has an emtpy pop@miscPop$", 
+                      use, " matrix"))
+        }
+      }
+      else if (use == "bv") {
+        stop("use='bv' is not supported")
+      }
+      else {
+        stop(paste0("use='", use, "' is not a valid option"))
+      }
+    }
+    else if (is(use, "function")) {
+      values = lapply(pop@pops, use, trait = trait, ...)
+      response = do.call('rbind', values)
+    }
+    else {
+      stop("use must be a character or a function")
+    }
+  }
+  if (any(is.na(response))) {
+    stop("selection trait has missing values, phenotype may need to be set")
+  }
+  return(response)
+}
+
+
 #' Identify candidate individuals
 #' 
 #' This function handles indexing by id and negative value indexing
@@ -576,4 +673,176 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   })
   crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
   return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))
+}
+
+#' @title Select populations from a MultiPop
+#'
+#' @description
+#' Selects \code{nPop} populations from a \code{\link{MultiPop-class}}
+#' object. If the \code{MultiPop} is nested (containing one or more 
+#' \code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects), selection 
+#' is performed at the specified \code{level} (depth), where 
+#' \code{level=1} selects direct children that are \code{\link{Pop-class}} 
+#' objects, \code{level=2} descends one level into nested 
+#' \code{MultiPop}s, and so on.
+#'
+#' @param pop A \code{\link{MultiPop-class}} object.
+#' @param nPop integer, the number of populations to select.
+#' @param level integer >= 1. The nesting depth at which selection is
+#'   performed (see Details).
+#' @param trait the trait for selection. This can be a trait name (character) 
+#'   or integer indicating a single trait, or a function returning a vector of 
+#'   length equal to the number of populations at \code{level} for each 
+#'   nested \code{MultiPop}. The function must work on a vector or matrix 
+#'   of \code{use} values stored at \code{pop@miscPop$use} as 
+#'   \code{trait(values, ...)} - depending on what \code{use} is. 
+#'   See the examples and \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values \code{"gv"}, estimated breeding values \code{"ebv"}, 
+#'   phenotypes \code{"pheno"}, or random values \code{"rand"}) or a 
+#'   function returning a vector of length equal to the number of 
+#'   populations at \code{level}. The function must work on \code{pop} 
+#'   as \code{lapply(pop@pops, FUN=use, ...)} or as 
+#'   \code{lapply(pop@pops, use, trait=trait, ...)} depending on what 
+#'   \code{trait} is. See the examples.
+#' @param selectTop logical, selects highest values if \code{TRUE} or lowest 
+#'   values if \code{FALSE}.
+#' @param simParam an object of \code{\link{SimParam}}. If \code{NULL}, the
+#'   global \code{SP} object is used.
+#' @param ... Additional arguments passed to \code{trait} or \code{use}
+#'   when they are functions.
+#'
+#' @details
+#' This function performs selection of \code{\link{Pop-class}} objects 
+#' contained within a \code{\link{MultiPop-class}} object.
+#' A \code{MultiPop} can be nested. The \code{level} argument controls at
+#' which nesting depth selection operates. \code{level=1}: select among 
+#' direct children of \code{pop} (those children must be 
+#' \code{\link{Pop-class}} objects). \code{level=2}: descend one level 
+#' into nested \code{MultiPop}s and select among their direct children; 
+#' and so on. If \code{level} is lower than the depth of \code{pop}, 
+#' the function stops with an error. 
+#'
+#' The function expects population-level summaries (for example means or
+#' medians) to be present in each child population's
+#' \code{pop@miscPop} slot under the name given by \code{use} (for
+#' example \code{pop@miscPop$pheno}). Use \code{\link{setPhenoPop}()} to
+#' populate these values prior to calling \code{selectPop()} when needed.
+#'
+#' If the number of eligible populations is less than \code{nPop}, the
+#' function returns all eligible populations and issues a warning.
+#'
+#' @return A \code{\link{MultiPop-class}} object
+#'   containing the selected populations in the original order. When 
+#'   \code{pop} is a \code{\link{Pop-class}}, the original object is returned.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=20, nChr=1, segSites=10)
+#' 
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' #' \dontshow{SP$nThreads = 1L}
+#' 
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' 
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' 
+#' # Create multi-population with one level of nesting
+#' multiPop = newMultiPop(pop[1:4], pop[5:8], pop[9:12], pop[13:16], pop[17:20])
+#' 
+#' # Set population-level phenotypes
+#' multiPop = setPhenoPop(multiPop, simParam=SP)
+#' 
+#' # Select best 2 populations
+#' selectPop(multiPop, nPop=2, simParam=SP)
+#' 
+#' # Select 2 most deviating populations from an optima
+#' squaredDeviation = function(x, optima=0) (x - optima)^2
+#' selectPop(multiPop, nPop=2, trait=squaredDeviation, simParam=SP)
+#' 
+#' # Create multi-population with two levels of nesting
+#' multiPop = newMultiPop(newMultiPop(pop[1:4], pop[5:8], pop[9:12]), 
+#'                        newMultiPop(pop[13:16], pop[17:20]))
+#' 
+#' # Set population-level phenotypes
+#' multiPop = setPhenoPop(multiPop, simParam=SP)
+#' 
+#' # Select best 2 populations at level 2
+#' selectPop(multiPop, nPop=2, level=2, simParam=SP)
+#' 
+#' # Select 2 populations at level 2 based on miscelaneous info with use function
+#' multiPop@pops = lapply(multiPop@pops, function(mp){
+#'   mp@pops = lapply(mp@pops, function(pop){
+#'     pop@miscPop = append(pop@miscPop, list(smth1 = rnorm(1), smth2 = rnorm(1)))
+#'     return(pop)
+#'   })
+#'   return(mp)
+#' })
+#' useFunc = function(pop, trait = NULL) pop@miscPop$smth1 + pop@miscPop$smth2
+#' selectPop(pop=multiPop, nPop=2, level=2, simParam=SP, use=useFunc)
+#' 
+#' # ... equivalent result with the use & trait function
+#' useFunc2 = function(pop, trait=NULL) cbind(pop@miscPop$smth1, pop@miscPop$smth2)
+#' trtFunc = function(x) rowSums(x)
+#' selectPop(pop=multiPop, nPop=2, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
+#' 
+#' @export
+selectPop = function (pop, nPop, level = 1, trait = 1, use = "pheno", 
+                      selectTop = TRUE, simParam = NULL, ...) 
+{
+  stopifnot(nPop >= 0)
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  
+  if (isPop(pop)) return(pop)
+  stopifnot(isMultiPop(pop))
+  
+  popList = pop@pops
+  multi = which(sapply(pop@pops, isMultiPop))
+  
+  if (level > 1 & identical(multi, integer(0))) {
+    stop(paste("The MultiPop object does not contain other MultiPop objects",
+               "at this level. You may want to decrease the value of 'level'"))
+  }
+  
+  while (level > 1) {
+    level = level - 1
+    for (i in multi) {
+      popList[[i]] = selectPop(pop[[i]], nPop = nPop, level = level, 
+                               simParam = simParam)
+    }
+    popList = do.call(newMultiPop, popList)
+    return(popList)
+  }
+  
+  if (!identical(multi, integer(0))){
+    stop(paste(
+      "This level contains", length(multi), " MultiPop-class objects.",
+      "\nSelection can only be performed when all populations at this level are",
+      "Pop-class objects.\nYou may want to increase the value of 'level'")
+    )
+  }
+  
+  eligible = which(sapply(pop@pops, isPop))
+  
+  if (length(eligible) < nPop) {
+    nPop = length(eligible)
+    warning("Suitable candidate populations smaller than nPop, returning ", 
+            nPop, " populations")
+  }
+  
+  response = getResponsePop(pop = pop, trait = trait, use = use, 
+                            simParam = simParam, ...)
+  
+  if (is.matrix(response)) {
+    stopifnot(ncol(response) == 1)
+  }
+  take = order(response, decreasing = selectTop)
+  take = take[take %in% eligible]
+  
+  return(pop[take[0:nPop]])
 }
