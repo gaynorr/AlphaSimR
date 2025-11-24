@@ -87,6 +87,7 @@
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/meanEBV.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/meanG.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/meanP.html</loc></url>
+<url><loc>https://gaynorr.github.io/AlphaSimR/reference/mendelianSampling.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/mergeGenome.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/mergePops.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/mutate.html</loc></url>
@@ -95,9 +96,11 @@
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/newMapPop.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/newMultiPop.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/newPop.html</loc></url>
+<url><loc>https://gaynorr.github.io/AlphaSimR/reference/parentAverage.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/pedigreeCross.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/pheno.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/popVar.html</loc></url>
+<url><loc>https://gaynorr.github.io/AlphaSimR/reference/popVarCpp.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/pullIbdHaplo.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/pullMarkerGeno.html</loc></url>
 <url><loc>https://gaynorr.github.io/AlphaSimR/reference/pullMarkerHaplo.html</loc></url>
