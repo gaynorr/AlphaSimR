@@ -34,7 +34,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/gaynorr/AlphaSimR/blob/master/inst/CITATION)
+[`inst/CITATION`](https://github.com/gaynorr/AlphaSimR/blob/v2.1.0/inst/CITATION)
 
 Gaynor RC, Gorjanc G, Hickey JM (2021). “AlphaSimR: an R package for
 breeding program simulations.” *G3 Gene\|Genomes\|Genetics*,
