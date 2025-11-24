@@ -4,6 +4,10 @@
 arma::Cube<unsigned char> packHaplo(arma::Mat<unsigned char>& haplo,
                                     arma::uword ploidy, bool inbred){
   arma::uword nHap = haplo.n_rows;
+  if(nHap==0){
+    Rcpp::stop("packHaplo was given no genotype data");
+  }
+  
   arma::uword nInd;
   if(inbred){
     nInd = haplo.n_rows;

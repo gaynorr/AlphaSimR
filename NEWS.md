@@ -1,3 +1,17 @@
+# AlphaSimR 2.1.0
+
+*changed R6 and methods from Depends to Imports to match current best practices for R packages
+
+*Change order of call to `finalizePop` in `.newPop` to allow access to recombination tracking data
+
+*added `parentAverage` and `mendelianSampling` functions
+
+*fixed bug in `c` for RawPop, MapPop, and NamedMapPop
+
+*changed `popVar` to an R wrapper to automate casting of vectors to matrices
+
+*corrected bibliography entry month from sept to sep
+
 # AlphaSimR 2.0.0
 
 *added names to `SP$recHist`
@@ -418,7 +432,7 @@
 
 *`selectFam` now handles half-sib families
 
-*`selectWithinFa`m now handles half-sib families
+*`selectWithinFam` now handles half-sib families
 
 *Removed restriction on varE=NULL in `setPhenoGCA`
 

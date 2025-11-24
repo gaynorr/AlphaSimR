@@ -1,3 +1,4 @@
+# fmt: skip file
 
 #' @title Mean genetic values
 #'
@@ -223,7 +224,7 @@ genParam = function(pop,simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+
   nInd = nInd(pop)
   nTraits = simParam$nTraits
   traitNames = simParam$traitNames
@@ -678,6 +679,132 @@ pheno = function(pop){
 #' @export
 ebv = function(pop){
   pop@ebv
+}
+
+#' @title Calculate parent average
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param parents \code{\link{Pop-class}} with mothers and fathers of individuals
+#'   in \code{pop}; if \code{NULL} must provide \code{mothers} and \code{fathers}
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#'
+#' @return a matrix of parent averages with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' parentAverage(pop2, parents = pop)
+#' parentAverage(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
+                         use = "gv", simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  if (!is.null(parents)) {
+    matchMothers = match(x = pop@mother, table = parents@id)
+    matchFathers = match(x = pop@father, table = parents@id)
+  } else {
+    if (is.null(mothers) | is.null(fathers)) {
+      stop("must provide either 'parents' or both 'mothers' and 'fathers'!")
+    }
+    matchMothers = match(x = pop@mother, table = mothers@id)
+    matchFathers = match(x = pop@father, table = fathers@id)
+  }
+  if (anyNA(matchMothers)) {
+    stop("some parents/mothers not found!")
+  }
+  if (anyNA(matchFathers)) {
+    stop("some parents/fathers not found!")
+  }
+  if (use %in% c("gv", "ebv", "pheno")) {
+    if (!is.null(parents)) {
+      ret = 0.5 * (slot(object = parents, name = use)[matchMothers, , drop = FALSE] +
+                   slot(object = parents, name = use)[matchFathers, , drop = FALSE])
+    } else {
+      ret = 0.5 * (slot(object = mothers, name = use)[matchMothers, , drop = FALSE] +
+                   slot(object = fathers, name = use)[matchFathers, , drop = FALSE])
+    }
+  } else if (use == "bv") {
+    if (!is.null(parents)) {
+      ret = 0.5 * (bv(parents, simParam = simParam)[matchMothers, , drop = FALSE] +
+                   bv(parents, simParam = simParam)[matchFathers, , drop = FALSE])
+    } else {
+      ret = 0.5 * (bv(mothers, simParam = simParam)[matchMothers, , drop = FALSE] +
+                   bv(fathers, simParam = simParam)[matchFathers, , drop = FALSE])
+    }
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(ret)
+}
+
+#' @title Calculate Mendelian sampling
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param parents \code{\link{Pop-class}} with mothers and fathers of individuals
+#'   in \code{pop}; if \code{NULL} must provide \code{mothers} and \code{fathers}
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#'
+#' @return a matrix of Mendelian samplings with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' mendelianSampling(pop2, parents = pop)
+#' mendelianSampling(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
+                             use = "gv", simParam = NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  pa = parentAverage(pop = pop, parents = parents, mothers = mothers, fathers = fathers,
+                     use = use, simParam = simParam)
+  if (use %in% c("gv", "ebv", "pheno")) {
+    ret = slot(object = pop, name = use) - pa
+  } else if (use == "bv") {
+    ret = bv(pop, simParam = simParam) - pa
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(ret)
 }
 
 #' @title Number of individuals
