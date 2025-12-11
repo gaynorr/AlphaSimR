@@ -541,6 +541,13 @@ setMethod("[",
 setMethod("c",
           signature(x = "Pop"),
           function (x, ...){
+            # Check if any argument is a MultiPop
+            args = list(...)
+            if (any(sapply(args, isMultiPop))) {
+              # Delegate to MultiPop's c method by wrapping Pop in MultiPop
+              return(c(newMultiPop(x), ...))
+            }
+            
             # Uses mergePops for increased speed
             x = mergePops(c(list(x),list(...)))
             return(x)
