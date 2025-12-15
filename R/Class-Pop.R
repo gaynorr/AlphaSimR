@@ -1,3 +1,5 @@
+# fmt: skip file
+
 # RawPop ------------------------------------------------------------------
 
 #' @title Raw Population
@@ -535,15 +537,13 @@ setMethod("[",
 setMethod("c",
           signature(x = "Pop"),
           function (x, ...){
-            # Check if any argument is a MultiPop
             args = list(...)
             if (any(sapply(args, isMultiPop))) {
-              # Delegate to MultiPop's c method by wrapping Pop in MultiPop
+              # Delegate to MultiPop's c method
               return(c(newMultiPop(x), ...))
             }
-            
-            # Uses mergePops for increased speed
-            x = mergePops(c(list(x),list(...)))
+            # Use mergePops for increased speed
+            x = mergePops(c(list(x),args))
             return(x)
           }
 )
@@ -643,7 +643,7 @@ newPop = function(rawPop,simParam=NULL,...){
 #' function in simParam
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
-#' 
+#'
 #' @keywords internal
 .newPop = function(rawPop, id=NULL, mother=NULL, father=NULL,
                    iMother=NULL, iFather=NULL, isDH=NULL,
@@ -720,15 +720,15 @@ newPop = function(rawPop,simParam=NULL,...){
   pheno = gv
 
   if(simParam$nTraits>=1){
-    tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl, 
+    tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl,
                      simParam$qtlIndex, simParam$nTraits, simParam$nThreads)
-    
+
     gv = tmp[[1]]
     colnames(gv) = simParam$traitNames
-    
+
     gxeTmp = tmp[[2]]
     dim(gxeTmp) = NULL # Account for matrix bug in RcppArmadillo
-    
+
     # Move over gxeTmp for traits with GxE
     for(i in seq_len(simParam$nTraits)){
       if(.hasSlot(simParam$traits[[i]], "gxeEff")){
@@ -982,6 +982,51 @@ setValidity("MultiPop",function(object){
   }
 })
 
+setMethod("show",
+          signature(object = "MultiPop"),
+          function (object){
+            printLevels = function(x, indent = "", level = 0) {
+              if (level == 1) {
+                indent = ""
+              }
+              if (level == 0) {
+                levelText = ""
+              } else {
+                levelText = paste0("Level ", level, ": ")
+              }
+              pasteNames = function(x) {
+                n = length(x)
+                if (n == 0) {
+                  ret = "(no names)"
+                } else {
+                  if (n <= 3) {
+                    ret = paste(x[1:n], collapse = ", ")
+                  } else {
+                    ret = paste(x[1], x[2], "...", x[n], sep = ", ")
+                  }
+                }
+                return(ret)
+              }
+              if (isMultiPop(x)) {
+                cat(paste0(indent, levelText,
+                           "An object of class ", classLabel(class(x)),
+                           " with ", length(x), " item(s): ",
+                           pasteNames(names(x)), "\n"))
+                for (x in x@pops) {
+                  printLevels(x, paste0("  ", indent), level = level + 1)
+                }
+              } else if (isPop(x)) {
+                cat(paste0(indent, levelText,
+                           "An object of class ", classLabel(class(x)),
+                           " with ", nInd(x), " individual(s): ",
+                           pasteNames(x@id), "\n"))
+              }
+            }
+            printLevels(object)
+            invisible()
+          }
+)
+
 #' @describeIn MultiPop Extract MultiPop by index
 setMethod("[",
           signature(x = "MultiPop"),
@@ -1074,7 +1119,7 @@ isMultiPop = function(x) {
 #' @description
 #' Creates an empty \code{\link{MultiPop-class}} object.
 #'
-#' @return Returns an object of \code{\link{MultiPop-class}} where the 
+#' @return Returns an object of \code{\link{MultiPop-class}} where the
 #'   \code{multipop@pops} slot is an empty list.
 #'
 #' @examples
