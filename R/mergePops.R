@@ -208,16 +208,16 @@ mergePops = function(popList){
 #' @description
 #' Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
 #' \code{MultiPop} containing only \code{\link{Pop-class}} objects
-#' up to the requested depth (see Details).
+#' down to a requested level (see Details).
 #'
-#' @param pop A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve.
 #'
 #' @details
 #' The \code{level} argument controls how many levels of nesting are preserved.
-#' \code{level = 1}: collapse all nested \code{MultiPop-class} objects so that
-#'   all returned children are \code{Pop-class} objects (i.e. flatten everything
+#' \code{level = 1}: flatten structure of \code{MultiPop-class} so that
+#'   all items are \code{Pop-class} objects (that is, flatten everything
 #'   below the top level).
 #' \code{level > 1}: preserve the top \code{level} levels of nesting; any
 #'   deeper \code{MultiPop-class} objects are flattened.
@@ -225,71 +225,68 @@ mergePops = function(popList){
 #' If \code{level} is greater than or equal to the nesting depth, the original
 #' object is returned unchanged.
 #'
-#' @return If \code{pop} is a \code{\link{Pop-class}}, the same \code{pop} 
-#' object is returned. Otherwise a \code{\link{MultiPop-class}} is returned 
-#' whose \code{pop@pops} slot contains \code{\link{Pop-class}} (and possibly
-#' \code{\link{MultiPop-class}}) objects assembled according to \code{level}.
+#' @return If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
+#' object is returned. Otherwise a \code{\link{MultiPop-class}} is returned
+#' whose \code{x@pops} slot contains \code{\link{Pop-class}} (and possibly
+#' \code{\link{MultiPop-class}}) objects flattened according to \code{level}.
 #'
 #' @examples
-#' \donttest{
 #' # Create founder haplotypes
-#' founderPop = quickHaplo(nInd=50, nChr=1, segSites=10)
-#' 
+#' founderPop = quickHaplo(nInd=12, nChr=1, segSites=10)
+#'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(5)
-#' 
+#'
 #' # Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' # Create a multi-population with nesting depth (level) 3
-#' mp_nested = newMultiPop(pop[1:10],
-#'                         newMultiPop(pop[11:20],
-#'                                     newMultiPop(pop[21:30], pop[31:40])))
+#' # Create a multi-population with down to level 3 nesting
+#' mp_nested = newMultiPop(pop[1:2],
+#'                         newMultiPop(pop[3:4],
+#'                                     newMultiPop(pop[5:7], pop[8:12])))
+#' mp_nested
 #'
-#' # Completely flatten to a single top-level MultiPop of Pops
-#' mp_flat = flattenMultiPop(mp_nested)
-#' length(mp_flat)         # number of Pop children at top-level
+#' # Completely flatten to a single top-level MultiPop
+#' flattenMultiPop(mp_nested)
 #'
 #' # Preserve two levels of nesting
-#' mp_partial = flattenMultiPop(mp_nested, level=2)
-#' }
+#' flattenMultiPop(mp_nested, level=2)
 #'
 #' @seealso \code{\link{newMultiPop}}, \code{\link{mergePops}},
 #'   \code{\link{mergeMultiPops}}
 #' @export
-flattenMultiPop = function(pop, level=1) {
-  
-  # Helper function to recursively extract Pop objects
-  .flatten = function(mp) {
-    popList = list()
-    for (item in mp@pops) {
-      if (isPop(item)) {
-        popList = c(popList, list(item))
-      } else if (isMultiPop(item)) {
-        popList = c(popList, .flatten(item))
-      }
-    }
-    return(popList)
-  }
-  
-  if (isPop(pop)) return(pop)
-  stopifnot(isMultiPop(pop))
-  
-  popList = pop@pops
-  multi = which(sapply(pop@pops, isMultiPop))
-  
-  while (level > 1){
+flattenMultiPop = function(x, level=1) {
+  if (isPop(x)) return(x)
+  stopifnot(isMultiPop(x))
+  multi = which(sapply(x@pops, isMultiPop))
+  while (level > 1) {
     level = level - 1
     for (i in multi) {
-      popList[[i]] = flattenMultiPop(popList[[i]], level = level)
+      x@pops[[i]] = flattenMultiPop(x@pops[[i]], level = level)
     }
-    return(do.call(newMultiPop, popList))
+    return(do.call(newMultiPop, x@pops))
   }
-  
-  flatPopList = .flatten(pop)
+  flatPopList = .flatten(x)
   return(do.call(newMultiPop, flatPopList))
+}
+
+#' Helper function to recursively extract Pop objects
+#'
+#' @param mp \code{\link{MultiPop-class}} object
+#'
+#' @keywords internal
+.flatten = function(mp) {
+  popList = list()
+  for (item in mp@pops) {
+    if (isPop(item)) {
+      popList = c(popList, list(item))
+    } else if (isMultiPop(item)) {
+      popList = c(popList, .flatten(item))
+    }
+  }
+  return(popList)
 }
 
 #' @title Merge Pop and MultiPop objects preserving structure to a depth
@@ -343,12 +340,12 @@ flattenMultiPop = function(pop, level=1) {
 #' \donttest{
 #' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=60, nChr=1, segSites=10)
-#' 
+#'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(5)
-#' 
+#'
 #' # Create population
 #' pop = newPop(founderPop, simParam = SP)
 #'
@@ -380,13 +377,13 @@ mergeMultiPops = function(..., level=0){
     popList = popList[-remove]
     classes = classes[-remove]
   }
-  
+
   # If popList contains a single object
   if (length(classes) == 1) {
     if (classes == "Pop") {
       # If the object is Pop, return it without the list wrapping
       return(popList[[1]])
-    } else if (classes == "MultiPop"){
+    } else if (classes == "MultiPop") {
       # Else, remove the list wrapping from the single multiPop object
       multiPop = popList[[1]]
       popList = multiPop@pops
@@ -400,9 +397,9 @@ mergeMultiPops = function(..., level=0){
     multiPop = do.call('c', popList)
     popList = multiPop@pops
   }
-  
+
   multi = which(sapply(popList, isMultiPop))
-  
+
   while (level > 0) {
     level = level - 1
     for (i in multi) {
@@ -410,8 +407,7 @@ mergeMultiPops = function(..., level=0){
     }
     return(do.call(newMultiPop, popList))
   }
-  
-  
+
   flatMultiPop = flattenMultiPop(multiPop)
   return(mergePops(flatMultiPop))
 }
