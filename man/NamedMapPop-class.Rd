@@ -22,7 +22,7 @@ isNamedMapPop(x)
 \item{...}{additional 'NamedMapPop' objects}
 }
 \description{
-Extends \code{\link{MapPop-class}} to add id, mother and father.
+Extends \code{\link{MapPop-class}} with id, mother and father.
 }
 \section{Methods (by generic)}{
 \itemize{

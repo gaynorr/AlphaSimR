@@ -262,22 +262,22 @@ flattenMultiPop = function(x, level=1) {
     }
     return(do.call(newMultiPop, x@pops))
   }
-  flatPopList = .flatten(x)
+  flatPopList = .flattenMultiPop(x)
   return(do.call(newMultiPop, flatPopList))
 }
 
-#' Helper function to recursively extract Pop objects
+#' Helper function to recursively extract Pop objects from a MultiPop
 #'
 #' @param mp \code{\link{MultiPop-class}} object
 #'
 #' @keywords internal
-.flatten = function(mp) {
+.flattenMultiPop = function(mp) {
   popList = list()
   for (item in mp@pops) {
     if (isPop(item)) {
       popList = c(popList, list(item))
     } else if (isMultiPop(item)) {
-      popList = c(popList, .flatten(item))
+      popList = c(popList, .flattenMultiPop(item))
     }
   }
   return(popList)
@@ -322,7 +322,7 @@ flattenMultiPop = function(x, level=1) {
 #' \code{Pop-class} or \code{MultiPop-class} results in an error.
 #'
 #' The function uses \code{\link{flattenMultiPop}} and \code{\link{mergePops}}
-#' internally to perform flattening and efficient merging of \code{Pop} and 
+#' internally to perform flattening and efficient merging of \code{Pop} and
 #' \code{MultiPop} objects.
 #'
 #' @return If \code{level == 0}, or when merging yields a single \code{Pop},
@@ -362,10 +362,10 @@ flattenMultiPop = function(x, level=1) {
 #'   \code{\link{newMultiPop}}
 #' @export
 mergeMultiPops = function(..., level=0){
-  
+
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
-  
+
   if(any(classes=="NULL")){
     remove = which(classes=="NULL")
     popList = popList[-remove]

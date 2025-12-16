@@ -22,7 +22,7 @@ isMapPop(x)
 \item{...}{additional 'MapPop' objects}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add a genetic map.
+Extends \code{\link{RawPop-class}} with a genetic map.
 This is the first object created in a simulation. It is used
 for creating initial populations and setting traits in the
 \code{\link{SimParam}}.

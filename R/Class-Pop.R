@@ -125,7 +125,7 @@ isRawPop = function(x) {
 #' @title Raw population with genetic map
 #'
 #' @description
-#' Extends \code{\link{RawPop-class}} to add a genetic map.
+#' Extends \code{\link{RawPop-class}} with a genetic map.
 #' This is the first object created in a simulation. It is used
 #' for creating initial populations and setting traits in the
 #' \code{\link{SimParam}}.
@@ -212,7 +212,7 @@ isMapPop = function(x) {
 #' @title Raw population with genetic map and id
 #'
 #' @description
-#' Extends \code{\link{MapPop-class}} to add id, mother and father.
+#' Extends \code{\link{MapPop-class}} with id, mother and father.
 #'
 #' @param x a 'NamedMapPop' object
 #' @param i index of individuals
@@ -353,7 +353,7 @@ isNamedMapPop = function(x) {
 #' @title Population
 #'
 #' @description
-#' Extends \code{\link{RawPop-class}} to add sex, genetic values,
+#' Extends \code{\link{RawPop-class}} with sex, genetic values,
 #' phenotypes, and pedigrees.
 #'
 #' @param object a 'Pop' object
@@ -950,16 +950,20 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
 #' @title Multi-Population
 #'
 #' @description
-#' The mega-population represents a population of populations.
-#' It is designed to behave like a list of populations.
+#' The multi-population holds multiple \code{\link{Pop-class}} and
+#' \code{\link{MultiPop-class}} objects. It is designed to behave like a list
+#' of "populations" and can hence have a nested structure - see examples in
+#' \code{\link{newMultiPop}}.
 #'
+#' @param object a 'MultiPop' object
 #' @param x a 'MultiPop' object
-#' @param i index of populations or mega-populations
+#' @param i index of populations or multi-populations
 #' @param ... additional 'MultiPop' or 'Pop' objects
 #'
-#' @slot pops list of \code{\link{Pop-class}} and/or
-#' \code{MultiPop-class}
+#' @slot pops list of \code{\link{Pop-class}} or
+#' \code{MultiPop-class} objects
 #'
+#' @seealso \code{\link{newMultiPop}} and \code{\link{newEmptyMultiPop}}
 #'
 #' @export
 setClass("MultiPop",
@@ -982,6 +986,7 @@ setValidity("MultiPop",function(object){
   }
 })
 
+#' @describeIn MultiPop Show MultiPop object summary
 setMethod("show",
           signature(object = "MultiPop"),
           function (object){
@@ -1027,7 +1032,7 @@ setMethod("show",
           }
 )
 
-#' @describeIn MultiPop Extract MultiPop by index
+#' @describeIn MultiPop Subset MultiPop by index
 setMethod("[",
           signature(x = "MultiPop"),
           function(x, i){
@@ -1036,7 +1041,7 @@ setMethod("[",
           }
 )
 
-#' @describeIn MultiPop Extract Pop by index
+#' @describeIn MultiPop Extract a population by index
 setMethod("[[",
           signature(x = "MultiPop"),
           function (x, i){
@@ -1087,17 +1092,27 @@ setMethod("length",
 #'
 #' @examples
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#' founderPop = quickHaplo(nInd=5, nChr=1, segSites=10)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
-#' #Create population
+#' #Create a population and multi-population
 #' pop = newPop(founderPop, simParam=SP)
-#' megaPop = newMultiPop(pop=pop)
-#' isMultiPop(megaPop)
+#' multiPop = newMultiPop(pop)
+#' isMultiPop(multiPop)
+#' multiPop
 #'
+#' #Create a multi-population with two populations
+#' multiPop2 = newMultiPop(pop[1:2], pop[3:4])
+#' multiPop2
+#'
+#' #Create a multi-population with nested structure
+#' multiPopN = newMultiPop(pop[1:2],
+#'                        newMultiPop(pop[3:4], pop[5]))
+#' multiPopN
 #' @export
 newMultiPop = function(...){
   input = list(...)

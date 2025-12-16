@@ -3,6 +3,7 @@
 \docType{class}
 \name{MultiPop-class}
 \alias{MultiPop-class}
+\alias{show,MultiPop-method}
 \alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
 \alias{c,MultiPop-method}
@@ -10,6 +11,8 @@
 \alias{isMultiPop}
 \title{Multi-Population}
 \usage{
+\S4method{show}{MultiPop}(object)
+
 \S4method{[}{MultiPop}(x, i)
 
 \S4method{[[}{MultiPop}(x, i)
@@ -21,21 +24,27 @@
 isMultiPop(x)
 }
 \arguments{
+\item{object}{a 'MultiPop' object}
+
 \item{x}{a 'MultiPop' object}
 
-\item{i}{index of populations or mega-populations}
+\item{i}{index of populations or multi-populations}
 
 \item{...}{additional 'MultiPop' or 'Pop' objects}
 }
 \description{
-The mega-population represents a population of populations.
-It is designed to behave like a list of populations.
+The multi-population holds multiple \code{\link{Pop-class}} and
+\code{\link{MultiPop-class}} objects. It is designed to behave like a list
+of "populations" and can hence have a nested structure - see examples in
+\code{\link{newMultiPop}}.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract MultiPop by index
+\item \code{show(MultiPop)}: Show MultiPop object summary
 
-\item \code{[[}: Extract Pop by index
+\item \code{[}: Subset MultiPop by index
+
+\item \code{[[}: Extract a population by index
 
 \item \code{c(MultiPop)}: Combine multiple MultiPops
 
@@ -50,7 +59,10 @@ It is designed to behave like a list of populations.
 \section{Slots}{
 
 \describe{
-\item{\code{pops}}{list of \code{\link{Pop-class}} and/or
-\code{MultiPop-class}}
+\item{\code{pops}}{list of \code{\link{Pop-class}} or
+\code{MultiPop-class} objects}
 }}
 
+\seealso{
+\code{\link{newMultiPop}} and \code{\link{newEmptyMultiPop}}
+}

@@ -20,15 +20,25 @@ objects.
 }
 \examples{
 #Create founder haplotypes
-founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+founderPop = quickHaplo(nInd=5, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
-#Create population
+#Create a population and multi-population
 pop = newPop(founderPop, simParam=SP)
-megaPop = newMultiPop(pop=pop)
-isMultiPop(megaPop)
+multiPop = newMultiPop(pop)
+isMultiPop(multiPop)
+multiPop
 
+#Create a multi-population with two populations
+multiPop2 = newMultiPop(pop[1:2], pop[3:4])
+multiPop2
+
+#Create a multi-population with nested structure
+multiPopN = newMultiPop(pop[1:2],
+                       newMultiPop(pop[3:4], pop[5]))
+multiPopN
 }
