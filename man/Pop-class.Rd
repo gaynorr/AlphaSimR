@@ -27,7 +27,7 @@
 \item{object}{a 'Pop' object}
 }
 \description{
-Extends \code{\link{RawPop-class}} to add sex, genetic values,
+Extends \code{\link{RawPop-class}} with sex, genetic values,
 phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{

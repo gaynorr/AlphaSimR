@@ -1,4 +1,6 @@
-# AlphaSimR 2.2.0
+TODO mention all the MultiPop additions!
+
+# AlphaSimR 2.1.0.9001
 
 * Added asLogNormal() function.
 
