@@ -15,11 +15,11 @@
 isNamedMapPop(x)
 }
 \arguments{
-\item{x}{a 'NamedMapPop' object}
+\item{x}{a \code{NamedMapPop} object}
 
 \item{i}{index of individuals}
 
-\item{...}{additional 'NamedMapPop' objects}
+\item{...}{additional \code{NamedMapPop} objects}
 }
 \description{
 Extends \code{\link{MapPop-class}} with id, mother and father.

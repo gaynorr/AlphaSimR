@@ -41,7 +41,6 @@ founderPop = quickHaplo(nInd=12, nChr=1, segSites=10)
 # Set simulation parameters
 SP = SimParam$new(founderPop)
 \dontshow{SP$nThreads = 1L}
-SP$addTraitA(5)
 
 # Create population
 pop = newPop(founderPop, simParam=SP)
@@ -60,6 +59,5 @@ flattenMultiPop(mp_nested, level=2)
 
 }
 \seealso{
-\code{\link{newMultiPop}}, \code{\link{mergePops}},
-  \code{\link{mergeMultiPops}}
+\code{\link{mergeMultiPops}} and \code{\link{mergePops}}
 }

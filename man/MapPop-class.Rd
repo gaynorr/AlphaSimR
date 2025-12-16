@@ -15,11 +15,11 @@
 isMapPop(x)
 }
 \arguments{
-\item{x}{a 'MapPop' object}
+\item{x}{a \code{MapPop} object}
 
 \item{i}{index of individuals}
 
-\item{...}{additional 'MapPop' objects}
+\item{...}{additional \code{MapPop} objects}
 }
 \description{
 Extends \code{\link{RawPop-class}} with a genetic map.

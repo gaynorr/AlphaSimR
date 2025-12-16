@@ -18,13 +18,13 @@
 \S4method{length}{Pop}(x)
 }
 \arguments{
-\item{x}{a 'Pop' object}
+\item{x}{a \code{Pop} object}
 
 \item{i}{index of individuals}
 
-\item{...}{additional 'Pop' objects}
+\item{...}{additional \code{Pop} objects}
 
-\item{object}{a 'Pop' object}
+\item{object}{a \code{Pop} object}
 }
 \description{
 Extends \code{\link{RawPop-class}} with sex, genetic values,

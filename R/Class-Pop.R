@@ -7,18 +7,18 @@
 #' @description
 #' The raw population class contains only genotype data.
 #'
-#' @param object a 'RawPop' object
-#' @param x a 'RawPop' object
+#' @param object a \code{RawPop} object
+#' @param x a \code{RawPop} object
 #' @param i index of individuals
-#' @param ... additional 'RawPop' objects
+#' @param ... additional \code{RawPop} objects
 #'
 #' @slot nInd number of individuals
 #' @slot nChr number of chromosomes
 #' @slot ploidy level of ploidy
 #' @slot nLoci number of loci per chromosome
-#' @slot geno list of nChr length containing chromosome genotypes.
+#' @slot geno list of \code{nChr} length containing chromosome genotypes.
 #' Each element is a three dimensional array of raw values.
-#' The array dimensions are nLoci by ploidy by nInd.
+#' The array dimensions are \code{nLoci} by \code{ploidy} by \code{nInd}.
 #'
 #' @export
 setClass("RawPop",
@@ -130,9 +130,9 @@ isRawPop = function(x) {
 #' for creating initial populations and setting traits in the
 #' \code{\link{SimParam}}.
 #'
-#' @param x a 'MapPop' object
+#' @param x a \code{MapPop} object
 #' @param i index of individuals
-#' @param ... additional 'MapPop' objects
+#' @param ... additional \code{MapPop} objects
 #'
 #' @slot genMap list of chromosome genetic maps
 #' @slot centromere vector of centromere positions
@@ -214,9 +214,9 @@ isMapPop = function(x) {
 #' @description
 #' Extends \code{\link{MapPop-class}} with id, mother and father.
 #'
-#' @param x a 'NamedMapPop' object
+#' @param x a \code{NamedMapPop} object
 #' @param i index of individuals
-#' @param ... additional 'NamedMapPop' objects
+#' @param ... additional \code{NamedMapPop} objects
 #'
 #' @slot id an individual's identifier
 #' @slot mother the identifier of the individual's mother
@@ -356,10 +356,10 @@ isNamedMapPop = function(x) {
 #' Extends \code{\link{RawPop-class}} with sex, genetic values,
 #' phenotypes, and pedigrees.
 #'
-#' @param object a 'Pop' object
-#' @param x a 'Pop' object
+#' @param object a \code{Pop} object
+#' @param x a \code{Pop} object
 #' @param i index of individuals
-#' @param ... additional 'Pop' objects
+#' @param ... additional \code{Pop} objects
 #'
 #' @slot id an individual's identifier
 #' @slot iid an individual's internal identifier
@@ -757,7 +757,10 @@ newPop = function(rawPop,simParam=NULL,...){
                pheno=pheno,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=0))
+                          ncol=0,
+                          dimnames = list(NULL, NULL))
+                          # TODO: add ebv trait names?
+               )
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1,
                       fixEff=1L, p=NULL, onlyPheno=FALSE,
@@ -821,7 +824,7 @@ resetPop = function(pop,simParam=NULL){
                      ncol=simParam$nTraits)
   pop@ebv = matrix(NA_real_,
                    nrow=pop@nInd,
-                   ncol=0)
+                   ncol=0) # TODO: replace 0 with ncol=simParam$nTraits?
   pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
@@ -941,7 +944,10 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                pheno = traitMat,
                ebv = matrix(NA_real_,
                             nrow=0L,
-                            ncol=0L))
+                            ncol=0L,
+                            dimnames = list(NULL, NULL))
+                            # TODO: replace the above with traitMat?
+               )
   return(output)
 }
 
@@ -952,18 +958,19 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
 #' @description
 #' The multi-population holds multiple \code{\link{Pop-class}} and
 #' \code{\link{MultiPop-class}} objects. It is designed to behave like a list
-#' of "populations" and can hence have a nested structure - see examples in
-#' \code{\link{newMultiPop}}.
+#' and can hence have a nested structure - see examples in \code{\link{newMultiPop}}.
 #'
-#' @param object a 'MultiPop' object
-#' @param x a 'MultiPop' object
-#' @param i index of populations or multi-populations
-#' @param ... additional 'MultiPop' or 'Pop' objects
+#' @param object a \code{MultiPop} object
+#' @param x a \code{MultiPop} object
+#' @param i index of \code{MultiPop} or \code{Pop} objects
+#' @param ... additional \code{MultiPop} or \code{Pop} objects
 #'
 #' @slot pops list of \code{\link{Pop-class}} or
-#' \code{MultiPop-class} objects
+#' \code{MultiPop-class} objects (the latter gives nested structure)
 #'
-#' @seealso \code{\link{newMultiPop}} and \code{\link{newEmptyMultiPop}}
+#' @seealso \code{\link{newMultiPop}}, \code{\link{newEmptyMultiPop}},
+#'   and \code{\link{mergeMultiPops}} on how to merge one or more \code{MultiPop}
+#'   with control over the level of nesting.
 #'
 #' @export
 setClass("MultiPop",
@@ -1049,7 +1056,7 @@ setMethod("[[",
           }
 )
 
-#' @describeIn MultiPop Combine multiple MultiPops
+#' @describeIn MultiPop Combine multiple MultiPops (without level control)
 setMethod("c",
           signature(x = "MultiPop"),
           function (x, ...){
@@ -1106,13 +1113,11 @@ setMethod("length",
 #' multiPop
 #'
 #' #Create a multi-population with two populations
-#' multiPop2 = newMultiPop(pop[1:2], pop[3:4])
-#' multiPop2
+#' newMultiPop(pop[1:2], pop[3:4])
 #'
 #' #Create a multi-population with nested structure
-#' multiPopN = newMultiPop(pop[1:2],
-#'                        newMultiPop(pop[3:4], pop[5]))
-#' multiPopN
+#' newMultiPop(pop[1:2],
+#'             newMultiPop(pop[3:4], pop[5]))
 #' @export
 newMultiPop = function(...){
   input = list(...)
