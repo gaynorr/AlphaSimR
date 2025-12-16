@@ -2,88 +2,87 @@
 % Please edit documentation in R/mergePops.R
 \name{mergeMultiPops}
 \alias{mergeMultiPops}
-\title{Merge Pop and MultiPop objects preserving structure to a depth}
+\title{Merge Pop and MultiPop objects}
 \usage{
 mergeMultiPops(..., level = 0)
 }
 \arguments{
-\item{...}{One or more objects of class \code{Pop} or \code{MultiPop}.
+\item{...}{\code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
 \code{NULL} values are ignored.}
 
-\item{level}{Integer scalar >= 0. Depth to preserve; see Details.}
+\item{level}{Integer scalar >= 0 to merge at a sepecific level of nesting;
+see Details.}
 }
 \value{
 If \code{level == 0}, or when merging yields a single \code{Pop},
 a \code{\link{Pop-class}} object is returned. Otherwise a
-\code{\link{MultiPop-class}} object is returned with the requested nesting
-preserved.
+\code{\link{MultiPop-class}} object is returned with the requested level of
+nesting preserved.
 }
 \description{
-Merge one or more \code{\link{Pop-class}} and
-\code{\link{MultiPop-class}} objects while preserving the nesting
-structure down to a user-specified depth.
+Merge one or more \code{\link{Pop-class}} and \code{\link{MultiPop-class}}
+objects. Because a \code{MultiPop} can have a nested structure
+merging is controlled by the \code{level} argument (see Details).
 }
 \details{
-The function accepts multiple arguments and merges them according to the 
-\code{level} parameter.
-\code{level = 0}: fully collapse and merge everything into a single 
-  \code{\link{Pop-class}} object (all nested structures flattened 
-  then merged). 
-\code{level = 1}: ensure the returned object is a 
-  \code{\link{MultiPop-class}} where each child is a \code{Pop-class}. 
-  In this mode, if you pass multiple arguments they are each reduced 
-  to a \code{Pop} (by flatten+merge as needed) and appended 
-  (in the order provided) to a single top-level \code{MultiPop-class}. 
-\code{level > 1}: preserve the top \code{level} levels of the 
-  \code{MultiPop-class} structure. Processing descends into children, 
-  decrementing \code{level} at each nested step; when \code{level} 
-  reaches \code{0} at some node, that node's descendants are flattened 
-  and merged.
+The function accepts multiple inputs and merges them according to the
+\code{level} argument.
+\code{level = 0}: merge all \code{Pop} objects in the inputs into a single
+  \code{Pop} object (the inputs are first completely flattened then merged).
+\code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
+  \code{Pop} (level 1). Each input is first flattened to level 1 and its
+  \code{Pop} objects merged into one \code{Pop}, and then all these \code{Pop}
+  objects are merged into a single \code{MultiPop}
+\code{level > 1}: merge inputs into a \code{MultiPop} while preserving top
+  \code{level} structure. Each input is first flattened to the requested
+  \code{level} and its items merged into a single \code{MultiPop}, and then
+  inputs are merged.
 
-Important behavioral notes: If a single \code{Pop-class} is provided, it 
-is returned unchanged. If a single \code{MultiPop-class} is provided, it 
-is processed in place according to \code{level}. If multiple objects are 
-provided in \code{...}, they are combined into a \code{MultiPop-class} 
-(preserving the order of arguments) and then processed according to 
-\code{level}. However, this function does not generate new \code{MultiPop} 
-objects. If none of the arguments is a \code{MultiPop}, an error is raised. 
-\code{NULL} arguments are ignored. Passing any object that is not a 
-\code{Pop-class} or \code{MultiPop-class} results in an error.
-
-The function uses \code{\link{flattenMultiPop}} and \code{\link{mergePops}}
-internally to perform flattening and efficient merging of \code{Pop} and 
-\code{MultiPop} objects.
+Important behavioral notes: If a single \code{Pop} is provided, it
+is returned unchanged. If a single \code{MultiPop} is provided, it
+is processed according to \code{level}. If multiple objects are provided,
+they are combined into a \code{MultiPop} (preserving the order of inputs)
+and then processed according to \code{level}. If neither of the multiple inputs
+is a \code{MultiPop}, an error is raised. An error is also raised if inputs
+are not a \code{Pop} or a \code{MultiPop}. \code{NULL} inputs are ignored.
 }
 \examples{
-\donttest{
 # Create founder haplotypes
-founderPop = quickHaplo(nInd=60, nChr=1, segSites=10)
+founderPop = quickHaplo(nInd=11, nChr=1, segSites=10)
 
 # Set simulation parameters
 SP = SimParam$new(founderPop)
 \dontshow{SP$nThreads = 1L}
-SP$addTraitA(5)
 
 # Create population
-pop = newPop(founderPop, simParam = SP)
+pop = newPop(founderPop, simParam=SP)
 
 # Create two multi-population with different levels of nesting
-mp1 = newMultiPop(pop[1:10], pop[11:20])
-mp2 = newMultiPop(pop[21:40],
-                  newMultiPop(pop[41:50], pop[51:60]))
+mp1 = newMultiPop(pop[1:2], pop[3:5])
+mp1
+mp2 = newMultiPop(pop[6:7],
+                  newMultiPop(pop[8:10], pop[11]))
+mp2
 
-# Fully merge everything into one Pop
-single_pop = mergeMultiPops(mp1, mp2, level=0)
+# Fully merge all Pops in inputs into one Pop
+mergeMultiPops(mp1[[1]]) # nothing happens with a single Pop
+mergeMultiPops(mp1)
+mergeMultiPops(mp1, mp2)
 
-# Merge into a MultiPop where each top-level child is a Pop
-merged_level = mergeMultiPops(mp1, mp2, level=1)
+# Merge into a MultiPop where each level 1 item is a Pop
+mergeMultiPops(mp1[[1]], level=1) # nothing happens with a single Pop
+mergeMultiPops(mp1, level=1)
+mergeMultiPops(mp1, mp2[[1]], level=1)
+mergeMultiPops(mp2, level=1)
+mergeMultiPops(mp1, mp2, level=1)
 
-# Preserve more nested structure (do not merge top-level MultiPop children)
-merged_level2 = mergeMultiPops(mp1, mp2, level = 2)
-}
+# Merge into a MultiPop and preserve level 1 and 2 structure
+mergeMultiPops(mp2, level=2)
+mergeMultiPops(mp2, mp1, level=2)
+mergeMultiPops(mp2, mp1[[1]], level=2)
 
 }
 \seealso{
-\code{\link{flattenMultiPop}}, \code{\link{mergePops}},
-  \code{\link{newMultiPop}}
+\code{\link{MultiPop-class}}, \code{\link{flattenMultiPop}}, and
+  \code{\link{mergePops}}
 }

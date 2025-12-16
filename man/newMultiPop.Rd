@@ -34,11 +34,9 @@ isMultiPop(multiPop)
 multiPop
 
 #Create a multi-population with two populations
-multiPop2 = newMultiPop(pop[1:2], pop[3:4])
-multiPop2
+newMultiPop(pop[1:2], pop[3:4])
 
 #Create a multi-population with nested structure
-multiPopN = newMultiPop(pop[1:2],
-                       newMultiPop(pop[3:4], pop[5]))
-multiPopN
+newMultiPop(pop[1:2],
+            newMultiPop(pop[3:4], pop[5]))
 }

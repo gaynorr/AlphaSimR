@@ -24,19 +24,18 @@
 isMultiPop(x)
 }
 \arguments{
-\item{object}{a 'MultiPop' object}
+\item{object}{a \code{MultiPop} object}
 
-\item{x}{a 'MultiPop' object}
+\item{x}{a \code{MultiPop} object}
 
-\item{i}{index of populations or multi-populations}
+\item{i}{index of \code{MultiPop} or \code{Pop} objects}
 
-\item{...}{additional 'MultiPop' or 'Pop' objects}
+\item{...}{additional \code{MultiPop} or \code{Pop} objects}
 }
 \description{
 The multi-population holds multiple \code{\link{Pop-class}} and
 \code{\link{MultiPop-class}} objects. It is designed to behave like a list
-of "populations" and can hence have a nested structure - see examples in
-\code{\link{newMultiPop}}.
+and can hence have a nested structure - see examples in \code{\link{newMultiPop}}.
 }
 \section{Methods (by generic)}{
 \itemize{
@@ -46,7 +45,7 @@ of "populations" and can hence have a nested structure - see examples in
 
 \item \code{[[}: Extract a population by index
 
-\item \code{c(MultiPop)}: Combine multiple MultiPops
+\item \code{c(MultiPop)}: Combine multiple MultiPops (without level control)
 
 \item \code{length(MultiPop)}: Number of pops in MultiPop
 
@@ -60,9 +59,11 @@ of "populations" and can hence have a nested structure - see examples in
 
 \describe{
 \item{\code{pops}}{list of \code{\link{Pop-class}} or
-\code{MultiPop-class} objects}
+\code{MultiPop-class} objects (the latter gives nested structure)}
 }}
 
 \seealso{
-\code{\link{newMultiPop}} and \code{\link{newEmptyMultiPop}}
+\code{\link{newMultiPop}}, \code{\link{newEmptyMultiPop}},
+  and \code{\link{mergeMultiPops}} on how to merge one or more \code{MultiPop}
+  with control over the level of nesting.
 }
