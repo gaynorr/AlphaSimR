@@ -60,11 +60,15 @@ and "H" for hermaphrodites}
 \item{\code{gv}}{matrix of genetic values. When using GxE traits,
 gv reflects gv when p=0.5. Dimensions are nInd by nTraits.}
 
-\item{\code{pheno}}{matrix of phenotypic values. Dimensions are
-nInd by nTraits.}
+\item{\code{pheno}}{matrix of phenotypic values. Dimensions are nInd by nTraits.}
 
-\item{\code{ebv}}{matrix of estimated breeding values. Dimensions
-are nInd rows and a variable number of columns.}
+\item{\code{ebv}}{matrix of estimated breeding values. Dimensions are nInd rows and
+a variable number of columns. The variable number of columns enable storing
+estimates for different traits and/or for different kinds of values per
+individual (for example, estimated breeding values and estimated genetic
+values, etc.). Column names should be used to distinguish the estimates of
+traits and values when comparing them to true genetic values in \code{gv} slot.
+See also the \code{misc} slot.}
 
 \item{\code{gxe}}{list containing GxE slopes for GxE traits}
 
@@ -76,8 +80,7 @@ nodes with the items for individuals in the population (see example in
 \code{\link{newPop}}) - we support vectors and matrices or objects that
 have a generic length and subset method.
 This list is normally empty and exists solely as an
-open slot available for uses to store extra information about
-individuals.}
+open slot available for users to store extra information about individuals.}
 
 \item{\code{miscPop}}{a list of any length containing optional meta data for the
 population (see example in \code{\link{newPop}}).
