@@ -1,6 +1,6 @@
 # fmt: skip file
 
-# RawPop ------------------------------------------------------------------
+# RawPop -----------------------------------------------------------------------
 
 #' @title Raw Population
 #'
@@ -120,7 +120,7 @@ isRawPop = function(x) {
   return(ret)
 }
 
-# MapPop ------------------------------------------------------------------
+# MapPop -----------------------------------------------------------------------
 
 #' @title Raw population with genetic map
 #'
@@ -348,7 +348,7 @@ isNamedMapPop = function(x) {
   return(ret)
 }
 
-# Pop ---------------------------------------------------------------------
+# Pop --------------------------------------------------------------------------
 
 #' @title Population
 #'
@@ -366,29 +366,32 @@ isNamedMapPop = function(x) {
 #' @slot mother the identifier of the individual's mother
 #' @slot father the identifier of the individual's father
 #' @slot sex sex of individuals: "M" for males, "F" for females,
-#' and "H" for hermaphrodites
+#'   and "H" for hermaphrodites
 #' @slot nTraits number of traits
 #' @slot gv matrix of genetic values. When using GxE traits,
-#' gv reflects gv when p=0.5. Dimensions are nInd by nTraits.
-#' @slot pheno matrix of phenotypic values. Dimensions are
-#' nInd by nTraits.
-#' @slot ebv matrix of estimated breeding values. Dimensions
-#' are nInd rows and a variable number of columns.
+#'   gv reflects gv when p=0.5. Dimensions are nInd by nTraits.
+#' @slot pheno matrix of phenotypic values. Dimensions are nInd by nTraits.
+#' @slot ebv matrix of estimated breeding values. Dimensions are nInd rows and
+#'   a variable number of columns. The variable number of columns enable storing
+#'   estimates for different traits and/or for different kinds of values per
+#'   individual (for example, estimated breeding values and estimated genetic
+#'   values, etc.). Column names should be used to distinguish the estimates of
+#'   traits and values when comparing them to true genetic values in \code{gv} slot.
+#'   See also the \code{misc} slot.
 #' @slot gxe list containing GxE slopes for GxE traits
 #' @slot fixEff a fixed effect relating to the phenotype.
-#' Used by genomic selection models but otherwise ignored.
+#'   Used by genomic selection models but otherwise ignored.
 #' @slot misc a list whose elements correspond to additional miscellaneous
-#' nodes with the items for individuals in the population (see example in
-#' \code{\link{newPop}}) - we support vectors and matrices or objects that
-#' have a generic length and subset method.
-#' This list is normally empty and exists solely as an
-#' open slot available for uses to store extra information about
-#' individuals.
+#'   nodes with the items for individuals in the population (see example in
+#'   \code{\link{newPop}}) - we support vectors and matrices or objects that
+#'   have a generic length and subset method.
+#'   This list is normally empty and exists solely as an
+#'   open slot available for users to store extra information about individuals.
 #' @slot miscPop a list of any length containing optional meta data for the
-#' population (see example in \code{\link{newPop}}).
-#' This list is empty unless information is supplied by the user.
-#' Note that the list is emptied every time the population is subsetted or
-#' combined because the meta data for old population might not be valid anymore.
+#'   population (see example in \code{\link{newPop}}).
+#'   This list is empty unless information is supplied by the user.
+#'   Note that the list is emptied every time the population is subsetted or
+#'   combined because the meta data for old population might not be valid anymore.
 #'
 #' @seealso \code{\link{newPop}}, \code{\link{newEmptyPop}}, \code{\link{resetPop}}
 #'
@@ -757,9 +760,10 @@ newPop = function(rawPop,simParam=NULL,...){
                pheno=pheno,
                ebv=matrix(NA_real_,
                           nrow=rawPop@nInd,
-                          ncol=0,
+                          ncol=0L,
                           dimnames = list(NULL, NULL))
-                          # TODO: add ebv trait names?
+               # No dimnames for EBV to make it user-flexible and
+               # avoid rbind() adding them later in merging populations
                )
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1,
@@ -824,7 +828,10 @@ resetPop = function(pop,simParam=NULL){
                      ncol=simParam$nTraits)
   pop@ebv = matrix(NA_real_,
                    nrow=pop@nInd,
-                   ncol=0) # TODO: replace 0 with ncol=simParam$nTraits?
+                   ncol=0L,
+                   dimnames = list(NULL, NULL))
+  # No dimnames for EBV to make it user-flexible and
+  # avoid rbind() adding them later in merging populations
   pop@gxe = vector("list",simParam$nTraits)
   pop@gv = matrix(NA_real_,nrow=pop@nInd,
                   ncol=simParam$nTraits)
@@ -946,12 +953,13 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
                             nrow=0L,
                             ncol=0L,
                             dimnames = list(NULL, NULL))
-                            # TODO: replace the above with traitMat?
+               # No dimnames for EBV to make it user-flexible and
+               # avoid rbind() adding them later in merging populations
                )
   return(output)
 }
 
-# MultiPop ------------------------------------------------------------------
+# MultiPop ---------------------------------------------------------------------
 
 #' @title Multi-Population
 #'
