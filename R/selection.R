@@ -37,8 +37,8 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   }else{ # trait is not a function, so must be numeric or character
     if(is.character(trait)){ # Suspect trait is a name
       take = match(trait, simParam$traitNames)
-      if(is.na(take)){
-        stop("'",trait,"' did not match any trait names")
+      if(any(is.na(take))){
+        stop("'",trait[is.na(take)],"' did not match any trait names")
       }
       trait = take
     }
