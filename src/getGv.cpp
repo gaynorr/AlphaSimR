@@ -351,11 +351,11 @@ arma::field<arma::vec> getGvIndexE(const Rcpp::S4& trait,
           d(E(i,0))*xd(genoMat(j,qtlIndex(E(i,0)))) + 
           a(E(i,1))*xa(genoMat(j,qtlIndex(E(i,1)))) + 
           d(E(i,1))*xd(genoMat(j,qtlIndex(E(i,1)))) + 
-          E(i,2)*xa(genoMat(j,(E(i,0))))*xa(genoMat(j,qtlIndex(E(i,1))));
+          E(i,2)*xa(genoMat(j,qtlIndex(E(i,0))))*xa(genoMat(j,qtlIndex(E(i,1))));
       }else{
         gv(j,tid) += a(E(i,0))*xa(genoMat(j,qtlIndex(E(i,0)))) + 
-          a(E(i,1))*xa(genoMat(j,(E(i,1)))) + 
-          E(i,2)*xa(genoMat(j,(E(i,0))))*xa(genoMat(j,qtlIndex(E(i,1))));
+          a(E(i,1))*xa(genoMat(j,qtlIndex(E(i,1)))) + 
+          E(i,2)*xa(genoMat(j,qtlIndex(E(i,0))))*xa(genoMat(j,qtlIndex(E(i,1))));
       }
       if(hasGxe){
         gxe(j,tid) += g(E(i,0))*xa(genoMat(j,qtlIndex(E(i,0)))) + 

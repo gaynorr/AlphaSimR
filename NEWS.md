@@ -1,3 +1,5 @@
+*fixed bug in `getGvE` with multiple traits.
+
 # AlphaSimR 2.1.0
 
 *changed R6 and methods from Depends to Imports to match current best practices for R packages
