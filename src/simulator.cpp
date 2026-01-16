@@ -691,7 +691,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
 
 // [[Rcpp::export]]
 Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, 
-                arma::uword ploidy, int nThreads, Rcpp::StringVector seed){
+                arma::uword ploidy, int nThreads, arma::uvec seed, Rcpp::StringVector seedString){
   //Check input
   string t = args;
   if (t == "") {
@@ -702,7 +702,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   arma::uword nChr = maxSites.n_elem;
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   arma::field<arma::vec > genMap(nChr);
-  
+
   //Loop through chromosomes
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -710,7 +710,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   for(arma::uword chr=0; chr<nChr; chr++){
     // Run MaCS and check for valid output
     vector<AlphaSimRReturn> macsOutput;
-    macsOutput = runFromAlphaSimR(args+seed(chr));
+    macsOutput = runFromAlphaSimR(args + seedString[chr]);
     
     arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
@@ -730,7 +730,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
         genMap(chr).set_size(0);
         continue;
       }
-      selSites = sampleInt(maxSites(chr),nSites);
+      selSites = sampleIntSeeded(maxSites(chr), nSites, seed[chr]);
       nSites = maxSites(chr);
     }else{
       selSites.set_size(nSites);

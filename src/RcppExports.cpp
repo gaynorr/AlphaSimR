@@ -845,8 +845,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // MaCS
-Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, Rcpp::StringVector seed);
-RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP) {
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, arma::uvec seed, Rcpp::StringVector seedString);
+RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP, SEXP seedStringSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -855,8 +855,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type inbred(inbredSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::StringVector >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed));
+    Rcpp::traits::input_parameter< arma::uvec >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type seedString(seedStringSEXP);
+    rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed, seedString));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -916,7 +917,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
-    {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
+    {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 7},
     {NULL, NULL, 0}
 };
 
