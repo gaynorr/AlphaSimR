@@ -155,10 +155,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
     nThreads = nChr
   }
 
-  # Note that the seed doesn't really control the random number seed.
-  # This is partially because MaCS is called within an OpenMP loop, but
-  # it is still a problem even with nThreads = 1
-  seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
+  seed = sapply(1:nChr, function(x) {sample.int(1e8, 1)})
 
   if(is.null(segSites)){
     segSites = rep(0L,nChr)
@@ -243,7 +240,7 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 
   # Run MaCS
   macsOut = MaCS(command, segSites, inbred, ploidy,
-                 nThreads, seed)
+                 nThreads, seed, as.character(seed))
   dim(macsOut$geno) = NULL # Account for matrix bug in RcppArmadillo
 
   # Check if desired number of loci were obtained

@@ -305,17 +305,17 @@ createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, 
 }
 
 #' @title Population variance
-#' 
+#'
 #' @description
-#' Calculates the population variance matrix as 
-#' opposed to the sample variance matrix calculated 
-#' by \code{\link{var}}. i.e. divides by n instead 
+#' Calculates the population variance matrix as
+#' opposed to the sample variance matrix calculated
+#' by \code{\link{var}}. i.e. divides by n instead
 #' of n-1
-#' 
+#'
 #' @param X an n by m matrix
-#' 
+#'
 #' @return an m by m variance-covariance matrix
-#' 
+#'
 #' @keywords internal
 popVarCpp <- function(X) {
     .Call(`_AlphaSimR_popVarCpp`, X)
@@ -369,7 +369,7 @@ packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
-MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {
-    .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed)
+MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed, seedString) {
+    .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed, seedString)
 }
 

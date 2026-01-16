@@ -1,5 +1,6 @@
 // These functions may be called by R, but are not listed in the package namespace
 #include "alphasimr.h"
+#include <random>
 
 std::bitset<8> toBits(unsigned char byte){
   return std::bitset<8>(byte);
@@ -205,6 +206,92 @@ arma::uvec sampleInt(arma::uword n, arma::uword N){
   return cumsum(output);
 }
 
+// Randomly samples integers without replacement (using a seed)
+// n number of integers to return
+// N number of integers to sample from
+// seed deterministic seed for the RNG
+// Returns an integer vector of length n with values ranging from 0 to N-1
+// Uses Jeffrey Scott Vitter's Method D
+arma::uvec sampleIntSeeded(arma::uword n, arma::uword N, arma::uword seed){
+  arma::uvec output;
+  output.set_size(n);
+  if(n == 0){
+    return output;
+  }
+  std::mt19937 mt(static_cast<unsigned long int>(seed));
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+  auto randu = [&](){ return dist(mt); };
+  double q, v, x, y1, y2;
+  arma::uword threshold = 13*n;
+  arma::uword S, limit, top, bottom;
+  double u = randu();
+  v = exp(log(u)/double(n));
+  q = double(N-n+1);
+  while((n>1) & (threshold<N)){
+    while(true){
+      while(true){
+        x = double(N)*(1-v);
+        S = floor(x);
+        if(double(S)<q){
+          break;
+        }
+        u = randu();
+        v = exp(log(u)/double(n));
+      }
+      u = randu();
+      y1 = exp(log(u*double(N)/q)/double(n-1));
+      v = y1*(1-x/double(N))*(q/(q-double(S)));
+      if(v <= 1){
+        break;
+      }
+      y2 = 1;
+      top = N-1;
+      if((n-1) > S){
+        bottom = N-n;
+        limit = N-S;
+      }else{
+        bottom = N-S-1;
+        limit = N-n+1;
+      }
+      for(arma::uword i=N-1; i>=limit; --i)
+        y2 *= double(top)/double(bottom);
+      u = randu();
+      if((double(N)/(double(N)-x)) >= (y1*exp(log(y2)/double(n-1)))){
+        v = exp(log(u)/double(n-1));
+        break;
+      }
+      v = exp(log(u)/double(n));
+    }
+    output(n-1) = S+1;
+    N = N-S-1;
+    --n;
+    q = double(N-n+1);
+    threshold -= 13;
+  }
+  if(n > 1){
+    top = N-n;
+    while(n >= 2){
+      u = randu();
+      S = 0;
+      q = double(top)/double(N);
+      while(q > u){
+        ++S;
+        --top;
+        --N;
+        q = (q*double(top))/double(N);
+      }
+      output(n-1) = S+1;
+      --N;
+      --n;
+    }
+    u = randu();
+    output(0) = floor(u*N);
+  }else{
+    output(0) = floor(v*N);
+  }
+  return cumsum(output);
+}
+
 // Samples random pairs without replacement from all possible combinations
 // nLevel1 = number of levels for the first column
 // nLevel2 = number of levels for the second column
@@ -326,4 +413,3 @@ int getNumThreads(){
 #endif
   return 1;
 }
-
