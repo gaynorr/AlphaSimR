@@ -506,10 +506,14 @@ transMat = function(R){
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
+#' hapBefore = pullSegSiteHaplo(pop)
 #'
 #' #Introduce mutations
-#' pop = mutate(pop, simParam=SP)
-#'
+#' mutate(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
+#' pop = mutate(pop, mutRate = 0.1, simParam=SP)
+#' hapAfter = pullSegSiteHaplo(pop)
+#' hapAfter - hapBefore
+#' 
 #' @export
 mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
 
@@ -532,7 +536,7 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
       hap = (take-1L)%%pop@ploidy + 1L
 
       # Sample mutation sites
-      sites = sampleInt(nMut[take], s) + 1L
+      sites = sample.int(size = nMut[take], n = s)
 
       # Resolve all mutations
       chr = 1L

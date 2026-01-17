@@ -40,8 +40,12 @@ SP$addTraitA(10)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
+hapBefore = pullSegSiteHaplo(pop)
 
 #Introduce mutations
-pop = mutate(pop, simParam=SP)
+mutate(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
+pop = mutate(pop, mutRate = 0.1, simParam=SP)
+hapAfter = pullSegSiteHaplo(pop)
+hapAfter - hapBefore
 
 }

@@ -122,13 +122,13 @@ arma::uword mapCol(const arma::uword& row, const arma::uword& k, const arma::uwo
   return k+row+1 - n*(n-1)/2 + (n-row)*((n-row)-1)/2;
 }
 
-
 // Randomly samples integers without replacement
 // n number of integers to return
 // N number of integers to sample from
 // Returns an integer vector of length n with values ranging from 0 to N-1
+// Uses Armadillo's RNG - synced with R's RNG when single-threaded,
+// but not safe for multi-threading (OpenMP)!
 // Uses Jeffrey Scott Vitter's Method D
-// [[Rcpp::export]]
 arma::uvec sampleInt(arma::uword n, arma::uword N){
   arma::uvec output;
   output.set_size(n);
@@ -211,6 +211,8 @@ arma::uvec sampleInt(arma::uword n, arma::uword N){
 // N number of integers to sample from
 // seed deterministic seed for the RNG
 // Returns an integer vector of length n with values ranging from 0 to N-1
+// Uses STD RNG - can be seeded for reproducibility and is thread-safe,
+// but has to be manually seeded in a reproducible way for each thread!
 // Uses Jeffrey Scott Vitter's Method D
 arma::uvec sampleIntSeeded(arma::uword n, arma::uword N, arma::uword seed){
   arma::uvec output;
