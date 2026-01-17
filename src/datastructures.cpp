@@ -168,9 +168,13 @@ void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
   }
 }
 
+// Monotonic node ids make ordering deterministic across runs.
+std::atomic<unsigned long long> Node::sNextId(0);
 
 Node::Node(NodeType iType,short int iPopulation,double dHeight):
   PtrRefCountable(){
+  // Assign a stable id so NodePtrSet ordering is reproducible.
+  this->iNodeId = sNextId.fetch_add(1, std::memory_order_relaxed);
   this->iType = iType;
   this->iPopulation = iPopulation;
   this->dHeight = dHeight;

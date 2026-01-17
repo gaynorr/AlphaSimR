@@ -3,6 +3,7 @@
 #include <set>
 #include <list>
 #include <queue>
+#include <atomic>
 //#include<stack>
 #include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -234,6 +235,8 @@ public:
   
   // assign an event with this node
   void setEvent(EventPtr & assoEvent);
+  // Stable node id for deterministic ordering.
+  unsigned long long getId() const;
   // a place holder to identify a node at the top of the coalescing
   // line.  the height of this node assures that the coalescing
   // line will always be included as a candidate for coalescence
@@ -242,6 +245,10 @@ public:
   bool bDeleted;
   
 private:
+  // Monotonic counter for stable node ids.
+  static std::atomic<unsigned long long> sNextId;
+  // Stable id used by NodePtrSet comparator.
+  unsigned long long iNodeId;
   EventPtr event;
   WeakEdgePtr topEdge1,topEdge2,bottomEdge1,bottomEdge2;
   //    EdgePtr topEdge1,topEdge2,bottomEdge1,bottomEdge2;
@@ -747,10 +754,10 @@ private:
 
 struct byNodePtr{
   bool operator()(const NodePtr& node1, const NodePtr& node2) const{
-    return (node1<node2);
+    // Deterministic ordering independent of pointer addresses.
+    return (node1->getId()<node2->getId());
   }
 };
-
 
 struct byEventTime{
   bool operator()(const EventPtr& event1, const EventPtr& event2) const{
@@ -815,10 +822,17 @@ inline short int Node::getPopulation(){
 inline Node::NodeType Node::getType(){
   return this->iType;
 }
+
 // height in graph relative to time 0: present time
 inline double Node::getHeight(){
   return this->dHeight;
 }
+
+// Used for deterministic set ordering.
+inline unsigned long long Node::getId() const{  
+  return this->iNodeId;
+}
+
 // clear top edges
 inline void Node::clearTopEdges(){
   this->topEdgeSize = 0;
