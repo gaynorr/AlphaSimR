@@ -772,18 +772,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// sampleInt
-arma::uvec sampleInt(arma::uword n, arma::uword N);
-RcppExport SEXP _AlphaSimR_sampleInt(SEXP nSEXP, SEXP NSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::uword >::type n(nSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampleInt(n, N));
-    return rcpp_result_gen;
-END_RCPP
-}
 // sampAllComb
 arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2, arma::uword n);
 RcppExport SEXP _AlphaSimR_sampAllComb(SEXP nLevel1SEXP, SEXP nLevel2SEXP, SEXP nSEXP) {
@@ -911,7 +899,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_mergeGeno", (DL_FUNC) &_AlphaSimR_mergeGeno, 2},
     {"_AlphaSimR_mergeMultGeno", (DL_FUNC) &_AlphaSimR_mergeMultGeno, 4},
     {"_AlphaSimR_mergeMultIntMat", (DL_FUNC) &_AlphaSimR_mergeMultIntMat, 3},
-    {"_AlphaSimR_sampleInt", (DL_FUNC) &_AlphaSimR_sampleInt, 2},
     {"_AlphaSimR_sampAllComb", (DL_FUNC) &_AlphaSimR_sampAllComb, 3},
     {"_AlphaSimR_sampHalfDialComb", (DL_FUNC) &_AlphaSimR_sampHalfDialComb, 2},
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
