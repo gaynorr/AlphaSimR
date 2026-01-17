@@ -3,7 +3,6 @@
 #include <set>
 #include <list>
 #include <queue>
-#include <atomic>
 //#include<stack>
 #include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -245,8 +244,12 @@ public:
   bool bDeleted;
   
 private:
-  // Monotonic counter for stable node ids.
-  static std::atomic<unsigned long long> sNextId;
+  // Monotonic counter for stable node ids (can work across threads).
+  // static std::atomic<unsigned long long> sNextId;
+  // Thread-local monotonic counter for stable node ids (only within a thread).
+  static thread_local unsigned long long sNextId;
+  // thread_local will not work across OpenMP threads, but we don't need that,
+  // in fact it will slow OpenMP parallelisation!
   // Stable id used by NodePtrSet comparator.
   unsigned long long iNodeId;
   EventPtr event;

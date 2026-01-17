@@ -168,13 +168,21 @@ void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
   }
 }
 
-// Monotonic node ids make ordering deterministic across runs.
-std::atomic<unsigned long long> Node::sNextId(0);
+// Monotonic node ids make ordering deterministic (can work across threads).
+// std::atomic<unsigned long long> Node::sNextId(0);
+// Thread-local node ids make ordering deterministic (only within a thread).
+thread_local unsigned long long Node::sNextId = 0;
+// thread_local will not work across OpenMP threads, but we don't need that,
+// in fact it will slow OpenMP parallelisation!
 
 Node::Node(NodeType iType,short int iPopulation,double dHeight):
   PtrRefCountable(){
-  // Assign a stable id so NodePtrSet ordering is reproducible.
-  this->iNodeId = sNextId.fetch_add(1, std::memory_order_relaxed);
+  // Assign a stable id so NodePtrSet ordering is reproducible (can work across threads).
+  // this->iNodeId = sNextId.fetch_add(1, std::memory_order_relaxed);
+  // Assign a stable id so NodePtrSet ordering is reproducible (only within a thread).
+  this->iNodeId = sNextId++;
+  // sNextId++ will not work across OpenMP threads, but we don't need that,
+  // in fact it will slow OpenMP parallelisation!
   this->iType = iType;
   this->iPopulation = iPopulation;
   this->dHeight = dHeight;
@@ -668,4 +676,3 @@ string GraphBuilder::getNewickTree(double lastCoalHeight,NodePtr & curNode){
   }
   return oss.str();
 }
-
