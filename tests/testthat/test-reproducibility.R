@@ -6,17 +6,14 @@ test_that("quickHaplo() and runMacs() are reproducible", {
   set.seed(123)
   pop <- quickHaplo(nInd = 4, nChr = 2, segSites = 10)
   hap1 <- pullSegSiteHaplo(pop)
-  hap1
 
   set.seed(123)
   pop <- quickHaplo(nInd = 4, nChr = 2, segSites = 10)
   hap2 <- pullSegSiteHaplo(pop)
-  hap2
 
   set.seed(124)
   pop <- quickHaplo(nInd = 4, nChr = 2, segSites = 10)
   hap3 <- pullSegSiteHaplo(pop)
-  hap3
 
   test <- sum(hap1 - hap2) == 0
   # print(test)
@@ -37,7 +34,6 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 1
   )
   hap1 <- pullSegSiteHaplo(pop)
-  hap1
 
   set.seed(123)
   pop <- runMacs(
@@ -48,7 +44,6 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 1
   )
   hap2 <- pullSegSiteHaplo(pop)
-  hap2
 
   set.seed(124)
   pop <- runMacs(
@@ -59,7 +54,6 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 1
   )
   hap3 <- pullSegSiteHaplo(pop)
-  hap3
 
   test <- sum(hap1 - hap2) == 0
   # print(test)
@@ -80,7 +74,6 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 2
   )
   hap1 <- pullSegSiteHaplo(pop)
-  hap1
 
   set.seed(123)
   pop <- runMacs(
@@ -91,7 +84,6 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 2
   )
   hap2 <- pullSegSiteHaplo(pop)
-  hap2
 
   set.seed(124)
   pop <- runMacs(
@@ -102,13 +94,26 @@ test_that("quickHaplo() and runMacs() are reproducible", {
     nThreads = 2
   )
   hap3 <- pullSegSiteHaplo(pop)
-  hap3
+
+  set.seed(123)
+  pop <- runMacs(
+    nInd = 4,
+    nChr = 2,
+    segSites = 10,
+    species = "GENERIC",
+    nThreads = NULL # so getNumThreads() kicks in
+  )
+  hap4 <- pullSegSiteHaplo(pop)
 
   test <- sum(hap1 - hap2) == 0
   # print(test)
   expect_true(test)
 
   test <- !sum(hap1 - hap3) == 0
+  # print(test)
+  expect_true(test)
+
+  test <- sum(hap1 - hap4) == 0
   # print(test)
   expect_true(test)
 })

@@ -305,17 +305,17 @@ createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, 
 }
 
 #' @title Population variance
-#' 
+#'
 #' @description
-#' Calculates the population variance matrix as 
-#' opposed to the sample variance matrix calculated 
-#' by \code{\link{var}}. i.e. divides by n instead 
+#' Calculates the population variance matrix as
+#' opposed to the sample variance matrix calculated
+#' by \code{\link{var}}. i.e. divides by n instead
 #' of n-1
-#' 
+#'
 #' @param X an n by m matrix
-#' 
+#'
 #' @return an m by m variance-covariance matrix
-#' 
+#'
 #' @keywords internal
 popVarCpp <- function(X) {
     .Call(`_AlphaSimR_popVarCpp`, X)
@@ -331,10 +331,6 @@ mergeMultGeno <- function(popList, nInd, nBin, ploidy) {
 
 mergeMultIntMat <- function(X, nRow, nCol) {
     .Call(`_AlphaSimR_mergeMultIntMat`, X, nRow, nCol)
-}
-
-sampleInt <- function(n, N) {
-    .Call(`_AlphaSimR_sampleInt`, n, N)
 }
 
 sampAllComb <- function(nLevel1, nLevel2, n) {
