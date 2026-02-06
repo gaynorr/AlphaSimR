@@ -722,14 +722,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// popVar
-arma::mat popVar(const arma::mat& X);
-RcppExport SEXP _AlphaSimR_popVar(SEXP XSEXP) {
+// popVarCpp
+arma::mat popVarCpp(const arma::mat& X);
+RcppExport SEXP _AlphaSimR_popVarCpp(SEXP XSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(popVar(X));
+    rcpp_result_gen = Rcpp::wrap(popVarCpp(X));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -906,7 +906,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
     {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},
-    {"_AlphaSimR_popVar", (DL_FUNC) &_AlphaSimR_popVar, 1},
+    {"_AlphaSimR_popVarCpp", (DL_FUNC) &_AlphaSimR_popVarCpp, 1},
     {"_AlphaSimR_mergeGeno", (DL_FUNC) &_AlphaSimR_mergeGeno, 2},
     {"_AlphaSimR_mergeMultGeno", (DL_FUNC) &_AlphaSimR_mergeMultGeno, 4},
     {"_AlphaSimR_mergeMultIntMat", (DL_FUNC) &_AlphaSimR_mergeMultIntMat, 3},

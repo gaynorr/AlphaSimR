@@ -725,6 +725,11 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
       if(nSites<maxSites(chr)){
         maxSites(chr) = nSites;
       }
+      if(nSites==0){
+        geno(chr).set_size(0,ploidy,nInd);
+        genMap(chr).set_size(0);
+        continue;
+      }
       selSites = sampleInt(maxSites(chr),nSites);
       nSites = maxSites(chr);
     }else{

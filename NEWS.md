@@ -1,4 +1,22 @@
-# AlphaSimR 1.6.1.9990
+*fixed bug in `getGvE` with multiple traits.
+
+# AlphaSimR 2.1.0
+
+*changed R6 and methods from Depends to Imports to match current best practices for R packages
+
+*Change order of call to `finalizePop` in `.newPop` to allow access to recombination tracking data
+
+*added `parentAverage` and `mendelianSampling` functions
+
+*fixed bug in `c` for RawPop, MapPop, and NamedMapPop
+
+*changed `popVar` to an R wrapper to automate casting of vectors to matrices
+
+*warn when misc lists don't match in length or names in `c(pop, pop2)`
+
+*corrected bibliography entry month from sept to sep
+
+# AlphaSimR 2.0.0
 
 *added names to `SP$recHist`
 
@@ -9,6 +27,8 @@
 *added support for data.frames in SimParam genetic map switching functions
 
 *changed finalizePop function call in `.newPop` to pass simParam as an argument
+
+*updated version numbering to follow tidyverse format with a major version indicating backwards compatibility has been broken
 
 # AlphaSimR 1.6.1
 
@@ -191,7 +211,7 @@
 *removed lazyData field in DESCRIPTION
 
 # AlphaSimR 1.0.0
-  
+
 *AlphaSimR manuscript has been published in G3 (citation added)
 
 *changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
@@ -262,7 +282,7 @@
 
 *the `c` function now merges individuals for MapPop objects (was chromosomes before)
 
-*the `cChr` function new merges chromosomes for MapPop objects 
+*the `cChr` function new merges chromosomes for MapPop objects
 
 *fixed broken SimParam_addStructuredSnpChip
 
@@ -416,7 +436,7 @@
 
 *`selectFam` now handles half-sib families
 
-*`selectWithinFa`m now handles half-sib families
+*`selectWithinFam` now handles half-sib families
 
 *Removed restriction on varE=NULL in `setPhenoGCA`
 
@@ -429,4 +449,4 @@
 *Added `runMacs2` as a wrapper for `runMacs`
 
 *Fixed error when using H2 in SimParam_setVarE
-    
+

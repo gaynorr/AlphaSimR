@@ -22,9 +22,9 @@ unsigned char toByte(std::bitset<8> bits){
 //' 
 //' @return an m by m variance-covariance matrix
 //' 
-//' @export
+//' @keywords internal
 // [[Rcpp::export]]
-arma::mat popVar(const arma::mat& X) {
+arma::mat popVarCpp(const arma::mat& X) {
   if(X.n_rows==1){
     return(arma::mat(X.n_cols,X.n_cols,arma::fill::zeros));
   }else{

@@ -647,3 +647,22 @@ rnormWithSeed = function(n, u){
   set.seed(as.integer((u-0.5)*2*2147483647))
   rnorm(n)
 }
+
+
+#' @title Population variance
+#' 
+#' @description
+#' Calculates the population variance matrix as 
+#' opposed to the sample variance matrix calculated 
+#' by \code{\link{var}}. i.e. divides by n instead 
+#' of n-1
+#' 
+#' @param X an n by m matrix
+#' 
+#' @return an m by m variance-covariance matrix
+#' 
+#' @export
+popVar = function(X){
+  return(popVarCpp(as.matrix(X)))
+}
+

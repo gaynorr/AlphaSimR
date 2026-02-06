@@ -316,9 +316,9 @@ createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, 
 #' 
 #' @return an m by m variance-covariance matrix
 #' 
-#' @export
-popVar <- function(X) {
-    .Call(`_AlphaSimR_popVar`, X)
+#' @keywords internal
+popVarCpp <- function(X) {
+    .Call(`_AlphaSimR_popVarCpp`, X)
 }
 
 mergeGeno <- function(x, y) {

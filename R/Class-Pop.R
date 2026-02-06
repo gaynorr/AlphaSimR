@@ -90,7 +90,9 @@ setMethod("c",
                           x@ploidy==y@ploidy,
                           x@nLoci==y@nLoci)
                 x@nInd = x@nInd+y@nInd
-                x@geno = mergeGeno(x@geno,y@geno)
+                geno = mergeGeno(x@geno,y@geno)
+                dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+                x@geno = geno
               }
             }
             return(x)
@@ -190,7 +192,9 @@ setMethod("c",
                           x@nLoci==y@nLoci,
                           all.equal(x@genMap, y@genMap))
                 x@nInd = x@nInd+y@nInd
-                x@geno = mergeGeno(x@geno,y@geno)
+                geno = mergeGeno(x@geno,y@geno)
+                dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+                x@geno = geno
                 x@inbred = x@inbred & y@inbred
               }
             }
@@ -289,7 +293,9 @@ setMethod("c",
                 x@id = c(x@id, y@id)
                 x@mother = c(x@mother, y@mother)
                 x@father = c(x@father, y@father)
-                x@geno = mergeGeno(x@geno,y@geno)
+                geno = mergeGeno(x@geno,y@geno)
+                dim(geno) = NULL # Account for matrix bug in RcppArmadillo
+                x@geno = geno
                 x@inbred = x@inbred & y@inbred
               }
             }
@@ -757,8 +763,6 @@ newPop = function(rawPop,simParam=NULL,...){
                       simParam=simParam)
   }
 
-  output = simParam$finalizePop(output, simParam=simParam, ...)
-
   if(simParam$isTrackPed){
     if(simParam$isTrackRec){
       simParam$addToRec(lastId,id,iMother,iFather,isDH,hist,output@ploidy)
@@ -768,6 +772,8 @@ newPop = function(rawPop,simParam=NULL,...){
   }else{
     simParam$updateLastId(lastId)
   }
+  
+  output = simParam$finalizePop(output, simParam=simParam, ...)
 
   return(output)
 }

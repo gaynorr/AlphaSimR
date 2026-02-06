@@ -14,8 +14,8 @@ convertTraitsToNames = function(traits, simParam){
   if(is.character(traits)){
     # Suspect trait is a name
     take = match(traits, simParam$traitNames)
-    if(is.na(take)){
-      stop("'",traits,"' did not match any trait names")
+    if(any(is.na(take))){
+      stop("'",traits[is.na(take)],"' did not match any trait names")
     }
     traits = take
   }else if(is.function(traits)){
