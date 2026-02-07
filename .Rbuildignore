@@ -1,7 +1,6 @@
-^vignettes/web_only$
 ^.*\.Rproj$
-^\.Rproj\.user$
 ^Notes\.txt$
-^_pkgdown\.yml$
+^\.Rproj\.user$
 ^\.github$
-
+^_pkgdown\.yml$
+^vignettes/web_only$
