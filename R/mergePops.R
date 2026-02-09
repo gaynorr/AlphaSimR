@@ -305,12 +305,13 @@ flattenMultiPop = function(x, level=1) {
 #' @details
 #' The function accepts multiple inputs and merges them according to the
 #' \code{level} argument.
-#' \code{level = 0}: merge all \code{Pop} objects in the inputs into a single
-#'   \code{Pop} object (the inputs are first completely flattened then merged).
+#' \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
+#'   inputs into a single \code{Pop} object (the inputs are first completely 
+#'   flattened then merged).
 #' \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
 #'   \code{Pop} (level 1). Each input is first flattened to level 1 and its
 #'   \code{Pop} objects merged into one \code{Pop}, and then all these \code{Pop}
-#'   objects are merged into a single \code{MultiPop}
+#'   objects are merged into a single \code{MultiPop}.
 #' \code{level > 1}: merge inputs into a \code{MultiPop} while preserving top
 #'   \code{level} structure. Each input is first flattened to the requested
 #'   \code{level} and its items merged into a single \code{MultiPop}, and then
