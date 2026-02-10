@@ -1031,45 +1031,62 @@ setValidity("MultiPop",function(object){
 #' @describeIn MultiPop Show MultiPop object summary
 setMethod("show",
           signature(object = "MultiPop"),
-          function (object){
-            printLevels = function(x, indent = "", level = 0) {
-              if (level == 1) {
-                indent = ""
-              }
-              if (level == 0) {
-                levelText = ""
+          function (object) {
+            # Helper function to print nested structure recursively
+            printMultiPop = function(obj, level, prefix, isLast, idx) {
+              # Determine the branch characters
+              if (isLast) {
+                connector = paste0(prefix, "`-- ")
+                childPrefix = paste0(prefix, "      ")
               } else {
-                levelText = paste0("Level ", level, ": ")
+                connector = paste0(prefix, "|-- ")
+                childPrefix = paste0(prefix, "|     ")
               }
-              pasteNames = function(x) {
-                n = length(x)
-                if (n == 0) {
-                  ret = "(no names)"
+              
+              # Print index
+              indexLabel = paste0("[[", idx, "]] ")
+              
+              if (isMultiPop(obj)) {
+                # Print MultiPop header
+                cat(connector, indexLabel, "An object of class \"MultiPop\" with ", 
+                    length(obj@pops), " item(s)\n", sep = "")
+                
+                # Print level indicator for the nested MultiPop
+                levelPrefix = paste0(childPrefix, "|   ")
+                cat(levelPrefix, "Level ", level + 1, ":\n", sep = "")
+                
+                # Process each item in the MultiPop
+                for (i in seq_along(obj@pops)) {
+                  isLastItem = (i == length(obj@pops))
+                  printMultiPop(obj@pops[[i]], level = level + 1, idx = i,
+                                prefix = childPrefix, isLast = isLastItem)
+                }
+                
+              } else if (isPop(obj)) {
+                # Print Pop object
+                indIds = if (length(obj@id) <= 3) {
+                  paste(obj@id, collapse = ", ")
                 } else {
-                  if (n <= 3) {
-                    ret = paste(x[1:n], collapse = ", ")
-                  } else {
-                    ret = paste(x[1], x[2], "...", x[n], sep = ", ")
-                  }
+                  paste(obj@id[1], obj@id[2], "...", obj@id[length(obj)], 
+                        sep = ", ")
                 }
-                return(ret)
-              }
-              if (isMultiPop(x)) {
-                cat(paste0(indent, levelText,
-                           "An object of class ", classLabel(class(x)),
-                           " with ", length(x), " item(s): ",
-                           pasteNames(names(x)), "\n"))
-                for (x in x@pops) {
-                  printLevels(x, paste0("  ", indent), level = level + 1)
-                }
-              } else if (isPop(x)) {
-                cat(paste0(indent, levelText,
-                           "An object of class ", classLabel(class(x)),
-                           " with ", nInd(x), " individual(s): ",
-                           pasteNames(x@id), "\n"))
+                
+                cat(connector, indexLabel, "An object of class \"Pop\" with ", 
+                    obj@nInd, " individual(s): ", indIds, "\n", sep = "")
               }
             }
-            printLevels(object)
+            
+            # Print top-level header
+            cat("An object of class \"MultiPop\" with ", length(object@pops), 
+                " item(s)\n", sep = "")
+            cat("    Level 1:\n")
+            
+            # Print each top-level item
+            for (i in seq_along(object@pops)) {
+              isLastItem = (i == length(object@pops))
+              printMultiPop(object@pops[[i]], level = 1, prefix = "", 
+                            isLast = isLastItem, idx = i)
+            }
             invisible()
           }
 )

@@ -39,7 +39,7 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{show(MultiPop)}: Show MultiPop summary
+\item \code{show(MultiPop)}: Show MultiPop object summary
 
 \item \code{[}: Subset MultiPop by index
 
