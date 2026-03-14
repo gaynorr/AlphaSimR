@@ -4,7 +4,13 @@
 \alias{pullSegSiteGeno}
 \title{Pull segregating site genotypes}
 \usage{
-pullSegSiteGeno(pop, chr = NULL, asRaw = FALSE, simParam = NULL)
+pullSegSiteGeno(
+  pop,
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{RawPop-class}} or
@@ -17,6 +23,11 @@ all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}, not 
 used if pop is \code{\link{MapPop-class}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from
+\code{getNumThreads()} for \code{\link{MapPop-class}} objects and
+\code{simParam$nThreads} for \code{\link{RawPop-class}}.}
 }
 \value{
 Returns a matrix of genotypes

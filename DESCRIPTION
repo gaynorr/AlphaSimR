@@ -5,11 +5,11 @@ Version: 2.1.0
 Date: 2025-11-08
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
-  person("Gregor", "Gorjanc", role = "ctb", 
+  person("Gregor", "Gorjanc", role = "ctb",
   comment = c(ORCID = "0000-0001-8008-2787")),
-  person("John", "Hickey", role = "ctb", 
+  person("John", "Hickey", role = "ctb",
   comment = c(ORCID = "0000-0001-5675-3974")),
-  person("Daniel", "Money", role = "ctb", 
+  person("Daniel", "Money", role = "ctb",
   comment = c(ORCID = "0000-0001-5151-3648")),
   person("David", "Wilson", role = "ctb"),
   person("Thiago", "Oliveira", role = "ctb",
@@ -20,19 +20,19 @@ Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   comment = c(ORCID = "0000-0001-6284-7248")),
   person("Ros", "Craddock", role = "ctb",
   comment = c(ORCID = "0009-0004-1578-1580")),
-  person("Jana", "Obsteter", role = "ctb", 
+  person("Jana", "Obsteter", role = "ctb",
   comment = c(ORCID = "0000-0003-1511-3916")))
-Description: The successor to the 'AlphaSim' software for breeding program 
-  simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>]. 
-  Used for stochastic simulations of breeding programs to the level of DNA 
-  sequence for every individual. Contained is a wide range of functions for 
-  modeling common tasks in a breeding program, such as selection and crossing. 
-  These functions allow for constructing simulations of highly complex plant and 
-  animal breeding programs via scripting in the R software environment. Such 
-  simulations can be used to evaluate overall breeding program performance and 
-  conduct research into breeding program design, such as implementation of 
-  genomic selection. Included is the 'Markovian Coalescent Simulator' ('MaCS') 
-  for fast simulation of biallelic sequences according to a population 
+Description: The successor to the 'AlphaSim' software for breeding program
+  simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>].
+  Used for stochastic simulations of breeding programs to the level of DNA
+  sequence for every individual. Contained is a wide range of functions for
+  modeling common tasks in a breeding program, such as selection and crossing.
+  These functions allow for constructing simulations of highly complex plant and
+  animal breeding programs via scripting in the R software environment. Such
+  simulations can be used to evaluate overall breeding program performance and
+  conduct research into breeding program design, such as implementation of
+  genomic selection. Included is the 'Markovian Coalescent Simulator' ('MaCS')
+  for fast simulation of biallelic sequences according to a population
   demographic history [Chen et al. (2009) <doi:10.1101/gr.083634.108>].
 License: MIT + file LICENSE
 URL: https://github.com/gaynorr/AlphaSimR,
@@ -42,7 +42,7 @@ Encoding: UTF-8
 Depends: R (>= 4.0.0)
 Imports: Rcpp (>= 0.12.7), Rdpack, methods, R6
 RdMacros: Rdpack
-LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH
+LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH, dqrng (>= 0.4.1)
 RoxygenNote: 7.3.3
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr

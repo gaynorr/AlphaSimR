@@ -9,7 +9,8 @@ pullSegSiteHaplo(
   haplo = "all",
   chr = NULL,
   asRaw = FALSE,
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -27,6 +28,11 @@ all chromosome are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}, not 
 used if pop is \code{\link{MapPop-class}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from
+\code{getNumThreads()} for \code{\link{MapPop-class}} objects and
+\code{simParam$nThreads} for \code{\link{RawPop-class}}.}
 }
 \value{
 Returns a matrix of haplotypes

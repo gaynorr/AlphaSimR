@@ -4,7 +4,14 @@
 \alias{pullMarkerHaplo}
 \title{Pull marker haplotypes}
 \usage{
-pullMarkerHaplo(pop, markers, haplo = "all", asRaw = FALSE, simParam = NULL)
+pullMarkerHaplo(
+  pop,
+  markers,
+  haplo = "all",
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{RawPop-class}} or
@@ -21,6 +28,11 @@ haplotypes and a value of 2 for male haplotypes in diploids.}
 
 \item{simParam}{an object of \code{\link{SimParam}}, not 
 used if pop is \code{\link{MapPop-class}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from
+\code{getNumThreads()} for \code{\link{MapPop-class}} objects and
+\code{simParam$nThreads} for \code{\link{RawPop-class}}.}
 }
 \value{
 Returns a matrix of genotypes.

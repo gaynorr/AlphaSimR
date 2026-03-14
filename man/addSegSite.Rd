@@ -4,7 +4,7 @@
 \alias{addSegSite}
 \title{Add segregating site to MapPop}
 \usage{
-addSegSite(mapPop, siteName, chr, mapPos, haplo)
+addSegSite(mapPop, siteName, chr, mapPos, haplo, nThreads = NULL)
 }
 \arguments{
 \item{mapPop}{an object of \code{\link{MapPop-class}}}
@@ -16,6 +16,9 @@ addSegSite(mapPop, siteName, chr, mapPos, haplo)
 \item{mapPos}{genetic map position of site in Morgans}
 
 \item{haplo}{haplotypes for the site}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{getNumThreads()}.}
 }
 \value{
 an object of \code{\link{MapPop-class}}
@@ -33,7 +36,8 @@ founderPop = quickHaplo(nInd=10,nChr=1,segSites=2)
 # Add a locus a the 0.5 Morgan map position
 haplo = matrix(sample(x=0:1, size=20, replace=TRUE), ncol=1)
 
-founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5, haplo=haplo)
+founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5,
+                         haplo=haplo, nThreads=1L)
 
 pullSegSiteHaplo(founderPop2)
 

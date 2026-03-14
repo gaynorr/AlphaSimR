@@ -13,9 +13,9 @@ popVarCpp(X)
 an m by m variance-covariance matrix
 }
 \description{
-Calculates the population variance matrix as
-opposed to the sample variance matrix calculated
-by \code{\link{var}}. i.e. divides by n instead
+Calculates the population variance matrix as 
+opposed to the sample variance matrix calculated 
+by \code{\link{var}}. i.e. divides by n instead 
 of n-1
 }
 \keyword{internal}
