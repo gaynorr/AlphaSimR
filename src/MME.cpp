@@ -738,13 +738,14 @@ Rcpp::List callFastRRBLUP(arma::vec y,
   double OpO = M.n_rows/Ve;
   arma::uvec order = arma::regspace<arma::uvec>(0,M.n_cols-1);
   arma::uword k;
+  dqrng::rng64_t rng = alphasimrRng::createRng();
   for(arma::uword iter=0; iter<maxIter; ++iter){
     e += beta;
     rhs = accu(e)/Ve;
     beta = rhs/OpO;
     e -= beta;
     eps=0;
-    order = shuffle(order);
+    alphasimrRng::shuffle(order, *rng);
     for(arma::uword i=0; i<M.n_cols; ++i){
       k = order(i);
       Md = genoToGenoA(M.col(k), ploidy, 1);

@@ -734,19 +734,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // mergeGeno
-arma::field<arma::Cube<unsigned char>> mergeGeno(const arma::field<arma::Cube<unsigned char>>& x, const arma::field<arma::Cube<unsigned char>>& y);
+arma::field<arma::Cube<unsigned char> > mergeGeno(const arma::field<arma::Cube<unsigned char> >& x, const arma::field<arma::Cube<unsigned char> >& y);
 RcppExport SEXP _AlphaSimR_mergeGeno(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char>>& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char>>& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type y(ySEXP);
     rcpp_result_gen = Rcpp::wrap(mergeGeno(x, y));
     return rcpp_result_gen;
 END_RCPP
 }
 // mergeMultGeno
-arma::field<arma::Cube<unsigned char>> mergeMultGeno(Rcpp::List& popList, arma::uvec nInd, arma::uvec nBin, arma::uword ploidy);
+arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList, arma::uvec nInd, arma::uvec nBin, arma::uword ploidy);
 RcppExport SEXP _AlphaSimR_mergeMultGeno(SEXP popListSEXP, SEXP nIndSEXP, SEXP nBinSEXP, SEXP ploidySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -760,12 +760,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // mergeMultIntMat
-arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int>>& X, arma::uvec nRow, arma::uword nCol);
+arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X, arma::uvec nRow, arma::uword nCol);
 RcppExport SEXP _AlphaSimR_mergeMultIntMat(SEXP XSEXP, SEXP nRowSEXP, SEXP nColSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::Mat<int>>& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::Mat<int> >& >::type X(XSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type nRow(nRowSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type nCol(nColSEXP);
     rcpp_result_gen = Rcpp::wrap(mergeMultIntMat(X, nRow, nCol));
@@ -832,9 +832,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rngDiagnosticsSampleInt
+arma::imat rngDiagnosticsSampleInt(arma::uword n, arma::uword N, arma::uword reps, uint64_t seed);
+RcppExport SEXP _AlphaSimR_rngDiagnosticsSampleInt(SEXP nSEXP, SEXP NSEXP, SEXP repsSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type n(nSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< uint64_t >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(rngDiagnosticsSampleInt(n, N, reps, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rngDiagnosticsSamplePoisson
+arma::ivec rngDiagnosticsSamplePoisson(double lambda, arma::uword reps, uint64_t seed);
+RcppExport SEXP _AlphaSimR_rngDiagnosticsSamplePoisson(SEXP lambdaSEXP, SEXP repsSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< uint64_t >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(rngDiagnosticsSamplePoisson(lambda, reps, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // MaCS
-Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, arma::uvec seed, Rcpp::StringVector seedString);
-RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP, SEXP seedStringSEXP) {
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, arma::uvec seed);
+RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -844,8 +871,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type seed(seedSEXP);
-    Rcpp::traits::input_parameter< Rcpp::StringVector >::type seedString(seedStringSEXP);
-    rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed, seedString));
+    rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -904,7 +930,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
-    {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 7},
+    {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
+    {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
+    {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
     {NULL, NULL, 0}
 };
 

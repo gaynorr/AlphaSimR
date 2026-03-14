@@ -4,7 +4,7 @@
 \alias{setMarkerHaplo}
 \title{Set marker haplotypes}
 \usage{
-setMarkerHaplo(pop, haplo, simParam = NULL)
+setMarkerHaplo(pop, haplo, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{RawPop-class}} or
@@ -14,6 +14,11 @@ setMarkerHaplo(pop, haplo, simParam = NULL)
 
 \item{simParam}{an object of \code{\link{SimParam}}, not 
 used if pop is \code{\link{MapPop-class}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from
+\code{getNumThreads()} for \code{\link{MapPop-class}} objects and
+\code{simParam$nThreads} for \code{\link{RawPop-class}}.}
 }
 \value{
 an object of the same class as the "pop" input
