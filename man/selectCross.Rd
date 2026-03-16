@@ -15,6 +15,7 @@ selectCross(
   use = "pheno",
   selectTop = TRUE,
   simParam = NULL,
+  nThreads = NULL,
   ...,
   balance = TRUE
 )
@@ -50,12 +51,15 @@ Selects lowest values if false.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
 \item{...}{additional arguments if using a function for
 trait}
 
 \item{balance}{if using sexes, this option will balance the number
 of progeny per parent. This argument occurs after ..., so the argument
-name must be matched exactly.}
+name, as well as \code{nThreads}, must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

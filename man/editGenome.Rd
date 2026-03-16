@@ -4,7 +4,7 @@
 \alias{editGenome}
 \title{Edit genome}
 \usage{
-editGenome(pop, ind, chr, segSites, allele, simParam = NULL)
+editGenome(pop, ind, chr, segSites, allele, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -20,6 +20,9 @@ match length of chr.}
 \item{allele}{either 0 or 1 for desired allele}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

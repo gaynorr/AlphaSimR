@@ -4,7 +4,7 @@
 \alias{pullIbdHaplo}
 \title{Pull IBD haplotypes}
 \usage{
-pullIbdHaplo(pop, chr = NULL, snpChip = NULL, simParam = NULL)
+pullIbdHaplo(pop, chr = NULL, snpChip = NULL, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -16,6 +16,9 @@ all chromosomes are retrieved.}
 are to be retrieved. If NULL, all sites are retrieved.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns a matrix of IBD haplotypes.

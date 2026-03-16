@@ -4,12 +4,15 @@
 \alias{genicVarD}
 \title{Dominance genic variance}
 \usage{
-genicVarD(pop, simParam = NULL)
+genicVarD(pop, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 Returns dominance genic variance for all traits
