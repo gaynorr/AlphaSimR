@@ -436,12 +436,12 @@ relative to all active QTL}
 \if{latex}{\out{\hypertarget{method-SimParam-new}{}}}
 \subsection{Method \code{new()}}{
 Starts the process of building a new simulation
-by creating a new SimParam object and assigning a founder
+by creating a new \code{SimParam} object and assigning a founder
 population to the class. It is recommended that you save the
-object with the name "SP", because subsequent functions will
+object with the name \code{SP}, because subsequent functions will
 check your global environment for an object of this name if
-their simParam arguments are NULL. This allows you to call
-these functions without explicitly supplying a simParam
+their \code{simParam} arguments are \code{NULL}. This allows you
+to call these functions without explicitly supplying a \code{simParam}
 argument with every call.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$new(founderPop)}\if{html}{\out{</div>}}

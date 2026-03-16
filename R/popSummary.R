@@ -168,7 +168,9 @@ varEBV = function(pop){
 #' for an object of \code{\link{Pop-class}}
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -354,7 +356,9 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns additive variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -382,7 +386,9 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns dominance variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -411,7 +417,9 @@ varD = function(pop,simParam=NULL,nThreads=NULL){
 #' variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -439,7 +447,9 @@ varAA = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns breeding values for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -467,7 +477,9 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns dominance deviations for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -496,7 +508,9 @@ dd = function(pop,simParam=NULL,nThreads=NULL){
 #' deviations for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -524,7 +538,9 @@ aa = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns additive genic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -552,7 +568,9 @@ genicVarA = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns dominance genic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -581,7 +599,9 @@ genicVarD = function(pop,simParam=NULL,nThreads=NULL){
 #' genic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -609,7 +629,9 @@ genicVarAA = function(pop,simParam=NULL,nThreads=NULL){
 #' @description Returns total genic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -720,7 +742,9 @@ ebv = function(pop){
 #'   if \code{NULL} must provide \code{parents}
 #' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
 #'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
-#' @param simParam \code{\link{SimParam}} object
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -807,7 +831,9 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #'   if \code{NULL} must provide \code{parents}
 #' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
 #'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
-#' @param simParam \code{\link{SimParam}} object
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

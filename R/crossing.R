@@ -9,7 +9,9 @@
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -111,7 +113,9 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 #' of progeny per parent
 #' @param parents an optional vector of indices for allowable parents
 #' @param ignoreSexes should sexes be ignored
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -222,7 +226,9 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' or randomly "rand"
 #' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -302,7 +308,9 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -411,7 +419,9 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL,
 #' @param maleParents an optional vector of indices for allowable
 #' male parents
 #' @param ignoreSexes should sex be ignored
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -507,7 +517,9 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param parents an optional vector of indices for allowable parents
 #' @param keepParents should previous parents be used for mother and
 #' father.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -618,7 +630,9 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 #' @param useFemale should female recombination rates be used.
 #' @param keepParents should previous parents be used for mother and
 #' father.
-#' @param simParam an object of 'SimParam' class
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -787,7 +801,9 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' individual should be selfed.
 #' @param useFemale If creating DH lines, should female recombination
 #' rates be used. This parameter has no effect if, recombRatio=1.
-#' @param simParam an object of 'SimParam' class
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

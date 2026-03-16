@@ -30,7 +30,9 @@ if \code{NULL} must provide \code{parents}}
 \item{use}{character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
 \code{"\link{ebv}"}, or \code{"\link{pheno}"}}
 
-\item{simParam}{\code{\link{SimParam}} object}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}

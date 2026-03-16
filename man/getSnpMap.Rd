@@ -15,7 +15,9 @@ is returned. Options are "A" for average map, "F"
 for female map, and "M" for male map. All options are 
 equivalent if not using sex specific maps.}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 }
 \value{
 Returns a data.frame with:
