@@ -357,6 +357,8 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns a matrix of SNP genotypes.
 #' 
@@ -375,9 +377,15 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' pullSnpGeno(pop, simParam=SP)
 #' 
 #' @export
-pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
+pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
+                       nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   if(is.character(snpChip)){
@@ -394,7 +402,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
                    simParam$snpChips[[snpChip]]@lociPerChr,
                    simParam$snpChips[[snpChip]]@lociLoc)
   
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,simParam$nThreads)
+  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
   
   if(!asRaw){
     output = convToImat(output)
@@ -422,6 +430,8 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns a matrix of QTL genotypes.
 #' 
@@ -440,9 +450,15 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL){
 #' pullQtlGeno(pop, simParam=SP)
 #' 
 #' @export
-pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL){
+pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL,
+                       nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   if(is.character(trait)){
@@ -459,7 +475,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL){
                    simParam$traits[[trait]]@lociPerChr,
                    simParam$traits[[trait]]@lociLoc)
   
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,simParam$nThreads)
+  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
   
   if(!asRaw){
     output = convToImat(output)
@@ -568,6 +584,8 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns a matrix of SNP haplotypes.
 #' 
@@ -587,9 +605,15 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' 
 #' @export
 pullSnpHaplo = function(pop, snpChip=1, haplo="all",
-                        chr=NULL, asRaw=FALSE, simParam=NULL){
+                        chr=NULL, asRaw=FALSE, simParam=NULL,
+                        nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   if(is.character(snpChip)){
@@ -610,7 +634,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   lociLoc = tmp$lociLoc
   
   if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc,simParam$nThreads)
+    output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -625,7 +649,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),simParam$nThreads)
+                         as.integer(haplo),nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -657,6 +681,8 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' all chromosome are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns a matrix of QTL haplotypes.
 #' 
@@ -676,9 +702,15 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' 
 #' @export
 pullQtlHaplo = function(pop, trait=1, haplo="all",
-                        chr=NULL, asRaw=FALSE, simParam=NULL){
+                        chr=NULL, asRaw=FALSE, simParam=NULL,
+                        nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   if(is.character(trait)){
@@ -700,7 +732,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   lociLoc = tmp$lociLoc
   
   if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc,simParam$nThreads)
+    output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -715,7 +747,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),simParam$nThreads)
+                         as.integer(haplo),nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -853,6 +885,8 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' @param snpChip an integer indicating which SNP array loci 
 #' are to be retrieved. If NULL, all sites are retrieved.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns a matrix of IBD haplotypes.
 #' 
@@ -872,9 +906,15 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' pullIbdHaplo(pop, simParam=SP)
 #' 
 #' @export
-pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
+pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL,
+                        nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   if(is.character(snpChip)){
@@ -904,7 +944,7 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL){
   output = createIbdMat(ibd=ibd, chr=chr, 
                         nLoci=pop@nLoci, 
                         ploidy=pop@ploidy,
-                        nThreads=simParam$nThreads)
+                        nThreads=nThreads)
   
   rownames(output) = paste(rep(pop@id,each=pop@ploidy),
                            rep(1:pop@ploidy,pop@nInd),sep="_")
@@ -1151,12 +1191,14 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
 #' 
 #' # Extract haplotypes for marker "1_1"
 #' H = pullMarkerHaplo(founderPop, markers="1_1")
+#' H[1,1]
 #' 
 #' # Set the first haplotype to 1
 #' H[1,1] = 1L
 #' 
 #' # Set marker haplotypes
 #' founderPop = setMarkerHaplo(founderPop, haplo=H)
+#' pullMarkerHaplo(founderPop, markers="1_1")[1,1]
 #' 
 #' @export
 setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
@@ -1202,7 +1244,7 @@ setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
   if(is(pop, "Pop")){
     PHENO = pop@pheno
     EBV = pop@ebv
-    pop = resetPop(pop=pop, simParam=simParam)
+    pop = resetPop(pop=pop, simParam=simParam, nThreads=nThreads)
     pop@pheno = PHENO
     pop@ebv = EBV
   }

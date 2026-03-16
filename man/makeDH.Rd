@@ -4,7 +4,14 @@
 \alias{makeDH}
 \title{Generates DH lines}
 \usage{
-makeDH(pop, nDH = 1, useFemale = TRUE, keepParents = TRUE, simParam = NULL)
+makeDH(
+  pop,
+  nDH = 1,
+  useFemale = TRUE,
+  keepParents = TRUE,
+  simParam = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
@@ -17,6 +24,9 @@ makeDH(pop, nDH = 1, useFemale = TRUE, keepParents = TRUE, simParam = NULL)
 father.}
 
 \item{simParam}{an object of 'SimParam' class}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

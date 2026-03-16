@@ -4,7 +4,14 @@
 \alias{self}
 \title{Self individuals}
 \usage{
-self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE, simParam = NULL)
+self(
+  pop,
+  nProgeny = 1,
+  parents = NULL,
+  keepParents = TRUE,
+  simParam = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -17,6 +24,9 @@ self(pop, nProgeny = 1, parents = NULL, keepParents = TRUE, simParam = NULL)
 father.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

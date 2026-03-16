@@ -186,6 +186,8 @@ selIndex = function(Y,b,scale=FALSE){
 #' match length of chr.
 #' @param allele either 0 or 1 for desired allele
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -207,9 +209,15 @@ selIndex = function(Y,b,scale=FALSE){
 #'                   allele=1, simParam=SP)
 #'
 #' @export
-editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
+editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
+                       nThreads=NULL) {
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   ind = unique(as.integer(ind))
   stopifnot(all(ind %in% (1:pop@nInd)))
@@ -241,7 +249,7 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
   }
   PHENO = pop@pheno
   EBV = pop@ebv
-  pop = resetPop(pop = pop, simParam = simParam)
+  pop = resetPop(pop = pop, simParam = simParam, nThreads=nThreads)
   pop@pheno = PHENO
   pop@ebv = EBV
   return(pop)
@@ -260,6 +268,8 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
 #' @param trait which trait effects should guide selection of the top QTL
 #' @param increase should the trait value be increased or decreased
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -279,16 +289,23 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL) {
 #' pop2 = editGenomeTopQtl(pop, ind=1, nQtl=10, simParam=SP)
 #'
 #' @export
-editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam = NULL) {
+editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
+                            simParam = NULL, nThreads=NULL) {
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   ind = unique(as.integer(ind))
   stopifnot(all(ind %in% (1:pop@nInd)))
   nQtl = as.integer(nQtl)
   stopifnot(nQtl > 0 & nQtl <= simParam$traits[[trait]]@nLoci)
 
-  findTopQtl = function(pop, ind, nQtl, trait, increase, simParam) {
+  findTopQtl = function(pop, ind, nQtl, trait, increase, simParam,
+                        nThreads) {
     # @title Find the top non fixed QTL for use in editGenome()
     # @param pop an object of \code{\link{Pop-class}}
     # @param ind a vector of individuals to edit
@@ -301,7 +318,8 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
     #         second indicating which segsite (of all segsites within a chromosome) are the top,
     #         third  indicating chromosome of the QTL
     #         fourth indicates which allele we want to fix (edit to)
-    QtlGeno = pullQtlGeno(pop=pop[ind],trait=trait,simParam=simParam)
+    QtlGeno = pullQtlGeno(pop=pop[ind],trait=trait,simParam=simParam,
+                          nThreads=nThreads)
 
     QtlEff = simParam$traits[[trait]]@addEff
     ret = vector(mode = "list", length = 4)
@@ -356,13 +374,15 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 
   for (ind2 in ind) {
     targetQtl = findTopQtl(pop = pop, ind = ind2, nQtl = nQtl, trait = trait,
-                           increase = increase, simParam = simParam)
+                           increase = increase, simParam = simParam,
+                           nThreads = nThreads)
     pop = editGenome(pop = pop,
                      ind = ind2,
                      chr = targetQtl[[3]],
                      segSites = targetQtl[[2]],
                      allele = targetQtl[[4]],
-                     simParam = simParam)
+                     simParam = simParam,
+                     nThreads = nThreads)
   }
   return(pop)
 }
@@ -382,6 +402,8 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 #' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' trait
 #'
@@ -407,12 +429,17 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE, simParam
 #'
 #' @export
 usefulness = function(pop,trait=1,use="gv",p=0.1,
-                      selectTop=TRUE,simParam=NULL,...){
+                      selectTop=TRUE,simParam=NULL,nThreads=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
   response = getResponse(pop=pop, trait=trait, use=use,
-                         simParam=simParam, ...)
+                         simParam=simParam, nThreads=nThreads, ...)
   response = sort(response, decreasing=selectTop)
   response = response[1:ceiling(p*length(response))]
   return(mean(response))
@@ -489,6 +516,8 @@ transMat = function(R){
 #' @param mutRate rate of new mutations
 #' @param returnPos should the positions of mutations be returned
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return an object of \code{\link{Pop-class}} if
 #' returnPos=FALSE or a list containing a
@@ -515,7 +544,16 @@ transMat = function(R){
 #' hapAfter - hapBefore
 #' 
 #' @export
-mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
+mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
+                  nThreads=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   # Mutation history variable
   IND=NULL; CHR=NULL; HAP=NULL; SITE=NULL
@@ -579,7 +617,7 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL){
     # Reset population
     PHENO = pop@pheno
     EBV = pop@ebv
-    pop = resetPop(pop=pop, simParam=simParam)
+    pop = resetPop(pop=pop, simParam=simParam, nThreads=nThreads)
     pop@pheno = PHENO
     pop@ebv = EBV
   }
@@ -669,4 +707,3 @@ rnormWithSeed = function(n, u){
 popVar = function(X){
   return(popVarCpp(as.matrix(X)))
 }
-

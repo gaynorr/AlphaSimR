@@ -6,13 +6,17 @@
 
 * Improved documentation for `SimParam$finalizePop` field.
 
+* Added a short vignette explaining OpenMP support for parallelization.
+
+* `SimParam$nThreads` now validates assignments. Setting it to `NULL` resets to `getNumThreads()`, and invalid values now fail with a clear error.
+
+* Added optional `nThreads` arguments across OpenMP-enabled R functions and `SimParam` methods so thread counts can be controlled explicitly per call instead of only through `SimParam$nThreads` and is propagated across the package consistently.
+
 * Consolidated the use of RNG across the package to enable reproducibility. This is an internal change not visible to users.
 
 * Made meiosis-related C++ RNG reproducible across serial and OpenMP execution by using `dqrng`. This is an internal change not visible to users, but will enable visible reproducibility.
 
 * Fixed a reproducibility bug in `runMacs()` and `runMacs2()`: `set.seed()` can now reproduce MaCS founder simulations, including when chromosomes are simulated in parallel with OpenMP. This is an internal change not visible to users, but will enable visible reproducibility.
-
-* Added optional `nThreads` arguments to standalone `MapPop` helper functions so thread counts can be controlled explicitly outside the `SimParam` workflow.
 
 * Fixed a bug in `getGvE` with multiple traits.
 

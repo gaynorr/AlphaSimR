@@ -10,6 +10,8 @@
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -30,9 +32,14 @@
 #'
 #' @export
 makeCross = function(pop,crossPlan,nProgeny=1,
-                     simParam=NULL){
+                     simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(pop@ploidy%%2L != 0L){
     stop("You can not cross indiviuals with odd ploidy levels")
@@ -66,7 +73,7 @@ makeCross = function(pop,crossPlan,nProgeny=1,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
-              simParam$nThreads)
+              nThreads)
   dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -87,7 +94,8 @@ makeCross = function(pop,crossPlan,nProgeny=1,
                  femaleParentPop=pop,
                  maleParentPop=pop,
                  hist=hist,
-                 simParam=simParam))
+                 simParam=simParam,
+                 nThreads=nThreads))
 }
 
 #' @title Make random crosses
@@ -104,6 +112,8 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 #' @param parents an optional vector of indices for allowable parents
 #' @param ignoreSexes should sexes be ignored
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -125,9 +135,14 @@ makeCross = function(pop,crossPlan,nProgeny=1,
 randCross = function(pop,nCrosses,nProgeny=1,
                      balance=TRUE,parents=NULL,
                      ignoreSexes=FALSE,
-                     simParam=NULL){
+                     simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is.null(parents)){
     parents = 1:pop@nInd
@@ -173,7 +188,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
       crossPlan[,2] = male[crossPlan[,2]]
     }
   }
-  return(makeCross(pop=pop,crossPlan=crossPlan,nProgeny=nProgeny,simParam=simParam))
+  return(makeCross(pop=pop,crossPlan=crossPlan,nProgeny=nProgeny,
+                   simParam=simParam,nThreads=nThreads))
 }
 
 #' @title Select and randomly cross
@@ -207,6 +223,8 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' trait
 #' @param balance if using sexes, this option will balance the number
@@ -234,14 +252,20 @@ randCross = function(pop,nCrosses,nProgeny=1,
 #' @export
 selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
                        nProgeny=1,trait=1,use="pheno",selectTop=TRUE,
-                       simParam=NULL,...,balance=TRUE){
+                       simParam=NULL,nThreads=NULL,...,balance=TRUE){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(!is.null(nInd)){
     parents = selectInd(pop=pop,nInd=nInd,trait=trait,use=use,
                         sex="B",selectTop=selectTop,
-                        returnPop=FALSE,simParam=simParam,...)
+                        returnPop=FALSE,simParam=simParam,
+                        nThreads=nThreads,...)
   }else{
     if(simParam$sexes=="no")
       stop("You must specify nInd when simParam$sexes is `no`")
@@ -251,16 +275,19 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
       stop("You must specify nMale if nInd is NULL")
     females = selectInd(pop=pop,nInd=nFemale,trait=trait,use=use,
                         sex="F",selectTop=selectTop,
-                        returnPop=FALSE,simParam=simParam,...)
+                        returnPop=FALSE,simParam=simParam,
+                        nThreads=nThreads,...)
     males = selectInd(pop=pop,nInd=nMale,trait=trait,use=use,
                       sex="M",selectTop=selectTop,
-                      returnPop=FALSE,simParam=simParam,...)
+                      returnPop=FALSE,simParam=simParam,
+                      nThreads=nThreads,...)
     parents = c(females,males)
   }
 
   return(randCross(pop=pop,nCrosses=nCrosses,nProgeny=nProgeny,
                    balance=balance,parents=parents,
-                   ignoreSexes=FALSE,simParam=simParam))
+                   ignoreSexes=FALSE,simParam=simParam,
+                   nThreads=nThreads))
 }
 
 #' @title Make designed crosses
@@ -276,6 +303,8 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -295,9 +324,15 @@ selectCross = function(pop,nInd=NULL,nFemale=NULL,nMale=NULL,nCrosses,
 #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
 #'
 #' @export
-makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
+makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL,
+                      nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
@@ -333,7 +368,7 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
             simParam$femaleCentromere,
             simParam$maleCentromere,
             simParam$quadProb,
-            simParam$nThreads)
+            nThreads)
   dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -354,7 +389,8 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
                  femaleParentPop=females,
                  maleParentPop=males,
                  hist=hist,
-                 simParam=simParam))
+                 simParam=simParam,
+                 nThreads=nThreads))
 }
 
 #' @title Make random crosses
@@ -376,6 +412,8 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 #' male parents
 #' @param ignoreSexes should sex be ignored
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -397,9 +435,14 @@ makeCross2 = function(females,males,crossPlan,nProgeny=1,simParam=NULL){
 randCross2 = function(females,males,nCrosses,nProgeny=1,
                       balance=TRUE,femaleParents=NULL,
                       maleParents=NULL,ignoreSexes=FALSE,
-                      simParam=NULL){
+                      simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   #Set allowable parents
   if(is.null(femaleParents)){
@@ -450,7 +493,7 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
   }
   return(makeCross2(females=females,males=males,
                     crossPlan=crossPlan,nProgeny=nProgeny,
-                    simParam=simParam))
+                    simParam=simParam,nThreads=nThreads))
 }
 
 #' @title Self individuals
@@ -465,6 +508,8 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #' @param keepParents should previous parents be used for mother and
 #' father.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -484,15 +529,20 @@ randCross2 = function(females,males,nCrosses,nProgeny=1,
 #'
 #' @export
 self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
-                simParam=NULL){
+                simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(is.null(parents))
     pop@pops = lapply(pop@pops, self, nProgeny=nProgeny,
                       parents=NULL, keepParents=keepParents,
-                      simParam=simParam)
+                      simParam=simParam, nThreads=nThreads)
     return(pop)
   }
   if(is.null(parents)){
@@ -519,7 +569,7 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
               simParam$femaleCentromere,
               simParam$maleCentromere,
               simParam$quadProb,
-              simParam$nThreads)
+              nThreads)
   dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
              nInd=nrow(crossPlan),
@@ -541,7 +591,8 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                    femaleParentPop=pop,
                    maleParentPop=pop,
                    hist=hist,
-                   simParam=simParam))
+                   simParam=simParam,
+                   nThreads=nThreads))
   }else{
     return(.newPop(rawPop=rPop,
                    mother=rep(pop@id,each=nProgeny),
@@ -551,7 +602,8 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
                    femaleParentPop=pop,
                    maleParentPop=pop,
                    hist=hist,
-                   simParam=simParam))
+                   simParam=simParam,
+                   nThreads=nThreads))
   }
 }
 
@@ -567,6 +619,8 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 #' @param keepParents should previous parents be used for mother and
 #' father.
 #' @param simParam an object of 'SimParam' class
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -586,13 +640,19 @@ self = function(pop,nProgeny=1,parents=NULL,keepParents=TRUE,
 #'
 #' @export
 makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
-                  simParam=NULL){
+                  simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
   if(is(pop,"MultiPop")){
     pop@pops = lapply(pop@pops, makeDH, nDH=nDH, useFemale=useFemale,
-                      keepParents=keepParents, simParam=simParam)
+                      keepParents=keepParents, simParam=simParam,
+                      nThreads=nThreads)
     return(pop)
   }
   if(pop@ploidy!=2){
@@ -604,14 +664,14 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                     simParam$v,
                     simParam$p,
                     simParam$isTrackRec,
-                    simParam$nThreads)
+                    nThreads)
   }else{
     tmp = createDH2(pop@geno,nDH,
                     simParam$maleMap,
                     simParam$v,
                     simParam$p,
                     simParam$isTrackRec,
-                    simParam$nThreads)
+                    nThreads)
   }
   dim(tmp$geno) = NULL # Account for matrix bug in RcppArmadillo
   rPop = new("RawPop",
@@ -635,7 +695,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                    femaleParentPop=pop,
                    maleParentPop=pop,
                    hist=hist,
-                   simParam=simParam))
+                   simParam=simParam,
+                   nThreads=nThreads))
   }else{
     return(.newPop(rawPop=rPop,
                    mother=rep(pop@id, each=nDH),
@@ -646,7 +707,8 @@ makeDH = function(pop,nDH=1,useFemale=TRUE,keepParents=TRUE,
                    femaleParentPop=pop,
                    maleParentPop=pop,
                    hist=hist,
-                   simParam=simParam))
+                   simParam=simParam,
+                   nThreads=nThreads))
   }
 }
 
@@ -726,6 +788,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' @param useFemale If creating DH lines, should female recombination
 #' rates be used. This parameter has no effect if, recombRatio=1.
 #' @param simParam an object of 'SimParam' class
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @description
 #' The way in which the user supplied pedigree is used depends on
@@ -754,9 +818,14 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' @export
 pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                          maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE,
-                         simParam=NULL){
+                         simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
 
   if(simParam$sexes!="no"){
@@ -854,33 +923,38 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
           output[[i]] = makeCross2(founderPop[id[i]],
                                    output[[ped$father[i]]],
                                    crossPlan=crossPlan,
-                                   simParam=simParam)
+                                   simParam=simParam,
+                                   nThreads=nThreads)
         }else if(fatherIsFounder[i]){
           # Cross newly created individual to founder
           output[[i]] = makeCross2(output[[ped$mother[i]]],
                                    founderPop[id[i]],
                                    crossPlan=crossPlan,
-                                   simParam=simParam)
+                                   simParam=simParam,
+                                   nThreads=nThreads)
         }else{
           # Cross two newly created individuals
           output[[i]] = makeCross2(output[[ped$mother[i]]],
                                    output[[ped$father[i]]],
                                    crossPlan=crossPlan,
-                                   simParam=simParam)
+                                   simParam=simParam,
+                                   nThreads=nThreads)
         }
       }
       
       # Self?
       for(j in seq_len(nSelf[i])){
         output[[i]] = self(output[[i]],
-                           simParam=simParam)
+                           simParam=simParam,
+                           nThreads=nThreads)
       }
 
       # Make the individual a DH?
       if(DH[i]){
         output[[i]] = makeDH(output[[i]],
                              useFemale=useFemale,
-                             simParam=simParam)
+                             simParam=simParam,
+                             nThreads=nThreads)
       }
     }
   }
@@ -895,4 +969,3 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
 
   return(output)
 }
-

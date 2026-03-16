@@ -11,7 +11,8 @@ writeRecords(
   useQtl = FALSE,
   includeHaplo = FALSE,
   append = TRUE,
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -34,6 +35,9 @@ If false, any existing records are deleted before writing new records.
 Note that this will delete all files in the 'dir' directory.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 Saves a population's phenotypic and marker data to a directory.

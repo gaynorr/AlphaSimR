@@ -16,6 +16,7 @@
   maleParentPop = NULL,
   hist = NULL,
   simParam = NULL,
+  nThreads = NULL,
   ...
 )
 }
@@ -41,6 +42,9 @@
 \item{hist}{optional recombination history}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments passed to the \code{finalizePop}
 function in simParam}

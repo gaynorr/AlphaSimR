@@ -606,7 +606,7 @@ addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL){
 
   # Check if an inbred population has become outbred
   if(mapPop@inbred){
-    M = pullMarkerGeno(mapPop, markers=siteName)
+    M = pullMarkerGeno(mapPop, markers=siteName, nThreads=nThreads)
     isHomo0 = M==0L
     isHomo1 = M==mapPop@ploidy
     isHet = !(isHomo0 | isHomo1)

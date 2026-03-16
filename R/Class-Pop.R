@@ -582,6 +582,8 @@ setMethod("length",
 #' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments used internally
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -614,11 +616,16 @@ setMethod("length",
 #' pop@miscPop$tmp1 = sum(pop@misc$tmp1)
 #' pop@miscPop$tmp2 = sum(pop@misc$tmp2)
 #' @export
-newPop = function(rawPop,simParam=NULL,...){
+newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  return(.newPop(rawPop=rawPop,simParam=simParam,...))
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
+  return(.newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...))
 }
 
 #' @title Create new population
@@ -638,6 +645,8 @@ newPop = function(rawPop,simParam=NULL,...){
 #' @param maleParentPop optional population of male parents
 #' @param hist optional recombination history
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments passed to the \code{finalizePop}
 #' function in simParam
 #'
@@ -647,9 +656,14 @@ newPop = function(rawPop,simParam=NULL,...){
 .newPop = function(rawPop, id=NULL, mother=NULL, father=NULL,
                    iMother=NULL, iFather=NULL, isDH=NULL,
                    femaleParentPop=NULL, maleParentPop=NULL,
-                   hist=NULL, simParam=NULL,...){
+                   hist=NULL, simParam=NULL, nThreads=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
 
   stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
@@ -720,7 +734,7 @@ newPop = function(rawPop,simParam=NULL,...){
 
   if(simParam$nTraits>=1){
     tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl, 
-                     simParam$qtlIndex, simParam$nTraits, simParam$nThreads)
+                     simParam$qtlIndex, simParam$nTraits, nThreads)
     
     gv = tmp[[1]]
     colnames(gv) = simParam$traitNames
@@ -786,6 +800,8 @@ newPop = function(rawPop,simParam=NULL,...){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return an object of \code{\link{Pop-class}}
 #'
@@ -805,9 +821,14 @@ newPop = function(rawPop,simParam=NULL,...){
 #' pop = resetPop(pop, simParam=SP)
 #'
 #' @export
-resetPop = function(pop,simParam=NULL){
+resetPop = function(pop,simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   pop@nTraits = simParam$nTraits
 
@@ -828,7 +849,7 @@ resetPop = function(pop,simParam=NULL){
 
   # Calculate genetic values
   for(i in seq_len(simParam$nTraits)){
-    tmp = getGv(simParam$traits[[i]],pop,simParam$nThreads)
+    tmp = getGv(simParam$traits[[i]],pop,nThreads)
     pop@gv[,i] = tmp[[1]]
     if(length(tmp)>1){
       pop@gxe[[i]] = tmp[[2]]

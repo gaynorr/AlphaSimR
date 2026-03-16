@@ -41,7 +41,10 @@ addError = function(gv, varE, reps){
 #' @param simParam simulation parameters object
 #'
 #' @keywords internal
-calcPheno = function(pop, varE, reps, p, traits, simParam){
+calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   nTraits = length(traits)
 
   if(nTraits==0L){

@@ -4,12 +4,15 @@
 \alias{genicVarG}
 \title{Total genic variance}
 \usage{
-genicVarG(pop, simParam = NULL)
+genicVarG(pop, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 Returns total genic variance for all traits

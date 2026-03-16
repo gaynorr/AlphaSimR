@@ -13,7 +13,8 @@ randCross2(
   femaleParents = NULL,
   maleParents = NULL,
   ignoreSexes = FALSE,
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ male parents}
 \item{ignoreSexes}{should sex be ignored}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

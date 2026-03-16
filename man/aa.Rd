@@ -4,12 +4,15 @@
 \alias{aa}
 \title{Additive-by-additive epistatic deviations}
 \usage{
-aa(pop, simParam = NULL)
+aa(pop, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 Returns additive-by-additive epistatic

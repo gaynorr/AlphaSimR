@@ -16,12 +16,20 @@
 #' If false, any existing records are deleted before writing new records.
 #' Note that this will delete all files in the 'dir' directory.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @export
 writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
-                        includeHaplo=FALSE,append=TRUE,simParam=NULL){
+                        includeHaplo=FALSE,append=TRUE,simParam=NULL,
+                        nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   snpChip = as.integer(snpChip)
   dir = normalizePath(dir, mustWork=TRUE)
@@ -80,26 +88,26 @@ writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
     if(useQtl){
       writeGeno(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                 simParam$traits[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"),simParam$nThreads)
+                file.path(dir,"genotype.txt"),nThreads)
       if(includeHaplo){
         writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                       simParam$traits[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"),simParam$nThreads)
+                      file.path(dir,"haplotype1.txt"),nThreads)
         writeOneHaplo(pop@geno,simParam$traits[[snpChip]]@lociPerChr,
                       simParam$traits[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"),simParam$nThreads)
+                      file.path(dir,"haplotype2.txt"),nThreads)
       }
     }else{
       writeGeno(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                 simParam$snpChips[[snpChip]]@lociLoc,
-                file.path(dir,"genotype.txt"),simParam$nThreads)
+                file.path(dir,"genotype.txt"),nThreads)
       if(includeHaplo){
         writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                       simParam$snpChips[[snpChip]]@lociLoc,1L,
-                      file.path(dir,"haplotype1.txt"),simParam$nThreads)
+                      file.path(dir,"haplotype1.txt"),nThreads)
         writeOneHaplo(pop@geno,simParam$snpChips[[snpChip]]@lociPerChr,
                       simParam$snpChips[[snpChip]]@lociLoc,2L,
-                      file.path(dir,"haplotype2.txt"),simParam$nThreads)
+                      file.path(dir,"haplotype2.txt"),nThreads)
       }
     }
   }
