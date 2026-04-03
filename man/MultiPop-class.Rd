@@ -3,6 +3,7 @@
 \docType{class}
 \name{MultiPop-class}
 \alias{MultiPop-class}
+\alias{show,MultiPop-method}
 \alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
 \alias{c,MultiPop-method}
@@ -10,6 +11,8 @@
 \alias{isMultiPop}
 \title{Multi-Population}
 \usage{
+\S4method{show}{MultiPop}(object)
+
 \S4method{[}{MultiPop}(x, i)
 
 \S4method{[[}{MultiPop}(x, i)
@@ -21,23 +24,28 @@
 isMultiPop(x)
 }
 \arguments{
-\item{x}{a 'MultiPop' object}
+\item{object}{a \code{MultiPop} object}
 
-\item{i}{index of populations or mega-populations}
+\item{x}{a \code{MultiPop} object}
 
-\item{...}{additional 'MultiPop' or 'Pop' objects}
+\item{i}{index of \code{MultiPop} or \code{Pop} objects}
+
+\item{...}{additional \code{MultiPop} or \code{Pop} objects}
 }
 \description{
-The mega-population represents a population of populations.
-It is designed to behave like a list of populations.
+The multi-population holds multiple \code{\link{Pop-class}} and
+\code{\link{MultiPop-class}} objects. It is designed to behave like a list
+and can hence have a nested structure - see examples in \code{\link{newMultiPop}}.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract MultiPop by index
+\item \code{show(MultiPop)}: Show MultiPop object summary
 
-\item \code{[[}: Extract Pop by index
+\item \code{[}: Subset MultiPop by index
 
-\item \code{c(MultiPop)}: Combine multiple MultiPops
+\item \code{[[}: Extract a population by index
+
+\item \code{c(MultiPop)}: Combine multiple MultiPops (without level control)
 
 \item \code{length(MultiPop)}: Number of pops in MultiPop
 
@@ -50,7 +58,12 @@ It is designed to behave like a list of populations.
 \section{Slots}{
 
 \describe{
-\item{\code{pops}}{list of \code{\link{Pop-class}} and/or
-\code{MultiPop-class}}
+\item{\code{pops}}{list of \code{\link{Pop-class}} or
+\code{MultiPop-class} objects (the latter gives nested structure)}
 }}
 
+\seealso{
+\code{\link{newMultiPop}}, \code{\link{newEmptyMultiPop}},
+  and \code{\link{mergeMultiPops}} on how to merge one or more \code{MultiPop}
+  with control over the level of nesting.
+}

@@ -18,13 +18,13 @@
 isRawPop(x)
 }
 \arguments{
-\item{x}{a 'RawPop' object}
+\item{x}{a \code{RawPop} object}
 
 \item{i}{index of individuals}
 
-\item{...}{additional 'RawPop' objects}
+\item{...}{additional \code{RawPop} objects}
 
-\item{object}{a 'RawPop' object}
+\item{object}{a \code{RawPop} object}
 }
 \description{
 The raw population class contains only genotype data.
@@ -54,8 +54,8 @@ The raw population class contains only genotype data.
 
 \item{\code{nLoci}}{number of loci per chromosome}
 
-\item{\code{geno}}{list of nChr length containing chromosome genotypes.
+\item{\code{geno}}{list of \code{nChr} length containing chromosome genotypes.
 Each element is a three dimensional array of raw values.
-The array dimensions are nLoci by ploidy by nInd.}
+The array dimensions are \code{nLoci} by \code{ploidy} by \code{nInd}.}
 }}
 

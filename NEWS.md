@@ -1,4 +1,4 @@
-# AlphaSimR 2.2.0
+# AlphaSimR 2.0.0.9001
 
 * Added asLogNormal() function.
 
