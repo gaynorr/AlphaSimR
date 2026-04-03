@@ -4,7 +4,7 @@
 \alias{calcPheno}
 \title{Calculate phenotypes}
 \usage{
-calcPheno(pop, varE, reps, p, traits, simParam)
+calcPheno(pop, varE, reps, p, traits, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of class Pop}

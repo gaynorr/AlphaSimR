@@ -14,7 +14,8 @@ pedigreeCross(
   DH = NULL,
   nSelf = NULL,
   useFemale = TRUE,
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -48,6 +49,9 @@ individual should be selfed.}
 rates be used. This parameter has no effect if, recombRatio=1.}
 
 \item{simParam}{an object of 'SimParam' class}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 Creates a \code{\link{Pop-class}} from a generic

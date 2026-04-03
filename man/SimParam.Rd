@@ -290,8 +290,6 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{nThreads}}{number of threads used on platforms with OpenMP support}
-
 \item{\code{snpChips}}{list of SNP chips}
 
 \item{\code{invalidQtl}}{list of segregating sites that aren't valid QTL}
@@ -301,7 +299,12 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \item{\code{founderPop}}{founder population used for variance scaling}
 
 \item{\code{finalizePop}}{function applied to newly created populations.
-Currently does nothing and should only be changed by expert users.}
+The function must satisfy these four requirements:
+1) The first argument must be a \code{\link{Pop-class}} object,
+2) The second argument must be a SimParam object,
+3) The remaining arguments must be passed via \code{...}, and
+4) The return must be a \code{\link{Pop-class}} object.
+See \code{\link{asCategorical}} for an example.}
 
 \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
 return an empty population with a warning instead of an error.}
@@ -323,6 +326,9 @@ autopolyploid. (default is 0)}
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
+\item{\code{nThreads}}{number of threads used with OpenMP (when available).
+Assign \code{NULL} to reset to \code{getNumThreads()}.}
+
 \item{\code{traitNames}}{vector of trait names}
 
 \item{\code{snpChipNames}}{vector of chip names}
@@ -831,7 +837,8 @@ with correlated additive effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -856,6 +863,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -894,7 +904,8 @@ with correlated effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -928,6 +939,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -965,7 +979,8 @@ variance and dominance genetic variance.
   limVarDD = c(0, 0.5),
   silent = FALSE,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -993,6 +1008,9 @@ Can be a single value or nChr values.}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1066,7 +1084,8 @@ with correlated effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1097,6 +1116,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1136,7 +1158,8 @@ Randomly assigns eligible QTLs for a trait with dominance and GxE.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1176,6 +1199,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1213,7 +1239,8 @@ with correlated additive effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1246,6 +1273,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1286,7 +1316,8 @@ with correlated effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1325,6 +1356,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1365,7 +1399,8 @@ with correlated effects.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1404,6 +1439,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1446,7 +1484,8 @@ epistasis and GxE.
   gamma = FALSE,
   shape = 1,
   force = FALSE,
-  name = NULL
+  name = NULL,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1491,6 +1530,9 @@ for via the desired level of genetic variance, the var argument)}
 ignored. Only set to TRUE if you know what you are doing.}
 
 \item{\code{name}}{optional name for trait(s)}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1517,7 +1559,7 @@ Manually add a new trait to the simulation. Trait must
 be formatted as a \code{\link{LociMap-class}}. If the
 trait is not already formatted, consider using importTrait.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE, nThreads = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1530,6 +1572,9 @@ trait is not already formatted, consider using importTrait.
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1552,7 +1597,8 @@ inputs. This function only works for A and AD trait types.
   intercept = NULL,
   name = NULL,
   varE = NULL,
-  force = FALSE
+  force = FALSE,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1575,6 +1621,9 @@ a single trait.}
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1585,7 +1634,13 @@ ignored. Only set to TRUE if you know what you are doing}
 \subsection{Method \code{switchTrait()}}{
 Switch a trait in the simulation.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchTrait(traitPos, lociMap, varE = NA_real_, force = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchTrait(
+  traitPos,
+  lociMap,
+  varE = NA_real_,
+  force = FALSE,
+  nThreads = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -1600,6 +1655,9 @@ Switch a trait in the simulation.
 
 \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -1715,7 +1773,8 @@ values of means and variances in the founder population.
   var = 1,
   varEnv = 0,
   varGxE = 1e-06,
-  useVarA = TRUE
+  useVarA = TRUE,
+  nThreads = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -1731,6 +1790,9 @@ values of means and variances in the founder population.
 \item{\code{varGxE}}{a vector of new GxE variances}
 
 \item{\code{useVarA}}{tune according to additive genetic variance if true}
+
+\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{self$nThreads}.}
 }
 \if{html}{\out{</div>}}
 }

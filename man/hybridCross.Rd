@@ -9,7 +9,8 @@ hybridCross(
   males,
   crossPlan = "testcross",
   returnHybridPop = FALSE,
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ or a matrix with two columns for designed crosses}
 \code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \description{
 A convenient function for hybrid plant breeding simulations. Allows for

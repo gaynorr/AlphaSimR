@@ -22,6 +22,8 @@
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for 
 #' traits
 #'
@@ -47,38 +49,42 @@
 #' @export
 writePlink = function(pop, baseName, traits=1, use="pheno", 
                       snpChip=1, useQtl=FALSE, simParam=NULL, 
-                      ...){
+                      nThreads=NULL, ...){
   if(pop@ploidy!=2L){
     stop("writePlink() only supports ploidy=2")
   } 
-  
   if(is.null(simParam)){ 
-    simParam = get(x="SP", envir=.GlobalEnv)
+    simParam = get("SP", envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   
   # Pull "phenotype" data indicated by traits
   y = getResponse(pop=pop, trait=traits, use=use,
-                  simParam=simParam, ...)
+                  simParam=simParam, nThreads=nThreads, ...)
   
   # Pull QTL/SNP data indicated by snpChip and useQtl
   if(useQtl){
     H1 = pullQtlHaplo(pop=pop, trait=snpChip, 
                       haplo=1, asRaw=TRUE, 
-                      simParam=simParam)
+                      simParam=simParam, nThreads=nThreads)
     
     H2 = pullQtlHaplo(pop=pop, trait=snpChip, 
                       haplo=2, asRaw=TRUE, 
-                      simParam=simParam)
+                      simParam=simParam, nThreads=nThreads)
     
     map = getQtlMap(trait=snpChip, simParam=simParam)
   }else{
     H1 = pullSnpHaplo(pop=pop, snpChip=snpChip, 
                       haplo=1, asRaw=TRUE, 
-                      simParam=simParam)
+                      simParam=simParam, nThreads=nThreads)
     
     H2 = pullSnpHaplo(pop=pop, snpChip=snpChip, 
                       haplo=2, asRaw=TRUE, 
-                      simParam=simParam)
+                      simParam=simParam, nThreads=nThreads)
     
     map = getSnpMap(snpChip=snpChip, simParam=simParam)
   }

@@ -121,90 +121,6 @@ arma::uword mapCol(const arma::uword& row, const arma::uword& k, const arma::uwo
   return k+row+1 - n*(n-1)/2 + (n-row)*((n-row)-1)/2;
 }
 
-
-// Randomly samples integers without replacement
-// n number of integers to return
-// N number of integers to sample from
-// Returns an integer vector of length n with values ranging from 0 to N-1
-// Uses Jeffrey Scott Vitter's Method D
-// [[Rcpp::export]]
-arma::uvec sampleInt(arma::uword n, arma::uword N){
-  arma::uvec output;
-  output.set_size(n);
-  if(n == 0){
-    return output;
-  }
-  double q, v, x, y1, y2;
-  arma::uword threshold = 13*n;
-  arma::uword S, limit, top, bottom;
-  arma::vec u(1,arma::fill::randu);
-  v = exp(log(u(0))/double(n));
-  q = double(N-n+1);
-  while((n>1) & (threshold<N)){
-    while(true){
-      while(true){
-        x = double(N)*(1-v);
-        S = floor(x);
-        if(double(S)<q){
-          break;
-        }
-        u.randu();
-        v = exp(log(u(0))/double(n));
-      }
-      u.randu();
-      y1 = exp(log(u(0)*double(N)/q)/double(n-1));
-      v = y1*(1-x/double(N))*(q/(q-double(S)));
-      if(v <= 1){
-        break;
-      }
-      y2 = 1;
-      top = N-1;
-      if((n-1) > S){
-        bottom = N-n;
-        limit = N-S;
-      }else{
-        bottom = N-S-1;
-        limit = N-n+1;
-      }
-      for(arma::uword i=N-1; i>=limit; --i)
-        y2 *= double(top)/double(bottom);
-      u.randu();
-      if((double(N)/(double(N)-x)) >= (y1*exp(log(y2)/double(n-1)))){
-        v = exp(log(u(0))/double(n-1));
-        break;
-      }
-      v = exp(log(u(0))/double(n));
-    }
-    output(n-1) = S+1;
-    N = N-S-1;
-    --n;
-    q = double(N-n+1);
-    threshold -= 13;
-  }
-  if(n > 1){
-    top = N-n;
-    while(n >= 2){
-      u.randu();
-      S = 0;
-      q = double(top)/double(N);
-      while(q > u(0)){
-        ++S;
-        --top;
-        --N;
-        q = (q*double(top))/double(N);
-      }
-      output(n-1) = S+1;
-      --N;
-      --n;
-    }
-    u.randu();
-    output(0) = floor(u(0)*N);
-  }else{
-    output(0) = floor(v*N);
-  }
-  return cumsum(output);
-}
-
 // Samples random pairs without replacement from all possible combinations
 // nLevel1 = number of levels for the first column
 // nLevel2 = number of levels for the second column
@@ -214,6 +130,8 @@ arma::uvec sampleInt(arma::uword n, arma::uword N){
 // Returns an integer matrix with the sampled levels for each column
 // Values in column 1 range from 1 to nLevel1
 // Values in column 2 range from 1 to nLevel2
+// Uses alphasimrRng::sampleInt(), which is seeded from R's RNG.
+// Not safe for use inside OpenMP.
 // [[Rcpp::export]]
 arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2, 
                        arma::uword n){
@@ -223,7 +141,8 @@ arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2,
     n -= N;
     ++fullComb;
   }
-  arma::uvec samples = sampleInt(n,N);
+  // Sample n combinations from the full set of size N
+  arma::uvec samples = alphasimrRng::sampleInt(n,N);
   // Calculate selected combinations
   arma::umat output(n,2);
   for(arma::uword  i=0; i<n; ++i){
@@ -252,6 +171,8 @@ arma::umat sampAllComb(arma::uword nLevel1, arma::uword nLevel2,
 // then only n%N combinations are sampled and the rest are systematically assigned
 // Returns an integer matrix with the sampled levels for each combination
 // Returned values range from 1 to nLevel
+// Uses alphasimrRng::sampleInt(), which is seeded from R's RNG.
+// Not safe for use inside OpenMP.
 // [[Rcpp::export]]
 arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
   arma::uword N = nLevel*(nLevel-1)/2;
@@ -260,7 +181,8 @@ arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
     n -= N;
     ++fullComb;
   }
-  arma::uvec samples = sampleInt(n,N);
+  // Sample n combinations from the full set of size N
+  arma::uvec samples = alphasimrRng::sampleInt(n,N);
   // Calculate selected combinations
   arma::umat output(n,2);
   for(arma::uword i=0; i<n; ++i){
@@ -285,19 +207,6 @@ arma::umat sampHalfDialComb(arma::uword nLevel, arma::uword n){
 // [[Rcpp::export]]
 arma::mat calcCoef(arma::mat& X, arma::mat& Y){
   return arma::solve(X,Y);
-}
-
-// Knuth's algorithm for sampling from a Poisson distribution
-arma::uword samplePoisson(double lambda){
-  double p=1,L=exp(-lambda);
-  arma::uword k=0;
-  arma::vec u(1);
-  do{
-    k++;
-    u.randu();
-    p *= u(0);
-  }while(p>L);
-  return k-1;
 }
 
 // n choose k recursive formula
@@ -326,4 +235,3 @@ int getNumThreads(){
 #endif
   return 1;
 }
-

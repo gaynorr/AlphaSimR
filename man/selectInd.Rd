@@ -14,6 +14,7 @@ selectInd(
   returnPop = TRUE,
   candidates = NULL,
   simParam = NULL,
+  nThreads = NULL,
   ...
 )
 }
@@ -51,6 +52,9 @@ individuals is returned.}
 \item{candidates}{an optional vector of eligible selection candidates.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments if using a function for
 \code{trait} or \code{use}}

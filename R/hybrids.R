@@ -16,6 +16,8 @@
 #' \code{\link{HybridPop-class}}. If false returns results as
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -35,9 +37,14 @@
 hybridCross = function(females, males,
                        crossPlan="testcross",
                        returnHybridPop=FALSE,
-                       simParam=NULL){
+                       simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
@@ -63,7 +70,8 @@ hybridCross = function(females, males,
     return(makeCross2(females=females,
                       males=males,
                       crossPlan=crossPlan,
-                      simParam=simParam))
+                      simParam=simParam,
+                      nThreads=nThreads))
   }
 
   #Return HybridPop-class
@@ -79,7 +87,7 @@ hybridCross = function(females, males,
                       femaleParents=crossPlan[,1],
                       males=males,
                       maleParents=crossPlan[,2],
-                      nThreads=simParam$nThreads)
+                      nThreads=nThreads)
     gv[,i] = tmp[[1]]
     if(length(tmp)==2){
       gxe[[i]] = tmp[[2]]
@@ -249,6 +257,8 @@ calcGCA = function(pop,use="pheno"){
 #' or by the \code{\link{makeDH}} function
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #'
 #' @return Returns an object of \code{\link{Pop-class}} or
@@ -272,16 +282,23 @@ calcGCA = function(pop,use="pheno"){
 #' @export
 setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
                        varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL,
-                       inbred=FALSE, onlyPheno=FALSE, simParam=NULL){
+                       inbred=FALSE, onlyPheno=FALSE, simParam=NULL,
+                       nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(class(testers)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers,
                       use=use, h2=h2, H2=H2, varE=varE, corE=corE,
                       reps=reps, fixEff=fixEff, p=p, inbred=inbred,
-                      onlyPheno=FALSE, simParam=simParam)
+                      onlyPheno=FALSE, simParam=simParam,
+                      nThreads=nThreads)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -291,7 +308,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
   use = tolower(use)
   #Make hybrids
   tmp = hybridCross(females=pop, males=testers, crossPlan="testcross",
-                    returnHybridPop=inbred, simParam=simParam)
+                    returnHybridPop=inbred, simParam=simParam,
+                    nThreads=nThreads)
   #Get response
   if(use=="pheno"){
     y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,
@@ -354,6 +372,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @details
 #' The reps parameter is for convenient representation of replicated data.
@@ -385,16 +405,22 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
                             h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                             reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
-                            simParam=NULL){
+                            simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(class(testPop)=="Pop", !onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop,
                       nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2,
                       varE=varE, corE=corE, reps=reps, fixEff=fixEff,
-                      p=p, onlyPheno=FALSE, simParam=simParam)
+                      p=p, onlyPheno=FALSE, simParam=simParam,
+                      nThreads=nThreads)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -404,7 +430,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
   use = tolower(use)
   #Make hybrids
   tmp = randCross2(females=pop, males=testPop, nCrosses=nInd(pop)*nMatePerInd,
-                   balance=TRUE, simParam=simParam)
+                   balance=TRUE, simParam=simParam, nThreads=nThreads)
   #Get response
   if(use=="pheno"){
     y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,

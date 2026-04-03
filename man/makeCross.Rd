@@ -4,7 +4,7 @@
 \alias{makeCross}
 \title{Make designed crosses}
 \usage{
-makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL)
+makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL, nThreads = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -16,6 +16,9 @@ population or character strings for the IDs.}
 \item{nProgeny}{number of progeny per cross}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

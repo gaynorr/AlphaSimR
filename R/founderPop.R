@@ -155,11 +155,6 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
     nThreads = nChr
   }
 
-  # Note that the seed doesn't really control the random number seed.
-  # This is partially because MaCS is called within an OpenMP loop, but
-  # it is still a problem even with nThreads = 1
-  seed = sapply(1:nChr,function(x){as.character(sample.int(1e8,1))})
-
   if(is.null(segSites)){
     segSites = rep(0L,nChr)
   }else if(length(segSites)==1L){
@@ -240,6 +235,11 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   if(length(genLen)==1){
     genLen = rep(genLen, nChr)
   }
+
+  # MaCS uses its own RNG, so runMacs() creates explicit chromosome seeds from
+  # R's RNG and passes them through the R/C++ bridge. The same chromosome seed
+  # is also reused for possible post-MaCS site subsampling in C++.
+  seed = sample.int(n = 1e8, size = nChr)
 
   # Run MaCS
   macsOut = MaCS(command, segSites, inbred, ploidy,
@@ -323,9 +323,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #' (cattleChrBp = cattleChrSum / 30)
 #' recRate = 9.26e-09
 #' (cattleGenLen = recRate * cattleChrBp)
-#' mutRate = 1.20e-08
+#' cattleMutRate = 9.4e-9
 #' runMacs2(nInd = 10, nChr = 1, Ne = 90, bp = cattleChrBp,
-#'          genLen = cattleGenLen, mutRate = 1.20e-08,
+#'          genLen = cattleGenLen, mutRate = cattleMutRate,
 #'          histNe  = c(120, 250, 350, 1000, 1500, 2000, 2500, 3500, 7000, 10000, 17000, 62000),
 #'          histGen = c(  3,   6,  12,   18,   24,  154,  454,  654, 1754,  2354,  3354, 33154),
 #'          returnCommand = TRUE)
@@ -515,6 +515,8 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 #' @param chr which chromosome to add the site
 #' @param mapPos genetic map position of site in Morgans
 #' @param haplo haplotypes for the site
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{getNumThreads()}.
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #'
@@ -526,15 +528,21 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 #' # Add a locus a the 0.5 Morgan map position
 #' haplo = matrix(sample(x=0:1, size=20, replace=TRUE), ncol=1)
 #'
-#' founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5, haplo=haplo)
+#' founderPop2 = addSegSite(founderPop, siteName="x", chr=1, mapPos=0.5,
+#'                          haplo=haplo, nThreads=1L)
 #'
 #' pullSegSiteHaplo(founderPop2)
 #'
 #' @export
-addSegSite = function(mapPop, siteName, chr, mapPos, haplo){
+addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL){
   # Check validity of input data
   stopifnot(is(mapPop, "MapPop"))
   stopifnot(length(haplo)==(mapPop@nInd*mapPop@ploidy))
+  if(is.null(nThreads)){
+    nThreads = getNumThreads()
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   # Check that name isn't already present
   allSiteNames = unlist(unname(lapply(mapPop@genMap, names)))
@@ -559,7 +567,7 @@ addSegSite = function(mapPop, siteName, chr, mapPos, haplo){
   haploMat = getHaplo(chrGeno,
                       mapPop@nLoci[chr],
                       1:mapPop@nLoci[chr],
-                      getNumThreads())
+                      nThreads)
 
   # Find position of insertion
   pos = findInterval(x=mapPos, vec=chrMap)
@@ -598,7 +606,7 @@ addSegSite = function(mapPop, siteName, chr, mapPos, haplo){
 
   # Check if an inbred population has become outbred
   if(mapPop@inbred){
-    M = pullMarkerGeno(mapPop, markers=siteName)
+    M = pullMarkerGeno(mapPop, markers=siteName, nThreads=nThreads)
     isHomo0 = M==0L
     isHomo1 = M==mapPop@ploidy
     isHet = !(isHomo0 | isHomo1)

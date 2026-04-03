@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+## Introduction
+
 AlphaSimR is a package for performing stochastic simulations of plant and animal breeding programs. It is the successor to the AlphaSim software for breeding program simulation [@AlphaSim]. AlphaSimR combines the features of its predecessor with the R software environment to create a flexible and easy-to-use software environment capable of simulating very complex plant and animal breeding programs.
 
 There is no single way to construct a simulation in AlphaSimR. This is an intentional design aspect of AlphaSimR, because it frees users from the constraints of predefined simulation structures. However, most simulations follow a general structure consisting of four steps:
@@ -19,7 +21,7 @@ There is no single way to construct a simulation in AlphaSimR. This is an intent
 3. Modeling the Breeding Program
 4. Examining the Results
 
-The easiest way to learn how to use AlphaSimR is to learn about these steps. The easiest way to learn about these steps is to look at an example, so this vignette will introduce AlphaSimR by working through a small example simulation. The example will begin with a description of the breeding program being simulated. This will be followed by sections for each of the above steps and conclude with the full code for the example simulation. 
+The easiest way to learn how to use AlphaSimR is to learn about these steps. The easiest way to learn about these steps is to look at an example, so this vignette will introduce AlphaSimR by working through a small example simulation. The example will begin with a description of the breeding program being simulated. This will be followed by sections for each of the above steps and conclude with the full code for the example simulation.
 
 ## Example Breeding Program
 
@@ -37,7 +39,7 @@ The code above uses the `quickHaplo` function to generate the initial haplotypes
 
 The preferred choice for simulating realistic haplotypes is to use the `runMacs` function. The `runMacs` function is a wrapper for the MaCS software, a coalescent simulation program included within the distribution of AlphaSimR [@MaCS]. The MaCS software is used by AlphaSimR to simulate bi-allelic genome sequences according to a population demographic history. The `runMacs` function allows the user to specify one of several predefined population histories or supply their own population history. A list of currently available population histories can be found in the `runMacs` help document.
 
-An alternative choice for providing realistic initial haplotypes is to import them with the `newMapPop` function. This function allows the user to import their own haplotypes that can be generated in another software package or taken directly from real marker data. 
+An alternative choice for providing realistic initial haplotypes is to import them with the `newMapPop` function. This function allows the user to import their own haplotypes that can be generated in another software package or taken directly from real marker data.
 
 ## Setting Simulation Parameters
 
@@ -65,24 +67,24 @@ SP$setSexes("yes_sys")
 
 ## Modeling the Breeding Program
 
-We are now ready to start modeling the breeding program. To begin, we need to generate the initial population of animals. This step will take the haplotypes in `founderPop` and the information in `SP` to create an object of `Pop-class`. 
+We are now ready to start modeling the breeding program. To begin, we need to generate the initial population of animals. This step will take the haplotypes in `founderPop` and the information in `SP` to create an object of `Pop-class`.
 
 ```{r eval=FALSE}
 pop = newPop(founderPop)
 ```
-A `Pop-class` object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations. 
+A `Pop-class` object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations.
 
-Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in AlphaSimR that lacks a built-in function. However, the example breeding program presented here is easily modeled using built-in functions. 
+Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in AlphaSimR that lacks a built-in function. However, the example breeding program presented here is easily modeled using built-in functions.
 
-Before continuing to model the breeding program, you should first think about the data you’ll need for examining the results in the next stage. This is because you must expressly request that the relevant data is saved. AlphaSimR is designed this way for increased speed and reduced memory usage. 
+Before continuing to model the breeding program, you should first think about the data you’ll need for examining the results in the next stage. This is because you must expressly request that the relevant data is saved. AlphaSimR is designed this way for increased speed and reduced memory usage.
 
-In this example a plot of the generation mean over time is desired. All that is needed to construct this plot is a vector containing the mean in each generation. To start this vector, the mean in the current generation is saved as “genMean”. In each subsequent generation, the mean of that generation will be added to “genMean”. Measuring the mean in the current generation is accomplished with the code below.  
+In this example a plot of the generation mean over time is desired. All that is needed to construct this plot is a vector containing the mean in each generation. To start this vector, the mean in the current generation is saved as “genMean”. In each subsequent generation, the mean of that generation will be added to “genMean”. Measuring the mean in the current generation is accomplished with the code below.
 
 ```{r eval=FALSE}
 genMean = meanG(pop)
 ```
 
-The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively. 
+The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively.
 
 To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with `c()`. The code for the loop is given below.
 

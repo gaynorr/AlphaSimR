@@ -10,7 +10,8 @@ mendelianSampling(
   mothers = NULL,
   fathers = NULL,
   use = "gv",
-  simParam = NULL
+  simParam = NULL,
+  nThreads = NULL
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ if \code{NULL} must provide \code{parents}}
 \code{"\link{ebv}"}, or \code{"\link{pheno}"}}
 
 \item{simParam}{\code{\link{SimParam}} object}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 a matrix of Mendelian samplings with dimensions nInd by nTraits

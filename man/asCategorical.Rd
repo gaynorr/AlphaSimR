@@ -17,39 +17,39 @@ asCategorical(
 }
 \arguments{
 \item{x}{matrix, values for one or more traits (if not a matrix,
-we cast to a matrix)}
+we cast to a matrix).}
 
-\item{p}{NULL, numeric or list, when \code{NULL} the \code{threshold} argument
-takes precedence; when numeric, provide a vector of probabilities of
-categories to convert continuous values into categories for a single trait
-(if probabilities do not sum to 1, another category is added and a warning
-is raised); when list, provide a list of numeric probabilities - list node
-with \code{NULL} will skip conversion for a specific trait (see examples);
-internally \code{p} is converted to \code{threshold} hence input
-\code{threshold} is overwritten}
+\item{p}{\code{NULL}, numeric, or list, when \code{NULL} the \code{threshold}
+argument takes precedence; when numeric, provide a vector of probabilities
+of categories to convert continuous values into categories for a single
+trait (if probabilities do not sum to 1, another category is added and
+a warning is raised); when list, provide a list of numeric probabilities
+- list node with \code{NULL} will skip conversion for a specific trait
+(see examples); internally \code{p} is converted to \code{threshold} hence
+input \code{threshold} is overwritten.}
 
 \item{mean}{numeric, assumed mean(s) of the normal (Gaussian) trait(s);
-used only when \code{p} is given}
+used only when \code{p} is given.}
 
 \item{var}{numeric, assumed variance(s) of the normal (Gaussian) trait(s);
-used only when \code{p} is given}
+used only when \code{p} is given.}
 
-\item{threshold}{NULL, numeric or list, when numeric, provide a vector of
+\item{threshold}{\code{NULL}, numeric or, list, when numeric, provide a vector of
 threshold values to convert continuous values into categories for a single trait
 (the thresholds specify left-closed and right-opened intervals [t1, t2),
 which can be changed with \code{include.lowest} and \code{right};
 ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
 range of values; otherwise you will get \code{NA} values);
 when list, provide a list of numeric thresholds - list node with \code{NULL}
-will skip conversion for a specific trait (see examples)}
+will skip conversion for a specific trait (see examples).}
 
-\item{include.lowest}{logical, see \code{\link{cut}}}
+\item{include.lowest}{logical, see \code{\link{cut}}.}
 
-\item{right}{logical, see \code{\link{cut}}}
+\item{right}{logical, see \code{\link{cut}}.}
 }
 \value{
 matrix of values with some traits recorded as ordered categories
- in the form of 1:nC with nC being the number of categories.
+ in the form of \code{1:nC} with \code{nC} being the number of categories.
 }
 \description{
 Convert a normal (Gaussian) trait to an ordered categorical (threshold)
@@ -60,6 +60,7 @@ If input trait is normal (Gaussian) then this function generates a
   categorical trait according to the ordered probit model.
 }
 \examples{
+#Simulate a founder pop, set latent trait parameters, and create a population
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
 \dontshow{SP$nThreads = 1L}
@@ -68,10 +69,10 @@ trtVarG = c(1, 2)
 SP$addTraitA(nQtlPerChr = 10, mean = trtMean, var = trtVarG,
              corA = matrix(data = c(1.0, 0.6,
                                     0.6, 1.0), ncol = 2))
-pop = newPop(founderPop)
 trtVarE = c(1, 1)
 trtVarP = trtVarG + trtVarE
-pop = setPheno(pop, varE = trtVarE)
+SP$setVarE(varE = trtVarE)
+pop = newPop(founderPop)
 pheno(pop)
 
 #Convert a single input trait
@@ -108,4 +109,17 @@ asCategorical(x = pheno(pop),
               p = list(c(0.5, 0.5),
                        p),
               mean = trtMean, var = trtVarP)
+
+#Store the recoded trait manually
+pheno(pop)
+pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+pheno(pop)
+
+#Apply and store the transformation automatically via SimParam$finalizePop()
+SP$finalizePop = function(pop, simParam = SP) {
+  pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+  return(pop)
+}
+pop = newPop(founderPop)
+pheno(pop)
 }

@@ -4,7 +4,7 @@
 \alias{convertTraitsToNames}
 \title{Convert traits to a vector of names}
 \usage{
-convertTraitsToNames(traits, simParam)
+convertTraitsToNames(traits, simParam = NULL)
 }
 \arguments{
 \item{traits}{the traits argument from a GS model}

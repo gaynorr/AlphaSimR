@@ -16,6 +16,7 @@
   maleParentPop = NULL,
   hist = NULL,
   simParam = NULL,
+  nThreads = NULL,
   ...
 )
 }
@@ -42,7 +43,10 @@
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments passed to the finalizePop
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{...}{additional arguments passed to the \code{finalizePop}
 function in simParam}
 }
 \value{

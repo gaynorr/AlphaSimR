@@ -4,7 +4,7 @@
 \alias{checkSexes}
 \title{Find individuals of desired sex}
 \usage{
-checkSexes(pop, sex, simParam, ...)
+checkSexes(pop, sex, simParam = NULL, ...)
 }
 \arguments{
 \item{pop}{a population}
