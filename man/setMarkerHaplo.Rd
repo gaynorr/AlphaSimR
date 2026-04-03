@@ -45,11 +45,13 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 
 # Extract haplotypes for marker "1_1"
 H = pullMarkerHaplo(founderPop, markers="1_1")
+H[1,1]
 
 # Set the first haplotype to 1
 H[1,1] = 1L
 
 # Set marker haplotypes
 founderPop = setMarkerHaplo(founderPop, haplo=H)
+pullMarkerHaplo(founderPop, markers="1_1")[1,1]
 
 }
