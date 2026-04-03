@@ -7,7 +7,7 @@
 newEmptyMultiPop()
 }
 \value{
-Returns an object of \code{\link{MultiPop-class}} where the 
+Returns an object of \code{\link{MultiPop-class}} where the
   \code{multipop@pops} slot is an empty list.
 }
 \description{
