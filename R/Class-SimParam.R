@@ -11,9 +11,6 @@ SimParam = R6Class(
   public = list(
     #### Public ----
 
-    #' @field nThreads number of threads used on platforms with OpenMP support
-    nThreads = "integer",
-
     #' @field snpChips list of SNP chips
     snpChips = "list",
 
@@ -27,7 +24,12 @@ SimParam = R6Class(
     founderPop = "MapPop",
 
     #' @field finalizePop function applied to newly created populations.
-    #' Currently does nothing and should only be changed by expert users.
+    #' The function must satisfy these four requirements:
+    #' 1) The first argument must be a \code{\link{Pop-class}} object,
+    #' 2) The second argument must be a SimParam object,
+    #' 3) The remaining arguments must be passed via \code{...}, and
+    #' 4) The return must be a \code{\link{Pop-class}} object.
+    #' See \code{\link{asCategorical}} for an example.
     finalizePop = "function",
 
     #' @field allowEmptyPop if true, population arguments with nInd=0 will
@@ -506,6 +508,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -516,9 +520,15 @@ SimParam = R6Class(
     #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
-                         gamma=FALSE,shape=1,force=FALSE,name=NULL){
+                         gamma=FALSE,shape=1,force=FALSE,name=NULL,
+                         nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -543,8 +553,7 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         trait@addEff = trait@addEff*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
@@ -574,6 +583,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -585,9 +596,15 @@ SimParam = R6Class(
     #' SP$addTraitAD(10, meanDD=0.5)
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
-                          gamma=FALSE,shape=1,force=FALSE,name=NULL){
+                          gamma=FALSE,shape=1,force=FALSE,name=NULL,
+                          nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -619,8 +636,7 @@ SimParam = R6Class(
                     domEff=domEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -656,6 +672,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @details
     #' This function will always add a trait to 'SimParam', unless an error occurs
@@ -702,9 +720,15 @@ SimParam = R6Class(
     #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
     altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0,
                              limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
-                             silent=FALSE,force=FALSE,name=NULL){
+                             silent=FALSE,force=FALSE,name=NULL,
+                             nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -723,7 +747,7 @@ SimParam = R6Class(
                           varA = varA,
                           varD = varD,
                           inbrDepr = inbrDepr,
-                          nThreads = self$nThreads)
+                          nThreads = nThreads)
 
       # Run optim to optimize meanDD and varDD
       optOut = optim(par = c(mean(limMeanDD), mean(sqrt(limVarDD))),
@@ -776,6 +800,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -787,9 +813,14 @@ SimParam = R6Class(
     #' SP$addTraitAG(10, varGxE=2)
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
-                          force=FALSE,name=NULL){
+                          force=FALSE,name=NULL,nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -822,8 +853,7 @@ SimParam = R6Class(
                     addEff=addEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         trait@addEff = trait@addEff*scale
         trait@intercept = mean[i]-mean(tmp$gv*scale)
@@ -833,8 +863,7 @@ SimParam = R6Class(
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop,
-                            self$nThreads)
+        tmpG = calcGenParam(traitG, self$founderPop, nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
           trait = new("TraitAG",
@@ -878,6 +907,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -890,9 +921,14 @@ SimParam = R6Class(
     addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
                            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
-                           shape=1,force=FALSE,name=NULL){
+                           shape=1,force=FALSE,name=NULL,nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -933,8 +969,7 @@ SimParam = R6Class(
                     domEff=domEff[,i],
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -949,8 +984,7 @@ SimParam = R6Class(
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop,
-                            self$nThreads)
+        tmpG = calcGenParam(traitG, self$founderPop, nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
           trait = new("TraitADG",
@@ -997,6 +1031,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1008,9 +1044,14 @@ SimParam = R6Class(
     #' SP$addTraitAE(10, relAA=0.1)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
                           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
-                          name=NULL){
+                          name=NULL,nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -1046,8 +1087,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -1089,6 +1129,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1101,9 +1143,14 @@ SimParam = R6Class(
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
                            useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
-                           name=NULL){
+                           name=NULL,nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -1147,8 +1194,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -1191,6 +1237,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1202,9 +1250,14 @@ SimParam = R6Class(
     #' SP$addTraitAEG(10, varGxE=2)
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
-                           shape=1,force=FALSE,name=NULL){
+                           shape=1,force=FALSE,name=NULL,nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -1249,8 +1302,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -1265,8 +1317,7 @@ SimParam = R6Class(
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop,
-                            self$nThreads)
+        tmpG = calcGenParam(traitG, self$founderPop, nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
           trait = new("TraitAEG",
@@ -1318,6 +1369,8 @@ SimParam = R6Class(
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
     #' @param name optional name for trait(s)
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @examples
     #' #Create founder haplotypes
@@ -1330,9 +1383,15 @@ SimParam = R6Class(
     addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
                             corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
-                            gamma=FALSE,shape=1,force=FALSE,name=NULL){
+                            gamma=FALSE,shape=1,force=FALSE,name=NULL,
+                            nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       if(length(nQtlPerChr)==1){
         nQtlPerChr = rep(nQtlPerChr,self$nChr)
@@ -1385,8 +1444,7 @@ SimParam = R6Class(
                     epiEff=cbind(E,epiEff[,i]),
                     intercept=0,
                     name=name[i])
-        tmp = calcGenParam(trait, self$founderPop,
-                           self$nThreads)
+        tmp = calcGenParam(trait, self$founderPop, nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -1402,8 +1460,7 @@ SimParam = R6Class(
                      qtlLoci,
                      addEff=gxeEff[,i],
                      intercept=0)
-        tmpG = calcGenParam(traitG, self$founderPop,
-                            self$nThreads)
+        tmpG = calcGenParam(traitG, self$founderPop, nThreads)
         if(varEnv[i]==0){
           scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
           trait = new("TraitADEG",
@@ -1439,13 +1496,19 @@ SimParam = R6Class(
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
-    manAddTrait = function(lociMap,varE=NA_real_,force=FALSE){
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
+    manAddTrait = function(lociMap,varE=NA_real_,force=FALSE,nThreads=NULL){
       if(!force){
         private$.isRunning()
       }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
+      }
       stopifnot(is(lociMap,"LociMap"))
-      tmp = calcGenParam(lociMap, self$founderPop,
-                         self$nThreads)
+      tmp = calcGenParam(lociMap, self$founderPop, nThreads)
       varA = popVar(tmp$bv)[1]
       varG = popVar(tmp$gv)[1]
       private$.addTrait(lociMap,varA,varG,varE)
@@ -1470,15 +1533,23 @@ SimParam = R6Class(
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     importTrait = function(markerNames,
                            addEff,
                            domEff=NULL,
                            intercept=NULL,
                            name=NULL,
                            varE=NULL,
-                           force=FALSE){
+                           force=FALSE,
+                           nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
 
       # Check addEff and domEff inputs
@@ -1589,7 +1660,8 @@ SimParam = R6Class(
         }
 
         # Add trait to simParam
-        self$manAddTrait(lociMap=trait, varE=varE[i], force=force)
+        self$manAddTrait(lociMap=trait, varE=varE[i], force=force,
+                         nThreads=nThreads)
       }
 
       invisible(self)
@@ -1604,15 +1676,22 @@ SimParam = R6Class(
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
-    switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE){
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
+    switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE,
+                           nThreads=NULL){
       if(!force){
         private$.isRunning()
+      }
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
       }
       stopifnot(is(lociMap,"LociMap"),
                 traitPos<=self$nTraits,
                 traitPos>0)
-      tmp = calcGenParam(lociMap, self$founderPop,
-                         self$nThreads)
+      tmp = calcGenParam(lociMap, self$founderPop, nThreads)
       private$.traits[[traitPos]] = lociMap
       private$.varA[traitPos] = popVar(tmp$bv)[1]
       private$.varG[traitPos] = popVar(tmp$gv)[1]
@@ -1778,6 +1857,8 @@ SimParam = R6Class(
     #' @param varEnv a vector of new environmental variances
     #' @param varGxE a vector of new GxE variances
     #' @param useVarA tune according to additive genetic variance if true
+    #' @param nThreads number of threads to use if OpenMP is available.
+    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @note
     #' By default the founder population is the population used to
@@ -1805,7 +1886,12 @@ SimParam = R6Class(
     #' pop = resetPop(pop, simParam=SP)
     #' meanG(pop)
     rescaleTraits = function(mean=0,var=1,varEnv=0,
-                             varGxE=1e-6,useVarA=TRUE){
+                             varGxE=1e-6,useVarA=TRUE,nThreads=NULL){
+      if(is.null(nThreads)){
+        nThreads = self$nThreads
+      }else{
+        nThreads = as.integer(nThreads)
+      }
       stopifnot(length(mean)==self$nTraits,
                 length(var)==self$nTraits,
                 length(varEnv)==self$nTraits,
@@ -1815,7 +1901,7 @@ SimParam = R6Class(
         trait@intercept = 0
         tmp = calcGenParam(trait,
                            self$founderPop,
-                           self$nThreads)
+                           nThreads)
         if(useVarA){
           scale = sqrt(var[i])/sqrt(popVar(tmp$bv)[1])
         }else{
@@ -1839,7 +1925,7 @@ SimParam = R6Class(
                        intercept = 0)
           tmpG = calcGenParam(traitG,
                               self$founderPop,
-                              self$nThreads)
+                              nThreads)
 
           if(varEnv[i]==0){
             scaleG = sqrt(varGxE[i])/sqrt(popVar(tmpG$gv)[1])
@@ -2162,6 +2248,7 @@ SimParam = R6Class(
   private = list(
     #### Private ----
 
+    .nThreads="integer",
     .restrSites="logical",
     .traits="list",
     .segSites="integer",
@@ -2372,6 +2459,26 @@ SimParam = R6Class(
   ),
   active = list(
     #### Active ----
+
+    #' @field nThreads number of threads used with OpenMP (when available).
+    #' Assign \code{NULL} to reset to \code{getNumThreads()}.
+    nThreads=function(value){
+      if(missing(value)){
+        private$.nThreads
+      }else{
+        if(is.null(value)){
+          value = getNumThreads()
+        }
+        valueInt = as.integer(value)
+        if(!is.numeric(value) || length(value)!=1L || is.na(value) ||
+           !is.finite(value) || value < 1L || is.na(valueInt) ||
+           value != valueInt){
+          stop("`$nThreads` must be a single positive integer or NULL to reset",
+               call.=FALSE)
+        }
+        private$.nThreads = valueInt
+      }
+    },
 
     #' @field traitNames vector of trait names
     traitNames=function(value){
@@ -2826,6 +2933,3 @@ findQtlIndex = function(activeQtl, traitQtl){
 
   return(match(traitLoci, activeLoci))
 }
-
-
-

@@ -15,6 +15,7 @@ selectCross(
   use = "pheno",
   selectTop = TRUE,
   simParam = NULL,
+  nThreads = NULL,
   ...,
   balance = TRUE
 )
@@ -49,6 +50,9 @@ or randomly "rand"}
 Selects lowest values if false.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments if using a function for
 trait}

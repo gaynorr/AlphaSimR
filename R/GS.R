@@ -10,12 +10,15 @@
 #' @returns a vector of names for traits
 #' 
 #' @keywords internal
-convertTraitsToNames = function(traits, simParam){
+convertTraitsToNames = function(traits, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   if(is.character(traits)){
     # Suspect trait is a name
     take = match(traits, simParam$traitNames)
-    if(is.na(take)){
-      stop("'",traits,"' did not match any trait names")
+    if(any(is.na(take))){
+      stop("'",traits[is.na(take)],"' did not match any trait names")
     }
     traits = take
   }else if(is.function(traits)){
@@ -52,6 +55,8 @@ convertTraitsToNames = function(traits, simParam){
 #' @param Ve error variance. If value is NULL, a
 #' reasonable value is chosen automatically.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -79,13 +84,18 @@ convertTraitsToNames = function(traits, simParam){
 #' @export
 fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=1000, Vu=NULL, Ve=NULL,
-                      simParam=NULL, ...){
+                      simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -128,7 +138,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   ans = callFastRRBLUP(y,pop@geno,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
-                       simParam$nThreads)
+                       nThreads)
 
   bv = new("TraitA",
            nLoci=nLoci,
@@ -177,6 +187,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param maxIter maximum number of iterations. Only used
 #' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -204,13 +216,18 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                   useQtl=FALSE, maxIter=1000L,
-                  simParam=NULL, ...){
+                  simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -229,10 +246,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   if(ncol(y)>1){
     ans = callRRBLUP_MV(y, fixEff, pop@geno, lociPerChr,
-                        lociLoc, maxIter, simParam$nThreads)
+                        lociLoc, maxIter, nThreads)
   }else{
     ans = callRRBLUP(y, fixEff, pop@geno, lociPerChr, lociLoc,
-                     simParam$nThreads)
+                     nThreads)
   }
 
   markerEff=ans$u
@@ -297,6 +314,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -353,13 +372,18 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                    useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL,
                    useEM=TRUE, tol=1e-6, simParam=NULL,
-                   ...){
+                   nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -402,7 +426,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   ans = callRRBLUP2(y, fixEff, pop@geno, lociPerChr,
                     lociLoc, Vu, Ve, tol, maxIter, useEM,
-                    simParam$nThreads)
+                    nThreads)
 
   bv = new("TraitA",
            nLoci=nLoci,
@@ -450,6 +474,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param maxIter maximum number of iterations. Only used
 #' when number of traits is greater than 1.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -477,13 +503,18 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                     useQtl=FALSE, maxIter=40L,
-                    simParam=NULL, ...){
+                    simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -502,7 +533,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D(y, fixEff, pop@geno, lociPerChr,
-                     lociLoc, maxIter, simParam$nThreads)
+                     lociLoc, maxIter, nThreads)
 
   bv = new("TraitA",
            nLoci=nLoci,
@@ -564,6 +595,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -592,13 +625,18 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
                      useQtl=FALSE, maxIter=10, Va=NULL, Vd=NULL,
                      Ve=NULL, useEM=TRUE, tol=1e-6,
-                     simParam=NULL, ...){
+                     simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -651,7 +689,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_D2(y, fixEff, pop@geno, lociPerChr,
                       lociLoc, maxIter, Va, Vd, Ve, tol, useEM,
-                      simParam$nThreads)
+                      nThreads)
 
   bv = new("TraitA",
            nLoci=nLoci,
@@ -701,6 +739,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -728,13 +768,18 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=40L,
-                      simParam=NULL, ...){
+                      simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -754,7 +799,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_GCA(y, fixEff, pop@geno,
                        lociPerChr, lociLoc, maxIter,
-                       simParam$nThreads)
+                       nThreads)
 
   gv = new("TraitA2",
            nLoci=nLoci,
@@ -822,6 +867,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -850,13 +897,18 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL,
                        Ve=NULL, useEM=TRUE, tol=1e-6,
-                       simParam=NULL, ...){
+                       simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -911,7 +963,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callRRBLUP_GCA2(y, fixEff, pop@geno,
                         lociPerChr, lociLoc, maxIter,
                         VuF, VuM, Ve, tol, useEM,
-                        simParam$nThreads)
+                        nThreads)
 
   gv = new("TraitA2",
            nLoci=nLoci,
@@ -968,6 +1020,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -995,13 +1049,18 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=40L,
-                      simParam=NULL, ...){
+                      simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -1021,7 +1080,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   stopifnot(ncol(y)==1)
   ans = callRRBLUP_SCA(y, fixEff, pop@geno,
                        lociPerChr, lociLoc, maxIter,
-                       simParam$nThreads)
+                       nThreads)
 
   gv = new("TraitA2D",
            nLoci=nLoci,
@@ -1092,6 +1151,8 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
 #'
@@ -1120,13 +1181,18 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL,
                        VuD=NULL, Ve=NULL, useEM=TRUE, tol=1e-6,
-                       simParam=NULL, ...){
+                       simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,...)
+                  simParam=simParam,nThreads=nThreads,...)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -1189,7 +1255,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   ans = callRRBLUP_SCA2(y, fixEff, pop@geno,
                         lociPerChr, lociLoc, maxIter,
                         VuF, VuM, VuD, Ve, tol, useEM,
-                        simParam$nThreads)
+                        nThreads)
 
   gv = new("TraitA2D",
            nLoci=nLoci,
@@ -1250,6 +1316,8 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' added. If FALSE, existing data is replaced with the
 #' new estimates.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
@@ -1277,9 +1345,14 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 setEBV = function(pop, solution, value="gv", targetPop=NULL,
-                  append=FALSE, simParam=NULL){
+                  append=FALSE, simParam=NULL, nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
 
   nTraits = length(solution@gv)
@@ -1295,7 +1368,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 
   if(value=="gv"){
     for(i in seq_len(nTraits)){
-      tmp = getGv(solution@gv[[i]],pop,simParam$nThreads)
+      tmp = getGv(solution@gv[[i]],pop,nThreads)
       ebv[,i] = tmp[[1]]
       colnames(ebv)[i] = solution@gv[[i]]@name
     }
@@ -1309,7 +1382,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       }
       
       for(i in seq_len(nTraits)){
-        tmp = getGv(solution@bv[[i]],pop,simParam$nThreads)
+        tmp = getGv(solution@bv[[i]],pop,nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@bv[[i]]@name
       }
@@ -1325,7 +1398,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         p = calcGenoFreq(targetPop@geno,
                          trait@lociPerChr,
                          trait@lociLoc,
-                         simParam$nThreads)
+                         nThreads)
         p = c(p)
         q = 1-p
 
@@ -1345,7 +1418,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
                     addEff=alpha,
                     intercept=intercept)
 
-        tmp = getGv(trait, pop, simParam$nThreads)
+        tmp = getGv(trait, pop, nThreads)
         ebv[,i] = tmp[[1]]
 
         # changing original name from "est_GV_..." to "est_BV_..."
@@ -1366,7 +1439,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       }
 
       for(i in seq_len(nTraits)){
-        tmp = getGv(solution@female[[i]],pop,simParam$nThreads)
+        tmp = getGv(solution@female[[i]],pop,nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@female[[i]]@name
       }
@@ -1378,7 +1451,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         p = calcGenoFreq(targetPop@geno,
                          trait@lociPerChr,
                          trait@lociLoc,
-                         simParam$nThreads)
+                         nThreads)
         p = c(p)
         q = 1-p
 
@@ -1398,7 +1471,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
                     addEff=alpha,
                     intercept=intercept)
 
-        tmp = getGv(trait, pop, simParam$nThreads)
+        tmp = getGv(trait, pop, nThreads)
         ebv[,i] = tmp[[1]]
 
         # changing original name from "est_GV_..." to "est_female_..."
@@ -1419,7 +1492,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
       }
       
       for(i in seq_len(nTraits)){
-        tmp = getGv(solution@male[[i]],pop,simParam$nThreads)
+        tmp = getGv(solution@male[[i]],pop,nThreads)
         ebv[,i] = tmp[[1]]
         colnames(ebv)[i] = solution@male[[i]]@name
       }
@@ -1431,7 +1504,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
         p = calcGenoFreq(targetPop@geno,
                          trait@lociPerChr,
                          trait@lociLoc,
-                         simParam$nThreads)
+                         nThreads)
         p = c(p)
         q = 1-p
 
@@ -1455,7 +1528,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
                     addEff=alpha,
                     intercept=intercept)
 
-        tmp = getGv(trait, pop, simParam$nThreads)
+        tmp = getGv(trait, pop, nThreads)
         ebv[,i] = tmp[[1]]
 
         # changing original name from "est_BV_..." to "est_male_..."

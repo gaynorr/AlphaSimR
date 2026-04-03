@@ -12,6 +12,7 @@ RRBLUP_SCA(
   useQtl = FALSE,
   maxIter = 40L,
   simParam = NULL,
+  nThreads = NULL,
   ...
 )
 }
@@ -34,6 +35,9 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 \item{maxIter}{maximum number of iterations for convergence.}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments if using a function for
 traits}

@@ -1,3 +1,4 @@
+# fmt: skip file
 
 #' @title Mean genetic values
 #'
@@ -168,6 +169,8 @@ varEBV = function(pop){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return
 #' \describe{
@@ -219,11 +222,16 @@ varEBV = function(pop){
 #' ans = genParam(pop, simParam=SP)
 #'
 #' @export
-genParam = function(pop,simParam=NULL){
+genParam = function(pop,simParam=NULL,nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
-  
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
+
   nInd = nInd(pop)
   nTraits = simParam$nTraits
   traitNames = simParam$traitNames
@@ -248,7 +256,7 @@ genParam = function(pop,simParam=NULL){
   #Loop through trait calculations
   for(i in seq_len(nTraits)){
     trait = simParam$traits[[i]]
-    tmp = calcGenParam(trait,pop,simParam$nThreads)
+    tmp = calcGenParam(trait,pop,nThreads)
     genicVarA[i] = tmp$genicVarA2
     covA_HW[i] = tmp$genicVarA-tmp$genicVarA2
     gv[,i] = tmp$gv
@@ -347,6 +355,8 @@ genParam = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -363,8 +373,8 @@ genParam = function(pop,simParam=NULL){
 #' varA(pop, simParam=SP)
 #'
 #' @export
-varA = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$varA
+varA = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$varA
 }
 
 #' @title Dominance variance
@@ -373,6 +383,8 @@ varA = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -389,8 +401,8 @@ varA = function(pop,simParam=NULL){
 #' varD(pop, simParam=SP)
 #'
 #' @export
-varD = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$varD
+varD = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$varD
 }
 
 #' @title Additive-by-additive epistatic variance
@@ -400,6 +412,8 @@ varD = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -416,8 +430,8 @@ varD = function(pop,simParam=NULL){
 #' varAA(pop, simParam=SP)
 #'
 #' @export
-varAA = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$varAA
+varAA = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$varAA
 }
 
 #' @title Breeding value
@@ -426,6 +440,8 @@ varAA = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -442,8 +458,8 @@ varAA = function(pop,simParam=NULL){
 #' bv(pop, simParam=SP)
 #'
 #' @export
-bv = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$bv
+bv = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$bv
 }
 
 #' @title Dominance deviations
@@ -452,6 +468,8 @@ bv = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -468,8 +486,8 @@ bv = function(pop,simParam=NULL){
 #' dd(pop, simParam=SP)
 #'
 #' @export
-dd = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$dd
+dd = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$dd
 }
 
 #' @title Additive-by-additive epistatic deviations
@@ -479,6 +497,8 @@ dd = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -495,8 +515,8 @@ dd = function(pop,simParam=NULL){
 #' aa(pop, simParam=SP)
 #'
 #' @export
-aa = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$aa
+aa = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$aa
 }
 
 #' @title Additive genic variance
@@ -505,6 +525,8 @@ aa = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -521,8 +543,8 @@ aa = function(pop,simParam=NULL){
 #' genicVarA(pop, simParam=SP)
 #'
 #' @export
-genicVarA = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$genicVarA
+genicVarA = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarA
 }
 
 #' @title Dominance genic variance
@@ -531,6 +553,8 @@ genicVarA = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -547,8 +571,8 @@ genicVarA = function(pop,simParam=NULL){
 #' genicVarD(pop, simParam=SP)
 #'
 #' @export
-genicVarD = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$genicVarD
+genicVarD = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarD
 }
 
 #' @title Additive-by-additive genic variance
@@ -558,6 +582,8 @@ genicVarD = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -574,8 +600,8 @@ genicVarD = function(pop,simParam=NULL){
 #' genicVarAA(pop, simParam=SP)
 #'
 #' @export
-genicVarAA = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$genicVarAA
+genicVarAA = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarAA
 }
 
 #' @title Total genic variance
@@ -584,6 +610,8 @@ genicVarAA = function(pop,simParam=NULL){
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -600,8 +628,8 @@ genicVarAA = function(pop,simParam=NULL){
 #' genicVarG(pop, simParam=SP)
 #'
 #' @export
-genicVarG = function(pop,simParam=NULL){
-  genParam(pop,simParam=simParam)$genicVarG
+genicVarG = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarG
 }
 
 #' @title Genetic value
@@ -678,6 +706,150 @@ pheno = function(pop){
 #' @export
 ebv = function(pop){
   pop@ebv
+}
+
+#' @title Calculate parent average
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param parents \code{\link{Pop-class}} with mothers and fathers of individuals
+#'   in \code{pop}; if \code{NULL} must provide \code{mothers} and \code{fathers}
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @return a matrix of parent averages with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' parentAverage(pop2, parents = pop)
+#' parentAverage(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
+                         use = "gv", simParam = NULL, nThreads=NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
+  if (!is.null(parents)) {
+    matchMothers = match(x = pop@mother, table = parents@id)
+    matchFathers = match(x = pop@father, table = parents@id)
+  } else {
+    if (is.null(mothers) | is.null(fathers)) {
+      stop("must provide either 'parents' or both 'mothers' and 'fathers'!")
+    }
+    matchMothers = match(x = pop@mother, table = mothers@id)
+    matchFathers = match(x = pop@father, table = fathers@id)
+  }
+  if (anyNA(matchMothers)) {
+    stop("some parents/mothers not found!")
+  }
+  if (anyNA(matchFathers)) {
+    stop("some parents/fathers not found!")
+  }
+  if (use %in% c("gv", "ebv", "pheno")) {
+    if (!is.null(parents)) {
+      ret = 0.5 * (slot(object = parents, name = use)[matchMothers, , drop = FALSE] +
+                   slot(object = parents, name = use)[matchFathers, , drop = FALSE])
+    } else {
+      ret = 0.5 * (slot(object = mothers, name = use)[matchMothers, , drop = FALSE] +
+                   slot(object = fathers, name = use)[matchFathers, , drop = FALSE])
+    }
+  } else if (use == "bv") {
+    if (!is.null(parents)) {
+      ret = 0.5 * (bv(parents, simParam = simParam,
+                      nThreads=nThreads)[matchMothers, , drop = FALSE] +
+                   bv(parents, simParam = simParam,
+                      nThreads=nThreads)[matchFathers, , drop = FALSE])
+    } else {
+      ret = 0.5 * (bv(mothers, simParam = simParam,
+                      nThreads=nThreads)[matchMothers, , drop = FALSE] +
+                   bv(fathers, simParam = simParam,
+                      nThreads=nThreads)[matchFathers, , drop = FALSE])
+    }
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(ret)
+}
+
+#' @title Calculate Mendelian sampling
+#'
+#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#'   will be calculated
+#' @param parents \code{\link{Pop-class}} with mothers and fathers of individuals
+#'   in \code{pop}; if \code{NULL} must provide \code{mothers} and \code{fathers}
+#' @param mothers \code{\link{Pop-class}} with mothers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
+#'   if \code{NULL} must provide \code{parents}
+#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
+#' @param simParam \code{\link{SimParam}} object
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @return a matrix of Mendelian samplings with dimensions nInd by nTraits
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#' 
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
+#' mendelianSampling(pop2, parents = pop)
+#' mendelianSampling(pop2, mothers = pop, fathers = pop)
+#'
+#' @export
+mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
+                             use = "gv", simParam = NULL, nThreads=NULL) {
+  if (is.null(simParam)) {
+    simParam = get("SP", envir = .GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
+  pa = parentAverage(pop = pop, parents = parents, mothers = mothers, fathers = fathers,
+                     use = use, simParam = simParam, nThreads=nThreads)
+  if (use %in% c("gv", "ebv", "pheno")) {
+    ret = slot(object = pop, name = use) - pa
+  } else if (use == "bv") {
+    ret = bv(pop, simParam = simParam, nThreads=nThreads) - pa
+  } else {
+    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+  }
+  return(ret)
 }
 
 #' @title Number of individuals

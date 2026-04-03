@@ -41,7 +41,10 @@ addError = function(gv, varE, reps){
 #' @param simParam simulation parameters object
 #'
 #' @keywords internal
-calcPheno = function(pop, varE, reps, p, traits, simParam){
+calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   nTraits = length(traits)
 
   if(nTraits==0L){
@@ -277,37 +280,159 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   return(pop)
 }
 
+#' @title Convert a normal (Gaussian) trait to a log-normal trait
+#' @param x matrix, values for one or more traits (if not a matrix,
+#'   we cast to a matrix).
+#' @param meanlog \code{NULL}, numeric or list, trait mean(s) on the log scale;
+#'  when \code{NULL} mean of 0 is assumed,
+#'  when numeric means for all traits in \code{x} must be provided, and
+#'  when list means for all traits in \code{x} must be provided with possibility
+#'  to pass a \code{NULL} list node to skip the conversion for the trait
+#'  (see examples).
+#' @details If input trait is normal (Gaussian) then this function generates
+#'   a log-normal trait by applying exponential link function on the input.
+#'   Note the possible terminological confusion, a log-normal trait is expressed
+#'   on exponential scale and its underlying (latent) values are on the log scale
+#'   (see examples). See \code{\link{rlnorm}} on the log-normal distribution,
+#'   including the expressions for the expected value and variance of observed trait,
+#'   which can help you tune the parameters to obtain targeted observed trait values.
+#'   Note that \code{asLogNormal} does not provide the \code{sdlog} argument because
+#'   latent trait variation is already controlled by other parameters.
+#'   See examples below.
+#' @return matrix of log-normal values.
+#' @examples
+#' #Simulate a founder pop, set latent trait parameters, and create a population
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' trtMeanLog = c(0, 0)
+#' trtVarGLog = c(1, 2)
+#' SP$addTraitA(nQtlPerChr = 10, mean = trtMeanLog, var = trtVarGLog,
+#'              corA = matrix(data = c(1.0, 0.6,
+#'                                     0.6, 1.0), ncol = 2))
+#' trtVarELog = c(1, 1)
+#' trtVarPLog = trtVarGLog + trtVarELog
+#' SP$setVarE(varE = trtVarELog)
+#' pop = newPop(founderPop)
+#' popLarge = randCross(pop, nCrosses = 1000)
+#' 
+#' meanVarFun = function(x) list(mean = mean(x), var = var(x))
+#' 
+#' #Latent phenotypes and parameters
+#' (phenoLog = pheno(pop))
+#' phenoLogLarge = pheno(popLarge)
+#' apply(X = phenoLog, MARGIN = 2, FUN = meanVarFun)
+#' apply(X = phenoLogLarge, MARGIN = 2, FUN = meanVarFun)
+#'
+#' #Convert a single input trait
+#' (phenoExpMeanLog0 = asLogNormal(x = pheno(pop)[, 1]))
+#' meanVarFun(phenoExpMeanLog0)
+#'
+#' #Demonstrate meanlog argument
+#' #Here we aim to obtain observed trait values with the mean of 1.
+#' #Since E(trtExp)=exp(mean(trtLog)+var(trtLog)/2), trtMeanLog[1]=0, and trtVarPLog[1],
+#' #to get E(trtExp)=1=exp(0) we set meanlog to -trtVarPLog[1]/2.
+#' #See also ?rlnorm for the expression of variance.
+#' (phenoExpMeanExp1 = asLogNormal(x = pheno(pop)[, 1], meanlog = -trtVarPLog[1]/2))
+#' meanVarFun(phenoExpMeanExp1)
+#' exp(trtVarPLog[1] - 1)
+#' cbind(phenoLog = phenoLog[, 1],
+#'   phenoExpMeanLog0 = phenoExpMeanLog0,
+#'   phenoExpMeanExp1 = phenoExpMeanExp1)
+#' 
+#' tmp = cbind(phenoLog = phenoLogLarge[, 1],
+#'   phenoExpMeanLog0 = c(asLogNormal(phenoLogLarge[, 1])),
+#'   phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanlog = -trtVarPLog[1]/2)))
+#' (tmp2 = apply(X = tmp, MARGIN = 2, FUN = meanVarFun))
+#' par(mfrow = c(3, 1))
+#' hist(tmp[, "phenoLog"], main = paste0("Mean: ", v=tmp2$phenoLog$mean))
+#' abline(v=tmp2$phenoLog$mean, col = "red")
+#' hist(tmp[, "phenoExpMeanLog0"], main = paste0("Mean: ", v=tmp2$phenoExpMeanLog0$mean))
+#' abline(v = tmp2$phenoExpMeanLog0$mean, col = "red")
+#' hist(tmp[, "phenoExpMeanExp1"], main = paste0("Mean: ", v=tmp2$phenoExpMeanExp1$mean))
+#' abline(v= tmp2$phenoExpMeanExp1$mean, col = "red")
+#'
+#' #Convert multiple input traits
+#' asLogNormal(x = pheno(pop))
+#' try(asLogNormal(x = pheno(pop), meanlog = 0))
+#' asLogNormal(x = pheno(pop), meanlog = c(0, 1))
+#' asLogNormal(x = pheno(pop), meanlog = list(0, NULL))
+#' 
+#' #Store the recoded trait manually
+#' pheno(pop)
+#' pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePop()
+#' SP$finalizePop = function(pop, simParam = SP) {
+#'   pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' @export
+asLogNormal <- function(x, meanlog = NULL) {
+  if (!is.matrix(x)) {
+    x = as.matrix(x)
+  }
+  nTraits = ncol(x)
+  if (is.null(meanlog)) {
+    meanlog = rep(x = 0, times = nTraits)
+  }
+  if (is.numeric(meanlog)) {
+    if (length(meanlog) != nTraits) {
+      stop("You must supply meanlog for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      x[, trt] = exp(meanlog[trt] + x[, trt])
+    }
+  } else if (is.list(meanlog)) {
+    if (length(meanlog) != nTraits) {
+      stop("You must supply meanlog for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      if (!is.null(meanlog[[trt]])) {
+        x[, trt] = exp(meanlog[[trt]] + x[, trt])
+      }
+    }
+  } else {
+    stop("meanlog must be NULL, numeric, or list!")
+  }
+  return(x)
+}
+
 #' @title Convert a normal (Gaussian) trait to an ordered categorical (threshold)
 #'   trait
 #' @param x matrix, values for one or more traits (if not a matrix,
-#'   we cast to a matrix)
-#' @param p NULL, numeric or list, when \code{NULL} the \code{threshold} argument
-#'   takes precedence; when numeric, provide a vector of probabilities of
-#'   categories to convert continuous values into categories for a single trait
-#'   (if probabilities do not sum to 1, another category is added and a warning
-#'   is raised); when list, provide a list of numeric probabilities - list node
-#'   with \code{NULL} will skip conversion for a specific trait (see examples);
-#'   internally \code{p} is converted to \code{threshold} hence input
-#'   \code{threshold} is overwritten
+#'   we cast to a matrix).
+#' @param p \code{NULL}, numeric, or list, when \code{NULL} the \code{threshold}
+#'   argument takes precedence; when numeric, provide a vector of probabilities
+#'   of categories to convert continuous values into categories for a single
+#'   trait (if probabilities do not sum to 1, another category is added and
+#'   a warning is raised); when list, provide a list of numeric probabilities
+#'   - list node with \code{NULL} will skip conversion for a specific trait
+#'   (see examples); internally \code{p} is converted to \code{threshold} hence
+#'   input \code{threshold} is overwritten.
 #' @param mean numeric, assumed mean(s) of the normal (Gaussian) trait(s);
-#'   used only when \code{p} is given
+#'   used only when \code{p} is given.
 #' @param var numeric, assumed variance(s) of the normal (Gaussian) trait(s);
-#'   used only when \code{p} is given
-#' @param threshold NULL, numeric or list, when numeric, provide a vector of
+#'   used only when \code{p} is given.
+#' @param threshold \code{NULL}, numeric or, list, when numeric, provide a vector of
 #'   threshold values to convert continuous values into categories for a single trait
 #'   (the thresholds specify left-closed and right-opened intervals [t1, t2),
 #'   which can be changed with \code{include.lowest} and \code{right};
 #'   ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
 #'   range of values; otherwise you will get \code{NA} values);
 #'   when list, provide a list of numeric thresholds - list node with \code{NULL}
-#'   will skip conversion for a specific trait (see examples)
-#' @param include.lowest logical, see \code{\link{cut}}
-#' @param right logical, see \code{\link{cut}}
+#'   will skip conversion for a specific trait (see examples).
+#' @param include.lowest logical, see \code{\link{cut}}.
+#' @param right logical, see \code{\link{cut}}.
 #' @details If input trait is normal (Gaussian) then this function generates a
 #'   categorical trait according to the ordered probit model.
 #' @return matrix of values with some traits recorded as ordered categories
-#'  in the form of 1:nC with nC being the number of categories.
+#'  in the form of \code{1:nC} with \code{nC} being the number of categories.
 #' @examples
+#' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
@@ -316,10 +441,10 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' SP$addTraitA(nQtlPerChr = 10, mean = trtMean, var = trtVarG,
 #'              corA = matrix(data = c(1.0, 0.6,
 #'                                     0.6, 1.0), ncol = 2))
-#' pop = newPop(founderPop)
 #' trtVarE = c(1, 1)
 #' trtVarP = trtVarG + trtVarE
-#' pop = setPheno(pop, varE = trtVarE)
+#' SP$setVarE(varE = trtVarE)
+#' pop = newPop(founderPop)
 #' pheno(pop)
 #'
 #' #Convert a single input trait
@@ -356,6 +481,19 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'               p = list(c(0.5, 0.5),
 #'                        p),
 #'               mean = trtMean, var = trtVarP)
+#' 
+#' #Store the recoded trait manually
+#' pheno(pop)
+#' pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePop()
+#' SP$finalizePop = function(pop, simParam = SP) {
+#'   pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+#'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
 #' @export
 asCategorical = function(x, p = NULL, mean = 0, var = 1,
                          threshold = c(-Inf, 0, Inf),
@@ -384,8 +522,11 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
     for (trt in 1:nTraits) {
       if (!is.null(p[[trt]])) {
         pSum = sum(p[[trt]])
-        if (!(pSum == 1)) { # TODO: how can we do floating point aware comparison?
-          warning("Probabilities do not sum to 1 - creating one more category!")
+        if (pSum > 1) {
+          stop("Probabilities for trait ", trt, " sum to more than 1!")
+        } else if (pSum < 1) {
+          warning("Probabilities do not sum to 1 for trait ", trt,
+            "! Creating one more category!")
           p[[trt]] = c(p[[trt]], 1 - pSum)
         }
         tmp = qnorm(p = cumsum(p[[trt]]), mean = mean[trt], sd = sqrt(var[trt]))
@@ -406,7 +547,7 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
     threshold = list(threshold)
   }
   if (length(threshold) != nTraits) {
-    stop("You must supply thresholds for all traits in x !")
+    stop("You must supply thresholds for all traits in x!")
   }
   for (trt in 1:nTraits) {
     if (!is.null(threshold[[trt]])) {

@@ -4,7 +4,7 @@
 \alias{getResponse}
 \title{Returns a vector response from a population}
 \usage{
-getResponse(pop, trait, use, simParam = NULL, ...)
+getResponse(pop, trait, use, simParam = NULL, nThreads = NULL, ...)
 }
 \arguments{
 \item{pop}{an object of class Pop or HybirdPop}
@@ -15,6 +15,9 @@ getResponse(pop, trait, use, simParam = NULL, ...)
 note that "bv" doesn't work on class HybridPop)}
 
 \item{simParam}{simulation parameters are only used when use="bv"}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{are additional arguments passed to trait when trait is a function}
 }

@@ -5,10 +5,20 @@
 #' @param use a character ("rand", "gv", "ebv", "pheno", or "bv"; 
 #' note that "bv" doesn't work on class HybridPop)
 #' @param simParam simulation parameters are only used when use="bv"
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... are additional arguments passed to trait when trait is a function
 #'
 #' @keywords internal
-getResponse = function(pop,trait,use,simParam=NULL,...){
+getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
   if(is(trait,"function")){
     if(is.character(use)){
       use = tolower(use)
@@ -24,7 +34,7 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
         if(is(pop,"HybridPop")){
           stop("Use='bv' is not a valid option for HybridPop")
         }
-        response = genParam(pop,simParam=simParam)$bv
+        response = genParam(pop,simParam=simParam,nThreads=nThreads)$bv
         response = trait(response,...)
       }else{
         stop(paste0("Use=",use," is not an option"))
@@ -37,8 +47,8 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
   }else{ # trait is not a function, so must be numeric or character
     if(is.character(trait)){ # Suspect trait is a name
       take = match(trait, simParam$traitNames)
-      if(is.na(take)){
-        stop("'",trait,"' did not match any trait names")
+      if(any(is.na(take))){
+        stop("'",trait[is.na(take)],"' did not match any trait names")
       }
       trait = take
     }
@@ -56,7 +66,8 @@ getResponse = function(pop,trait,use,simParam=NULL,...){
         if(is(pop,"HybridPop")){
           stop("Use='bv' is not a valid option for HybridPop")
         }
-        response = genParam(pop,simParam=simParam)$bv[,trait,drop=FALSE]
+        response = genParam(pop,simParam=simParam,
+                            nThreads=nThreads)$bv[,trait,drop=FALSE]
       }else{
         stop(paste0("Use=",use," is not an option"))
       }
@@ -185,7 +196,10 @@ getCandidates = function(pop, candidates){
 #' @param ...  captures use of old gender argument
 #'
 #' @keywords internal
-checkSexes = function(pop,sex,simParam,...){
+checkSexes = function(pop,sex,simParam=NULL,...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
   sex = toupper(sex)
   eligible = 1:pop@nInd
   if(simParam$sexes=="no"){
@@ -255,6 +269,8 @@ getFam = function(pop,famType){
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #'   \code{trait} or \code{use}
 #'
@@ -305,17 +321,22 @@ getFam = function(pop,famType){
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
-                     candidates=NULL,simParam=NULL,...){
+                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
   stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
-                      simParam=simParam, ...)
+                      simParam=simParam, nThreads=nThreads, ...)
     return(pop)
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
@@ -328,7 +349,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
     warning("Suitable candidates smaller than nInd, returning ",nInd," individuals")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)
+                         simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
     stopifnot(ncol(response)==1)
   }
@@ -374,6 +395,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #'   \code{trait} and \code{use}
 #'
@@ -402,17 +425,23 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
-                     candidates=NULL,simParam=NULL,...){
+                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
   stopifnot(nFam>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
                       use=use, sex=sex, famType=famType,
                       selectTop=selectTop, returnPop=TRUE,
-                      candidates=NULL, simParam=simParam, ...)
+                      candidates=NULL, simParam=simParam,
+                      nThreads=nThreads, ...)
     return(pop)
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
@@ -427,7 +456,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
     warning("Suitable families smaller than nFam, returning ", nFam, " families")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)
+                         simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
     stopifnot(ncol(response)==1)
   }
@@ -481,6 +510,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #'   \code{trait} and \code{use}
 #'
@@ -509,17 +540,22 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
-                           candidates=NULL,simParam=NULL,...){
+                           candidates=NULL,simParam=NULL,nThreads=NULL,...){
   stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(returnPop, is.null(candidates))
     pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
-                      simParam=simParam, ...)
+                      simParam=simParam, nThreads=nThreads, ...)
     return(pop)
   }
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
@@ -529,7 +565,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   }
   families = getFam(pop=pop,famType=famType)
   response = getResponse(pop=pop,trait=trait,use=use,
-                         simParam=simParam,...)
+                         simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
     stopifnot(ncol(response)==1)
   }
@@ -588,6 +624,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'   Selects lowest values if false.
 #' @param candidates an optional vector of eligible selection candidates.
 #' @param simParam an object of \code{\link{SimParam}}
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #'   \code{trait} and \code{use}
 #'
@@ -615,23 +653,28 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
-                    candidates=NULL,simParam=NULL,...){
+                    candidates=NULL,simParam=NULL,nThreads=NULL,...){
   stopifnot(nInd>=0)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
     stopifnot(is.null(candidates))
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
                       pollenControl=pollenControl, trait=trait, use=use,
                       selectTop=selectTop, candidates=NULL,
-                      simParam=simParam, ...)
+                      simParam=simParam, nThreads=nThreads, ...)
     return(pop)
   }
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
                      use=use,sex="B",selectTop=selectTop,
                      returnPop=FALSE,candidates=candidates,
-                     simParam=simParam,...)
+                     simParam=simParam,nThreads=nThreads,...)
   nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)
   if(pollenControl){
     male = female
@@ -652,7 +695,8 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
     }
   })
   crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
-  return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam))
+  return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam,
+                   nThreads=nThreads))
 }
 
 #' @title Select populations

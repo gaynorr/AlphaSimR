@@ -82,9 +82,9 @@ cattleChrSum = 2.8e9 # https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_00226379
 (cattleChrBp = cattleChrSum / 30)
 recRate = 9.26e-09
 (cattleGenLen = recRate * cattleChrBp)
-mutRate = 1.20e-08
+cattleMutRate = 9.4e-9
 runMacs2(nInd = 10, nChr = 1, Ne = 90, bp = cattleChrBp,
-         genLen = cattleGenLen, mutRate = 1.20e-08,
+         genLen = cattleGenLen, mutRate = cattleMutRate,
          histNe  = c(120, 250, 350, 1000, 1500, 2000, 2500, 3500, 7000, 10000, 17000, 62000),
          histGen = c(  3,   6,  12,   18,   24,  154,  454,  654, 1754,  2354,  3354, 33154),
          returnCommand = TRUE)

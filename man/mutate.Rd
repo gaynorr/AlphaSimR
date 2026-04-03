@@ -4,7 +4,13 @@
 \alias{mutate}
 \title{Add Random Mutations}
 \usage{
-mutate(pop, mutRate = 2.5e-08, returnPos = FALSE, simParam = NULL)
+mutate(
+  pop,
+  mutRate = 2.5e-08,
+  returnPos = FALSE,
+  simParam = NULL,
+  nThreads = NULL
+)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
@@ -14,6 +20,9 @@ mutate(pop, mutRate = 2.5e-08, returnPos = FALSE, simParam = NULL)
 \item{returnPos}{should the positions of mutations be returned}
 
 \item{simParam}{an object of \code{\link{SimParam}}}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 an object of \code{\link{Pop-class}} if
@@ -40,8 +49,12 @@ SP$addTraitA(10)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
+hapBefore = pullSegSiteHaplo(pop)
 
 #Introduce mutations
-pop = mutate(pop, simParam=SP)
+mutate(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
+pop = mutate(pop, mutRate = 0.1, simParam=SP)
+hapAfter = pullSegSiteHaplo(pop)
+hapAfter - hapBefore
 
 }

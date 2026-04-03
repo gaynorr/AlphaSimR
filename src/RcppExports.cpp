@@ -722,14 +722,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// popVar
-arma::mat popVar(const arma::mat& X);
-RcppExport SEXP _AlphaSimR_popVar(SEXP XSEXP) {
+// popVarCpp
+arma::mat popVarCpp(const arma::mat& X);
+RcppExport SEXP _AlphaSimR_popVarCpp(SEXP XSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(popVar(X));
+    rcpp_result_gen = Rcpp::wrap(popVarCpp(X));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -769,18 +769,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type nRow(nRowSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type nCol(nColSEXP);
     rcpp_result_gen = Rcpp::wrap(mergeMultIntMat(X, nRow, nCol));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sampleInt
-arma::uvec sampleInt(arma::uword n, arma::uword N);
-RcppExport SEXP _AlphaSimR_sampleInt(SEXP nSEXP, SEXP NSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::uword >::type n(nSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampleInt(n, N));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -844,8 +832,35 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rngDiagnosticsSampleInt
+arma::imat rngDiagnosticsSampleInt(arma::uword n, arma::uword N, arma::uword reps, uint64_t seed);
+RcppExport SEXP _AlphaSimR_rngDiagnosticsSampleInt(SEXP nSEXP, SEXP NSEXP, SEXP repsSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type n(nSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< uint64_t >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(rngDiagnosticsSampleInt(n, N, reps, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rngDiagnosticsSamplePoisson
+arma::ivec rngDiagnosticsSamplePoisson(double lambda, arma::uword reps, uint64_t seed);
+RcppExport SEXP _AlphaSimR_rngDiagnosticsSamplePoisson(SEXP lambdaSEXP, SEXP repsSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< uint64_t >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(rngDiagnosticsSamplePoisson(lambda, reps, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // MaCS
-Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, Rcpp::StringVector seed);
+Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, arma::uvec seed);
 RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -855,7 +870,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type inbred(inbredSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::StringVector >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type seed(seedSEXP);
     rcpp_result_gen = Rcpp::wrap(MaCS(args, maxSites, inbred, ploidy, nThreads, seed));
     return rcpp_result_gen;
 END_RCPP
@@ -906,16 +921,17 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 15},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 7},
     {"_AlphaSimR_createReducedGenome", (DL_FUNC) &_AlphaSimR_createReducedGenome, 10},
-    {"_AlphaSimR_popVar", (DL_FUNC) &_AlphaSimR_popVar, 1},
+    {"_AlphaSimR_popVarCpp", (DL_FUNC) &_AlphaSimR_popVarCpp, 1},
     {"_AlphaSimR_mergeGeno", (DL_FUNC) &_AlphaSimR_mergeGeno, 2},
     {"_AlphaSimR_mergeMultGeno", (DL_FUNC) &_AlphaSimR_mergeMultGeno, 4},
     {"_AlphaSimR_mergeMultIntMat", (DL_FUNC) &_AlphaSimR_mergeMultIntMat, 3},
-    {"_AlphaSimR_sampleInt", (DL_FUNC) &_AlphaSimR_sampleInt, 2},
     {"_AlphaSimR_sampAllComb", (DL_FUNC) &_AlphaSimR_sampAllComb, 3},
     {"_AlphaSimR_sampHalfDialComb", (DL_FUNC) &_AlphaSimR_sampHalfDialComb, 2},
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
+    {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
+    {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
     {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
     {NULL, NULL, 0}
 };

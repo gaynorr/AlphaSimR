@@ -61,8 +61,10 @@ Rcpp::List argAltAD(Rcpp::S4 LociMap,
   }
   
   // Sample random deviates
-  arma::vec a(nLoci, arma::fill::randn);
-  arma::vec domDegDev(nLoci, arma::fill::randn);
+  // (this is outside OpenMP; if threaded, use alphasimrRng::cloneStream()!)
+  dqrng::rng64_t rng = alphasimrRng::createRng();
+  arma::vec a = alphasimrRng::rnormVec(nLoci, 0.0, 1.0, *rng);
+  arma::vec domDegDev = alphasimrRng::rnormVec(nLoci, 0.0, 1.0, *rng);
   
   return Rcpp::List::create(Rcpp::Named("x")=x,
                             Rcpp::Named("xa")=xa,

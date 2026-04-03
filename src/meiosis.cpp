@@ -1,5 +1,24 @@
 #include "alphasimr.h"
 
+namespace {
+
+// Creates one stable dqrng substream per chromosome for the current call.
+// Stream ids follow chromosome order so results stay reproducible if the
+// OpenMP thread count changes.
+std::vector<alphasimrRng::rngPtr> makeChrRngs(arma::uword nChr) {
+  dqrng::rng64_t baseRng = alphasimrRng::createRng();
+  std::vector<alphasimrRng::rngPtr> chrRngs;
+  chrRngs.reserve(nChr);
+  for (arma::uword chr = 0; chr < nChr; ++chr) {
+    // One stable dqrng substream per chromosome keeps meiosis reproducible
+    // even when the OpenMP thread count changes.
+    chrRngs.push_back(alphasimrRng::cloneStream(baseRng, chr + 1));
+  }
+  return chrRngs;
+}
+
+} // namespace
+
 // Class for storing recombination history
 class RecHist{
 public:
@@ -57,33 +76,34 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
 // end, the length of the interval used to sample
 // v, the interference parameter
 // p, the proportion of non-interfering crossovers
+// rng, the explicit dqrng stream used for all random draws in this call
 // n, the number of gamma deviates sampled at a time (affects performance, not results)
 arma::vec sampleChiasmata(double end, double v, 
-                          double p, arma::uword n=40){
-  if((1-p)<1e-6){
+                          double p, alphasimrRng::rngEngine& rng,
+                          arma::uword n=40){
+  if((1.0-p)<1.0e-6){
     // No crossover interference
     // Switching to count-location model
-    n = samplePoisson(2*end);
-    arma::vec x(n, arma::fill::randu);
+    n = alphasimrRng::samplePoisson(2.0*end, rng);
+    arma::vec x = alphasimrRng::runifVec(n, rng);
     return sort(x);
     
   }else{
     // Using gamma or gamma-sprinkling model
     
     // Choose a starting location 9-10 Morgans away
-    arma::vec u(1, arma::fill::randu);
-    double start = u(0)-10;
+    double start = alphasimrRng::runif(rng) - 10.0;
     
-    if(p<1e-6){ // Gamma model
+    if(p<1.0e-6){ // Gamma model
       // Sample deviates from a gamma distribution
-      arma::vec output = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+      arma::vec output = alphasimrRng::rgammaVec(n, v, 1.0/(2.0*v), rng);
       
       // Find locations on genetic map
       output = cumsum(output)+start;
       
       // Add additional values if max position less than end
       while(output(output.n_elem-1)<end){
-        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v)));
+        arma::vec tmp = alphasimrRng::rgammaVec(n, v, 1.0/(2.0*v), rng);
         tmp = cumsum(tmp) + output(output.n_elem-1);
         output = join_cols(output, tmp);
       }
@@ -95,14 +115,16 @@ arma::vec sampleChiasmata(double end, double v,
       return output(find(output<end));
     }else{ // Gamma sprinkling model
       // Sample type 1 deviates from a gamma distribution
-      arma::vec type1 = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+      arma::vec type1 = alphasimrRng::rgammaVec(
+        n, v, 1.0/(2.0*v*(1.0-p)), rng);
       
       // Find locations on genetic map
       type1 = cumsum(type1)+start;
       
       // Add additional values if max position less than end
       while(type1(type1.n_elem-1)<end){
-        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+        arma::vec tmp = alphasimrRng::rgammaVec(
+          n, v, 1.0/(2.0*v*(1.0-p)), rng);
         tmp = cumsum(tmp) + type1(type1.n_elem-1);
         type1 = join_cols(type1, tmp);
       }
@@ -114,14 +136,16 @@ arma::vec sampleChiasmata(double end, double v,
       type1 = type1(find(type1<end));
       
       // Sample type 2 deviates from a gamma distribution
-      arma::vec type2 = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
+      arma::vec type2 = alphasimrRng::rgammaVec(
+        n, 1.0, 1.0/(2.0*p), rng);
       
       // Find locations on genetic map
       type2 = cumsum(type2);
       
       // Add additional values if max position less than end
       while(type2(type2.n_elem-1)<end){
-        arma::vec tmp = arma::randg<arma::vec>(n, arma::distr_param(1.0,1.0/(2.0*p)));
+        arma::vec tmp = alphasimrRng::rgammaVec(
+          n, 1.0, 1.0/(2.0*p), rng);
         tmp = cumsum(tmp) + type2(type2.n_elem-1);
         type2 = join_cols(type2, tmp);
       }
@@ -142,28 +166,29 @@ arma::vec sampleChiasmata(double end, double v,
 // end, the length of the interval used to sample
 // v, the interference parameter
 // p, the proportion of non-interfering crossovers
+// rng, the explicit dqrng stream used for all random draws in this call
 // n1, the number of gamma deviates sampled for the first arm 
 // n2, the number of gamma deviates sampled for all other arms
 arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v, 
-                                           double p, arma::uword n1=40, arma::uword n2=8){
+                                           double p, alphasimrRng::rngEngine& rng,
+                                           arma::uword n1=40, arma::uword n2=8){
   arma::field<arma::vec> output(4);
-  arma::vec u(1, arma::fill::randu);
-  double start = u(0)-10;
+  double start = alphasimrRng::runif(rng) - 10.0;
   
   // Randomly set order of chromosome arms
   arma::uvec arm = {0, 1, 2, 3};
-  arm = shuffle(arm);
+  alphasimrRng::shuffle(arm, rng);
   double nearest, terminator, prob;
   
-  if((1-p)<1e-6){
+  if((1.0-p)<1.0e-6){
     // All chiasmata from type 2 pathway
     // Changing v and p to model type 2 with type 1 pathway
-    p = 0;
-    v = 1;
+    p = 0.0;
+    v = 1.0;
   }
   
   // First arm
-  output(arm(0)) = arma::randg<arma::vec>(n1, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+  output(arm(0)) = alphasimrRng::rgammaVec(n1, v, 1.0/(2.0*v*(1.0-p)), rng);
   output(arm(0)) = cumsum(output(arm(0))) + start;
   if(arm(0)%2){ // Tail
     terminator = end - exchange;
@@ -171,7 +196,7 @@ arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v
     terminator = exchange;
   }
   while( output(arm(0))(output(arm(0)).n_elem-1) < terminator ){
-    arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+    arma::vec tmp = alphasimrRng::rgammaVec(n2, v, 1.0/(2.0*v*(1.0-p)), rng);
     tmp = cumsum(tmp) + output(arm(0))(output(arm(0)).n_elem-1);
     output(arm(0)) = join_cols(output(arm(0)), tmp);
   }
@@ -185,14 +210,15 @@ arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v
   // All other arms
   for(arma::uword i=1; i<4; ++i){
     output(arm(i)).set_size(1+n2);
-    prob = R::pgamma(nearest, v, 1.0/(2.0*v*(1-p)), 1, 0);
-    u.randu();
-    u(0) = u(0)*(1-prob)+prob;
-    output(arm(i))(0) = R::qgamma(u(0), v, 1.0/(2.0*v*(1-p)), 1, 0) - nearest;
+    prob = R::pgamma(nearest, v, 1.0/(2.0*v*(1.0-p)), 1, 0);
+    double u = alphasimrRng::runif(rng);
+    u = u*(1.0-prob)+prob;
+    output(arm(i))(0) = R::qgamma(u, v, 1.0/(2.0*v*(1.0-p)), 1, 0) - nearest;
     if(output(arm(i))(0) < nearest){
       nearest = output(arm(i))(0);
     }
-    output(arm(i))(arma::span(1,n2)) = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+    output(arm(i))(arma::span(1,n2)) = alphasimrRng::rgammaVec(
+      n2, v, 1.0/(2.0*v*(1.0-p)), rng);
     output(arm(i)) = cumsum(output(arm(i)));
     if(arm(i)%2){ // Tail
       terminator = end - exchange;
@@ -200,7 +226,7 @@ arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v
       terminator = exchange;
     }
     while( output(arm(i))(output(arm(i)).n_elem-1) < terminator ){
-      arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(v,1.0/(2.0*v*(1-p))));
+      arma::vec tmp = alphasimrRng::rgammaVec(n2, v, 1.0/(2.0*v*(1.0-p)), rng);
       tmp = cumsum(tmp) + output(arm(i))(output(arm(i)).n_elem-1);
       output(arm(i)) = join_cols(output(arm(i)), tmp);
     }
@@ -221,14 +247,14 @@ arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v
       }
       
       // Sample type 2 deviates from a gamma distribution
-      arma::vec type2 = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*p)));
+      arma::vec type2 = alphasimrRng::rgammaVec(n2, 1.0, 1.0/(2.0*p), rng);
       
       // Find locations on genetic map
       type2 = cumsum(type2);
       
       // Add additional values if max position less than terminator
       while(type2(type2.n_elem-1)<terminator){
-        arma::vec tmp = arma::randg<arma::vec>(n2, arma::distr_param(1.0,1.0/(2.0*p)));
+        arma::vec tmp = alphasimrRng::rgammaVec(n2, 1.0, 1.0/(2.0*p), rng);
         tmp = cumsum(tmp) + type2(type2.n_elem-1);
         type2 = join_cols(type2, tmp);
       }
@@ -329,20 +355,24 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 }
 
 // Finds recombination map for a bivalent pair
-arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p){
+// genMap, chromosome genetic map
+// v, the interference parameter
+// p, the proportion of non-interfering crossovers
+// rng, the explicit dqrng stream used for all random draws in this call
+arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
+                              alphasimrRng::rngEngine& rng){
   arma::uword startPos=0, endPos, readChr=0, nCO;
   double genLen = genMap(genMap.n_elem-1);
   
-  
   // Find crossover positions
-  arma::vec posCO = sampleChiasmata(genLen, v, p);
+  arma::vec posCO = sampleChiasmata(genLen, v, p, rng);
   if(posCO.n_elem==0){
     arma::Mat<int> output(1,2,arma::fill::ones);
     return output;
   }
   
   // Thin crossovers 
-  arma::vec thin(posCO.n_elem, arma::fill::randu);
+  arma::vec thin = alphasimrRng::runifVec(posCO.n_elem, rng);
   posCO = posCO(find(thin>0.5));
   nCO = posCO.n_elem;
   
@@ -376,20 +406,21 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p){
  * The exchange point between pairings is sampled at random
  * A centromere from the first chromosome is always selected
  * The second centromere is sampled at random
+ * rng is the explicit dqrng stream used for all random draws in this call
  */
 arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
                                                 double centromere, double v,
-                                                double p){
+                                                double p,
+                                                alphasimrRng::rngEngine& rng){
   arma::field<arma::Mat<int> > output(2);
   double genLen = genMap(genMap.n_elem-1);
   
   // Sample the exchange point
-  arma::vec u(1, arma::fill::randu);
-  double exchange = u(0)*genLen;
+  double exchange = alphasimrRng::runif(rng) * genLen;
   
   // Determine crossover positions
   // Returns field with crossover positions in each arm of the quadrivalent
-  arma::field<arma::vec> posCO = sampleQuadChiasmata(exchange, genLen, v, p);
+  arma::field<arma::vec> posCO = sampleQuadChiasmata(exchange, genLen, v, p, rng);
   
   // Set chromatid configuration for each chiasmata
   arma::field<arma::umat> chromatidPairs(4); // matches posCO
@@ -404,8 +435,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
       
       // Randomly switch to "1" chromatid
       for(arma::uword j=0; j<chromatidPairs(i).n_elem; ++j){
-        u.randu();
-        if(u(0)>0.5){
+        if(alphasimrRng::runif(rng)>0.5){
           chromatidPairs(i).at(j) = 1;
         }
       }
@@ -426,8 +456,8 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   // Always taking chromosome 1 (1-4) and chromatid 1 (0-1) 
   arma::uvec chromosome(2, arma::fill::ones);
   arma::uvec chromatid(2, arma::fill::ones);
-  chromosome(1) = sampleInt(1,3)(0) + 2; // 2-4
-  chromatid(1) = sampleInt(1,2)(0); // 0-1
+  chromosome(1) = alphasimrRng::sampleInt(1,3, rng)(0) + 2; // 2-4
+  chromatid(1) = alphasimrRng::sampleInt(1,2, rng)(0); // 0-1
   
   // Find starting chromosomes and chromatids by working backwards
   // from selected centromeres to start of chromosome (head)
@@ -849,15 +879,17 @@ void transferGeno(const arma::Col<unsigned char>& inChr,
   }
 }
 
-//Simulates a gamete using a count-location model for recombination
+// Simulates a gamete using a count-location model for recombination
+// rng is the explicit dqrng stream used for crossover sampling and thinning.
 void bivalent(const arma::Col<unsigned char>& chr1,
               const arma::Col<unsigned char>& chr2,
               const arma::vec& genMap,
               double v,
               double p,
               arma::Col<unsigned char>& output,
-              arma::Mat<int>& hist){
-  hist = findBivalentCO(genMap, v, p);
+              arma::Mat<int>& hist,
+              alphasimrRng::rngEngine& rng){
+  hist = findBivalentCO(genMap, v, p, rng);
   if(hist.n_rows==1){
     output = chr1;
   }else{
@@ -891,7 +923,8 @@ void bivalent(const arma::Col<unsigned char>& chr1,
   }
 }
 
-//Simulates a gamete using a count-location model for recombination
+// Simulates a gamete using a count-location model for recombination
+// rng is the explicit dqrng stream used for crossover sampling and thinning.
 void quadrivalent(const arma::Col<unsigned char>& chr1,
                   const arma::Col<unsigned char>& chr2,
                   const arma::Col<unsigned char>& chr3,
@@ -903,11 +936,12 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
                   arma::Col<unsigned char>& output1,
                   arma::Col<unsigned char>& output2,
                   arma::Mat<int>& hist1,
-                  arma::Mat<int>& hist2){
+                  arma::Mat<int>& hist2,
+                  alphasimrRng::rngEngine& rng){
   int nBins = chr1.n_elem;
   
   arma::field<arma::Mat<int> > output;
-  output = findQuadrivalentCO(genMap, centromere, v, p);
+  output = findQuadrivalentCO(genMap, centromere, v, p, rng);
   
   hist1 = output(0);
   hist2 = output(1);
@@ -1080,12 +1114,13 @@ Rcpp::List cross(
   if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
+  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
   //Loop through chromosomes
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){
-    arma::vec u(1);
+    alphasimrRng::rngEngine& rng = *chrRngs[chr];
     arma::Mat<int> hist1, hist2;
     arma::uvec xm(motherPloidy); // Indicator for mother chromosomes
     for(arma::uword i=0; i<motherPloidy; ++i)
@@ -1101,13 +1136,12 @@ Rcpp::List cross(
     //Loop through individuals
     for(arma::uword ind=0; ind<nInd; ++ind){
       progenyChr=0;
-      xm = shuffle(xm);
+      alphasimrRng::shuffle(xm, rng);
       
       //Female gamete
       for(arma::uword x=0; x<motherPloidy; x+=4){
         if((motherPloidy-x)>2){
-          u.randu();
-          if(u(0)>quadProb){
+          if(alphasimrRng::runif(rng)>quadProb){
             //Bivalent 1
             bivalent(motherGeno(chr).slice(mother(ind)).col(xm(x)),
                      motherGeno(chr).slice(mother(ind)).col(xm(x+1)),
@@ -1115,7 +1149,8 @@ Rcpp::List cross(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1132,7 +1167,8 @@ Rcpp::List cross(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1154,7 +1190,8 @@ Rcpp::List cross(
                          gamete1,
                          gamete2,
                          hist1,
-                         hist2);
+                         hist2,
+                         rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
@@ -1177,7 +1214,8 @@ Rcpp::List cross(
                    v,
                    p,
                    gamete1,
-                   hist1);
+                   hist1,
+                   rng);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
           if(trackRec){
             hist1.col(0) *= 100; //To avoid conflicts
@@ -1190,11 +1228,10 @@ Rcpp::List cross(
       }
       
       //Male gamete
-      xf = shuffle(xf);
+      alphasimrRng::shuffle(xf, rng);
       for(arma::uword x=0; x<fatherPloidy; x+=4){
         if((fatherPloidy-x)>2){
-          u.randu();
-          if(u(0)>quadProb){
+          if(alphasimrRng::runif(rng)>quadProb){
             //Bivalent 1
             bivalent(fatherGeno(chr).slice(father(ind)).col(xf(x)),
                      fatherGeno(chr).slice(father(ind)).col(xf(x+1)),
@@ -1202,7 +1239,8 @@ Rcpp::List cross(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1219,7 +1257,8 @@ Rcpp::List cross(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1241,7 +1280,8 @@ Rcpp::List cross(
                          gamete1,
                          gamete2,
                          hist1,
-                         hist2);
+                         hist2,
+                         rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
@@ -1264,7 +1304,8 @@ Rcpp::List cross(
                    v,
                    p,
                    gamete1,
-                   hist1);
+                   hist1,
+                   rng);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
           if(trackRec){
             hist1.col(0) *= 100; //To avoid conflicts
@@ -1302,10 +1343,12 @@ Rcpp::List createDH2(
   if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
+  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
+    alphasimrRng::rngEngine& rng = *chrRngs[chr];
     arma::Mat<int> histMat;
     arma::uword nBins = geno(chr).n_rows;
     arma::Cube<unsigned char> tmp(nBins,2,nInd*nDH);
@@ -1313,14 +1356,15 @@ Rcpp::List createDH2(
     arma::uvec x = {0,1};
     for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop
-        x = shuffle(x);
+        alphasimrRng::shuffle(x, rng);
         bivalent(geno(chr).slice(ind).col(x(0)),
                  geno(chr).slice(ind).col(x(1)),
                  genMap(chr),
                  v,
                  p,
                  gamete,
-                 histMat);
+                 histMat,
+                 rng);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           tmp.slice(i+ind*nDH).col(j) = gamete;
           if(trackRec){
@@ -1359,11 +1403,12 @@ Rcpp::List createReducedGenome(
   if(nChr < static_cast<arma::uword>(nThreads) ){
     nThreads = nChr;
   }
+  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
-    arma::vec u(1);
+    alphasimrRng::rngEngine& rng = *chrRngs[chr];
     arma::Mat<int> hist1, hist2;
     arma::uword nBins = geno(chr).n_rows;
     arma::Cube<unsigned char> tmpGeno(nBins,ploidy/2,nInd*nProgeny);
@@ -1372,13 +1417,12 @@ Rcpp::List createReducedGenome(
     for(arma::uword i=0; i<ploidy; ++i) 
       x(i) = i;
     for(arma::uword ind=0; ind<(nInd*nProgeny); ++ind){ //Individual loop
-      x = shuffle(x);
+      alphasimrRng::shuffle(x, rng);
       arma::uword progenyChr=0;
       arma::uword par = ind/nProgeny;
       for(arma::uword y=0; y<ploidy; y+=4){
         if((ploidy-y)>2){
-          u.randu();
-          if(u(0)>quadProb){
+          if(alphasimrRng::runif(rng)>quadProb){
             //Bivalent 1
             bivalent(geno(chr).slice(par).col(x(y)),
                      geno(chr).slice(par).col(x(y+1)),
@@ -1386,7 +1430,8 @@ Rcpp::List createReducedGenome(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1403,7 +1448,8 @@ Rcpp::List createReducedGenome(
                      v,
                      p,
                      gamete1,
-                     hist1);
+                     hist1,
+                     rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             if(trackRec){
               hist1.col(0) *= 100; //To avoid conflicts
@@ -1425,7 +1471,8 @@ Rcpp::List createReducedGenome(
                          gamete1,
                          gamete2,
                          hist1,
-                         hist2);
+                         hist2,
+                         rng);
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
@@ -1448,7 +1495,8 @@ Rcpp::List createReducedGenome(
                    v,
                    p,
                    gamete1,
-                   hist1);
+                   hist1,
+                   rng);
           tmpGeno.slice(ind).col(progenyChr) = gamete1;
           if(trackRec){
             hist1.col(0) *= 100; //To avoid conflicts
