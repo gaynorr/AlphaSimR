@@ -28,7 +28,7 @@ E(x) +
 
 $P(x)$ is the phenotypic value of an individual with genotype dosage $x$ at a single locus.
 
-```{r}
+```{r, eval=FALSE}
   # P_HW = p^2 +a -->
   # H_HW = 2pq  d
   # Q_HW = q^2 -a
