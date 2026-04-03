@@ -42,7 +42,7 @@
 
 \item{simParam}{an object of \code{\link{SimParam}}}
 
-\item{...}{additional arguments passed to the finalizePop
+\item{...}{additional arguments passed to the \code{finalizePop}
 function in simParam}
 }
 \value{

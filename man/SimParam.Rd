@@ -301,7 +301,12 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \item{\code{founderPop}}{founder population used for variance scaling}
 
 \item{\code{finalizePop}}{function applied to newly created populations.
-Currently does nothing and should only be changed by expert users.}
+The function must satisfy these four requirements:
+1) The first argument must be a \code{\link{Pop-class}} object,
+2) The second argument must be a SimParam object,
+3) The remaining arguments must be passed via \code{...}, and
+4) The return must be a \code{\link{Pop-class}} object.
+See \code{\link{asCategorical}} for an example.}
 
 \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
 return an empty population with a warning instead of an error.}

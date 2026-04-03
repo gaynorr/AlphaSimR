@@ -27,7 +27,12 @@ SimParam = R6Class(
     founderPop = "MapPop",
 
     #' @field finalizePop function applied to newly created populations.
-    #' Currently does nothing and should only be changed by expert users.
+    #' The function must satisfy these four requirements:
+    #' 1) The first argument must be a \code{\link{Pop-class}} object,
+    #' 2) The second argument must be a SimParam object,
+    #' 3) The remaining arguments must be passed via \code{...}, and
+    #' 4) The return must be a \code{\link{Pop-class}} object.
+    #' See \code{\link{asCategorical}} for an example.
     finalizePop = "function",
 
     #' @field allowEmptyPop if true, population arguments with nInd=0 will

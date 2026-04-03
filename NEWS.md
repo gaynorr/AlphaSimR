@@ -1,5 +1,11 @@
 # AlphaSimR 2.2.0
 
+* Added asLogNormal() function.
+
+* Improved examples for asCategorical() function.
+
+* Improved documentation for `SimParam$finalizePop` field.
+
 * Consolidated the use of RNG across the package to enable reproducibility. This is an internal change not visible to users.
 
 * Made meiosis-related C++ RNG reproducible across serial and OpenMP execution by using `dqrng`. This is an internal change not visible to users, but will enable visible reproducibility.
