@@ -1,5 +1,27 @@
 context("phenotypes")
 
+test_that("asLogNormal_converts_correctly", {
+  x = matrix(data = c(-1, 0, 1, 0, 1, 2), nrow = 3, ncol = 2)
+
+  expect_equal(asLogNormal(x = x[, 1]), matrix(exp(x[, 1])))
+  expect_equal(
+    asLogNormal(x = x[, 1], meanlog = 2),
+    matrix(exp(2 + x[, 1]))
+  )
+  expect_equal(
+    asLogNormal(x = x, meanlog = c(0, 3)),
+    cbind(exp(0 + x[, 1]), exp(3 + x[, 2]))
+  )
+  expect_equal(
+    asLogNormal(x = x, meanlog = list(NULL, 3)),
+    cbind(x[, 1], exp(3 + x[, 2]))
+  )
+
+  expect_error(asLogNormal(x = x, meanlog = 0))
+  expect_error(asLogNormal(x = x, meanlog = list(0)))
+  expect_error(asLogNormal(x = x, meanlog = TRUE))
+})
+
 test_that("asCategorical_converts_correctly", {
   cont = matrix(data = 0, nrow = 7, ncol = 3)
   cont[, 1] = c(-3, -2, -1, 0, 1, 2, 3)
@@ -21,6 +43,7 @@ test_that("asCategorical_converts_correctly", {
     suppressWarnings(asCategorical(x = cont[, 1], p = 0.5)),
     asCategorical(x = cont[, 1], p = c(0.5, 0.5))
   )
+  expect_error(asCategorical(x = cont[, 1], p = c(0.6, 0.6)))
 
   trtMean = apply(X = cont, MARGIN = 2, FUN = mean)
   trtVar = apply(X = cont, MARGIN = 2, FUN = var)
@@ -35,6 +58,15 @@ test_that("asCategorical_converts_correctly", {
       var = trtVar[1]
     ),
     matrix(c(1, 1, 2, 3, 4, 4, 4))
+  )
+  expect_equal(
+    asCategorical(
+      x = cont[, 1],
+      threshold = c(-Inf, 0, Inf),
+      include.lowest = TRUE,
+      right = TRUE
+    ),
+    matrix(c(1, 1, 1, 1, 2, 2, 2))
   )
 
   expect_error(asCategorical(x = cont))
@@ -54,6 +86,8 @@ test_that("asCategorical_converts_correctly", {
 })
 
 test_that("pop@gv and genParam(pop)@gv match", {
+  # This test is here since we have two different code paths for these two
+  # functionalities and we had one bug in one code path
   founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10, ploidy = 1)
   SP = SimParam$new(founderPop)
   SP$addTraitA(nQtlPerChr = 10, mean = 0, var = 1, name = "addTraitA_allQTLs")

@@ -638,7 +638,7 @@ newPop = function(rawPop,simParam=NULL,...){
 #' @param maleParentPop optional population of male parents
 #' @param hist optional recombination history
 #' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments passed to the finalizePop
+#' @param ... additional arguments passed to the \code{finalizePop}
 #' function in simParam
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
