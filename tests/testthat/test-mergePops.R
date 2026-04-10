@@ -52,8 +52,8 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                     newMultiPop(pop[6:7],
                                 newMultiPop(pop[8], pop[9:10])))
 
-  # mergePops doesn't handle nested MultiPop objects
-  expect_error(mergePops(mp2), 'all(classes == "Pop") is not TRUE', fixed = TRUE)
+  # mergePops and mergeMultiPops do the same on MultiPop objects
+  expect_identical(mergePops(mp2), mergeMultiPops(mp2))
   expect_identical(pop[1:10], mergeMultiPops(mp2))
   expect_identical(pop[1:2],
                    mergeMultiPops(mp2, level = 1)[[1]])
@@ -74,8 +74,8 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                     newMultiPop(pop[8:9],
                                 newMultiPop(pop[10:11], pop[12])))
 
-  # mergePops doesn't handle nested MultiPop objects
-  expect_error(mergePops(mp3), 'all(classes == "Pop") is not TRUE', fixed = TRUE)
+  # mergePops and mergeMultiPops do the same on MultiPop objects
+  expect_identical(mergePops(mp3), mergeMultiPops(mp3))
   expect_identical(pop, mergeMultiPops(mp3))
   expect_identical(pop[1:2],
                    mergeMultiPops(mp3, level = 1)[[1]])

@@ -30,8 +30,8 @@
 mergePops = function(popList){
   if(is(popList,"MultiPop")){
     for(i in seq_len(length(popList@pops))){
-      if(is(popList@pops[i],"MultiPop")){
-        popList@pops[i] = mergePops(popList@pops[i])
+      if(is(popList@pops[[i]],"MultiPop")){
+        popList@pops[[i]] = mergePops(popList@pops[[i]])
       }
     }
     popList = popList@pops
