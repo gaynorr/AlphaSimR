@@ -1050,7 +1050,7 @@ setMethod("show",
           signature(object = "MultiPop"),
           function (object) {
             # Helper function to print nested structure recursively
-            printMultiPop = function(obj, level, prefix, isLast, idx) {
+            printMultiPop = function(obj, level, prefix, isLast, idx, nameLabel) {
               # Determine the branch characters
               if (isLast) {
                 connector = paste0(prefix, "`-- ")
@@ -1062,21 +1062,35 @@ setMethod("show",
               
               # Print index
               indexLabel = paste0("[[", idx, "]] ")
+
+              # Dont print name label if it's empty
+              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ")) {
+                nameLabel = ""
+              }
               
               if (isMultiPop(obj)) {
                 # Print MultiPop header
-                cat(connector, indexLabel, "An object of class \"MultiPop\" with ", 
+                cat(connector, indexLabel, nameLabel, "An object of class \"MultiPop\" with ", 
                     length(obj@pops), " item(s)\n", sep = "")
                 
                 # Print level indicator for the nested MultiPop
-                levelPrefix = paste0(childPrefix, "|   ")
-                cat(levelPrefix, "Level ", level + 1, ":\n", sep = "")
+                if (length(obj@pops) > 0) {
+                  levelPrefix = paste0(childPrefix, "|   ")
+                  cat(levelPrefix, "Level ", level + 1, ":\n", sep = "")
+                }
+
+                # Prepare name labels for child items
+                if (!is.null(names(obj))) {
+                  nameLabels = paste0(" \"", names(obj), "\" - ")
+                } else {
+                  nameLabels = rep("", length(object))
+                }
                 
                 # Process each item in the MultiPop
                 for (i in seq_along(obj@pops)) {
                   isLastItem = (i == length(obj@pops))
                   printMultiPop(obj@pops[[i]], level = level + 1, idx = i,
-                                prefix = childPrefix, isLast = isLastItem)
+                                prefix = childPrefix, isLast = isLastItem, nameLabel = nameLabels[i])
                 }
                 
               } else if (isPop(obj)) {
@@ -1088,7 +1102,7 @@ setMethod("show",
                         sep = ", ")
                 }
                 
-                cat(connector, indexLabel, "An object of class \"Pop\" with ", 
+                cat(connector, indexLabel, nameLabel, "An object of class \"Pop\" with ", 
                     obj@nInd, " individual(s): ", indIds, "\n", sep = "")
               }
             }
@@ -1096,13 +1110,22 @@ setMethod("show",
             # Print top-level header
             cat("An object of class \"MultiPop\" with ", length(object@pops), 
                 " item(s)\n", sep = "")
-            cat("    Level 1:\n")
+            if (length(object@pops) > 0) {
+              cat("    Level 1:\n")
+            }
+
+            # Prepare name labels for top-level items
+            if (!is.null(names(object))) {
+              nameLabels = paste0(" \"", names(object), "\" - ")
+            } else {
+              nameLabels = rep("", length(object))
+            }
             
             # Print each top-level item
             for (i in seq_along(object@pops)) {
               isLastItem = (i == length(object@pops))
               printMultiPop(object@pops[[i]], level = 1, prefix = "", 
-                            isLast = isLastItem, idx = i)
+                            isLast = isLastItem, idx = i, nameLabel = nameLabels[i])
             }
             invisible()
           }

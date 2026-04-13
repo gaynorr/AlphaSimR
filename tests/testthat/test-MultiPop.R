@@ -198,3 +198,35 @@ test_that("MultiPop assignment and replace methods", {
     fixed = TRUE
   )
 })
+
+test_that("MultiPop show", {
+  founderPop <- quickHaplo(nInd = 40, nChr = 1, segSites = 10)
+  SP <- SimParam$new(founderPop)
+  SP$addTraitA(10)
+  pop <- newPop(founderPop, simParam = SP)
+
+  # Empty MultiPop
+  out0 <- capture.output(show(newEmptyMultiPop()))
+  expect_true(any(grepl('An object of class "MultiPop" with 0 item\\(s\\)', out0)))
+
+  # Nested + named MultiPop
+  mp <- newMultiPop(
+    top1 = pop[1:5],
+    top2 = newMultiPop(
+      mid1 = pop[6:10],
+      mid2 = newMultiPop(low1 = pop[11:15],
+                         low2 = pop[16:18])
+    )
+  )
+  out1 <- capture.output(show(mp))
+  expect_true(any(grepl("Level 1:", out1, fixed = TRUE)))
+  expect_true(any(grepl('An object of class "Pop" with 5 individual\\(s\\)', out1)))
+  expect_true(any(grepl('An object of class "MultiPop" with 2 item\\(s\\)', out1)))
+  expect_true(any(grepl('An object of class "Pop" with 3 individual\\(s\\)', out1)))
+
+  # Name suppression branch for "" and NA
+  names(mp) <- c("", NA_character_)
+  out2 <- capture.output(show(mp))
+  expect_false(any(grepl('"NA" - ', out2, fixed = TRUE)))
+  expect_false(any(grepl('"" - ', out2, fixed = TRUE)))
+})
