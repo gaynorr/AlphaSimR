@@ -393,7 +393,7 @@ isNamedMapPop = function(x) {
 #'   have a generic length and subset method.
 #'   This list is normally empty and exists solely as an
 #'   open slot available for users to store extra information about individuals.
-#' @slot miscPop a list of any length containing optional meta data for the
+#' @slot miscPop a list of additional miscellaneous data for the
 #'   population (see example in \code{\link{newPop}}).
 #'   This list is empty unless information is supplied by the user.
 #'   Note that the list is emptied every time the population is subsetted or
@@ -587,10 +587,14 @@ setMethod("length",
 #' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
 #' The function is intended for use with output from functions such
 #' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
-#' \code{\link{quickHaplo}}.
+#' \code{\link{quickHaplo}}. However, it can also be used to create an
+#' empty \code{\link{Pop-class}} object simply by specifying the desired 
+#' \code{ploidy}.
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
+#' @param ploidy optional, integer. Ploidy of the new empty population. 
+#'   Used only if \code{rawPop} is missing.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
@@ -605,6 +609,11 @@ setMethod("length",
 #'   To get genetically different sets of individuals you can subset the
 #'   \code{rawPop} input, say first half for one set and the second half
 #'   for the other set.
+#' 
+#'   When \code{rawPop} is missing, and \code{ploidy} is provided, an empty 
+#'   population with the specified \code{ploidy} is returned by calling 
+#'   \code{\link{newEmptyPop}} (useful for programmatic construction or tests).
+#'   If \code{rawPop} is provided, \code{ploidy} is ignored.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -625,8 +634,11 @@ setMethod("length",
 #' #MiscPop
 #' pop@miscPop$tmp1 = sum(pop@misc$tmp1)
 #' pop@miscPop$tmp2 = sum(pop@misc$tmp2)
+#' 
+#' #Create empty population with ploidy 2
+#' emptyPop = newPop(ploidy=2L, simParam=SP)
 #' @export
-newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
+newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -634,6 +646,9 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  if(missing(rawPop) && !is.null(ploidy)){
+    return(newEmptyPop(ploidy=ploidy, simParam=simParam))
   }
   return(.newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...))
 }
