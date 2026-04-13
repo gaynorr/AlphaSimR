@@ -230,3 +230,85 @@ test_that("MultiPop show", {
   expect_false(any(grepl('"NA" - ', out2, fixed = TRUE)))
   expect_false(any(grepl('"" - ', out2, fixed = TRUE)))
 })
+
+test_that("Multipop unnameMultiPop", {
+  founderPop <- quickHaplo(nInd = 100, nChr = 1, segSites = 10)
+  SP <- SimParam$new(founderPop)
+  SP$addTraitA(10)
+  pop <- newPop(founderPop, simParam = SP)
+
+  mp2 = newMultiPop(pop1 = pop[1:20], pop2 = pop[21:40],
+                    mpA = newMultiPop(pop3 = pop[41:60],
+                                      mpB = newMultiPop(pop4 = pop[61:80], pop5 = pop[81:100])))
+
+  # Test unnameMultiPop on MultiPop with nested structure
+  expect_error(unnameMultiPop(mp2, level = 0), "level must be a positive integer or Inf", fixed = TRUE)
+
+  u1mp2 = unnameMultiPop(mp2, level = 1)
+  expect_null(names(u1mp2))
+  expect_identical(names(u1mp2[[3]]), c("pop3", "mpB"))
+  expect_identical(names(u1mp2[[3]][['mpB']]), c("pop4", "pop5"))
+
+  u2mp2 = unnameMultiPop(mp2, level = 2)
+  expect_identical(names(u2mp2), c("pop1", "pop2", "mpA"))
+  expect_null(names(u2mp2[[3]]))
+  expect_identical(names(u2mp2[['mpA']][[2]]), c("pop4", "pop5"))
+
+  u3mp2 = unnameMultiPop(mp2, level = 3)
+  expect_identical(names(u3mp2), c("pop1", "pop2", "mpA"))
+  expect_identical(names(u3mp2[['mpA']]), c("pop3", "mpB"))
+  expect_null(names(u3mp2[['mpA']][['mpB']]))
+
+  u4mp2 = unnameMultiPop(mp2, level = 1:2)
+  expect_null(names(u4mp2))
+  expect_null(names(u4mp2[[3]]))
+  expect_identical(names(u2mp2[[3]][[2]]), c("pop4", "pop5"))
+
+  u5mp2 = unnameMultiPop(mp2, level = Inf)
+  expect_null(names(u5mp2))
+  expect_null(names(u5mp2[[3]]))
+  expect_null(names(u5mp2[[3]][[2]]))
+
+  # Test error paths for invalid level arguments
+  mp <- newMultiPop(
+    l1 = pop[1:5],
+    l2 = newMultiPop(
+      l2a = pop[6:10],
+      l2b = newMultiPop(l3a = pop[11:15])
+    )
+  )
+  # depth = 3
+
+  # length(level) == 1 branch
+  expect_error(unnameMultiPop(mp, level = 0), "level must be a positive integer or Inf", fixed = TRUE)
+  expect_error(unnameMultiPop(mp, level = NA_real_), "level must be a positive integer or Inf", fixed = TRUE)
+  expect_error(unnameMultiPop(mp, level = 1.5), "level must be a positive integer or Inf", fixed = TRUE)
+  expect_error(unnameMultiPop(mp, level = 4), "requested level exceed max depth of x (3)", fixed = TRUE)
+
+  # length(level) > 1 branch
+  expect_error(
+    unnameMultiPop(mp, level = c(1, NA_real_)),
+    "levels must be a numeric vector of positive integers (no NA)",
+    fixed = TRUE
+  )
+  expect_error(
+    unnameMultiPop(mp, level = c(1, 0)),
+    "levels must be a numeric vector of positive integers (no NA)",
+    fixed = TRUE
+  )
+  expect_error(
+    unnameMultiPop(mp, level = c(1, 2.5)),
+    "levels must be a numeric vector of positive integers (no NA)",
+    fixed = TRUE
+  )
+  expect_error(
+    unnameMultiPop(mp, level = c(1, Inf)),
+    "cannot mix Inf with integer levels",
+    fixed = TRUE
+  )
+  expect_error(
+    unnameMultiPop(mp, level = c(1, 4)),
+    "requested level(s) exceed max depth of x (3)",
+    fixed = TRUE
+  )
+})

@@ -1388,3 +1388,138 @@ isMultiPop = function(x) {
 newEmptyMultiPop = function(){
   new("MultiPop", pops=list())
 }
+
+#' @title Remove names from a MultiPop
+#'
+#' @description
+#' Remove names from a \code{\link{MultiPop-class}} object at one or
+#' more specified nesting levels.
+#'
+#' @param x A \code{\link{MultiPop-class}} object.
+#' @param level A positive integer, a vector of positive integers, or
+#'   \code{Inf}. If \code{level = Inf}, names are removed at every level.
+#'   If \code{level = c(a, b)}, names are removed only at levels \code{a}
+#'   and \code{b}. Levels must be >= 1; an error is raised if any
+#'   requested level is deeper than the MultiPop's maximum depth.
+#'   The top level is \code{1}.
+#'
+#' @return A \code{\link{MultiPop-class}} object with names removed at the
+#'   requested levels.
+#'
+#' @details
+#' - Top-level elements of a MultiPop have level 1; nested MultiPops increase
+#'   the level by 1 per nesting.  \cr
+#' - Passing a vector of positive integers removes names only at those exact
+#'   levels.  \cr
+#' - Using \code{Inf} removes names at every level.  \cr
+#' - Mixing \code{Inf} with integer levels (e.g. \code{c(1, Inf)}) is not
+#'   allowed and will raise an error.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' # Create a multi-population with nested structure and names at each level
+#' mp = newMultiPop(
+#'   pop1 = pop[1:3],
+#'   mpA = newMultiPop(
+#'     pop2 = pop[4:6],
+#'     mpB = newMultiPop(pop3 = pop[7:8], pop4 = pop[9:10])
+#'   )
+#' )
+#' print(mp)
+#'
+#' # Remove only top-level names
+#' unnameMultiPop(mp, level = 1)
+#'
+#' # Remove names exactly at levels 2 and 3
+#' unnameMultiPop(mp, level = c(2L, 3L))
+#'
+#' # Remove all names at every level
+#' unnameMultiPop(mp, level = Inf)
+#'
+#' @export
+unnameMultiPop = function(x, level = Inf) {
+  # Get max depth of nesting in MultiPop
+  md = .depthMultiPop(x)
+
+  # Validate level arg
+  if (length(level) == 1L) {
+    if (is.infinite(level)) {
+      levels = Inf
+    } else {
+      if (
+        !is.numeric(level) ||
+          is.na(level) ||
+          level < 1 ||
+          level != as.integer(level)
+      ) {
+        stop("level must be a positive integer or Inf")
+      }
+      if (level > md) {
+        stop(sprintf("requested level exceed max depth of x (%d)", md))
+      }
+      levels = as.integer(level)
+    }
+  } else {
+    if (!is.numeric(level) || any(is.na(level)) || any(level <= 0)) {
+      stop("levels must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(is.infinite(level))) {
+      stop("cannot mix Inf with integer levels")
+    }
+    if (any(level != trunc(level))) {
+      stop("levels must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(level > md)) {
+      stop(sprintf("requested level(s) exceed max depth of x (%d)", md))
+    }
+    levels = as.integer(unique(level))
+  }
+
+  # Recursively unname pops at specified level(s)
+  return(.unname(x, 1L, levels))
+}
+
+#' Helper function to recursively compute the maximum depth of a
+#' MultiPop object, where the top level is considered to be 1.
+#'
+#' @param mp \code{\link{MultiPop-class}} object
+#'
+#' @keywords internal
+.depthMultiPop = function(mp) {
+  multi = which(sapply(mp@pops, isMultiPop))
+  if (length(multi) == 0L) {
+    return(1L)
+  }
+  depth = max(vapply(mp@pops[multi], .depthMultiPop, integer(1L)))
+  return(1L + depth)
+}
+
+#' Helper function to recursively remove names from a MultiPop object at
+#' specified levels, where the top level is considered to be 1.
+#'
+#' @param mp \code{\link{MultiPop-class}} object
+#' @param level Current level in the MultiPop hierarchy
+#' @param levels Set of levels at which to remove names
+#'
+#' @keywords internal
+.unname = function(mp, level, levels) {
+  if (any(is.infinite(levels)) || level %in% levels) {
+    names(mp) = NULL
+  }
+  multi = which(sapply(mp@pops, isMultiPop))
+  if (length(multi) > 0L) {
+    mp@pops[multi] = lapply(mp@pops[multi], function(child) {
+      .unname(child, level + 1L, levels)
+    })
+  }
+  validObject(mp)
+  return(mp)
+}
