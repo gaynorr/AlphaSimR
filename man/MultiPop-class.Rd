@@ -6,6 +6,12 @@
 \alias{show,MultiPop-method}
 \alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
+\alias{$,MultiPop-method}
+\alias{names,MultiPop-method}
+\alias{[<-,MultiPop-method}
+\alias{[[<-,MultiPop-method}
+\alias{$<-,MultiPop-method}
+\alias{names<-,MultiPop-method}
 \alias{c,MultiPop-method}
 \alias{length,MultiPop-method}
 \alias{isMultiPop}
@@ -16,6 +22,18 @@
 \S4method{[}{MultiPop}(x, i)
 
 \S4method{[[}{MultiPop}(x, i)
+
+\S4method{$}{MultiPop}(x, name)
+
+\S4method{names}{MultiPop}(x)
+
+\S4method{[}{MultiPop}(x, i) <- value
+
+\S4method{[[}{MultiPop}(x, i) <- value
+
+\S4method{$}{MultiPop}(x, name) <- value
+
+\S4method{names}{MultiPop}(x) <- value
 
 \S4method{c}{MultiPop}(x, ...)
 
@@ -29,6 +47,10 @@ isMultiPop(x)
 \item{x}{a \code{MultiPop} object}
 
 \item{i}{index of \code{MultiPop} or \code{Pop} objects}
+
+\item{name}{name used by `$` and `$<-` methods}
+
+\item{value}{replacement value for `$<-`, `[[<-` or `names<-`}
 
 \item{...}{additional \code{MultiPop} or \code{Pop} objects}
 }
@@ -44,6 +66,18 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 \item \code{[}: Subset MultiPop by index
 
 \item \code{[[}: Extract a population by index
+
+\item \code{$}: Extract a population by name
+
+\item \code{names(MultiPop)}: Access names of pops in MultiPop
+
+\item \code{`[`(MultiPop) <- value}: Replace contents of a subset of elements in MultiPop
+
+\item \code{`[[`(MultiPop) <- value}: Replace contents of a single element in MultiPop
+
+\item \code{`$`(MultiPop) <- value}: Replace contents of a single element in MultiPop by name
+
+\item \code{names(MultiPop) <- value}: Replace names of pops in MultiPop
 
 \item \code{c(MultiPop)}: Combine multiple MultiPops (without level control)
 

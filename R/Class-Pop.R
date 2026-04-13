@@ -1013,6 +1013,8 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
 #' @param object a \code{MultiPop} object
 #' @param x a \code{MultiPop} object
 #' @param i index of \code{MultiPop} or \code{Pop} objects
+#' @param name name used by `$` and `$<-` methods
+#' @param value replacement value for `$<-`, `[[<-` or `names<-`
 #' @param ... additional \code{MultiPop} or \code{Pop} objects
 #'
 #' @slot pops list of \code{\link{Pop-class}} or
@@ -1122,6 +1124,150 @@ setMethod("[[",
             return(x@pops[[i]])
           }
 )
+
+#' @describeIn MultiPop Extract a population by name
+setMethod("$", signature(x = "MultiPop"), function(x, name) {
+  nm = as.character(name)
+  if (length(nm) != 1L) {
+    stop("$ requires a single name")
+  }
+  nms = names(x@pops)
+  if (!is.null(nms) && nm %in% nms) {
+    return(x@pops[[nm]])
+  }
+  return(NULL)
+})
+
+#' @describeIn MultiPop Access names of pops in MultiPop
+setMethod("names", signature(x = "MultiPop"), function(x) {
+  n = names(x@pops)
+  return(n)
+})
+
+#' @describeIn MultiPop Replace contents of a subset of elements in MultiPop
+setReplaceMethod("[", signature(x = "MultiPop"), function(x, i, value) {
+  # Deletion
+  if (is.null(value)) {
+    x@pops[i] = NULL
+    validObject(x)
+    return(x)
+  }
+
+  # Coerce single Pop/MultiPop to list; require list of Pop/MultiPop otherwise
+  if (isPop(value)) {
+    value = list(value)
+  } else if (isMultiPop(value)) {
+    value = value@pops
+  } else if (is.list(value)) {
+    classes = sapply(value, function(x) isPop(x) || isMultiPop(x) || is.null(x))
+    if (any(!classes)) {
+      stop("All elements of list must be Pop, MultiPop, or NULL")
+    }
+  } else {
+    stop("value must be a list or a Pop/MultiPop")
+  }
+
+  # List semantics handles numeric/character/logical indices, recycling, names, expansion
+  x@pops[i] = value
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace contents of a single element in MultiPop
+setReplaceMethod("[[", signature(x = "MultiPop"), function(x, i, value) {
+  stopifnot("index required" = !missing(i))
+
+  # Require exactly one element
+  if (is.logical(i)) {
+    idx = which(i)
+    if (length(idx) != 1L) {
+      stop("logical index must select exactly one element")
+    }
+  } else if (is.character(i)) {
+    if (length(i) != 1L) {
+      stop("only single character index allowed")
+    }
+    nms = names(x@pops)
+    nm = i
+  } else if (is.numeric(i) || is.integer(i)) {
+    idx = as.integer(i)
+    if (length(idx) != 1L || idx < 1L) stop("invalid numeric index")
+  } else {
+    stop("index must be numeric, character, or logical")
+  }
+
+  # Deletion
+  if (is.null(value)) {
+    if (exists("nms", inherits = FALSE)) {
+      if (!is.null(nms) && nm %in% nms) {
+        x@pops = x@pops[nms != nm]
+      }
+    } else {
+      x@pops[[idx]] = NULL
+    }
+    validObject(x)
+    return(x)
+  }
+
+  # Validate replacement value
+  if (!(isPop(value) || isMultiPop(value))) {
+    stop("value must be a Pop or MultiPop")
+  }
+
+  # Assign / Append
+  if (exists("nm", inherits = FALSE)) {
+    if (!is.null(nms) && nm %in% nms) {
+      x@pops[[nm]] = value
+    } else {
+      x@pops = c(x@pops, setNames(list(value), nm))
+    }
+  } else {
+    x@pops[[idx]] = value
+  }
+
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace contents of a single element in MultiPop by name
+setReplaceMethod("$", signature(x = "MultiPop"), function(x, name, value) {
+  nms = names(x@pops)
+  nm = as.character(name)
+  if (length(nm) != 1L) {
+    stop("$ requires a single name")
+  }
+
+  # Deletion
+  if (is.null(value)) {
+    if (!is.null(nms) && nm %in% nms) {
+      x@pops = x@pops[nms != nm]
+    }
+    validObject(x)
+    return(x)
+  }
+
+  # Validate replacement value
+  if (!(isPop(value) || isMultiPop(value))) {
+    stop("value must be a Pop or MultiPop")
+  }
+
+  # Assign / Append
+  if (!is.null(nms) && nm %in% nms) {
+    x@pops[[nm]] = value
+  } else {
+    x@pops = c(x@pops, setNames(list(value), nm))
+  }
+
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace names of pops in MultiPop
+setReplaceMethod("names", signature(x = "MultiPop"), function(x, value) {
+  names(x@pops) = value
+  validObject(x)
+  return(x)
+})
 
 #' @describeIn MultiPop Combine multiple MultiPops (without level control)
 setMethod("c",
