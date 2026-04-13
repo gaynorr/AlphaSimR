@@ -217,11 +217,11 @@ mergePops = function(popList){
 #'   preserve.
 #'
 #' @details
-#' The \code{level} argument controls how many levels of nesting are preserved.
-#' \code{level = 1}: flatten structure of \code{MultiPop-class} so that
+#' The \code{level} argument controls how many levels of nesting are preserved.  \cr
+#' - \code{level = 1}: flatten structure of \code{MultiPop-class} so that
 #'   all items are \code{Pop-class} objects (that is, flatten everything
-#'   below the top level).
-#' \code{level > 1}: preserve the top \code{level} levels of nesting; any
+#'   below the top level).  \cr
+#' - \code{level > 1}: preserve the top \code{level} levels of nesting; any
 #'   deeper \code{MultiPop-class} objects are flattened.
 #'
 #' If \code{level} is greater than or equal to the nesting depth, the original
@@ -267,10 +267,14 @@ flattenMultiPop = function(x, level=1) {
     for (i in multi) {
       x@pops[[i]] = flattenMultiPop(x@pops[[i]], level = level)
     }
-    return(do.call(newMultiPop, x@pops))
+    multiPop = do.call(newMultiPop, x@pops)
+    validObject(multiPop)
+    return(multiPop)
   }
   flatPopList = .flattenMultiPop(x)
-  return(do.call(newMultiPop, flatPopList))
+  multiPop = do.call(newMultiPop, flatPopList)
+  validObject(multiPop)
+  return(multiPop)
 }
 
 #' Helper function to recursively extract Pop objects from a MultiPop
@@ -305,14 +309,14 @@ flattenMultiPop = function(x, level=1) {
 #' @details
 #' The function accepts multiple inputs and merges them according to the
 #' \code{level} argument.
-#' \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
+#' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
 #'   inputs into a single \code{Pop} object (the inputs are first completely 
-#'   flattened then merged).
-#' \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
+#'   flattened then merged).  \cr
+#' - \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
 #'   \code{Pop} (level 1). Each input is first flattened to level 1 and its
 #'   \code{Pop} objects merged into one \code{Pop}, and then all these \code{Pop}
-#'   objects are merged into a single \code{MultiPop}.
-#' \code{level > 1}: merge inputs into a \code{MultiPop} while preserving top
+#'   objects are merged into a single \code{MultiPop}.  \cr
+#' - \code{level > 1}: merge inputs into a \code{MultiPop} while preserving top
 #'   \code{level} structure. Each input is first flattened to the requested
 #'   \code{level} and its items merged into a single \code{MultiPop}, and then
 #'   inputs are merged.
@@ -374,14 +378,8 @@ mergeMultiPops = function(..., level=0){
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
 
-  if(any(classes == "NULL")){
-    remove = which(classes == "NULL")
-    popList = popList[-remove]
-    classes = classes[-remove]
-  }
-
   # If popList contains a single object
-  if (length(classes) == 1) {
+  if (length(classes) == 1L) {
     if (classes == "Pop") {
       # If the object is Pop, return it without the list wrapping
       return(popList[[1]])
@@ -406,7 +404,9 @@ mergeMultiPops = function(..., level=0){
     for (i in multi) {
       popList[[i]] = mergeMultiPops(popList[[i]], level = level)
     }
-    return(do.call(newMultiPop, popList))
+    multiPop = do.call(newMultiPop, popList)
+    validObject(multiPop)
+    return(multiPop)
   }
 
   flatMultiPop = flattenMultiPop(multiPop)

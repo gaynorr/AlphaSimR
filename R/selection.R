@@ -98,7 +98,9 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param FUN a summary function to be applied to the vector or matrix of
 #'   values. Default is \code{mean}.
 #' @param FUN.ARGS a list of additional arguments passed to \code{FUN}.
-#' @param returnList logical. Should the returned object be a list?
+#' @param returnList logical to return a list (when \code{TRUE}) 
+#'   or a vector (when \code{FALSE} and the return object can be 
+#'   simplified to a vector).
 #' @param simParam an object of \code{\link{SimParam}}.
 #' @param ... additional arguments passed to \code{trait} or \code{use}
 #'   when they are custom functions.
