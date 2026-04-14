@@ -612,6 +612,7 @@ setMethod("length",
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create population
@@ -825,6 +826,7 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create population
@@ -892,6 +894,7 @@ resetPop = function(pop,simParam=NULL,nThreads=NULL){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create population
@@ -923,6 +926,7 @@ isPop = function(x) {
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #'
 #' #Create empty population

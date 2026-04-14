@@ -90,6 +90,7 @@ test_that("pop@gv and genParam(pop)@gv match", {
   # functionalities and we had one bug in one code path
   founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10, ploidy = 1)
   SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr = 10, mean = 0, var = 1, name = "addTraitA_allQTLs")
   SP$addTraitAE(
     nQtlPerChr = 10,
@@ -118,7 +119,7 @@ makePhenoFinalizerTestSetup = function() {
   set.seed(101)
   founderPop = quickHaplo(nInd = 8, nChr = 1, segSites = 4)
   SP = SimParam$new(founderPop)
-  # SP$nThreads = 1L
+  SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr = 4, mean = c(0, 0), var = c(1, 2), corA = diag(2))
   SP$setVarE(varE = c(1, 1))
 
