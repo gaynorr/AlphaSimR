@@ -96,7 +96,9 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @param traits an integer vector indicate which traits to set. If NULL,
 #' all traits will be set.
 #' @param simParam an object of \code{\link{SimParam}}
-#'
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
+#' 
 #' @details
 #' There are three arguments for setting the error variance of a
 #' phenotype: h2, H2, and varE. The user should only use one of these
@@ -154,7 +156,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @export
 setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                     reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
-                    traits=NULL, simParam=NULL){
+                    traits=NULL, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -265,6 +267,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   pheno = calcPheno(pop=pop, varE=varE, reps=reps, p=p,
                     traits=traits, simParam=simParam)
 
+  pheno = simParam$finalizePheno(pheno, pop=pop, simParam=simParam, ...)
+
   colnames(pheno) = colnames(pop@gv)
 
   if(onlyPheno){
@@ -278,6 +282,139 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   }
 
   return(pop)
+}
+
+#' @title Convert a normal (Gaussian) trait to a log-normal trait
+#' @param x matrix, values for one or more traits (if not a matrix,
+#'   we cast to a matrix).
+#' @param meanlog \code{NULL}, numeric or list, trait mean(s) on the log scale;
+#'  when \code{NULL} mean of 0 is assumed,
+#'  when numeric means for all traits in \code{x} must be provided, and
+#'  when list means for all traits in \code{x} must be provided with possibility
+#'  to pass a \code{NULL} list node to skip the conversion for the trait
+#'  (see examples).
+#' @details If input trait is normal (Gaussian) then this function generates
+#'   a log-normal trait by applying exponential link function on the input.
+#'   Note the possible terminological confusion, a log-normal trait is expressed
+#'   on exponential scale and its underlying (latent) values are on the log scale
+#'   (see examples). See \code{\link{rlnorm}} on the log-normal distribution,
+#'   including the expressions for the expected value and variance of observed trait,
+#'   which can help you tune the parameters to obtain targeted observed trait values.
+#'   Note that \code{asLogNormal} does not provide the \code{sdlog} argument because
+#'   latent trait variation is already controlled by other parameters.
+#'   See examples below.
+#' @return matrix of log-normal values.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
+#' @examples
+#' #Simulate a founder pop, set latent trait parameters, and create a population
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' trtMeanLog = c(0, 0)
+#' trtVarGLog = c(1, 2)
+#' SP$addTraitA(nQtlPerChr = 10, mean = trtMeanLog, var = trtVarGLog,
+#'              corA = matrix(data = c(1.0, 0.6,
+#'                                     0.6, 1.0), ncol = 2))
+#' trtVarELog = c(1, 1)
+#' trtVarPLog = trtVarGLog + trtVarELog
+#' SP$setVarE(varE = trtVarELog)
+#' pop = newPop(founderPop)
+#' popLarge = randCross(pop, nCrosses = 1000)
+#' 
+#' meanVarFun = function(x) list(mean = mean(x), var = var(x))
+#' 
+#' #Latent phenotypes and parameters
+#' (phenoLog = pheno(pop))
+#' phenoLogLarge = pheno(popLarge)
+#' apply(X = phenoLog, MARGIN = 2, FUN = meanVarFun)
+#' apply(X = phenoLogLarge, MARGIN = 2, FUN = meanVarFun)
+#'
+#' #Convert a single input trait
+#' (phenoExpMeanLog0 = asLogNormal(x = pheno(pop)[, 1]))
+#' meanVarFun(phenoExpMeanLog0)
+#'
+#' #Demonstrate meanlog argument
+#' #Here we aim to obtain observed trait values with the mean of 1.
+#' #Since E(trtExp)=exp(mean(trtLog)+var(trtLog)/2), trtMeanLog[1]=0, and trtVarPLog[1],
+#' #to get E(trtExp)=1=exp(0) we set meanlog to -trtVarPLog[1]/2.
+#' #See also ?rlnorm for the expression of variance.
+#' (phenoExpMeanExp1 = asLogNormal(x = pheno(pop)[, 1], meanlog = -trtVarPLog[1]/2))
+#' meanVarFun(phenoExpMeanExp1)
+#' exp(trtVarPLog[1] - 1)
+#' cbind(phenoLog = phenoLog[, 1],
+#'   phenoExpMeanLog0 = phenoExpMeanLog0,
+#'   phenoExpMeanExp1 = phenoExpMeanExp1)
+#' 
+#' tmp = cbind(phenoLog = phenoLogLarge[, 1],
+#'   phenoExpMeanLog0 = c(asLogNormal(phenoLogLarge[, 1])),
+#'   phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanlog = -trtVarPLog[1]/2)))
+#' (tmp2 = apply(X = tmp, MARGIN = 2, FUN = meanVarFun))
+#' par(mfrow = c(3, 1))
+#' hist(tmp[, "phenoLog"], main = paste0("Mean: ", v=tmp2$phenoLog$mean))
+#' abline(v=tmp2$phenoLog$mean, col = "red")
+#' hist(tmp[, "phenoExpMeanLog0"], main = paste0("Mean: ", v=tmp2$phenoExpMeanLog0$mean))
+#' abline(v = tmp2$phenoExpMeanLog0$mean, col = "red")
+#' hist(tmp[, "phenoExpMeanExp1"], main = paste0("Mean: ", v=tmp2$phenoExpMeanExp1$mean))
+#' abline(v= tmp2$phenoExpMeanExp1$mean, col = "red")
+#'
+#' #Convert multiple input traits
+#' asLogNormal(x = pheno(pop))
+#' try(asLogNormal(x = pheno(pop), meanlog = 0))
+#' asLogNormal(x = pheno(pop), meanlog = c(0, 1))
+#' asLogNormal(x = pheno(pop), meanlog = list(0, NULL))
+#' 
+#' #Store the recoded trait manually
+#' pheno(pop)
+#' pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePop()
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
+#'   pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asLogNormal(x = pheno[, 1])
+#'   return(pheno)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' @export
+asLogNormal <- function(x, meanlog = NULL) {
+  if (!is.matrix(x)) {
+    x = as.matrix(x)
+  }
+  nTraits = ncol(x)
+  if (is.null(meanlog)) {
+    meanlog = rep(x = 0, times = nTraits)
+  }
+  if (is.numeric(meanlog)) {
+    if (length(meanlog) != nTraits) {
+      stop("You must supply meanlog for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      x[, trt] = exp(meanlog[trt] + x[, trt])
+    }
+  } else if (is.list(meanlog)) {
+    if (length(meanlog) != nTraits) {
+      stop("You must supply meanlog for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      if (!is.null(meanlog[[trt]])) {
+        x[, trt] = exp(meanlog[[trt]] + x[, trt])
+      }
+    }
+  } else {
+    stop("meanlog must be NULL, numeric, or list!")
+  }
+  return(x)
 }
 
 #' @title Convert a normal (Gaussian) trait to an ordered categorical (threshold)
@@ -310,6 +447,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   categorical trait according to the ordered probit model.
 #' @return matrix of values with some traits recorded as ordered categories
 #'  in the form of \code{1:nC} with \code{nC} being the number of categories.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 #' @examples
 #' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -367,9 +506,19 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' pheno(pop)
 #' 
 #' #Apply and store the transformation automatically via SimParam$finalizePop()
-#' SP$finalizePop = function(pop, simParam = SP) {
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
 #'   pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
 #'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asCategorical(x = pheno[, 1])
+#'   return(pheno)
 #' }
 #' pop = newPop(founderPop)
 #' pheno(pop)
