@@ -116,10 +116,24 @@ pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
 pheno(pop)
 
 #Apply and store the transformation automatically via SimParam$finalizePop()
-SP$finalizePop = function(pop, simParam = SP) {
+finalizePopDefault = SP$finalizePop
+SP$finalizePop = function(pop, simParam = SP, ...) {
   pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
   return(pop)
 }
 pop = newPop(founderPop)
 pheno(pop)
+
+#Apply and store the transformation automatically via SimParam$finalizePheno()
+SP$finalizePop = finalizePopDefault
+SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+  pheno[, 1] = asCategorical(x = pheno[, 1])
+  return(pheno)
+}
+pop = newPop(founderPop)
+pheno(pop)
+}
+\seealso{
+\code{finalizePop} and \code{finalizePheno} functions in
+  \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 }

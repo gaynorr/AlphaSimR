@@ -1,8 +1,10 @@
-# AlphaSimR 2.0.0.9001
+# AlphaSimR 2.1.0.9001
 
 * Added asLogNormal() function.
 
 * Improved examples for asCategorical() function.
+
+* Added `SimParam$finalizePheno` field, to provide a user-defined function applied to newly generated phenotypic values (similar to `SimParam$finalizePop`).
 
 * Improved documentation for `SimParam$finalizePop` field.
 
@@ -80,7 +82,7 @@
 
 # AlphaSimR 1.5.1
 
-*d eleted bad example code for `setMisc`
+* deleted bad example code for `setMisc`
 
 * changed examples to use a single thread for CRAN testing this change is not shown in the documentation
 

@@ -96,7 +96,9 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @param traits an integer vector indicate which traits to set. If NULL,
 #' all traits will be set.
 #' @param simParam an object of \code{\link{SimParam}}
-#'
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
+#' 
 #' @details
 #' There are three arguments for setting the error variance of a
 #' phenotype: h2, H2, and varE. The user should only use one of these
@@ -154,7 +156,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @export
 setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                     reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
-                    traits=NULL, simParam=NULL){
+                    traits=NULL, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -265,6 +267,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   pheno = calcPheno(pop=pop, varE=varE, reps=reps, p=p,
                     traits=traits, simParam=simParam)
 
+  pheno = simParam$finalizePheno(pheno, pop=pop, simParam=simParam, ...)
+
   colnames(pheno) = colnames(pop@gv)
 
   if(onlyPheno){
@@ -300,6 +304,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'   latent trait variation is already controlled by other parameters.
 #'   See examples below.
 #' @return matrix of log-normal values.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 #' @examples
 #' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -364,9 +370,19 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' pheno(pop)
 #' 
 #' #Apply and store the transformation automatically via SimParam$finalizePop()
-#' SP$finalizePop = function(pop, simParam = SP) {
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
 #'   pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
 #'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asLogNormal(x = pheno[, 1])
+#'   return(pheno)
 #' }
 #' pop = newPop(founderPop)
 #' pheno(pop)
@@ -431,6 +447,8 @@ asLogNormal <- function(x, meanlog = NULL) {
 #'   categorical trait according to the ordered probit model.
 #' @return matrix of values with some traits recorded as ordered categories
 #'  in the form of \code{1:nC} with \code{nC} being the number of categories.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 #' @examples
 #' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -488,9 +506,19 @@ asLogNormal <- function(x, meanlog = NULL) {
 #' pheno(pop)
 #' 
 #' #Apply and store the transformation automatically via SimParam$finalizePop()
-#' SP$finalizePop = function(pop, simParam = SP) {
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
 #'   pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
 #'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asCategorical(x = pheno[, 1])
+#'   return(pheno)
 #' }
 #' pop = newPop(founderPop)
 #' pheno(pop)

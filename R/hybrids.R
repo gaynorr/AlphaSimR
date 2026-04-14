@@ -259,6 +259,8 @@ calcGCA = function(pop,use="pheno"){
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
 #'
 #'
 #' @return Returns an object of \code{\link{Pop-class}} or
@@ -283,7 +285,7 @@ calcGCA = function(pop,use="pheno"){
 setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
                        varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL,
                        inbred=FALSE, onlyPheno=FALSE, simParam=NULL,
-                       nThreads=NULL){
+                       nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -298,7 +300,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
                       use=use, h2=h2, H2=H2, varE=varE, corE=corE,
                       reps=reps, fixEff=fixEff, p=p, inbred=inbred,
                       onlyPheno=FALSE, simParam=simParam,
-                      nThreads=nThreads)
+                      nThreads=nThreads, ...)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -313,7 +315,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
   #Get response
   if(use=="pheno"){
     y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,
-                 p=p, reps=reps, onlyPheno=TRUE, simParam=simParam)
+                 p=p, reps=reps, onlyPheno=TRUE, simParam=simParam, ...)
   }else if(use=="gv"){
     y = tmp@gv
   }else{
@@ -374,6 +376,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
 #'
 #' @details
 #' The reps parameter is for convenient representation of replicated data.
@@ -405,7 +409,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
                             h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                             reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
-                            simParam=NULL,nThreads=NULL){
+                            simParam=NULL,nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -420,7 +424,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
                       nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2,
                       varE=varE, corE=corE, reps=reps, fixEff=fixEff,
                       p=p, onlyPheno=FALSE, simParam=simParam,
-                      nThreads=nThreads)
+                      nThreads=nThreads, ...)
     return(pop)
   }
   if(any(duplicated(pop@id))){
@@ -434,7 +438,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
   #Get response
   if(use=="pheno"){
     y = setPheno(tmp, h2=h2, H2=H2, varE=varE, corE=corE,
-                 reps=reps, p=p, onlyPheno=TRUE, simParam=simParam)
+                 reps=reps, p=p, onlyPheno=TRUE, simParam=simParam, ...)
   }else if(use=="gv"){
     y = tmp@gv
   }else{

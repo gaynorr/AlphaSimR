@@ -657,8 +657,8 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#' @param ... additional arguments passed to the \code{finalizePop}
-#' function in simParam
+#' @param ... additional arguments passed to the \code{finalizePop} or
+#' \code{finalizePheno} function(s) in simParam
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
@@ -788,7 +788,7 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
   if(simParam$nTraits>=1){
     output = setPheno(output, varE=NULL, reps=1,
                       fixEff=1L, p=NULL, onlyPheno=FALSE,
-                      simParam=simParam)
+                      simParam=simParam, ...)
   }
 
   if(simParam$isTrackPed){
