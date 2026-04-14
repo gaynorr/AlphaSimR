@@ -300,7 +300,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 
 \item{\code{finalizePop}}{function applied to newly created populations.
 It is run as the last step of creating a new population and
-provides users a way to automatically modify populations.
+provides a way to automatically modify populations.
 The function must satisfy these four requirements:
 1) The first argument is a \code{\link{Pop-class}} object
    which will be used in this function;
@@ -314,22 +314,22 @@ See \code{\link{asCategorical}} for an example.}
 return an empty population with a warning instead of an error.}
 
 \item{\code{finalizePheno}}{function applied to newly generated phenotype values.
-It is run as one of the last step of generating new phenotype values and
-provides users a way to automatically modify phenotype values.
-While \code{finalizePop} function can be used to the same effect for
-newly generated populations, this function provides more granular
-support so that user have control over finalizing phenotype values
-with new and existing populations, say, when we repeatedly call
-\code{\link{setPheno}}.
+It is run as the last step of generating new phenotype values and
+provides a way to automatically modify phenotype values.
+While \code{finalizePop} function can be used to a similar effect,
+\code{finalizePheno} function provides more granular support over
+finalizing phenotype values in new and existing populations, say,
+when we repeatedly call \code{\link{setPheno}} on the existing population
+(which would not trigger use of \code{finalizePop}).
 The function must satisfy these five requirements:
 1) The first argument is a matrix of phenotype values,
    which will be used in this function and
    should have dimensions as \code{pop@pheno};
 2) The second argument is a \code{\link{Pop-class}} object
-   to provide access to population specific values,
+   to provide access to population specific values;
 3) The third argument must be a SimParam object
-   to provide access to global parameters,
-4) The remaining arguments must be passed via \code{...}, and
+   to provide access to global parameters;
+4) The remaining arguments must be passed via \code{...}; and
 5) The return is a matrix of phenotype values that will form the new
    \code{pop@pheno}, so the function should not change column or
    row order.
