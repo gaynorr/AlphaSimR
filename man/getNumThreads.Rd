@@ -14,6 +14,11 @@ Gets the number of available threads by calling the OpenMP function
 \code{omp_get_max_threads()}
 }
 \examples{
+isOpenMPAvailable()
 getNumThreads()
 
+}
+\seealso{
+\code{vignette("parallelization", package="AlphaSimR")}
+ for setup details and \code{\link{isOpenMPAvailable}}.
 }

@@ -327,7 +327,9 @@ autopolyploid. (default is 0)}
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
 \item{\code{nThreads}}{number of threads used with OpenMP (when available).
-Assign \code{NULL} to reset to \code{getNumThreads()}.}
+Assign \code{NULL} to reset to \code{getNumThreads()}.
+See \code{vignette("parallelization", package="AlphaSimR")}
+for setup details.}
 
 \item{\code{traitNames}}{vector of trait names}
 

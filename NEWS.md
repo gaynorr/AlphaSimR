@@ -6,11 +6,15 @@
 
 * Improved documentation for `SimParam$finalizePop` field.
 
+* AlphaSimR now reports OpenMP support and the default thread count when attached in interactive sessions. Use `options(AlphaSimR.quiet = TRUE)` to silence this message.
+
 * Added a short vignette explaining OpenMP support for parallelization.
 
 * `SimParam$nThreads` now validates assignments. Setting it to `NULL` resets to `getNumThreads()`, and invalid values now fail with a clear error.
 
 * Added optional `nThreads` arguments across OpenMP-enabled R functions and `SimParam` methods so thread counts can be controlled explicitly per call instead of only through `SimParam$nThreads` and is propagated across the package consistently.
+
+* Clarified in function documentation that `simParam = NULL` uses the global `SP` object where applicable.
 
 * Consolidated the use of RNG across the package to enable reproducibility. This is an internal change not visible to users.
 
@@ -19,8 +23,6 @@
 * Fixed a reproducibility bug in `runMacs()` and `runMacs2()`: `set.seed()` can now reproduce MaCS founder simulations, including when chromosomes are simulated in parallel with OpenMP. This is an internal change not visible to users, but will enable visible reproducibility.
 
 * Fixed a bug in `getGvE` with multiple traits.
-
-* Clarified in function documentation that `simParam = NULL` uses the global `SP` object where applicable.
 
 # AlphaSimR 2.1.0
 

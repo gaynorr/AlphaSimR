@@ -2462,6 +2462,8 @@ SimParam = R6Class(
 
     #' @field nThreads number of threads used with OpenMP (when available).
     #' Assign \code{NULL} to reset to \code{getNumThreads()}.
+    #' See \code{vignette("parallelization", package="AlphaSimR")}
+    #' for setup details.
     nThreads=function(value){
       if(missing(value)){
         private$.nThreads
