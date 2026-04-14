@@ -433,6 +433,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addSnpChipByName(c("1_1","1_3"))
     addSnpChipByName = function(markers, name=NULL){
       genMap = private$.femaleMap
@@ -1901,6 +1902,7 @@ SimParam = R6Class(
     #'
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
     #' SP$addTraitA(10)
     #'
     #' #Create population
@@ -1909,7 +1911,6 @@ SimParam = R6Class(
     #'
     #' #Change mean to 1
     #' SP$rescaleTraits(mean=1)
-    #' \dontshow{SP$nThreads = 1L}
     #' #Run resetPop for change to take effect
     #' pop = resetPop(pop, simParam=SP)
     #' meanG(pop)

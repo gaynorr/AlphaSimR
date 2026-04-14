@@ -115,6 +115,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChipByName(c("1_1","1_3"))
 
 ## ------------------------------------------------
@@ -262,6 +263,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population
@@ -270,7 +272,6 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
-\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
@@ -815,6 +816,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChipByName(c("1_1","1_3"))
 }
 \if{html}{\out{</div>}}
@@ -1829,6 +1831,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population
@@ -1837,7 +1840,6 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
-\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)

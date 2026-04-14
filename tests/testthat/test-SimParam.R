@@ -1,13 +1,13 @@
 test_that("SimParam nThreads validates values and NULL resets to default", {
   founder <- quickHaplo(nInd = 2, nChr = 2, segSites = 4)
   SP <- SimParam$new(founder)
-  pop <- newPop(founder, simParam = SP)
-
   SP$nThreads <- 1L
+  pop <- newPop(founder, simParam = SP)
   expect_equal(SP$nThreads, 1L)
 
   SP$nThreads <- NULL
   expect_equal(SP$nThreads, getNumThreads())
+  SP$nThreads <- 1L
   expect_silent(pullSegSiteGeno(pop, simParam = SP))
 
   expect_error(
