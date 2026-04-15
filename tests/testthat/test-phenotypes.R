@@ -3,23 +3,27 @@ context("phenotypes")
 test_that("asLogNormal_converts_correctly", {
   x = matrix(data = c(-1, 0, 1, 0, 1, 2), nrow = 3, ncol = 2)
 
-  expect_equal(asLogNormal(x = x[, 1]), matrix(exp(x[, 1])))
+  expect_equal(asLogNormal(x[, 1]), matrix(exp(x[, 1])))
   expect_equal(
-    asLogNormal(x = x[, 1], meanlog = 2),
+    asLogNormal(x[, 1], meanLogShift = 2),
     matrix(exp(2 + x[, 1]))
   )
   expect_equal(
-    asLogNormal(x = x, meanlog = c(0, 3)),
+    asLogNormal(x, meanLogShift = c(0, 3)),
     cbind(exp(0 + x[, 1]), exp(3 + x[, 2]))
   )
   expect_equal(
-    asLogNormal(x = x, meanlog = list(NULL, 3)),
+    asLogNormal(x, meanLogShift = list(NULL, 3)),
     cbind(x[, 1], exp(3 + x[, 2]))
   )
 
-  expect_error(asLogNormal(x = x, meanlog = 0))
-  expect_error(asLogNormal(x = x, meanlog = list(0)))
-  expect_error(asLogNormal(x = x, meanlog = TRUE))
+  expect_error(asLogNormal(x, meanLogShift = 0))
+  expect_error(asLogNormal(x, meanLogShift = list(0)))
+  expect_error(asLogNormal(x, meanLogShift = TRUE))
+  expect_equal(
+    asLogNormal(x[, 1], meanLogShift = 0),
+    asLogNormal(x[, 1])
+  )
 })
 
 test_that("asCategorical_converts_correctly", {
@@ -28,27 +32,44 @@ test_that("asCategorical_converts_correctly", {
   cont[, 2] = c(-3, -2, -1, 0, 1, 2, 3)
   cont[, 3] = c(-3, -2, -1, 0, 1, 2, 3)
 
-  expect_equal(asCategorical(x = cont[, 1]), matrix(c(1, 1, 1, 2, 2, 2, 2)))
+  expect_equal(asCategorical(cont[, 1]), matrix(c(1, 1, 2, 2, 3, 3, 3)))
   expect_equal(
-    asCategorical(x = cont[, 1], threshold = c(-1, 0, 1)),
+    asCategorical(cont[, 1], threshold = c(-Inf, 0, Inf)),
+    matrix(c(1, 1, 1, 2, 2, 2, 2))
+  )
+  expect_equal(
+    asCategorical(cont[, 1], threshold = c(-1, 0, 1)),
     matrix(c(NA, NA, 1, 2, 2, NA, NA))
   )
   expect_equal(
-    asCategorical(x = cont[, 1], threshold = c(-Inf, -1, 0, 1, Inf)),
+    asCategorical(cont[, 1], threshold = c(-Inf, -1, 0, 1, Inf)),
     matrix(c(1, 1, 2, 3, 4, 4, 4))
   )
 
-  expect_warning(asCategorical(x = cont[, 1], p = 0.5))
+  expect_warning(asCategorical(cont[, 1], p = 0.5))
   expect_equal(
-    suppressWarnings(asCategorical(x = cont[, 1], p = 0.5)),
-    asCategorical(x = cont[, 1], p = c(0.5, 0.5))
+    suppressWarnings(asCategorical(cont[, 1], p = 0.5)),
+    asCategorical(cont[, 1], p = c(0.5, 0.5))
   )
-  expect_error(asCategorical(x = cont[, 1], p = c(0.6, 0.6)))
+  expect_error(asCategorical(cont[, 1], p = c(0.6, 0.6)))
+  expect_equal(
+    asCategorical(cont[, 1], p = c(0.5, 0.5), threshold = c(-Inf, 0, Inf)),
+    asCategorical(cont[, 1], p = c(0.5, 0.5))
+  )
 
   trtMean = apply(X = cont, MARGIN = 2, FUN = mean)
   trtVar = apply(X = cont, MARGIN = 2, FUN = var)
   expect_equal(
-    asCategorical(x = cont[, 1], p = c(0.5, 0.5), var = trtVar[1]),
+    asCategorical(cont[, 1], p = c(0.5, 0.5), var = trtVar[1]),
+    matrix(c(1, 1, 1, 2, 2, 2, 2))
+  )
+  expect_equal(
+    asCategorical(
+      x = cont[, 1] + 2,
+      p = c(0.5, 0.5),
+      mean = 2,
+      var = trtVar[1]
+    ),
     matrix(c(1, 1, 1, 2, 2, 2, 2))
   )
   expect_equal(
@@ -69,20 +90,73 @@ test_that("asCategorical_converts_correctly", {
     matrix(c(1, 1, 1, 1, 2, 2, 2))
   )
 
-  expect_error(asCategorical(x = cont))
-  cont2 = asCategorical(x = cont, threshold = list(NULL, c(-Inf, 0, Inf), NULL))
+  expect_error(asCategorical(cont))
+  cont2 = asCategorical(cont, threshold = list(NULL, c(-Inf, 0, Inf), NULL))
   cont2Exp = cont
   cont2Exp[, 2] = c(1, 1, 1, 2, 2, 2, 2)
   expect_equal(cont2, cont2Exp)
 
-  expect_error(asCategorical(x = cont, p = c(0.5, 0.5)))
+  expect_error(asCategorical(cont, p = c(0.5, 0.5)))
   pList = list(NULL, c(0.5, 0.5), NULL)
-  expect_error(asCategorical(x = cont, p = pList))
-  expect_error(asCategorical(x = cont, p = pList, mean = trtMean))
-  cont2 = asCategorical(x = cont, p = pList, mean = trtMean, var = trtVar)
+  expect_error(asCategorical(cont, p = pList))
+  expect_error(asCategorical(cont, p = pList, mean = trtMean))
+  cont2 = asCategorical(cont, p = pList, mean = trtMean, var = trtVar)
   cont2Exp = cont
   cont2Exp[, 2] = c(1, 1, 1, 2, 2, 2, 2)
   expect_equal(cont2, cont2Exp)
+})
+
+test_that("asPoisson_converts_correctly", {
+  cont = matrix(data = c(-1, 0, 1, 0, 1, 2), nrow = 3, ncol = 2)
+
+  set.seed(100)
+  expSingle = matrix(rpois(n = nrow(cont), lambda = exp(cont[, 1])))
+  set.seed(100)
+  expect_equal(asPoisson(cont[, 1]), expSingle)
+
+  set.seed(100)
+  expSingleZeroShift = asPoisson(cont[, 1])
+  set.seed(100)
+  expect_equal(
+    asPoisson(cont[, 1], meanLogShift = 0),
+    expSingleZeroShift
+  )
+
+  set.seed(101)
+  expShift = matrix(rpois(n = nrow(cont), lambda = exp(log(2) + cont[, 1])))
+  set.seed(101)
+  expect_equal(asPoisson(cont[, 1], meanLogShift = log(2)), expShift)
+
+  expect_equal(
+    asPoisson(cont[, 1], meanLogShift = list(NULL)),
+    matrix(cont[, 1])
+  )
+
+  set.seed(102)
+  expMulti = cbind(
+    rpois(n = nrow(cont), lambda = exp(cont[, 1])),
+    rpois(n = nrow(cont), lambda = exp(log(3) + cont[, 2]))
+  )
+  set.seed(102)
+  expect_equal(
+    asPoisson(cont, meanLogShift = c(0, log(3))),
+    expMulti
+  )
+
+  set.seed(103)
+  expPartial = cbind(
+    cont[, 1],
+    rpois(n = nrow(cont), lambda = exp(log(3) + cont[, 2]))
+  )
+  set.seed(103)
+  expect_equal(
+    asPoisson(cont, meanLogShift = list(NULL, log(3))),
+    expPartial
+  )
+
+  expect_error(asPoisson(cont, meanLogShift = 0))
+  expect_error(asPoisson(cont, meanLogShift = list(0)))
+  expect_error(asPoisson(cont, meanLogShift = TRUE))
 })
 
 test_that("pop@gv and genParam(pop)@gv match", {
@@ -135,7 +209,7 @@ test_that("finalizePop can recode stored phenotypes", {
   pop = newPop(founderPop, simParam = SP)
 
   SP$finalizePop = function(pop, simParam = SP, targetTrait = 1L, ...) {
-    pop@pheno[, targetTrait] = asCategorical(x = pheno(pop)[, targetTrait])
+    pop@pheno[, targetTrait] = asCategorical(pheno(pop)[, targetTrait])
     pop
   }
 
@@ -143,7 +217,7 @@ test_that("finalizePop can recode stored phenotypes", {
   finalizedPop = newPop(founderPop, simParam = SP)
 
   expected = pheno(pop)
-  expected[, 1] = asCategorical(x = expected[, 1])
+  expected[, 1] = asCategorical(expected[, 1])
 
   expect_equal(pheno(finalizedPop), expected)
 
@@ -151,7 +225,7 @@ test_that("finalizePop can recode stored phenotypes", {
   finalizedPop = newPop(founderPop, simParam = SP, targetTrait = 2L)
 
   expected = pheno(pop)
-  expected[, 2] = asCategorical(x = expected[, 2])
+  expected[, 2] = asCategorical(expected[, 2])
 
   expect_equal(pheno(finalizedPop), expected)
 })
@@ -171,7 +245,7 @@ test_that("finalizePheno can recode phenotypes during newPop", {
     targetTrait = 1L,
     ...
   ) {
-    pheno[, targetTrait] = asCategorical(x = pheno[, targetTrait])
+    pheno[, targetTrait] = asCategorical(pheno[, targetTrait])
     pheno
   }
 
@@ -179,7 +253,7 @@ test_that("finalizePheno can recode phenotypes during newPop", {
   finalizedPop = newPop(founderPop, simParam = SP)
 
   expected = pheno(pop)
-  expected[, 1] = asCategorical(x = expected[, 1])
+  expected[, 1] = asCategorical(expected[, 1])
 
   expect_equal(pheno(finalizedPop), expected)
 
@@ -187,7 +261,7 @@ test_that("finalizePheno can recode phenotypes during newPop", {
   finalizedPop = newPop(founderPop, simParam = SP, targetTrait = 2L)
 
   expected = pheno(pop)
-  expected[, 2] = asCategorical(x = expected[, 2])
+  expected[, 2] = asCategorical(expected[, 2])
 
   expect_equal(pheno(finalizedPop), expected)
 
@@ -195,7 +269,7 @@ test_that("finalizePheno can recode phenotypes during newPop", {
   finalizedPop = setPheno(finalizedPop, simParam = SP, targetTrait = 2L)
 
   expected = pheno(pop)
-  expected[, 2] = asCategorical(x = expected[, 2])
+  expected[, 2] = asCategorical(expected[, 2])
 
   expect_equal(pheno(finalizedPop), expected)
 })
@@ -216,14 +290,14 @@ test_that("finalizePheno can recode stored phenotypes via setPheno", {
     targetTrait = 1L,
     ...
   ) {
-    pheno[, targetTrait] = asCategorical(x = pheno[, targetTrait])
+    pheno[, targetTrait] = asCategorical(pheno[, targetTrait])
     pheno
   }
 
   set.seed(203)
   finalizedPop = setPheno(pop, varE = c(1, 1), simParam = SP, targetTrait = 2L)
 
-  expected[, 2] = asCategorical(x = expected[, 2])
+  expected[, 2] = asCategorical(expected[, 2])
 
   expect_equal(pheno(finalizedPop), expected)
 })
@@ -244,7 +318,7 @@ test_that("finalizePheno can recode onlyPheno output from setPheno", {
     targetTrait = 1L,
     ...
   ) {
-    pheno[, targetTrait] = asCategorical(x = pheno[, targetTrait])
+    pheno[, targetTrait] = asCategorical(pheno[, targetTrait])
     pheno
   }
 
@@ -257,7 +331,7 @@ test_that("finalizePheno can recode onlyPheno output from setPheno", {
   )
 
   expected = pheno
-  expected[, 1] = asCategorical(x = expected[, 1])
+  expected[, 1] = asCategorical(expected[, 1])
 
   expect_equal(finalizedPheno, expected)
 
@@ -271,7 +345,7 @@ test_that("finalizePheno can recode onlyPheno output from setPheno", {
   )
 
   expected = pheno
-  expected[, 2] = asCategorical(x = expected[, 2])
+  expected[, 2] = asCategorical(expected[, 2])
 
   expect_equal(finalizedPheno, expected)
 })
@@ -300,7 +374,7 @@ calcExpectedSetPhenoGCA = function(
     simParam = simParam
   )
   y = setPheno(tmp, varE = varE, onlyPheno = TRUE, simParam = simParam)
-  y[, targetTrait] = asCategorical(x = y[, targetTrait])
+  y[, targetTrait] = asCategorical(y[, targetTrait])
 
   female = factor(tmp@mother, levels = unique(tmp@mother))
   tmpAgg = aggregate(y ~ female, FUN = mean)
@@ -323,7 +397,7 @@ calcExpectedSetPhenoProgTest = function(
     simParam = simParam
   )
   y = setPheno(tmp, varE = varE, onlyPheno = TRUE, simParam = simParam)
-  y[, targetTrait] = asCategorical(x = y[, targetTrait])
+  y[, targetTrait] = asCategorical(y[, targetTrait])
 
   female = factor(tmp@mother, levels = pop@id)
   tmpAgg = aggregate(y ~ female, FUN = mean)
@@ -351,7 +425,7 @@ test_that("finalizePheno can recode phenotypes via setPhenoGCA", {
     targetTrait = 1L,
     ...
   ) {
-    pheno[, targetTrait] = asCategorical(x = pheno[, targetTrait])
+    pheno[, targetTrait] = asCategorical(pheno[, targetTrait])
     pheno
   }
 
@@ -400,7 +474,7 @@ test_that("finalizePheno can recode phenotypes via setPhenoProgTest", {
     targetTrait = 1L,
     ...
   ) {
-    pheno[, targetTrait] = asCategorical(x = pheno[, targetTrait])
+    pheno[, targetTrait] = asCategorical(pheno[, targetTrait])
     pheno
   }
 
