@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9001
 
+* Added asPoisson() function.
+
 * Added asLogNormal() function.
 
 * Improved examples for asCategorical() function.

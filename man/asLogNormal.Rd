@@ -4,18 +4,17 @@
 \alias{asLogNormal}
 \title{Convert a normal (Gaussian) trait to a log-normal trait}
 \usage{
-asLogNormal(x, meanlog = NULL)
+asLogNormal(x, meanLogShift = NULL)
 }
 \arguments{
 \item{x}{matrix, values for one or more traits (if not a matrix,
 we cast to a matrix).}
 
-\item{meanlog}{\code{NULL}, numeric or list, trait mean(s) on the log scale;
-when \code{NULL} mean of 0 is assumed,
-when numeric means for all traits in \code{x} must be provided, and
-when list means for all traits in \code{x} must be provided with possibility
-to pass a \code{NULL} list node to skip the conversion for the trait
-(see examples).}
+\item{meanLogShift}{\code{NULL}, numeric or list, additional additive shift(s)
+on the latent log scale; when \code{NULL} a shift of 0 is assumed, when
+numeric shifts for all traits in \code{x} must be provided, and when list
+shifts for all traits in \code{x} must be provided with possibility to pass
+a \code{NULL} list node to skip the conversion for the trait (see examples).}
 }
 \value{
 matrix of log-normal values.
@@ -26,14 +25,30 @@ Convert a normal (Gaussian) trait to a log-normal trait
 \details{
 If input trait is normal (Gaussian) then this function generates
   a log-normal trait by applying exponential link function on the input.
+  No sampling happens in this function, which makes it deterministic.
+
   Note the possible terminological confusion, a log-normal trait is expressed
   on exponential scale and its underlying (latent) values are on the log scale
-  (see examples). See \code{\link{rlnorm}} on the log-normal distribution,
-  including the expressions for the expected value and variance of observed trait,
-  which can help you tune the parameters to obtain targeted observed trait values.
-  Note that \code{asLogNormal} does not provide the \code{sdlog} argument because
-  latent trait variation is already controlled by other parameters.
-  See examples below.
+  (see examples). If the supplied latent values \code{x} have mean
+  \code{mu} and variance \code{sigma2}, then the recoded trait has expected
+  value \code{exp(meanLogShift + mu + sigma2/2)} and variance
+  \code{E(y)^2 * (exp(sigma2) - 1)}; therefore, to target an observed mean
+  \code{M}, set \code{meanLogShift = log(M) - mu - sigma2/2}. See
+  \code{\link{rlnorm}} for the same expressions in the standard log-normal
+  parameterization. Note that \code{asLogNormal} does not provide the
+  \code{sdlog} argument because latent trait variation is already controlled
+  by other parameters.
+
+  The name \code{meanLogShift} is used to emphasize that this argument
+  is an additional mean shift applied during transformation, not the
+  primary way to set the latent trait mean. In normal AlphaSimR workflow,
+  the latent mean is usually already set via
+  \code{SP$addTrait*(..., mean = ...)} in founding population and
+  \code{meanLogShift} should be left at its default unless an extra
+  transformation-specific shift on the latent (log) scale is needed.
+  One example is to control the mean of the observed values as shown below.
+  This value should be established at the start of simulation and kept
+  constant for most use cases.
 }
 \examples{
 #Simulate a founder pop, set latent trait parameters, and create a population
@@ -60,15 +75,16 @@ apply(X = phenoLog, MARGIN = 2, FUN = meanVarFun)
 apply(X = phenoLogLarge, MARGIN = 2, FUN = meanVarFun)
 
 #Convert a single input trait
-(phenoExpMeanLog0 = asLogNormal(x = pheno(pop)[, 1]))
+(phenoExpMeanLog0 = asLogNormal(pheno(pop)[, 1]))
 meanVarFun(phenoExpMeanLog0)
 
-#Demonstrate meanlog argument
+#Demonstrate meanLogShift argument
 #Here we aim to obtain observed trait values with the mean of 1.
-#Since E(trtExp)=exp(mean(trtLog)+var(trtLog)/2), trtMeanLog[1]=0, and trtVarPLog[1],
-#to get E(trtExp)=1=exp(0) we set meanlog to -trtVarPLog[1]/2.
+#Since E(trtExp)=exp(meanLogShift + mean(trtLog) + var(trtLog)/2),
+#trait 1 is centered on the latent scale (mean(trtLog)=0), and
+#trtVarPLog[1] is the latent variance, we set meanLogShift to -trtVarPLog[1]/2.
 #See also ?rlnorm for the expression of variance.
-(phenoExpMeanExp1 = asLogNormal(x = pheno(pop)[, 1], meanlog = -trtVarPLog[1]/2))
+(phenoExpMeanExp1 = asLogNormal(pheno(pop)[, 1], meanLogShift = -trtVarPLog[1]/2))
 meanVarFun(phenoExpMeanExp1)
 exp(trtVarPLog[1] - 1)
 cbind(phenoLog = phenoLog[, 1],
@@ -77,9 +93,8 @@ cbind(phenoLog = phenoLog[, 1],
 
 tmp = cbind(phenoLog = phenoLogLarge[, 1],
   phenoExpMeanLog0 = c(asLogNormal(phenoLogLarge[, 1])),
-  phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanlog = -trtVarPLog[1]/2)))
+  phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanLogShift = -trtVarPLog[1]/2)))
 (tmp2 = apply(X = tmp, MARGIN = 2, FUN = meanVarFun))
-par(mfrow = c(3, 1))
 hist(tmp[, "phenoLog"], main = paste0("Mean: ", v=tmp2$phenoLog$mean))
 abline(v=tmp2$phenoLog$mean, col = "red")
 hist(tmp[, "phenoExpMeanLog0"], main = paste0("Mean: ", v=tmp2$phenoExpMeanLog0$mean))
@@ -88,20 +103,20 @@ hist(tmp[, "phenoExpMeanExp1"], main = paste0("Mean: ", v=tmp2$phenoExpMeanExp1$
 abline(v= tmp2$phenoExpMeanExp1$mean, col = "red")
 
 #Convert multiple input traits
-asLogNormal(x = pheno(pop))
-try(asLogNormal(x = pheno(pop), meanlog = 0))
-asLogNormal(x = pheno(pop), meanlog = c(0, 1))
-asLogNormal(x = pheno(pop), meanlog = list(0, NULL))
+asLogNormal(pheno(pop))
+try(asLogNormal(pheno(pop), meanLogShift = 0))
+asLogNormal(pheno(pop), meanLogShift = c(0, 1))
+asLogNormal(pheno(pop), meanLogShift = list(0, NULL))
 
 #Store the recoded trait manually
 pheno(pop)
-pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+pop@pheno[, 1] = asLogNormal(pheno(pop)[, 1])
 pheno(pop)
 
 #Apply and store the transformation automatically via SimParam$finalizePop()
 finalizePopDefault = SP$finalizePop
 SP$finalizePop = function(pop, simParam = SP, ...) {
-  pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+  pop@pheno[, 1] = asLogNormal(pheno(pop)[, 1])
   return(pop)
 }
 pop = newPop(founderPop)
@@ -110,7 +125,7 @@ pheno(pop)
 #Apply and store the transformation automatically via SimParam$finalizePheno()
 SP$finalizePop = finalizePopDefault
 SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
-  pheno[, 1] = asLogNormal(x = pheno[, 1])
+  pheno[, 1] = asLogNormal(pheno[, 1])
   return(pheno)
 }
 pop = newPop(founderPop)

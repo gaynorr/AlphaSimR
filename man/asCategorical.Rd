@@ -10,7 +10,7 @@ asCategorical(
   p = NULL,
   mean = 0,
   var = 1,
-  threshold = c(-Inf, 0, Inf),
+  threshold = c(-Inf, -sqrt(var), sqrt(var), Inf),
   include.lowest = TRUE,
   right = FALSE
 )
@@ -19,29 +19,36 @@ asCategorical(
 \item{x}{matrix, values for one or more traits (if not a matrix,
 we cast to a matrix).}
 
-\item{p}{\code{NULL}, numeric, or list, when \code{NULL} the \code{threshold}
-argument takes precedence; when numeric, provide a vector of probabilities
-of categories to convert continuous values into categories for a single
-trait (if probabilities do not sum to 1, another category is added and
-a warning is raised); when list, provide a list of numeric probabilities
-- list node with \code{NULL} will skip conversion for a specific trait
-(see examples); internally \code{p} is converted to \code{threshold} hence
-input \code{threshold} is overwritten.}
+\item{p}{\code{NULL}, numeric, or list, when \code{NULL} \code{threshold}
+is used; when numeric, provide a vector of category probabilities to
+convert continuous values into for a single trait (if probabilities
+do not sum to 1, another category is added and a warning is raised);
+when list, provide a list of probabilities - list node with \code{NULL}
+will skip conversion for a specific trait (see examples).
+If \code{p} is provided, it takes precedence over \code{threshold}.
+Internally \code{p} is converted to \code{threshold}, and any supplied
+\code{threshold} values are ignored.}
 
-\item{mean}{numeric, assumed mean(s) of the normal (Gaussian) trait(s);
-used only when \code{p} is given.}
+\item{mean}{numeric, assumed latent mean(s) of \code{x}; used only when
+\code{p} is given to convert category probabilities to thresholds.
+See also details.}
 
-\item{var}{numeric, assumed variance(s) of the normal (Gaussian) trait(s);
-used only when \code{p} is given.}
+\item{var}{numeric, assumed latent variance(s) of \code{x}; used only when
+\code{p} is given to convert category probabilities to thresholds.
+See also details.}
 
-\item{threshold}{\code{NULL}, numeric or, list, when numeric, provide a vector of
-threshold values to convert continuous values into categories for a single trait
-(the thresholds specify left-closed and right-opened intervals [t1, t2),
-which can be changed with \code{include.lowest} and \code{right};
-ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
-range of values; otherwise you will get \code{NA} values);
+\item{threshold}{\code{NULL}, numeric or, list, when numeric, provide
+a vector of category thresholds to convert continuous values into for
+a single trait (the thresholds specify left-closed and right-opened
+intervals [t1, t2), which can be changed with \code{include.lowest}
+and \code{right}; ensure you add \code{-Inf} and \code{Inf} or min and
+max to cover the whole range of values; otherwise you will get
+\code{NA} values);
 when list, provide a list of numeric thresholds - list node with \code{NULL}
-will skip conversion for a specific trait (see examples).}
+will skip conversion for a specific trait (see examples). The default values
+are set somewhat arbitrarily to get a ratio of (0.16, 0.68, 0.16) of records
+in each of the categories with most of the outlying individuals scored
+differently than individuals close to the "average".}
 
 \item{include.lowest}{logical, see \code{\link{cut}}.}
 
@@ -58,6 +65,15 @@ Convert a normal (Gaussian) trait to an ordered categorical (threshold)
 \details{
 If input trait is normal (Gaussian) then this function generates a
   categorical trait according to the ordered probit model.
+  No sampling happens in this function, which makes it deterministic.
+
+  When \code{p} is used, \code{mean} and \code{var} describe the latent
+  distribution of \code{x} and are used only to derive thresholds.
+  In normal AlphaSimR workflow, this latent mean and variance are usually
+  set via \code{SP$addTrait*(..., mean = ..., var = ...)} in founding
+  population and \code{SP$setVarE}. \code{p} or \code{threshold} values
+  should be established at the start of simulation and kept constant
+  for most use cases.
 }
 \examples{
 #Simulate a founder pop, set latent trait parameters, and create a population
@@ -76,49 +92,49 @@ pop = newPop(founderPop)
 pheno(pop)
 
 #Convert a single input trait
-asCategorical(x = pheno(pop)[, 1])
+asCategorical(pheno(pop)[, 1])
 
 #Demonstrate threshold argument (in units of pheno SD)
-asCategorical(x = pheno(pop)[, 1], threshold = c(-1, 0, 1) * sqrt(trtVarP[1]))
-asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, -1, 0, 1, Inf) * sqrt(trtVarP[1]))
-asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, 0, Inf))
+asCategorical(pheno(pop)[, 1], threshold = c(-1, 0, 1) * sqrt(trtVarP[1]))
+asCategorical(pheno(pop)[, 1], threshold = c(-Inf, -1, 0, 1, Inf) * sqrt(trtVarP[1]))
+asCategorical(pheno(pop)[, 1], threshold = c(-Inf, 0, Inf))
 
 #Demonstrate p argument
-asCategorical(x = pheno(pop)[, 1], p = 0.5, var = trtVarP[1])
-asCategorical(x = pheno(pop)[, 1], p = c(0.5, 0.5), var = trtVarP[1])
-asCategorical(x = pheno(pop)[, 1], p = c(0.25, 0.5, 0.25), var = trtVarP[1])
+asCategorical(pheno(pop)[, 1], p = 0.5, var = trtVarP[1])
+asCategorical(pheno(pop)[, 1], p = c(0.5, 0.5), var = trtVarP[1])
+asCategorical(pheno(pop)[, 1], p = c(0.25, 0.5, 0.25), var = trtVarP[1])
 
 #Convert multiple input traits (via threshold or p argument)
-try(asCategorical(x = pheno(pop)))
-asCategorical(x = pheno(pop),
+try(asCategorical(pheno(pop)))
+asCategorical(pheno(pop),
               threshold = list(c(-Inf, 0, Inf),
                                NULL))
-try(asCategorical(x = pheno(pop), p = c(0.5, 0.5)))
-asCategorical(x = pheno(pop),
+try(asCategorical(pheno(pop), p = c(0.5, 0.5)))
+asCategorical(pheno(pop),
               p = list(c(0.5, 0.5),
                        NULL),
               mean = trtMean, var = trtVarP)
 
-asCategorical(x = pheno(pop),
+asCategorical(pheno(pop),
               threshold = list(c(-Inf, 0, Inf),
                                c(-Inf, -2, -1, 0, 1, 2, Inf) * sqrt(trtVarP[2])))
 q = c(-2, -1, 0, 1, 2)
 p = pnorm(q)
 p = c(p[1], p[2]-p[1], p[3]-p[2], p[4]-p[3], p[5]-p[4], 1-p[5])
-asCategorical(x = pheno(pop),
+asCategorical(pheno(pop),
               p = list(c(0.5, 0.5),
                        p),
               mean = trtMean, var = trtVarP)
 
 #Store the recoded trait manually
 pheno(pop)
-pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+pop@pheno[, 1] = asCategorical(pheno(pop)[, 1])
 pheno(pop)
 
 #Apply and store the transformation automatically via SimParam$finalizePop()
 finalizePopDefault = SP$finalizePop
 SP$finalizePop = function(pop, simParam = SP, ...) {
-  pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+  pop@pheno[, 1] = asCategorical(pheno(pop)[, 1])
   return(pop)
 }
 pop = newPop(founderPop)
@@ -127,7 +143,7 @@ pheno(pop)
 #Apply and store the transformation automatically via SimParam$finalizePheno()
 SP$finalizePop = finalizePopDefault
 SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
-  pheno[, 1] = asCategorical(x = pheno[, 1])
+  pheno[, 1] = asCategorical(pheno[, 1])
   return(pheno)
 }
 pop = newPop(founderPop)
