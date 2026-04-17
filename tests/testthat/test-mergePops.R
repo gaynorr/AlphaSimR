@@ -46,7 +46,7 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   pop = newPop(founderPop, simParam=SP)
 
   # A single Pop object is returned unchanged
-  expect_identical(pop, mergeMultiPops(pop))
+  expect_identical(pop, mergeMultiPops(pop, NULL))
   expect_identical(pop, mergeMultiPops(pop, level = 1))
   
   # A flat MultiPop
