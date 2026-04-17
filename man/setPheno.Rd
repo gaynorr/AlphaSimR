@@ -51,6 +51,8 @@ all traits will be set.}
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
 global environment.}
+
+\item{...}{additional arguments used by the finalizePop in SimParam}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or
