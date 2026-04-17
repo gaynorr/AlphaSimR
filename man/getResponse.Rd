@@ -14,7 +14,9 @@ getResponse(pop, trait, use, simParam = NULL, nThreads = NULL, ...)
 \item{use}{a character ("rand", "gv", "ebv", "pheno", or "bv"; 
 note that "bv" doesn't work on class HybridPop)}
 
-\item{simParam}{simulation parameters are only used when use="bv"}
+\item{simParam}{simulation parameters. Only used when \code{use="bv"}.
+If \code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}

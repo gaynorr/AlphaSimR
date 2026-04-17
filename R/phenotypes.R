@@ -38,7 +38,8 @@ addError = function(gv, varE, reps){
 #' @param reps number of reps for phenotype
 #' @param p p-value for environment
 #' @param traits number of traits
-#' @param simParam simulation parameters object
+#' @param simParam simulation parameters. If \code{NULL}, the function uses
+#' the object named \code{SP} from the global environment.
 #'
 #' @keywords internal
 calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
@@ -95,10 +96,10 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @param onlyPheno should only the phenotype be returned, see return
 #' @param traits an integer vector indicate which traits to set. If NULL,
 #' all traits will be set.
-#' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments passed to the \code{finalizePheno}
-#' function in simParam
-#' 
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#'
 #' @details
 #' There are three arguments for setting the error variance of a
 #' phenotype: h2, H2, and varE. The user should only use one of these

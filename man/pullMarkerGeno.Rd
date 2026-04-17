@@ -15,8 +15,10 @@ names of the loci to be retrieved.}
 
 \item{asRaw}{return in raw (byte) format}
 
-\item{simParam}{an object of \code{\link{SimParam}}, not 
-used if pop is \code{\link{MapPop-class}}}
+\item{simParam}{an object of class \code{\link{SimParam}} for non-
+\code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
+object named \code{SP} from the global environment. Ignored when
+\code{pop} is a \code{\link{MapPop-class}}.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from

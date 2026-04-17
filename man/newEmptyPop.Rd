@@ -9,7 +9,9 @@ newEmptyPop(ploidy = 2L, simParam = NULL)
 \arguments{
 \item{ploidy}{the ploidy of the population}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} with

@@ -591,7 +591,9 @@ setMethod("length",
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments used internally
@@ -655,7 +657,9 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
 #' @param femaleParentPop optional population of female parents
 #' @param maleParentPop optional population of male parents
 #' @param hist optional recombination history
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments passed to the \code{finalizePop} or
@@ -814,7 +818,9 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
 #' resets phenotypes and EBVs.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -915,7 +921,9 @@ isPop = function(x) {
 #' defined ploidy and other parameters taken from simParam.
 #'
 #' @param ploidy the ploidy of the population
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #'
 #' @return Returns an object of \code{\link{Pop-class}} with
 #' zero individuals

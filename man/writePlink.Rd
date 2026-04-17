@@ -35,7 +35,9 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
