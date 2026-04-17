@@ -345,6 +345,24 @@ calcCoef <- function(X, Y) {
     .Call(`_AlphaSimR_calcCoef`, X, Y)
 }
 
+#' @title Check if OpenMP is available
+#'
+#' @description Checks if OpenMP is available
+#'
+#' @return logical
+#'
+#' @seealso \code{vignette("parallelization", package="AlphaSimR")}
+#'  for setup details and \code{\link{getNumThreads}}.
+#'
+#' @examples
+#' isOpenMPAvailable()
+#' getNumThreads()
+#'
+#' @export
+isOpenMPAvailable <- function() {
+    .Call(`_AlphaSimR_isOpenMPAvailable`)
+}
+
 #' @title Number of available threads
 #'
 #' @description
@@ -353,7 +371,11 @@ calcCoef <- function(X, Y) {
 #'
 #' @return integer
 #'
+#' @seealso \code{vignette("parallelization", package="AlphaSimR")}
+#'  for setup details and \code{\link{isOpenMPAvailable}}.
+#'
 #' @examples
+#' isOpenMPAvailable()
 #' getNumThreads()
 #'
 #' @export
