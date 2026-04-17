@@ -30,7 +30,9 @@ values. Default is \code{mean}.}
 
 \item{FUN.ARGS}{a list of additional arguments passed to \code{FUN}.}
 
-\item{returnList}{logical. Should the returned object be a list?}
+\item{returnList}{logical to return a list (when \code{TRUE}) 
+or a vector (when \code{FALSE} and the return object can be 
+simplified to a vector).}
 
 \item{simParam}{an object of \code{\link{SimParam}}.}
 

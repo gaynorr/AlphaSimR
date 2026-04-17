@@ -24,11 +24,11 @@ Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
 down to a requested level (see Details).
 }
 \details{
-The \code{level} argument controls how many levels of nesting are preserved.
-\code{level = 1}: flatten structure of \code{MultiPop-class} so that
+The \code{level} argument controls how many levels of nesting are preserved.  \cr
+- \code{level = 1}: flatten structure of \code{MultiPop-class} so that
   all items are \code{Pop-class} objects (that is, flatten everything
-  below the top level).
-\code{level > 1}: preserve the top \code{level} levels of nesting; any
+  below the top level).  \cr
+- \code{level > 1}: preserve the top \code{level} levels of nesting; any
   deeper \code{MultiPop-class} objects are flattened.
 
 If \code{level} is greater than or equal to the nesting depth, the original

@@ -393,7 +393,7 @@ isNamedMapPop = function(x) {
 #'   have a generic length and subset method.
 #'   This list is normally empty and exists solely as an
 #'   open slot available for users to store extra information about individuals.
-#' @slot miscPop a list of any length containing optional meta data for the
+#' @slot miscPop a list of additional miscellaneous data for the
 #'   population (see example in \code{\link{newPop}}).
 #'   This list is empty unless information is supplied by the user.
 #'   Note that the list is emptied every time the population is subsetted or
@@ -587,10 +587,14 @@ setMethod("length",
 #' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
 #' The function is intended for use with output from functions such
 #' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
-#' \code{\link{quickHaplo}}.
+#' \code{\link{quickHaplo}}. It can also be used to create an
+#' empty \code{\link{Pop-class}} object simply by specifying the desired 
+#' \code{ploidy}.
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
+#' @param ploidy optional, integer. Ploidy of the new empty population. 
+#'   Used only if \code{rawPop} is missing.
 #' @param simParam an object of \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
@@ -605,6 +609,11 @@ setMethod("length",
 #'   To get genetically different sets of individuals you can subset the
 #'   \code{rawPop} input, say first half for one set and the second half
 #'   for the other set.
+#' 
+#'   When \code{rawPop} is missing, and \code{ploidy} is provided, an empty 
+#'   population with the specified \code{ploidy} is returned by calling 
+#'   \code{\link{newEmptyPop}} (useful for programmatic construction or tests).
+#'   If \code{rawPop} is provided, \code{ploidy} is ignored.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -625,8 +634,11 @@ setMethod("length",
 #' #MiscPop
 #' pop@miscPop$tmp1 = sum(pop@misc$tmp1)
 #' pop@miscPop$tmp2 = sum(pop@misc$tmp2)
+#' 
+#' #Create empty population with ploidy 2
+#' emptyPop = newPop(ploidy=2L, simParam=SP)
 #' @export
-newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
+newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -634,6 +646,9 @@ newPop = function(rawPop,simParam=NULL,nThreads=NULL,...){
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  if(missing(rawPop) && !is.null(ploidy)){
+    return(newEmptyPop(ploidy=ploidy, simParam=simParam))
   }
   return(.newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...))
 }
@@ -998,6 +1013,8 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
 #' @param object a \code{MultiPop} object
 #' @param x a \code{MultiPop} object
 #' @param i index of \code{MultiPop} or \code{Pop} objects
+#' @param name name used by `$` and `$<-` methods
+#' @param value replacement value for `$<-`, `[[<-` or `names<-`
 #' @param ... additional \code{MultiPop} or \code{Pop} objects
 #'
 #' @slot pops list of \code{\link{Pop-class}} or
@@ -1033,7 +1050,7 @@ setMethod("show",
           signature(object = "MultiPop"),
           function (object) {
             # Helper function to print nested structure recursively
-            printMultiPop = function(obj, level, prefix, isLast, idx) {
+            printMultiPop = function(obj, level, prefix, isLast, idx, nameLabel) {
               # Determine the branch characters
               if (isLast) {
                 connector = paste0(prefix, "`-- ")
@@ -1045,21 +1062,35 @@ setMethod("show",
               
               # Print index
               indexLabel = paste0("[[", idx, "]] ")
+
+              # Dont print name label if it's empty
+              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ")) {
+                nameLabel = ""
+              }
               
               if (isMultiPop(obj)) {
                 # Print MultiPop header
-                cat(connector, indexLabel, "An object of class \"MultiPop\" with ", 
+                cat(connector, indexLabel, nameLabel, "An object of class \"MultiPop\" with ", 
                     length(obj@pops), " item(s)\n", sep = "")
                 
                 # Print level indicator for the nested MultiPop
-                levelPrefix = paste0(childPrefix, "|   ")
-                cat(levelPrefix, "Level ", level + 1, ":\n", sep = "")
+                if (length(obj@pops) > 0) {
+                  levelPrefix = paste0(childPrefix, "|   ")
+                  cat(levelPrefix, "Level ", level + 1, ":\n", sep = "")
+                }
+
+                # Prepare name labels for child items
+                if (!is.null(names(obj))) {
+                  nameLabels = paste0(" \"", names(obj), "\" - ")
+                } else {
+                  nameLabels = rep("", length(object))
+                }
                 
                 # Process each item in the MultiPop
                 for (i in seq_along(obj@pops)) {
                   isLastItem = (i == length(obj@pops))
                   printMultiPop(obj@pops[[i]], level = level + 1, idx = i,
-                                prefix = childPrefix, isLast = isLastItem)
+                                prefix = childPrefix, isLast = isLastItem, nameLabel = nameLabels[i])
                 }
                 
               } else if (isPop(obj)) {
@@ -1071,7 +1102,7 @@ setMethod("show",
                         sep = ", ")
                 }
                 
-                cat(connector, indexLabel, "An object of class \"Pop\" with ", 
+                cat(connector, indexLabel, nameLabel, "An object of class \"Pop\" with ", 
                     obj@nInd, " individual(s): ", indIds, "\n", sep = "")
               }
             }
@@ -1079,13 +1110,22 @@ setMethod("show",
             # Print top-level header
             cat("An object of class \"MultiPop\" with ", length(object@pops), 
                 " item(s)\n", sep = "")
-            cat("    Level 1:\n")
+            if (length(object@pops) > 0) {
+              cat("    Level 1:\n")
+            }
+
+            # Prepare name labels for top-level items
+            if (!is.null(names(object))) {
+              nameLabels = paste0(" \"", names(object), "\" - ")
+            } else {
+              nameLabels = rep("", length(object))
+            }
             
             # Print each top-level item
             for (i in seq_along(object@pops)) {
               isLastItem = (i == length(object@pops))
               printMultiPop(object@pops[[i]], level = 1, prefix = "", 
-                            isLast = isLastItem, idx = i)
+                            isLast = isLastItem, idx = i, nameLabel = nameLabels[i])
             }
             invisible()
           }
@@ -1107,6 +1147,150 @@ setMethod("[[",
             return(x@pops[[i]])
           }
 )
+
+#' @describeIn MultiPop Extract a population by name
+setMethod("$", signature(x = "MultiPop"), function(x, name) {
+  nm = as.character(name)
+  if (length(nm) != 1L) {
+    stop("$ requires a single name")
+  }
+  nms = names(x@pops)
+  if (!is.null(nms) && nm %in% nms) {
+    return(x@pops[[nm]])
+  }
+  return(NULL)
+})
+
+#' @describeIn MultiPop Access names of pops in MultiPop
+setMethod("names", signature(x = "MultiPop"), function(x) {
+  n = names(x@pops)
+  return(n)
+})
+
+#' @describeIn MultiPop Replace contents of a subset of elements in MultiPop
+setReplaceMethod("[", signature(x = "MultiPop"), function(x, i, value) {
+  # Deletion
+  if (is.null(value)) {
+    x@pops[i] = NULL
+    validObject(x)
+    return(x)
+  }
+
+  # Coerce single Pop/MultiPop to list; require list of Pop/MultiPop otherwise
+  if (isPop(value)) {
+    value = list(value)
+  } else if (isMultiPop(value)) {
+    value = value@pops
+  } else if (is.list(value)) {
+    classes = sapply(value, function(x) isPop(x) || isMultiPop(x) || is.null(x))
+    if (any(!classes)) {
+      stop("All elements of list must be Pop, MultiPop, or NULL")
+    }
+  } else {
+    stop("value must be a list or a Pop/MultiPop")
+  }
+
+  # List semantics handles numeric/character/logical indices, recycling, names, expansion
+  x@pops[i] = value
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace contents of a single element in MultiPop
+setReplaceMethod("[[", signature(x = "MultiPop"), function(x, i, value) {
+  if (missing(i)) stop("index required")
+
+  # Require exactly one element
+  if (is.logical(i)) {
+    idx = which(i)
+    if (length(idx) != 1L) {
+      stop("logical index must select exactly one element")
+    }
+  } else if (is.character(i)) {
+    if (length(i) != 1L) {
+      stop("only single character index allowed")
+    }
+    nms = names(x@pops)
+    nm = i
+  } else if (is.numeric(i) || is.integer(i)) {
+    idx = as.integer(i)
+    if (length(idx) != 1L || idx < 1L) stop("invalid numeric index")
+  } else {
+    stop("index must be numeric, character, or logical")
+  }
+
+  # Deletion
+  if (is.null(value)) {
+    if (exists("nms", inherits = FALSE)) {
+      if (!is.null(nms) && nm %in% nms) {
+        x@pops = x@pops[nms != nm]
+      }
+    } else {
+      x@pops[[idx]] = NULL
+    }
+    validObject(x)
+    return(x)
+  }
+
+  # Validate replacement value
+  if (!(isPop(value) || isMultiPop(value))) {
+    stop("value must be a Pop or MultiPop")
+  }
+
+  # Assign / Append
+  if (exists("nm", inherits = FALSE)) {
+    if (!is.null(nms) && nm %in% nms) {
+      x@pops[[nm]] = value
+    } else {
+      x@pops = c(x@pops, setNames(list(value), nm))
+    }
+  } else {
+    x@pops[[idx]] = value
+  }
+
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace contents of a single element in MultiPop by name
+setReplaceMethod("$", signature(x = "MultiPop"), function(x, name, value) {
+  nms = names(x@pops)
+  nm = as.character(name)
+  if (length(nm) != 1L) {
+    stop("$ requires a single name")
+  }
+
+  # Deletion
+  if (is.null(value)) {
+    if (!is.null(nms) && nm %in% nms) {
+      x@pops = x@pops[nms != nm]
+    }
+    validObject(x)
+    return(x)
+  }
+
+  # Validate replacement value
+  if (!(isPop(value) || isMultiPop(value))) {
+    stop("value must be a Pop or MultiPop")
+  }
+
+  # Assign / Append
+  if (!is.null(nms) && nm %in% nms) {
+    x@pops[[nm]] = value
+  } else {
+    x@pops = c(x@pops, setNames(list(value), nm))
+  }
+
+  validObject(x)
+  return(x)
+})
+
+#' @describeIn MultiPop Replace names of pops in MultiPop
+setReplaceMethod("names", signature(x = "MultiPop"), function(x, value) {
+  names(x@pops) = value
+  validObject(x)
+  return(x)
+})
 
 #' @describeIn MultiPop Combine multiple MultiPops (without level control)
 setMethod("c",
@@ -1203,4 +1387,139 @@ isMultiPop = function(x) {
 #' @export
 newEmptyMultiPop = function(){
   new("MultiPop", pops=list())
+}
+
+#' @title Remove names from a MultiPop
+#'
+#' @description
+#' Remove names from a \code{\link{MultiPop-class}} object at one or
+#' more specified nesting levels.
+#'
+#' @param x A \code{\link{MultiPop-class}} object.
+#' @param level A positive integer, a vector of positive integers, or
+#'   \code{Inf}. If \code{level = Inf}, names are removed at every level.
+#'   If \code{level = c(a, b)}, names are removed only at levels \code{a}
+#'   and \code{b}. Levels must be >= 1; an error is raised if any
+#'   requested level is deeper than the MultiPop's maximum depth.
+#'   The top level is \code{1}.
+#'
+#' @return A \code{\link{MultiPop-class}} object with names removed at the
+#'   requested levels.
+#'
+#' @details
+#' - Top-level elements of a MultiPop have level 1; nested MultiPops increase
+#'   the level by 1 per nesting.  \cr
+#' - Passing a vector of positive integers removes names only at those exact
+#'   levels.  \cr
+#' - Using \code{Inf} removes names at every level.  \cr
+#' - Mixing \code{Inf} with integer levels (e.g. \code{c(1, Inf)}) is not
+#'   allowed and will raise an error.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' # Create a multi-population with nested structure and names at each level
+#' mp = newMultiPop(
+#'   pop1 = pop[1:3],
+#'   mpA = newMultiPop(
+#'     pop2 = pop[4:6],
+#'     mpB = newMultiPop(pop3 = pop[7:8], pop4 = pop[9:10])
+#'   )
+#' )
+#' print(mp)
+#'
+#' # Remove only top-level names
+#' unnameMultiPop(mp, level = 1)
+#'
+#' # Remove names exactly at levels 2 and 3
+#' unnameMultiPop(mp, level = c(2L, 3L))
+#'
+#' # Remove all names at every level
+#' unnameMultiPop(mp, level = Inf)
+#'
+#' @export
+unnameMultiPop = function(x, level = Inf) {
+  # Get max depth of nesting in MultiPop
+  md = .depthMultiPop(x)
+
+  # Validate level arg
+  if (length(level) == 1L) {
+    if (is.infinite(level)) {
+      levels = Inf
+    } else {
+      if (
+        !is.numeric(level) ||
+          is.na(level) ||
+          level < 1 ||
+          level != as.integer(level)
+      ) {
+        stop("level must be a positive integer or Inf")
+      }
+      if (level > md) {
+        stop(sprintf("requested level exceed max depth of x (%d)", md))
+      }
+      levels = as.integer(level)
+    }
+  } else {
+    if (!is.numeric(level) || any(is.na(level)) || any(level <= 0)) {
+      stop("levels must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(is.infinite(level))) {
+      stop("cannot mix Inf with integer levels")
+    }
+    if (any(level != trunc(level))) {
+      stop("levels must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(level > md)) {
+      stop(sprintf("requested level(s) exceed max depth of x (%d)", md))
+    }
+    levels = as.integer(unique(level))
+  }
+
+  # Recursively unname pops at specified level(s)
+  return(.unname(x, 1L, levels))
+}
+
+#' Helper function to recursively compute the maximum depth of a
+#' MultiPop object, where the top level is considered to be 1.
+#'
+#' @param mp \code{\link{MultiPop-class}} object
+#'
+#' @keywords internal
+.depthMultiPop = function(mp) {
+  multi = which(sapply(mp@pops, isMultiPop))
+  if (length(multi) == 0L) {
+    return(1L)
+  }
+  depth = max(vapply(mp@pops[multi], .depthMultiPop, integer(1L)))
+  return(1L + depth)
+}
+
+#' Helper function to recursively remove names from a MultiPop object at
+#' specified levels, where the top level is considered to be 1.
+#'
+#' @param mp \code{\link{MultiPop-class}} object
+#' @param level Current level in the MultiPop hierarchy
+#' @param levels Set of levels at which to remove names
+#'
+#' @keywords internal
+.unname = function(mp, level, levels) {
+  if (any(is.infinite(levels)) || level %in% levels) {
+    names(mp) = NULL
+  }
+  multi = which(sapply(mp@pops, isMultiPop))
+  if (length(multi) > 0L) {
+    mp@pops[multi] = lapply(mp@pops[multi], function(child) {
+      .unname(child, level + 1L, levels)
+    })
+  }
+  validObject(mp)
+  return(mp)
 }

@@ -16,11 +16,19 @@ test_that("cPop_and_mergePops", {
   SP$addTraitA(10)
   SP$setVarE(h2=0.5)
   expect_identical(c(pop[1:2], pop[3]), pop[1:3])
-  expect_identical(mergePops(list(pop[1:2], pop[3])), pop[1:3])
-
+  expect_identical(mergePops(list(pop[1:2], pop[3], NULL)), pop[1:3])
+  expect_identical(mergePops(newMultiPop(pop[1:2], newMultiPop(pop[3]))), pop[1:3])
+  
   pop@ebv = pop@pheno
   expect_identical(c(pop[1:2], pop[3]), pop[1:3])
   expect_identical(mergePops(list(pop[1:2], pop[3])), pop[1:3])
+  
+  pop3 = pop[3]
+  pop3@ebv = matrix(1:2, ncol=2, dimnames=list(NULL, c("Trait1", "Trait2")))
+  expect_warning(c(pop[1:2], pop3),
+                 "Populations have different numbers of EBV columns; EBVs removed!", fixed = TRUE)
+  expect_warning(mergePops(list(pop[1:2], pop3)),
+                 "Populations have different numbers of EBV columns; EBVs removed!", fixed = TRUE)
 })
 
 test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
@@ -30,10 +38,15 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   SP$nThreads = 1L
   SP$addTraitA(10)
   SP$setVarE(h2=0.5)
+  
+  # Non-Pop and non-MultiPop objects throw an error
+  expect_error(mergeMultiPops(1:5), 
+               "One or more objects are not of Pop or Multi-Pop class!", fixed = TRUE)
+
   pop = newPop(founderPop, simParam=SP)
 
   # A single Pop object is returned unchanged
-  expect_identical(pop, mergeMultiPops(pop))
+  expect_identical(pop, mergeMultiPops(pop, NULL))
   expect_identical(pop, mergeMultiPops(pop, level = 1))
   
   # A flat MultiPop
@@ -52,8 +65,8 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                     newMultiPop(pop[6:7],
                                 newMultiPop(pop[8], pop[9:10])))
 
-  # mergePops doesn't handle nested MultiPop objects
-  expect_error(mergePops(mp2), 'all(classes == "Pop") is not TRUE', fixed = TRUE)
+  # mergePops and mergeMultiPops do the same on MultiPop objects
+  expect_identical(mergePops(mp2), mergeMultiPops(mp2))
   expect_identical(pop[1:10], mergeMultiPops(mp2))
   expect_identical(pop[1:2],
                    mergeMultiPops(mp2, level = 1)[[1]])
@@ -74,8 +87,8 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                     newMultiPop(pop[8:9],
                                 newMultiPop(pop[10:11], pop[12])))
 
-  # mergePops doesn't handle nested MultiPop objects
-  expect_error(mergePops(mp3), 'all(classes == "Pop") is not TRUE', fixed = TRUE)
+  # mergePops and mergeMultiPops do the same on MultiPop objects
+  expect_identical(mergePops(mp3), mergeMultiPops(mp3))
   expect_identical(pop, mergeMultiPops(mp3))
   expect_identical(pop[1:2],
                    mergeMultiPops(mp3, level = 1)[[1]])
@@ -140,6 +153,9 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   expect_identical(mergeMultiPops(mp1, mp2, level = 3), c(mp1, mp2))
 
   # Flattening multiPops
+
+  # A single Pop object is returned unchanged
+  expect_identical(pop, flattenMultiPop(pop))
 
   # Nothing to flatten, so the same input should be returned
   expect_identical(flattenMultiPop(mp1, level = 0), mp1)
