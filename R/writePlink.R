@@ -21,7 +21,9 @@
 #' @param useQtl should QTL genotypes be used instead of a SNP chip. 
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these 
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for 

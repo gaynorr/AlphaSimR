@@ -49,7 +49,7 @@ The second step is setting global parameters for the simulation. This can be don
 SP = SimParam$new(founderPop)
 ```
 
-The output from this function is an object of class `SimParam` and it is saved with the name `SP`. The name `SP` should almost always be used, because many AlphaSimR functions use an argument called "simParam" with a default value of `NULL`. If you leave this value as `NULL`, those functions will search your global environment for an object called `SP` and use it as the function's argument. This means that if you use `SP`, you won't need to specify a value for the "simParam" argument.
+The output from this function is an object of class `SimParam` and it is saved with the name `SP`. The name `SP` should almost always be used, because many AlphaSimR functions use an argument called `simParam` with a default value of `NULL`. If you leave this value as `NULL`, those functions will search your global environment for an object called `SP` and use it as the function's argument. This means that if you use `SP`, you won't need to specify a value for the `simParam` argument.
 
 The next line of code defines the quantitative trait used for selection. As mentioned in the previous section, this trait is controlled by 1000 QTL per chromosome. The rest of the function arguments are left as their defaults, which include a trait mean of zero and a variance of one unit.
 

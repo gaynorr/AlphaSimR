@@ -15,7 +15,9 @@
 #' @param returnHybridPop should results be returned as
 #' \code{\link{HybridPop-class}}. If false returns results as
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -256,7 +258,9 @@ calcGCA = function(pop,use="pheno"){
 #' fully inbred if created by \code{\link{newPop}} using inbred founders
 #' or by the \code{\link{makeDH}} function
 #' @param onlyPheno should only the phenotype be returned, see return
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -371,7 +375,9 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #' used by GxE traits. If NULL, a value is
 #' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

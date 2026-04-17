@@ -215,7 +215,28 @@ double choose(double n, double k){
   return (n*choose(n-1,k-1))/k;
 }
 
-// Gets the number of available threads
+//' @title Check if OpenMP is available
+//'
+//' @description Checks if OpenMP is available
+//'
+//' @return logical
+//'
+//' @seealso \code{vignette("parallelization", package="AlphaSimR")}
+//'  for setup details and \code{\link{getNumThreads}}.
+//'
+//' @examples
+//' isOpenMPAvailable()
+//' getNumThreads()
+//'
+//' @export
+// [[Rcpp::export]]
+bool isOpenMPAvailable(){
+#ifdef _OPENMP
+  return true;
+#endif
+  return false;
+}
+
 //' @title Number of available threads
 //'
 //' @description
@@ -224,7 +245,11 @@ double choose(double n, double k){
 //'
 //' @return integer
 //'
+//' @seealso \code{vignette("parallelization", package="AlphaSimR")}
+//'  for setup details and \code{\link{isOpenMPAvailable}}.
+//'
 //' @examples
+//' isOpenMPAvailable()
 //' getNumThreads()
 //'
 //' @export

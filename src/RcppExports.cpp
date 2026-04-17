@@ -809,6 +809,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// isOpenMPAvailable
+bool isOpenMPAvailable();
+RcppExport SEXP _AlphaSimR_isOpenMPAvailable() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(isOpenMPAvailable());
+    return rcpp_result_gen;
+END_RCPP
+}
 // getNumThreads
 int getNumThreads();
 RcppExport SEXP _AlphaSimR_getNumThreads() {
@@ -928,6 +938,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_sampAllComb", (DL_FUNC) &_AlphaSimR_sampAllComb, 3},
     {"_AlphaSimR_sampHalfDialComb", (DL_FUNC) &_AlphaSimR_sampHalfDialComb, 2},
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
+    {"_AlphaSimR_isOpenMPAvailable", (DL_FUNC) &_AlphaSimR_isOpenMPAvailable, 0},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
     {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},

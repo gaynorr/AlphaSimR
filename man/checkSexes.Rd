@@ -11,7 +11,8 @@ checkSexes(pop, sex, simParam = NULL, ...)
 
 \item{sex}{the desired sex (M or F)}
 
-\item{simParam}{simulation parameters object}
+\item{simParam}{simulation parameters. If \code{NULL}, the function uses
+the object named \code{SP} from the global environment.}
 
 \item{...}{captures use of old gender argument}
 }

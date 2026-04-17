@@ -4,7 +4,9 @@
 #' @param trait a vector or custom function
 #' @param use a character ("rand", "gv", "ebv", "pheno", or "bv"; 
 #' note that "bv" doesn't work on class HybridPop)
-#' @param simParam simulation parameters are only used when use="bv"
+#' @param simParam simulation parameters. Only used when \code{use="bv"}.
+#' If \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... are additional arguments passed to trait when trait is a function
@@ -192,7 +194,8 @@ getCandidates = function(pop, candidates){
 #'
 #' @param pop a population
 #' @param sex the desired sex (M or F)
-#' @param simParam simulation parameters object
+#' @param simParam simulation parameters. If \code{NULL}, the function uses
+#' the object named \code{SP} from the global environment.
 #' @param ...  captures use of old gender argument
 #'
 #' @keywords internal
@@ -268,7 +271,9 @@ getFam = function(pop,famType){
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -394,7 +399,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -509,7 +516,9 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -623,7 +632,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param selectTop selects highest values if true.
 #'   Selects lowest values if false.
 #' @param candidates an optional vector of eligible selection candidates.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
