@@ -39,6 +39,7 @@ test_that("selectInd_and_getResponse",{
 test_that("selectPop_and_calcPopValue",{
   founderPop = quickHaplo(nInd=100, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
   pop = newPop(founderPop, simParam=SP)
   

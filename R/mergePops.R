@@ -378,6 +378,12 @@ mergeMultiPops = function(..., level=0){
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
 
+  if(any(classes == "NULL")){
+    remove = which(classes == "NULL")
+    popList = popList[-remove]
+    classes = classes[-remove]
+  }
+
   # If popList contains a single object
   if (length(classes) == 1L) {
     if (classes == "Pop") {

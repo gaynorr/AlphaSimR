@@ -587,7 +587,7 @@ setMethod("length",
 #' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
 #' The function is intended for use with output from functions such
 #' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
-#' \code{\link{quickHaplo}}. However, it can also be used to create an
+#' \code{\link{quickHaplo}}. It can also be used to create an
 #' empty \code{\link{Pop-class}} object simply by specifying the desired 
 #' \code{ploidy}.
 #'
@@ -1198,7 +1198,7 @@ setReplaceMethod("[", signature(x = "MultiPop"), function(x, i, value) {
 
 #' @describeIn MultiPop Replace contents of a single element in MultiPop
 setReplaceMethod("[[", signature(x = "MultiPop"), function(x, i, value) {
-  stopifnot("index required" = !missing(i))
+  if (missing(i)) stop("index required")
 
   # Require exactly one element
   if (is.logical(i)) {
