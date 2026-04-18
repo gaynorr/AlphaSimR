@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9001
+# AlphaSimR 2.1.0.9002
 
 * Added asPoisson() function.
 

@@ -99,7 +99,8 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
-#' @param ... additional arguments used by the finalizePop in SimParam
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
 #'
 #' @details
 #' There are three arguments for setting the error variance of a
