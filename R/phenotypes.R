@@ -99,6 +99,8 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
+#' @param ... additional arguments passed to the \code{finalizePheno}
+#' function in simParam
 #'
 #' @details
 #' There are three arguments for setting the error variance of a
@@ -157,7 +159,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' @export
 setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                     reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
-                    traits=NULL, simParam=NULL){
+                    traits=NULL, simParam=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -268,6 +270,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   pheno = calcPheno(pop=pop, varE=varE, reps=reps, p=p,
                     traits=traits, simParam=simParam)
 
+  pheno = simParam$finalizePheno(pheno, pop=pop, simParam=simParam, ...)
+
   colnames(pheno) = colnames(pop@gv)
 
   if(onlyPheno){
@@ -286,23 +290,40 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' @title Convert a normal (Gaussian) trait to a log-normal trait
 #' @param x matrix, values for one or more traits (if not a matrix,
 #'   we cast to a matrix).
-#' @param meanlog \code{NULL}, numeric or list, trait mean(s) on the log scale;
-#'  when \code{NULL} mean of 0 is assumed,
-#'  when numeric means for all traits in \code{x} must be provided, and
-#'  when list means for all traits in \code{x} must be provided with possibility
-#'  to pass a \code{NULL} list node to skip the conversion for the trait
-#'  (see examples).
+#' @param meanLogShift \code{NULL}, numeric or list, additional additive shift(s)
+#'  on the latent log scale; when \code{NULL} a shift of 0 is assumed, when
+#'  numeric shifts for all traits in \code{x} must be provided, and when list
+#'  shifts for all traits in \code{x} must be provided with possibility to pass
+#'  a \code{NULL} list node to skip the conversion for the trait (see examples).
 #' @details If input trait is normal (Gaussian) then this function generates
 #'   a log-normal trait by applying exponential link function on the input.
+#'   No sampling happens in this function, which makes it deterministic.
+#'
 #'   Note the possible terminological confusion, a log-normal trait is expressed
 #'   on exponential scale and its underlying (latent) values are on the log scale
-#'   (see examples). See \code{\link{rlnorm}} on the log-normal distribution,
-#'   including the expressions for the expected value and variance of observed trait,
-#'   which can help you tune the parameters to obtain targeted observed trait values.
-#'   Note that \code{asLogNormal} does not provide the \code{sdlog} argument because
-#'   latent trait variation is already controlled by other parameters.
-#'   See examples below.
+#'   (see examples). If the supplied latent values \code{x} have mean
+#'   \code{mu} and variance \code{sigma2}, then the recoded trait has expected
+#'   value \code{exp(meanLogShift + mu + sigma2/2)} and variance
+#'   \code{E(y)^2 * (exp(sigma2) - 1)}; therefore, to target an observed mean
+#'   \code{M}, set \code{meanLogShift = log(M) - mu - sigma2/2}. See
+#'   \code{\link{rlnorm}} for the same expressions in the standard log-normal
+#'   parameterization. Note that \code{asLogNormal} does not provide the
+#'   \code{sdlog} argument because latent trait variation is already controlled
+#'   by other parameters.
+#'
+#'   The name \code{meanLogShift} is used to emphasize that this argument
+#'   is an additional mean shift applied during transformation, not the
+#'   primary way to set the latent trait mean. In normal AlphaSimR workflow,
+#'   the latent mean is usually already set via
+#'   \code{SP$addTrait*(..., mean = ...)} in founding population and
+#'   \code{meanLogShift} should be left at its default unless an extra
+#'   transformation-specific shift on the latent (log) scale is needed.
+#'   One example is to control the mean of the observed values as shown below.
+#'   This value should be established at the start of simulation and kept
+#'   constant for most use cases.
 #' @return matrix of log-normal values.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 #' @examples
 #' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -328,15 +349,16 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' apply(X = phenoLogLarge, MARGIN = 2, FUN = meanVarFun)
 #'
 #' #Convert a single input trait
-#' (phenoExpMeanLog0 = asLogNormal(x = pheno(pop)[, 1]))
+#' (phenoExpMeanLog0 = asLogNormal(pheno(pop)[, 1]))
 #' meanVarFun(phenoExpMeanLog0)
 #'
-#' #Demonstrate meanlog argument
+#' #Demonstrate meanLogShift argument
 #' #Here we aim to obtain observed trait values with the mean of 1.
-#' #Since E(trtExp)=exp(mean(trtLog)+var(trtLog)/2), trtMeanLog[1]=0, and trtVarPLog[1],
-#' #to get E(trtExp)=1=exp(0) we set meanlog to -trtVarPLog[1]/2.
+#' #Since E(trtExp)=exp(meanLogShift + mean(trtLog) + var(trtLog)/2),
+#' #trait 1 is centered on the latent scale (mean(trtLog)=0), and
+#' #trtVarPLog[1] is the latent variance, we set meanLogShift to -trtVarPLog[1]/2.
 #' #See also ?rlnorm for the expression of variance.
-#' (phenoExpMeanExp1 = asLogNormal(x = pheno(pop)[, 1], meanlog = -trtVarPLog[1]/2))
+#' (phenoExpMeanExp1 = asLogNormal(pheno(pop)[, 1], meanLogShift = -trtVarPLog[1]/2))
 #' meanVarFun(phenoExpMeanExp1)
 #' exp(trtVarPLog[1] - 1)
 #' cbind(phenoLog = phenoLog[, 1],
@@ -345,9 +367,8 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' 
 #' tmp = cbind(phenoLog = phenoLogLarge[, 1],
 #'   phenoExpMeanLog0 = c(asLogNormal(phenoLogLarge[, 1])),
-#'   phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanlog = -trtVarPLog[1]/2)))
+#'   phenoExpMeanExp1 = c(asLogNormal(phenoLogLarge[, 1], meanLogShift = -trtVarPLog[1]/2)))
 #' (tmp2 = apply(X = tmp, MARGIN = 2, FUN = meanVarFun))
-#' par(mfrow = c(3, 1))
 #' hist(tmp[, "phenoLog"], main = paste0("Mean: ", v=tmp2$phenoLog$mean))
 #' abline(v=tmp2$phenoLog$mean, col = "red")
 #' hist(tmp[, "phenoExpMeanLog0"], main = paste0("Mean: ", v=tmp2$phenoExpMeanLog0$mean))
@@ -356,50 +377,60 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #' abline(v= tmp2$phenoExpMeanExp1$mean, col = "red")
 #'
 #' #Convert multiple input traits
-#' asLogNormal(x = pheno(pop))
-#' try(asLogNormal(x = pheno(pop), meanlog = 0))
-#' asLogNormal(x = pheno(pop), meanlog = c(0, 1))
-#' asLogNormal(x = pheno(pop), meanlog = list(0, NULL))
+#' asLogNormal(pheno(pop))
+#' try(asLogNormal(pheno(pop), meanLogShift = 0))
+#' asLogNormal(pheno(pop), meanLogShift = c(0, 1))
+#' asLogNormal(pheno(pop), meanLogShift = list(0, NULL))
 #' 
 #' #Store the recoded trait manually
 #' pheno(pop)
-#' pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#' pop@pheno[, 1] = asLogNormal(pheno(pop)[, 1])
 #' pheno(pop)
 #' 
 #' #Apply and store the transformation automatically via SimParam$finalizePop()
-#' SP$finalizePop = function(pop, simParam = SP) {
-#'   pop@pheno[, 1] = asLogNormal(x = pheno(pop)[, 1])
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
+#'   pop@pheno[, 1] = asLogNormal(pheno(pop)[, 1])
 #'   return(pop)
 #' }
 #' pop = newPop(founderPop)
 #' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asLogNormal(pheno[, 1])
+#'   return(pheno)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
 #' @export
-asLogNormal <- function(x, meanlog = NULL) {
+asLogNormal <- function(x, meanLogShift = NULL) {
   if (!is.matrix(x)) {
     x = as.matrix(x)
   }
   nTraits = ncol(x)
-  if (is.null(meanlog)) {
-    meanlog = rep(x = 0, times = nTraits)
+  if (is.null(meanLogShift)) {
+    meanLogShift = rep(x = 0, times = nTraits)
   }
-  if (is.numeric(meanlog)) {
-    if (length(meanlog) != nTraits) {
-      stop("You must supply meanlog for all traits in x!")
+  if (is.numeric(meanLogShift)) {
+    if (length(meanLogShift) != nTraits) {
+      stop("You must supply meanLogShift for all traits in x!")
     }
     for (trt in 1:nTraits) {
-      x[, trt] = exp(meanlog[trt] + x[, trt])
+      x[, trt] = exp(meanLogShift[trt] + x[, trt])
     }
-  } else if (is.list(meanlog)) {
-    if (length(meanlog) != nTraits) {
-      stop("You must supply meanlog for all traits in x!")
+  } else if (is.list(meanLogShift)) {
+    if (length(meanLogShift) != nTraits) {
+      stop("You must supply meanLogShift for all traits in x!")
     }
     for (trt in 1:nTraits) {
-      if (!is.null(meanlog[[trt]])) {
-        x[, trt] = exp(meanlog[[trt]] + x[, trt])
+      if (!is.null(meanLogShift[[trt]])) {
+        x[, trt] = exp(meanLogShift[[trt]] + x[, trt])
       }
     }
   } else {
-    stop("meanlog must be NULL, numeric, or list!")
+    stop("meanLogShift must be NULL, numeric, or list!")
   }
   return(x)
 }
@@ -408,32 +439,50 @@ asLogNormal <- function(x, meanlog = NULL) {
 #'   trait
 #' @param x matrix, values for one or more traits (if not a matrix,
 #'   we cast to a matrix).
-#' @param p \code{NULL}, numeric, or list, when \code{NULL} the \code{threshold}
-#'   argument takes precedence; when numeric, provide a vector of probabilities
-#'   of categories to convert continuous values into categories for a single
-#'   trait (if probabilities do not sum to 1, another category is added and
-#'   a warning is raised); when list, provide a list of numeric probabilities
-#'   - list node with \code{NULL} will skip conversion for a specific trait
-#'   (see examples); internally \code{p} is converted to \code{threshold} hence
-#'   input \code{threshold} is overwritten.
-#' @param mean numeric, assumed mean(s) of the normal (Gaussian) trait(s);
-#'   used only when \code{p} is given.
-#' @param var numeric, assumed variance(s) of the normal (Gaussian) trait(s);
-#'   used only when \code{p} is given.
-#' @param threshold \code{NULL}, numeric or, list, when numeric, provide a vector of
-#'   threshold values to convert continuous values into categories for a single trait
-#'   (the thresholds specify left-closed and right-opened intervals [t1, t2),
-#'   which can be changed with \code{include.lowest} and \code{right};
-#'   ensure you add \code{-Inf} and \code{Inf} or min and max to cover the whole
-#'   range of values; otherwise you will get \code{NA} values);
-#'   when list, provide a list of numeric thresholds - list node with \code{NULL}
+#' @param p \code{NULL}, numeric, or list, when \code{NULL} \code{threshold}
+#'   is used; when numeric, provide a vector of category probabilities to
+#'   convert continuous values into for a single trait (if probabilities
+#'   do not sum to 1, another category is added and a warning is raised);
+#'   when list, provide a list of probabilities - list node with \code{NULL}
 #'   will skip conversion for a specific trait (see examples).
+#'   If \code{p} is provided, it takes precedence over \code{threshold}.
+#'   Internally \code{p} is converted to \code{threshold}, and any supplied
+#'   \code{threshold} values are ignored.
+#' @param mean numeric, assumed latent mean(s) of \code{x}; used only when
+#'   \code{p} is given to convert category probabilities to thresholds.
+#'   See also details.
+#' @param var numeric, assumed latent variance(s) of \code{x}; used only when
+#'   \code{p} is given to convert category probabilities to thresholds.
+#'   See also details.
+#' @param threshold \code{NULL}, numeric or, list, when numeric, provide
+#'   a vector of category thresholds to convert continuous values into for
+#'   a single trait (the thresholds specify left-closed and right-opened
+#'   intervals [t1, t2), which can be changed with \code{include.lowest}
+#'   and \code{right}; ensure you add \code{-Inf} and \code{Inf} or min and
+#'   max to cover the whole range of values; otherwise you will get
+#'   \code{NA} values);
+#'   when list, provide a list of numeric thresholds - list node with \code{NULL}
+#'   will skip conversion for a specific trait (see examples). The default values
+#'   are set somewhat arbitrarily to get a ratio of (0.16, 0.68, 0.16) of records
+#'   in each of the categories with most of the outlying individuals scored
+#'   differently than individuals close to the "average".
 #' @param include.lowest logical, see \code{\link{cut}}.
 #' @param right logical, see \code{\link{cut}}.
 #' @details If input trait is normal (Gaussian) then this function generates a
 #'   categorical trait according to the ordered probit model.
+#'   No sampling happens in this function, which makes it deterministic.
+#'
+#'   When \code{p} is used, \code{mean} and \code{var} describe the latent
+#'   distribution of \code{x} and are used only to derive thresholds.
+#'   In normal AlphaSimR workflow, this latent mean and variance are usually
+#'   set via \code{SP$addTrait*(..., mean = ..., var = ...)} in founding
+#'   population and \code{SP$setVarE}. \code{p} or \code{threshold} values
+#'   should be established at the start of simulation and kept constant
+#'   for most use cases.
 #' @return matrix of values with some traits recorded as ordered categories
 #'  in the form of \code{1:nC} with \code{nC} being the number of categories.
+#' @seealso \code{finalizePop} and \code{finalizePheno} functions in
+#'   \code{\link{SimParam}} for automatic conversion (also demonstrated below).
 #' @examples
 #' #Simulate a founder pop, set latent trait parameters, and create a population
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -451,55 +500,65 @@ asLogNormal <- function(x, meanlog = NULL) {
 #' pheno(pop)
 #'
 #' #Convert a single input trait
-#' asCategorical(x = pheno(pop)[, 1])
+#' asCategorical(pheno(pop)[, 1])
 #'
 #' #Demonstrate threshold argument (in units of pheno SD)
-#' asCategorical(x = pheno(pop)[, 1], threshold = c(-1, 0, 1) * sqrt(trtVarP[1]))
-#' asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, -1, 0, 1, Inf) * sqrt(trtVarP[1]))
-#' asCategorical(x = pheno(pop)[, 1], threshold = c(-Inf, 0, Inf))
+#' asCategorical(pheno(pop)[, 1], threshold = c(-1, 0, 1) * sqrt(trtVarP[1]))
+#' asCategorical(pheno(pop)[, 1], threshold = c(-Inf, -1, 0, 1, Inf) * sqrt(trtVarP[1]))
+#' asCategorical(pheno(pop)[, 1], threshold = c(-Inf, 0, Inf))
 #'
 #' #Demonstrate p argument
-#' asCategorical(x = pheno(pop)[, 1], p = 0.5, var = trtVarP[1])
-#' asCategorical(x = pheno(pop)[, 1], p = c(0.5, 0.5), var = trtVarP[1])
-#' asCategorical(x = pheno(pop)[, 1], p = c(0.25, 0.5, 0.25), var = trtVarP[1])
+#' asCategorical(pheno(pop)[, 1], p = 0.5, var = trtVarP[1])
+#' asCategorical(pheno(pop)[, 1], p = c(0.5, 0.5), var = trtVarP[1])
+#' asCategorical(pheno(pop)[, 1], p = c(0.25, 0.5, 0.25), var = trtVarP[1])
 #'
 #' #Convert multiple input traits (via threshold or p argument)
-#' try(asCategorical(x = pheno(pop)))
-#' asCategorical(x = pheno(pop),
+#' try(asCategorical(pheno(pop)))
+#' asCategorical(pheno(pop),
 #'               threshold = list(c(-Inf, 0, Inf),
 #'                                NULL))
-#' try(asCategorical(x = pheno(pop), p = c(0.5, 0.5)))
-#' asCategorical(x = pheno(pop),
+#' try(asCategorical(pheno(pop), p = c(0.5, 0.5)))
+#' asCategorical(pheno(pop),
 #'               p = list(c(0.5, 0.5),
 #'                        NULL),
 #'               mean = trtMean, var = trtVarP)
 #'
-#' asCategorical(x = pheno(pop),
+#' asCategorical(pheno(pop),
 #'               threshold = list(c(-Inf, 0, Inf),
 #'                                c(-Inf, -2, -1, 0, 1, 2, Inf) * sqrt(trtVarP[2])))
 #' q = c(-2, -1, 0, 1, 2)
 #' p = pnorm(q)
 #' p = c(p[1], p[2]-p[1], p[3]-p[2], p[4]-p[3], p[5]-p[4], 1-p[5])
-#' asCategorical(x = pheno(pop),
+#' asCategorical(pheno(pop),
 #'               p = list(c(0.5, 0.5),
 #'                        p),
 #'               mean = trtMean, var = trtVarP)
 #' 
 #' #Store the recoded trait manually
 #' pheno(pop)
-#' pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+#' pop@pheno[, 1] = asCategorical(pheno(pop)[, 1])
 #' pheno(pop)
 #' 
 #' #Apply and store the transformation automatically via SimParam$finalizePop()
-#' SP$finalizePop = function(pop, simParam = SP) {
-#'   pop@pheno[, 1] = asCategorical(x = pheno(pop)[, 1])
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
+#'   pop@pheno[, 1] = asCategorical(pheno(pop)[, 1])
 #'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asCategorical(pheno[, 1])
+#'   return(pheno)
 #' }
 #' pop = newPop(founderPop)
 #' pheno(pop)
 #' @export
 asCategorical = function(x, p = NULL, mean = 0, var = 1,
-                         threshold = c(-Inf, 0, Inf),
+                         threshold = c(-Inf, -sqrt(var), sqrt(var), Inf),
                          include.lowest = TRUE, right = FALSE) {
   if (!is.matrix(x)) {
     x = as.matrix(x)
@@ -563,47 +622,159 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
 
 #' @title Convert a normal (Gaussian) trait to a count (Poisson) trait
 #' @param x matrix, values for one or more traits (if not a matrix,
-#'   we cast to a matrix)
-#' @param TODO numeric or list, when numeric, provide a vector of TODO
+#'   we cast to a matrix).
+#' @param meanLogShift \code{NULL}, numeric or list, additional additive shift(s)
+#'   on the latent log scale; when \code{NULL} a shift of 0 is assumed, when
+#'   numeric shifts for all traits in \code{x} must be provided, and when list
+#'   shifts for all traits in \code{x} must be provided with the possibility to
+#'   pass a \code{NULL} list node to skip the conversion for a trait
+#'   (see examples).
 #' @return matrix of values with some traits recoded as counts
 #' @details If input trait is normal (Gaussian) then this function generates a
-#'   count trait according to the Poisson generalised linear model.
+#'   count trait by sampling from the Poisson generalised linear model.
+#'   As such, this function's output is stochastic.
+#' 
+#'   Specifically, it generates \code{y | x ~ Poisson(lambda)} with
+#'   \code{lambda = exp(meanLogShift + x)}. If the supplied latent values
+#'   \code{x} have mean \code{mu} and variance \code{sigma2}, then the
+#'   marginal expected value of the counts is
+#'   \code{exp(meanLogShift + mu + sigma2/2)}, which is the same mean
+#'   formula as in the log-normal case. Therefore, to target an expected
+#'   count mean \code{M}, set \code{meanLogShift = log(M) - mu - sigma2/2}.
+#'   The marginal variance differs from the log-normal case and is
+#'   \code{E(y) + E(y)^2 * (exp(sigma2) - 1)}, because Poisson sampling
+#'   adds the extra \code{E(y)} term on top of the latent-scale heterogeneity.
+#'   Consequently, latent variance can be used to correct the expected
+#'   mean and to induce overdispersion, but it does not fully determine
+#'   the observed variance. If \code{x} already contains an added Gaussian
+#'   residual term, that latent variance contributes to the overdispersion as well.
+#' 
+#'   The name \code{meanLogShift} is used to emphasize that this argument
+#'   is an additional shift applied during transformation, not the primary
+#'   way to set the latent trait mean. In normal AlphaSimR workflow, the
+#'   latent mean and variance are usually already set via
+#'   \code{SP$addTrait*(..., mean = ..., var = ...)} in founding population
+#'   and \code{SP$setVarE}. Hence, \code{meanLogShift} should be left at
+#'   its default unless an extra transformation-specific shift is needed.
+#'   One example is to control the mean of the observed values as shown below.
+#'   This value should be established at the start of simulation and kept
+#'   constant for most use cases.
 #' @examples
-#' founderPop = quickHaplo(nInd=20, nChr=1, segSites=10)
+#' #Simulate a founder pop, set latent trait parameters, and create a population
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(nQtlPerChr = 10, mean = c(0, 0), var = c(1, 2),
+#' trtMeanLog = c(0, 0)
+#' trtVarGLog = c(1, 2)
+#' SP$addTraitA(nQtlPerChr = 10, mean = trtMeanLog, var = trtVarGLog,
 #'              corA = matrix(data = c(1.0, 0.6,
 #'                                     0.6, 1.0), ncol = 2))
+#' trtVarELog = c(1, 1)
+#' trtVarPLog = trtVarGLog + trtVarELog
+#' SP$setVarE(varE = trtVarELog)
 #' pop = newPop(founderPop)
-#' pop = setPheno(pop, varE = c(1, 1))
+#' popLarge = randCross(pop, nCrosses = 1000)
 #' pheno(pop)
+#'
+#' meanVarFun = function(x) list(mean = mean(x), var = var(x))
+#'
 #' #Convert a single input trait
-#' asCount(x = pheno(pop)[, 2])
-#' asCount(x = pheno(pop)[, 2], TODO = c(-1, 0, 1))
-#' asCount(x = pheno(pop)[, 2], TODO = c(-Inf, -1, 0, 1, Inf))
+#' (countGv = asPoisson(gv(pop)[, 1]))
+#' meanVarFun(countGv)
+#'
+#' #Demonstrate meanLogShift argument
+#' #For Y|x ~ Poisson(exp(meanLogShift + x)), the expected count is
+#' #E(Y)=exp(meanLogShift + mean(x) + var(x)/2). Trait 1 is centered on the
+#' #latent scale, so we use -variance/2 to target expected mean 1.
+#' (countGvMean1 = asPoisson(gv(pop)[, 1], meanLogShift = -trtVarGLog[1]/2))
+#' meanVarFun(countGvMean1)
+#'
+#' #If x already contains Gaussian residual variance, use the corresponding
+#' #latent variance in the same correction.
+#' (countPhenoMean1 = asPoisson(pheno(pop)[, 1], meanLogShift = -trtVarPLog[1]/2))
+#' meanVarFun(countPhenoMean1)
+#'
+#' #Large population example to inspect means and variances
+#' gvLarge = gv(popLarge)[, 1]
+#' phenoLarge = pheno(popLarge)[, 1]
+#' tmp = cbind(
+#'   gv = gvLarge,
+#'   countGv = c(asPoisson(gvLarge)),
+#'   countGvMean1 = c(asPoisson(gvLarge, meanLogShift = -trtVarGLog[1]/2)),
+#'   pheno = phenoLarge,
+#'   countPhenoMean1 = c(asPoisson(phenoLarge, meanLogShift = -trtVarPLog[1]/2))
+#' )
+#' (tmp2 = apply(X = tmp, MARGIN = 2, FUN = meanVarFun))
+#' hist(tmp[, "gv"], main = paste0("Mean: ", v = tmp2$gv$mean,
+#'   ", Var: ", v = tmp2$gv$var))
+#' abline(v = tmp2$gv$mean, col = "red")
+#' hist(tmp[, "countGv"], main = paste0("Mean: ", v = tmp2$countGv$mean,
+#'   ", Var: ", v = tmp2$countGv$var))
+#' abline(v = tmp2$countGv$mean, col = "red")
+#' hist(tmp[, "countGvMean1"], main = paste0("Mean: ", v = tmp2$countGvMean1$mean,
+#'   ", Var: ", v = tmp2$countGvMean1$var))
+#' abline(v = tmp2$countGvMean1$mean, col = "red")
+#' hist(tmp[, "pheno"], main = paste0("Mean: ", v = tmp2$pheno$mean,
+#' ", Var: ", v = tmp2$pheno$var))
+#' abline(v = tmp2$pheno$mean, col = "red")
+#' hist(tmp[, "countPhenoMean1"], main = paste0("Mean: ", v = tmp2$countPhenoMean1$mean,
+#'   ", Var: ", v = tmp2$countPhenoMean1$var))
+#' abline(v = tmp2$countPhenoMean1$mean, col = "red")
+#'
 #' #Convert multiple input traits
-#' try(asCount(x = pheno(pop)))
-#' asCount(x = pheno(pop),
-#'           TODO = list(NULL,
-#'                       ???))
-#' TODO export
-# asCount = function(x, TODO = 10) {
-#   if (!is.matrix(x)) {
-#     x = as.matrix(x)
-#   }
-#   nTraits = ncol(x)
-#   if (is.numeric(TODO)) {
-#     if (nTraits > 1) {
-#       stop("When x contains more than one column, you must supply a list of TODO! See examples.")
-#     }
-#     TODO = list(TODO)
-#   }
-#   for (trt in 1:nTraits) {
-#     if (!is.null(TODO[[trt]])) {
-# TODO: need to think what to do with an intercept and lambda
-#       x[, trt] = round(exp(x[, trt]))
-#     }
-#   }
-#   return(x)
-# }
+#' try(asPoisson(pheno(pop), meanLogShift = 0))
+#' asPoisson(gv(pop), meanLogShift = c(-trtVarGLog[1]/2, -trtVarGLog[2]/2))
+#' asPoisson(pheno(pop), meanLogShift = list(-trtVarPLog[1]/2, NULL))
+#'
+#' #Store the recoded trait manually
+#' pheno(pop)
+#' pop@pheno[, 1] = asPoisson(pheno(pop)[, 1])
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePop()
+#' finalizePopDefault = SP$finalizePop
+#' SP$finalizePop = function(pop, simParam = SP, ...) {
+#'   pop@pheno[, 1] = asPoisson(pheno(pop)[, 1])
+#'   return(pop)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' 
+#' #Apply and store the transformation automatically via SimParam$finalizePheno()
+#' SP$finalizePop = finalizePopDefault
+#' SP$finalizePheno = function(pheno, pop, simParam = SP, ...) {
+#'   pheno[, 1] = asPoisson(pheno[, 1])
+#'   return(pheno)
+#' }
+#' pop = newPop(founderPop)
+#' pheno(pop)
+#' @export
+asPoisson <- function(x, meanLogShift = NULL) {
+  if (!is.matrix(x)) {
+    x = as.matrix(x)
+  }
+  nTraits = ncol(x)
+  if (is.null(meanLogShift)) {
+    meanLogShift = rep(x = 0, times = nTraits)
+  }
+  if (is.numeric(meanLogShift)) {
+    if (length(meanLogShift) != nTraits) {
+      stop("You must supply meanLogShift for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      x[, trt] = rpois(n = nrow(x), lambda = exp(meanLogShift[trt] + x[, trt]))
+    }
+  } else if (is.list(meanLogShift)) {
+    if (length(meanLogShift) != nTraits) {
+      stop("You must supply meanLogShift for all traits in x!")
+    }
+    for (trt in 1:nTraits) {
+      if (!is.null(meanLogShift[[trt]])) {
+        x[, trt] = rpois(n = nrow(x), lambda = exp(meanLogShift[[trt]] + x[, trt]))
+      }
+    }
+  } else {
+    stop("meanLogShift must be NULL, numeric, or list!")
+  }
+  return(x)
+}

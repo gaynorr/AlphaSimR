@@ -17,8 +17,13 @@
 Notes.txt
 config.log
 config.status
+covr/
 docs
 src/*.dll
+src/*.gcda
+src/**/*.gcda
+src/*.gcno
+src/**/*.gcno
 src/*.o
 src/*.so
 vignettes/*.html

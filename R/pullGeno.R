@@ -527,9 +527,10 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' 
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
 #' SP$addSnpChip(5)
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' pullSegSiteGeno(pop, simParam=SP)
@@ -1214,15 +1215,15 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 #' 
 #' # Extract haplotypes for marker "1_1"
-#' H = pullMarkerHaplo(founderPop, markers="1_1")
+#' H = pullMarkerHaplo(founderPop, markers="1_1", nThreads=1L)
 #' H[1,1]
 #' 
 #' # Set the first haplotype to 1
 #' H[1,1] = 1L
 #' 
 #' # Set marker haplotypes
-#' founderPop = setMarkerHaplo(founderPop, haplo=H)
-#' pullMarkerHaplo(founderPop, markers="1_1")[1,1]
+#' founderPop = setMarkerHaplo(founderPop, haplo=H, nThreads=1L)
+#' pullMarkerHaplo(founderPop, markers="1_1", nThreads=1L)[1,1]
 #' 
 #' @export
 setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){

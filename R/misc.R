@@ -16,6 +16,7 @@ convToImat = function(X){
 #' @examples
 #' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
 #' SP <- SimParam$new(founderGenomes)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$setSexes(sexes = "yes_sys")
 #' pop <- newPop(founderGenomes)
 #'
@@ -63,6 +64,7 @@ isMale <- function(x) {
 #'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' # Create a population
 #' pop = newPop(founderPop, simParam=SP)
