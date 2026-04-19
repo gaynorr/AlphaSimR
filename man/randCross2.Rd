@@ -24,7 +24,9 @@ randCross2(
 
 \item{nCrosses}{total number of crosses to make}
 
-\item{nProgeny}{number of progeny per cross}
+\item{nProgeny}{number of progeny per cross. May be a single value for all 
+crosses or a vector with values equal to the number of crosses. If providing 
+a vector, the values are randomly assigned to each cross.}
 
 \item{balance}{this option will balance the number
 of progeny per parent}

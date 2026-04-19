@@ -13,7 +13,8 @@ makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL, nThreads = NULL)
 female and male parents. Either integers for the position in
 population or character strings for the IDs.}
 
-\item{nProgeny}{number of progeny per cross}
+\item{nProgeny}{number of progeny per cross. May be a single value for all 
+crosses or a vector with values for each cross.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the

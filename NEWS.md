@@ -1,4 +1,6 @@
-# AlphaSimR 2.1.0.9002
+# AlphaSimR 2.1.0.9003
+
+* Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 
 * Added asPoisson() function.
 

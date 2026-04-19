@@ -16,7 +16,8 @@ self(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{nProgeny}{total number of selfed progeny per individual}
+\item{nProgeny}{number of selfed progeny per individual. May be a single value 
+for all or a vector providing values for each individual.}
 
 \item{parents}{an optional vector of indices for allowable parents}
 
