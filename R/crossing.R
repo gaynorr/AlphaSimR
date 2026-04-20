@@ -29,10 +29,16 @@
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Cross individual 1 with individual 10
-#' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' #Cross individual 1 with individual 10 and 2 with 4
+#' crossPlan = matrix(c(1,10,
+#'                      2,4),
+#'                    nrow=2, ncol=2, byrow=TRUE)
 #' pop2 = makeCross(pop, crossPlan, simParam=SP)
+#' getPed(pop2)
 #'
+#' #The same but variable nProgeny
+#' pop3 = makeCross(pop, crossPlan, nProgeny=c(1,2),simParam=SP)
+#' getPed(pop3)
 #' @export
 makeCross = function(pop, crossPlan, nProgeny=1,
                      simParam=NULL, nThreads=NULL){
@@ -360,10 +366,16 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Cross individual 1 with individual 10
-#' crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#' #Cross individual 1 with individual 10 and 2 with 4
+#' crossPlan = matrix(c(1,10,
+#'                      2,4),
+#'                    nrow=2, ncol=2, byrow=TRUE)
 #' pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
+#' getPed(pop2)
 #'
+#' #The same but variable nProgeny
+#' pop3 = makeCross2(pop, pop, crossPlan, nProgeny=c(1,2),simParam=SP)
+#' getPed(pop3)
 #' @export
 makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
                       nThreads=NULL){
