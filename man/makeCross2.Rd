@@ -50,8 +50,14 @@ SP = SimParam$new(founderPop)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Cross individual 1 with individual 10
-crossPlan = matrix(c(1,10), nrow=1, ncol=2)
+#Cross individual 1 with individual 10 and 2 with 4
+crossPlan = matrix(c(1,10,
+                     2,4),
+                   nrow=2, ncol=2, byrow=TRUE)
 pop2 = makeCross2(pop, pop, crossPlan, simParam=SP)
+getPed(pop2)
 
+#The same but variable nProgeny
+pop3 = makeCross2(pop, pop, crossPlan, nProgeny=c(1,2),simParam=SP)
+getPed(pop3)
 }
