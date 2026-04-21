@@ -5,7 +5,8 @@
 #' itself or a custom function.
 #'
 #' @param traits the traits argument from a GS model
-#' @param simParam the simulation parameters object
+#' @param simParam simulation parameters. If \code{NULL}, the function uses
+#' the object named \code{SP} from the global environment.
 #'
 #' @returns a vector of names for traits
 #' 
@@ -54,7 +55,9 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' reasonable value is chosen automatically.
 #' @param Ve error variance. If value is NULL, a
 #' reasonable value is chosen automatically.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -186,7 +189,9 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used
 #' when number of traits is greater than 1.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -313,7 +318,9 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -473,7 +480,9 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations. Only used
 #' when number of traits is greater than 1.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -594,7 +603,9 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -738,7 +749,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -866,7 +879,9 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -1019,7 +1034,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations for convergence.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -1150,7 +1167,9 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useEM use EM to solve variance components. If false,
 #' the initial values are considered true.
 #' @param tol tolerance for EM algorithm convergence
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -1315,7 +1334,9 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' existing data in the EBV slot. If TRUE, a new column is
 #' added. If FALSE, existing data is replaced with the
 #' new estimates.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

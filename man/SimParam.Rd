@@ -115,6 +115,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChipByName(c("1_1","1_3"))
 
 ## ------------------------------------------------
@@ -262,6 +263,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population
@@ -270,7 +272,6 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
-\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
@@ -299,15 +300,41 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \item{\code{founderPop}}{founder population used for variance scaling}
 
 \item{\code{finalizePop}}{function applied to newly created populations.
+It is run as the last step of creating a new population and
+provides a way to automatically modify populations.
 The function must satisfy these four requirements:
-1) The first argument must be a \code{\link{Pop-class}} object,
-2) The second argument must be a SimParam object,
-3) The remaining arguments must be passed via \code{...}, and
-4) The return must be a \code{\link{Pop-class}} object.
+1) The first argument is a \code{\link{Pop-class}} object
+   which will be used in this function;
+2) The second argument is a SimParam object
+   to provide access to global parameters;
+3) The remaining arguments are passed via \code{...}; and
+4) The return is a \code{\link{Pop-class}} object.
 See \code{\link{asCategorical}} for an example.}
 
 \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
 return an empty population with a warning instead of an error.}
+
+\item{\code{finalizePheno}}{function applied to newly generated phenotype values.
+It is run as the last step of generating new phenotype values and
+provides a way to automatically modify phenotype values.
+While \code{finalizePop} function can be used to a similar effect,
+\code{finalizePheno} function provides more granular support over
+finalizing phenotype values in new and existing populations, say,
+when we repeatedly call \code{\link{setPheno}} on the existing population
+(which would not trigger use of \code{finalizePop}).
+The function must satisfy these five requirements:
+1) The first argument is a matrix of phenotype values,
+   which will be used in this function and
+   should have dimensions as \code{pop@pheno};
+2) The second argument is a \code{\link{Pop-class}} object
+   to provide access to population specific values;
+3) The third argument must be a SimParam object
+   to provide access to global parameters;
+4) The remaining arguments must be passed via \code{...}; and
+5) The return is a matrix of phenotype values that will form the new
+   \code{pop@pheno}, so the function should not change column or
+   row order.
+See \code{\link{asCategorical}} for an example.}
 
 \item{\code{v}}{the crossover interference parameter for a gamma model of
 recombination. A value of 1 indicates no crossover interference
@@ -327,7 +354,9 @@ autopolyploid. (default is 0)}
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
 \item{\code{nThreads}}{number of threads used with OpenMP (when available).
-Assign \code{NULL} to reset to \code{getNumThreads()}.}
+Assign \code{NULL} to reset to \code{getNumThreads()}.
+See \code{vignette("parallelization", package="AlphaSimR")}
+for setup details.}
 
 \item{\code{traitNames}}{vector of trait names}
 
@@ -436,12 +465,12 @@ relative to all active QTL}
 \if{latex}{\out{\hypertarget{method-SimParam-new}{}}}
 \subsection{Method \code{new()}}{
 Starts the process of building a new simulation
-by creating a new SimParam object and assigning a founder
+by creating a new \code{SimParam} object and assigning a founder
 population to the class. It is recommended that you save the
-object with the name "SP", because subsequent functions will
+object with the name \code{SP}, because subsequent functions will
 check your global environment for an object of this name if
-their simParam arguments are NULL. This allows you to call
-these functions without explicitly supplying a simParam
+their \code{simParam} arguments are \code{NULL}. This allows you
+to call these functions without explicitly supplying a \code{simParam}
 argument with every call.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SimParam$new(founderPop)}\if{html}{\out{</div>}}
@@ -789,6 +818,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addSnpChipByName(c("1_1","1_3"))
 }
 \if{html}{\out{</div>}}
@@ -1803,6 +1833,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population
@@ -1811,7 +1842,6 @@ meanG(pop)
 
 #Change mean to 1
 SP$rescaleTraits(mean=1)
-\dontshow{SP$nThreads = 1L}
 #Run resetPop for change to take effect
 pop = resetPop(pop, simParam=SP)
 meanG(pop)

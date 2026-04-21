@@ -16,14 +16,17 @@ self(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{nProgeny}{total number of selfed progeny per individual}
+\item{nProgeny}{number of selfed progeny per individual. May be a single value 
+for all or a vector providing values for each individual.}
 
 \item{parents}{an optional vector of indices for allowable parents}
 
 \item{keepParents}{should previous parents be used for mother and
 father.}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}

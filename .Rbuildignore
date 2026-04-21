@@ -2,5 +2,6 @@
 ^Notes\.txt$
 ^\.Rproj\.user$
 ^\.github$
+^\.git$
 ^_pkgdown\.yml$
 ^vignettes/web_only$

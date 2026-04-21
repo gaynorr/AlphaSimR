@@ -16,6 +16,7 @@ convToImat = function(X){
 #' @examples
 #' founderGenomes <- quickHaplo(nInd = 3, nChr = 1, segSites = 100)
 #' SP <- SimParam$new(founderGenomes)
+#' \dontshow{SP$nThreads = 1L}
 #' SP$setSexes(sexes = "yes_sys")
 #' pop <- newPop(founderGenomes)
 #'
@@ -63,6 +64,7 @@ isMale <- function(x) {
 #'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' # Create a population
 #' pop = newPop(founderPop, simParam=SP)
@@ -185,7 +187,9 @@ selIndex = function(Y,b,scale=FALSE){
 #' @param segSites a vector of segregating sites to edit. Length must
 #' match length of chr.
 #' @param allele either 0 or 1 for desired allele
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -267,7 +271,9 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #' @param nQtl number of QTL to edit
 #' @param trait which trait effects should guide selection of the top QTL
 #' @param increase should the trait value be increased or decreased
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
@@ -401,7 +407,9 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
 #' @param p the proportion of individuals selected
 #' @param selectTop selects highest values if true.
 #' Selects lowest values if false.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
@@ -515,7 +523,9 @@ transMat = function(R){
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param mutRate rate of new mutations
 #' @param returnPos should the positions of mutations be returned
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

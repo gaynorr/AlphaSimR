@@ -17,7 +17,8 @@ calcPheno(pop, varE, reps, p, traits, simParam = NULL)
 
 \item{traits}{number of traits}
 
-\item{simParam}{simulation parameters object}
+\item{simParam}{simulation parameters. If \code{NULL}, the function uses
+the object named \code{SP} from the global environment.}
 }
 \description{
 Calculate phenotypes

@@ -3,6 +3,7 @@ context("selection")
 test_that("selectInd_and_getResponse",{
   founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(10)
   SP$setVarE(h2=0.5)
   pop = newPop(founderPop, simParam=SP)

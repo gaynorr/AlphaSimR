@@ -18,7 +18,8 @@ setPhenoProgTest(
   p = NULL,
   onlyPheno = FALSE,
   simParam = NULL,
-  nThreads = NULL
+  nThreads = NULL,
+  ...
 )
 }
 \arguments{
@@ -55,10 +56,15 @@ sampled at random.}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{...}{additional arguments passed to the \code{finalizePheno}
+function in simParam}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or

@@ -13,7 +13,7 @@ vignette: >
 
 # Introduction
 
-This vignette describes how AlphaSimR implements quantitative genetics theory. This vignette is based on AlphaSimR's trait definition, so you should be familiar with the "traits" vignette. The implementation of quantitative genetics theory will be described by following description and examples from Falconer and Mackay [-@FalconerMackay] and then tweaking the examples to demonstrate various assumptions and deviations from the assumptions.
+This page describes how AlphaSimR implements quantitative genetics theory. This page is based on AlphaSimR's trait definition, so you should be familiar with the "traits" vignette. The implementation of quantitative genetics theory will be described by following description and examples from Falconer and Mackay [-@FalconerMackay] and then tweaking the examples to demonstrate various assumptions and deviations from the assumptions.
 
 # Single-locus **AD** trait
 

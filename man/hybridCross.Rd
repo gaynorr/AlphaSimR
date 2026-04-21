@@ -25,7 +25,9 @@ or a matrix with two columns for designed crosses}
 \code{\link{HybridPop-class}}. If false returns results as
 \code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}

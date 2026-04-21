@@ -3,6 +3,7 @@ context("misc")
 test_that("misc_and_miscPop", {
   founderPop = quickHaplo(nInd = 2, nChr = 1, segSites = 10)
   SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
   SP$addTraitA(10)
   popOrig = newPop(founderPop, simParam = SP)
   multiPop = newMultiPop(popOrig, popOrig)

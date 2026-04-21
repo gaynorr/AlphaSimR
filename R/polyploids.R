@@ -13,7 +13,9 @@
 #' @param keepParents should previous parents be used for mother and 
 #' father. 
 #' @param simRecomb should genetic recombination be modeled.
-#' @param simParam an object of 'SimParam' class
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' 
@@ -125,7 +127,9 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
 #' @param pop an object of 'Pop' superclass
 #' @param keepParents should previous parents be used for mother and 
 #' father. 
-#' @param simParam an object of 'SimParam' class
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' 
@@ -225,7 +229,9 @@ doubleGenome = function(pop, keepParents=TRUE,
 #' @param crossPlan a matrix with two column representing
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
-#' @param simParam an object of \code{\link{SimParam}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'

@@ -1,0 +1,45 @@
+---
+title: "Genotype-by-environment interactions in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: AlphaSimR.bib
+vignette: >
+  %\VignetteIndexEntry{Quantitative Genetics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Introduction
+
+This document describes how to use AlphaSimR to model
+genotype-by-environment interaction.
+
+```{r, eval=FALSE}
+
+# Legacy GxE trait
+SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxE=1, legacyGxE=TRUE)
+
+# New GxE trait
+SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxL=1, varGxL_Y=1)
+  
+SP$setVarE(H2=0.5, useGxE=TRUE)
+
+# Legacy GxE
+p = runif(40)
+year = 1
+pop = setPheno(pop, p=p[year], reps=2, fixEff=year)
+
+# New GxE trait
+year = 1
+pop = setPheno(pop, year=year, reps=1, locs=2)
+
+PYT = setPheno(PYT, year=year, fixEff=paste0("PYT_", year))
+
+pheno_df = setPheno(PYT, year=year, fixEff=paste0("PYT_", year), returnPheno=TRUE)
+
+
+```

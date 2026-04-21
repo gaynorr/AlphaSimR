@@ -15,7 +15,8 @@ setPheno(
   p = NULL,
   onlyPheno = FALSE,
   traits = NULL,
-  simParam = NULL
+  simParam = NULL,
+  ...
 )
 }
 \arguments{
@@ -47,7 +48,12 @@ sampled at random.}
 \item{traits}{an integer vector indicate which traits to set. If NULL,
 all traits will be set.}
 
-\item{simParam}{an object of \code{\link{SimParam}}}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
+
+\item{...}{additional arguments passed to the \code{finalizePheno}
+function in simParam}
 }
 \value{
 Returns an object of \code{\link{Pop-class}} or

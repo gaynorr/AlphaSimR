@@ -48,7 +48,9 @@ individual should be selfed.}
 \item{useFemale}{If creating DH lines, should female recombination
 rates be used. This parameter has no effect if, recombRatio=1.}
 
-\item{simParam}{an object of 'SimParam' class}
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}

@@ -1,4 +1,8 @@
-# AlphaSimR 2.0.0.9001
+# AlphaSimR 2.1.0.9003
+
+* Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
+
+* Added asPoisson() function.
 
 * Added MultiPop accessors (`[[`, `[`, `$`, and `names`), and their replacement methods (`[[<-`, `[<-`, `$<-`, and `names<-`).
 
@@ -20,13 +24,19 @@
 
 * Improved examples for asCategorical() function.
 
+* Added `SimParam$finalizePheno` field, to provide a user-defined function applied to newly generated phenotypic values (similar to `SimParam$finalizePop`).
+
 * Improved documentation for `SimParam$finalizePop` field.
+
+* AlphaSimR now reports OpenMP support and the default thread count when attached in interactive sessions. Use `options(AlphaSimR.quiet = TRUE)` to silence this message.
 
 * Added a short vignette explaining OpenMP support for parallelization.
 
 * `SimParam$nThreads` now validates assignments. Setting it to `NULL` resets to `getNumThreads()`, and invalid values now fail with a clear error.
 
 * Added optional `nThreads` arguments across OpenMP-enabled R functions and `SimParam` methods so thread counts can be controlled explicitly per call instead of only through `SimParam$nThreads` and is propagated across the package consistently.
+
+* Clarified in function documentation that `simParam = NULL` uses the global `SP` object where applicable.
 
 * Consolidated the use of RNG across the package to enable reproducibility. This is an internal change not visible to users.
 
@@ -96,7 +106,7 @@
 
 # AlphaSimR 1.5.1
 
-*d eleted bad example code for `setMisc`
+* deleted bad example code for `setMisc`
 
 * changed examples to use a single thread for CRAN testing this change is not shown in the documentation
 
