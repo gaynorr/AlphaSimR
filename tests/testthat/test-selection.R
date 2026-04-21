@@ -44,6 +44,9 @@ test_that("selectPop_and_calcPopValue",{
   SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
   pop = newPop(founderPop, simParam=SP)
   
+  # Selecting from a Pop object should return the same Pop object
+  expect_equal(pop, selectPop(pop, nPop = 1, simParam = SP))
+
   # Multipop with 1 level of nesting
   mp1 = newMultiPop(pop[1:5], pop[6:10])
   
@@ -149,7 +152,7 @@ test_that("selectPop_and_calcPopValue",{
                     newMultiPop(pop[41:60],
                                 newMultiPop(pop[61:80], pop[81:100])))
   
-  mp3 = setPheno(mp3, simParam = SP)
+  mp3 = setPheno(mp3, varE = c(1,1), simParam = SP)
   
   # Selection can only be performed when all populations are Pop-class
   expect_error(
@@ -168,4 +171,14 @@ test_that("selectPop_and_calcPopValue",{
       "\nSelection can only be performed when all populations at this level are",
       "Pop-class objects.\nYou may want to increase the value of 'level'"
     ), fixed = TRUE)
+  
+  # Selection should give the same result as if we had directly selected from the appropriate nested population
+  expect_identical(
+    selectPop(mp3, nPop = 1, level = 3, simParam = SP)[[2]][[2]],
+    selectPop(mp3[[2]][[2]], nPop = 1, level = 1, simParam = SP)
+  )
+  expect_identical(
+    selectPop(mp3, nPop = 1, level = 3, simParam = SP)[[3]][[2]],
+    selectPop(mp3[[3]][[2]], nPop = 1, level = 1, simParam = SP)
+  )
 })

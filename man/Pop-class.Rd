@@ -82,7 +82,7 @@ have a generic length and subset method.
 This list is normally empty and exists solely as an
 open slot available for users to store extra information about individuals.}
 
-\item{\code{miscPop}}{a list of any length containing optional meta data for the
+\item{\code{miscPop}}{a list of additional miscellaneous data for the
 population (see example in \code{\link{newPop}}).
 This list is empty unless information is supplied by the user.
 Note that the list is emptied every time the population is subsetted or

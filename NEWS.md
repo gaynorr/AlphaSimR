@@ -4,6 +4,22 @@
 
 * Added asPoisson() function.
 
+* Added MultiPop accessors (`[[`, `[`, `$`, and `names`), and their replacement methods (`[[<-`, `[<-`, `$<-`, and `names<-`).
+
+* Added a `show()` method for MultiPop objects that displays nested structure, indices, names (if available) and number of items/individuals.
+
+* Added `mergeMultiPops()` function to combine multiple Pop and/or MultiPop objects up to a defined `level`.
+
+* Added `flattenMultiPop()` function to reduce the depth of a nested MultiPop object up to a defined `level`.
+
+* Added `selectPop()` function to select a subset of populations from a MultiPop. This function uses the new internal `calcPopValue()` function to calculate a summary value for each population, which is then used for selection.
+
+* Added `unnameMultiPop()` function to remove names from a MultiPop at specific `level`(s).
+
+* Added `newEmptyMultiPop()` function to create an empty MultiPop. It has the same outcome as `newMultiPop()` with no arguments. To make this behavior consistent with `newEmptyPop()`, `newPop()` now also supports creating an empty population with defined ploidy.
+
+* Update `mergePops()` to handle nested MultiPop objects.
+
 * Added asLogNormal() function.
 
 * Improved examples for asCategorical() function.

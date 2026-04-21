@@ -6,7 +6,7 @@
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate var cov2cor lm coef model.matrix
 #' @importFrom stats rnorm dnorm qnorm pnorm qgamma rbinom runif rpois
-#' @importFrom stats na.omit
+#' @importFrom stats na.omit setNames
 #' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
 #' @importFrom Rdpack reprompt

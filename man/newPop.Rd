@@ -4,11 +4,14 @@
 \alias{newPop}
 \title{Create new population}
 \usage{
-newPop(rawPop, simParam = NULL, nThreads = NULL, ...)
+newPop(rawPop, ploidy = NULL, simParam = NULL, nThreads = NULL, ...)
 }
 \arguments{
 \item{rawPop}{an object of \code{\link{MapPop-class}} or
 \code{\link{NamedMapPop-class}}}
+
+\item{ploidy}{optional, integer. Ploidy of the new empty population. 
+Used only if \code{rawPop} is missing.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -27,7 +30,9 @@ Creates an initial \code{\link{Pop-class}} from an object of
 \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}.
 The function is intended for use with output from functions such
 as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
-\code{\link{quickHaplo}}.
+\code{\link{quickHaplo}}. It can also be used to create an
+empty \code{\link{Pop-class}} object simply by specifying the desired 
+\code{ploidy}.
 }
 \details{
 Note that \code{newPop} takes genomes from the
@@ -37,6 +42,11 @@ Note that \code{newPop} takes genomes from the
   To get genetically different sets of individuals you can subset the
   \code{rawPop} input, say first half for one set and the second half
   for the other set.
+
+  When \code{rawPop} is missing, and \code{ploidy} is provided, an empty 
+  population with the specified \code{ploidy} is returned by calling 
+  \code{\link{newEmptyPop}} (useful for programmatic construction or tests).
+  If \code{rawPop} is provided, \code{ploidy} is ignored.
 }
 \examples{
 #Create founder haplotypes
@@ -58,4 +68,7 @@ pop@misc$tmp2 = rnorm(n=2)
 #MiscPop
 pop@miscPop$tmp1 = sum(pop@misc$tmp1)
 pop@miscPop$tmp2 = sum(pop@misc$tmp2)
+
+#Create empty population with ploidy 2
+emptyPop = newPop(ploidy=2L, simParam=SP)
 }
