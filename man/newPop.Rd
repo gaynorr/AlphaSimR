@@ -12,6 +12,7 @@ newPop(rawPop, ploidy = NULL, simParam = NULL, nThreads = NULL, ...)
 
 \item{ploidy}{optional, integer. Ploidy of the new empty population. 
 Used only if \code{rawPop} is missing.}
+
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
 global environment.}
