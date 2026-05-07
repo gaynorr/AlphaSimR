@@ -191,3 +191,146 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                    newMultiPop(pop[8:9], pop[10:11], pop[12]))
   expect_equal(flattenMultiPop(mp3, level = 3), mp3)
 })
+
+test_that("splitPop", {
+  # Create founder haplotypes and set simulation parameters
+  founderPop = quickHaplo(nInd = 12, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10)
+  #  Create population
+  pop = newPop(founderPop, simParam = SP)
+
+  # splitPop basic behavior
+  by1 = sample(LETTERS[1:3], nInd(pop), replace = TRUE)
+  mp1 = splitPop(pop, by = by1)
+
+  expect_true(isMultiPop(mp1))
+  expect_length(mp1@pops, length(unique(by1)))
+  expect_identical(.depthMultiPop(mp1), 1L)
+
+  expect_identical(
+    splitPop(pop, by = "A"),
+    splitPop(pop, by = rep("A", length(pop)))
+  )
+
+  # splitPop recursive behavior
+  mp2 = splitPop(
+    pop,
+    by = list(
+      sample(LETTERS[1:2], nInd(pop), replace = TRUE),
+      function(x) getFam(x, famType = "B")
+    )
+  )
+
+  expect_true(isMultiPop(mp2))
+  expect_true(all(vapply(mp2@pops, isMultiPop, logical(1))))
+  expect_identical(.depthMultiPop(mp2), 2L)
+
+  # Error handling
+  expect_error(
+    splitPop(newEmptyPop(ploidy = 2L, simParam = SP), by = list()),
+    "`by` must have at least one grouping spec.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(double(), by = 1:5),
+    "`x` must be a Pop or MultiPop object",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(pop, by = numeric(0)),
+    paste0("Grouping vector length (", length(numeric(0)),
+           ") must equal `nInd(pop)` (", length(pop), "), or be length 1."),
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(pop, by = list(NA_real_)),
+    "Grouping vector contains NA values.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(pop, by = list(1:4)),
+    paste0("Grouping vector length (", length(list(1:4)[[1]]),
+           ") must equal `nInd(pop)` (", length(pop), "), or be length 1."),
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(pop, by = list(list(1, 2, 3))),
+    "Grouping spec must be an atomic vector or a function returning one.",
+    fixed = TRUE
+  )
+  
+  # splitPop works for MultiPop objects
+  mp3 = splitPop(mp2, by = function(x) sample(LETTERS[1:2], length(x), replace = TRUE))
+
+  expect_true(is(mp1, "MultiPop"))
+  expect_true(all(vapply(mp3@pops, isMultiPop, logical(1))))
+  expect_identical(.depthMultiPop(mp3), 3L)
+
+    # Level control tests (deterministic splitter)
+  mp_nested = newMultiPop(pop[1:3], newMultiPop(pop[4:6], pop[7:9]))
+  splitter = function(p) rep(c("A", "B"), length.out = nInd(p))
+
+  # level = 1: only top-level Pop nodes are split
+  res1 = splitPop(mp_nested, by = splitter, level = 1)
+  expect_identical(res1[[1]], splitPop(mp_nested[[1]], by = splitter))
+  expect_identical(res1[[2]], mp_nested[[2]])
+
+  # level = 2: only Pop nodes at depth 2 are split
+  res2 = splitPop(mp_nested, by = splitter, level = 2)
+  expect_identical(res2[[1]], mp_nested[[1]])
+  expect_identical(res2[[2]], splitPop(mp_nested[[2]], by = splitter))
+
+  # level = 1:2: Pop nodes at depth 1 and 2 are split
+  res12 = splitPop(mp_nested, by = splitter, level = 1:2)
+  expect_identical(res12[[1]], splitPop(mp_nested[[1]], by = splitter))
+  expect_identical(res12[[2]], splitPop(mp_nested[[2]], by = splitter))
+
+  # level = Inf: split every Pop node encountered
+  resInf = splitPop(mp_nested, by = splitter, level = Inf)
+  expect_identical(resInf[[1]], splitPop(mp_nested[[1]], by = splitter))
+  expect_identical(resInf[[2]], splitPop(mp_nested[[2]], by = splitter))
+
+  # Error handling for level argument
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = -1L),
+    "`level` must be a positive integer or Inf",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = 4L),
+    "requested `level` exceeds max depth of `x` (2)",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = c(1, NA)),
+    "`level` must be a numeric vector of positive integers (no NA)",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = c(1, Inf)),
+    "cannot mix Inf with integer levels",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = c(1, 1.5)),
+    "`level` must be a numeric vector of positive integers (no NA)",
+    fixed = TRUE
+  )
+
+  expect_error(
+    splitPop(mp_nested, by = splitter, level = c(1, 5)),
+    "requested level(s) exceed max depth of `x` (2)",
+    fixed = TRUE
+  )
+})

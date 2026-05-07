@@ -418,3 +418,187 @@ mergeMultiPops = function(..., level=0){
   flatMultiPop = flattenMultiPop(multiPop)
   return(mergePops(flatMultiPop))
 }
+
+#' @title Split Pop or MultiPop
+#'
+#' @description
+#' Split a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object
+#' into a \code{MultiPop} at specified nesting \code{level}(s) using one
+#' or more grouping specifications (\code{by}). Grouping specs can be
+#' atomic vectors (length \code{nInd(x)} or 1) or functions that return
+#' such vectors. If \code{by} is a list, each element is applied
+#' recursively to create nested \code{MultiPop} objects.
+#'
+#' @param x a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object
+#' @param by a vector, function, or list of vectors/functions defining
+#'   groupings. Functions are called with a \code{Pop} and must return an
+#'   atomic vector of length \code{nInd(pop)} (or 1).
+#' @param level A positive integer, a vector of positive integers, or
+#'   \code{Inf}. Only relevant when \code{x} is a \code{\link{MultiPop-class}}
+#'   object. If \code{level = Inf}, split any \code{\link{Pop-class}} within 
+#'   \code{x} according to \code{by}. If \code{level = c(a, b)}, only
+#'   \code{Pop-class} objects at levels \code{a} and \code{b} (top \code{level=1})
+#'   are split. An error is raised if any requested level is deeper than the
+#'   object's maximum nesting depth.
+#' 
+#' @return Returns a \code{\link{MultiPop-class}} object.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
+#' 
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$addTraitA(10)
+#' 
+#' # Create population
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' # Split pop into groups A/B deterministically
+#' mp1 = splitPop(pop, by = rep(c("A", "B"), length.out = nInd(pop)))
+#' mp1
+#'
+#' # Nested split: First using a random grouping vector (three groups), then by family
+#' mp2 = splitPop(
+#'   pop,
+#'   by = list(
+#'     sample(LETTERS[1:3], nInd(pop), replace = TRUE),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#' mp2
+#' 
+#' # When x is a MultiPop, control which nesting levels are split
+#' mp_nested = newMultiPop(pop[1:3], newMultiPop(pop[4:6], pop[7:9]))
+#' splitPop(mp_nested, 
+#'          by = function(p) rep(c("A","B"), length.out = nInd(p)),
+#'          level = 1)
+#'
+#' @export
+splitPop = function(x, by, level = Inf) {
+  if (!isPop(x) && !isMultiPop(x)) {
+    stop("`x` must be a Pop or MultiPop object")
+  }
+  
+  # Validate by argument
+  if (!is.list(by)) {
+    by = list(by)
+  }
+  if (length(by) == 0) {
+    stop("`by` must have at least one grouping spec.")
+  }
+  
+  # Get max depth of nesting in MultiPop
+  md = ifelse(isMultiPop(x), .depthMultiPop(x), 1L)
+
+  # Validate level argument
+  if (length(level) == 1L) {
+    if (is.infinite(level)) {
+      levels = Inf
+    } else {
+      if (!is.numeric(level) || is.na(level) ||
+          level < 1 || level != as.integer(level)) {
+        stop("`level` must be a positive integer or Inf")
+      }
+      if (level > md) {
+        stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
+      }
+      levels = as.integer(level)
+    }
+  } else {
+    if (!is.numeric(level) || any(is.na(level)) || any(level <= 0)) {
+      stop("`level` must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(is.infinite(level))) {
+      stop("cannot mix Inf with integer levels")
+    }
+    if (any(level != trunc(level))) {
+      stop("`level` must be a numeric vector of positive integers (no NA)")
+    }
+    if (any(level > md)) {
+      stop(sprintf("requested level(s) exceed max depth of `x` (%d)", md))
+    }
+    levels = as.integer(unique(level))
+  }
+
+  # Recursively split at requested levels
+  res = .splitAtLevels(x, currentLevel = 1L, levels = levels, by = by)
+  return(res)
+}
+
+#' Helper to apply splitting only at requested nesting levels
+#'
+#' @param obj A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param currentLevel Integer; current depth during recursion (top-level = 1).
+#' @param levels Integer vector or \code{Inf}; levels at which to apply splits.
+#' @param by A list of grouping specs (vectors or functions).
+#'
+#' @return The input object with splits applied at the requested levels.
+#'
+#' @keywords internal
+.splitAtLevels = function(obj, currentLevel, levels, by) {
+  if (isPop(obj)) {
+    # A Pop at the currentLevel: split only if currentLevel requested (or Inf)
+    if (any(is.infinite(levels)) || currentLevel %in% levels) {
+      return(.splitPop(obj, by))
+    } else {
+      return(obj)
+    }
+  }
+
+  if (isMultiPop(obj)) {
+    # For each child: if child is MultiPop, its children are one level deeper;
+    # if child is Pop, it sits at currentLevel.
+    obj@pops = lapply(obj@pops, function(child) {
+      if (isMultiPop(child)) {
+        .splitAtLevels(child, currentLevel = currentLevel + 1L, levels = levels, by = by)
+      } else {
+        .splitAtLevels(child, currentLevel = currentLevel, levels = levels, by = by)
+      }
+    })
+    validObject(obj)
+    return(obj)
+  }
+}
+
+#' Helper function to recursively split a Pop object
+#'
+#' @param pop A \code{\link{Pop-class}} object.
+#' @param by A list of grouping specs (vectors or functions). Each element is
+#'   applied in order to produce nested splits.
+#'
+#' @return A \code{\link{MultiPop-class}} produced by recursively applying \code{by}.
+#'
+#' @keywords internal
+.splitPop = function(pop, by) {
+  if (length(by) == 0) {
+    return(pop)
+  }
+
+  f = by[[1]]
+  groups = if (is.function(f)) f(pop) else f
+
+  if (!is.atomic(groups)) {
+    stop("Grouping spec must be an atomic vector or a function returning one.")
+  }
+  if (any(is.na(groups))) {
+    stop("Grouping vector contains NA values.")
+  }
+
+  n = nInd(pop)
+  if (length(groups) == 1L) {
+    groups = rep(groups, n)
+  }
+  if (length(groups) != n) {
+    stop(
+      "Grouping vector length (", length(groups),
+      ") must equal `nInd(pop)` (", n, "), or be length 1."
+    )
+  }
+
+  popList = split(pop, groups)
+  mp = newEmptyMultiPop()
+  mp@pops = lapply(popList, .splitPop, by = by[-1])
+  return(mp)
+}
