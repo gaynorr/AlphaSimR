@@ -28,3 +28,4 @@ src/*.o
 src/*.so
 vignettes/*.html
 vignettes/*.pdf
+.positai

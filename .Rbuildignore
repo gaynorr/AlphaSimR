@@ -5,3 +5,5 @@
 ^\.git$
 ^_pkgdown\.yml$
 ^vignettes/web_only$
+^\.positai$
+^\.claude$
