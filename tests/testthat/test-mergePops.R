@@ -159,12 +159,12 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
 
   # Nothing to flatten, so the same input should be returned
   expect_identical(flattenMultiPop(mp1, level = 0), mp1)
-  expect_identical(flattenMultiPop(mp1, level = 1), mp1)
-  expect_identical(flattenMultiPop(mp1, level = 2), mp1)
-  tmp = flattenMultiPop(mp1)
+  tmp = flattenMultiPop(mp1, level = 1)
+  expect_identical(tmp, mp1)
   expect_identical(tmp[[1]], pop[1:2])
   expect_identical(tmp[[2]], pop[3:5])
   tmp = flattenMultiPop(mp1, level = 2)
+  expect_identical(tmp, mp1)
   expect_identical(tmp[[1]], pop[1:2])
   expect_identical(tmp[[2]], pop[3:5])
 
@@ -190,6 +190,39 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   expect_identical(tmp[[3]],
                    newMultiPop(pop[8:9], pop[10:11], pop[12]))
   expect_equal(flattenMultiPop(mp3, level = 3), mp3)
+
+  # Flattening with preserveNames
+  mp_named = newMultiPop(A = pop[1:2], B = pop[3:5],
+                         C = newMultiPop(D = pop[6:7], E = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "auto"),
+                   newMultiPop(A = pop[1:2], B = pop[3:5], D = pop[6:7], E = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "concatenate"),
+                   newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_E = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "force"),
+                   newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_E = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "none"),
+                   newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 2, preserveNames = "none"),
+                   newMultiPop(A = pop[1:2], B = pop[3:5], 
+                               C = newMultiPop(pop[6:7], pop[8:10])))
+                               
+  mp_named = newMultiPop(A = pop[1:2], B = pop[3:5],
+                         C = newMultiPop(D = pop[6:7], D = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "auto"),
+                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "concatenate"),
+                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
+
+  expect_identical(
+    expect_warning(flattenMultiPop(mp_named, level = 1, preserveNames = "force"),
+                   "Duplicate names found in 'force' mode. Making names unique by appending suffixes.",
+                   fixed = TRUE),
+    newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_D.1 = pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "none"),
+                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
+  expect_identical(flattenMultiPop(mp_named, level = 2, preserveNames = "none"),
+                    newMultiPop(A = pop[1:2], B = pop[3:5], 
+                                C = newMultiPop(pop[6:7], pop[8:10])))
 })
 
 test_that("splitPop", {
