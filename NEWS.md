@@ -12,11 +12,15 @@
 
 * Added `flattenMultiPop()` function to reduce the depth of a nested MultiPop object up to a defined `level`.
 
-* Added `selectPop()` function to select a subset of populations from a MultiPop. This function uses the new internal `calcPopValue()` function to calculate a summary value for each population, which is then used for selection.
+* Added `calcPopValue()` function to calculate summary values for each Pop in a MultiPop.
+
+* Added `selectPop()` function to select a subset of populations from a MultiPop. This function uses the new `calcPopValue()` function.
 
 * Added `unnameMultiPop()` function to remove names from a MultiPop at specific `level`(s).
 
 * Added `newEmptyMultiPop()` function to create an empty MultiPop. It has the same outcome as `newMultiPop()` with no arguments. To make this behavior consistent with `newEmptyPop()`, `newPop()` now also supports creating an empty population with defined ploidy.
+
+* Added `splitPop()` function to divide a Pop or MultiPop object into multiple subpopulations at specified level(s).
 
 * Update `mergePops()` to handle nested MultiPop objects.
 

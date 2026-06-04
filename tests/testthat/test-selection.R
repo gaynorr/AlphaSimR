@@ -37,8 +37,8 @@ test_that("selectInd_and_getResponse",{
   expect_equal(pop5@id, pop6@id)
 })
 
-test_that("selectPop_and_calcPopValue",{
-  founderPop = quickHaplo(nInd=100, nChr=1, segSites=10)
+test_that("selectPop",{
+  founderPop = quickHaplo(nInd=14, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
@@ -70,6 +70,14 @@ test_that("selectPop_and_calcPopValue",{
                  paste("Suitable candidate populations smaller than nPop, returning", 
                        length(mp1), "populations"))
   
+  # Invalid level
+  expect_error(selectPop(mp1, nPop = 2, level = 0.5, simParam = SP),
+               "`level` must be a positive integer",
+               fixed=TRUE)
+               expect_error(selectPop(mp1, nPop = 2, level = 1:2, simParam = SP),
+               "`level` must be a positive integer",
+               fixed=TRUE)
+  
   # TODO: Update support for use='bv' with genParamPop()
   # bv is not currently supported
   expect_error(selectPop(mp1, nPop = 2, use = 'bv', simParam = SP),
@@ -78,8 +86,7 @@ test_that("selectPop_and_calcPopValue",{
   
   # Selecting nested populations from a non-nested object
   expect_error(selectPop(mp1, nPop = 1, level = 3, use = 'pheno', simParam = SP),
-               paste("The MultiPop object does not contain other MultiPop objects",
-                     "at this level. You may want to decrease the value of 'level'"),
+               "requested `level` exceeds max depth of `x` (1)",
                fixed=TRUE)
   
   # Use a custom trait obtained by summing up the two available traits
@@ -119,9 +126,9 @@ test_that("selectPop_and_calcPopValue",{
   
   # MultiPop with 1 nested object
   
-  mp2 = newMultiPop(pop[1:20], pop[21:40],
-                    newMultiPop(pop[41:60],
-                                newMultiPop(pop[61:80], pop[81:100])))
+  mp2 = newMultiPop(pop[1:2], pop[3:4],
+                    newMultiPop(pop[5:6],
+                                newMultiPop(pop[7:8], pop[9:10])))
   
   # setPheno for all traits
   mp2 = setPheno(mp2, varE = c(1,1), simParam = SP)
@@ -146,11 +153,11 @@ test_that("selectPop_and_calcPopValue",{
   
   # MultiPop with >1 nested object
   
-  mp3 = newMultiPop(pop[1:20],
-                    newMultiPop(pop[21:30],
-                                newMultiPop(pop[31:35], pop[36:40])),
-                    newMultiPop(pop[41:60],
-                                newMultiPop(pop[61:80], pop[81:100])))
+  mp3 = newMultiPop(pop[1:2],
+                    newMultiPop(pop[3:4],
+                                newMultiPop(pop[5:6], pop[7:8])),
+                    newMultiPop(pop[9:10],
+                                newMultiPop(pop[11:12], pop[13:14])))
   
   mp3 = setPheno(mp3, varE = c(1,1), simParam = SP)
   

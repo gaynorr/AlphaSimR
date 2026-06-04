@@ -897,6 +897,7 @@ selectPop = function(
   FUN = mean,
   FUN.ARGS = list()
 ) {
+
   stopifnot(nPop >= 0)
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
@@ -907,17 +908,22 @@ selectPop = function(
   }
   stopifnot(isMultiPop(x))
 
-  multi = which(sapply(unname(x@pops), isMultiPop))
+  if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
+        level < 1 || level != as.integer(level)) {
+      stop("`level` must be a positive integer")
+    }
 
-  if (level > 1 & identical(multi, integer(0))) {
-    stop(paste(
-      "The MultiPop object does not contain other MultiPop objects",
-      "at this level. You may want to decrease the value of 'level'"
-    ))
+  md = .depthMultiPop(x)
+  if (md < level) {
+    stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
   }
 
-  while (level > 1) {
-    level = level - 1
+  is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
+  is_pop = vapply(unname(x@pops), isPop, logical(1L))
+  multi = which(is_multi)
+
+  while (level > 1L) {
+    level = level - 1L
     for (i in multi) {
       x@pops[[i]] = selectPop(
         x = x[[i]],
@@ -932,8 +938,7 @@ selectPop = function(
         ...
       )
     }
-    multiPop = do.call(newMultiPop, x@pops)
-    return(multiPop)
+    return(x)
   }
 
   if (!identical(multi, integer(0))) {
@@ -946,7 +951,7 @@ selectPop = function(
     ))
   }
 
-  eligible = which(sapply(x@pops, isPop))
+  eligible = which(is_pop)
 
   if (length(eligible) < nPop) {
     nPop = length(eligible)
@@ -957,21 +962,28 @@ selectPop = function(
     )
   }
 
-  popValues = calcPopValue(
+  if (is.character(use) && use == 'bv') {
+    stop("use='bv' is not currently supported for populations")
+  }
+
+  response = calcPopValue(
     x,
-    trait = trait,
-    use = use,
-    FUN = FUN,
-    returnList = FALSE,
-    FUN.ARGS = FUN.ARGS,
-    simParam = simParam,
-    ...
+    FUN = function(pop) {
+      getResponse(pop = pop, trait = trait, use = use, simParam = simParam, ...)
+    },
+    simplify = FALSE,
+    level = 1L,
+    simParam = simParam
   )
+
+  popValues = vapply(response, function(res) {
+    do.call(FUN, c(list(res), FUN.ARGS))
+  }, numeric(1L))
 
   take = order(popValues, decreasing = selectTop)
   take = take[take %in% eligible]
 
-  return(x[take[0:nPop]])
+  return(x[take[seq_len(nPop)]])
 }
 
 #' Helper function to collect leaf paths in a \code{MultiPop}
