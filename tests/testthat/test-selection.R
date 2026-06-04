@@ -182,3 +182,140 @@ test_that("selectPop_and_calcPopValue",{
     selectPop(mp3[[3]][[2]], nPop = 1, level = 1, simParam = SP)
   )
 })
+
+# tests/testthat/test-calcPopValue.R
+test_that("calcPopValue", {
+  founderPop = quickHaplo(nInd = 14, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
+  SP$setVarE(h2 = c(0.6, 0.4))
+  pop = newPop(founderPop, simParam = SP)
+
+  # Pop case
+  expect_identical(
+    calcPopValue(pop, FUN = pheno, simplify = FALSE, simParam = SP),
+    pheno(pop)
+  )
+  expect_identical(
+    calcPopValue(
+      pop,
+      FUN = function(x, ...) cor(x@pheno, ...),
+      simplify = TRUE,
+      simParam = SP,
+      method = "kendall"
+    ),
+    cor(pheno(pop), method = "kendall")
+  )
+
+  # Nested MultiPop case
+  mp1 = splitPop(
+    randCross(pop, nCrosses = 3, nProgeny = 4, simParam = SP),
+    by = list(
+      function(x) rep(LETTERS[1:2], length.out = length(x)),
+      function(x) getFam(x, famType = "B")
+    )
+  )
+
+  # simplify=FALSE preserves nesting and names
+  outF = calcPopValue(mp1, FUN = pheno, simplify = FALSE, simParam = SP)
+  expect_true(is.list(outF))
+  expect_identical(names(outF), names(mp1))
+  expect_true(is.list(outF$A))
+  expect_identical(outF$A, lapply(mp1$A@pops, pheno))
+  expect_identical(outF$B, lapply(mp1$B@pops, pheno))
+
+  # level > depth returns unchanged structure
+  expect_identical(
+    outF,
+    calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 3, simParam = SP)
+  )
+
+  # simplify=TRUE level=2 attaches source with level2
+  out2 = calcPopValue(
+    mp1,
+    FUN = pheno,
+    simplify = TRUE,
+    level = 2,
+    simParam = SP
+  )
+  expect_true(is.list(out2))
+  expect_identical(names(out2), names(mp1))
+
+  outA = calcPopValue(mp1$A, FUN = pheno, simplify = TRUE, simParam = SP)
+  expect_identical(attributes(out2$A)$source[[1]], attributes(outA)$source[[1]])
+  expect_equal(nrow(attributes(outA)$source), nrow(outA))
+
+  outB = calcPopValue(mp1$B, FUN = pheno, simplify = TRUE, simParam = SP)
+  expect_identical(attributes(out2$B)$source[[1]], attributes(outB)$source[[1]])
+  expect_equal(nrow(attributes(outB)$source), nrow(outB))
+
+  expect_equal(rbind(outA), do.call('rbind', lapply(mp1$A@pops, pheno)))
+  expect_equal(rbind(outB), do.call('rbind', lapply(mp1$B@pops, pheno)))
+
+  # simplify=TRUE level=1 attaches level1/level2 source
+  out1 = calcPopValue(
+    mp1,
+    FUN = pheno,
+    simplify = TRUE,
+    level = 1,
+    simParam = SP
+  )
+  expect_true(is.matrix(out1))
+  expect_equal(nrow(out1), nInd(mergeMultiPops(mp1)))
+  expect_identical(
+    rbind(attributes(out2$A)$source, attributes(out2$B)$source),
+    attributes(out1)$source[, 2, drop = FALSE]
+  )
+  expect_equal(rbind(out1), rbind(outA, outB))
+
+  # Ragged and nested MultiPop
+  mp3 = newMultiPop(
+    p1 = pop[1:2],
+    mp1 = newMultiPop(
+      p2 = pop[3:4],
+      mp2 = newMultiPop(p3 = pop[5:6], p4 = pop[7:8])
+    ),
+    mp3 = newMultiPop(
+      p5 = pop[9:10],
+      mp4 = newMultiPop(p6 = pop[11:12], p7 = pop[13:14])
+    )
+  )
+
+  # simplify=FALSE preserves nesting and names
+  outF = calcPopValue(mp3, FUN = pheno, simplify = FALSE, simParam = SP)
+  expect_true(is.list(outF))
+  expect_identical(names(outF), names(mp3))
+  expect_identical(names(outF$mp1), names(mp3$mp1))
+  expect_identical(names(outF$mp3), names(mp3$mp3))
+  expect_identical(outF$mp1$mp2, lapply(mp3$mp1$mp2@pops, pheno))
+  expect_identical(outF$mp3$mp4, lapply(mp3$mp3$mp4@pops, pheno))
+
+  # simplify=TRUE level=1 attaches level1/level2/level3 source
+  out1 = calcPopValue(
+    mp3,
+    FUN = pheno,
+    simplify = TRUE,
+    level = 1,
+    simParam = SP
+  )
+  expect_true(is.matrix(out1))
+  expect_equal(nrow(out1), nInd(mergeMultiPops(mp3)))
+
+  # Error handling
+  expect_error(
+    calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE, simParam = SP),
+    "`x` must be a Pop or MultiPop object.",
+    fixed = TRUE
+  )
+  expect_error(
+    calcPopValue(1:5, FUN = pheno, simplify = FALSE, simParam = SP),
+    "`x` must be a Pop or MultiPop object.",
+    fixed = TRUE
+  )
+  expect_error(
+    calcPopValue(list(pop), FUN = pheno, simplify = FALSE, simParam = SP),
+    "`x` must be a Pop or MultiPop object.",
+    fixed = TRUE
+  )
+})
