@@ -309,7 +309,12 @@ test_that("calcPopValue", {
   expect_true(is.matrix(out1))
   expect_equal(nrow(out1), nInd(mergeMultiPops(mp3)))
 
-  # Error handling
+  # Error and warning handling
+  expect_warning(
+    calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE, simParam = SP),
+    "Some values returned by FUN have unsupported types for simplification. Returning list output.",
+    fixed = TRUE
+  )
   expect_error(
     calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE, simParam = SP),
     "`x` must be a Pop or MultiPop object.",

@@ -4,12 +4,12 @@
 \alias{.formatCalcPopSource}
 \title{Helper function to format the source attribute for \code{calcPopValue}}
 \usage{
-.formatCalcPopSource(paths, values, level_offset = 0L)
+.formatCalcPopSource(paths, nRows, level_offset = 0L)
 }
 \arguments{
 \item{paths}{List of character vectors representing leaf paths.}
 
-\item{values}{List of values returned from \code{FUN}.}
+\item{nRows}{Vector of row counts for each path.}
 
 \item{level_offset}{Integer scalar used to label source levels.}
 }

@@ -22,7 +22,7 @@ is added to indicate the origin of each row.}
 preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 Ignored if \code{simplify=FALSE}.}
 
-\item{simParam}{an object of class \code{\link{SimParam}}. If \code{NULL}, 
+\item{simParam}{an object of class \code{\link{SimParam}}. If \code{NULL},
 the function uses the object named \code{SP} from the global environment.}
 
 \item{...}{Additional arguments passed to \code{FUN}.}
@@ -72,7 +72,7 @@ calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 2)
 calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 1)
 
 # Custom function returning a summary matrix
-calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)), 
+calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)),
              simplify = TRUE, level = 1)
 
 }

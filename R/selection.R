@@ -103,7 +103,7 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 #'   Ignored if \code{simplify=FALSE}.
-#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL}, 
+#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
 #'   the function uses the object named \code{SP} from the global environment.
 #' @param ... Additional arguments passed to \code{FUN}.
 #'
@@ -148,7 +148,7 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 1)
 #'
 #' # Custom function returning a summary matrix
-#' calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)), 
+#' calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)),
 #'              simplify = TRUE, level = 1)
 #'
 #' @export
@@ -208,20 +208,36 @@ calcPopValue = function(
   )
 
   if (simplify && level == 1L) {
-    popValue = do.call(rbind, popValueList)
-    src = .formatCalcPopSource(
-      source,
+    nRows = vapply(
       popValueList,
-      level_offset = .level_offset
+      function(v) {
+        if (is.null(v)) {
+          return(0L)
+        }
+        if (is.data.frame(v) || is.matrix(v) || is.array(v)) {
+          return(dim(v)[1]) # number of rows
+        }
+        if (is.atomic(v) && is.null(dim(v))) {
+          return(1L) # vectors are one row
+        }
+        return(NA_integer_)
+      },
+      integer(1L)
     )
-
-    if (NROW(src) != NROW(popValue)) {
+    if (any(is.na(nRows))) {
       warning(
-        "The number of rows in the source data frame does not match the number of rows in the output matrix.",
+        "Some values returned by FUN have unsupported types for simplification. Returning list output.",
         call. = FALSE
       )
+      return(popValueList)
     }
-    attr(popValue, "source") = src
+
+    popValue = do.call(rbind, popValueList)
+    attr(popValue, "source") = .formatCalcPopSource(
+      paths = source,
+      nRows = nRows,
+      level_offset = .level_offset
+    )
     return(popValue)
   }
 
@@ -1018,11 +1034,11 @@ selectPop = function(
 #' Helper function to format the source attribute for \code{calcPopValue}
 #'
 #' @param paths List of character vectors representing leaf paths.
-#' @param values List of values returned from \code{FUN}.
+#' @param nRows Vector of row counts for each path.
 #' @param level_offset Integer scalar used to label source levels.
 #'
 #' @keywords internal
-.formatCalcPopSource = function(paths, values, level_offset = 0L) {
+.formatCalcPopSource = function(paths, nRows, level_offset = 0L) {
   if (length(paths) == 0L) {
     return(NULL)
   }
@@ -1049,7 +1065,6 @@ selectPop = function(
     }
   }
 
-  nRows = vapply(values, NROW, integer(1L))
   idx = rep(seq_along(nRows), nRows)
   pathDf = pathDf[idx, , drop = FALSE]
   rownames(pathDf) = NULL
