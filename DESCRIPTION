@@ -43,7 +43,7 @@ Depends: R (>= 4.0.0)
 Imports: Rcpp (>= 0.12.7), Rdpack, methods, R6
 RdMacros: Rdpack
 LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH, dqrng (>= 0.4.1)
-RoxygenNote: 7.3.3
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true
+Config/roxygen2/version: 8.0.0
