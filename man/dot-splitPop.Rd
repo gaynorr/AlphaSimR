@@ -9,8 +9,16 @@
 \arguments{
 \item{pop}{A \code{\link{Pop-class}} object.}
 
-\item{by}{A list of grouping specs (vectors or functions). Each element is
-applied in order to produce nested splits.}
+\item{by}{A grouping specification. This may be:  \cr
+- an atomic vector.  \cr
+- a function returning an atomic vector.  \cr
+- a list of vectors/functions for recursive nested splitting.  \cr
+- a data frame whose columns define nested grouping levels.
+
+For data frames, rows are aligned to \code{pop@id} when possible, otherwise
+they are assumed to already be in population order. During recursion, the
+data frame is subset to each child population so that row alignment is
+preserved across levels.}
 }
 \value{
 A \code{\link{MultiPop-class}} produced by recursively applying \code{by}.

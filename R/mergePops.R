@@ -527,35 +527,55 @@ mergeMultiPops = function(..., level=0){
 #'
 #' @description
 #' Split a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object
-#' into a \code{MultiPop} at specified nesting \code{level}(s) using one
-#' or more grouping specifications (\code{by}). Grouping specs can be
-#' atomic vectors (length \code{nInd(x)} or 1) or functions that return
-#' such vectors. If \code{by} is a list, each element is applied
-#' recursively to create nested \code{MultiPop} objects.
+#' into a \code{MultiPop} using one or more grouping specifications passed
+#' through \code{by}.
 #'
 #' @param x a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object
-#' @param by a vector, function, or list of vectors/functions defining
-#'   groupings. Functions are called with a \code{Pop} and must return an
-#'   atomic vector of length \code{nInd(pop)} (or 1).
-#' @param level A positive integer, a vector of positive integers, or
+#' @param by a vector, function, list, or data frame defining groupings
+#' @param level a positive integer, a vector of positive integers, or
 #'   \code{Inf}. Only relevant when \code{x} is a \code{\link{MultiPop-class}}
-#'   object. If \code{level = Inf}, split any \code{\link{Pop-class}} within 
-#'   \code{x} according to \code{by}. If \code{level = c(a, b)}, only
-#'   \code{Pop-class} objects at levels \code{a} and \code{b} (top \code{level=1})
-#'   are split. An error is raised if any requested level is deeper than the
-#'   object's maximum nesting depth.
-#' 
+#'   object. See Details.
+#'
+#' @details
+#' The \code{by} argument can take several forms:  \cr
+#' - Atomic vectors: used directly as grouping labels. The
+#'   vector is passed to \code{\link[base]{split}} and may be recycled as
+#'   needed. If the vector length is not a multiple of the population size,
+#'   \code{\link[base]{split}} issues a warning.  \cr
+#' - Functions: called on each \code{Pop} object and must return
+#'   an atomic vector of grouping labels.  \cr
+#' - Lists: each element must be a vector or function. Elements
+#'   are applied recursively to create nested \code{\link{MultiPop-class}}
+#'   objects.  \cr
+#' - Data frames: each column defines one nesting level. In this
+#'   case, \code{x} must be a \code{\link{Pop-class}} object. Rows of the data
+#'   frame must correspond to individuals in \code{x}. If row names are present
+#'   and match \code{x@id}, they are used to align rows to individuals;
+#'   otherwise rows are assumed to be in population order and a warning is
+#'   issued. \code{NA} values are allowed in grouping columns and can be used
+#'   to represent uneven nesting structures. If all grouping values for a
+#'   subpopulation are \code{NA} at a given level, splitting stops for that
+#'   branch.
+#'
+#' The \code{level} argument is only relevant when \code{x} is a
+#' \code{\link{MultiPop-class}} object. If \code{level = Inf}, all
+#' \code{\link{Pop-class}} objects contained in \code{x} are split according
+#' to \code{by}. If \code{level = c(a, b)}, only \code{Pop-class} objects at
+#' nesting levels \code{a} and \code{b} (with the top level being \code{1}) are
+#' split. An error is raised if any requested level exceeds the maximum nesting
+#' depth of \code{x}.
+#'
 #' @return Returns a \code{\link{MultiPop-class}} object.
 #'
 #' @examples
 #' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
-#' 
+#'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' \dontshow{SP$nThreads = 1L}
 #' SP$addTraitA(10)
-#' 
+#'
 #' # Create population
 #' pop = newPop(founderPop, simParam = SP)
 #'
@@ -563,7 +583,23 @@ mergeMultiPops = function(..., level=0){
 #' mp1 = splitPop(pop, by = rep(c("A", "B"), length.out = nInd(pop)))
 #' mp1
 #'
-#' # Nested split: First using a random grouping vector (three groups), then by family
+#' # Split using a data frame, with rows aligned by individual ID
+#' by_df = data.frame(
+#'   level1 = sample(LETTERS[1:3], nInd(pop), replace = TRUE),
+#'   level2 = sample(1:2, nInd(pop), replace = TRUE),
+#'   row.names = pop@id
+#' )
+#' splitPop(pop, by = by_df)
+#'
+#' # Uneven nested structure using NA values in lower levels
+#' by_df2 = data.frame(
+#'   level1 = c(rep("A", 4), rep("B", 6)),
+#'   level2 = c(rep(NA_character_, 4), rep(c("C", "D"), each = 3)),
+#'   row.names = pop@id
+#' )
+#' splitPop(pop, by = by_df2)
+#'
+#' # Nested split: first by a random grouping vector, then by family
 #' mp2 = splitPop(
 #'   pop,
 #'   by = list(
@@ -572,12 +608,14 @@ mergeMultiPops = function(..., level=0){
 #'   )
 #' )
 #' mp2
-#' 
+#'
 #' # When x is a MultiPop, control which nesting levels are split
 #' mp_nested = newMultiPop(pop[1:3], newMultiPop(pop[4:6], pop[7:9]))
-#' splitPop(mp_nested, 
-#'          by = function(p) rep(c("A","B"), length.out = nInd(p)),
-#'          level = 1)
+#' splitPop(
+#'   mp_nested,
+#'   by = function(p) rep(c("A", "B"), length.out = nInd(p)),
+#'   level = 1
+#' )
 #'
 #' @export
 splitPop = function(x, by, level = Inf) {
@@ -591,6 +629,20 @@ splitPop = function(x, by, level = Inf) {
   }
   if (length(by) == 0) {
     stop("`by` must have at least one grouping spec.")
+  }
+  if (is.data.frame(by) && isPop(x)){
+    if (.row_names_info(by) > 0) {
+      if (setequal(rownames(by), x@id)){
+        by = by[x@id, , drop = FALSE]
+      } else {
+        warning("Row names of data frame `by` don't match `x@id`. Mapping rows by order instead of names.")
+      }
+    } else {
+      warning("Mapping rows of data frame (`by`) to individuals' identifiers (`x@id`) by order.\n",
+              "Consider setting row names of `by` to match `x@id` for clarity.")
+    }
+    res = .splitPop(x, by)
+    return(res)
   }
   
   # Get max depth of nesting in MultiPop
@@ -669,8 +721,16 @@ splitPop = function(x, by, level = Inf) {
 #' Helper function to recursively split a Pop object
 #'
 #' @param pop A \code{\link{Pop-class}} object.
-#' @param by A list of grouping specs (vectors or functions). Each element is
-#'   applied in order to produce nested splits.
+#' @param by A grouping specification. This may be:  \cr
+#' - an atomic vector.  \cr
+#' - a function returning an atomic vector.  \cr
+#' - a list of vectors/functions for recursive nested splitting.  \cr
+#' - a data frame whose columns define nested grouping levels.
+#' 
+#' For data frames, rows are aligned to \code{pop@id} when possible, otherwise
+#' they are assumed to already be in population order. During recursion, the
+#' data frame is subset to each child population so that row alignment is
+#' preserved across levels.
 #'
 #' @return A \code{\link{MultiPop-class}} produced by recursively applying \code{by}.
 #'
@@ -686,23 +746,20 @@ splitPop = function(x, by, level = Inf) {
   if (!is.atomic(groups)) {
     stop("Grouping spec must be an atomic vector or a function returning one.")
   }
+  if (all(is.na(groups))) {
+    return(pop)
+  }
   if (any(is.na(groups))) {
     stop("Grouping vector contains NA values.")
   }
 
-  n = nInd(pop)
-  if (length(groups) == 1L) {
-    groups = rep(groups, n)
-  }
-  if (length(groups) != n) {
-    stop(
-      "Grouping vector length (", length(groups),
-      ") must equal `nInd(pop)` (", n, "), or be length 1."
-    )
-  }
-
   popList = split(pop, groups)
   mp = newEmptyMultiPop()
-  mp@pops = lapply(popList, .splitPop, by = by[-1])
+  if (is.data.frame(by)){
+    groups = lapply(split(by, groups), `[`, -1)
+    mp@pops = mapply(FUN = .splitPop, pop = popList, by = groups)
+  } else {
+    mp@pops = lapply(popList, .splitPop, by = by[-1])
+  }
   return(mp)
 }
