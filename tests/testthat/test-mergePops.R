@@ -273,24 +273,22 @@ test_that("splitPop", {
     fixed = TRUE
   )
 
-  expect_error(
-    splitPop(pop, by = numeric(0)),
-    paste0("Grouping vector length (", length(numeric(0)),
-           ") must equal `nInd(pop)` (", length(pop), "), or be length 1."),
+  expect_warning(
+    splitPop(pop, by = numeric(7)),
+    "data length is not a multiple of split variable",
     fixed = TRUE
   )
 
   expect_error(
-    splitPop(pop, by = list(NA_real_)),
+    splitPop(pop, by = list(c(NA_real_, 0))),
     "Grouping vector contains NA values.",
     fixed = TRUE
   )
 
-  expect_error(
-    splitPop(pop, by = list(1:4)),
-    paste0("Grouping vector length (", length(list(1:4)[[1]]),
-           ") must equal `nInd(pop)` (", length(pop), "), or be length 1."),
-    fixed = TRUE
+  # split.default() recycling behavior
+  expect_identical(
+    splitPop(pop, by = 1:4),
+    splitPop(pop, by = rep(1:4, length.out = nInd(pop)))
   )
 
   expect_error(
@@ -366,4 +364,45 @@ test_that("splitPop", {
     "requested level(s) exceed max depth of `x` (2)",
     fixed = TRUE
   )
+
+  # splitPop using a data frame for grouping
+  by1 = data.frame(level1 = by1)
+  expect_warning(
+    expect_identical(mp1, splitPop(pop, by = by1)),
+    "Mapping rows of data frame (`by`) to individuals' identifiers (`x@id`) by order.\nConsider setting row names of `by` to match `x@id` for clarity.",
+    fixed = TRUE
+  )
+  
+  rownames(by1) = letters[pop@iid]
+  expect_warning(
+    splitPop(pop, by = data.frame(level1 = by1)),
+    "Row names of data frame `by` don't match `x@id`. Mapping rows by order instead of names.",
+    fixed = TRUE
+  )
+
+  # Specify row names of the data frame to match `x@id`
+  by_df = data.frame(level1 = by1, row.names = pop@id)
+  expect_identical(mp1, splitPop(pop, by = by_df))
+  
+  # splitPop can create nested MultiPop objects using a data frame with multiple columns
+  nms = sapply(mp2@pops, lengths)
+  by_df = data.frame(level1 = rep(names(nms), nms),
+                     level2 = "0_0",
+                     row.names = mergePops(mp2)@id)
+  expect_identical(mp2, splitPop(pop, by = by_df))
+
+  # A data frame with NA values in the grouping columns creates an uneven nested structure
+  by_df = data.frame(level1 = c(rep("A", 4), rep("B", 8)),
+                     level2 = c(rep(NA_character_, 4), rep(LETTERS[3:4], each = 4)),
+                     level3 = c(rep(NA_character_, 8), rep("E", 4)),
+                     row.names = pop@id)
+                     
+  mp4 = newMultiPop(A = pop[1:4],
+                    B = newMultiPop(
+                      C = pop[5:8],
+                      D = newMultiPop(E = pop[9:12])))
+  
+  expect_identical(mp4, splitPop(pop, by = by_df))
+  
+
 })

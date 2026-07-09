@@ -98,7 +98,7 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
 #'   \code{\link{flattenMultiPop}}. The output matrices from each \code{Pop}
-#'    are combined with \code{\link{rbind}}, and a \code{"source"} attribute
+#'   are combined with \code{\link{rbind}}, and a \code{"source"} attribute
 #'   is added to indicate the origin of each row.
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.

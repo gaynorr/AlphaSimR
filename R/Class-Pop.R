@@ -1077,7 +1077,7 @@ setMethod("show",
               indexLabel = paste0("[[", idx, "]] ")
 
               # Dont print name label if it's empty
-              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ")) {
+              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ", NA_character_)) {
                 nameLabel = ""
               }
               

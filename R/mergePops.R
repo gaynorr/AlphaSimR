@@ -247,8 +247,7 @@ mergePops = function(popList){
 #' @return If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
 #' object is returned. Otherwise a \code{\link{MultiPop-class}} is returned
 #' whose \code{x@pops} slot contains \code{\link{Pop-class}} (and possibly
-#' \code{\link{MultiPop-class}}) objects flattened according to \code{level}
-#' and \code{preserveNames}.
+#' \code{\link{MultiPop-class}}) objects flattened according to \code{level}.
 #'
 #' @seealso \code{\link{mergeMultiPops}} and \code{\link{mergePops}}
 #'
@@ -287,9 +286,11 @@ mergePops = function(popList){
 #' flattenMultiPop(mp_nested, level = 2)
 #'
 #' @export
-flattenMultiPop = function(x, level = 1,
-                           preserveNames = c("auto", "concatenate", "force", "none")) {
-  preserveNames = match.arg(preserveNames)
+flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
+  preserveNames = match.arg(
+    arg = preserveNames,
+    choices = c("auto", "concatenate", "force", "none")
+  )
   if (isPop(x)) {
     return(x)
   }
@@ -319,8 +320,11 @@ flattenMultiPop = function(x, level = 1,
 #' @param mp \code{\link{MultiPop-class}} object
 #'
 #' @keywords internal
-.flattenMultiPop = function(mp, preserveNames = c("auto", "concatenate", "force", "none")) {
-  preserveNames = match.arg(preserveNames)
+.flattenMultiPop = function(mp, preserveNames = "auto") {
+  preserveNames = match.arg(
+    arg = preserveNames,
+    choices = c("auto", "concatenate", "force", "none")
+  )
 
   if (.depthMultiPop(mp) == 1L) {
     res = mp@pops

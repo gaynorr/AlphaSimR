@@ -15,7 +15,7 @@ as its first argument.}
 \item{simplify}{Logical. If \code{TRUE}, simplify the output by flattening
 the \code{MultiPop} in \code{x} to the requested \code{level} using
 \code{\link{flattenMultiPop}}. The output matrices from each \code{Pop}
- are combined with \code{\link{rbind}}, and a \code{"source"} attribute
+are combined with \code{\link{rbind}}, and a \code{"source"} attribute
 is added to indicate the origin of each row.}
 
 \item{level}{Integer scalar >= 1. Number of \code{MultiPop} levels to

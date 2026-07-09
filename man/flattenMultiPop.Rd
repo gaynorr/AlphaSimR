@@ -4,11 +4,7 @@
 \alias{flattenMultiPop}
 \title{Flatten a MultiPop object to a specified depth}
 \usage{
-flattenMultiPop(
-  x,
-  level = 1,
-  preserveNames = c("auto", "concatenate", "force", "none")
-)
+flattenMultiPop(x, level = 1, preserveNames = "auto")
 }
 \arguments{
 \item{x}{A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.}
@@ -30,8 +26,7 @@ flattening. One of:  \cr
 If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
 object is returned. Otherwise a \code{\link{MultiPop-class}} is returned
 whose \code{x@pops} slot contains \code{\link{Pop-class}} (and possibly
-\code{\link{MultiPop-class}}) objects flattened according to \code{level}
-and \code{preserveNames}.
+\code{\link{MultiPop-class}}) objects flattened according to \code{level}.
 }
 \description{
 Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
