@@ -902,3 +902,383 @@ mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL
 nInd = function(pop){
   pop@nInd
 }
+
+#' @title Calculate trait parameters for populations
+#'
+#' @description
+#' Internal helper used by \code{\link{genParamPop}} to compute
+#' population summaries for a single trait. Written in R for prototyping
+#' and discussion.
+#'
+#' @param multiPop an object of \code{\link{MultiPop-class}}.
+#' @param trait a trait object from \code{simParam$traits}.
+#' @param FUN function used to summarize values within each population
+#'   (e.g. \code{mean}, \code{sum}).
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#'   \code{NULL}, the function uses the object named \code{SP} from the
+#'   global environment.
+#' @param ... additional arguments passed to \code{FUN}.
+#'
+#' @return
+#' A list with per-population summaries for one trait, including:
+#' \itemize{
+#'   \item \code{gv}, \code{bv}, and (when available) \code{dd}
+#'   \item \code{gv_a}, and (when available) \code{gv_d}
+#'   \item \code{mu}, \code{gv_mu}, \code{alpha}
+#'   \item currently implemented variance components (e.g. \code{genicVarA})
+#' }
+#'
+#' @details
+#' Prototype implementation under development. Intended for exploratory
+#' population-level summaries and API discussion.
+#' 
+#' @keywords internal
+calcGenParamPop_R = function(multiPop, trait, FUN = mean, simParam=NULL, ...) {
+  
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  
+  # Extract ploidy from population information
+  ploidy = multiPop@pops[[1]]@ploidy
+  
+  # Extract trait information
+  lociLoc = trait@lociLoc
+  lociPerChr = trait@lociPerChr
+  a = trait@addEff  # Additive effects
+  nLoci = length(a)
+  intercept = trait@intercept
+  nPop = length(multiPop)
+  nIndPop = lengths(multiPop)
+  interceptPop = rep(0, nPop)
+  
+  
+  # Genotype dosage values (0, 1, 2 for diploids)
+  x = 0:ploidy
+
+  # Additive coding: scales genotype to [-1, 1] for diploids
+  # For diploid: xa = (x - 1) * 1 = c(-1, 0, 1)
+  xa = (x - ploidy/2) * (2/ploidy)
+  
+  # Allele substitution effects
+  alpha = numeric(nLoci)
+  
+  # Initialize output vectors
+  gv_a = bvMat = vector(mode = 'double', length = nPop)
+  
+  # Additive genic variance (sum over loci, assuming no LD)
+  genicVarA = 0   # Additive genic variance (observed frequencies)
+  
+  # Check if trait has dominance effects
+  hasD = methods::.hasSlot(trait, "domEff")
+  if (hasD) {
+    d = trait@domEff  # Dominance effects
+    
+    # Initialize output vectors
+    gv_d = ddMat = gv_a
+    
+    # Dominance coding: measures deviation from additivity
+    # For diploid: xd = x*(2-x)*(1/2)^2 = c(0, 0.5, 0) -> heterozygote = 0.5
+    xd = x * (ploidy - x) * (2/ploidy)^2
+    
+    # Dominance genic variance (sum over loci, assuming no LD)
+    genicVarD = 0   # Dominance genic variance (observed frequencies)
+  }
+
+  
+  # Loop over each locus
+  for (loc in seq_len(nLoci)) {
+    
+    # Additive genetic value: aEff = xa * a[i]
+    aEff =  xa * a[loc]
+    
+    # Initialize pop-specific vectors
+    genoMu = gv_a_pop = gv_d_pop  = double()
+    
+    if (hasD) {
+      # Dominance genetic value: dEff = xd * d[i]
+      dEff =  xd * d[loc]
+      # Total genetic value at this locus
+      gv = aEff + dEff
+      # Initialize pop-specific vectors
+      gv_d_pop = gv_a_pop
+    } else {
+      gv = aEff
+    }
+    
+    # Loop over each pop
+    for (p in seq_along(multiPop)) {
+      pop = multiPop@pops[[p]]
+      
+      # Get genotype matrix (individuals x QTL)
+      # Each cell contains the dosage (0 to ploidy)
+      lociMap = selectLoci(chr=NULL, lociPerChr, lociLoc)
+      genoMat = getGeno(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, 
+                                    simParam$nThreads)
+      genoMat = convToImat(genoMat)
+      rownames(genoMat) = pop@id
+      colnames(genoMat) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, 
+                                                   simParam$genMap)
+      
+      # Mean allele dosage for each population
+      genoMu = c(genoMu, mean(genoMat[,loc]))
+      
+      # Vectorize operations over individuals
+      geno = genoMat[,loc] + 1  # +1 for R indexing (genotype 0 -> index 1)
+      
+      # Append average additive genetic values per population
+      # gv_a_pop = c(gv_a_pop, mean(aEff[geno]))
+      gv_a_pop = c(gv_a_pop, FUN(aEff[geno], ...))
+      
+      if (hasD) {
+        # Append average dominance genetic values per population
+        # gv_d_pop = c(gv_d_pop, mean(dEff[geno]))
+        gv_d_pop = c(gv_d_pop, FUN(dEff[geno], ...))
+      }
+    }
+    
+    # Cumulative additive genetic values across loci
+    gv_a = gv_a + gv_a_pop
+    
+    if (hasD) {
+      # Cumulative dominance genetic values across loci
+      gv_d = gv_d + gv_d_pop
+      # Total genetic values per population
+      gv_t_pop = gv_a_pop + gv_d_pop
+      
+    } else {
+      # Total genetic values per population
+      gv_t_pop = gv_a_pop
+    }
+    
+    
+    # Allele substitution effect for this locus
+    alpha[loc] = cov(genoMu, gv_t_pop) / var(genoMu)
+    # Breeding values per population at this locus
+    bv = (genoMu - mean(genoMu)) * alpha[loc]
+    # Cumulative breeding values across loci
+    bvMat = bvMat + bv
+    
+    # Var(BV) assuming no LD between loci
+    # Using observed frequencies
+    # TODO: popVar(bv) -> genicVarA
+    genicVarA = genicVarA + popVar(matrix(bv))[1,1]
+    
+    if (hasD) {
+      # Dominance values per population at this locus
+      dd = gv_t_pop - mean(gv_t_pop) - bv
+      # Cumulative dominance deviations across loci
+      ddMat = ddMat + dd
+      # Var(BV) assuming no LD between loci
+      # Using observed frequencies
+      # TODO: popVar(dd) -> genicVarD
+      genicVarD = genicVarD + popVar(matrix(dd))[1,1]
+    }
+  }
+  
+  # Calculate population-specific intercepts
+  for (p in seq_along(multiPop)) {
+    interceptPop[p] = FUN(rep(intercept, nIndPop[p]), ...)
+  }
+
+  if (hasD) {
+    # Cumulative total genetic values across loci
+    gv_t = gv_a + gv_d
+    result = list(
+      gv = gv_t + interceptPop,               # Total genetic value
+      bv = bvMat,                             # Breeding values
+      dd = ddMat,                             # Dominance deviations
+      genicVarA = genicVarA,                  # Additive genic variance
+      varA = popVar(matrix(bvMat))[1,1],      # Additive genetic variance
+      genicVarD = genicVarD,                  # Dominance genic variance
+      varD = popVar(matrix(ddMat))[1,1],      # Dominance genetic variance
+      varG = popVar(matrix(gv_t))[1,1],       # Total genetic variance
+  # genicVarA2 = genicVarA2,                # Additive genic variance (HWE)
+  # genicVarD2 = genicVarD2,                # Dominance genic variance (HWE)
+      mu = mean(gv_t + interceptPop) ,                    # Population mean
+  # mu_HWE = mu_HWE + intercept,            # Population mean under HWE
+      gv_a = gv_a,                            # Additive genetic values
+      gv_d = gv_d,                            # Dominance genetic values
+      gv_mu = interceptPop,                      # Intercept
+      alpha = alpha                          # Allele substitution effects
+  # alpha_HW = alpha_HW                     # Allele substitution effects (HWE)
+    )
+  } else {
+    result = list(
+      gv = gv_a + interceptPop,
+      bv = bvMat,
+      genicVarA = genicVarA,
+      # genicVarA2 = genicVarA2,
+      mu = mean(gv_a) + interceptPop,
+      # mu_HWE = mu_HWE + intercept,
+      gv_a = gv_a,
+      gv_mu = interceptPop,
+      alpha = alpha
+      # alpha_HW = alpha_HW
+    )
+  }
+  
+  return(result)
+}
+
+#' @title Summarize genetic parameters across populations
+#'
+#' @description
+#' Computes trait-wise population summaries of genetic values and related
+#' variance components for a \code{\link{MultiPop-class}} object.
+#' This is a prototype implementation intended for development and feedback.
+#'
+#' @param multiPop an object of \code{\link{MultiPop-class}}.
+#' @param FUN function used to summarize values within each population
+#'   (e.g. \code{mean}, \code{sum}).
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#'   \code{NULL}, the function uses the object named \code{SP} from the
+#'   global environment.
+#' @param nThreads number of threads to use if OpenMP is available.
+#'   If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... additional arguments passed to \code{FUN}.
+#'
+#' @return
+#' A list containing trait-level and population-level summaries, including:
+#' \itemize{
+#'   \item \code{varA}, \code{varD}, \code{varAA}, \code{varG}
+#'   \item \code{mu}
+#'   \item \code{gv}, \code{bv}, \code{dd}, \code{aa}
+#'   \item \code{gv_mu}, \code{gv_a}, \code{gv_d}, \code{gv_aa}
+#'   \item \code{alpha}
+#'   \item selected covariance and genic-variance components currently available
+#' }
+#'
+#' @details
+#' This function currently wraps \code{calcGenParamPop_R} trait-by-trait.
+#' Behavior for non-linear summary functions depends on \code{FUN} and should
+#' be interpreted with care.
+#'
+#' @export
+genParamPop = function(multiPop, FUN = mean, simParam = NULL, nThreads = NULL, ...){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.null(nThreads)){
+    nThreads = simParam$nThreads
+  }else{
+    nThreads = as.integer(nThreads)
+  }
+
+  nPop = length(multiPop)
+  nTraits = simParam$nTraits
+  traitNames = simParam$traitNames
+
+  # Blank nPop multiPop nTrait matrices
+  gv = matrix(NA_real_, nrow=nPop, ncol=nTraits)
+  colnames(gv) = traitNames
+  bv = dd = aa = gv_a = gv_d = gv_aa = gv_mu = gv
+
+  # Blank nTrait vectors
+  genicVarA = rep(NA_real_, nTraits)
+  names(genicVarA) = traitNames
+  genicVarD = genicVarAA = covA_HW = covD_HW = covAA_HW =
+    covG_HW = mu = mu_HW = covAAA_L = covDAA_L =
+    covAD_L = genicVarA
+
+  # Average effect of an allele substitution
+  alpha = vector("list", length=nTraits)
+  names(alpha) = traitNames
+  # alpha_HW = alpha
+
+  #Loop through trait calculations
+  for(i in seq_len(nTraits)){
+    trait = simParam$traits[[i]]
+    tmp = calcGenParamPop_R(multiPop = multiPop, trait = trait, FUN = FUN, simParam = simParam, ...)
+    # genicVarA[i] = tmp$genicVarA2
+    # covA_HW[i] = tmp$genicVarA-tmp$genicVarA2
+    gv[,i] = tmp$gv
+    bv[,i] = tmp$bv
+    mu[i] = tmp$mu
+    # mu_HW[i] = tmp$mu_HWE
+    gv_a[,i] = tmp$gv_a
+    gv_mu[,i] = tmp$gv_mu
+    if(.hasSlot(trait,"domEff")){
+      # genicVarD[i] = tmp$genicVarD2
+      # covD_HW[i] = tmp$genicVarD-tmp$genicVarD2
+      dd[,i] = tmp$dd
+      gv_d[,i] = tmp$gv_d
+    }else{
+      # genicVarD[i] = 0
+      # covD_HW[i] = 0
+      dd[,i] = rep(0,nPop)
+      gv_d[,i] = rep(0,nPop)
+    }
+    if(.hasSlot(trait,"epiEff")){
+      genicVarAA[i] = tmp$genicVarAA2
+      covAA_HW[i] = tmp$genicVarAA-tmp$genicVarAA2
+      aa[,i] = tmp$aa
+      gv_aa[,i] = tmp$gv_aa
+    }else{
+      genicVarAA[i] = 0
+      covAA_HW[i] = 0
+      aa[,i] = rep(0,nPop)
+      gv_aa[,i] = rep(0,nPop)
+    }
+    if(nPop==1){
+      covAD_L[i] = 0
+      covAAA_L[i] = 0
+      covDAA_L[i] = 0
+    } else {
+      covAD_L[i] = popVar(cbind(bv[,i],dd[,i]))[1,2]
+      covAAA_L[i] = popVar(cbind(bv[,i],aa[,i]))[1,2]
+      covDAA_L[i] = popVar(cbind(dd[,i],aa[,i]))[1,2]
+    }
+    alpha[[i]] = tmp$alpha
+    # alpha_HW[[i]] = tmp$alpha_HW
+  }
+
+  varA = popVar(bv)
+  rownames(varA) = colnames(varA) = traitNames
+
+  varD = popVar(dd)
+  rownames(varD) = colnames(varD) = traitNames
+
+  varAA = popVar(aa)
+  rownames(varAA) = colnames(varAA) = traitNames
+
+  varG = popVar(gv)
+  rownames(varG) = colnames(varG) = traitNames
+
+  # genicVarG = genicVarA + genicVarD + genicVarAA
+  # covG_HW = covA_HW + covD_HW + covAA_HW
+
+  output = list(varA=varA,
+                varD=varD,
+                varAA=varAA,
+                varG=varG,
+                # genicVarA=genicVarA,
+                # genicVarD=genicVarD,
+                genicVarAA=genicVarAA,
+                # genicVarG=genicVarG,
+                # # covA_HW=covA_HW,
+                # covD_HW=covD_HW,
+                covAA_HW=covAA_HW,
+                covG_HW=covG_HW,
+                # covA_L=diag(varA)-genicVarA-covA_HW,
+                # covD_L=diag(varD)-genicVarD-covD_HW,
+                covAA_L=diag(varAA)-genicVarAA-covAA_HW,
+                covAD_L=covAD_L,
+                covAAA_L=covAAA_L,
+                covDAA_L=covDAA_L,
+                # covG_L=diag(varG)-genicVarG-covG_HW,
+                mu=mu,
+                # mu_HW=mu_HW,
+                gv=gv,
+                bv=bv,
+                dd=dd,
+                aa=aa,
+                gv_mu=gv_mu,
+                gv_a=gv_a,
+                gv_d=gv_d,
+                gv_aa=gv_aa,
+                alpha=alpha#,
+                # alpha_HW=alpha_HW
+                )
+  return(output)
+}
