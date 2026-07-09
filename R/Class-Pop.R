@@ -1044,7 +1044,6 @@ setValidity("MultiPop",function(object){
   errors = character()
     # Check that all populations are valid
     for(i in seq_len(length(object@pops))){
-      # TODO: Validate names before returning multiPops
       if(!validObject(object@pops[[i]]) &
          (is(object@pops[[i]], "Pop") |
                 is(object@pops[[i]],"MultiPop"))){

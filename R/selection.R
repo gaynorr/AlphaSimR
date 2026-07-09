@@ -97,9 +97,10 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #'   as its first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
-#'   \code{\link{flattenMultiPop}}. The output matrices from each \code{Pop}
-#'   are combined with \code{\link{rbind}}, and a \code{"source"} attribute
-#'   is added to indicate the origin of each row.
+#'   \code{\link{flattenMultiPop}}. The corresponding output matrices from 
+#'   each \code{Pop} are combined with \code{\link{rbind}}, and a
+#'   \code{"source"} attribute is added to indicate the origin of each row
+#'   (see Details).
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 #'   Ignored if \code{simplify=FALSE}.
@@ -110,9 +111,14 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @details
 #' The \code{level} argument controls the depth of nesting retained when
 #' \code{simplify=TRUE}. If \code{level} exceeds the depth of \code{x}, the
-#' output structure is returned unchanged. The \code{"source"} attribute is
-#' a data frame with columns \code{level1}, \code{level2}, etc., indicating
-#' the origin of each row in the simplified output.
+#' output structure is returned unchanged.
+#' 
+#' When the output is simplified (\code{simplify=TRUE}), a
+#' \code{"source"} attribute is attached to the resulting matrix. This
+#' attribute is a data frame with columns \code{level1}, \code{level2}, etc.,
+#' that record the origin of each row. The values correspond to the name or
+#' index of the population from which the row was derived at each nesting
+#' level.
 #'
 #' @return If \code{x} is a \code{Pop}, returns the value of \code{FUN(x, ...)}.
 #' Otherwise returns a list (or a simplified matrix) of results, optionally with

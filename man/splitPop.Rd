@@ -47,10 +47,10 @@ The \code{by} argument can take several forms:  \cr
 The \code{level} argument is only relevant when \code{x} is a
 \code{\link{MultiPop-class}} object. If \code{level = Inf}, all
 \code{\link{Pop-class}} objects contained in \code{x} are split according
-to \code{by}. If \code{level = c(a, b)}, only \code{Pop-class} objects at
-nesting levels \code{a} and \code{b} (with the top level being \code{1}) are
-split. An error is raised if any requested level exceeds the maximum nesting
-depth of \code{x}.
+to \code{by}. If, for example, \code{level=c(1,3)}, only
+\code{Pop-class} objects at nesting levels \code{1} and \code{3} are
+split, where the top level is defined as level \code{1}. An error is raised
+if any specified level exceeds the maximum nesting depth of \code{x}.
 }
 \examples{
 # Create founder haplotypes
