@@ -85,36 +85,84 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
   return(response)
 }
 
-#' Calculate summary response from a population
+#' @title Calculate values from Pop or MultiPop objects
 #'
-#' Calculates a summary response from a \code{\link{Pop-class}} or
-#' \code{\link{MultiPop-class}} object. For \code{MultiPop} objects,
-#' the function is applied recursively to all populations.
+#' @description
+#' Apply a summary function to each \code{\link{Pop-class}} in a
+#' \code{\link{MultiPop-class}} and optionally simplify the output to a
+#' requested level of nesting.
 #'
-#' @param x a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
-#' @param trait the trait for selection. Either a number indicating
-#'   a single trait or a character for a trait name, or a function
-#'   returning a vector of values.
-#' @param use the selection criterion. Either a character ("rand", "gv",
-#'   "ebv", or "pheno") or a custom function.
-#' @param FUN a summary function to be applied to the vector or matrix of
-#'   values. Default is \code{mean}.
-#' @param FUN.ARGS a list of additional arguments passed to \code{FUN}.
-#' @param returnList logical to return a list (when \code{TRUE}) 
-#'   or a vector (when \code{FALSE} and the return object can be 
-#'   simplified to a vector).
-#' @param simParam an object of \code{\link{SimParam}}.
-#' @param ... additional arguments passed to \code{trait} or \code{use}
-#'   when they are custom functions.
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
+#'   as its first argument.
+#' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
+#'   the \code{MultiPop} in \code{x} to the requested \code{level} using
+#'   \code{\link{flattenMultiPop}}. The corresponding output matrices from 
+#'   each \code{Pop} are combined with \code{\link{rbind}}, and a
+#'   \code{"source"} attribute is added to indicate the origin of each row
+#'   (see Details).
+#' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
+#'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
+#'   Ignored if \code{simplify=FALSE}.
+#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
+#'   the function uses the object named \code{SP} from the global environment.
+#' @param ... Additional arguments passed to \code{FUN}.
 #'
-#' @keywords internal
+#' @details
+#' The \code{level} argument controls the depth of nesting retained when
+#' \code{simplify=TRUE}. If \code{level} exceeds the depth of \code{x}, the
+#' output structure is returned unchanged.
+#' 
+#' When the output is simplified (\code{simplify=TRUE}), a
+#' \code{"source"} attribute is attached to the resulting matrix. This
+#' attribute is a data frame with columns \code{level1}, \code{level2}, etc.,
+#' that record the origin of each row. The values correspond to the name or
+#' index of the population from which the row was derived at each nesting
+#' level.
+#'
+#' @return If \code{x} is a \code{Pop}, returns the value of \code{FUN(x, ...)}.
+#' Otherwise returns a list (or a simplified matrix) of results, optionally with
+#' a \code{"source"} attribute.
+#'
+#' @seealso \code{\link{MultiPop-class}}, \code{\link{flattenMultiPop}}
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=6, nChr=1, segSites=10)
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
+#' SP$setVarE(h2 = c(0.6, 0.4))
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+#'
+#' # Create a nested MultiPop
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#'
+#' # Calculate phenotypes at different levels
+#' calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 2)
+#' calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 1)
+#'
+#' # Custom function returning a summary matrix
+#' calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)),
+#'              simplify = TRUE, level = 1)
+#'
+#' @export
 calcPopValue = function(
   x,
-  trait = 1,
-  use = 'pheno',
-  FUN = mean,
-  FUN.ARGS = list(),
-  returnList = FALSE,
+  FUN,
+  simplify = FALSE,
+  level = 1,
   simParam = NULL,
   ...
 ) {
@@ -122,46 +170,88 @@ calcPopValue = function(
     simParam = get("SP", envir = .GlobalEnv)
   }
 
-  if (isMultiPop(x)) {
-    popValueList = lapply(x@pops, function(x) {
-      calcPopValue(
-        x,
-        trait = trait,
-        use = use,
-        FUN = FUN,
-        FUN.ARGS = FUN.ARGS,
-        returnList = returnList,
-        simParam = simParam,
-        ...
-      )
-    })
+  dots = list(...)
+  .level_offset = dots[[".level_offset"]]
+  if (is.null(.level_offset)) {
+    .level_offset = 0L
+  }
+  dots[[".level_offset"]] = NULL
 
-    if (returnList || any(sapply(popValueList, length) != 1)) {
-      return(popValueList)
-    } else {
-      popValue = do.call('c', popValueList)
-      return(unname(popValue))
-    }
-  } else if (isPop(x)) {
-    # TODO: Update support for use='bv' with genParamPop()
-    if (is.character(use)) {
-      if (use == 'bv') {
-        stop("use='bv' is not currently supported for populations")
-      }
-    }
-    response = getResponse(
-      x,
-      trait = trait,
-      use = use,
-      simParam = simParam,
-      ...
-    )
-    if (is.matrix(response)) {
-      stopifnot(ncol(response) == 1)
-    }
-    FUN.ARGS = append(FUN.ARGS, list(response), after = 0)
+  if (isPop(x)) {
+    FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
+
+  if (!isMultiPop(x)) {
+    stop("`x` must be a Pop or MultiPop object.")
+  }
+
+  source = NULL
+  if (simplify && level == 1L) {
+    source = .collectLeafPaths(x)
+  }
+
+  if (simplify) {
+    x = flattenMultiPop(x, level = level)
+  }
+
+  popValueList = lapply(
+    x@pops,
+    function(pop) {
+      FUN.ARGS = c(
+        list(
+          pop,
+          FUN = FUN,
+          simplify = simplify,
+          level = level - 1L,
+          simParam = simParam,
+          .level_offset = .level_offset + 1L
+        ),
+        dots
+      )
+      do.call(calcPopValue, FUN.ARGS)
+    }
+  )
+
+  if (simplify && level == 1L) {
+    nRows = vapply(
+      popValueList,
+      function(v) {
+        if (is.null(v)) {
+          return(0L)
+        }
+        if (is.data.frame(v) || is.matrix(v) || is.array(v)) {
+          return(dim(v)[1]) # number of rows
+        }
+        if (is.atomic(v) && is.null(dim(v))) {
+          return(1L) # vectors are one row
+        }
+        return(NA_integer_)
+      },
+      integer(1L)
+    )
+    if (any(is.na(nRows))) {
+      warning(
+        "Some values returned by FUN have unsupported types for simplification. Returning list output.",
+        call. = FALSE
+      )
+      return(popValueList)
+    }
+
+    popValue = do.call(rbind, popValueList)
+    attr(popValue, "source") = .formatCalcPopSource(
+      paths = source,
+      nRows = nRows,
+      level_offset = .level_offset
+    )
+    return(popValue)
+  }
+
+  if (!is.null(names(x@pops))) {
+    names(popValueList) = names(x@pops)
+  }
+
+  return(popValueList)
 }
 
 #' Identify candidate individuals
@@ -829,6 +919,7 @@ selectPop = function(
   FUN = mean,
   FUN.ARGS = list()
 ) {
+
   stopifnot(nPop >= 0)
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
@@ -839,17 +930,22 @@ selectPop = function(
   }
   stopifnot(isMultiPop(x))
 
-  multi = which(sapply(unname(x@pops), isMultiPop))
+  if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
+        level < 1 || level != as.integer(level)) {
+      stop("`level` must be a positive integer")
+    }
 
-  if (level > 1 & identical(multi, integer(0))) {
-    stop(paste(
-      "The MultiPop object does not contain other MultiPop objects",
-      "at this level. You may want to decrease the value of 'level'"
-    ))
+  md = .depthMultiPop(x)
+  if (md < level) {
+    stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
   }
 
-  while (level > 1) {
-    level = level - 1
+  is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
+  is_pop = vapply(unname(x@pops), isPop, logical(1L))
+  multi = which(is_multi)
+
+  while (level > 1L) {
+    level = level - 1L
     for (i in multi) {
       x@pops[[i]] = selectPop(
         x = x[[i]],
@@ -864,8 +960,7 @@ selectPop = function(
         ...
       )
     }
-    multiPop = do.call(newMultiPop, x@pops)
-    return(multiPop)
+    return(x)
   }
 
   if (!identical(multi, integer(0))) {
@@ -878,7 +973,7 @@ selectPop = function(
     ))
   }
 
-  eligible = which(sapply(x@pops, isPop))
+  eligible = which(is_pop)
 
   if (length(eligible) < nPop) {
     nPop = length(eligible)
@@ -889,19 +984,96 @@ selectPop = function(
     )
   }
 
-  popValues = calcPopValue(
+  if (is.character(use) && use == 'bv') {
+    stop("use='bv' is not currently supported for populations")
+  }
+
+  response = calcPopValue(
     x,
-    trait = trait,
-    use = use,
-    FUN = FUN,
-    returnList = FALSE,
-    FUN.ARGS = FUN.ARGS,
-    simParam = simParam,
-    ...
+    FUN = function(pop) {
+      getResponse(pop = pop, trait = trait, use = use, simParam = simParam, ...)
+    },
+    simplify = FALSE,
+    level = 1L,
+    simParam = simParam
   )
+
+  popValues = vapply(response, function(res) {
+    do.call(FUN, c(list(res), FUN.ARGS))
+  }, numeric(1L))
 
   take = order(popValues, decreasing = selectTop)
   take = take[take %in% eligible]
 
-  return(x[take[0:nPop]])
+  return(x[take[seq_len(nPop)]])
+}
+
+#' Helper function to collect leaf paths in a \code{MultiPop}
+#'
+#' @param x \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param path Character vector of labels representing the current path.
+#'
+#' @keywords internal
+.collectLeafPaths = function(x, path = list()) {
+  if (isPop(x)) {
+    return(list(path))
+  }
+  stopifnot(isMultiPop(x))
+
+  out = list()
+  nm = names(x@pops)
+
+  for (i in seq_along(x@pops)) {
+    child = x@pops[[i]]
+    if (!is.null(nm) && length(nm) >= i && !is.na(nm[i]) && nzchar(nm[i])) {
+      label = nm[i]
+    } else {
+      label = i
+    }
+    childPath = c(path, list(label))
+    out = c(out, .collectLeafPaths(child, path = childPath))
+  }
+
+  return(out)
+}
+
+#' Helper function to format the source attribute for \code{calcPopValue}
+#'
+#' @param paths List of character vectors representing leaf paths.
+#' @param nRows Vector of row counts for each path.
+#' @param level_offset Integer scalar used to label source levels.
+#'
+#' @keywords internal
+.formatCalcPopSource = function(paths, nRows, level_offset = 0L) {
+  if (length(paths) == 0L) {
+    return(NULL)
+  }
+
+  maxDepth = max(lengths(paths))
+  pathList = lapply(paths, function(p) {
+    pad = rep(list(NA), maxDepth - length(p))
+    c(p, pad)
+  })
+
+  pathDf = data.frame(sapply(pathList, `[[`, 1))
+  for (i in seq_len(maxDepth)[-1]) {
+    pathDf = cbind(pathDf, sapply(pathList, `[[`, i))
+  }
+  colnames(pathDf) = paste0("level", level_offset + seq_len(maxDepth))
+
+  for (j in seq_len(ncol(pathDf))) {
+    col = pathDf[[j]]
+    first = col[!is.na(col)][1]
+    if (!is.null(first) && is.numeric(first)) {
+      pathDf[[j]] = as.integer(col)
+    } else {
+      pathDf[[j]] = as.character(col)
+    }
+  }
+
+  idx = rep(seq_along(nRows), nRows)
+  pathDf = pathDf[idx, , drop = FALSE]
+  rownames(pathDf) = NULL
+
+  return(pathDf)
 }

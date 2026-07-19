@@ -35,6 +35,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Chris Gaynor \email{gaynor.robert@hotmail.com} (\href{https://orcid.org/0000-0003-0558-6656}{ORCID})
 
+Authors:
+\itemize{
+  \item Chris Gaynor \email{gaynor.robert@hotmail.com} (\href{https://orcid.org/0000-0003-0558-6656}{ORCID})
+}
+
 Other contributors:
 \itemize{
   \item Gregor Gorjanc (\href{https://orcid.org/0000-0001-8008-2787}{ORCID}) [contributor]

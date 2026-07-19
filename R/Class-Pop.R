@@ -1076,7 +1076,7 @@ setMethod("show",
               indexLabel = paste0("[[", idx, "]] ")
 
               # Dont print name label if it's empty
-              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ")) {
+              if (nameLabel %in% c(" \"NA\" - ", " \"\" - ", NA_character_)) {
                 nameLabel = ""
               }
               
@@ -1433,6 +1433,7 @@ newEmptyMultiPop = function(){
 #'
 #' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' # Create population
 #' pop = newPop(founderPop, simParam = SP)
@@ -1458,6 +1459,8 @@ newEmptyMultiPop = function(){
 #'
 #' @export
 unnameMultiPop = function(x, level = Inf) {
+  stopifnot(isMultiPop(x))
+  
   # Get max depth of nesting in MultiPop
   md = .depthMultiPop(x)
 
