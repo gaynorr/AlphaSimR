@@ -284,6 +284,8 @@ getFam = function(pop,famType){
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -412,6 +414,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -529,6 +533,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -644,6 +650,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #' or \code{\link{MultiPop-class}}
+#'
+#' @family mating functions
+#' @family selection functions
 #'
 #' @examples
 #' #Create founder haplotypes

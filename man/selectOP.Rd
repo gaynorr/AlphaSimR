@@ -89,3 +89,25 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = selectOP(pop, nInd=3, nSeeds=10, probSelf=0.5, simParam=SP)
 
 }
+\seealso{
+Other mating functions: 
+\code{\link{hybridCross}()},
+\code{\link{makeCross}()},
+\code{\link{makeCross2}()},
+\code{\link{makeDH}()},
+\code{\link{pedigreeCross}()},
+\code{\link{randCross}()},
+\code{\link{randCross2}()},
+\code{\link{selectCross}()},
+\code{\link{self}()},
+\code{\link{setPhenoGCA}()},
+\code{\link{setPhenoProgTest}()}
+
+Other selection functions: 
+\code{\link{selectCross}()},
+\code{\link{selectFam}()},
+\code{\link{selectInd}()},
+\code{\link{selectWithinFam}()}
+}
+\concept{mating functions}
+\concept{selection functions}

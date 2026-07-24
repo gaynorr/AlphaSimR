@@ -21,6 +21,8 @@
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @family mating functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
@@ -266,9 +268,10 @@ calcGCA = function(pop,use="pheno"){
 #' @param ... additional arguments passed to the \code{finalizePheno}
 #' function in simParam
 #'
-#'
 #' @return Returns an object of \code{\link{Pop-class}} or
 #' a matrix if onlyPheno=TRUE
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -394,6 +397,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #'
 #' @return Returns an object of \code{\link{Pop-class}} or
 #' a matrix if onlyPheno=TRUE
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes

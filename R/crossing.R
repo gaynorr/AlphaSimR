@@ -17,6 +17,8 @@
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#' 
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -148,6 +150,8 @@ makeCross = function(pop, crossPlan, nProgeny=1,
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
+#' @family mating functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -277,6 +281,9 @@ randCross = function(pop, nCrosses, nProgeny=1,
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
+#' @family mating functions
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -354,6 +361,8 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -492,6 +501,8 @@ makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
 #'
+#' @family mating functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -603,6 +614,8 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -736,6 +749,8 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -924,6 +939,8 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' supplied pedigree are matched against founderNames. If matchID
 #' is FALSE, founder individuals in the user supplied pedigree are
 #' randomly sampled from founderPop.
+#'
+#' @family mating functions
 #'
 #' @examples
 #' #Create founder haplotypes

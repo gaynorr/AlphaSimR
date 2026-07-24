@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9003
+# AlphaSimR 2.1.0.9004
 
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 
@@ -45,6 +45,8 @@
 * Fixed a reproducibility bug in `runMacs()` and `runMacs2()`: `set.seed()` can now reproduce MaCS founder simulations, including when chromosomes are simulated in parallel with OpenMP. This is an internal change not visible to users, but will enable visible reproducibility.
 
 * Fixed a bug in `getGvE` with multiple traits.
+
+* Added additional structure to help documents so that related functions will be shown in the "see also" section.
 
 # AlphaSimR 2.1.0
 

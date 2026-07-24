@@ -1,4 +1,3 @@
-
 #' @title Simulation parameters
 #'
 #' @description

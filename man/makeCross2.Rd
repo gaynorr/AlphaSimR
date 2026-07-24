@@ -61,3 +61,18 @@ getPed(pop2)
 pop3 = makeCross2(pop, pop, crossPlan, nProgeny=c(1,2),simParam=SP)
 getPed(pop3)
 }
+\seealso{
+Other mating functions: 
+\code{\link{hybridCross}()},
+\code{\link{makeCross}()},
+\code{\link{makeDH}()},
+\code{\link{pedigreeCross}()},
+\code{\link{randCross}()},
+\code{\link{randCross2}()},
+\code{\link{selectCross}()},
+\code{\link{selectOP}()},
+\code{\link{self}()},
+\code{\link{setPhenoGCA}()},
+\code{\link{setPhenoProgTest}()}
+}
+\concept{mating functions}

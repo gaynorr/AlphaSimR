@@ -92,3 +92,25 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = selectCross(pop, nInd=4, nCrosses=8, simParam=SP)
 
 }
+\seealso{
+Other mating functions: 
+\code{\link{hybridCross}()},
+\code{\link{makeCross}()},
+\code{\link{makeCross2}()},
+\code{\link{makeDH}()},
+\code{\link{pedigreeCross}()},
+\code{\link{randCross}()},
+\code{\link{randCross2}()},
+\code{\link{selectOP}()},
+\code{\link{self}()},
+\code{\link{setPhenoGCA}()},
+\code{\link{setPhenoProgTest}()}
+
+Other selection functions: 
+\code{\link{selectFam}()},
+\code{\link{selectInd}()},
+\code{\link{selectOP}()},
+\code{\link{selectWithinFam}()}
+}
+\concept{mating functions}
+\concept{selection functions}

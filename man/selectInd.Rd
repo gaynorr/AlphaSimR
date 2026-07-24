@@ -111,3 +111,11 @@ pop6 = selectInd(pop, 5, trait=trtFunc, use=useFunc2, simParam=SP)
 pop6@id
 
 }
+\seealso{
+Other selection functions: 
+\code{\link{selectCross}()},
+\code{\link{selectFam}()},
+\code{\link{selectOP}()},
+\code{\link{selectWithinFam}()}
+}
+\concept{selection functions}

@@ -53,3 +53,18 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = self(pop, simParam=SP)
 
 }
+\seealso{
+Other mating functions: 
+\code{\link{hybridCross}()},
+\code{\link{makeCross}()},
+\code{\link{makeCross2}()},
+\code{\link{makeDH}()},
+\code{\link{pedigreeCross}()},
+\code{\link{randCross}()},
+\code{\link{randCross2}()},
+\code{\link{selectCross}()},
+\code{\link{selectOP}()},
+\code{\link{setPhenoGCA}()},
+\code{\link{setPhenoProgTest}()}
+}
+\concept{mating functions}

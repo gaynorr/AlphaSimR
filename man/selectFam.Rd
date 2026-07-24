@@ -94,3 +94,11 @@ pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
 pop3 = selectFam(pop2, 2, simParam=SP)
 
 }
+\seealso{
+Other selection functions: 
+\code{\link{selectCross}()},
+\code{\link{selectInd}()},
+\code{\link{selectOP}()},
+\code{\link{selectWithinFam}()}
+}
+\concept{selection functions}

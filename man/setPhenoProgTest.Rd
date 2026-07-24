@@ -100,3 +100,18 @@ pop2 = newPop(founderPop[6:10], simParam=SP)
 pop3 = setPhenoProgTest(pop1, pop2, use="gv", simParam=SP)
 
 }
+\seealso{
+Other mating functions: 
+\code{\link{hybridCross}()},
+\code{\link{makeCross}()},
+\code{\link{makeCross2}()},
+\code{\link{makeDH}()},
+\code{\link{pedigreeCross}()},
+\code{\link{randCross}()},
+\code{\link{randCross2}()},
+\code{\link{selectCross}()},
+\code{\link{selectOP}()},
+\code{\link{self}()},
+\code{\link{setPhenoGCA}()}
+}
+\concept{mating functions}
