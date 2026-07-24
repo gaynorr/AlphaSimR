@@ -95,10 +95,10 @@ pop3 = selectFam(pop2, 2, simParam=SP)
 
 }
 \seealso{
-Other selection functions: 
-\code{\link{selectCross}()},
-\code{\link{selectInd}()},
-\code{\link{selectOP}()},
-\code{\link{selectWithinFam}()}
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=selectWithinFam]{selectWithinFam()}}
 }
 \concept{selection functions}

@@ -84,17 +84,17 @@ pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
 }
 \seealso{
-Other mating functions: 
-\code{\link{hybridCross}()},
-\code{\link{makeCross}()},
-\code{\link{makeCross2}()},
-\code{\link{makeDH}()},
-\code{\link{randCross}()},
-\code{\link{randCross2}()},
-\code{\link{selectCross}()},
-\code{\link{selectOP}()},
-\code{\link{self}()},
-\code{\link{setPhenoGCA}()},
-\code{\link{setPhenoProgTest}()}
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
 }
 \concept{mating functions}

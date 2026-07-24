@@ -53,17 +53,17 @@ pop3 = makeCross(pop, crossPlan, nProgeny=c(1,2),simParam=SP)
 getPed(pop3)
 }
 \seealso{
-Other mating functions: 
-\code{\link{hybridCross}()},
-\code{\link{makeCross2}()},
-\code{\link{makeDH}()},
-\code{\link{pedigreeCross}()},
-\code{\link{randCross}()},
-\code{\link{randCross2}()},
-\code{\link{selectCross}()},
-\code{\link{selectOP}()},
-\code{\link{self}()},
-\code{\link{setPhenoGCA}()},
-\code{\link{setPhenoProgTest}()}
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
 }
 \concept{mating functions}

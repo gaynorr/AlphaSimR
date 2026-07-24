@@ -112,10 +112,10 @@ pop6@id
 
 }
 \seealso{
-Other selection functions: 
-\code{\link{selectCross}()},
-\code{\link{selectFam}()},
-\code{\link{selectOP}()},
-\code{\link{selectWithinFam}()}
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectFam]{selectFam()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=selectWithinFam]{selectWithinFam()}}
 }
 \concept{selection functions}

@@ -17,7 +17,7 @@ new trait values.
 \examples{
 
 ## ------------------------------------------------
-## Method `SimParam$new`
+## Method `SimParam$new()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -27,7 +27,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
 
 ## ------------------------------------------------
-## Method `SimParam$setTrackPed`
+## Method `SimParam$setTrackPed()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -39,7 +39,7 @@ SP = SimParam$new(founderPop)
 SP$setTrackPed(TRUE)
 
 ## ------------------------------------------------
-## Method `SimParam$setTrackRec`
+## Method `SimParam$setTrackRec()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -51,7 +51,7 @@ SP = SimParam$new(founderPop)
 SP$setTrackRec(TRUE)
 
 ## ------------------------------------------------
-## Method `SimParam$resetPed`
+## Method `SimParam$resetPed()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -71,7 +71,7 @@ pop2 = newPop(founderPop, simParam=SP)
 pop2@id # 1:10
 
 ## ------------------------------------------------
-## Method `SimParam$restrSegSites`
+## Method `SimParam$restrSegSites()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -83,7 +83,7 @@ SP = SimParam$new(founderPop)
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 
 ## ------------------------------------------------
-## Method `SimParam$setSexes`
+## Method `SimParam$setSexes()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -95,7 +95,7 @@ SP = SimParam$new(founderPop)
 SP$setSexes("yes_sys")
 
 ## ------------------------------------------------
-## Method `SimParam$addSnpChip`
+## Method `SimParam$addSnpChip()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -107,7 +107,7 @@ SP = SimParam$new(founderPop)
 SP$addSnpChip(10)
 
 ## ------------------------------------------------
-## Method `SimParam$addSnpChipByName`
+## Method `SimParam$addSnpChipByName()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -119,7 +119,7 @@ SP = SimParam$new(founderPop)
 SP$addSnpChipByName(c("1_1","1_3"))
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitA`
+## Method `SimParam$addTraitA()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -131,7 +131,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitAD`
+## Method `SimParam$addTraitAD()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -143,7 +143,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitAD(10, meanDD=0.5)
 
 ## ------------------------------------------------
-## Method `SimParam$altAddTraitAD`
+## Method `SimParam$altAddTraitAD()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -155,7 +155,7 @@ SP = SimParam$new(founderPop)
 SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitAG`
+## Method `SimParam$addTraitAG()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -167,7 +167,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitAG(10, varGxE=2)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitADG`
+## Method `SimParam$addTraitADG()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -179,7 +179,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitAE`
+## Method `SimParam$addTraitAE()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -191,7 +191,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitAE(10, relAA=0.1)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitADE`
+## Method `SimParam$addTraitADE()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -203,7 +203,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitADE(10)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitAEG`
+## Method `SimParam$addTraitAEG()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -215,7 +215,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitAEG(10, varGxE=2)
 
 ## ------------------------------------------------
-## Method `SimParam$addTraitADEG`
+## Method `SimParam$addTraitADEG()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -227,7 +227,7 @@ SP = SimParam$new(founderPop)
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
-## Method `SimParam$setVarE`
+## Method `SimParam$setVarE()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -240,7 +240,7 @@ SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 
 ## ------------------------------------------------
-## Method `SimParam$setCorE`
+## Method `SimParam$setCorE()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -255,7 +255,7 @@ E = 0.5*diag(2)+0.5 #Positively correlated error
 SP$setCorE(E)
 
 ## ------------------------------------------------
-## Method `SimParam$rescaleTraits`
+## Method `SimParam$rescaleTraits()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -277,7 +277,7 @@ pop = resetPop(pop, simParam=SP)
 meanG(pop)
 
 ## ------------------------------------------------
-## Method `SimParam$setRecombRatio`
+## Method `SimParam$setRecombRatio()`
 ## ------------------------------------------------
 
 #Create founder haplotypes
@@ -289,17 +289,17 @@ SP = SimParam$new(founderPop)
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{snpChips}}{list of SNP chips}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{snpChips}}{list of SNP chips}
 
-\item{\code{invalidQtl}}{list of segregating sites that aren't valid QTL}
+    \item{\code{invalidQtl}}{list of segregating sites that aren't valid QTL}
 
-\item{\code{invalidSnp}}{list of segregating sites that aren't valid SNP}
+    \item{\code{invalidSnp}}{list of segregating sites that aren't valid SNP}
 
-\item{\code{founderPop}}{founder population used for variance scaling}
+    \item{\code{founderPop}}{founder population used for variance scaling}
 
-\item{\code{finalizePop}}{function applied to newly created populations.
+    \item{\code{finalizePop}}{function applied to newly created populations.
 It is run as the last step of creating a new population and
 provides a way to automatically modify populations.
 The function must satisfy these four requirements:
@@ -311,10 +311,10 @@ The function must satisfy these four requirements:
 4) The return is a \code{\link{Pop-class}} object.
 See \code{\link{asCategorical}} for an example.}
 
-\item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
+    \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
 return an empty population with a warning instead of an error.}
 
-\item{\code{finalizePheno}}{function applied to newly generated phenotype values.
+    \item{\code{finalizePheno}}{function applied to newly generated phenotype values.
 It is run as the last step of generating new phenotype values and
 provides a way to automatically modify phenotype values.
 While \code{finalizePop} function can be used to a similar effect,
@@ -336,135 +336,135 @@ The function must satisfy these five requirements:
    row order.
 See \code{\link{asCategorical}} for an example.}
 
-\item{\code{v}}{the crossover interference parameter for a gamma model of
+    \item{\code{v}}{the crossover interference parameter for a gamma model of
 recombination. A value of 1 indicates no crossover interference
 (e.g. Haldane mapping function). A value of 2.6 approximates the
 degree of crossover interference implied by the Kosambi mapping
 function. (default is 2.6)}
 
-\item{\code{p}}{the proportion of crossovers coming from a non-interfering
+    \item{\code{p}}{the proportion of crossovers coming from a non-interfering
 pathway. (default is 0)}
 
-\item{\code{quadProb}}{the probability of quadrivalent pairing in an
+    \item{\code{quadProb}}{the probability of quadrivalent pairing in an
 autopolyploid. (default is 0)}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Active bindings}{
-\if{html}{\out{<div class="r6-active-bindings">}}
-\describe{
-\item{\code{nThreads}}{number of threads used with OpenMP (when available).
+  \if{html}{\out{<div class="r6-active-bindings">}}
+  \describe{
+    \item{\code{nThreads}}{number of threads used with OpenMP (when available).
 Assign \code{NULL} to reset to \code{getNumThreads()}.
 See \code{vignette("parallelization", package="AlphaSimR")}
 for setup details.}
 
-\item{\code{traitNames}}{vector of trait names}
+    \item{\code{traitNames}}{vector of trait names}
 
-\item{\code{snpChipNames}}{vector of chip names}
+    \item{\code{snpChipNames}}{vector of chip names}
 
-\item{\code{traits}}{list of traits}
+    \item{\code{traits}}{list of traits}
 
-\item{\code{nChr}}{number of chromosomes}
+    \item{\code{nChr}}{number of chromosomes}
 
-\item{\code{nTraits}}{number of traits}
+    \item{\code{nTraits}}{number of traits}
 
-\item{\code{nSnpChips}}{number of SNP chips}
+    \item{\code{nSnpChips}}{number of SNP chips}
 
-\item{\code{segSites}}{segregating sites per chromosome}
+    \item{\code{segSites}}{segregating sites per chromosome}
 
-\item{\code{sexes}}{sexes used for mating}
+    \item{\code{sexes}}{sexes used for mating}
 
-\item{\code{sepMap}}{are there seperate genetic maps for
+    \item{\code{sepMap}}{are there seperate genetic maps for
 males and females}
 
-\item{\code{genMap}}{list of chromosome genetic maps}
+    \item{\code{genMap}}{list of chromosome genetic maps}
 
-\item{\code{femaleMap}}{list of chromosome genetic maps for
+    \item{\code{femaleMap}}{list of chromosome genetic maps for
 females}
 
-\item{\code{maleMap}}{list of chromosome genetic maps for
+    \item{\code{maleMap}}{list of chromosome genetic maps for
 males}
 
-\item{\code{centromere}}{position of centromeres genetic map}
+    \item{\code{centromere}}{position of centromeres genetic map}
 
-\item{\code{femaleCentromere}}{position of centromeres on female
+    \item{\code{femaleCentromere}}{position of centromeres on female
 genetic map}
 
-\item{\code{maleCentromere}}{position of centromeres on male
+    \item{\code{maleCentromere}}{position of centromeres on male
 genetic map}
 
-\item{\code{lastId}}{last ID number assigned}
+    \item{\code{lastId}}{last ID number assigned}
 
-\item{\code{isTrackPed}}{is pedigree being tracked}
+    \item{\code{isTrackPed}}{is pedigree being tracked}
 
-\item{\code{pedigree}}{pedigree matrix for all individuals}
+    \item{\code{pedigree}}{pedigree matrix for all individuals}
 
-\item{\code{isTrackRec}}{is recombination being tracked}
+    \item{\code{isTrackRec}}{is recombination being tracked}
 
-\item{\code{recHist}}{list of historic recombination events}
+    \item{\code{recHist}}{list of historic recombination events}
 
-\item{\code{haplotypes}}{list of computed IBD haplotypes}
+    \item{\code{haplotypes}}{list of computed IBD haplotypes}
 
-\item{\code{varA}}{additive genetic variance in founderPop}
+    \item{\code{varA}}{additive genetic variance in founderPop}
 
-\item{\code{varG}}{total genetic variance in founderPop}
+    \item{\code{varG}}{total genetic variance in founderPop}
 
-\item{\code{varE}}{default error variance}
+    \item{\code{varE}}{default error variance}
 
-\item{\code{version}}{the version of AlphaSimR used to generate this object}
+    \item{\code{version}}{the version of AlphaSimR used to generate this object}
 
-\item{\code{activeQtl}}{a LociMap representing all active QTL in simulation}
+    \item{\code{activeQtl}}{a LociMap representing all active QTL in simulation}
 
-\item{\code{qtlIndex}}{a list of vectors giving trait specific QTL indices
+    \item{\code{qtlIndex}}{a list of vectors giving trait specific QTL indices
 relative to all active QTL}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-SimParam-new}{\code{SimParam$new()}}
-\item \href{#method-SimParam-setTrackPed}{\code{SimParam$setTrackPed()}}
-\item \href{#method-SimParam-setTrackRec}{\code{SimParam$setTrackRec()}}
-\item \href{#method-SimParam-resetPed}{\code{SimParam$resetPed()}}
-\item \href{#method-SimParam-restrSegSites}{\code{SimParam$restrSegSites()}}
-\item \href{#method-SimParam-setSexes}{\code{SimParam$setSexes()}}
-\item \href{#method-SimParam-setFounderHap}{\code{SimParam$setFounderHap()}}
-\item \href{#method-SimParam-addSnpChip}{\code{SimParam$addSnpChip()}}
-\item \href{#method-SimParam-addSnpChipByName}{\code{SimParam$addSnpChipByName()}}
-\item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
-\item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
-\item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
-\item \href{#method-SimParam-altAddTraitAD}{\code{SimParam$altAddTraitAD()}}
-\item \href{#method-SimParam-addTraitAG}{\code{SimParam$addTraitAG()}}
-\item \href{#method-SimParam-addTraitADG}{\code{SimParam$addTraitADG()}}
-\item \href{#method-SimParam-addTraitAE}{\code{SimParam$addTraitAE()}}
-\item \href{#method-SimParam-addTraitADE}{\code{SimParam$addTraitADE()}}
-\item \href{#method-SimParam-addTraitAEG}{\code{SimParam$addTraitAEG()}}
-\item \href{#method-SimParam-addTraitADEG}{\code{SimParam$addTraitADEG()}}
-\item \href{#method-SimParam-manAddTrait}{\code{SimParam$manAddTrait()}}
-\item \href{#method-SimParam-importTrait}{\code{SimParam$importTrait()}}
-\item \href{#method-SimParam-switchTrait}{\code{SimParam$switchTrait()}}
-\item \href{#method-SimParam-removeTrait}{\code{SimParam$removeTrait()}}
-\item \href{#method-SimParam-setVarE}{\code{SimParam$setVarE()}}
-\item \href{#method-SimParam-setCorE}{\code{SimParam$setCorE()}}
-\item \href{#method-SimParam-rescaleTraits}{\code{SimParam$rescaleTraits()}}
-\item \href{#method-SimParam-setRecombRatio}{\code{SimParam$setRecombRatio()}}
-\item \href{#method-SimParam-switchGenMap}{\code{SimParam$switchGenMap()}}
-\item \href{#method-SimParam-switchFemaleMap}{\code{SimParam$switchFemaleMap()}}
-\item \href{#method-SimParam-switchMaleMap}{\code{SimParam$switchMaleMap()}}
-\item \href{#method-SimParam-addToRec}{\code{SimParam$addToRec()}}
-\item \href{#method-SimParam-ibdHaplo}{\code{SimParam$ibdHaplo()}}
-\item \href{#method-SimParam-updateLastId}{\code{SimParam$updateLastId()}}
-\item \href{#method-SimParam-addToPed}{\code{SimParam$addToPed()}}
-\item \href{#method-SimParam-clone}{\code{SimParam$clone()}}
-}
+  \itemize{
+    \item \href{#method-SimParam-initialize}{\code{SimParam$new()}}
+    \item \href{#method-SimParam-setTrackPed}{\code{SimParam$setTrackPed()}}
+    \item \href{#method-SimParam-setTrackRec}{\code{SimParam$setTrackRec()}}
+    \item \href{#method-SimParam-resetPed}{\code{SimParam$resetPed()}}
+    \item \href{#method-SimParam-restrSegSites}{\code{SimParam$restrSegSites()}}
+    \item \href{#method-SimParam-setSexes}{\code{SimParam$setSexes()}}
+    \item \href{#method-SimParam-setFounderHap}{\code{SimParam$setFounderHap()}}
+    \item \href{#method-SimParam-addSnpChip}{\code{SimParam$addSnpChip()}}
+    \item \href{#method-SimParam-addSnpChipByName}{\code{SimParam$addSnpChipByName()}}
+    \item \href{#method-SimParam-addStructuredSnpChip}{\code{SimParam$addStructuredSnpChip()}}
+    \item \href{#method-SimParam-addTraitA}{\code{SimParam$addTraitA()}}
+    \item \href{#method-SimParam-addTraitAD}{\code{SimParam$addTraitAD()}}
+    \item \href{#method-SimParam-altAddTraitAD}{\code{SimParam$altAddTraitAD()}}
+    \item \href{#method-SimParam-addTraitAG}{\code{SimParam$addTraitAG()}}
+    \item \href{#method-SimParam-addTraitADG}{\code{SimParam$addTraitADG()}}
+    \item \href{#method-SimParam-addTraitAE}{\code{SimParam$addTraitAE()}}
+    \item \href{#method-SimParam-addTraitADE}{\code{SimParam$addTraitADE()}}
+    \item \href{#method-SimParam-addTraitAEG}{\code{SimParam$addTraitAEG()}}
+    \item \href{#method-SimParam-addTraitADEG}{\code{SimParam$addTraitADEG()}}
+    \item \href{#method-SimParam-manAddTrait}{\code{SimParam$manAddTrait()}}
+    \item \href{#method-SimParam-importTrait}{\code{SimParam$importTrait()}}
+    \item \href{#method-SimParam-switchTrait}{\code{SimParam$switchTrait()}}
+    \item \href{#method-SimParam-removeTrait}{\code{SimParam$removeTrait()}}
+    \item \href{#method-SimParam-setVarE}{\code{SimParam$setVarE()}}
+    \item \href{#method-SimParam-setCorE}{\code{SimParam$setCorE()}}
+    \item \href{#method-SimParam-rescaleTraits}{\code{SimParam$rescaleTraits()}}
+    \item \href{#method-SimParam-setRecombRatio}{\code{SimParam$setRecombRatio()}}
+    \item \href{#method-SimParam-switchGenMap}{\code{SimParam$switchGenMap()}}
+    \item \href{#method-SimParam-switchFemaleMap}{\code{SimParam$switchFemaleMap()}}
+    \item \href{#method-SimParam-switchMaleMap}{\code{SimParam$switchMaleMap()}}
+    \item \href{#method-SimParam-addToRec}{\code{SimParam$addToRec()}}
+    \item \href{#method-SimParam-ibdHaplo}{\code{SimParam$ibdHaplo()}}
+    \item \href{#method-SimParam-updateLastId}{\code{SimParam$updateLastId()}}
+    \item \href{#method-SimParam-addToPed}{\code{SimParam$addToPed()}}
+    \item \href{#method-SimParam-clone}{\code{SimParam$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-SimParam-new"></a>}}
-\if{latex}{\out{\hypertarget{method-SimParam-new}{}}}
-\subsection{Method \code{new()}}{
-Starts the process of building a new simulation
+\if{html}{\out{<a id="method-SimParam-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-SimParam-initialize}{}}}
+\subsection{\code{SimParam$new()}}{
+  Starts the process of building a new simulation
 by creating a new \code{SimParam} object and assigning a founder
 population to the class. It is recommended that you save the
 object with the name \code{SP}, because subsequent functions will
@@ -472,136 +472,132 @@ check your global environment for an object of this name if
 their \code{simParam} arguments are \code{NULL}. This allows you
 to call these functions without explicitly supplying a \code{simParam}
 argument with every call.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$new(founderPop)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{founderPop}}{an object of \code{\link{MapPop-class}}}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$new(founderPop)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{founderPop}}{an object of \code{\link{MapPop-class}}}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setTrackPed"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setTrackPed}{}}}
-\subsection{Method \code{setTrackPed()}}{
-Sets pedigree tracking for the simulation.
+\subsection{\code{SimParam$setTrackPed()}}{
+  Sets pedigree tracking for the simulation.
 By default pedigree tracking is turned off. When turned on,
 the pedigree of all individuals created will be tracked,
 except those created by \code{\link{hybridCross}}. Turning
 off pedigree tracking will turn off recombination tracking
 if it is turned on.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setTrackPed(isTrackPed, force = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{isTrackPed}}{should pedigree tracking be on.}
-
-\item{\code{force}}{should the check for a running simulation be
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setTrackPed(isTrackPed, force = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{isTrackPed}}{should pedigree tracking be on.}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$setTrackPed(TRUE)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setTrackRec"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setTrackRec}{}}}
-\subsection{Method \code{setTrackRec()}}{
-Sets recombination tracking for the simulation.
+\subsection{\code{SimParam$setTrackRec()}}{
+  Sets recombination tracking for the simulation.
 By default recombination tracking is turned off. When turned
 on recombination tracking will also turn on pedigree tracking.
 Recombination tracking keeps records of all individuals created,
 except those created by \code{\link{hybridCross}}, because their
 pedigree is not tracked.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setTrackRec(isTrackRec, force = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{isTrackRec}}{should recombination tracking be on.}
-
-\item{\code{force}}{should the check for a running simulation be
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setTrackRec(isTrackRec, force = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{isTrackRec}}{should recombination tracking be on.}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$setTrackRec(TRUE)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-resetPed"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-resetPed}{}}}
-\subsection{Method \code{resetPed()}}{
-Resets the internal lastId, the pedigree
+\subsection{\code{SimParam$resetPed()}}{
+  Resets the internal lastId, the pedigree
 and recombination tracking (if in use) to the
 supplied lastId. Be careful using this function because
 it may introduce a bug if you use individuals from
 the deleted portion of the pedigree.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$resetPed(lastId = 0L)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{lastId}}{last ID to include in pedigree}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$resetPed(lastId = 0L)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{lastId}}{last ID to include in pedigree}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
@@ -612,16 +608,15 @@ SP$resetPed()
 pop2 = newPop(founderPop, simParam=SP)
 pop2@id # 1:10
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-restrSegSites"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-restrSegSites}{}}}
-\subsection{Method \code{restrSegSites()}}{
-Sets restrictions on which segregating sites can
+\subsection{\code{SimParam$restrSegSites()}}{
+  Sets restrictions on which segregating sites can
 serve as a SNP and/or QTL. The default behavior of AlphaSimR is
 to randomly sample QTL or SNP from all eligible sites and then
 mark the sampled sites ineligible to be sampled as the other
@@ -641,59 +636,53 @@ overlap=FALSE to preallocate sites as QTL and SNP respectively. This
 option is useful when simulating multiple traits and/or SNP chips,
 because it can be used to guarantee that enough eligible sites are
 available when running addTrait and or addSnpChip functions.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$restrSegSites(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$restrSegSites(
   minQtlPerChr = NULL,
   minSnpPerChr = NULL,
   excludeQtl = NULL,
   excludeSnp = NULL,
   overlap = FALSE,
   minSnpFreq = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{minQtlPerChr}}{the minimum number of segregating sites for
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{minQtlPerChr}}{the minimum number of segregating sites for
 QTLs. Can be a single value or a vector values for each chromosome.}
-
-\item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
+      \item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
 Can be a single value or a vector values for each chromosome.}
-
-\item{\code{excludeQtl}}{an optional vector of segregating site names to
+      \item{\code{excludeQtl}}{an optional vector of segregating site names to
 exclude from consideration as a viable QTL.}
-
-\item{\code{excludeSnp}}{an optional vector of segregating site names to
+      \item{\code{excludeSnp}}{an optional vector of segregating site names to
 exclude from consideration as a viable SNP.}
-
-\item{\code{overlap}}{should SNP and QTL sites be allowed to overlap.}
-
-\item{\code{minSnpFreq}}{minimum allowable frequency for SNP loci.
+      \item{\code{overlap}}{should SNP and QTL sites be allowed to overlap.}
+      \item{\code{minSnpFreq}}{minimum allowable frequency for SNP loci.
 No minimum SNP frequency is used if value is NULL.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setSexes"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setSexes}{}}}
-\subsection{Method \code{setSexes()}}{
-Changes how sexes are determined in the simulation.
+\subsection{\code{SimParam$setSexes()}}{
+  Changes how sexes are determined in the simulation.
 The default sexes is "no", indicating all individuals are hermaphrodites.
 To add sexes to the simulation, run this function with "yes_sys" or
 "yes_rand". The value "yes_sys" will systematically assign
@@ -701,165 +690,160 @@ sexes to newly created individuals as first male and then female.
 Populations with an odd number of individuals will have one more male than
 female. The value "yes_rand" will randomly assign a sex to each
 individual.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setSexes(sexes, force = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{sexes}}{acceptable value are "no", "yes_sys", or
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setSexes(sexes, force = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{sexes}}{acceptable value are "no", "yes_sys", or
 "yes_rand"}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$setSexes("yes_sys")
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setFounderHap"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setFounderHap}{}}}
-\subsection{Method \code{setFounderHap()}}{
-Allows for the manual setting of founder haplotypes. This functionality
+\subsection{\code{SimParam$setFounderHap()}}{
+  Allows for the manual setting of founder haplotypes. This functionality
 is not fully documented, because it is still experimental.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setFounderHap(hapMap)}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setFounderHap(hapMap)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{hapMap}}{a list of founder haplotypes}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{hapMap}}{a list of founder haplotypes}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addSnpChip"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addSnpChip}{}}}
-\subsection{Method \code{addSnpChip()}}{
-Randomly assigns eligible SNPs to a SNP chip
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL, name = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nSnpPerChr}}{number of SNPs per chromosome.
+\subsection{\code{SimParam$addSnpChip()}}{
+  Randomly assigns eligible SNPs to a SNP chip
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addSnpChip(nSnpPerChr, minSnpFreq = NULL, refPop = NULL, name = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nSnpPerChr}}{number of SNPs per chromosome.
 Can be a single value or nChr values.}
-
-\item{\code{minSnpFreq}}{minimum allowable frequency for SNP loci.
+      \item{\code{minSnpFreq}}{minimum allowable frequency for SNP loci.
 If NULL, no minimum frequency is used.}
-
-\item{\code{refPop}}{reference population for calculating SNP
+      \item{\code{refPop}}{reference population for calculating SNP
 frequency. If NULL, the founder population is used.}
-
-\item{\code{name}}{optional name for chip}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+      \item{\code{name}}{optional name for chip}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addSnpChip(10)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addSnpChipByName"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addSnpChipByName}{}}}
-\subsection{Method \code{addSnpChipByName()}}{
-Assigns SNPs to a SNP chip by supplying marker names. This function does
+\subsection{\code{SimParam$addSnpChipByName()}}{
+  Assigns SNPs to a SNP chip by supplying marker names. This function does
 check against excluded SNPs and will not add the SNPs to the list of
 excluded QTL for the purpose of avoiding overlap between SNPs and QTL.
 Excluding these SNPs from being used as QTL can be accomplished using
 the excludeQtl argument in SimParam's restrSegSites function.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addSnpChipByName(markers, name = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{markers}}{a vector of names for the markers}
-
-\item{\code{name}}{optional name for chip}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addSnpChipByName(markers, name = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{markers}}{a vector of names for the markers}
+      \item{\code{name}}{optional name for chip}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addSnpChipByName(c("1_1","1_3"))
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addStructuredSnpChip"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addStructuredSnpChip}{}}}
-\subsection{Method \code{addStructuredSnpChip()}}{
-Randomly selects the number of snps in structure and then
+\subsection{\code{SimParam$addStructuredSnpChip()}}{
+  Randomly selects the number of snps in structure and then
 assigns them to chips based on structure
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addStructuredSnpChip(nSnpPerChr, structure, force = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nSnpPerChr}}{number of SNPs per chromosome.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addStructuredSnpChip(nSnpPerChr, structure, force = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nSnpPerChr}}{number of SNPs per chromosome.
 Can be a single value or nChr values.}
-
-\item{\code{structure}}{a matrix.  Rows are snp chips, columns are chips.
+      \item{\code{structure}}{a matrix.  Rows are snp chips, columns are chips.
 If value is true then that snp is on that chip.}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitA"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitA}{}}}
-\subsection{Method \code{addTraitA()}}{
-Randomly assigns eligible QTLs for one or more additive traits.
+\subsection{\code{SimParam$addTraitA()}}{
+  Randomly assigns eligible QTLs for one or more additive traits.
 If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitA(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitA(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -869,60 +853,51 @@ with correlated additive effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAD}{}}}
-\subsection{Method \code{addTraitAD()}}{
-Randomly assigns eligible QTLs for one or more traits with dominance.
+\subsection{\code{SimParam$addTraitAD()}}{
+  Randomly assigns eligible QTLs for one or more traits with dominance.
 If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAD(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitAD(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -936,70 +911,57 @@ with correlated effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{meanDD}}{mean dominance degree}
-
-\item{\code{varDD}}{variance of dominance degree}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corDD}}{a matrix of correlations between dominance degrees}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true. If
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{meanDD}}{mean dominance degree}
+      \item{\code{varDD}}{variance of dominance degree}
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corDD}}{a matrix of correlations between dominance degrees}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
 FALSE, tuning is performed according to total genetic variance.}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitAD(10, meanDD=0.5)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
-\subsection{Method \code{altAddTraitAD()}}{
-An alternative method for adding a trait with additive  and dominance effects
+\subsection{\code{SimParam$altAddTraitAD()}}{
+  An alternative method for adding a trait with additive  and dominance effects
 to an AlphaSimR simulation. The function attempts to create a trait matching
 user defined values for number of QTL, inbreeding depression, additive genetic
 variance and dominance genetic variance.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$altAddTraitAD(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$altAddTraitAD(
   nQtlPerChr,
   mean = 0,
   varA = 1,
@@ -1011,41 +973,31 @@ variance and dominance genetic variance.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome.
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome.
 Can be a single value or nChr values.}
-
-\item{\code{mean}}{desired mean of the trait}
-
-\item{\code{varA}}{desired additive variance}
-
-\item{\code{varD}}{desired dominance variance}
-
-\item{\code{inbrDepr}}{desired inbreeding depression, see details}
-
-\item{\code{limMeanDD}}{limits for meanDD, see details}
-
-\item{\code{limVarDD}}{limits for varDD, see details}
-
-\item{\code{silent}}{should summary details be printed to the console}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{mean}}{desired mean of the trait}
+      \item{\code{varA}}{desired additive variance}
+      \item{\code{varD}}{desired dominance variance}
+      \item{\code{inbrDepr}}{desired inbreeding depression, see details}
+      \item{\code{limMeanDD}}{limits for meanDD, see details}
+      \item{\code{limVarDD}}{limits for varDD, see details}
+      \item{\code{silent}}{should summary details be printed to the console}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Details}{
-This function will always add a trait to 'SimParam', unless an error occurs
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    This function will always add a trait to 'SimParam', unless an error occurs
 with picking QTLs. The resulting trait will always have the desired mean and
 additive genetic variance. However, it may not have the desired values for
 inbreeding depression and dominance variance. Thus, it is strongly recommended
@@ -1078,32 +1030,30 @@ Summary information on this trait is printed to the console when silent=FALSE.
 The summary information reports the inbreeding depression and dominance
 variance for the population as well as the dominance degree mean and variance
 applied to the trait.
-}
-
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitAG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAG}{}}}
-\subsection{Method \code{addTraitAG()}}{
-Randomly assigns eligible QTLs for one or more additive GxE traits.
+\subsection{\code{SimParam$addTraitAG()}}{
+  Randomly assigns eligible QTLs for one or more additive GxE traits.
 If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAG(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitAG(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1116,64 +1066,52 @@ with correlated effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
-
-\item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corGxE}}{a matrix of correlations between GxE effects}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
+      \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitAG(10, varGxE=2)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitADG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitADG}{}}}
-\subsection{Method \code{addTraitADG()}}{
-Randomly assigns eligible QTLs for a trait with dominance and GxE.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADG(
+\subsection{\code{SimParam$addTraitADG()}}{
+  Randomly assigns eligible QTLs for a trait with dominance and GxE.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitADG(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1190,75 +1128,59 @@ Randomly assigns eligible QTLs for a trait with dominance and GxE.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-
-\item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
-
-\item{\code{meanDD}}{mean dominance degree}
-
-\item{\code{varDD}}{variance of dominance degree}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corDD}}{a matrix of correlations between dominance degrees}
-
-\item{\code{corGxE}}{a matrix of correlations between GxE effects}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
+      \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
+      \item{\code{meanDD}}{mean dominance degree}
+      \item{\code{varDD}}{variance of dominance degree}
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corDD}}{a matrix of correlations between dominance degrees}
+      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitAE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAE}{}}}
-\subsection{Method \code{addTraitAE()}}{
-Randomly assigns eligible QTLs for one or more additive and epistasis
+\subsection{\code{SimParam$addTraitAE()}}{
+  Randomly assigns eligible QTLs for one or more additive and epistasis
 traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated additive effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAE(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitAE(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1271,68 +1193,56 @@ with correlated additive effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{relAA}}{the relative value of additive-by-additive variance compared
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
 to additive variance in a diploid organism with allele frequency 0.5}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true. If
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
 FALSE, tuning is performed according to total genetic variance.}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitAE(10, relAA=0.1)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitADE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitADE}{}}}
-\subsection{Method \code{addTraitADE()}}{
-Randomly assigns eligible QTLs for one or more traits with dominance and
+\subsection{\code{SimParam$addTraitADE()}}{
+  Randomly assigns eligible QTLs for one or more traits with dominance and
 epistasis. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADE(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitADE(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1348,74 +1258,59 @@ with correlated effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{meanDD}}{mean dominance degree}
-
-\item{\code{varDD}}{variance of dominance degree}
-
-\item{\code{relAA}}{the relative value of additive-by-additive variance compared
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{meanDD}}{mean dominance degree}
+      \item{\code{varDD}}{variance of dominance degree}
+      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
 to additive variance in a diploid organism with allele frequency 0.5}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corDD}}{a matrix of correlations between dominance degrees}
-
-\item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true. If
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corDD}}{a matrix of correlations between dominance degrees}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
 FALSE, tuning is performed according to total genetic variance.}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitADE(10)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitAEG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitAEG}{}}}
-\subsection{Method \code{addTraitAEG()}}{
-Randomly assigns eligible QTLs for one or more additive and epistasis
+\subsection{\code{SimParam$addTraitAEG()}}{
+  Randomly assigns eligible QTLs for one or more additive and epistasis
 GxE traits. If simulating more than one trait, all traits will be pleiotropic
 with correlated effects.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitAEG(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitAEG(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1431,73 +1326,58 @@ with correlated effects.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{relAA}}{the relative value of additive-by-additive variance compared
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
 to additive variance in a diploid organism with allele frequency 0.5}
-
-\item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
-
-\item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-
-\item{\code{corGxE}}{a matrix of correlations between GxE effects}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true. If
+      \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
+      \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
+      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
 FALSE, tuning is performed according to total genetic variance.}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitAEG(10, varGxE=2)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addTraitADEG"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addTraitADEG}{}}}
-\subsection{Method \code{addTraitADEG()}}{
-Randomly assigns eligible QTLs for a trait with dominance,
+\subsection{\code{SimParam$addTraitADEG()}}{
+  Randomly assigns eligible QTLs for a trait with dominance,
 epistasis and GxE.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addTraitADEG(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addTraitADEG(
   nQtlPerChr,
   mean = 0,
   var = 1,
@@ -1516,111 +1396,92 @@ epistasis and GxE.
   force = FALSE,
   name = NULL,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-
-\item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-
-\item{\code{var}}{a vector of desired genetic variances for one or more traits}
-
-\item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-
-\item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
-
-\item{\code{meanDD}}{mean dominance degree}
-
-\item{\code{varDD}}{variance of dominance degree}
-
-\item{\code{relAA}}{the relative value of additive-by-additive variance compared
+      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
+      \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
+      \item{\code{meanDD}}{mean dominance degree}
+      \item{\code{varDD}}{variance of dominance degree}
+      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
 to additive variance in a diploid organism with allele frequency 0.5}
-
-\item{\code{corA}}{a matrix of correlations between additive effects}
-
-\item{\code{corDD}}{a matrix of correlations between dominance degrees}
-
-\item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-
-\item{\code{corGxE}}{a matrix of correlations between GxE effects}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true}
-
-\item{\code{gamma}}{should a gamma distribution be used instead of normal}
-
-\item{\code{shape}}{the shape parameter for the gamma distribution
+      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corDD}}{a matrix of correlations between dominance degrees}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
+      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{gamma}}{should a gamma distribution be used instead of normal}
+      \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
 for via the desired level of genetic variance, the var argument)}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
-
-\item{\code{name}}{optional name for trait(s)}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{name}}{optional name for trait(s)}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-manAddTrait"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-manAddTrait}{}}}
-\subsection{Method \code{manAddTrait()}}{
-Manually add a new trait to the simulation. Trait must
+\subsection{\code{SimParam$manAddTrait()}}{
+  Manually add a new trait to the simulation. Trait must
 be formatted as a \code{\link{LociMap-class}}. If the
 trait is not already formatted, consider using importTrait.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE, nThreads = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{lociMap}}{a new object descended from
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$manAddTrait(lociMap, varE = NA_real_, force = FALSE, nThreads = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{lociMap}}{a new object descended from
 \code{\link{LociMap-class}}}
-
-\item{\code{varE}}{default error variance for phenotype, optional}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{varE}}{default error variance for phenotype, optional}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-importTrait"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-importTrait}{}}}
-\subsection{Method \code{importTrait()}}{
-Manually add a new trait(s) to the simulation. Unlike the
+\subsection{\code{SimParam$importTrait()}}{
+  Manually add a new trait(s) to the simulation. Unlike the
 manAddTrait function, this function does not require
 formatting the trait as a \code{\link{LociMap-class}}.
 The formatting is performed automatically for the user,
 with more user friendly data.frames or matrices taken as
 inputs. This function only works for A and AD trait types.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$importTrait(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$importTrait(
   markerNames,
   addEff,
   domEff = NULL,
@@ -1629,211 +1490,194 @@ inputs. This function only works for A and AD trait types.
   varE = NULL,
   force = FALSE,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{markerNames}}{a vector of names for the QTL}
-
-\item{\code{addEff}}{a matrix of additive effects (nLoci x nTraits).
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{markerNames}}{a vector of names for the QTL}
+      \item{\code{addEff}}{a matrix of additive effects (nLoci x nTraits).
 Alternatively, a vector of length nLoci can be supplied for
 a single trait.}
-
-\item{\code{domEff}}{optional dominance effects for each locus}
-
-\item{\code{intercept}}{optional intercepts for each trait}
-
-\item{\code{name}}{optional name(s) for the trait(s)}
-
-\item{\code{varE}}{default error variance for phenotype, optional}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{domEff}}{optional dominance effects for each locus}
+      \item{\code{intercept}}{optional intercepts for each trait}
+      \item{\code{name}}{optional name(s) for the trait(s)}
+      \item{\code{varE}}{default error variance for phenotype, optional}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-switchTrait"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-switchTrait}{}}}
-\subsection{Method \code{switchTrait()}}{
-Switch a trait in the simulation.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchTrait(
+\subsection{\code{SimParam$switchTrait()}}{
+  Switch a trait in the simulation.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$switchTrait(
   traitPos,
   lociMap,
   varE = NA_real_,
   force = FALSE,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{traitPos}}{an integer indicate which trait to switch}
-
-\item{\code{lociMap}}{a new object descended from
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{traitPos}}{an integer indicate which trait to switch}
+      \item{\code{lociMap}}{a new object descended from
 \code{\link{LociMap-class}}}
-
-\item{\code{varE}}{default error variance for phenotype, optional}
-
-\item{\code{force}}{should the check for a running simulation be
+      \item{\code{varE}}{default error variance for phenotype, optional}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-removeTrait"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-removeTrait}{}}}
-\subsection{Method \code{removeTrait()}}{
-Remove a trait from the simulation
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$removeTrait(traits, force = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{traits}}{an integer vector indicating which traits to remove}
-
-\item{\code{force}}{should the check for a running simulation be
+\subsection{\code{SimParam$removeTrait()}}{
+  Remove a trait from the simulation
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$removeTrait(traits, force = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{traits}}{an integer vector indicating which traits to remove}
+      \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
-\subsection{Method \code{setVarE()}}{
-Defines a default values for error
+\subsection{\code{SimParam$setVarE()}}{
+  Defines a default values for error
 variances used in \code{\link{setPheno}}. These defaults
 will be used to automatically generate phenotypes when new
 populations are created. See the details section of \code{\link{setPheno}}
 for more information about each arguments and how they
 should be used.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL, corE = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{h2}}{a vector of desired narrow-sense heritabilities}
-
-\item{\code{H2}}{a vector of desired broad-sense heritabilities}
-
-\item{\code{varE}}{a vector or matrix of error variances}
-
-\item{\code{corE}}{an optional matrix of error correlations}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setVarE(h2 = NULL, H2 = NULL, varE = NULL, corE = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{h2}}{a vector of desired narrow-sense heritabilities}
+      \item{\code{H2}}{a vector of desired broad-sense heritabilities}
+      \item{\code{varE}}{a vector or matrix of error variances}
+      \item{\code{corE}}{an optional matrix of error correlations}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setCorE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setCorE}{}}}
-\subsection{Method \code{setCorE()}}{
-Defines a correlation structure for default
+\subsection{\code{SimParam$setCorE()}}{
+  Defines a correlation structure for default
 error variances. You must call \code{setVarE} first to define
 the default error variances.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setCorE(corE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{corE}}{a correlation matrix for the error variances}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setCorE(corE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{corE}}{a correlation matrix for the error variances}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
 SP$setVarE(varE=c(1,1))
 E = 0.5*diag(2)+0.5 #Positively correlated error
 SP$setCorE(E)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-rescaleTraits"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-rescaleTraits}{}}}
-\subsection{Method \code{rescaleTraits()}}{
-Linearly scales all traits to achieve desired
+\subsection{\code{SimParam$rescaleTraits()}}{
+  Linearly scales all traits to achieve desired
 values of means and variances in the founder population.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$rescaleTraits(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$rescaleTraits(
   mean = 0,
   var = 1,
   varEnv = 0,
   varGxE = 1e-06,
   useVarA = TRUE,
   nThreads = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{mean}}{a vector of new trait means}
-
-\item{\code{var}}{a vector of new trait variances}
-
-\item{\code{varEnv}}{a vector of new environmental variances}
-
-\item{\code{varGxE}}{a vector of new GxE variances}
-
-\item{\code{useVarA}}{tune according to additive genetic variance if true}
-
-\item{\code{nThreads}}{number of threads to use if OpenMP is available.
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{mean}}{a vector of new trait means}
+      \item{\code{var}}{a vector of new trait variances}
+      \item{\code{varEnv}}{a vector of new environmental variances}
+      \item{\code{varGxE}}{a vector of new GxE variances}
+      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$addTraitA(10)
 
 #Create population
@@ -1846,218 +1690,219 @@ SP$rescaleTraits(mean=1)
 pop = resetPop(pop, simParam=SP)
 meanG(pop)
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-setRecombRatio"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setRecombRatio}{}}}
-\subsection{Method \code{setRecombRatio()}}{
-Set the relative recombination rates between males
+\subsection{\code{SimParam$setRecombRatio()}}{
+  Set the relative recombination rates between males
 and females. This allows for sex-specific recombination rates,
 under the assumption of equivalent recombination landscapes.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$setRecombRatio(femaleRatio)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{femaleRatio}}{relative ratio of recombination in females compared to
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$setRecombRatio(femaleRatio)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{femaleRatio}}{relative ratio of recombination in females compared to
 males. A value of 2 indicate twice as much recombination in females. The
 value must be greater than 0. (default is 1)}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{#Create founder haplotypes
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
 SP$setRecombRatio(2) #Twice as much recombination in females
 }
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-switchGenMap"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-switchGenMap}{}}}
-\subsection{Method \code{switchGenMap()}}{
-Replaces existing genetic map.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchGenMap(genMap, centromere = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{genMap}}{a list of length nChr containing
+\subsection{\code{SimParam$switchGenMap()}}{
+  Replaces existing genetic map.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$switchGenMap(genMap, centromere = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{genMap}}{a list of length nChr containing
 numeric vectors for the position of each segregating
 site on a chromosome.}
-
-\item{\code{centromere}}{a numeric vector of centromere
+      \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromere are assumed to
 be metacentric.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-switchFemaleMap"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-switchFemaleMap}{}}}
-\subsection{Method \code{switchFemaleMap()}}{
-Replaces existing female genetic map.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{genMap}}{a list of length nChr containing
+\subsection{\code{SimParam$switchFemaleMap()}}{
+  Replaces existing female genetic map.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{genMap}}{a list of length nChr containing
 numeric vectors for the position of each segregating
 site on a chromosome.}
-
-\item{\code{centromere}}{a numeric vector of centromere
+      \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromere are assumed to
 be metacentric.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-switchMaleMap"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-switchMaleMap}{}}}
-\subsection{Method \code{switchMaleMap()}}{
-Replaces existing male genetic map.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$switchMaleMap(genMap, centromere = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{genMap}}{a list of length nChr containing
+\subsection{\code{SimParam$switchMaleMap()}}{
+  Replaces existing male genetic map.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$switchMaleMap(genMap, centromere = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{genMap}}{a list of length nChr containing
 numeric vectors for the position of each segregating
 site on a chromosome.}
-
-\item{\code{centromere}}{a numeric vector of centromere
+      \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromere are assumed to
 be metacentric.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addToRec"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addToRec}{}}}
-\subsection{Method \code{addToRec()}}{
-For internal use only.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToRec(lastId, id, mother, father, isDH, hist, ploidy)}\if{html}{\out{</div>}}
+\subsection{\code{SimParam$addToRec()}}{
+  For internal use only.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addToRec(lastId, id, mother, father, isDH, hist, ploidy)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{lastId}}{ID of last individual}
+      \item{\code{id}}{the name of each individual}
+      \item{\code{mother}}{vector of mother iids}
+      \item{\code{father}}{vector of father iids}
+      \item{\code{isDH}}{indicator for DH lines}
+      \item{\code{hist}}{new recombination history}
+      \item{\code{ploidy}}{ploidy level}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{lastId}}{ID of last individual}
-
-\item{\code{id}}{the name of each individual}
-
-\item{\code{mother}}{vector of mother iids}
-
-\item{\code{father}}{vector of father iids}
-
-\item{\code{isDH}}{indicator for DH lines}
-
-\item{\code{hist}}{new recombination history}
-
-\item{\code{ploidy}}{ploidy level}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-ibdHaplo"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-ibdHaplo}{}}}
-\subsection{Method \code{ibdHaplo()}}{
-For internal use only.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$ibdHaplo(iid)}\if{html}{\out{</div>}}
+\subsection{\code{SimParam$ibdHaplo()}}{
+  For internal use only.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$ibdHaplo(iid)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{iid}}{internal ID}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{iid}}{internal ID}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-updateLastId"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-updateLastId}{}}}
-\subsection{Method \code{updateLastId()}}{
-For internal use only.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$updateLastId(lastId)}\if{html}{\out{</div>}}
+\subsection{\code{SimParam$updateLastId()}}{
+  For internal use only.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$updateLastId(lastId)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{lastId}}{last ID assigned}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{lastId}}{last ID assigned}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-addToPed"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-addToPed}{}}}
-\subsection{Method \code{addToPed()}}{
-For internal use only.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$addToPed(lastId, id, mother, father, isDH)}\if{html}{\out{</div>}}
+\subsection{\code{SimParam$addToPed()}}{
+  For internal use only.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$addToPed(lastId, id, mother, father, isDH)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{lastId}}{ID of last individual}
+      \item{\code{id}}{the name of each individual}
+      \item{\code{mother}}{vector of mother iids}
+      \item{\code{father}}{vector of father iids}
+      \item{\code{isDH}}{indicator for DH lines}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{lastId}}{ID of last individual}
-
-\item{\code{id}}{the name of each individual}
-
-\item{\code{mother}}{vector of mother iids}
-
-\item{\code{father}}{vector of father iids}
-
-\item{\code{isDH}}{indicator for DH lines}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SimParam-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SimParam$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{SimParam$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SimParam$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }
