@@ -1,6 +1,9 @@
 #include <RcppTskit.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -43,6 +46,29 @@ tsk_id_t checkTskId(tsk_id_t id) {
   return id;
 }
 
+std::string jsonEscape(const std::string& value) {
+  std::ostringstream output;
+  for (unsigned char character : value) {
+    switch (character) {
+      case '"': output << "\\\""; break;
+      case '\\': output << "\\\\"; break;
+      case '\b': output << "\\b"; break;
+      case '\f': output << "\\f"; break;
+      case '\n': output << "\\n"; break;
+      case '\r': output << "\\r"; break;
+      case '\t': output << "\\t"; break;
+      default:
+        if (character < 0x20) {
+          output << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+                 << static_cast<int>(character) << std::dec;
+        } else {
+          output << character;
+        }
+    }
+  }
+  return output.str();
+}
+
 int getPloidy(SEXP history, int chromosome) {
   if (TYPEOF(history) == INTSXP) {
     return Rf_length(history);
@@ -64,6 +90,69 @@ int getPloidy(SEXP history, int chromosome) {
 }  // namespace
 
 // [[Rcpp::export]]
+Rcpp::List resolveVariantEncodingCpp(
+    Rcpp::IntegerMatrix originRows,
+    Rcpp::IntegerMatrix currentHaplotypes,
+    Rcpp::IntegerMatrix originHaplotypes,
+    Rcpp::LogicalVector knownOrigins) {
+  const int nSamples = currentHaplotypes.nrow();
+  const int nLoci = currentHaplotypes.ncol();
+  const int nOrigins = originHaplotypes.nrow();
+  if (originRows.nrow() != nSamples || originRows.ncol() != nLoci ||
+      originHaplotypes.ncol() != nLoci ||
+      knownOrigins.size() != nOrigins || nOrigins < 1) {
+    Rcpp::stop("Variant-encoding dimensions disagree");
+  }
+
+  Rcpp::IntegerMatrix overrides(nSamples, nLoci);
+  std::fill(overrides.begin(), overrides.end(), -1);
+  std::vector<int> inferred(nOrigins, -1);
+  for (int locus = 0; locus < nLoci; ++locus) {
+    std::fill(inferred.begin(), inferred.end(), -1);
+    for (int sample = 0; sample < nSamples; ++sample) {
+      const int origin = originRows(sample, locus) - 1;
+      const int allele = currentHaplotypes(sample, locus);
+      if (origin < 0 || origin >= nOrigins) {
+        Rcpp::stop("Sample ancestry references an unknown founder origin");
+      }
+      if (allele != 0 && allele != 1) {
+        Rcpp::stop("Current haplotypes must contain only 0 and 1");
+      }
+      if (knownOrigins[origin] == NA_LOGICAL) {
+        Rcpp::stop("Known-origin indicators cannot be missing");
+      }
+      if (!knownOrigins[origin]) {
+        if (inferred[origin] == -1) {
+          inferred[origin] = allele;
+        } else if (inferred[origin] != allele) {
+          inferred[origin] = -2;
+        }
+      }
+    }
+    for (int origin = 0; origin < nOrigins; ++origin) {
+      if (!knownOrigins[origin] && inferred[origin] >= 0) {
+        originHaplotypes(origin, locus) = inferred[origin];
+      }
+      const int allele = originHaplotypes(origin, locus);
+      if (allele != 0 && allele != 1) {
+        Rcpp::stop("Origin haplotypes must contain only 0 and 1");
+      }
+    }
+    for (int sample = 0; sample < nSamples; ++sample) {
+      const int origin = originRows(sample, locus) - 1;
+      const int allele = currentHaplotypes(sample, locus);
+      if (allele != originHaplotypes(origin, locus)) {
+        overrides(sample, locus) = allele;
+      }
+    }
+  }
+
+  return Rcpp::List::create(
+      Rcpp::Named("originHaplotypes") = originHaplotypes,
+      Rcpp::Named("sampleAlleleOverrides") = overrides);
+}
+
+// [[Rcpp::export]]
 SEXP buildTreeSequenceCpp(Rcpp::List recHist,
                           Rcpp::IntegerMatrix pedigree,
                           Rcpp::IntegerVector sampleIid,
@@ -71,7 +160,8 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
                           int chromosome,
                           int nLoci,
                           Rcpp::IntegerVector founderIid,
-                          Rcpp::IntegerMatrix founderHaplotypes,
+                          Rcpp::IntegerMatrix originHaplotypes,
+                          Rcpp::IntegerMatrix sampleAlleleOverrides,
                           bool includeVariants,
                           bool simplify,
                           std::string version,
@@ -153,30 +243,62 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
   std::unique_ptr<tsk_table_collection_t, TableDeleter> tables(
       new tsk_table_collection_t());
   checkTsk(tsk_table_collection_init(tables.get(), 0));
+  const std::string jsonSchema = "{\"codec\":\"json\"}";
+  checkTsk(tsk_table_collection_set_metadata_schema(
+      tables.get(), jsonSchema.c_str(), jsonSchema.size()));
+  checkTsk(tsk_individual_table_set_metadata_schema(
+      &tables->individuals, jsonSchema.c_str(), jsonSchema.size()));
+  checkTsk(tsk_node_table_set_metadata_schema(
+      &tables->nodes, jsonSchema.c_str(), jsonSchema.size()));
+  checkTsk(tsk_site_table_set_metadata_schema(
+      &tables->sites, jsonSchema.c_str(), jsonSchema.size()));
   tables->sequence_length = static_cast<double>(nLoci);
   const std::string timeUnits = "generations";
   checkTsk(tsk_table_collection_set_time_units(
       tables.get(), timeUnits.c_str(), timeUnits.size()));
 
   std::ostringstream metadata;
-  metadata << "{\"software\":\"AlphaSimR\",\"version\":\"" << version
-           << "\",\"chromosome\":" << chromosome + 1
-           << ",\"coordinate_system\":\"locus_index\"}";
+  metadata << "{\"software\":{\"name\":\"AlphaSimR\",\"version\":\""
+           << jsonEscape(version) << "\"},\"chromosome\":" << chromosome + 1
+           << ",\"coordinate_system\":\"locus_index\""
+           << ",\"time_scale\":\"pedigree_depth\""
+           << ",\"time_origin\":\"deepest_recorded_individual\""
+           << ",\"founder_origin_offset_generations\":1"
+           << ",\"sample_ancestry_proxy_offset\":"
+           << "\"next_representable_older_time\""
+           << ",\"variant_encoding\":\""
+           << (includeVariants ? "founder_origins_and_sample_overrides" : "none")
+           << "\"}";
   const std::string metadataString = metadata.str();
   checkTsk(tsk_table_collection_set_metadata(
       tables.get(), metadataString.c_str(), metadataString.size()));
+  std::ostringstream provenance;
+  provenance << "{\"schema_version\":\"1.0.0\",\"software\":{\"name\":"
+             << "\"AlphaSimR\",\"version\":\"" << jsonEscape(version)
+             << "\"},\"parameters\":{\"command\":\"asTreeSequence\""
+             << ",\"chromosome\":" << chromosome + 1
+             << ",\"coordinate_system\":\"locus_index\""
+             << ",\"include_variants\":"
+             << (includeVariants ? "true" : "false")
+             << ",\"simplify\":" << (simplify ? "true" : "false") << "}}";
+  const std::string provenanceString = provenance.str();
   checkTskId(tsk_provenance_table_add_row(
       &tables->provenances, timestamp.c_str(), timestamp.size(),
-      metadataString.c_str(), metadataString.size()));
+      provenanceString.c_str(), provenanceString.size()));
 
   std::vector<std::vector<tsk_id_t>> nodes(nIndividuals);
   std::vector<tsk_id_t> sampleNodes;
   std::vector<tsk_id_t> originNodes;
   originNodes.reserve(founderOrigins.size());
   for (std::size_t row = 0; row < founderOrigins.size(); ++row) {
+    std::ostringstream originMetadata;
+    originMetadata << "{\"founder_haplotype_origin\":"
+                   << founderOrigins[row] << "}";
+    const std::string originMetadataString = originMetadata.str();
     originNodes.push_back(checkTskId(tsk_node_table_add_row(
         &tables->nodes, 0, static_cast<double>(maxDepth + 1),
-        TSK_NULL, TSK_NULL, nullptr, 0)));
+        TSK_NULL, TSK_NULL, originMetadataString.c_str(),
+        originMetadataString.size())));
   }
   for (int i = 0; i < nIndividuals; ++i) {
     std::vector<tsk_id_t> parents;
@@ -189,34 +311,58 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
       parents.push_back(father - 1);
     }
     const std::string label = Rcpp::as<std::string>(individualId[i]);
+    std::ostringstream individualMetadata;
+    individualMetadata << "{\"id\":\"" << jsonEscape(label)
+                       << "\",\"iid\":" << i + 1 << "}";
+    const std::string individualMetadataString = individualMetadata.str();
     const tsk_id_t individual = checkTskId(tsk_individual_table_add_row(
         &tables->individuals, 0, nullptr, 0,
         parents.empty() ? nullptr : parents.data(), parents.size(),
-        label.c_str(), label.size()));
+        individualMetadataString.c_str(), individualMetadataString.size()));
     if (individual != i) {
       Rcpp::stop("Unexpected tskit individual identifier");
     }
   }
 
-  auto addIndividualNodes = [&](int i, bool isSample) {
+  auto addIndividualNodes = [&](int i) {
+    const bool isSample = samples.count(i) > 0;
+    const double individualTime = static_cast<double>(maxDepth - depth[i]);
+    const double lineageTime = isSample
+        ? std::nextafter(individualTime,
+                         std::numeric_limits<double>::infinity())
+        : individualTime;
     nodes[i].reserve(ploidy[i]);
     for (int homolog = 0; homolog < ploidy[i]; ++homolog) {
-      const tsk_flags_t flags = isSample ? TSK_NODE_IS_SAMPLE : 0;
+      std::ostringstream nodeMetadata;
+      nodeMetadata << "{\"homolog\":" << homolog + 1
+                   << ",\"role\":\"ancestry\"}";
+      const std::string nodeMetadataString = nodeMetadata.str();
       const tsk_id_t node = checkTskId(tsk_node_table_add_row(
-          &tables->nodes, flags, static_cast<double>(maxDepth - depth[i]),
-          TSK_NULL, i, nullptr, 0));
+          &tables->nodes, 0, lineageTime, TSK_NULL,
+          isSample ? TSK_NULL : i, nodeMetadataString.c_str(),
+          nodeMetadataString.size()));
       nodes[i].push_back(node);
-      if (isSample) {
-        sampleNodes.push_back(node);
-      }
     }
   };
-  for (int iid : sampleIid) {
-    addIndividualNodes(iid - 1, true);
-  }
   for (int i = 0; i < nIndividuals; ++i) {
-    if (samples.count(i) == 0) {
-      addIndividualNodes(i, false);
+    addIndividualNodes(i);
+  }
+
+  for (int iid : sampleIid) {
+    const int i = iid - 1;
+    const double sampleTime = static_cast<double>(maxDepth - depth[i]);
+    for (int homolog = 0; homolog < ploidy[i]; ++homolog) {
+      std::ostringstream nodeMetadata;
+      nodeMetadata << "{\"homolog\":" << homolog + 1
+                   << ",\"role\":\"sample\"}";
+      const std::string nodeMetadataString = nodeMetadata.str();
+      const tsk_id_t sampleNode = checkTskId(tsk_node_table_add_row(
+          &tables->nodes, TSK_NODE_IS_SAMPLE, sampleTime, TSK_NULL, i,
+          nodeMetadataString.c_str(), nodeMetadataString.size()));
+      sampleNodes.push_back(sampleNode);
+      checkTskId(tsk_edge_table_add_row(
+          &tables->edges, 0, static_cast<double>(nLoci), nodes[i][homolog],
+          sampleNode, nullptr, 0));
     }
   }
 
@@ -287,19 +433,27 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
   }
 
   if (includeVariants) {
-    if (founderHaplotypes.nrow() !=
+    if (originHaplotypes.nrow() !=
             static_cast<int>(founderOrigins.size()) ||
-        founderHaplotypes.ncol() != nLoci) {
-      Rcpp::stop("Founder haplotypes do not match recorded haplotype origins");
+        originHaplotypes.ncol() != nLoci) {
+      Rcpp::stop("Origin haplotypes do not match recorded haplotype origins");
+    }
+    if (sampleAlleleOverrides.nrow() !=
+            static_cast<int>(sampleNodes.size()) ||
+        sampleAlleleOverrides.ncol() != nLoci) {
+      Rcpp::stop("Sample allele overrides do not match sampled haplotypes");
     }
     for (int locus = 0; locus < nLoci; ++locus) {
+      std::ostringstream siteMetadata;
+      siteMetadata << "{\"locus\":" << locus + 1 << "}";
+      const std::string siteMetadataString = siteMetadata.str();
       const tsk_id_t site = checkTskId(tsk_site_table_add_row(
           &tables->sites, static_cast<double>(locus) + 0.5, "0", 1,
-          nullptr, 0));
-      for (int row = 0; row < founderHaplotypes.nrow(); ++row) {
-        const int allele = founderHaplotypes(row, locus);
+          siteMetadataString.c_str(), siteMetadataString.size()));
+      for (int row = 0; row < originHaplotypes.nrow(); ++row) {
+        const int allele = originHaplotypes(row, locus);
         if (allele != 0 && allele != 1) {
-          Rcpp::stop("Founder haplotypes must contain only 0 and 1");
+          Rcpp::stop("Origin haplotypes must contain only 0 and 1");
         }
         if (allele == 1) {
           checkTskId(tsk_mutation_table_add_row(
@@ -307,10 +461,28 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
               TSK_UNKNOWN_TIME, "1", 1, nullptr, 0));
         }
       }
+      for (int row = 0; row < sampleAlleleOverrides.nrow(); ++row) {
+        const int allele = sampleAlleleOverrides(row, locus);
+        if (allele < -1 || allele > 1) {
+          Rcpp::stop("Sample allele overrides must contain only -1, 0, and 1");
+        }
+        if (allele >= 0) {
+          const char* state = allele == 0 ? "0" : "1";
+          checkTskId(tsk_mutation_table_add_row(
+              &tables->mutations, site, sampleNodes[row], TSK_NULL,
+              TSK_UNKNOWN_TIME, state, 1, nullptr, 0));
+        }
+      }
     }
   }
 
   checkTsk(tsk_table_collection_sort(tables.get(), nullptr, 0));
+  checkTsk(tsk_table_collection_build_index(tables.get(), 0));
+  if (includeVariants) {
+    checkTsk(tsk_table_collection_compute_mutation_parents(tables.get(), 0));
+  }
+  checkTsk(tsk_table_collection_check_integrity(
+      tables.get(), TSK_CHECK_TREES));
   if (simplify) {
     checkTsk(tsk_table_collection_simplify(
         tables.get(), sampleNodes.data(), sampleNodes.size(),
@@ -318,6 +490,9 @@ SEXP buildTreeSequenceCpp(Rcpp::List recHist,
             TSK_SIMPLIFY_KEEP_INPUT_ROOTS,
         nullptr));
     checkTsk(tsk_table_collection_sort(tables.get(), nullptr, 0));
+    checkTsk(tsk_table_collection_build_index(tables.get(), 0));
+    checkTsk(tsk_table_collection_check_integrity(
+        tables.get(), TSK_CHECK_TREES));
   }
 
   AlphaSimRTableXPtr xptr(tables.release(), true);

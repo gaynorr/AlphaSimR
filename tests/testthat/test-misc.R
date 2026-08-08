@@ -107,3 +107,21 @@ test_that("mutate", {
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 6)
 })
+
+test_that("mutate resolves unsorted sites across chromosomes", {
+  set.seed(1201)
+  founderPop = quickHaplo(nInd=2, nChr=3, segSites=c(3, 5, 9))
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  hapBefore = pullSegSiteHaplo(pop, simParam=SP)
+
+  result = mutate(pop, mutRate=1, returnPos=TRUE, simParam=SP)
+  hapAfter = pullSegSiteHaplo(result[[1L]], simParam=SP)
+
+  expect_equal(unname(hapAfter), unname(1L - hapBefore))
+  expect_equal(nrow(result[[2L]]), nrow(hapBefore) * ncol(hapBefore))
+  expect_true(all(result[[2L]]$chromosome %in% seq_len(pop@nChr)))
+  expect_true(all(result[[2L]]$site >= 1L))
+  expect_true(all(result[[2L]]$site <= pop@nLoci[result[[2L]]$chromosome]))
+})

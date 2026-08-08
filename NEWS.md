@@ -1,8 +1,12 @@
 # AlphaSimR 2.1.0.9004
 
-* Added on-demand tskit tree-sequence export for recorded recombination histories.
+* Added on-demand tskit tree-sequence export for recorded recombination histories, including exact current-sample variants after mutation, genome editing, and additional founders.
 
 * Fixed homolog remapping in tracked quadrivalent meioses.
+
+* Fixed male centromere scaling for sex-specific recombination maps, including autopolyploid meiosis.
+
+* Fixed mutation-site resolution when mutations are sampled out of chromosome order.
 
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 

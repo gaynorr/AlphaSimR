@@ -77,11 +77,18 @@
 #' @details Coordinates are locus based. For a chromosome with \code{n} loci,
 #' the sequence spans \code{[0, n)} and locus \code{i} is stored at
 #' \code{i - 0.5}. When variants are requested, the current population is
-#' checked against the founder alleles and recorded inheritance. Direct genome
-#' changes made by functions such as \code{\link{mutate}} and
-#' \code{\link{editGenome}} cannot currently be represented and produce an
-#' informative error. Inbred founders retain their shared haplotype origins,
-#' and samples may span generations and even ploidies in a MultiPop.
+#' checked against the founder alleles and recorded inheritance. Changes made
+#' by functions such as \code{\link{mutate}} and \code{\link{editGenome}} are
+#' represented as mutations on terminal sample nodes. Alleles from
+#' additional founders are inferred from sampled descendants where possible.
+#' Known founder alleles are used only when sampled tracked founders verify
+#' their correspondence to \code{SimParam$founderPop}; otherwise founder
+#' alleles are inferred conservatively from the requested samples. Inbred
+#' founders retain their shared haplotype origins, and samples may span
+#' generations and even ploidies in a MultiPop. Sample and recorded-individual
+#' node times are pedigree depths measured backwards from the deepest recorded
+#' individual. Synthetic founder-origin roots and sample ancestry proxies use
+#' the explicitly documented offsets stored in the top-level metadata.
 #' \code{HybridPop} is not supported because that lightweight class stores
 #' genetic values rather than haplotypes and recombination histories.
 #'
@@ -99,6 +106,16 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
                           simplify=TRUE, simParam=NULL){
   if(is.null(simParam)){
     simParam = get("SP", envir=.GlobalEnv)
+  }
+  if(!inherits(simParam, "SimParam")){
+    stop("simParam must be a SimParam object")
+  }
+  if(!is.logical(includeVariants) || length(includeVariants) != 1L ||
+     is.na(includeVariants)){
+    stop("includeVariants must be TRUE or FALSE")
+  }
+  if(!is.logical(simplify) || length(simplify) != 1L || is.na(simplify)){
+    stop("simplify must be TRUE or FALSE")
   }
   if(is(pop, "HybridPop")){
     stop(paste0(
@@ -133,25 +150,38 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
     stop("MultiPop components must have the same loci per chromosome")
   }
   nLoci = nLoci[[1L]]
+  if(nChr != simParam$nChr ||
+     !identical(nLoci, simParam$founderPop@nLoci)){
+    stop("pop and simParam chromosome/locus structures do not match")
+  }
   sampleIid = as.integer(unlist(
     lapply(samplePops, function(x) x@iid),
+    use.names=FALSE
+  ))
+  sampleId = as.character(unlist(
+    lapply(samplePops, function(x) x@id),
     use.names=FALSE
   ))
   if(length(sampleIid) == 0L){
     stop("pop must contain at least one individual")
   }
+  if(anyNA(sampleIid)){
+    stop("pop contains missing individual IDs")
+  }
   if(anyDuplicated(sampleIid)){
     stop("pop must contain unique individual IDs")
+  }
+  if(length(sampleId) != length(sampleIid) || anyNA(sampleId)){
+    stop("pop must contain one non-missing ID per individual")
   }
   if(!simParam$isTrackRec){
     stop("asTreeSequence requires SP$setTrackRec(TRUE) before creating populations")
   }
-  stopifnot(length(includeVariants)==1L, !is.na(includeVariants),
-            is.logical(includeVariants),
-            length(simplify)==1L, !is.na(simplify), is.logical(simplify))
-
   if(is.null(chr)){
     chr = seq_len(nChr)
+  }
+  if(!is.numeric(chr) || anyNA(chr) || any(chr != as.integer(chr))){
+    stop("chr must contain whole chromosome numbers")
   }
   chr = as.integer(chr)
   if(length(chr) == 0L || anyNA(chr) || anyDuplicated(chr) ||
@@ -161,9 +191,28 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
 
   recHist = simParam$recHist
   pedigree = simParam$pedigree
-  if(length(recHist) != nrow(pedigree) ||
+  if(ncol(pedigree) < 2L || anyNA(pedigree[,1:2,drop=FALSE]) ||
+     length(recHist) != nrow(pedigree) ||
      any(sampleIid < 1L | sampleIid > length(recHist))){
     stop("pop and the recorded recombination history do not match")
+  }
+  for(samplePop in samplePops){
+    for(iid in samplePop@iid){
+      history = recHist[[iid]]
+      recordedPloidy = if(is.integer(history)){
+        rep(length(history), length(chr))
+      }else if(is.list(history)){
+        vapply(chr, function(chromosome){
+          length(history[[chromosome]])
+        }, integer(1))
+      }else{
+        integer()
+      }
+      if(length(recordedPloidy) != length(chr) ||
+         any(recordedPloidy != samplePop@ploidy)){
+        stop("pop ploidy and the recorded recombination history do not match")
+      }
+    }
   }
   for(history in recHist){
     if(is.list(history)){
@@ -188,51 +237,97 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
   ))
   nFounder = simParam$founderPop@nInd
   expectedFounderIid = seq_len(nFounder)
-  if(includeVariants && !identical(founderIid, expectedFounderIid)){
-    stop(paste0(
-      "Variant export currently requires the original SimParam founder ",
-      "population to be the only recorded founders; use includeVariants=FALSE"
-    ))
-  }
-
   if(includeVariants){
     ibd = .recordedIbdHaplo(samplePops, chr, simParam)
-    founderHap = pullSegSiteHaplo(simParam$founderPop, chr=chr)
-    currentHap = do.call("rbind", lapply(
-      samplePops,
-      pullSegSiteHaplo,
-      chr=chr,
-      simParam=simParam
-    ))
-    unrecordedGenomeMessage = paste0(
-      "Current genomes contain changes not represented by recombination ",
-      "history (for example mutate() or editGenome()); use ",
-      "includeVariants=FALSE for ancestry-only export"
-    )
+    sortedChr = sort(chr)
+    blockEnd = cumsum(nLoci[sortedChr])
+    blockStart = c(1L, utils::head(blockEnd, -1L) + 1L)
+    blockOrder = match(chr, sortedChr)
+    columnOrder = unlist(Map(
+      seq.int,
+      blockStart[blockOrder],
+      blockEnd[blockOrder]
+    ), use.names=FALSE)
+    founderCopyHap = pullSegSiteHaplo(
+      simParam$founderPop,
+      chr=sortedChr
+    )[,columnOrder,drop=FALSE]
+    currentHap = do.call("rbind", lapply(samplePops, function(x){
+      pullSegSiteHaplo(
+        x,
+        chr=sortedChr,
+        simParam=simParam
+      )[,columnOrder,drop=FALSE]
+    }))
+    sampleRowIid = as.integer(unlist(lapply(samplePops, function(x){
+      rep(x@iid, each=x@ploidy)
+    }), use.names=FALSE))
     if(!identical(dim(ibd), dim(currentHap)) ||
-       ncol(founderHap) != ncol(currentHap)){
-      stop(unrecordedGenomeMessage)
+       ncol(founderCopyHap) != ncol(currentHap)){
+      stop("Current genomes and recorded ancestry have different dimensions")
     }
+    if(anyNA(currentHap) || any(currentHap != 0L & currentHap != 1L)){
+      stop("Current haplotypes must contain only 0 and 1")
+    }
+
     founderOrigins = as.integer(unlist(
-      recHist[expectedFounderIid],
+      recHist[founderIid],
       use.names=FALSE
     ))
-    if(length(founderOrigins) != nrow(founderHap) ||
-       anyNA(founderOrigins) || any(founderOrigins < 1L)){
-      stop("Recorded founder origins do not match SimParam$founderPop")
+    if(anyNA(founderOrigins) || any(founderOrigins < 1L)){
+      stop("Recorded founder origins must be positive integers")
     }
     uniqueOrigins = unique(founderOrigins)
-    originRows = match(uniqueOrigins, founderOrigins)
-    originHap = founderHap[originRows,,drop=FALSE]
-    copyOriginRows = match(founderOrigins, uniqueOrigins)
-    for(row in seq_len(nrow(founderHap))){
-      if(!identical(
-        unname(founderHap[row,]),
-        unname(originHap[copyOriginRows[row],])
-      )){
-        stop("Copies of a founder haplotype origin contain different alleles")
+    originHap = matrix(
+      0L,
+      nrow=length(uniqueOrigins),
+      ncol=ncol(currentHap)
+    )
+    originKnown = rep(FALSE, nrow(originHap))
+
+    originalFoundersRecorded =
+      length(expectedFounderIid) <= nrow(pedigree) &&
+      all(pedigree[expectedFounderIid, 1L] == 0L) &&
+      all(pedigree[expectedFounderIid, 2L] == 0L) &&
+      all(vapply(recHist[expectedFounderIid], is.integer, logical(1))) &&
+      all(expectedFounderIid %in% sampleIid)
+    if(originalFoundersRecorded){
+      founderSampleRows = as.integer(unlist(lapply(
+        expectedFounderIid,
+        function(iid) which(sampleRowIid == iid)
+      ), use.names=FALSE))
+      originalFoundersRecorded =
+        length(founderSampleRows) == nrow(founderCopyHap) &&
+        identical(
+          unname(currentHap[founderSampleRows,,drop=FALSE]),
+          unname(founderCopyHap)
+        )
+    }
+    if(originalFoundersRecorded){
+      originalOrigins = as.integer(unlist(
+        recHist[expectedFounderIid],
+        use.names=FALSE
+      ))
+      if(length(originalOrigins) != nrow(founderCopyHap)){
+        stop("Recorded original founders do not match SimParam$founderPop")
+      }
+      for(row in seq_len(nrow(founderCopyHap))){
+        originRow = match(originalOrigins[row], uniqueOrigins)
+        if(is.na(originRow)){
+          stop("Recorded founder origins are internally inconsistent")
+        }
+        if(originKnown[originRow] &&
+           !identical(
+             unname(founderCopyHap[row,]),
+             unname(originHap[originRow,])
+           )){
+          stop("Copies of a founder haplotype origin contain different alleles")
+        }
+        originHap[originRow,] = founderCopyHap[row,]
+        originKnown[originRow] = TRUE
       }
     }
+
     ibdOriginRows = matrix(
       match(as.integer(ibd), uniqueOrigins),
       nrow=nrow(ibd),
@@ -241,33 +336,44 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
     if(anyNA(ibdOriginRows)){
       stop("Recorded founder origins do not match SimParam$founderPop")
     }
-    expectedHap = matrix(0L, nrow=nrow(ibd), ncol=ncol(ibd))
-    for(j in seq_len(ncol(ibd))){
-      expectedHap[,j] = originHap[ibdOriginRows[,j],j]
-    }
-    if(!identical(unname(currentHap), expectedHap)){
-      stop(unrecordedGenomeMessage)
-    }
+
+    variantEncoding = resolveVariantEncodingCpp(
+      originRows=ibdOriginRows,
+      currentHaplotypes=currentHap,
+      originHaplotypes=originHap,
+      knownOrigins=originKnown
+    )
+    originHap = variantEncoding$originHaplotypes
+    sampleAlleleOverrides = variantEncoding$sampleAlleleOverrides
   }
 
   individualId = names(recHist)
   if(is.null(individualId) || length(individualId) != length(recHist)){
     individualId = as.character(seq_along(recHist))
+  }else{
+    missingId = is.na(individualId)
+    individualId[missingId] = as.character(which(missingId))
+  }
+  individualId[sampleIid] = sampleId
+  individualId = enc2utf8(individualId)
+  if(anyNA(iconv(individualId, from="UTF-8", to="UTF-8"))){
+    stop("Individual IDs must be valid UTF-8 strings")
   }
   version = as.character(utils::packageVersion("AlphaSimR"))
   timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz="UTC")
 
   output = vector("list", length(chr))
   names(output) = paste0("chr", chr)
+  columnOffset = 0L
   for(i in seq_along(chr)){
     if(includeVariants){
-      founderCopyChr = pullSegSiteHaplo(
-        simParam$founderPop,
-        chr=chr[i]
-      )
-      founderChr = founderCopyChr[originRows,,drop=FALSE]
+      columns = columnOffset + seq_len(nLoci[chr[i]])
+      originChr = originHap[,columns,drop=FALSE]
+      overridesChr = sampleAlleleOverrides[,columns,drop=FALSE]
+      columnOffset = columnOffset + nLoci[chr[i]]
     }else{
-      founderChr = matrix(integer(), nrow=0L, ncol=0L)
+      originChr = matrix(integer(), nrow=0L, ncol=0L)
+      overridesChr = matrix(integer(), nrow=0L, ncol=0L)
     }
     xptr = buildTreeSequenceCpp(
       recHist=recHist,
@@ -277,7 +383,8 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
       chromosome=chr[i]-1L,
       nLoci=nLoci[chr[i]],
       founderIid=founderIid,
-      founderHaplotypes=founderChr,
+      originHaplotypes=originChr,
+      sampleAlleleOverrides=overridesChr,
       includeVariants=includeVariants,
       simplify=simplify,
       version=version,
@@ -291,6 +398,8 @@ asTreeSequence = function(pop, chr=NULL, includeVariants=TRUE,
     output[[i]] = tables$tree_sequence()
   }
   attr(output, "chromosome") = chr
+  attr(output, "coordinate_system") = "locus_index"
+  attr(output, "sample_iid") = sampleIid
   class(output) = c("AlphaSimRTreeSequence", "list")
   return(output)
 }

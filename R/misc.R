@@ -573,6 +573,7 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
 
   # Number of total sites
   s = sum(pop@nLoci)
+  chromosomeEnds = cumsum(pop@nLoci)
 
   # Number of mutations per haplotype
   nMut = rbinom(nHap, s, mutRate)
@@ -587,23 +588,10 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
       sites = sample.int(size = nMut[take], n = s)
 
       # Resolve all mutations
-      chr = 1L
       for(i in sites){
-        # Find chromosome
-        repeat{
-          if(i > sum(pop@nLoci[1L:chr])){
-            chr = chr + 1L
-          }else{
-            break
-          }
-        }
-
-        # Find site
-        if(chr>1L){
-          site = i - sum(pop@nLoci[1L:(chr-1L)])
-        }else{
-          site = i
-        }
+        chr = findInterval(i - 1L, chromosomeEnds) + 1L
+        chromosomeStart = if(chr == 1L) 0L else chromosomeEnds[chr - 1L]
+        site = i - chromosomeStart
 
         # Create mutation
         BYTE = (site-1L)%/%8L + 1L

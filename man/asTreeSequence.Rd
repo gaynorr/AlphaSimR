@@ -41,11 +41,18 @@ conversion occurs only when this function is called.
 Coordinates are locus based. For a chromosome with \code{n} loci,
 the sequence spans \code{[0, n)} and locus \code{i} is stored at
 \code{i - 0.5}. When variants are requested, the current population is
-checked against the founder alleles and recorded inheritance. Direct genome
-changes made by functions such as \code{\link{mutate}} and
-\code{\link{editGenome}} cannot currently be represented and produce an
-informative error. Inbred founders retain their shared haplotype origins,
-and samples may span generations and even ploidies in a MultiPop.
+checked against the founder alleles and recorded inheritance. Changes made
+by functions such as \code{\link{mutate}} and \code{\link{editGenome}} are
+represented as mutations on terminal sample nodes. Alleles from
+additional founders are inferred from sampled descendants where possible.
+Known founder alleles are used only when sampled tracked founders verify
+their correspondence to \code{SimParam$founderPop}; otherwise founder
+alleles are inferred conservatively from the requested samples. Inbred
+founders retain their shared haplotype origins, and samples may span
+generations and even ploidies in a MultiPop. Sample and recorded-individual
+node times are pedigree depths measured backwards from the deepest recorded
+individual. Synthetic founder-origin roots and sample ancestry proxies use
+the explicitly documented offsets stored in the top-level metadata.
 \code{HybridPop} is not supported because that lightweight class stores
 genetic values rather than haplotypes and recombination histories.
 }

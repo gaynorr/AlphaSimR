@@ -399,7 +399,11 @@ MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed)
 }
 
-buildTreeSequenceCpp <- function(recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, founderHaplotypes, includeVariants, simplify, version, timestamp) {
-    .Call(`_AlphaSimR_buildTreeSequenceCpp`, recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, founderHaplotypes, includeVariants, simplify, version, timestamp)
+resolveVariantEncodingCpp <- function(originRows, currentHaplotypes, originHaplotypes, knownOrigins) {
+    .Call(`_AlphaSimR_resolveVariantEncodingCpp`, originRows, currentHaplotypes, originHaplotypes, knownOrigins)
+}
+
+buildTreeSequenceCpp <- function(recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, originHaplotypes, sampleAlleleOverrides, includeVariants, simplify, version, timestamp) {
+    .Call(`_AlphaSimR_buildTreeSequenceCpp`, recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, originHaplotypes, sampleAlleleOverrides, includeVariants, simplify, version, timestamp)
 }
 

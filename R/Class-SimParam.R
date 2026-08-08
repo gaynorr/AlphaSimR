@@ -2010,6 +2010,7 @@ SimParam = R6Class(
     setRecombRatio = function(femaleRatio){
       stopifnot(femaleRatio>0)
       genMap = self$genMap
+      centromere = self$centromere
       private$.sepMap = TRUE
       feSc = 2/(1/femaleRatio+1)
       maSc = 2/(femaleRatio+1)
@@ -2017,12 +2018,12 @@ SimParam = R6Class(
                                   function(x){
                                     feSc*x
                                   })
-      private$.femaleCentromere = feSc*private$.femaleCentromere
+      private$.femaleCentromere = feSc*centromere
       private$.maleMap = lapply(genMap,
                                 function(x){
                                   maSc*x
                                 })
-      private$.maleCentromere = maSc*private$.maleCentromere
+      private$.maleCentromere = maSc*centromere
       invisible(self)
     },
 
