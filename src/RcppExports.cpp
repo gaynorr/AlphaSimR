@@ -885,6 +885,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// buildTreeSequenceCpp
+SEXP buildTreeSequenceCpp(Rcpp::List recHist, Rcpp::IntegerMatrix pedigree, Rcpp::IntegerVector sampleIid, Rcpp::CharacterVector individualId, int chromosome, int nLoci, Rcpp::IntegerVector founderIid, Rcpp::IntegerMatrix founderHaplotypes, bool includeVariants, bool simplify, std::string version, std::string timestamp);
+RcppExport SEXP _AlphaSimR_buildTreeSequenceCpp(SEXP recHistSEXP, SEXP pedigreeSEXP, SEXP sampleIidSEXP, SEXP individualIdSEXP, SEXP chromosomeSEXP, SEXP nLociSEXP, SEXP founderIidSEXP, SEXP founderHaplotypesSEXP, SEXP includeVariantsSEXP, SEXP simplifySEXP, SEXP versionSEXP, SEXP timestampSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type recHist(recHistSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerMatrix >::type pedigree(pedigreeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type sampleIid(sampleIidSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type individualId(individualIdSEXP);
+    Rcpp::traits::input_parameter< int >::type chromosome(chromosomeSEXP);
+    Rcpp::traits::input_parameter< int >::type nLoci(nLociSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type founderIid(founderIidSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerMatrix >::type founderHaplotypes(founderHaplotypesSEXP);
+    Rcpp::traits::input_parameter< bool >::type includeVariants(includeVariantsSEXP);
+    Rcpp::traits::input_parameter< bool >::type simplify(simplifySEXP);
+    Rcpp::traits::input_parameter< std::string >::type version(versionSEXP);
+    Rcpp::traits::input_parameter< std::string >::type timestamp(timestampSEXP);
+    rcpp_result_gen = Rcpp::wrap(buildTreeSequenceCpp(recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, founderHaplotypes, includeVariants, simplify, version, timestamp));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveRRBLUP", (DL_FUNC) &_AlphaSimR_solveRRBLUP, 3},
@@ -944,6 +966,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
     {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
     {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
+    {"_AlphaSimR_buildTreeSequenceCpp", (DL_FUNC) &_AlphaSimR_buildTreeSequenceCpp, 12},
     {NULL, NULL, 0}
 };
 

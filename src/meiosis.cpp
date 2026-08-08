@@ -1069,6 +1069,15 @@ void quadrivalent(const arma::Col<unsigned char>& chr1,
   }
 }
 
+void remapQuadrivalentHistory(arma::Mat<int>& hist,
+                              const arma::uvec& homologs,
+                              arma::uword start){
+  hist.col(0) *= 100; // Avoid replacement conflicts
+  for(arma::uword i=0; i<4; ++i){
+    hist.col(0).replace(100*int(i+1), int(homologs(start+i))+1);
+  }
+}
+
 // Makes crosses between diploid individuals.
 // motherGeno: female genotypes
 // mother: female parents
@@ -1195,13 +1204,9 @@ Rcpp::List cross(
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
-              hist1.col(0) *= 100; //To avoid conflicts
-              hist1.col(0).replace(100,int(xm(x))+1);
-              hist1.col(0).replace(200,int(xm(x+1))+1);
+              remapQuadrivalentHistory(hist1, xm, x);
               hist.addHist(hist1,ind,chr,progenyChr);
-              hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(xm(x+2))+1);
-              hist2.col(0).replace(200,int(xm(x+3))+1);
+              remapQuadrivalentHistory(hist2, xm, x);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;
@@ -1285,13 +1290,9 @@ Rcpp::List cross(
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
-              hist1.col(0) *= 100; //To avoid conflicts
-              hist1.col(0).replace(100,int(xf(x))+1);
-              hist1.col(0).replace(200,int(xf(x+1))+1);
+              remapQuadrivalentHistory(hist1, xf, x);
               hist.addHist(hist1,ind,chr,progenyChr);
-              hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(xf(x+2))+1);
-              hist2.col(0).replace(200,int(xf(x+3))+1);
+              remapQuadrivalentHistory(hist2, xf, x);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;
@@ -1476,13 +1477,9 @@ Rcpp::List createReducedGenome(
             tmpGeno.slice(ind).col(progenyChr) = gamete1;
             tmpGeno.slice(ind).col(progenyChr+1) = gamete2;
             if(trackRec){
-              hist1.col(0) *= 100; //To avoid conflicts
-              hist1.col(0).replace(100,int(x(y))+1);
-              hist1.col(0).replace(200,int(x(y+1))+1);
+              remapQuadrivalentHistory(hist1, x, y);
               hist.addHist(hist1,ind,chr,progenyChr);
-              hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(x(y+2))+1);
-              hist2.col(0).replace(200,int(x(y+3))+1);
+              remapQuadrivalentHistory(hist2, x, y);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;

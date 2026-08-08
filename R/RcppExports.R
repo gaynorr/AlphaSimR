@@ -399,3 +399,7 @@ MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed)
 }
 
+buildTreeSequenceCpp <- function(recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, founderHaplotypes, includeVariants, simplify, version, timestamp) {
+    .Call(`_AlphaSimR_buildTreeSequenceCpp`, recHist, pedigree, sampleIid, individualId, chromosome, nLoci, founderIid, founderHaplotypes, includeVariants, simplify, version, timestamp)
+}
+
