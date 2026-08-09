@@ -11,6 +11,10 @@ test_that("makeCross",{
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop,simParam=SP)
   crossPlan = cbind(rep(1,10),rep(2,10))
+  expect_error(makeCross(pop=pop,crossPlan=matrix(c("3", "4"), ncol = 2),simParam=SP),
+               regexp = "Failed to match supplied IDs")
+  expect_error(makeCross(pop=pop,crossPlan=matrix(c(3, 4), ncol = 2),simParam=SP),
+               regexp = "Invalid crossPlan")
   #Match by number
   pop1 = makeCross(pop=pop,crossPlan=crossPlan,simParam=SP)
   expect_equal(SP$lastId,12L)
