@@ -231,7 +231,7 @@ calcPopValue = function(
     }
 
     popValue = do.call(rbind, popValueList)
-    attr(popValue, "source") = .formatCalcPopSource(
+    attr(popValue, "source") = .formatPopSource(
       paths = source,
       nRows = nRows,
       level_offset = .level_offset
@@ -1028,14 +1028,15 @@ selectPop = function(
   return(out)
 }
 
-#' Helper function to format the source attribute for \code{calcPopValue}
+#' Helper function to format the source attribute for simplified \code{MultiPop}
+#' output
 #'
 #' @param paths List of character vectors representing leaf paths.
 #' @param nRows Vector of row counts for each path.
 #' @param level_offset Integer scalar used to label source levels.
 #'
 #' @keywords internal
-.formatCalcPopSource = function(paths, nRows, level_offset = 0L) {
+.formatPopSource = function(paths, nRows, level_offset = 0L) {
   if (length(paths) == 0L) {
     return(NULL)
   }
