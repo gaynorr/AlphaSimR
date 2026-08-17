@@ -4,28 +4,94 @@
 \alias{meanEBV}
 \title{Mean estimated breeding values}
 \usage{
-meanEBV(pop)
+meanEBV(pop, simplify = FALSE, level = 1L)
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}}
+\item{pop}{A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+\code{\link{MultiPop-class}} object.}
+
+\item{simplify}{Logical. Only used when \code{pop} is a
+\code{\link{MultiPop-class}}. If \code{TRUE}, flatten \code{pop} to the
+requested \code{level} with \code{\link{flattenMultiPop}}, combine results
+across populations with \code{\link{rbind}}, and attach a \code{"source"}
+attribute describing row origins.}
+
+\item{level}{Integer scalar \eqn{\ge 1}. Only used when \code{pop} is a
+\code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+\code{MultiPop} levels to preserve. Passed to
+\code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.}
+}
+\value{
+If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+returns a numeric vector of mean estimated breeding values (one value per
+column in \code{ebv(pop)}).
+
+If \code{pop} is a \code{\link{MultiPop-class}} and \code{simplify=FALSE},
+returns a list matching the \code{MultiPop} nesting structure, with one
+numeric vector per \code{Pop} object. If \code{simplify=TRUE}, the nested
+list is simplified down to a requested \code{level} by binding individual
+\code{Pop} results with \code{\link{rbind}}: rows correspond to populations
+and columns to traits in \code{ebv(pop)} and a \code{"source"} attribute 
+records row origins. If \code{level=1} the whole structure is simplified 
+to a numeric matrix.
 }
 \description{
-Returns the mean estimated breeding values for all traits
+Returns mean estimated breeding values for all traits in a population.
+Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
+\code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
+optionally be simplified to a requested nesting level.
+}
+\details{
+When \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+follows the same nesting as \code{pop}.
+
+When \code{simplify=TRUE}, output is simplified to the requested
+\code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+structure is returned unchanged. If \code{level} \eqn{< 1}, the function
+sets \code{level=1} and issues a warning.
+
+Simplified output requires compatible \code{@ebv} columns 
+(see \code{\link{ebv}}) across terminal populations so that results can be
+combined with \code{\link{rbind}}.
+
+Simplified output includes a \code{"source"} attribute. This is a data frame
+with columns \code{level1}, \code{level2}, etc., indicating the name (or
+index) of the source population for each row at each retained nesting level.
 }
 \examples{
-#Create founder haplotypes
+# Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
-#Set simulation parameters
+# Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 trtH2 = 0.5
 SP$setVarE(h2=trtH2)
 \dontshow{SP$nThreads = 1L}
 
-#Create population
+# Create population
 pop = newPop(founderPop, simParam=SP)
-pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
-meanEBV(pop)
+pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
 
+# Individual performance based EBV
+pop2@ebv = trtH2 * (pheno(pop2) - meanP(pop2))
+meanEBV(pop2)
+
+# Create a nested MultiPop
+mp1 = splitPop(
+  pop2,
+  by = list(
+    function(x) rep(LETTERS[1:2], length.out = length(x)),
+    function(x) paste(x@mother, x@father, sep = "_")
+  )
+)
+
+# Calculate mean estimated breeding values and simplify at different levels
+meanEBV(mp1, simplify = FALSE)
+meanEBV(mp1, simplify = TRUE, level = 2)
+meanEBV(mp1, simplify = TRUE, level = 1)
+
+}
+\seealso{
+\code{\link{ebv}}, \code{\link{setEBV}}
 }
