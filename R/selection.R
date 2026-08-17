@@ -104,8 +104,6 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 #'   Ignored if \code{simplify=FALSE}.
-#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
-#'   the function uses the object named \code{SP} from the global environment.
 #' @param ... Additional arguments passed to \code{FUN}.
 #'
 #' @details
@@ -163,13 +161,8 @@ calcPopValue = function(
   FUN,
   simplify = FALSE,
   level = 1,
-  simParam = NULL,
   ...
 ) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
-
   dots = list(...)
   .level_offset = dots[[".level_offset"]]
   if (is.null(.level_offset)) {
@@ -204,7 +197,6 @@ calcPopValue = function(
           FUN = FUN,
           simplify = simplify,
           level = level - 1L,
-          simParam = simParam,
           .level_offset = .level_offset + 1L
         ),
         dots
@@ -994,8 +986,7 @@ selectPop = function(
       getResponse(pop = pop, trait = trait, use = use, simParam = simParam, ...)
     },
     simplify = FALSE,
-    level = 1L,
-    simParam = simParam
+    level = 1L
   )
 
   popValues = vapply(response, function(res) {

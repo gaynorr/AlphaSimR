@@ -4,7 +4,7 @@
 \alias{calcPopValue}
 \title{Calculate values from Pop or MultiPop objects}
 \usage{
-calcPopValue(x, FUN, simplify = FALSE, level = 1, simParam = NULL, ...)
+calcPopValue(x, FUN, simplify = FALSE, level = 1, ...)
 }
 \arguments{
 \item{x}{A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.}
@@ -22,9 +22,6 @@ each \code{Pop} are combined with \code{\link{rbind}}, and a
 \item{level}{Integer scalar >= 1. Number of \code{MultiPop} levels to
 preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 Ignored if \code{simplify=FALSE}.}
-
-\item{simParam}{an object of class \code{\link{SimParam}}. If \code{NULL},
-the function uses the object named \code{SP} from the global environment.}
 
 \item{...}{Additional arguments passed to \code{FUN}.}
 }
