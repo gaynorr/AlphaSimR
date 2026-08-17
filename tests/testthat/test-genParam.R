@@ -1044,3 +1044,149 @@ test_that("genParam", {
   # Multiple locus traits
   # TODO
 })
+
+test_that("genParamPop", {
+
+  # Recycling example from `genParam` test above, but using `genParamPop` instead
+  # Haplotypes (a bit more than usual so get desired allele and genotype freqs)
+  haplo = matrix(data = 0, nrow = 200, ncol = 3)
+
+  # Locus 1 - in Hardy-Weinberg equilibrium (=random mating, no inbreeding)
+  # Aiming for q = 0.1 as in Falconer (1996) example 7.1
+  haplo[1:2, 1] = 0 # 1 individual with 0/0
+  haplo[3:38, 1] = rep(c(0, 1), times = 18) # 18 individuals with 0/1
+  haplo[39:200, 1] = 1 # 81 individuals with 1/1
+
+  # Locus 2 - in Hardy-Weinberg equilibrium (=random mating, no inbreeding)
+  # Aiming for q = 0.4 as in Falconer (1996) example 7.1
+  haplo[1:32, 2] = 0 # 16 individuals with 0/0
+  haplo[33:128, 2] = rep(c(0, 1), times = 48) # 48 individuals with 0/1
+  haplo[129:200, 2] = 1 # 36 individuals with 1/1
+
+  # Locus 3 - not in Hardy-Weinberg equilibrium (=non-random mating, inbreeding)
+  # Aiming for q = 0.4 as in Falconer (1996) example 7.1
+  haplo[1:68, 3] = 0 # 34 individuals with 0/0
+  haplo[69:92, 3] = rep(c(0, 1), times = 12) # 12 individuals with 0/1
+  haplo[93:200, 3] = 1 # 54 individuals with 1/1
+
+  nInd = nrow(haplo) / 2
+  nLoc = ncol(haplo)
+  colnames(haplo) = letters[1:nLoc]
+
+  genMap = data.frame(
+    markerName = letters[1:nLoc],
+    chromosome = c(1, 1, 1),
+    position = c(0, 0.2, 0.4)
+  )
+
+  ped = data.frame(
+    id = as.character(1:nInd),
+    mother = rep(0, nInd),
+    father = rep(0, nInd)
+  )
+
+  founderPop = importHaplo(
+    haplo = haplo,
+    genMap = genMap,
+    ploidy = 2L,
+    ped = ped
+  )
+
+  SP = SimParam$new(founderPop = founderPop)
+  SP$nThreads = 1L
+
+  a = c(4, 4, 4)
+  d = c(2, 2, 2)
+  SP$importTrait(
+    markerNames = "a",
+    addEff = a[1],
+    domEff = d[1],
+    # markerNames = letters[1:nLoc],
+    # addEff = a,
+    # domEff = d,
+    intercept = 10,
+    name = "Falconer7.1_q=0.1_HWE"
+  )
+  SP$importTrait(
+    markerNames = "b",
+    addEff = a[2],
+    domEff = d[2],
+    intercept = 10,
+    name = "Falconer7.1_q=0.4_HWE"
+  )
+  SP$importTrait(
+    markerNames = "c",
+    addEff = a[3],
+    domEff = d[3],
+    intercept = 10,
+    name = "Falconer7.1_q=0.4_not_HWE"
+  )
+  SP$importTrait(
+    markerNames = letters[1:3],
+    addEff = a,
+    domEff = d,
+    intercept = 10,
+    name = "Multi-locus"
+  )
+
+  # Create a new shuffled population
+  pop = newPop(founderPop, simParam = SP)[sample(1:100, 100, replace = F)]
+  multiPop = split(pop, 1:100)
+  multiPop = do.call(newMultiPop, unname(multiPop))
+
+  ans1_C = calcGenParam(trait = SP$traits[[1]], pop, SP$nThreads)
+  ans1_R = calcGenParamPop_R(trait = SP$traits[[1]], multiPop = multiPop, simParam = SP)
+
+  expect_equal(ans1_R$gv, ans1_C$gv[,1])
+  expect_equal(ans1_R$bv, ans1_C$bv[,1])
+  expect_equal(ans1_R$dd, ans1_C$dd[,1])
+  expect_equal(ans1_R$genicVarA, ans1_C$genicVarA)
+  expect_equal(ans1_R$genicVarD, ans1_C$genicVarD)
+  expect_equal(ans1_R$mu, ans1_C$mu)
+  expect_equal(ans1_R$gv_a, ans1_C$gv_a[,1])
+  expect_equal(ans1_R$gv_d, ans1_C$gv_d[,1])
+  expect_equal(mean(ans1_R$gv_mu), ans1_C$gv_mu)
+  expect_equal(ans1_R$alpha, ans1_C$alpha[,1])
+
+  ans2_C = calcGenParam(trait = SP$traits[[2]], pop, SP$nThreads)
+  ans2_R = calcGenParamPop_R(trait = SP$traits[[2]], multiPop = multiPop, simParam = SP)
+
+  expect_equal(ans2_R$gv, ans2_C$gv[,1])
+  expect_equal(ans2_R$bv, ans2_C$bv[,1])
+  expect_equal(ans2_R$dd, ans2_C$dd[,1])
+  expect_equal(ans2_R$genicVarA, ans2_C$genicVarA)
+  expect_equal(ans2_R$genicVarD, ans2_C$genicVarD)
+  expect_equal(ans2_R$mu, ans2_C$mu)
+  expect_equal(ans2_R$gv_a, ans2_C$gv_a[,1])
+  expect_equal(ans2_R$gv_d, ans2_C$gv_d[,1])
+  expect_equal(mean(ans2_R$gv_mu), ans2_C$gv_mu)
+  expect_equal(ans2_R$alpha, ans2_C$alpha[,1])
+
+  ans3_C = calcGenParam(trait = SP$traits[[3]], pop, SP$nThreads)
+  ans3_R = calcGenParamPop_R(trait = SP$traits[[3]], multiPop = multiPop, simParam = SP)
+
+  expect_equal(ans3_R$gv, ans3_C$gv[,1])
+  expect_equal(ans3_R$bv, ans3_C$bv[,1])
+  expect_equal(ans3_R$dd, ans3_C$dd[,1])
+  expect_equal(ans3_R$genicVarA, ans3_C$genicVarA)
+  expect_equal(ans3_R$genicVarD, ans3_C$genicVarD)
+  expect_equal(ans3_R$mu, ans3_C$mu)
+  expect_equal(ans3_R$gv_a, ans3_C$gv_a[,1])
+  expect_equal(ans3_R$gv_d, ans3_C$gv_d[,1])
+  expect_equal(mean(ans3_R$gv_mu), ans3_C$gv_mu)
+  expect_equal(ans3_R$alpha, ans3_C$alpha[,1])
+
+  ans4_C = calcGenParam(trait = SP$traits[[4]], pop, SP$nThreads)
+  ans4_R = calcGenParamPop_R(trait = SP$traits[[4]], multiPop = multiPop, simParam = SP)
+
+  expect_equal(ans4_R$gv, ans4_C$gv[,1])
+  expect_equal(ans4_R$bv, ans4_C$bv[,1])
+  expect_equal(ans4_R$dd, ans4_C$dd[,1])
+  expect_equal(ans4_R$genicVarA, ans4_C$genicVarA)
+  expect_equal(ans4_R$genicVarD, ans4_C$genicVarD)
+  expect_equal(ans4_R$mu, ans4_C$mu)
+  expect_equal(ans4_R$gv_a, ans4_C$gv_a[,1])
+  expect_equal(ans4_R$gv_d, ans4_C$gv_d[,1])
+  expect_equal(mean(ans4_R$gv_mu), ans4_C$gv_mu)
+  expect_equal(ans4_R$alpha, ans4_C$alpha[,1])
+})
