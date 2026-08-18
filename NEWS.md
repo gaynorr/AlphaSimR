@@ -56,6 +56,8 @@
 
 * Update `varG()`, `varP()` and `varEBV()` to support MultiPop objects.
 
+* Add `varGPop()` and `varPPop()` to calculate genetic and phenotype variances between populations in a MultiPop.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

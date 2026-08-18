@@ -20,6 +20,10 @@ per \code{Pop} object.
 }
 \description{
 Returns total genetic variance for all traits within a \code{Pop}.
+
+In contrast to \code{\link{varGPop}}, which computes variance between
+population means, \code{varG} computes variance within populations from
+individual genetic values.
 }
 \details{
 A variance-covariance matrix of genetic values is computed for each

@@ -20,6 +20,10 @@ per \code{Pop} object.
 }
 \description{
 Returns phenotypic variance for all traits within a \code{Pop}.
+
+In contrast to \code{\link{varPPop}}, which computes variance between
+population means, \code{varP} computes variance within populations from
+individual genetic values.
 }
 \details{
 A variance-covariance matrix of phenotype values is computed for each 
@@ -47,4 +51,10 @@ mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
 # Return a list of variance-covariance matrices for the MultiPop
 varP(mp)
 
+# Compare with between-population variance
+varPPop(mp, level = 1)
+
+}
+\seealso{
+\code{\link{varPPop}}
 }

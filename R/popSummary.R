@@ -507,6 +507,10 @@ meanPPop = function(x, level = 0, .req_level) {
 #'
 #' @description
 #' Returns total genetic variance for all traits within a \code{Pop}.
+#' 
+#' In contrast to \code{\link{varGPop}}, which computes variance between
+#' population means, \code{varG} computes variance within populations from
+#' individual genetic values.
 #'
 #' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
 #'   \code{\link{MultiPop-class}} object.
@@ -546,6 +550,9 @@ meanPPop = function(x, level = 0, .req_level) {
 #' 
 #' # Return a list of variance-covariance matrices for the MultiPop
 #' varG(mp)
+#' 
+#' # Compare with between-population variance
+#' varGPop(mp, level = 1)
 #'
 #' @export
 varG = function(pop) {
@@ -560,6 +567,10 @@ varG = function(pop) {
 #'
 #' @description
 #' Returns phenotypic variance for all traits within a \code{Pop}.
+#' 
+#' In contrast to \code{\link{varPPop}}, which computes variance between
+#' population means, \code{varP} computes variance within populations from
+#' individual genetic values.
 #'
 #' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
 #'   \code{\link{MultiPop-class}} object.
@@ -567,6 +578,8 @@ varG = function(pop) {
 #' @details
 #' A variance-covariance matrix of phenotype values is computed for each 
 #' \code{Pop} across traits.
+#' 
+#' @seealso \code{\link{varPPop}}
 #' 
 #' @return
 #' If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
@@ -597,6 +610,9 @@ varG = function(pop) {
 #' 
 #' # Return a list of variance-covariance matrices for the MultiPop
 #' varP(mp)
+#' 
+#' # Compare with between-population variance
+#' varPPop(mp, level = 1)
 #'
 #' @export
 varP = function(pop) {
@@ -660,6 +676,142 @@ varEBV = function(pop) {
     rownames(G) = colnames(G) = colnames(x@ebv)
     return(G)
   })
+}
+
+#' @title Total genetic variance between populations
+#'
+#' @description
+#' Returns total genetic variance between populations in a
+#' \code{\link{MultiPop-class}} object.
+#'
+#' In contrast to \code{\link{varG}}, which computes variance within each
+#' terminal population from individual genetic values, \code{varGPop} computes
+#' variance among population means.
+#'
+#' @param x A \code{\link{MultiPop-class}} object.
+#' @param level Integer scalar \eqn{\ge 1} indicating the aggregation level for
+#'   population means (see Details).
+#'
+#' @details
+#' This function first computes mean genetic values using
+#' \code{\link{meanGPop}} at the requested \code{level}. The resulting matrix
+#' (rows = populations, columns = traits) is then passed to
+#' \code{\link{popVar}} to calculate a variance-covariance matrix of genetic
+#' values across traits, representing variance between populations at the
+#' requested \code{level}.
+#'
+#' If the requested \code{level} yields only one aggregated population, there is
+#' no between-population variation to estimate. In this case, the function
+#' returns a variance-covariance matrix of zeros and issues a warning.
+#' 
+#' @seealso \code{\link{varG}}
+#'
+#' @return
+#' A variance-covariance matrix of genetic values across traits, representing
+#' variance between populations at the requested aggregation \code{level}.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' \dontshow{SP$nThreads = 1L}
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' mp = splitPop(
+#'   pop,
+#'   by = list(
+#'     sample(rep(LETTERS[1:2], length.out = pop@nInd)),
+#'     function(x) sample(letters[5:6], length(x), replace = TRUE)
+#'   )
+#' )
+#'
+#' # Between-population variance at different aggregation levels
+#' varGPop(mp, level = 2)
+#' varGPop(mp, level = 1)
+#'
+#' # Compare with within-population variance
+#' varG(mp)
+#'
+#' @export
+varGPop = function(x, level = 1L) {
+  m = meanGPop(x, level = level)
+  if (is.vector(m)) {
+    warning(
+      "Returning a variance-covariance matrix of zeros. You may want to increase the value of `level`."
+    )
+    m = t(m)
+  }
+  G = popVar(m)
+  rownames(G) = colnames(G) = colnames(m)
+  return(G)
+}
+
+#' @title Phenotypic variance between populations
+#'
+#' @description
+#' Returns phenotypic variance between populations in a
+#' \code{\link{MultiPop-class}} object.
+#'
+#' In contrast to \code{\link{varP}}, which computes variance within each
+#' terminal population from individual phenotype values, \code{varPPop} computes
+#' variance among population means.
+#'
+#' @param x A \code{\link{MultiPop-class}} object.
+#' @param level Integer scalar \eqn{\ge 1} indicating the aggregation level for
+#'   population means (see Details).
+#'
+#' @details
+#' This function first computes mean phenotype values using
+#' \code{\link{meanPPop}} at the requested \code{level}. The resulting matrix
+#' (rows = populations, columns = traits) is then passed to
+#' \code{\link{popVar}} to calculate a variance-covariance matrix of phenotype
+#' values across traits, representing variance between populations at the
+#' requested \code{level}.
+#'
+#' If the requested \code{level} yields only one aggregated population, there is
+#' no between-population variation to estimate. In this case, the function
+#' returns a variance-covariance matrix of zeros and issues a warning.
+#' 
+#' @seealso \code{\link{varP}}
+#'
+#' @return
+#' A variance-covariance matrix of phenotype values across traits, representing
+#' variance between populations at the requested aggregation \code{level}.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' \dontshow{SP$nThreads = 1L}
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' mp = splitPop(
+#'   pop,
+#'   by = list(
+#'     sample(rep(LETTERS[1:2], length.out = pop@nInd)),
+#'     function(x) sample(letters[5:6], length(x), replace = TRUE)
+#'   )
+#' )
+#'
+#' # Between-population variance at different aggregation levels
+#' varPPop(mp, level = 2)
+#' varPPop(mp, level = 1)
+#'
+#' # Compare with within-population variance
+#' varP(mp)
+#'
+#' @export
+varPPop = function(x, level = 1L) {
+  m = meanPPop(x, level = level)
+  if (is.vector(m)) {
+    warning(
+      "Returning a variance-covariance matrix of zeros. You may want to increase the value of `level`."
+    )
+    m = t(m)
+  }
+  G = popVar(m)
+  rownames(G) = colnames(G) = colnames(m)
+  return(G)
 }
 
 #' @title Sumarize genetic parameters
