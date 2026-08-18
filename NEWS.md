@@ -54,6 +54,8 @@
 
 * Add `meanGPop()` and `meanPPop()` to calculate mean genetic and phenotype values between Pops in a MultiPop.
 
+* Update `varG()`, `varP()` and `varEBV()` to support MultiPop objects.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

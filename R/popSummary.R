@@ -503,88 +503,163 @@ meanPPop = function(x, level = 0, .req_level) {
   }
 }
 
-#' @title Total genetic variance
+#' @title Total genetic variance within a \code{Pop}
 #'
-#' @description Returns total genetic variance for all traits
+#' @description
+#' Returns total genetic variance for all traits within a \code{Pop}.
 #'
-#' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' 
+#' @details
+#' A variance-covariance matrix of genetic values is computed for each
+#' \code{Pop} across traits.
+#' 
+#' @seealso \code{\link{varGPop}}
+#' 
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+#' returns a variance-covariance matrix of genetic values across traits.
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}, returns a nested list
+#' matching the \code{MultiPop} structure, with one variance-covariance matrix
+#' per \code{Pop} object.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
+#' 
+#' # Return a variance-covariance matrix for the population
 #' varG(pop)
+#' 
+#' # Randomly split population into two sub-populations
+#' mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
+#' 
+#' # Return a list of variance-covariance matrices for the MultiPop
+#' varG(mp)
 #'
 #' @export
-varG = function(pop){
-  G = popVar(pop@gv)
-  rownames(G) = colnames(G) = colnames(pop@gv)
-  return(G)
+varG = function(pop) {
+  calcPopValue(pop, FUN = function(x) {
+    G = popVar(x@gv)
+    rownames(G) = colnames(G) = colnames(x@gv)
+    return(G)
+  })
 }
 
-#' @title Phenotypic variance
+#' @title Phenotypic variance within a \code{Pop}
 #'
-#' @description Returns phenotypic variance for all traits
+#' @description
+#' Returns phenotypic variance for all traits within a \code{Pop}.
 #'
-#' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' 
+#' @details
+#' A variance-covariance matrix of phenotype values is computed for each 
+#' \code{Pop} across traits.
+#' 
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+#' returns a variance-covariance matrix of phenotype values across traits.
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}, returns a nested list
+#' matching the \code{MultiPop} structure, with one variance-covariance matrix
+#' per \code{Pop} object.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
+#' 
+#' # Return a variance-covariance matrix for the population
 #' varP(pop)
+#' 
+#' # Randomly split population into two sub-populations
+#' mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
+#' 
+#' # Return a list of variance-covariance matrices for the MultiPop
+#' varP(mp)
 #'
 #' @export
-varP = function(pop){
-  P = popVar(pop@pheno)
-  rownames(P) = colnames(P) = colnames(pop@pheno)
-  return(P)
+varP = function(pop) {
+  calcPopValue(pop, FUN = function(x) {
+    G = popVar(x@pheno)
+    rownames(G) = colnames(G) = colnames(x@pheno)
+    return(G)
+  })
 }
 
-#' @title Variance of estimated breeding values
+#' @title Variance of estimated breeding values within a \code{Pop}
 #'
-#' @description Returns variance of estimated breeding values for all traits
+#' @description
+#' Returns variance of estimated breeding values for all traits within a
+#' \code{Pop}.
 #'
-#' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' 
+#' @details
+#' A variance-covariance matrix of estimated breeding values is computed for
+#' each \code{Pop} across traits in \code{ebv(pop)}.
+#' 
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+#' returns a variance-covariance matrix of estimated breeding values across
+#' traits in \code{ebv(pop)}.
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}, returns a nested list
+#' matching the \code{MultiPop} structure, with one variance-covariance matrix
+#' per \code{Pop} object.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
 #' trtH2 = 0.5
 #' SP$setVarE(h2=trtH2)
 #' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
-#' varA(pop)
+#' pop@ebv = trtH2 * (pheno(pop) - meanP(pop))
+#' 
+#' # Return a variance-covariance matrix for the population
 #' varEBV(pop)
+#' 
+#' # Randomly split population into two sub-populations
+#' mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
+#' 
+#' # Return a list of variance-covariance matrices for the MultiPop
+#' varEBV(mp)
 #'
 #' @export
-varEBV = function(pop){
-  ebv = popVar(pop@ebv)
-  rownames(ebv) = colnames(ebv) = colnames(pop@ebv)
-  return(ebv)
+varEBV = function(pop) {
+  calcPopValue(pop, FUN = function(x) {
+    G = popVar(x@ebv)
+    rownames(G) = colnames(G) = colnames(x@ebv)
+    return(G)
+  })
 }
 
 #' @title Sumarize genetic parameters
