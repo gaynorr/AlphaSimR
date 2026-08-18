@@ -50,6 +50,10 @@
 
 * Fixed a bug in `getGvE` with multiple traits.
 
+* Update `meanG()`, `meanP()` and `meanEBV()` to support MultiPop objects. The output can be simplified via `simplify` and `level` arguments, which are passed to `calcPopValue()`. These functions calculate mean values within Pop objects.
+
+* Add `meanGPop()` and `meanPPop()` to calculate mean genetic and phenotype values between Pops in a MultiPop.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

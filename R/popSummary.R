@@ -285,6 +285,224 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
   )
 }
 
+#' @title Mean genetic values between \code{Pops} in a \code{MultiPop}
+#'
+#' @description Computes mean genetic values for individual
+#' \code{\link{Pop-class}} objects in a \code{\link{MultiPop-class}} object.
+#' Means are then recursively aggregated upward through the nested
+#' \code{MultiPop} structure by taking the mean of child-population means
+#' at each level. Aggregation is intentionally unweighted across child 
+#' populations.
+#'
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param level Integer scalar \code{>= 0} indicating the requested aggregation
+#'   level (see Details).
+#' @param .req_level Internal argument used during recursion. Do not set
+#'   manually.
+#'
+#' @details
+#' The \code{level} argument controls the nesting level in a
+#' \code{MultiPop} structure at which mean aggregation stops:  \cr
+#' - When \code{level>0}, the function returns a numeric matrix with one
+#'   row per \code{Pop} or \code{MultiPop} unit at the requested \code{level}.
+#'   The returned matrix includes a \code{"source"} attribute with columns
+#'   \code{level1}, \code{level2}, etc., indicating the origin of each row,
+#'   and values indicating the name or index of the population at each
+#'   nesting level.  \cr
+#' - When \code{level=0}, the function returns a numeric vector giving the
+#'   overall mean-of-means across all branches for each trait. Any
+#'   \code{level<0} is treated as \code{level=0}.
+#' 
+#' @seealso
+#' \code{\link{meanG}}, \code{\link{gv}}
+#'
+#' @return
+#' If \code{x} is a \code{\link{Pop-class}} object, or if \code{level=0}, a
+#' numeric vector of mean genetic values for each trait.
+#'
+#' If \code{x} is a \code{\link{MultiPop-class}} object and \code{level>0}, a
+#' numeric matrix of (possibly aggregated) mean genetic values for each trait.
+#' The origin of each row is described by the \code{"source"} attribute.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' \dontshow{SP$nThreads = 1L}
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' mp = splitPop(
+#'   pop,
+#'   by = list(
+#'     sample(rep(LETTERS[1:2], length.out = pop@nInd)),
+#'     function(x) sample(letters[5:6], length(x), replace = TRUE)
+#'   )
+#' )
+#'
+#' meanGPop(mp, level = 1)
+#' meanGPop(mp, level = 0)
+#'
+#' @export
+meanGPop = function(x, level = 0, .req_level) {
+  if (!is.numeric(level) || length(level) != 1L || is.na(level)) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+  level = as.integer(level)
+
+  if (isPop(x)) {
+    if (nrow(x@gv) == 0L) {
+      stop("One of the populations in `x` is empty")
+    }
+    return(colMeans(x@gv))
+  }
+  stopifnot(isMultiPop(x))
+  if (length(x) == 0L) {
+    stop("`x` contains no populations.")
+  }
+
+  if (missing(.req_level)) {
+    .req_level = level
+  }
+
+  popValueList = lapply(
+    x@pops,
+    meanGPop,
+    level = level - 1,
+    .req_level = .req_level
+  )
+  popValues = do.call('rbind', popValueList)
+
+  if (level < 1) {
+    return(colMeans(popValues))
+  } else {
+    if (level == .req_level) {
+      md = .depthMultiPop(x)
+      cols = ifelse(level > md, md, level)
+      paths = .collectLeafPaths(x)
+      src = .formatPopSource(
+        paths = paths,
+        nRows = rep(1, length(paths)),
+        level_offset = 0L
+      )
+      src = src[, seq_len(cols), drop = FALSE]
+      src = unique(src)
+      rownames(src) = NULL
+      attr(popValues, "source") = src
+      rownames(popValues) = NULL
+    }
+    return(popValues)
+  }
+}
+
+#' @title Mean phenotype values between \code{Pops} in a \code{MultiPop}
+#'
+#' @description Computes mean phenotype values for individual
+#' \code{\link{Pop-class}} objects in a \code{\link{MultiPop-class}} object.
+#' Means are then recursively aggregated upward through the nested
+#' \code{MultiPop} structure by taking the mean of child-population means
+#' at each level. Aggregation is intentionally unweighted across child 
+#' populations.
+#'
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param level Integer scalar \code{>= 0} indicating the requested aggregation
+#'   level (see Details).
+#' @param .req_level Internal argument used during recursion. Do not set
+#'   manually.
+#'
+#' @details
+#' The \code{level} argument controls the nesting level in a
+#' \code{MultiPop} structure at which mean aggregation stops:  \cr
+#' - When \code{level>0}, the function returns a numeric matrix with one
+#'   row per \code{Pop} or \code{MultiPop} unit at the requested \code{level}.
+#'   The returned matrix includes a \code{"source"} attribute with columns
+#'   \code{level1}, \code{level2}, etc., indicating the origin of each row,
+#'   and values indicating the name or index of the population at each
+#'   nesting level.  \cr
+#' - When \code{level=0}, the function returns a numeric vector giving the
+#'   overall mean-of-means across all branches for each trait. Any
+#'   \code{level<0} is treated as \code{level=0}.
+#' 
+#' @seealso
+#' \code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}}
+#'
+#' @return
+#' If \code{x} is a \code{\link{Pop-class}} object, or if \code{level=0}, a
+#' numeric vector of mean phenotype values for each trait.
+#'
+#' If \code{x} is a \code{\link{MultiPop-class}} object and \code{level>0}, a
+#' numeric matrix of (possibly aggregated) mean phenotype values for each trait.
+#' The origin of each row is described by the \code{"source"} attribute.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' \dontshow{SP$nThreads = 1L}
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' mp = splitPop(
+#'   pop,
+#'   by = list(
+#'     sample(rep(LETTERS[1:2], length.out = pop@nInd)),
+#'     function(x) sample(letters[5:6], length(x), replace = TRUE)
+#'   )
+#' )
+#'
+#' meanPPop(mp, level = 1)
+#' meanPPop(mp, level = 0)
+#'
+#' @export
+meanPPop = function(x, level = 0, .req_level) {
+  if (!is.numeric(level) || length(level) != 1L || is.na(level)) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+  level = as.integer(level)
+
+  if (isPop(x)) {
+    if (nrow(x@pheno) == 0L) {
+      stop("One of the populations in `x` is empty")
+    }
+    return(colMeans(x@pheno))
+  }
+  stopifnot(isMultiPop(x))
+  if (length(x) == 0L) {
+    stop("`x` contains no populations.")
+  }
+
+  if (missing(.req_level)) {
+    .req_level = level
+  }
+
+  popValueList = lapply(
+    x@pops,
+    meanPPop,
+    level = level - 1,
+    .req_level = .req_level
+  )
+  popValues = do.call('rbind', popValueList)
+
+  if (level < 1) {
+    return(colMeans(popValues))
+  } else {
+    if (level == .req_level) {
+      md = .depthMultiPop(x)
+      cols = ifelse(level > md, md, level)
+      paths = .collectLeafPaths(x)
+      src = .formatPopSource(
+        paths = paths,
+        nRows = rep(1, length(paths)),
+        level_offset = 0L
+      )
+      src = src[, seq_len(cols), drop = FALSE]
+      src = unique(src)
+      rownames(src) = NULL
+      attr(popValues, "source") = src
+      rownames(popValues) = NULL
+    }
+    return(popValues)
+  }
+}
+
 #' @title Total genetic variance
 #'
 #' @description Returns total genetic variance for all traits
