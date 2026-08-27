@@ -164,11 +164,13 @@ calcPopValue = function(
   ...
 ) {
   dots = list(...)
+  .paths = dots[[".paths"]]
   .level_offset = dots[[".level_offset"]]
   if (is.null(.level_offset)) {
     .level_offset = 0L
   }
   dots[[".level_offset"]] = NULL
+  dots[[".paths"]] = NULL
 
   if (isPop(x)) {
     FUN.ARGS = c(list(x), dots)
@@ -179,9 +181,13 @@ calcPopValue = function(
     stop("`x` must be a Pop or MultiPop object.")
   }
 
+  if (is.null(.paths) && simplify) {
+    .paths = .collectLeafPaths(x)
+  }
+
   source = NULL
   if (simplify && level == 1L) {
-    source = .collectLeafPaths(x)
+    source = .paths
   }
 
   if (simplify) {
@@ -189,15 +195,30 @@ calcPopValue = function(
   }
 
   popValueList = lapply(
-    x@pops,
-    function(pop) {
+    seq_along(x@pops),
+    function(i) {
+      nm = names(x@pops)
+      child_label = ifelse(
+        !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
+        nm[i],
+        i
+      )
+      keep = vapply(
+        .paths,
+        function(p) {
+          length(p) > 0 && identical(p[[1]], child_label)
+        },
+        logical(1)
+      )
+
       FUN.ARGS = c(
         list(
-          pop,
+          x@pops[[i]],
           FUN = FUN,
           simplify = simplify,
           level = level - 1L,
-          .level_offset = .level_offset + 1L
+          .level_offset = .level_offset + 1L,
+          .paths = lapply(.paths[keep], function(p) p[-1])
         ),
         dots
       )
@@ -1016,11 +1037,11 @@ selectPop = function(
 
   for (i in seq_along(x@pops)) {
     child = x@pops[[i]]
-    if (!is.null(nm) && length(nm) >= i && !is.na(nm[i]) && nzchar(nm[i])) {
-      label = nm[i]
-    } else {
-      label = i
-    }
+    label = ifelse(
+      !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
+      nm[i],
+      i
+    )
     childPath = c(path, list(label))
     out = c(out, .collectLeafPaths(child, path = childPath))
   }

@@ -305,6 +305,41 @@ test_that("calcPopValue", {
   expect_true(is.matrix(out1))
   expect_equal(nrow(out1), nInd(mergeMultiPops(mp3)))
 
+  # Unnamed multipop
+  un_mp3 = newMultiPop(
+    pop[1:2],
+    newMultiPop(
+      pop[3:4],
+      newMultiPop(pop[5:6], pop[7:8])
+    ),
+    newMultiPop(
+      pop[9:10],
+      newMultiPop(pop[11:12], pop[13:14])
+    )
+  )
+
+  # simplify=FALSE preserves nesting
+  outF = calcPopValue(un_mp3, FUN = pheno, simplify = FALSE)
+  expect_true(is.list(outF))
+  expect_identical(names(outF), names(un_mp3))
+  expect_identical(outF[[1]], un_mp3[[1]]@pheno)
+  expect_identical(outF[[2]][[1]], un_mp3[[2]][[1]]@pheno)
+  expect_identical(outF[[2]][[2]][[1]], un_mp3[[2]][[2]][[1]]@pheno)
+  expect_identical(outF[[2]][[2]][[2]], un_mp3[[2]][[2]][[2]]@pheno)
+  expect_identical(outF[[3]][[1]], un_mp3[[3]][[1]]@pheno)
+  expect_identical(outF[[3]][[2]][[1]], un_mp3[[3]][[2]][[1]]@pheno)
+  expect_identical(outF[[3]][[2]][[2]], un_mp3[[3]][[2]][[2]]@pheno)
+
+  # simplify=TRUE level=1 attaches level1/level2/level3 source
+  out1 = calcPopValue(
+    un_mp3,
+    FUN = pheno,
+    simplify = TRUE,
+    level = 1
+  )
+  expect_true(is.matrix(out1))
+  expect_equal(nrow(out1), nInd(mergeMultiPops(un_mp3)))
+
   # Error and warning handling
   expect_warning(
     calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE),
