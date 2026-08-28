@@ -60,7 +60,7 @@ test_that("parentAverage_and_mendelianSampling_work",{
   expect_equal(ms_bv[1, ], bv(pop2, simParam=SP)[1, ] - 0.5 * (bv(pop, simParam=SP)[1, ] + bv(pop, simParam=SP)[2, ]))
 })
 
-test_that("means_and_variances", {
+test_that("slots_means_and_variances", {
   
   founderPop = quickHaplo(nInd=16, nChr=1, segSites=20)
   SP = SimParam$new(founderPop)
@@ -72,6 +72,11 @@ test_that("means_and_variances", {
   pop = newPop(founderPop, simParam=SP)
   ans = RRBLUP(pop, simParam=SP)
   pop = setEBV(pop, ans, simParam=SP)
+
+  # Check @gv @pheno and @ebv slots
+  expect_equal(gv(pop), pop@gv)
+  expect_equal(pheno(pop), pop@pheno)
+  expect_equal(ebv(pop), pop@ebv)
 
   # Check means and variances of a single pop
   expect_equal(meanG(pop), colMeans(pop@gv))
@@ -217,6 +222,18 @@ test_that("means_and_variances", {
   )
 
   # Expected errors and warnings
+  expect_warning(
+    gv(mp, simplify = TRUE, level = 0),
+    "`level` should be >= 1. Setting default `level=1`"
+  )
+  expect_warning(
+    pheno(mp, simplify = TRUE, level = 0),
+    "`level` should be >= 1. Setting default `level=1`"
+  )
+  expect_warning(
+    ebv(mp, simplify = TRUE, level = 0),
+    "`level` should be >= 1. Setting default `level=1`"
+  )
   expect_warning(
     meanG(mp, simplify = TRUE, level = 0),
     "`level` should be >= 1. Setting default `level=1`"

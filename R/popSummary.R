@@ -1307,80 +1307,289 @@ genicVarG = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarG
 }
 
-#' @title Genetic value
+#' @title Get genetic values from a population
 #'
-#' @description A wrapper for accessing the gv slot
+#' @description
+#' Returns genetic values for all traits in a population by extracting the
+#' \code{@gv} slot. Supports \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}}, and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' requested nesting level.
 #'
-#' @param pop a \code{\link{Pop-class}} or similar object
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' @param simplify Logical. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flatten \code{pop} to the
+#'   requested \code{level} with \code{\link{flattenMultiPop}}, combine results
+#'   across populations with \code{\link{rbind}}, and attach a \code{"source"}
+#'   attribute describing row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' When \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' When \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' structure is returned unchanged. If \code{level} \eqn{< 1}, the function
+#' sets \code{level=1} and issues a warning.
+#'
+#' Simplified output includes a \code{"source"} attribute. This is a data frame
+#' with columns \code{level1}, \code{level2}, etc., indicating the name (or
+#' index) of the source population for each row at each retained nesting level.
+#' 
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or
+#' \code{\link{HybridPop-class}}, returns a numeric matrix of genetic
+#' values (rows = individuals, columns = traits).
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}:    \cr
+#' - with \code{simplify=FALSE}, returns a nested list matching the
+#'   \code{MultiPop} structure, with one numeric matrix per terminal
+#'   \code{Pop};    \cr
+#' - with \code{simplify=TRUE}, returns a simplified object where terminal
+#'   \code{Pop} \code{@gv} matrices are combined (within each retained branch)
+#'   using \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, output is a single numeric matrix.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' gv(pop)
 #'
+#' pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+#'
+#' # Create a nested MultiPop
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#'
+#' # Extract estimated breeding values at different simplification levels
+#' gv(mp1, simplify = FALSE)
+#' gv(mp1, simplify = TRUE, level = 2)
+#' gv(mp1, simplify = TRUE, level = 1)
+#'
 #' @export
-gv = function(pop){
-  pop@gv
+gv = function(pop, simplify = FALSE, level = 1L){
+  if (simplify && level < 1L) {
+    warning("`level` should be >= 1. Setting default `level=1`")
+    level = 1L
+  }
+  calcPopValue(
+    pop,
+    FUN = function(x) x@gv,
+    simplify = simplify,
+    level = level
+  )
 }
 
-#' @title Phenotype
+#' @title Get phenotype values from a population
 #'
-#' @description A wrapper for accessing the pheno slot
+#' @description
+#' Returns phenotype values for all traits in a population by extracting the
+#' \code{@pheno} slot. Supports \code{\link{Pop-class}}, 
+#' \code{\link{HybridPop-class}}, and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' requested nesting level.
 #'
-#' @param pop a \code{\link{Pop-class}} or similar object
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' @param simplify Logical. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flatten \code{pop} to the
+#'   requested \code{level} with \code{\link{flattenMultiPop}}, combine results
+#'   across populations with \code{\link{rbind}}, and attach a \code{"source"}
+#'   attribute describing row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' When \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' When \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' structure is returned unchanged. If \code{level} \eqn{< 1}, the function
+#' sets \code{level=1} and issues a warning.
+#'
+#' Simplified output includes a \code{"source"} attribute. This is a data frame
+#' with columns \code{level1}, \code{level2}, etc., indicating the name (or
+#' index) of the source population for each row at each retained nesting level.
+#' 
+#' @seealso \code{\link{setPheno}}
+#'
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or
+#' \code{\link{HybridPop-class}}, returns a numeric matrix of phenotype
+#' values (rows = individuals, columns = traits).
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}:    \cr
+#' - with \code{simplify=FALSE}, returns a nested list matching the
+#'   \code{MultiPop} structure, with one numeric matrix per terminal
+#'   \code{Pop};    \cr
+#' - with \code{simplify=TRUE}, returns a simplified object where terminal
+#'   \code{Pop} \code{@pheno} matrices are combined (within each retained branch)
+#'   using \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, output is a single numeric matrix.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$addTraitA(10)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' pheno(pop)
 #'
+#' pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+#'
+#' # Create a nested MultiPop
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#'
+#' # Extract estimated breeding values at different simplification levels
+#' pheno(mp1, simplify = FALSE)
+#' pheno(mp1, simplify = TRUE, level = 2)
+#' pheno(mp1, simplify = TRUE, level = 1)
+#'
 #' @export
-pheno = function(pop){
-  pop@pheno
+pheno = function(pop, simplify = FALSE, level = 1L){
+  if (simplify && level < 1L) {
+    warning("`level` should be >= 1. Setting default `level=1`")
+    level = 1L
+  }
+  calcPopValue(
+    pop,
+    FUN = function(x) x@pheno,
+    simplify = simplify,
+    level = level
+  )
 }
 
-#' @title Estimated breeding value
+#' @title Get estimated breeding values from a population
 #'
-#' @description A wrapper for accessing the ebv slot
+#' @description
+#' Returns estimated breeding values for all traits in a population by
+#' extracting the \code{@ebv} slot.
+#' Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
+#' \code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
+#' optionally be simplified to a requested nesting level.
 #'
-#' @param pop a \code{\link{Pop-class}} or similar object
+#' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+#'   \code{\link{MultiPop-class}} object.
+#' @param simplify Logical. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flatten \code{pop} to the
+#'   requested \code{level} with \code{\link{flattenMultiPop}}, combine results
+#'   across populations with \code{\link{rbind}}, and attach a \code{"source"}
+#'   attribute describing row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Only used when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' When \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' When \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' structure is returned unchanged. If \code{level} \eqn{< 1}, the function
+#' sets \code{level=1} and issues a warning.
+#'
+#' Simplified output requires compatible \code{@ebv} columns across terminal
+#' populations so that results can be combined with \code{\link{rbind}}.
+#'
+#' Simplified output includes a \code{"source"} attribute. This is a data frame
+#' with columns \code{level1}, \code{level2}, etc., indicating the name (or
+#' index) of the source population for each row at each retained nesting level.
+#' 
+#' @seealso \code{\link{setEBV}}
+#'
+#' @return
+#' If \code{pop} is a \code{\link{Pop-class}} or
+#' \code{\link{HybridPop-class}}, returns a numeric matrix of estimated
+#' breeding values (rows = individuals, columns = traits).
+#'
+#' If \code{pop} is a \code{\link{MultiPop-class}}:    \cr
+#' - with \code{simplify=FALSE}, returns a nested list matching the
+#'   \code{MultiPop} structure, with one numeric matrix per terminal
+#'   \code{Pop};    \cr
+#' - with \code{simplify=TRUE}, returns a simplified object where terminal
+#'   \code{Pop} \code{@ebv} matrices are combined (within each retained branch)
+#'   using \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, output is a single numeric matrix.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
-#' #Set simulation parameters
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$addTraitA(10)
+#' trtH2 = 0.5
 #' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
-#' #Create population
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' pop@ebv = matrix(rnorm(pop@nInd), nrow=pop@nInd, ncol=1)
+#' pop@ebv = trtH2 * (pheno(pop) - meanP(pop))
 #' ebv(pop)
 #'
+#' # Create a nested MultiPop
+#' pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+#' pop2@ebv = trtH2 * (pheno(pop2) - meanP(pop2))
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#'
+#' # Extract estimated breeding values at different simplification levels
+#' ebv(mp1, simplify = FALSE)
+#' ebv(mp1, simplify = TRUE, level = 2)
+#' ebv(mp1, simplify = TRUE, level = 1)
+#'
 #' @export
-ebv = function(pop){
-  pop@ebv
+ebv = function(pop, simplify = FALSE, level = 1L){
+  if (simplify && level < 1L) {
+    warning("`level` should be >= 1. Setting default `level=1`")
+    level = 1L
+  }
+  calcPopValue(
+    pop,
+    FUN = function(x) x@ebv,
+    simplify = simplify,
+    level = level
+  )
 }
 
 #' @title Calculate parent average
