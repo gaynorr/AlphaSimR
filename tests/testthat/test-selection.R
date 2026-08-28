@@ -84,11 +84,6 @@ test_that("selectPop",{
                "use='bv' is not currently supported for populations",
                fixed=TRUE)
   
-  # Selecting nested populations from a non-nested object
-  expect_error(selectPop(mp1, nPop = 1, level = 3, use = 'pheno', simParam = SP),
-               "requested `level` exceeds max depth of `x` (1)",
-               fixed=TRUE)
-  
   # Use a custom trait obtained by summing up the two available traits
   values = sapply(mp1@pops, function(pop){
     mean(pop@pheno[,1:2])
@@ -344,6 +339,12 @@ test_that("calcPopValue", {
   expect_warning(
     calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE),
     "Some values returned by FUN have unsupported types for simplification. Returning list output.",
+    fixed = TRUE
+  )
+  colnames(mp1$A[[1]]@pheno) = c("tRAIT2","tRAIT1")
+  expect_warning(
+    calcPopValue(mp1, FUN = pheno, simplify = TRUE),
+    "Some values returned by FUN do not have consistent column names. Returning list output.",
     fixed = TRUE
   )
   expect_error(

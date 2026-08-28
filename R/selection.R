@@ -251,6 +251,17 @@ calcPopValue = function(
       return(popValueList)
     }
 
+    # Check consistent column names across matrices before combining
+    same_columns = all(vapply(
+      popValueList,
+      function(x) identical(colnames(x), colnames(popValueList[[1]])),
+      logical(1)
+    ))
+    if (!same_columns) {
+      warning("Some values returned by FUN do not have consistent column names. Returning list output.")
+      return(popValueList)
+    }
+
     popValue = do.call(rbind, popValueList)
     attr(popValue, "source") = .formatPopSource(
       paths = source,
@@ -947,11 +958,6 @@ selectPop = function(
         level < 1 || level != as.integer(level)) {
       stop("`level` must be a positive integer")
     }
-
-  md = .depthMultiPop(x)
-  if (md < level) {
-    stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
-  }
 
   is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
   is_pop = vapply(unname(x@pops), isPop, logical(1L))
