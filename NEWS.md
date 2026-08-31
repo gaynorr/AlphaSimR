@@ -60,6 +60,8 @@
 
 * Update `gv()`, `pheno()` and `ebv()` to support MultiPop objects.
 
+* Add `nPop()` to count the number of Pop-class objects in a MultiPop.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

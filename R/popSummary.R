@@ -1764,3 +1764,47 @@ mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL
 nInd = function(pop){
   pop@nInd
 }
+
+#' @title Number of populations
+#'
+#' @description
+#' Counts the number of \code{\link{Pop-class}} objects in a 
+#' \code{\link{MultiPop-class}} object.
+#'
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#'
+#' @return
+#' Integer scalar giving the number of terminal \code{Pop} objects contained in
+#' \code{x}.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' nPop(pop)
+#'
+#' mp = splitPop(
+#'   pop,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) sample(c("g1", "g2"), size = length(x), replace = TRUE)
+#'   )
+#' )
+#' nPop(mp)
+#'
+#' @export
+nPop = function (x) {
+  if (isPop(x)) return(1L)
+  stopifnot(isMultiPop(x))
+
+  count = sum(vapply(x@pops, nPop, integer(1L)))
+  return(count)
+}

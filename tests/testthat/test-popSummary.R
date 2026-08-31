@@ -70,6 +70,7 @@ test_that("slots_means_and_variances", {
   SP$addSnpChip(10)
 
   pop = newPop(founderPop, simParam=SP)
+  expect_equal(nPop(pop), 1L)
   ans = RRBLUP(pop, simParam=SP)
   pop = setEBV(pop, ans, simParam=SP)
 
@@ -98,6 +99,9 @@ test_that("slots_means_and_variances", {
   idx = sample(1:16, 8)
   mp$C = splitPop(pop[idx], \(x) sample(rep(letters[5:6], length.out = length(x))))
   mp$D = pop[-idx]
+
+  # Verify the number of terminal Pop objects
+  expect_equal(nPop(mp), 11L)
 
   # Check within-Pop variances in a MultiPop
   vrG = varG(mp)
