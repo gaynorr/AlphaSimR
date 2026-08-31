@@ -84,11 +84,6 @@ test_that("selectPop",{
                "use='bv' is not currently supported for populations",
                fixed=TRUE)
   
-  # Selecting nested populations from a non-nested object
-  expect_error(selectPop(mp1, nPop = 1, level = 3, use = 'pheno', simParam = SP),
-               "requested `level` exceeds max depth of `x` (1)",
-               fixed=TRUE)
-  
   # Use a custom trait obtained by summing up the two available traits
   values = sapply(mp1@pops, function(pop){
     mean(pop@pheno[,1:2])
@@ -201,7 +196,7 @@ test_that("calcPopValue", {
 
   # Pop case
   expect_identical(
-    calcPopValue(pop, FUN = pheno, simplify = FALSE, simParam = SP),
+    calcPopValue(pop, FUN = pheno, simplify = FALSE),
     pheno(pop)
   )
   expect_identical(
@@ -209,7 +204,6 @@ test_that("calcPopValue", {
       pop,
       FUN = function(x, ...) cor(x@pheno, ...),
       simplify = TRUE,
-      simParam = SP,
       method = "kendall"
     ),
     cor(pheno(pop), method = "kendall")
@@ -225,7 +219,7 @@ test_that("calcPopValue", {
   )
 
   # simplify=FALSE preserves nesting and names
-  outF = calcPopValue(mp1, FUN = pheno, simplify = FALSE, simParam = SP)
+  outF = calcPopValue(mp1, FUN = pheno, simplify = FALSE)
   expect_true(is.list(outF))
   expect_identical(names(outF), names(mp1))
   expect_true(is.list(outF$A))
@@ -235,7 +229,7 @@ test_that("calcPopValue", {
   # level > depth returns unchanged structure
   expect_identical(
     outF,
-    calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 3, simParam = SP)
+    calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 3)
   )
 
   # simplify=TRUE level=2 attaches source with level2
@@ -243,17 +237,16 @@ test_that("calcPopValue", {
     mp1,
     FUN = pheno,
     simplify = TRUE,
-    level = 2,
-    simParam = SP
+    level = 2
   )
   expect_true(is.list(out2))
   expect_identical(names(out2), names(mp1))
 
-  outA = calcPopValue(mp1$A, FUN = pheno, simplify = TRUE, simParam = SP)
+  outA = calcPopValue(mp1$A, FUN = pheno, simplify = TRUE)
   expect_identical(attributes(out2$A)$source[[1]], attributes(outA)$source[[1]])
   expect_equal(nrow(attributes(outA)$source), nrow(outA))
 
-  outB = calcPopValue(mp1$B, FUN = pheno, simplify = TRUE, simParam = SP)
+  outB = calcPopValue(mp1$B, FUN = pheno, simplify = TRUE)
   expect_identical(attributes(out2$B)$source[[1]], attributes(outB)$source[[1]])
   expect_equal(nrow(attributes(outB)$source), nrow(outB))
 
@@ -265,8 +258,7 @@ test_that("calcPopValue", {
     mp1,
     FUN = pheno,
     simplify = TRUE,
-    level = 1,
-    simParam = SP
+    level = 1
   )
   expect_true(is.matrix(out1))
   expect_equal(nrow(out1), nInd(mergeMultiPops(mp1)))
@@ -290,7 +282,7 @@ test_that("calcPopValue", {
   )
 
   # simplify=FALSE preserves nesting and names
-  outF = calcPopValue(mp3, FUN = pheno, simplify = FALSE, simParam = SP)
+  outF = calcPopValue(mp3, FUN = pheno, simplify = FALSE)
   expect_true(is.list(outF))
   expect_identical(names(outF), names(mp3))
   expect_identical(names(outF$mp1), names(mp3$mp1))
@@ -303,30 +295,70 @@ test_that("calcPopValue", {
     mp3,
     FUN = pheno,
     simplify = TRUE,
-    level = 1,
-    simParam = SP
+    level = 1
   )
   expect_true(is.matrix(out1))
   expect_equal(nrow(out1), nInd(mergeMultiPops(mp3)))
 
+  # Unnamed multipop
+  un_mp3 = newMultiPop(
+    pop[1:2],
+    newMultiPop(
+      pop[3:4],
+      newMultiPop(pop[5:6], pop[7:8])
+    ),
+    newMultiPop(
+      pop[9:10],
+      newMultiPop(pop[11:12], pop[13:14])
+    )
+  )
+
+  # simplify=FALSE preserves nesting
+  outF = calcPopValue(un_mp3, FUN = pheno, simplify = FALSE)
+  expect_true(is.list(outF))
+  expect_identical(names(outF), names(un_mp3))
+  expect_identical(outF[[1]], un_mp3[[1]]@pheno)
+  expect_identical(outF[[2]][[1]], un_mp3[[2]][[1]]@pheno)
+  expect_identical(outF[[2]][[2]][[1]], un_mp3[[2]][[2]][[1]]@pheno)
+  expect_identical(outF[[2]][[2]][[2]], un_mp3[[2]][[2]][[2]]@pheno)
+  expect_identical(outF[[3]][[1]], un_mp3[[3]][[1]]@pheno)
+  expect_identical(outF[[3]][[2]][[1]], un_mp3[[3]][[2]][[1]]@pheno)
+  expect_identical(outF[[3]][[2]][[2]], un_mp3[[3]][[2]][[2]]@pheno)
+
+  # simplify=TRUE level=1 attaches level1/level2/level3 source
+  out1 = calcPopValue(
+    un_mp3,
+    FUN = pheno,
+    simplify = TRUE,
+    level = 1
+  )
+  expect_true(is.matrix(out1))
+  expect_equal(nrow(out1), nInd(mergeMultiPops(un_mp3)))
+
   # Error and warning handling
   expect_warning(
-    calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE, simParam = SP),
+    calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE),
     "Some values returned by FUN have unsupported types for simplification. Returning list output.",
     fixed = TRUE
   )
+  colnames(mp1$A[[1]]@pheno) = c("tRAIT2","tRAIT1")
+  expect_warning(
+    calcPopValue(mp1, FUN = pheno, simplify = TRUE),
+    "Some values returned by FUN do not have consistent column names. Returning list output.",
+    fixed = TRUE
+  )
   expect_error(
-    calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE, simParam = SP),
+    calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE),
     "`x` must be a Pop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
-    calcPopValue(1:5, FUN = pheno, simplify = FALSE, simParam = SP),
+    calcPopValue(1:5, FUN = pheno, simplify = FALSE),
     "`x` must be a Pop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
-    calcPopValue(list(pop), FUN = pheno, simplify = FALSE, simParam = SP),
+    calcPopValue(list(pop), FUN = pheno, simplify = FALSE),
     "`x` must be a Pop or MultiPop object.",
     fixed = TRUE
   )

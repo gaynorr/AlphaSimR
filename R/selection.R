@@ -104,8 +104,6 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 #'   Ignored if \code{simplify=FALSE}.
-#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
-#'   the function uses the object named \code{SP} from the global environment.
 #' @param ... Additional arguments passed to \code{FUN}.
 #'
 #' @details
@@ -163,19 +161,16 @@ calcPopValue = function(
   FUN,
   simplify = FALSE,
   level = 1,
-  simParam = NULL,
   ...
 ) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
-
   dots = list(...)
+  .paths = dots[[".paths"]]
   .level_offset = dots[[".level_offset"]]
   if (is.null(.level_offset)) {
     .level_offset = 0L
   }
   dots[[".level_offset"]] = NULL
+  dots[[".paths"]] = NULL
 
   if (isPop(x)) {
     FUN.ARGS = c(list(x), dots)
@@ -186,9 +181,13 @@ calcPopValue = function(
     stop("`x` must be a Pop or MultiPop object.")
   }
 
+  if (is.null(.paths) && simplify) {
+    .paths = .collectLeafPaths(x)
+  }
+
   source = NULL
   if (simplify && level == 1L) {
-    source = .collectLeafPaths(x)
+    source = .paths
   }
 
   if (simplify) {
@@ -196,16 +195,30 @@ calcPopValue = function(
   }
 
   popValueList = lapply(
-    x@pops,
-    function(pop) {
+    seq_along(x@pops),
+    function(i) {
+      nm = names(x@pops)
+      child_label = ifelse(
+        !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
+        nm[i],
+        i
+      )
+      keep = vapply(
+        .paths,
+        function(p) {
+          length(p) > 0 && identical(p[[1]], child_label)
+        },
+        logical(1)
+      )
+
       FUN.ARGS = c(
         list(
-          pop,
+          x@pops[[i]],
           FUN = FUN,
           simplify = simplify,
           level = level - 1L,
-          simParam = simParam,
-          .level_offset = .level_offset + 1L
+          .level_offset = .level_offset + 1L,
+          .paths = lapply(.paths[keep], function(p) p[-1])
         ),
         dots
       )
@@ -238,8 +251,19 @@ calcPopValue = function(
       return(popValueList)
     }
 
+    # Check consistent column names across matrices before combining
+    same_columns = all(vapply(
+      popValueList,
+      function(x) identical(colnames(x), colnames(popValueList[[1]])),
+      logical(1)
+    ))
+    if (!same_columns) {
+      warning("Some values returned by FUN do not have consistent column names. Returning list output.")
+      return(popValueList)
+    }
+
     popValue = do.call(rbind, popValueList)
-    attr(popValue, "source") = .formatCalcPopSource(
+    attr(popValue, "source") = .formatPopSource(
       paths = source,
       nRows = nRows,
       level_offset = .level_offset
@@ -935,11 +959,6 @@ selectPop = function(
       stop("`level` must be a positive integer")
     }
 
-  md = .depthMultiPop(x)
-  if (md < level) {
-    stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
-  }
-
   is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
   is_pop = vapply(unname(x@pops), isPop, logical(1L))
   multi = which(is_multi)
@@ -994,8 +1013,7 @@ selectPop = function(
       getResponse(pop = pop, trait = trait, use = use, simParam = simParam, ...)
     },
     simplify = FALSE,
-    level = 1L,
-    simParam = simParam
+    level = 1L
   )
 
   popValues = vapply(response, function(res) {
@@ -1025,11 +1043,11 @@ selectPop = function(
 
   for (i in seq_along(x@pops)) {
     child = x@pops[[i]]
-    if (!is.null(nm) && length(nm) >= i && !is.na(nm[i]) && nzchar(nm[i])) {
-      label = nm[i]
-    } else {
-      label = i
-    }
+    label = ifelse(
+      !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
+      nm[i],
+      i
+    )
     childPath = c(path, list(label))
     out = c(out, .collectLeafPaths(child, path = childPath))
   }
@@ -1037,14 +1055,15 @@ selectPop = function(
   return(out)
 }
 
-#' Helper function to format the source attribute for \code{calcPopValue}
+#' Helper function to format the source attribute for simplified \code{MultiPop}
+#' output
 #'
 #' @param paths List of character vectors representing leaf paths.
 #' @param nRows Vector of row counts for each path.
 #' @param level_offset Integer scalar used to label source levels.
 #'
 #' @keywords internal
-.formatCalcPopSource = function(paths, nRows, level_offset = 0L) {
+.formatPopSource = function(paths, nRows, level_offset = 0L) {
   if (length(paths) == 0L) {
     return(NULL)
   }

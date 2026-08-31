@@ -2,31 +2,53 @@
 % Please edit documentation in R/popSummary.R
 \name{varEBV}
 \alias{varEBV}
-\title{Variance of estimated breeding values}
+\title{Variance of estimated breeding values within a \code{Pop}}
 \usage{
 varEBV(pop)
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}}
+\item{pop}{A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+\code{\link{MultiPop-class}} object.}
+}
+\value{
+If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+returns a variance-covariance matrix of estimated breeding values across
+traits in \code{ebv(pop)}.
+
+If \code{pop} is a \code{\link{MultiPop-class}}, returns a nested list
+matching the \code{MultiPop} structure, with one variance-covariance matrix
+per \code{Pop} object.
 }
 \description{
-Returns variance of estimated breeding values for all traits
+Returns variance of estimated breeding values for all traits within a
+\code{Pop}.
+}
+\details{
+A variance-covariance matrix of estimated breeding values is computed for
+each \code{Pop} across traits in \code{ebv(pop)}.
 }
 \examples{
-#Create founder haplotypes
+# Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
-#Set simulation parameters
+# Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 trtH2 = 0.5
 SP$setVarE(h2=trtH2)
 \dontshow{SP$nThreads = 1L}
 
-#Create population
+# Create population
 pop = newPop(founderPop, simParam=SP)
-pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
-varA(pop)
+pop@ebv = trtH2 * (pheno(pop) - meanP(pop))
+
+# Return a variance-covariance matrix for the population
 varEBV(pop)
+
+# Randomly split population into two sub-populations
+mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
+
+# Return a list of variance-covariance matrices for the MultiPop
+varEBV(mp)
 
 }
