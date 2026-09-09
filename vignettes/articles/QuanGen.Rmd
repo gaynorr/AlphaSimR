@@ -2,93 +2,450 @@
 title: "Quantitative Genetics in AlphaSimR"
 author: "Gregor Gorjanc and Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
-tables: true
+output: rmarkdown::html_vignette
 bibliography: AlphaSimR.bib
 vignette: >
   %\VignetteIndexEntry{Quantitative Genetics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+editor_options:
+  markdown:
+    wrap: 72
 ---
 
-# Introduction
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
 
-This page describes how AlphaSimR implements quantitative genetics theory. This page is based on AlphaSimR's trait definition, so you should be familiar with the "traits" vignette. The implementation of quantitative genetics theory will be described by following description and examples from Falconer and Mackay [-@FalconerMackay] and then tweaking the examples to demonstrate various assumptions and deviations from the assumptions.
-
-# Single-locus **AD** trait
-
-TODO: Summarize Falconer's exposition ...
-
-\begin{equation}
-P(x) = 
-\mu + 
-G(x) +
-E(x) +
-\end{equation}
-
-$P(x)$ is the phenotypic value of an individual with genotype dosage $x$ at a single locus.
-
-```{r, eval=FALSE}
-  # P_HW = p^2 +a -->
-  # H_HW = 2pq  d
-  # Q_HW = q^2 -a
-  # p^2 +a + 2pq  d + q^2 -a + intercept
-  p[1]^2 * a[1] + 2 * p[1] * q[1] * d[1] + q[1]^2 * -a[1] + 10
-  P[1] * a[1] + H[1] * d[1] + Q[1] * -a[1] + 10
-
-  p[3]^2 * a[3] + 2 * p[3] * q[3] * d[3] + q[3]^2 * -a[3] + 10
-  P[3] * a[3] + H[3] * d[3] + Q[3] * -a[3] + 10
-
-  c(p[3]^2, 2 * p[3] * q[3], q[3]^2)
-  c(P[3], H[3], Q[3])
-  c(
-    p[3]^2 + p[3] * q[3] * F[3],
-    2 * p[3] * q[3] - 2 * p[3] * q[3] * F[3],
-    q[3]^2 + p[3] * q[3] * F[3]
-  )
-
-  p[1]^2 * a[1] + 2 * p[1] * q[1] * d[1] + q[1]^2 * -a[1] + 10
-
+library(AlphaSimR)
 ```
 
-\begin{equation}
-P(x) = 
-\mu + 
-A(x) +
-D(x) +
-E(x) +
-\end{equation}
+This article describes how AlphaSimR implements quantitative genetics
+theory. The companion article on traits describes the *functional* model:
+how a genotype is turned into a genetic value through additive, dominance
+and epistatic effects. This article describes the *statistical* model:
+how those genetic values are decomposed into breeding values, dominance
+deviations and epistatic deviations, and how the variance of a population
+is partitioned into components. You should be familiar with the traits
+article before reading this one.
 
-\begin{equation}
-x_A = \big( x - \tfrac{ploidy}{2} \big) \big( \tfrac{2}{ploidy} \big)
-\end{equation}
+The distinction between the two models is the central idea of the field
+and is worth stating plainly at the outset. The functional model is a
+property of the biology: it says what genetic value a given genotype has.
+The statistical model is a property of a *population*: it says how much
+of the variation among the individuals in that population can be
+attributed to effects that are transmitted from parent to offspring. The
+same functional model, evaluated in two populations with different allele
+frequencies, yields different breeding values and different variance
+components. Everything below follows from taking that seriously.
 
-\begin{equation}
-A(x) = \sum a x_A
-\end{equation}
+All of the quantities described here are computed by `genParam`, which
+returns them for every trait in the simulation.
 
-\begin{equation}
-d = \delta \left| a \right|
-\end{equation}
+## The genotypic model
 
-Table 1 TODO
+AlphaSimR builds the genetic value of an individual from biallelic loci
+using scaled genotype dosages. For a locus with raw dosage $x$ (the
+number of copies of the "1" allele) in an organism of ploidy $P$, the
+scaled additive and dominance dosages are
 
-\begin{table}[h]
-\centering
-\caption{Raw and scaled genotype dosages.}
-\begin{tabular}{@{}rrrr@{}}
-\toprule
-Diploid & Tetraploid & Additive & Dominance \\ \midrule
-0 & 0 & $-1$ & $0$ \\
- & 1 & $-1/2$ & $3/4$ \\
-1 & 2 & $0$ & $1$ \\
- & 3 & $1/2$ & $3/4$ \\
-2 & 4 & $1$ & $0$ \\ \bottomrule
-\end{tabular}
-\end{table}
+$$x_A = \left( x - \frac{P}{2} \right)\left( \frac{2}{P} \right),
+\qquad
+x_D = x \left( P - x \right) \left( \frac{2}{P} \right)^{2}$$
 
-R code `runif
+and the genetic value of an individual is
 
-# Two-locus **ADE** trait
+$$G = \mu_0 + \sum_i a_i x_{A_i} + \sum_i d_i x_{D_i} +
+\sum_{(i,j)} e_{ij} x_{A_i} x_{A_j}$$
 
-# References
+where $\mu_0$ is the trait intercept, $a$ and $d$ are additive and
+dominance effects, and $e$ is an additive-by-additive epistatic effect.
+The epistatic sum runs over *pairs* of QTL. AlphaSimR assigns every QTL
+to exactly one pair, so the pairs are disjoint and the number of pairs is
+half the number of QTL. This matters for everything that follows, because
+it means the two-locus calculations described below can be carried out
+one pair at a time and summed.
+
+Note that the only epistasis in the model is additive-by-additive.
+There are no additive-by-dominance or dominance-by-dominance terms.
+
+## Breeding values
+
+The breeding value of an individual is the part of its genetic value that
+it transmits to its offspring. Formally it is the least-squares
+projection of the genetic value onto allele dosage, and the coefficient
+of that projection is the average effect of an allele substitution,
+usually written $\alpha$ [@FalconerMackay].
+
+Consider a single locus in a population where genotype dosage $x$ occurs
+with frequency $f(x)$. Let $\bar{x} = \sum_x f(x)\, x$ be the mean dosage
+and $G(x)$ the genetic value of dosage $x$. The average effect of an
+allele substitution is the regression coefficient of genetic value on
+dosage,
+
+$$\alpha = \frac{\sum_x f(x)\,\big(G(x) - \bar{G}\big)\big(x -
+\bar{x}\big)}{\sum_x f(x)\,\big(x - \bar{x}\big)^{2}}$$
+
+and the breeding value of an individual carrying dosage $x$ is
+
+$$A(x) = \big(x - \bar{x}\big)\, \alpha .$$
+
+An individual's breeding value for the trait is the sum of $A(x)$ over
+all QTL. Breeding values are centred on the population mean by
+construction, since $\sum_x f(x)(x - \bar{x}) = 0$.
+
+Two features of this definition deserve emphasis. First, $\alpha$ is not
+a property of the locus alone. It depends on $f(x)$, and therefore on
+allele frequency and on the mating system. A locus with a large dominance
+effect can have $\alpha = 0$ at one allele frequency and a substantial
+$\alpha$ at another. Second, when there is no dominance and no epistasis,
+$G(x)$ is linear in $x$, the regression is exact, and $\alpha$ reduces to
+the additive effect rescaled by the dosage scaling. Breeding values then
+account for all of the genetic variation.
+
+AlphaSimR computes two versions of $\alpha$ for every locus. The first
+uses the genotype frequencies actually observed in the population and is
+returned as `alpha`. The second uses the genotype frequencies expected
+under Hardy-Weinberg equilibrium at the observed allele frequency, and is
+returned as `alpha_HW`. Writing $p = \bar{x}/P$ for the allele frequency,
+the Hardy-Weinberg genotype frequencies for ploidy $P$ are
+
+$$f_{HW}(x) = \binom{P}{x} p^{x} (1-p)^{P-x}$$
+
+which is the familiar binomial expansion, and which for $P = 2$ gives the
+usual $p^2$, $2pq$, $q^2$. The two versions of $\alpha$ differ whenever
+the population departs from Hardy-Weinberg proportions, which is to say
+whenever there is inbreeding or any other form of non-random mating. The
+difference between them is what AlphaSimR later reports as the
+non-random-mating component of variance.
+
+```{r}
+founderPop = quickHaplo(nInd = 100, nChr = 2, segSites = 20)
+SP = SimParam$new(founderPop)
+SP$addTraitAD(nQtlPerChr = 10, meanDD = 0.5)
+pop = newPop(founderPop, simParam = SP)
+
+ans = genParam(pop, simParam = SP)
+
+head(ans$alpha[[1]])    # Observed frequencies
+head(ans$alpha_HW[[1]]) # Hardy-Weinberg frequencies
+```
+
+## Dominance deviations
+
+Once the breeding value has absorbed everything that can be explained by
+a linear regression on dosage, whatever is left over at that locus is the
+dominance deviation. It is defined as a lack of fit,
+
+$$D(x) = G(x) - A(x) - \bar{G}$$
+
+so that $G(x) = \bar{G} + A(x) + D(x)$ exactly. Because $A(x)$ is a
+least-squares projection, the dominance deviations are uncorrelated with
+the breeding values within a locus, and they have mean zero over the
+population.
+
+The name is slightly misleading in the way that all of Fisher's
+terminology is slightly misleading. The dominance deviation is not "the
+dominance effect". It is the residual from the additive regression, and
+it exists only because the functional dominance effect $d$ makes $G(x)$
+non-linear in $x$. If $d = 0$ then $D(x) = 0$ for every genotype
+regardless of allele frequency. Conversely, a locus with a large $d$
+contributes to the additive variance as well as the dominance variance,
+and at extreme allele frequencies most of its contribution is additive.
+
+As with $\alpha$, AlphaSimR computes dominance deviations twice, once
+against the observed genotype frequencies and once against
+Hardy-Weinberg expectations.
+
+## Epistatic deviations
+
+Epistatic deviations follow the same lack-of-fit logic, applied to a pair
+of loci rather than to a single locus. The calculation proceeds in two
+stages.
+
+The first stage marginalises. For the pair $(i,j)$, the marginal genetic
+value of dosage $x_i$ at the first locus is its genetic value averaged
+over the distribution of dosages at the second locus,
+
+$$G_i(x_i) = \sum_{x_j} f(x_j) \, G(x_i, x_j)$$
+
+and symmetrically for the second locus. Because the epistatic term is
+$e\, x_{A_i} x_{A_j}$, the average over the second locus contributes
+$e\, x_{A_i} \bar{x}_{A_j}$, which is linear in $x_{A_i}$. The epistatic
+effect therefore shifts the marginal genetic value at the first locus in
+a way that depends on the allele frequency at the second locus. This is
+the mechanism by which functional epistasis generates statistical
+additive variance.
+
+The average effect $\alpha_i$ and the breeding value $A_i$ are then
+obtained from the marginal genetic values exactly as in the single-locus
+case, and the dominance deviation $D_i$ is the residual from that
+regression. Note that because the marginalised epistatic contribution is
+linear in $x_{A_i}$, it is absorbed entirely by the additive regression
+and leaves the dominance deviation untouched. Epistasis in this model
+generates additive and epistatic variance, but no dominance variance.
+
+The second stage assembles the pair. The two-locus breeding value and
+dominance deviation are the sums of the single-locus quantities,
+
+$$A(x_i, x_j) = A_i(x_i) + A_j(x_j), \qquad
+D(x_i, x_j) = D_i(x_i) + D_j(x_j)$$
+
+and the epistatic deviation is what remains,
+
+$$AA(x_i, x_j) = G(x_i, x_j) - A(x_i, x_j) - D(x_i, x_j) - \bar{G}.$$
+
+Summing over pairs gives the individual's epistatic deviation for the
+trait. As with the other components it has mean zero over the population,
+so that for every individual
+
+$$G = \mu + A + D + AA$$
+
+holds exactly. This identity is worth verifying, because it is the
+clearest statement of what the decomposition is doing.
+
+```{r}
+founderPop = quickHaplo(nInd = 100, nChr = 2, segSites = 20)
+SP = SimParam$new(founderPop)
+SP$addTraitADE(nQtlPerChr = 10, meanDD = 0.5, relAA = 0.2)
+pop = newPop(founderPop, simParam = SP)
+
+ans = genParam(pop, simParam = SP)
+
+# G = mu + A + D + AA, for every individual
+resid = ans$gv[,1] - (ans$mu[1] + ans$bv[,1] + ans$dd[,1] + ans$aa[,1])
+range(resid)
+```
+
+## Partitioning the variance
+
+Having decomposed each individual's genetic value, the variance can be
+partitioned. AlphaSimR does this against three different reference
+populations, and keeping them straight is the key to reading the output
+of `genParam`.
+
+The **observed population** is the set of individuals actually in `pop`,
+with their actual joint genotypes. Variances computed here are the
+*genetic* variances: `varA`, `varD`, `varAA` and `varG`. They are simply
+the variances of the breeding values, dominance deviations, epistatic
+deviations and genetic values across individuals, and they include every
+correlation between loci that exists in the population.
+
+The **no-linkage-disequilibrium population** has the same genotype
+frequencies at each locus as the observed population, but loci are
+treated as independent. Variances computed here are sums of single-locus
+(or single-pair) contributions with no covariance between loci.
+
+The **idealised population** has the same *allele* frequencies as the
+observed population, but genotype frequencies at Hardy-Weinberg
+proportions and loci in linkage equilibrium. Variances computed here are
+the *genic* variances: `genicVarA`, `genicVarD`, `genicVarAA` and
+`genicVarG`. The genic variance is the variance the population would have
+if it were randomly mated and its loci were unlinked, holding allele
+frequencies fixed.
+
+The genic variances are computed as exact expectations over the frequency
+distribution rather than as sample variances over individuals. For the
+additive component,
+
+$$\sigma^{2}_{A,\text{genic}} = \sum_i \sum_x f_{HW}(x)\, A_i(x)^{2}$$
+
+and similarly for the dominance and epistatic components. Because the
+deviations have mean zero, these sums of squares are variances.
+
+## The Bulmer partitioning
+
+The genetic variance and the genic variance are not the same, and the
+difference between them is informative. Selection and non-random mating
+change the genetic variance of a population long before they change its
+allele frequencies, because they generate correlations between loci and
+departures from Hardy-Weinberg proportions. This is the Bulmer effect,
+described by @bulmer_1971, and it is the reason a breeding programme
+loses additive variance faster than allele-frequency change alone would
+suggest.
+
+`genParam` reports the difference as two separate covariance terms, so
+that for each component
+
+$$\sigma^{2}_{A} = \sigma^{2}_{A,\text{genic}} +
+\text{cov}_{A,HW} + \text{cov}_{A,L}$$
+
+with the analogous identity for the dominance and epistatic components.
+The three terms are:
+
+`genicVarA`, the variance of an idealised population at the same allele
+frequencies, randomly mated and in linkage equilibrium. This changes only
+when allele frequencies change, through selection, drift or mutation.
+
+`covA_HW`, the covariance arising from departures from Hardy-Weinberg
+proportions. It is computed as the difference between the genic variance
+evaluated at the observed genotype frequencies and the genic variance
+evaluated at Hardy-Weinberg genotype frequencies. Inbreeding makes this
+term positive for the additive component: an inbred population has more
+additive variance than a randomly mated one at the same allele
+frequencies, because homozygotes are over-represented.
+
+`covA_L`, the covariance between loci arising from linkage
+disequilibrium. It is obtained by subtraction, as the genetic variance
+minus the genic variance minus the Hardy-Weinberg term. Directional
+selection generates negative linkage disequilibrium among loci affecting
+the trait, so this term is typically negative in a selected population,
+and it is the term that carries the Bulmer effect.
+
+Because the total genetic value is a sum of three components, the total
+genetic variance also includes covariances *between* components. These
+are reported separately as `covAD_L`, `covAAA_L` and `covDAA_L`, the
+covariances between breeding values and dominance deviations, between
+breeding values and epistatic deviations, and between dominance and
+epistatic deviations. All three are zero in the idealised population and
+non-zero in general. The complete identity is
+
+$$\sigma^{2}_{G} = \sigma^{2}_{A} + \sigma^{2}_{D} + \sigma^{2}_{AA}
++ 2\,\text{cov}_{AD,L} + 2\,\text{cov}_{A\cdot AA,L}
++ 2\,\text{cov}_{D\cdot AA,L}$$
+
+which follows directly from $G = \mu + A + D + AA$ and holds numerically.
+
+```{r}
+# The full variance identity
+varG = ans$varG[1,1]
+parts = ans$varA[1,1] + ans$varD[1,1] + ans$varAA[1,1] +
+  2*(ans$covAD_L[1] + ans$covAAA_L[1] + ans$covDAA_L[1])
+
+c(varG = varG, parts = parts)
+```
+
+The Bulmer partitioning is easiest to see by selecting and then looking
+at what changed. In the example below the genic additive variance is
+almost unchanged after one generation of strong selection, because allele
+frequencies have barely moved, while the additive genetic variance has
+dropped because selection has generated negative linkage disequilibrium.
+
+```{r}
+set.seed(1234)
+
+founderPop = quickHaplo(nInd = 1000, nChr = 10, segSites = 20)
+SP = SimParam$new(founderPop)
+SP$addTraitA(nQtlPerChr = 10)
+SP$setVarE(h2 = 0.5)
+pop = newPop(founderPop, simParam = SP)
+
+sel = selectInd(pop, nInd = 100, simParam = SP)
+prog = randCross(sel, nCrosses = 1000, simParam = SP)
+
+before = genParam(pop, simParam = SP)
+after = genParam(prog, simParam = SP)
+
+round(c(varA_before = before$varA[1,1],
+        varA_after = after$varA[1,1],
+        genic_before = before$genicVarA[1],
+        genic_after = after$genicVarA[1],
+        covL_before = before$covA_L[1],
+        covL_after = after$covA_L[1]), 3)
+```
+
+## Polyploids and digenic dominance
+
+The dominance model requires special comment for autopolyploids, because
+a polyploid locus has more genotypes than a fully specified dominance
+model can be fitted with from a single parameter.
+
+A diploid locus has one heterozygous genotype, and a single dominance
+effect $d$ describes it completely. An autotetraploid locus has three
+heterozygous genotypes, with dosages 1, 2 and 3. Describing all three
+requires three parameters, conventionally decomposed into digenic,
+trigenic and quadrigenic dominance, corresponding to interactions among
+two, three and four alleles at the locus. @Gallais gives the full
+treatment.
+
+AlphaSimR uses one parameter. The scaled dominance dosage
+$x_D = x(P-x)(2/P)^2$ is proportional to $x(P-x)$, which is the number of
+heterozygous pairs of alleles among the $P$ alleles at the locus: each of
+the $x$ copies of the "1" allele pairs with each of the $P-x$ copies of
+the "0" allele. The dominance contribution is therefore proportional to
+the count of heterozygous *pairs*, which is precisely a digenic dominance
+model. Interactions involving three or four alleles at once are not
+represented.
+
+| Diploid dosage | Tetraploid dosage | $x_A$ | $x_D$ |
+|---------------:|------------------:|------:|------:|
+| 0              | 0                 | $-1$    | $0$    |
+|                | 1                 | $-1/2$  | $3/4$  |
+| 1              | 2                 | $0$     | $1$    |
+|                | 3                 | $1/2$   | $3/4$  |
+| 2              | 4                 | $1$     | $0$    |
+
+The consequence for the statistical decomposition is that the dominance
+deviations of a polyploid span only the digenic subspace. The
+decomposition itself is still exact: $G = \mu + A + D + AA$ holds for
+polyploids as it does for diploids, and the dominance deviations are
+still the least-squares residual from the additive regression. What is
+restricted is the functional model being decomposed. A real
+autotetraploid whose loci show trigenic or quadrigenic dominance cannot
+be represented, and the dominance variance AlphaSimR reports for a
+polyploid is the digenic dominance variance only.
+
+There is a second polyploid-specific caveat, this one concerning the
+Hardy-Weinberg reference. The binomial genotype frequencies used to
+compute the genic variances are the correct polysomic equilibrium only
+under random chromosome segregation without double reduction. Quadrivalent
+pairing, described in the article on genetic recombination, produces
+double reduction and therefore an excess of homozygotes relative to the
+binomial expectation. AlphaSimR does not model this in its
+Hardy-Weinberg reference, so in a simulation with `SP$quadProb > 0` the
+resulting excess homozygosity appears in the `covD_HW` and `covA_HW`
+terms as though it were non-random mating. This is arguably the right
+place for it, since the effect on the variance is the same, but it means
+those terms should not be read as a pure measure of the mating system in
+an autopolyploid simulation.
+
+```{r}
+founderPop = quickHaplo(nInd = 100, nChr = 2, segSites = 20, ploidy = 4L)
+SP = SimParam$new(founderPop)
+SP$addTraitAD(nQtlPerChr = 10, meanDD = 0.5)
+pop = newPop(founderPop, simParam = SP)
+
+ans4 = genParam(pop, simParam = SP)
+round(c(varA = ans4$varA[1,1],
+        varD = ans4$varD[1,1],
+        genicVarA = ans4$genicVarA[1],
+        genicVarD = ans4$genicVarD[1]), 3)
+```
+
+## Relationship to the classical theory
+
+The decomposition described here is the least-squares partition
+introduced by @fisher_1919 and extended to epistasis by @cockerham_1954
+and @kempthorne_1954. The additive-by-additive contrast used by
+AlphaSimR is the product of the two single-locus additive contrasts,
+which is the standard construction and the one that makes the components
+orthogonal in an idealised population. In the terminology of the natural
+and orthogonal interactions framework of @alvarezcastro_2007,
+AlphaSimR computes the statistical decomposition against the observed
+genotype frequencies, which is what makes `alpha` and `alpha_HW`
+differ.
+
+Orthogonality of the components holds exactly only in the idealised
+population, with Hardy-Weinberg proportions and linkage equilibrium. In
+any real or simulated population the components are correlated, and
+AlphaSimR does not pretend otherwise: the correlations are reported
+explicitly as the `cov*_L` terms rather than being assumed away. This is
+why the sum of `varA`, `varD` and `varAA` does not equal `varG` unless
+the cross-component covariances are included.
+
+One further point of interpretation, made forcefully by @hill_2008, is
+worth keeping in mind when setting up a simulation with epistasis. A
+functional model with substantial additive-by-additive epistasis will
+usually produce a population in which most of the genetic variance is
+statistically additive, particularly when allele frequencies are away
+from one half. The `relAA` argument specifies the ratio of
+epistatic to additive variance expected in a population at allele
+frequency 0.5 in linkage equilibrium; observed ratios in a simulated
+population will typically be smaller, sometimes much smaller. This is not
+an artefact of the implementation but a property of the decomposition
+itself.
+
+## References
+

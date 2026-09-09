@@ -2622,6 +2622,8 @@ SimParam = R6Class(
             genMap[[i]] = (private$.femaleMap[[i]]+
                              private$.maleMap[[i]])/2
           }
+          # Chromosome names are needed by getGenMap
+          names(genMap) = names(private$.femaleMap)
           genMap
         }else{
           private$.femaleMap

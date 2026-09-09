@@ -6,6 +6,8 @@
 
 * Fixed a bug in `reduceGenome` that always used the female centromere positions, even when `useFemale=FALSE` selected the male genetic map.
 
+* Fixed `SimParam$genMap` dropping chromosome names when sex-specific maps are in use. This removed the `chr` column from `getGenMap`, `getSnpMap` and `getQtlMap` output after any call to `setRecombRatio`, `switchFemaleMap` or `switchMaleMap`.
+
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 
 * Added asPoisson() function.

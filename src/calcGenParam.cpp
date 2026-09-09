@@ -155,14 +155,14 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
     if(!std::isfinite(alpha(E(i,0)))) alpha(E(i,0))=0;
     if(!std::isfinite(alphaHW(E(i,0)))) alphaHW(E(i,0))=0;
     if(!std::isfinite(alpha(E(i,1)))) alpha(E(i,1))=0;
-    if(!std::isfinite(alphaHW(E(i,1)))) alphaHW(E(i,0))=0;
+    if(!std::isfinite(alphaHW(E(i,1)))) alphaHW(E(i,1))=0;
     
     //Breeding values
     arma::vec bv1, bv2, bvE1, bvE2;
     bv1 = (x-genoMu1)*alpha(E(i,0)); //Breeding values
     bvE1 = (x-genoMu1)*alphaHW(E(i,0)); //Random mating breeding value
     bv2 = (x-genoMu2)*alpha(E(i,1)); //Breeding values
-    bvE2 = (x-genoMu2)*alphaHW(E(i,0)); //Random mating breeding value
+    bvE2 = (x-genoMu2)*alphaHW(E(i,1)); //Random mating breeding value
     genicA(tid) += accu(freq1%bv1%bv1);
     genicA2(tid) += accu(freqE1%bvE1%bvE1);
     genicA(tid) += accu(freq2%bv2%bv2);

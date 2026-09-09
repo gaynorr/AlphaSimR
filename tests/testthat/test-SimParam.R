@@ -80,6 +80,28 @@ test_that("setRecombRatio does not drift when called repeatedly",{
   expect_equal(unname(SP$maleCentromere/sapply(SP$maleMap,max)),rep(0.5,2))
 })
 
+test_that("sex-specific maps keep chromosome names",{
+  founderPop = quickHaplo(nInd=4,nChr=2,segSites=8,ploidy=4L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+
+  chrNames = names(SP$genMap)
+  expect_equal(length(chrNames),2L)
+
+  SP$setRecombRatio(2)
+
+  #The averaged map must keep the names of the sex-specific maps,
+  #because getGenMap uses them to build its chr column
+  expect_equal(names(SP$genMap),chrNames)
+  expect_equal(names(SP$femaleMap),chrNames)
+  expect_equal(names(SP$maleMap),chrNames)
+
+  map = getGenMap(SP)
+  expect_true("chr" %in% colnames(map))
+  expect_equal(nrow(map),16L)
+  expect_equal(unique(map$chr),chrNames)
+})
+
 test_that("sex-specific maps work with quadrivalent pairing",{
   founderPop = quickHaplo(nInd=4,nChr=2,segSites=8,ploidy=4L)
   SP = SimParam$new(founderPop)
