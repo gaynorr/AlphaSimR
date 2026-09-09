@@ -143,31 +143,37 @@ exportClasses(TraitAG)
 import(Rcpp)
 importFrom(R6,R6Class)
 importFrom(Rdpack,reprompt)
-importFrom(methods,.hasSlot)
-importFrom(methods,classLabel)
-importFrom(methods,is)
-importFrom(methods,new)
-importFrom(methods,show)
-importFrom(methods,slot)
-importFrom(methods,validObject)
-importFrom(stats,aggregate)
-importFrom(stats,coef)
-importFrom(stats,cov2cor)
-importFrom(stats,dnorm)
-importFrom(stats,lm)
-importFrom(stats,model.matrix)
-importFrom(stats,na.omit)
-importFrom(stats,pnorm)
-importFrom(stats,qgamma)
-importFrom(stats,qnorm)
-importFrom(stats,rbinom)
-importFrom(stats,rnorm)
-importFrom(stats,rpois)
-importFrom(stats,runif)
-importFrom(stats,setNames)
-importFrom(stats,var)
-importFrom(utils,combn)
-importFrom(utils,packageDescription)
-importFrom(utils,read.table)
-importFrom(utils,write.table)
+importFrom(methods,
+  .hasSlot,
+  classLabel,
+  is,
+  new,
+  show,
+  slot,
+  validObject
+)
+importFrom(stats,
+  aggregate,
+  coef,
+  cov2cor,
+  dnorm,
+  lm,
+  model.matrix,
+  na.omit,
+  pnorm,
+  qgamma,
+  qnorm,
+  rbinom,
+  rnorm,
+  rpois,
+  runif,
+  setNames,
+  var
+)
+importFrom(utils,
+  combn,
+  packageDescription,
+  read.table,
+  write.table
+)
 useDynLib(AlphaSimR, .registration = TRUE)
