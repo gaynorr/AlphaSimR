@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9004
+# AlphaSimR 2.1.0.9005
 
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 
@@ -49,6 +49,8 @@
 * Added additional structure to help documents so that related functions will be shown in the "see also" section.
 
 * renamed `mutate` to `mutateGenome` to prevent clash with dpylr function
+
+* performance optimization of functions in meiosis.cpp using Claude
 
 # AlphaSimR 2.1.0
 

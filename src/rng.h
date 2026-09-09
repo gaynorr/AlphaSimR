@@ -3,6 +3,7 @@
 
 #include <RcppArmadillo.h>
 #include <algorithm>
+#include <boost/random/gamma_distribution.hpp>
 #include <cstdint>
 #include <dqrng_distribution.h>
 #include <memory>
@@ -21,6 +22,22 @@ rngPtr cloneStream(const dqrng::rng64_t &baseRng, uint64_t stream);
 template <typename T> inline void shuffle(arma::Col<T> &x, rngEngine &rng) {
   std::shuffle(x.begin(), x.end(), rng);
 }
+
+// A reusable Gamma(shape, scale) sampler.
+//
+// rgammaVec builds one boost distribution and draws from it n times. Callers
+// that draw gamma deviates one at a time, such as the renewal processes in
+// meiosis.cpp, want the same thing without the intermediate vector, so they
+// hold a gammaSampler for the duration of the loop instead of rebuilding the
+// distribution on every draw.
+class gammaSampler {
+public:
+  gammaSampler(double shape, double scale) : dist(shape, scale) {}
+  double operator()(rngEngine &rng) { return dist(rng); }
+
+private:
+  boost::random::gamma_distribution<double> dist;
+};
 
 double runif(rngEngine &rng);
 arma::vec runifVec(arma::uword n, rngEngine &rng);
