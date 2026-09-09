@@ -48,6 +48,8 @@
 
 * Added additional structure to help documents so that related functions will be shown in the "see also" section.
 
+* renamed `mutate` to `mutateGenome` to prevent clash with dpylr function
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

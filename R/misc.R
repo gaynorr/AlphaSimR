@@ -548,14 +548,14 @@ transMat = function(R){
 #' hapBefore = pullSegSiteHaplo(pop)
 #'
 #' #Introduce mutations
-#' mutate(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
-#' pop = mutate(pop, mutRate = 0.1, simParam=SP)
+#' mutateGenome(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
+#' pop = mutateGenome(pop, mutRate = 0.1, simParam=SP)
 #' hapAfter = pullSegSiteHaplo(pop)
 #' hapAfter - hapBefore
 #' 
 #' @export
-mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
-                  nThreads=NULL){
+mutateGenome = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
+                        nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
