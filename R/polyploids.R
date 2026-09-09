@@ -51,11 +51,15 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
     stop("You cannot reduce odd ploidy levels")
   }
   
+  # The centromeres must come from the same map as the genetic positions,
+  # because they are interpreted as positions on that map
   if(simRecomb){
     if(useFemale){
       map = simParam$femaleMap
+      centromere = simParam$femaleCentromere
     }else{
       map = simParam$maleMap
+      centromere = simParam$maleCentromere
     }
   }else{
     # Create dummy map with zero genetic distance
@@ -64,6 +68,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
       map[[i]] = rep(0,pop@nLoci[i])
     }
     map = as.matrix(map)
+    centromere = rep(0,pop@nChr)
   }
   
   tmp = createReducedGenome(pop@geno, nProgeny,
@@ -72,7 +77,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                             simParam$p,
                             simParam$isTrackRec,
                             pop@ploidy,
-                            simParam$femaleCentromere,
+                            centromere,
                             simParam$quadProb,
                             nThreads)
   dim(tmp$geno) = NULL 

@@ -1,5 +1,11 @@
 # AlphaSimR 2.1.0.9005
 
+* Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
+
+* Fixed `SimParam$setRecombRatio` rescaling the centromeres from the sex-specific positions while rescaling the genetic maps from the sex-average. Repeated calls moved the centromeres relative to their maps. Both are now taken from the sex-average.
+
+* Fixed a bug in `reduceGenome` that always used the female centromere positions, even when `useFemale=FALSE` selected the male genetic map.
+
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
 
 * Added asPoisson() function.
