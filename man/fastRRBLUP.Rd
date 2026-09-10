@@ -57,8 +57,9 @@ traits}
 Solves an RR-BLUP model for genomic predictions given known variance
 components. This implementation is meant as a fast and low memory
 alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike
-the those functions, the fastRRBLUP does not fit fixed effects (other
-than the intercept) or account for unequal replication.
+those functions, fastRRBLUP does not estimate the variance components.
+Fixed effects are fit in the same way as \code{\link{RRBLUP}}, using
+the levels of the population's fixEff slot.
 }
 \examples{
 #Create founder haplotypes

@@ -114,12 +114,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // callFastRRBLUP
-Rcpp::List callFastRRBLUP(arma::vec y, arma::field<arma::Cube<unsigned char> >& geno, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, arma::uword maxIter, int nThreads);
-RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP, SEXP nThreadsSEXP) {
+Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x, arma::field<arma::Cube<unsigned char> >& geno, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, arma::uword maxIter, int nThreads);
+RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
     Rcpp::traits::input_parameter< arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
     Rcpp::traits::input_parameter< arma::Col<int>& >::type lociPerChr(lociPerChrSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
@@ -127,7 +128,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type maxIter(maxIterSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads));
+    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -893,7 +894,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveRRBLUP_EM", (DL_FUNC) &_AlphaSimR_solveRRBLUP_EM, 8},
     {"_AlphaSimR_solveRRBLUP_EM2", (DL_FUNC) &_AlphaSimR_solveRRBLUP_EM2, 10},
     {"_AlphaSimR_solveRRBLUP_EM3", (DL_FUNC) &_AlphaSimR_solveRRBLUP_EM3, 12},
-    {"_AlphaSimR_callFastRRBLUP", (DL_FUNC) &_AlphaSimR_callFastRRBLUP, 8},
+    {"_AlphaSimR_callFastRRBLUP", (DL_FUNC) &_AlphaSimR_callFastRRBLUP, 9},
     {"_AlphaSimR_callRRBLUP", (DL_FUNC) &_AlphaSimR_callRRBLUP, 6},
     {"_AlphaSimR_callRRBLUP2", (DL_FUNC) &_AlphaSimR_callRRBLUP2, 11},
     {"_AlphaSimR_callRRBLUP_D", (DL_FUNC) &_AlphaSimR_callRRBLUP_D, 7},

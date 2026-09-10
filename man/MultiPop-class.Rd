@@ -63,17 +63,17 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 \itemize{
 \item \code{show(MultiPop)}: Show MultiPop object summary
 
-\item \code{[}: Subset MultiPop by index
+\item \code{MultiPop[]}: Subset MultiPop by index
 
-\item \code{[[}: Extract a population by index
+\item \code{MultiPop[[]]}: Extract a population by index
 
 \item \code{$}: Extract a population by name
 
 \item \code{names(MultiPop)}: Access names of pops in MultiPop
 
-\item \code{`[`(MultiPop) <- value}: Replace contents of a subset of elements in MultiPop
+\item \code{MultiPop[] <- value}: Replace contents of a subset of elements in MultiPop
 
-\item \code{`[[`(MultiPop) <- value}: Replace contents of a single element in MultiPop
+\item \code{MultiPop[[]] <- value}: Replace contents of a single element in MultiPop
 
 \item \code{`$`(MultiPop) <- value}: Replace contents of a single element in MultiPop by name
 

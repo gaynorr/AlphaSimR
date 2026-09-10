@@ -77,12 +77,12 @@ Within genetics, albeit quantitative or population, we are interested in how ind
 
 In **AlphaSimR**:
 
-1) Random mutations can be added to individuals in populations with `mutate`. For the purpose of demonstration, the mutation is at a much higher rate than would be expected.
+1) Random mutations can be added to individuals in populations with `mutateGenome`. For the purpose of demonstration, the mutation is at a much higher rate than would be expected.
 
 ```{r}
 basePop = newPop(founderGenome)
 
-mutatedBasePop = mutate(basePop, mutRate = 0.1, simParam = SP)
+mutatedBasePop = mutateGenome(basePop, mutRate = 0.1, simParam = SP)
 
 pullSegSiteGeno(basePop)
 

@@ -1,0 +1,484 @@
+---
+title: "Genomic Selection in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: AlphaSimR.bib
+vignette: >
+  %\VignetteIndexEntry{Genomic Selection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+## Introduction
+
+Genomic selection is selection on a prediction of an individual's genetic
+merit made from its marker genotypes. AlphaSimR provides a family of
+ridge regression BLUP (RR-BLUP) models for making these predictions
+[@AlphaSim; @gaynor_2017], following the marker-effect approach
+introduced by Meuwissen and colleagues. The models are fitted in C++ and
+are intended to be re-fitted many times over the course of a simulation,
+so they are deliberately narrow in scope: they are fast, they take their
+data directly from a population object, and they return an object that
+AlphaSimR knows how to turn back into estimated values for any population
+you like.
+
+Two earlier articles are assumed here. The article on the genome explains
+how QTL and SNP chips are defined and how genotypes are stored and
+pulled. The article on quantitative genetics explains the distinction
+between a genetic value and a breeding value, and explains why a breeding
+value is a property of a *reference population* rather than of an
+individual on its own. That distinction reappears below, because it
+determines what `setEBV` gives you.
+
+Every genomic selection analysis in AlphaSimR has the same three steps:
+
+1. Assemble a training population that carries both phenotypes and
+   genotypes.
+2. Fit a model to it, producing an object of `RRsol-class`.
+3. Apply that solution to a population with `setEBV`, which fills the
+   population's `ebv` slot.
+
+Selection then proceeds with the ordinary selection functions, using
+`use="ebv"`.
+
+## A worked example
+
+The example below is used throughout the article.
+
+```{r}
+set.seed(1234)
+
+founderPop = runMacs(nInd = 500, nChr = 10, segSites = 100)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+```{r}
+# Keep the QTL and the SNP chip on separate segregating sites
+SP$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 50, overlap = FALSE)
+
+SP$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)
+SP$addSnpChip(nSnpPerChr = 50)
+SP$setVarE(h2 = 0.4)
+
+pop = newPop(founderPop, simParam = SP)
+```
+
+Note the use of `runMacs` rather than `quickHaplo`. Genomic prediction
+works because markers are in linkage disequilibrium with QTL, and
+`quickHaplo` samples haplotypes at linkage equilibrium. A simulation
+built on `quickHaplo` will show almost no predictive ability unless the
+QTL themselves are used as markers, which makes it a poor choice for
+demonstrating or benchmarking genomic selection.
+
+`restrSegSites` is used here to force the QTL and the SNP chip onto
+different segregating sites. Without it the two sets are sampled
+independently and may overlap, which quietly inflates accuracy.
+
+## Building a training population
+
+A training population is an ordinary `Pop-class` object. There is no
+special class and no separate registration step; a model simply reads the
+response and the genotypes out of whatever population you hand it. The
+requirements are only that the population carries a value to train on and
+that the SNP chip you intend to use was defined before the population was
+created.
+
+The response is chosen with the `use` argument, which accepts `"pheno"`
+(the default), `"gv"`, `"bv"`, `"ebv"`, or `"rand"`. Training on
+phenotypes is the realistic choice. Training on `"gv"` or `"bv"` is
+useful for diagnosis, because it removes environmental noise and shows
+what the model could achieve if phenotyping were perfect.
+
+Training populations are usually assembled from several sources, and the
+natural tool for that is `c()`:
+
+```{r}
+# Two batches of records, phenotyped separately
+batch1 = setPheno(pop[1:200], reps = 1, fixEff = 1L, simParam = SP)
+batch2 = setPheno(pop[201:400], reps = 3, fixEff = 2L, simParam = SP)
+
+trainPop = c(batch1, batch2)
+
+# Held back for validation
+predPop = pop[401:500]
+
+nInd(trainPop)
+```
+
+### Fixed effects
+
+Records assembled from different trials, years or stages of a breeding
+program are rarely on a common scale. The `fixEff` slot of a population
+labels each record with the group it came from, and the models fit those
+groups as fixed effects.
+
+```{r}
+table(trainPop@fixEff)
+```
+
+The label is set by the `fixEff` argument of `setPheno` and is carried by
+the population from then on. Internally each model applies
+`as.integer(factor(pop@fixEff))`, so the labels need not be consecutive
+or start at one; only the distinct values matter. The design matrix uses
+sum-to-zero coding with an intercept in the first column, so a population
+with a single `fixEff` level reduces to fitting an intercept alone, which
+is what happens by default.
+
+It is worth being explicit about what `fixEff` does *not* do. It does not
+add anything to the phenotype. AlphaSimR will not shift the mean of
+`batch2` simply because it was labelled `2`. The label exists so that a
+model can absorb differences that *you* created, for example by
+phenotyping the two batches with different error variances, different
+numbers of replicates, or different environmental covariates. If you
+generate all records the same way, the fitted fixed effects will simply
+be estimates of nothing.
+
+### Choosing the markers
+
+By default the models use the first SNP chip. A different chip is
+selected with `snpChip`, and `useQtl=TRUE` substitutes a trait's QTL for
+the chip. The QTL option is a diagnostic: it gives an upper bound on what
+a model can achieve, because it removes the imperfect linkage between
+markers and causal loci. Be aware that when `useQtl=TRUE` the `snpChip`
+argument switches meaning and selects *which trait's* QTL to use, so
+those QTL need not be the ones underlying the response you are modelling.
+
+### Size and memory
+
+The cost of these models is driven by the number of training records and
+the number of markers, and the balance between the two decides which
+implementation to use. `RRBLUPMemUse` gives a rough estimate of the
+memory required:
+
+```{r}
+RRBLUPMemUse(nInd = 2000, nMarker = 10000)
+RRBLUPMemUse(nInd = 2000, nMarker = 10000, model = "SCA")
+```
+
+The estimate is approximate and, as the help page warns, can be an
+underestimate. It is most useful for spotting the point at which a
+training population becomes too large for the machine, which is normally
+driven by the terms in $n^2$.
+
+## Fitting a model
+
+The simplest model is `RRBLUP`, which fits additive marker effects:
+
+```{r}
+ans = RRBLUP(trainPop, simParam = SP)
+
+class(ans)
+```
+
+The result is an object of `RRsol-class` with six slots. `Vu` and `Ve`
+hold the estimated marker and residual variances:
+
+```{r}
+ans@Vu
+ans@Ve
+```
+
+The remaining four slots — `gv`, `bv`, `female` and `male` — hold *trait
+objects*, the same kind of object that `SimParam` uses to define a real
+trait. This is the mechanism that makes the solution portable. A fitted
+model is stored as an estimated trait, so applying it to a new population
+is exactly the same operation as evaluating a genetic value, and it can
+be applied to any population that carries the same markers.
+
+Which of the four slots are filled depends on the model. `RRBLUP` fills
+`gv` and `bv`; the GCA and SCA models fill `gv`, `female` and `male` but
+leave `bv` empty. Asking `setEBV` for a value the model did not produce
+raises an error rather than returning something misleading.
+
+```{r}
+length(ans@gv)
+length(ans@bv)
+length(ans@female)
+```
+
+Markers are coded on the same scale that AlphaSimR uses for trait
+effects: for a diploid, the additive covariate takes the values −1, 0 and
+1 for the three genotypes, and the dominance covariate takes the value 1
+for the heterozygote and 0 otherwise. Estimated effects are therefore
+directly comparable with the true QTL effects returned by `SP$traits`,
+which is convenient when you want to check a model against the truth.
+
+## Getting GEBVs
+
+`setEBV` applies a solution to a population and writes the result into
+the population's `ebv` slot:
+
+```{r}
+predPop = setEBV(predPop, ans, simParam = SP)
+
+head(ebv(predPop))
+```
+
+The `value` argument chooses what is estimated. The default is `"gv"`, an
+estimated genetic value. The alternatives are `"bv"` for an estimated
+breeding value and `"female"` or `"male"` for estimated general combining
+abilities in the two pools of a hybrid program.
+
+For a purely additive model the distinction between `"gv"` and `"bv"` is
+cosmetic: both use the same marker effects and differ only in the
+intercept, so they are perfectly correlated and select the same
+individuals. The distinction matters once dominance is in the model,
+because then the genetic value and the breeding value are different
+quantities.
+
+`append` controls whether the new estimates replace the contents of the
+`ebv` slot or are added as an extra column. Appending is how you carry
+several estimates at once, for example a genetic value and a breeding
+value from the same fit, or estimates for several traits to be combined
+in an index.
+
+### The reference population
+
+An estimated breeding value depends on allele frequencies, because an
+average effect does. By default `setEBV` uses the frequencies implied by
+the fitted model, which are those of the training population. The
+`targetPop` argument overrides this, recomputing the average effects
+$\alpha = a + d(q - p)$ at the allele frequencies of the population you
+supply:
+
+```{r}
+# Breeding values relative to the prediction population
+predPop = setEBV(predPop, ans, value = "bv", targetPop = predPop,
+                 append = TRUE, simParam = SP)
+
+cor(ebv(predPop)[, 1], ebv(predPop)[, 2])
+```
+
+For an additive model this changes nothing but the intercept, as the
+correlation of one shows. For a model with dominance it genuinely changes
+the ranking, and it is the right thing to do when the population you are
+selecting in has drifted away from the population the model was trained
+on. The quantitative genetics article discusses why.
+
+### Measuring accuracy
+
+Accuracy is the correlation between the estimate and the thing it is
+meant to estimate. Which "thing" depends on the decision being made. If
+you are selecting parents, breeding value is the relevant target; if you
+are selecting a variety to be released, genetic value is.
+
+```{r}
+# Accuracy in the prediction population
+cor(ebv(predPop)[, 1], gv(predPop)[, 1])
+cor(ebv(predPop)[, 1], bv(predPop, simParam = SP)[, 1])
+```
+
+Two things are easy to get wrong here. The first is measuring accuracy in
+the training population. Those individuals contributed to the fit, so the
+correlation there is inflated and says little about how the model will
+perform on the individuals you actually have to select:
+
+```{r}
+trainPop = setEBV(trainPop, ans, simParam = SP)
+
+# Inflated: these individuals trained the model
+cor(ebv(trainPop)[, 1], gv(trainPop)[, 1])
+```
+
+The second is comparing a correlation against genetic value with one
+against breeding value and treating the difference as a property of the
+model. With dominance in the trait the two targets differ, and the gap
+between them is a property of the trait, not of the prediction.
+
+## Making selections
+
+Once the `ebv` slot is filled, genomic selection is ordinary selection
+with `use="ebv"`. Every selection function takes the argument:
+
+```{r}
+selected = selectInd(trainPop, nInd = 50, use = "ebv", simParam = SP)
+
+meanG(selected)
+meanG(trainPop)
+```
+
+`selectCross` combines selection and crossing in one call, which is the
+usual form inside a breeding cycle:
+
+```{r}
+newPop = selectCross(trainPop, nInd = 50, nCrosses = 200,
+                     use = "ebv", simParam = SP)
+```
+
+A full genomic selection cycle therefore has four lines: phenotype,
+fit, predict, select. The only real design question is how often the
+model is re-trained and what goes into the training population when it
+is. Re-fitting every cycle on an accumulating training population is
+the common choice, but it is also the expensive one, and the next
+section is largely about what to do when it becomes too expensive.
+
+## The models
+
+AlphaSimR offers five model structures, each in two implementations.
+
+| Model | Effects fitted | Slots filled |
+|---|---|---|
+| `RRBLUP` | additive | `gv`, `bv` |
+| `RRBLUP_D` | additive and dominance | `gv`, `bv` |
+| `RRBLUP_GCA` | separate additive effects per pool | `gv`, `female`, `male` |
+| `RRBLUP_SCA` | separate additive effects per pool, plus dominance | `gv`, `female`, `male` |
+| `fastRRBLUP` | additive | `gv`, `bv` |
+
+`RRBLUP` is the default choice and the only one that fits several traits
+at once. Supplying more than one trait fits a multivariate model, which
+borrows information across correlated traits at the cost of estimating a
+full covariance matrix.
+
+`RRBLUP_D` adds a dominance covariate for each marker. It is the model to
+use when the trait was defined with dominance and you care about the
+genetic value rather than only the breeding value — predicting the
+performance of a cross, for instance, rather than the merit of a parent
+[@xiang_2016].
+
+`RRBLUP_GCA` and `RRBLUP_SCA` are for hybrid programs with two heterotic
+pools. Rather than one set of additive effects, they estimate a set for
+each pool, which allows an allele to be worth something different
+depending on which parent contributed it. `RRBLUP_SCA` adds a dominance
+term on top, so that specific combining ability can be predicted as well
+as general combining ability [@Massman13]. Both fill the `female` and
+`male` slots with pool-specific solutions and leave `bv` empty; ask for
+`value="female"` or `value="male"` to get GCA estimates, and `value="gv"`
+to predict the performance of a specific cross. In practice these models
+are paired with `setPhenoGCA`, which phenotypes candidate parents through
+testcrosses, and with `hybridCross` for producing the crosses themselves.
+
+@dejong_2023 compared these models for the specific problem of selecting
+inbred parents on predicted GCA in a simulated maize program, and found
+that models fitting pool-specific effects together with dominance gave
+the best fit and the highest genetic gain. They also found that the
+ranking of models depends on marker density, with the models differing
+more in genetic gain at low density and more in heterosis at high
+density, which is a useful warning against assuming one model is
+uniformly best.
+
+`fastRRBLUP` is the exception in the list. It does not estimate variance
+components at all — `Vu` and `Ve` must be supplied, and reasonable
+starting values are chosen from the simulation parameters if they are
+not — and it solves the resulting system by Gauss–Seidel iteration over
+the markers. It never forms a large matrix, so its memory cost is close
+to the cost of the genotypes themselves. It is the model to reach for
+when the training population is large enough that the others will not
+fit in memory.
+
+### Model 1 versus model 2
+
+Every model above has a numbered counterpart: `RRBLUP2`, `RRBLUP_D2`,
+`RRBLUP_GCA2`, `RRBLUP_SCA2`. These fit exactly the same models. They
+differ only in how the equations are solved, and the difference is one of
+memory and speed rather than of results.
+
+The unnumbered functions use the approach of Kang and colleagues,
+sometimes called EMMA: the problem is transformed by an eigendecomposition
+of a matrix whose dimension is the number of *records*, and the variance
+components are then found by maximising the restricted likelihood along a
+single dimension. This is fast and reliable, but it forms an $n \times n$
+matrix.
+
+The numbered functions instead set up Henderson's mixed model equations
+directly. The coefficient matrix there has dimension equal to the number
+of fixed effects plus the number of *markers*, and the variance
+components are found with an EM algorithm. So:
+
+- If the number of markers is appreciably smaller than the number of
+  records, the numbered functions use less memory.
+- If the number of markers is larger, which is the common case, the
+  unnumbered functions use less memory.
+- The EM algorithm is slower and less reliable than the EMMA approach for
+  estimating variance components. `maxIter` defaults to a value that is
+  usually too small to converge, and a warning is issued when it does not.
+
+The numbered functions come into their own when the variance components
+do not need to be estimated. Setting `useEM=FALSE` and supplying `Vu` and
+`Ve` reduces the work to a single solve of the mixed model equations,
+which is quick. A common pattern is to fit `RRBLUP` once at the start of
+a simulation, keep its `Vu` and `Ve`, and use `RRBLUP2` with those values
+for every subsequent re-training:
+
+```{r}
+ans2 = RRBLUP2(trainPop, Vu = ans@Vu[1, 1], Ve = ans@Ve[1, 1],
+               useEM = FALSE, simParam = SP)
+
+predPop = setEBV(predPop, ans2, simParam = SP)
+
+cor(ebv(predPop)[, 1], gv(predPop)[, 1])
+```
+
+Whether holding the variance components fixed is acceptable depends on
+how far the population drifts over the course of the simulation, and that
+is a question only the simulation itself can answer. It is worth checking
+against a full re-fit before relying on it.
+
+## Using external software
+
+The AlphaSimR models cover ridge regression and its close relatives. For
+anything else — a Bayesian model, a GBLUP with a particular relationship
+matrix, a machine learning method — the genotypes are exported and the
+prediction is done elsewhere.
+
+Genotypes come out as an ordinary matrix, with individuals in rows and
+markers in columns, coded as allele dosages:
+
+```{r}
+geno = pullSnpGeno(trainPop, snpChip = 1, simParam = SP)
+
+dim(geno)
+geno[1:5, 1:5]
+```
+
+The matching marker map, which most external software will want, comes
+from `getSnpMap`:
+
+```{r}
+head(getSnpMap(snpChip = 1, simParam = SP))
+```
+
+`pullQtlGeno` and `pullSegSiteGeno` do the same for QTL and for all
+segregating sites, and the `pull*Haplo` family returns haplotypes rather
+than genotypes. For software that reads files rather than matrices,
+`writePlink` writes a population in PLINK format and `writeRecords`
+writes phenotype records.
+
+Bringing the predictions back is a matter of writing them into the `ebv`
+slot directly. `setEBV` is a convenience for AlphaSimR's own solutions,
+not a requirement:
+
+```{r eval=FALSE}
+# 'pred' is a vector of predictions from an external package,
+# in the same order as the individuals in predPop
+predPop@ebv = as.matrix(pred)
+```
+
+The slot must be a numeric matrix with one row per individual; any number
+of columns is allowed, and the selection functions index it with their
+`trait` argument. Once it is filled, the population behaves exactly as it
+would after `setEBV`, and every selection function with `use="ebv"` will
+work.
+
+Two R packages worth mentioning in this context are `rrBLUP` and
+`sommer` [@sommer], both of which fit mixed models with arbitrary
+covariance structures and both of which accept the matrices produced
+above without modification. `EMMREML` [@EMMREML] is another option for
+models with known covariance structures.
+
+## References

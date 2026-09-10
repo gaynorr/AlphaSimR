@@ -274,11 +274,12 @@ processes.
 
 A proportion $p$ of crossovers is assigned to the non-interfering
 pathway. Interfering chiasmata are drawn from a gamma renewal process
-with shape $v$ and rate $2v(1-p)$, so that they arrive at rate $2(1-p)$
-per Morgan. Non-interfering chiasmata are drawn from a Poisson process at
-rate $2p$ per Morgan; because a Poisson process is memoryless it needs no
-stationary start. The two sets of positions are merged and sorted, and
-the total rate is again two per Morgan.
+whose spacings have shape $v$ and gamma rate parameter $2v(1-p)$. That
+gives a mean spacing of $1/(2(1-p))$ Morgans, and so an arrival rate of
+$2(1-p)$ chiasmata per Morgan. Non-interfering chiasmata arrive as a
+Poisson process at $2p$ per Morgan; because a Poisson process is
+memoryless it needs no stationary start. The two sets of positions are
+merged and sorted, and the total rate is again two per Morgan.
 
 Setting $p = 0$ recovers the pure gamma model, and setting $p = 1$
 recovers the count-location model, so the three models form a single
@@ -303,8 +304,9 @@ crossover-heavy simulation is not much slower than a crossover-free one.
 A subtlety arises here. Crossovers are sampled on the continuous genetic
 map, but the simulation only stores genotypes at segregating sites. Two
 crossovers falling within the same marker interval leave no trace in the
-data; so does a crossover that falls before the first site or after the
-last. These *hidden* crossovers are removed from the recorded history, so
+data; neither does a pair of crossovers that returns the gamete to the
+chromosome it was already reading from. These *hidden* crossovers are
+removed from the recorded history, so
 what AlphaSimR reports is the set of crossovers that are actually
 observable given the density of the map. This keeps the recorded history
 consistent with the genotypes and keeps its size proportional to marker
@@ -368,6 +370,8 @@ tracking is off by default because the records accumulate over
 generations; turn it on before creating any populations.
 
 ```{r}
+set.seed(5678)
+
 founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 20, genLen = 1)
 
 SP = SimParam$new(founderPop)
@@ -438,8 +442,11 @@ dh = makeDH(pop, nDH = 1, simParam = SP)
 pullIbdHaplo(dh, simParam = SP)
 ```
 
-Both copies of each DH line are identical, as expected, and each is a
-mosaic of the two haplotypes of the parent it came from.
+Both copies of each DH line are identical, as expected. Each is built
+from the two haplotypes of the parent it came from, and where the gamete
+happened to recombine both copies carry the same crossovers. A gamete
+that recombined nowhere gives a DH line that simply doubles one parental
+haplotype.
 
 ## Summary
 

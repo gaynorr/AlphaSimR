@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9005
+# AlphaSimR 2.1.0.9006
 
 * Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
 
@@ -59,6 +59,8 @@
 * renamed `mutate` to `mutateGenome` to prevent clash with dpylr function
 
 * performance optimization of functions in meiosis.cpp using Claude
+
+* performance optimization of function in MME.cpp using Claude
 
 # AlphaSimR 2.1.0
 

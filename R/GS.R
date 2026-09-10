@@ -36,8 +36,9 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' Solves an RR-BLUP model for genomic predictions given known variance
 #' components. This implementation is meant as a fast and low memory
 #' alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike
-#' the those functions, the fastRRBLUP does not fit fixed effects (other
-#' than the intercept) or account for unequal replication.
+#' those functions, fastRRBLUP does not estimate the variance components.
+#' Fixed effects are fit in the same way as \code{\link{RRBLUP}}, using
+#' the levels of the population's fixEff slot.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name,
@@ -102,7 +103,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   traits = convertTraitsToNames(traits, simParam)
 
-  #fixEff = as.integer(factor(pop@fixEff))
+  fixEff = as.integer(factor(pop@fixEff))
 
   if(useQtl){
     nLoci = simParam$traits[[snpChip]]@nLoci
@@ -139,7 +140,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  ans = callFastRRBLUP(y,pop@geno,lociPerChr,
+  ans = callFastRRBLUP(y,fixEff,pop@geno,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
                        nThreads)
 
