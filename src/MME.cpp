@@ -1,5 +1,3 @@
-// solveUVM and solveMVM are based on R/EMMREML functions
-// solveMKM is based on the mmer function in R/sommer
 #include "alphasimr.h"
 
 #if !defined(ARMA_BLAS_CAPITALS)
@@ -168,6 +166,87 @@ Rcpp::List objREML2(double param, Rcpp::List args){
                             Rcpp::Named("output") = 0);
 }
 
+// Fit of the fixed effects at a given delta, shared by the FaST-LMM
+// objective below and by the final solve.
+struct FastLMMFit {
+  arma::vec beta;      // generalised least squares solution
+  double r = 0.0;      // (y-X*beta)'*H^-1*(y-X*beta)
+  double logDetH = 0.0; // log|H|
+  double logDetA = 0.0; // log|X'*H^-1*X|
+  bool ok = false;
+};
+
+// The mixed model variance is V = Vu*(M*M'+delta*I) = Vu*H. Writing the
+// spectral decomposition of M*M' as U*diag(s2)*U' together with a null space
+// of dimension nNull, any quadratic form splits into a part inside the span
+// of U and a part outside it,
+//
+//   a'*H^-1*b = sum_i at_i*bt_i/(s2_i+delta) + (a'*b-at'*bt)/delta
+//
+// for at = U'a and bt = U'b. The pieces outside the span do not depend on
+// delta and are supplied as yy0, Xy0 and XX0, so one decomposition serves
+// every value of delta and each evaluation is linear in the rank of M*M'.
+inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
+                             const arma::mat& Xt, const arma::vec& s2,
+                             double yy0, const arma::vec& Xy0,
+                             const arma::mat& XX0, double nNull){
+  FastLMMFit out;
+  out.ok = false;
+  arma::vec dInv = 1.0/(s2+delta);
+  arma::mat XtD = Xt;
+  XtD.each_col() %= dInv;
+  arma::mat A = Xt.t()*XtD + XX0/delta;
+  A = 0.5*(A+A.t()); // rounding only
+  arma::vec b = XtD.t()*yt + Xy0/delta;
+  double c = accu(yt%yt%dInv) + yy0/delta;
+  arma::mat L;
+  if(!arma::chol(L, A, "lower")){
+    return out;
+  }
+  out.logDetA = 2.0*accu(log(L.diag()));
+  out.beta = arma::solve(arma::trimatu(L.t()),
+                         arma::solve(arma::trimatl(L), b));
+  out.r = c - accu(b%out.beta);
+  if(out.r<=0.0) out.r = arma::datum::eps;
+  out.logDetH = accu(log(s2+delta)) + nNull*log(delta);
+  out.ok = true;
+  return out;
+}
+
+// Objective function for REML using the FaST-LMM algorithm of Lippert et al.
+// (2011), doi:10.1038/nmeth.1681. Written from the published description of
+// the method; no code is taken from the FaST-LMM software.
+//
+// Unlike objREML and objREML2, the fixed effects are not projected out of
+// the problem in advance. They are re-estimated by generalised least squares
+// at every delta, which is why the restricted likelihood carries the
+// log|X'*H^-1*X| term explicitly. The two formulations differ by a constant
+// and are minimised at the same delta.
+//
+// param is log(delta). The parameter spans twenty decades and the likelihood
+// is flat over most of them on a linear scale, so the search is made on the
+// log scale.
+Rcpp::List objREMLFastLMM(double param, Rcpp::List args){
+  double df = args["df"];
+  arma::vec yt = args["yt"];
+  arma::mat Xt = args["Xt"];
+  arma::vec s2 = args["s2"];
+  double yy0 = args["yy0"];
+  arma::vec Xy0 = args["Xy0"];
+  arma::mat XX0 = args["XX0"];
+  double nNull = args["nNull"];
+  FastLMMFit fit = fastLMMFit(exp(param), yt, Xt, s2, yy0, Xy0, XX0, nNull);
+  double value;
+  if(fit.ok){
+    value = df*log(fit.r) + fit.logDetH + fit.logDetA;
+  }else{
+    // X is rank deficient at this delta, so the point is excluded
+    value = 1.0e100;
+  }
+  return Rcpp::List::create(Rcpp::Named("objective") = value,
+                            Rcpp::Named("output") = 0);
+}
+
 // Produces a sum to zero design matrix with an intercept
 arma::mat makeX(arma::uvec& x){
   arma::uword nTrain = x.n_elem;
@@ -215,11 +294,15 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 //' @title Solve RR-BLUP
 //'
 //' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
+//' EMMA algorithm \insertCite{kang_2008}{AlphaSimR}.
 //'
 //' @param y a matrix with n rows and 1 column
 //' @param X a matrix with n rows and x columns
 //' @param M a matrix with n rows and m columns
+//'
+//' @references
+//' \insertAllCited{}
 //'
 //' @export
 // [[Rcpp::export]]
@@ -322,6 +405,171 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::mat u = M.t()*(Vy-VX*beta);
 
   double Vu = (sum(eta%eta/(lambda+delta))+Rnull/delta)/df;
+  double Ve = delta*Vu;
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=beta,
+                            Rcpp::Named("u")=u);
+}
+
+//' @title Solve RR-BLUP with FaST-LMM
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
+//' same arguments and returns the same values as \code{\link{solveRRBLUP}},
+//' but solves the mixed model equations using the factored spectral approach
+//' of FaST-LMM \insertCite{lippert_2011}{AlphaSimR} rather than the EMMA
+//' algorithm \insertCite{kang_2008}{AlphaSimR}. It is intended as an
+//' eventual replacement for \code{\link{solveRRBLUP}}.
+//'
+//' @details
+//' Both algorithms reduce the mixed model to a one dimensional search over
+//' delta, the ratio of the residual variance to the marker variance. They
+//' differ in the decomposition they search over.
+//'
+//' EMMA works with the fixed effects projected out. It needs the nonzero
+//' eigenvalues of S*M*M'*S for the projector S, and then has to factorise
+//' M*M'+delta*I a second time to reach the solutions.
+//'
+//' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
+//' every delta. One decomposition therefore supplies the likelihood, the
+//' generalised least squares solution for the fixed effects, and the BLUPs,
+//' and that decomposition is taken in whichever of the two spaces is
+//' smaller. When there are fewer markers than records the eigenvectors of
+//' M'*M serve in place of those of M*M', the rank deficient directions are
+//' summarised analytically, and no matrix larger than M is ever formed.
+//'
+//' This is an independent implementation of the published method. It shares
+//' no code with the FaST-LMM software distributed by Microsoft.
+//'
+//' @param y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//'
+//' @references
+//' \insertAllCited{}
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
+                        const arma::mat& M){
+  arma::uword n = y.n_rows;
+  arma::uword q = X.n_cols;
+  arma::uword m = M.n_cols;
+  double df = double(n)-double(q);
+
+  arma::vec yv = y.col(0);
+
+  arma::vec s2;  // eigenvalues of M*M' that are kept
+  arma::vec yt;  // U'*y
+  arma::mat Xt;  // U'*X
+  arma::mat MtU; // M'*U, low rank branch only
+  arma::mat U;   // full rank branch only
+  // Quantities outside the span of the kept eigenvectors
+  double yy0 = 0.0;
+  arma::vec Xy0(q, arma::fill::zeros);
+  arma::mat XX0(q, q, arma::fill::zeros);
+  double nNull = 0.0;
+
+  if(m<n){
+    // M'*M and M*M' share their nonzero eigenvalues, and the eigenvectors of
+    // the larger follow from those of the smaller as U = M*V*diag(1/s). The
+    // rotations below use that identity, so U itself is never formed.
+    arma::vec Mty = M.t()*yv;
+    arma::mat MtX = M.t()*X;
+    arma::vec eigval(m);
+    arma::mat eigvec(m,m);
+    eigen2(eigval, eigvec, M.t()*M);
+    double maxEig = eigval.max();
+    if(maxEig<0.0) maxEig = 0.0;
+    arma::uvec keep = find(eigval>(double(m)*arma::datum::eps*maxEig));
+    s2 = eigval(keep);
+    arma::mat Vk = eigvec.cols(keep);
+    arma::vec sInv = 1.0/sqrt(s2);
+    yt = sInv%(Vk.t()*Mty);
+    Xt = Vk.t()*MtX;
+    Xt.each_col() %= sInv;
+    MtU = Vk;
+    MtU.each_row() %= sqrt(s2).t();
+    // The remaining n-k directions have a zero eigenvalue. Their
+    // contribution is the same for every delta apart from a factor of
+    // 1/delta, so it is summarised here rather than being stored.
+    nNull = double(n)-double(s2.n_elem);
+    yy0 = accu(yv%yv)-accu(yt%yt);
+    if(yy0<0.0) yy0 = 0.0;
+    Xy0 = X.t()*yv-Xt.t()*yt;
+    XX0 = X.t()*X-Xt.t()*Xt;
+  }else{
+    // M*M' is the smaller of the two, and its decomposition spans all of
+    // R^n, so there is no null space to account for
+    arma::mat K = M*M.t();
+    arma::vec eigval(n);
+    U.set_size(n,n);
+    eigen2(eigval, U, K);
+    K.reset();
+    eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+    s2 = eigval;
+    yt = U.t()*yv;
+    Xt = U.t()*X;
+  }
+
+  Rcpp::List args = Rcpp::List::create(Rcpp::Named("df")=df,
+                                       Rcpp::Named("yt")=yt,
+                                       Rcpp::Named("Xt")=Xt,
+                                       Rcpp::Named("s2")=s2,
+                                       Rcpp::Named("yy0")=yy0,
+                                       Rcpp::Named("Xy0")=Xy0,
+                                       Rcpp::Named("XX0")=XX0,
+                                       Rcpp::Named("nNull")=nNull);
+
+  // Estimate variances. A coarse grid over log(delta) brackets the optimum
+  // before the bracket is refined, as recommended for FaST-LMM. Each grid
+  // point is linear in the rank of M*M', so the grid costs far less than the
+  // decomposition that precedes it, and it guards against the search
+  // settling on a local optimum.
+  const int nGrid = 100;
+  double logLower = log(1.0e-10);
+  double logUpper = log(1.0e10);
+  double step = (logUpper-logLower)/double(nGrid-1);
+  int best = 0;
+  double bestVal = 0.0;
+  for(int i=0; i<nGrid; ++i){
+    Rcpp::List gridOut = objREMLFastLMM(logLower+double(i)*step, args);
+    double value = gridOut["objective"];
+    if( (i==0) || (value<bestVal) ){
+      bestVal = value;
+      best = i;
+    }
+  }
+  int lowIdx = (best>0) ? (best-1) : 0;
+  int highIdx = (best<(nGrid-1)) ? (best+1) : (nGrid-1);
+  Rcpp::List optRes = optimize(*objREMLFastLMM, args,
+                               logLower+double(lowIdx)*step,
+                               logLower+double(highIdx)*step,
+                               1000, false, true, true);
+  double logDelta = optRes["parameter"];
+  double delta = exp(logDelta);
+
+  // Solve the mixed model equations at the estimated delta
+  FastLMMFit fit = fastLMMFit(delta, yt, Xt, s2, yy0, Xy0, XX0, nNull);
+  if(!fit.ok){
+    Rcpp::stop("solveRRBLUP2: mixed model equations could not be solved");
+  }
+  arma::mat beta = fit.beta;
+
+  // The BLUPs are u = M'*H^-1*(y-X*beta), which the decomposition already
+  // in hand applies without a second factorisation
+  arma::vec et = yt-Xt*fit.beta; // U'*(y-X*beta)
+  arma::vec etd = et/(s2+delta);
+  arma::mat u;
+  if(m<n){
+    arma::vec Mte = M.t()*(yv-X*fit.beta);
+    u = MtU*etd+(Mte-MtU*et)/delta;
+  }else{
+    u = M.t()*(U*etd);
+  }
+
+  double Vu = fit.r/df;
   double Ve = delta*Vu;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,

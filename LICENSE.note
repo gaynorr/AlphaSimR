@@ -1,0 +1,50 @@
+AlphaSimR as a whole is released under the MIT license. Its terms are
+given by R's MIT license template together with the file LICENSE.
+
+The package also contains source code written by a third party and
+released under a different license. That code, and its license, are set
+out below.
+
+================================================================================
+Markovian Coalescent Simulator (MaCS)
+================================================================================
+
+Files:      src/algorithm.cpp
+            src/constants.h
+            src/datastructures.cpp
+            src/simulator.cpp
+            src/simulator.h
+
+Copyright:  Gary K. Chen <gchen98@gmail.com>
+
+Source:     https://github.com/gchen98/macs
+
+Reference:  Chen GK, Marjoram P, Wall JD (2009) Fast and flexible
+            simulation of DNA sequence data. Genome Research 19:136-142.
+            https://doi.org/10.1101/gr.083634.108
+
+License:    Apache License, Version 2.0. The full text of the license is
+            given in the file inst/LICENSE-2.0.txt, which is installed
+            with the package as LICENSE-2.0.txt.
+
+The files listed above have been modified by the AlphaSimR authors. In
+summary, the modifications are:
+
+  * The MaCS command line program has been replaced by an interface that
+    is called from R. Results are returned in memory rather than written
+    to standard output or to temporary files, and the entry point in
+    src/simulator.cpp has been rewritten accordingly.
+
+  * Errors and messages are reported through R, so that a failed
+    simulation raises an R condition instead of writing to standard
+    error or terminating the process.
+
+  * Random number seeds are supplied by R, one per chromosome, so that
+    MaCS simulations can be reproduced with set.seed() and several
+    chromosomes can be simulated in parallel.
+
+  * Headers, includes and declarations have been adjusted so that the
+    code compiles as part of an R package.
+
+Modifications are copyright the AlphaSimR authors and are released under
+the Apache License, Version 2.0, on the same terms as the original.

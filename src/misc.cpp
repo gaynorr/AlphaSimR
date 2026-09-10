@@ -106,6 +106,27 @@ arma::uword mapIndex(arma::uword i, arma::uword j,
   return (n*(n-1)/2) - (n-i)*((n-i)-1)/2 + j-i-1;
 }
 
+// The number of blocks used for nItem work items. Blocks are never empty,
+// and there is always at least one, so that a function allocating one
+// accumulator per block always has somewhere to put its results.
+arma::uword countBlocks(arma::uword nItem){
+  if(nItem<1){
+    return 1;
+  }
+  if(nItem<nWorkBlocks){
+    return nItem;
+  }
+  return nWorkBlocks;
+}
+
+// The first work item of a block. Called with block and block+1 to get the
+// half open range a block covers. Any remainder is spread over the blocks
+// instead of landing entirely on the last one.
+arma::uword blockStart(arma::uword nItem, arma::uword nBlock,
+                       arma::uword block){
+  return (nItem*block)/nBlock;
+}
+
 // Find row given mapping index
 // k = mapping index
 // n = dimension of matrix

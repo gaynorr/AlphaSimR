@@ -20,6 +20,14 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
     nThreads = nInd;
   }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -29,7 +37,7 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -49,6 +57,7 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
         }
       }
     }
+  }
   }
   return output;
 }
@@ -117,6 +126,14 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
     nThreads = nInd;
   }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -126,7 +143,7 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -147,6 +164,7 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
       }
     }
   }
+  }
   return output;
 }
 
@@ -164,6 +182,14 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
     nThreads = nInd;
   }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -173,7 +199,7 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -194,6 +220,7 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
       }
     }
   }
+  }
   return output;
 }
 
@@ -212,6 +239,14 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
     nThreads = nInd;
   }
   arma::Mat<unsigned char> output(nInd*ploidy,arma::sum(lociPerChr));
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -221,7 +256,7 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -242,6 +277,7 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
       }
     }
   }
+  }
   return output;
 }
 
@@ -261,6 +297,14 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
     nThreads = nInd;
   }
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr));
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -270,7 +314,7 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -288,6 +332,7 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
         }
       }
     }
+  }
   }
   return output;
 }
@@ -307,6 +352,14 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  // One parallel region covers every chromosome, so threads start once
+  // per call rather than once per chromosome. Every thread walks the
+  // chromosome loop and works out the same loci offsets, and the work
+  // sharing construct below splits the individuals between them.
+#ifdef _OPENMP
+#pragma omp parallel num_threads(nThreads)
+#endif
+  {
   int loc1;
   int loc2 = -1;
   for(arma::uword i=0; i<nChr; ++i){
@@ -316,7 +369,7 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp for schedule(static)
 #endif
       for(arma::uword ind=0; ind<nInd; ++ind){
         std::bitset<8> workBits;
@@ -338,6 +391,7 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
         }
       }
     }
+  }
   }
   return geno;
 }

@@ -4,15 +4,61 @@
 #' @title Solve RR-BLUP
 #'
 #' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
+#' EMMA algorithm \insertCite{kang_2008}{AlphaSimR}.
 #'
 #' @param y a matrix with n rows and 1 column
 #' @param X a matrix with n rows and x columns
 #' @param M a matrix with n rows and m columns
 #'
+#' @references
+#' \insertAllCited{}
+#'
 #' @export
 solveRRBLUP <- function(y, X, M) {
     .Call(`_AlphaSimR_solveRRBLUP`, y, X, M)
+}
+
+#' @title Solve RR-BLUP with FaST-LMM
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
+#' same arguments and returns the same values as \code{\link{solveRRBLUP}},
+#' but solves the mixed model equations using the factored spectral approach
+#' of FaST-LMM \insertCite{lippert_2011}{AlphaSimR} rather than the EMMA
+#' algorithm \insertCite{kang_2008}{AlphaSimR}. It is intended as an
+#' eventual replacement for \code{\link{solveRRBLUP}}.
+#'
+#' @details
+#' Both algorithms reduce the mixed model to a one dimensional search over
+#' delta, the ratio of the residual variance to the marker variance. They
+#' differ in the decomposition they search over.
+#'
+#' EMMA works with the fixed effects projected out. It needs the nonzero
+#' eigenvalues of S*M*M'*S for the projector S, and then has to factorise
+#' M*M'+delta*I a second time to reach the solutions.
+#'
+#' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
+#' every delta. One decomposition therefore supplies the likelihood, the
+#' generalised least squares solution for the fixed effects, and the BLUPs,
+#' and that decomposition is taken in whichever of the two spaces is
+#' smaller. When there are fewer markers than records the eigenvectors of
+#' M'*M serve in place of those of M*M', the rank deficient directions are
+#' summarised analytically, and no matrix larger than M is ever formed.
+#'
+#' This is an independent implementation of the published method. It shares
+#' no code with the FaST-LMM software distributed by Microsoft.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param M a matrix with n rows and m columns
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @export
+solveRRBLUP2 <- function(y, X, M) {
+    .Call(`_AlphaSimR_solveRRBLUP2`, y, X, M)
 }
 
 #' @title Solve Multivariate RR-BLUP

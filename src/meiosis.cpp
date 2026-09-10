@@ -29,19 +29,30 @@ double sampleFirstChiasma(double shape, double scale,
   return (1.0-u)*interval;
 }
 
-// Creates one stable dqrng substream per chromosome for the current call.
-// Stream ids follow chromosome order so results stay reproducible if the
-// OpenMP thread count changes.
-std::vector<alphasimrRng::rngPtr> makeChrRngs(arma::uword nChr) {
-  dqrng::rng64_t baseRng = alphasimrRng::createRng();
-  std::vector<alphasimrRng::rngPtr> chrRngs;
-  chrRngs.reserve(nChr);
-  for (arma::uword chr = 0; chr < nChr; ++chr) {
-    // One stable dqrng substream per chromosome keeps meiosis reproducible
-    // even when the OpenMP thread count changes.
-    chrRngs.push_back(alphasimrRng::cloneStream(baseRng, chr + 1));
+// Creates one stable dqrng substream for each work item of the current call.
+//
+// Streams are built by walking: each one is a single long jump on from the
+// last. dqrng applies clone(stream) as a loop of stream long jumps, so
+// asking for stream k costs k jumps and building n streams by index would
+// cost O(n^2). Walking costs one jump per stream and reaches the same
+// states. A long jump is 2^192 draws, far more than a work item consumes,
+// so the streams do not overlap.
+//
+// Stream ids follow work item order, which is fixed by the chromosome and
+// block indices, so results stay reproducible if the OpenMP thread count
+// changes.
+std::vector<alphasimrRng::rngPtr> makeWorkRngs(arma::uword nWork) {
+  std::vector<alphasimrRng::rngPtr> workRngs;
+  if (nWork == 0) {
+    return workRngs;
   }
-  return chrRngs;
+  dqrng::rng64_t baseRng = alphasimrRng::createRng();
+  workRngs.reserve(nWork);
+  workRngs.push_back(baseRng->clone(1));
+  for (arma::uword i = 1; i < nWork; ++i) {
+    workRngs.push_back(workRngs[i - 1]->clone(1));
+  }
+  return workRngs;
 }
 
 } // namespace
@@ -1047,16 +1058,25 @@ Rcpp::List cross(
   if(trackRec){
     hist.setSize(nInd,nChr,ploidy);
   }
-  if(nChr < static_cast<arma::uword>(nThreads) ){
-    nThreads = nChr;
+  arma::uword nBlocks = countBlocks(nInd);
+  arma::uword nWork = nChr*nBlocks;
+  if(nWork < static_cast<arma::uword>(nThreads) ){
+    nThreads = static_cast<int>(nWork);
   }
-  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
-  //Loop through chromosomes
+  if(nThreads < 1){
+    nThreads = 1;
+  }
+  std::vector<alphasimrRng::rngPtr> workRngs = makeWorkRngs(nWork);
+  //Loop through chromosome by individual block pairs
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword chr=0; chr<nChr; ++chr){
-    alphasimrRng::rngEngine& rng = *chrRngs[chr];
+  for(arma::uword work=0; work<nWork; ++work){
+    arma::uword chr = work/nBlocks;
+    arma::uword block = work%nBlocks;
+    arma::uword indStart = blockStart(nInd, nBlocks, block);
+    arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+    alphasimrRng::rngEngine& rng = *workRngs[work];
     arma::Mat<int> hist1, hist2;
     arma::uvec xm(motherPloidy); // Indicator for mother chromosomes
     for(arma::uword i=0; i<motherPloidy; ++i)
@@ -1068,8 +1088,8 @@ Rcpp::List cross(
     arma::uword nBins = motherGeno(chr).n_rows;
     arma::Cube<unsigned char>& tmpGeno = geno(chr);
 
-    //Loop through individuals
-    for(arma::uword ind=0; ind<nInd; ++ind){
+    //Loop through the individuals of this block
+    for(arma::uword ind=indStart; ind<indEnd; ++ind){
       progenyChr=0;
       alphasimrRng::shuffle(xm, rng);
       
@@ -1250,7 +1270,7 @@ Rcpp::List cross(
         }
       }
     } //End individual loop
-  } //End chromosome loop
+  } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=geno,
                               Rcpp::Named("recHist")=hist.hist);
@@ -1276,20 +1296,29 @@ Rcpp::List createDH2(
   if(trackRec){
     hist.setSize(nInd*nDH,nChr,2);
   }
-  if(nChr < static_cast<arma::uword>(nThreads) ){
-    nThreads = nChr;
+  arma::uword nBlocks = countBlocks(nInd);
+  arma::uword nWork = nChr*nBlocks;
+  if(nWork < static_cast<arma::uword>(nThreads) ){
+    nThreads = static_cast<int>(nWork);
   }
-  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
+  if(nThreads < 1){
+    nThreads = 1;
+  }
+  std::vector<alphasimrRng::rngPtr> workRngs = makeWorkRngs(nWork);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
-    alphasimrRng::rngEngine& rng = *chrRngs[chr];
+  for(arma::uword work=0; work<nWork; ++work){ //Work loop
+    arma::uword chr = work/nBlocks;
+    arma::uword block = work%nBlocks;
+    arma::uword indStart = blockStart(nInd, nBlocks, block);
+    arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+    alphasimrRng::rngEngine& rng = *workRngs[work];
     arma::Mat<int> histMat;
     arma::uword nBins = geno(chr).n_rows;
     arma::Cube<unsigned char>& tmp = output(chr);
     arma::uvec x = {0,1};
-    for(arma::uword ind=0; ind<nInd; ++ind){ //Individual loop
+    for(arma::uword ind=indStart; ind<indEnd; ++ind){ //Individual loop
       for(arma::uword i=0; i<nDH; ++i){ //nDH loop
         alphasimrRng::shuffle(x, rng);
         bivalent(geno(chr).slice_colptr(ind, x(0)),
@@ -1314,7 +1343,7 @@ Rcpp::List createDH2(
         } //End ploidy loop
       } //End nDH loop
     } //End individual loop
-  } //End chromosome loop
+  } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=output,
                               Rcpp::Named("recHist")=hist.hist);
@@ -1341,22 +1370,31 @@ Rcpp::List createReducedGenome(
   if(trackRec){
     hist.setSize(nInd*nProgeny,nChr,ploidy/2);
   }
-  if(nChr < static_cast<arma::uword>(nThreads) ){
-    nThreads = nChr;
+  arma::uword nBlocks = countBlocks(nInd*nProgeny);
+  arma::uword nWork = nChr*nBlocks;
+  if(nWork < static_cast<arma::uword>(nThreads) ){
+    nThreads = static_cast<int>(nWork);
   }
-  std::vector<alphasimrRng::rngPtr> chrRngs = makeChrRngs(nChr);
+  if(nThreads < 1){
+    nThreads = 1;
+  }
+  std::vector<alphasimrRng::rngPtr> workRngs = makeWorkRngs(nWork);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword chr=0; chr<nChr; ++chr){ //Chromosome loop
-    alphasimrRng::rngEngine& rng = *chrRngs[chr];
+  for(arma::uword work=0; work<nWork; ++work){ //Work loop
+    arma::uword chr = work/nBlocks;
+    arma::uword block = work%nBlocks;
+    arma::uword indStart = blockStart(nInd*nProgeny, nBlocks, block);
+    arma::uword indEnd = blockStart(nInd*nProgeny, nBlocks, block+1);
+    alphasimrRng::rngEngine& rng = *workRngs[work];
     arma::Mat<int> hist1, hist2;
     arma::uword nBins = geno(chr).n_rows;
     arma::Cube<unsigned char>& tmpGeno = output(chr);
     arma::uvec x(ploidy);
     for(arma::uword i=0; i<ploidy; ++i) 
       x(i) = i;
-    for(arma::uword ind=0; ind<(nInd*nProgeny); ++ind){ //Individual loop
+    for(arma::uword ind=indStart; ind<indEnd; ++ind){ //Individual loop
       alphasimrRng::shuffle(x, rng);
       arma::uword progenyChr=0;
       arma::uword par = ind/nProgeny;
@@ -1447,7 +1485,7 @@ Rcpp::List createReducedGenome(
         }
       } // End ploidy loop
     } // End individual loop
-  } //End chromosome loop
+  } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=output,
                               Rcpp::Named("recHist")=hist.hist);

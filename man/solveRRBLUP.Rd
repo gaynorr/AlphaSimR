@@ -14,5 +14,9 @@ solveRRBLUP(y, X, M)
 \item{M}{a matrix with n rows and m columns}
 }
 \description{
-Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
+EMMA algorithm \insertCite{kang_2008}{AlphaSimR}.
+}
+\references{
+\insertAllCited{}
 }
