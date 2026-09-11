@@ -93,7 +93,7 @@ and the breeding value of an individual carrying dosage $x$ is
 $$A(x) = \big(x - \bar{x}\big)\, \alpha .$$
 
 An individual's breeding value for the trait is the sum of $A(x)$ over
-all QTL. Breeding values are centred on the population mean by
+all QTL. Breeding values are centered on the population mean by
 construction, since $\sum_x f(x)(x - \bar{x}) = 0$.
 
 Two features of this definition deserve emphasis. First, $\alpha$ is not
@@ -165,7 +165,7 @@ Epistatic deviations follow the same lack-of-fit logic, applied to a pair
 of loci rather than to a single locus. The calculation proceeds in two
 stages.
 
-The first stage marginalises. For the pair $(i,j)$, the marginal genetic
+The first stage marginalizes. For the pair $(i,j)$, the marginal genetic
 value of dosage $x_i$ at the first locus is its genetic value averaged
 over the distribution of dosages at the second locus,
 
@@ -182,12 +182,12 @@ additive variance.
 The average effect $\alpha_i$ and the breeding value $A_i$ are then
 obtained from the marginal genetic values exactly as in the single-locus
 case, and the dominance deviation $D_i$ is the residual from that
-regression. Because the marginalised epistatic contribution is linear
+regression. Because the marginalized epistatic contribution is linear
 in $x_{A_i}$, it is absorbed entirely by the additive regression and
 leaves the dominance deviation untouched. Epistasis in this model
 generates additive and epistatic variance, but no dominance variance.
 
-One qualification is worth stating. The marginalisation above weights
+One qualification is worth stating. The marginalization above weights
 the partner locus by its own marginal genotype frequencies, which
 treats the two loci of a pair as independent. When they are in linkage
 disequilibrium this is not quite the least-squares projection in the
@@ -195,12 +195,12 @@ observed population, and the components that follow from it are
 correspondingly not quite orthogonal. This is why the covariances
 between components are reported rather than assumed to be zero.
 
-The consequence is a difference in labelling rather than a loss of
+The consequence is a difference in labeling rather than a loss of
 variance. Under linkage disequilibrium, additive-by-additive effects
 induce a marginal dominance component, which a decomposition built on
 the joint two-locus genotype frequencies reports as dominance variance
 [@alvarezcastro_2019]. AlphaSimR cannot represent this. Because the
-marginalisation makes the epistatic contribution exactly linear in a
+marginalization makes the epistatic contribution exactly linear in a
 locus's own dosage, a trait with no dominance effects has dominance
 deviations of exactly zero however strong the disequilibrium, and the
 variance in question is reported as additive-by-additive instead. The
@@ -266,7 +266,7 @@ frequencies at each locus as the observed population, but loci are
 treated as independent. Variances computed here are sums of single-locus
 (or single-pair) contributions with no covariance between loci.
 
-The **idealised population** has the same *allele* frequencies as the
+The **idealized population** has the same *allele* frequencies as the
 observed population, but genotype frequencies at Hardy-Weinberg
 proportions and loci in linkage equilibrium. Variances computed here are
 the *genic* variances: `genicVarA`, `genicVarD`, `genicVarAA` and
@@ -290,7 +290,7 @@ difference between them is informative. Selection and non-random mating
 change the genetic variance of a population long before they change its
 allele frequencies, because they generate correlations between loci and
 departures from Hardy-Weinberg proportions. This is the Bulmer effect,
-described by @bulmer_1971, and it is the reason a breeding programme
+described by @bulmer_1971, and it is the reason a breeding program
 loses additive variance faster than allele-frequency change alone would
 suggest.
 
@@ -303,7 +303,7 @@ $$\sigma^{2}_{A} = \sigma^{2}_{A,\text{genic}} +
 with the analogous identity for the dominance and epistatic components.
 The three terms are:
 
-`genicVarA`, the variance of an idealised population at the same allele
+`genicVarA`, the variance of an idealized population at the same allele
 frequencies, randomly mated and in linkage equilibrium. This changes only
 when allele frequencies change, through selection, drift or mutation.
 
@@ -327,7 +327,7 @@ genetic variance also includes covariances *between* components. These
 are reported separately as `covAD_L`, `covAAA_L` and `covDAA_L`, the
 covariances between breeding values and dominance deviations, between
 breeding values and epistatic deviations, and between dominance and
-epistatic deviations. All three are zero in the idealised population and
+epistatic deviations. All three are zero in the idealized population and
 non-zero in general. The complete identity is
 
 $$\sigma^{2}_{G} = \sigma^{2}_{A} + \sigma^{2}_{D} + \sigma^{2}_{AA}
@@ -449,13 +449,13 @@ introduced by @fisher_1919 and extended to epistasis by @cockerham_1954
 and @kempthorne_1954. The additive-by-additive contrast used by
 AlphaSimR is the product of the two single-locus additive contrasts,
 which is the standard construction and the one that makes the components
-orthogonal in an idealised population. In the terminology of the natural
+orthogonal in an idealized population. In the terminology of the natural
 and orthogonal interactions framework of @alvarezcastro_2007,
 AlphaSimR computes the statistical decomposition against the observed
 genotype frequencies, which is what makes `alpha` and `alpha_HW`
 differ.
 
-Orthogonality of the components holds exactly only in the idealised
+Orthogonality of the components holds exactly only in the idealized
 population, with Hardy-Weinberg proportions and linkage equilibrium. In
 any real or simulated population the components are correlated, and
 AlphaSimR does not pretend otherwise: the correlations are reported
@@ -483,7 +483,7 @@ from one half. The `relAA` argument specifies the ratio of
 epistatic to additive variance expected in a population at allele
 frequency 0.5 in linkage equilibrium; observed ratios in a simulated
 population will typically be smaller, sometimes much smaller. This is not
-an artefact of the implementation but a property of the decomposition
+an artifact of the implementation but a property of the decomposition
 itself.
 
 ## References

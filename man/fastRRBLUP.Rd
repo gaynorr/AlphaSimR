@@ -13,6 +13,7 @@ fastRRBLUP(
   maxIter = 1000,
   Vu = NULL,
   Ve = NULL,
+  nSubsample = 5000L,
   simParam = NULL,
   nThreads = NULL,
   ...
@@ -37,11 +38,16 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations.}
 
-\item{Vu}{marker effect variance. If value is NULL, a
-reasonable value is chosen automatically.}
+\item{Vu}{marker effect variance. If value is NULL, this variance
+and Ve are estimated by REML. See details.}
 
-\item{Ve}{error variance. If value is NULL, a
-reasonable value is chosen automatically.}
+\item{Ve}{error variance. If value is NULL, this variance and Vu
+are estimated by REML. See details.}
+
+\item{nSubsample}{the number of records used to estimate the variance
+components. Ignored when Vu and Ve are supplied. A value of zero uses
+every record, which is only advisable for small training populations,
+because the memory needed grows with the square of this value.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -54,12 +60,27 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Solves an RR-BLUP model for genomic predictions given known variance
-components. This implementation is meant as a fast and low memory
-alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike
-those functions, fastRRBLUP does not estimate the variance components.
-Fixed effects are fit in the same way as \code{\link{RRBLUP}}, using
-the levels of the population's fixEff slot.
+Solves an RR-BLUP model for genomic predictions. This implementation is
+meant as a fast and low memory alternative to \code{\link{RRBLUP}} or
+\code{\link{RRBLUP2}}. Fixed effects are fit in the same way as
+\code{\link{RRBLUP}}, using the levels of the population's fixEff slot.
+
+The mixed model equations are solved by preconditioned conjugate
+gradient, iterating over the genotypes rather than over a stored
+coefficient matrix \insertCite{stranden_1999}{AlphaSimR}. Neither the
+coefficient matrix nor a numeric copy of the genotypes is formed, so
+memory use stays close to the size of the genotypes, and the iteration
+is shared across nThreads.
+
+Variance components are estimated by REML when they are not supplied.
+REML needs a matrix decomposition whose cost is the square of the number
+of records in memory and their cube in time, which is what this function
+is built to avoid, so the estimate is taken from a random subset of the
+records set by nSubsample. Variance components are nuisance parameters
+for genomic prediction and are estimated far more precisely than a
+breeding program needs, so a few thousand records give values good
+enough to shrink with. The marker effects are always solved for using
+every record.
 }
 \examples{
 #Create founder haplotypes
@@ -82,4 +103,7 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+}
+\references{
+\insertAllCited{}
 }

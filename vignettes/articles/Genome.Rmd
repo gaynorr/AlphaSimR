@@ -18,10 +18,10 @@ knitr::opts_chunk$set(
 library(AlphaSimR)
 ```
 
-**AlphaSimR** is built upon the basics of genetics for the stochastic simulation of crop and animal breeding programmes. This vignette will provide an overview of the genome, it's inheritance, and the tools used to read it with supporting examples and code.
+**AlphaSimR** is built upon the basics of genetics for the stochastic simulation of crop and animal breeding programs. This vignette will provide an overview of the genome, it's inheritance, and the tools used to read it with supporting examples and code.
 
 # What is a genome?
-The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualised as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is package can vary substantial including the number of chromosome and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomnal, one non-autosomnal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
+The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is package can vary substantial including the number of chromosome and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomnal, one non-autosomnal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
 
 ## Genes, alleles, loci, genotypes, and haplotypes.
 Although similar, there are essential differences in the terminology used. This next section will provide a short glossary for genes, allele, loci, genotypes, and haplotypes.
@@ -50,7 +50,7 @@ SP$setTrackRec(TRUE)
 founderGenome
 
 ```
-Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined loci labelled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes. Where the ancestral allele is not known, the allele dosage will be randomly assigned.
+Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined loci labeled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes. Where the ancestral allele is not known, the allele dosage will be randomly assigned.
 
 ```{r}
 pullSegSiteGeno(founderGenome)

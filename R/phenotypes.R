@@ -631,7 +631,7 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
 #'   (see examples).
 #' @return matrix of values with some traits recoded as counts
 #' @details If input trait is normal (Gaussian) then this function generates a
-#'   count trait by sampling from the Poisson generalised linear model.
+#'   count trait by sampling from the Poisson generalized linear model.
 #'   As such, this function's output is stochastic.
 #' 
 #'   Specifically, it generates \code{y | x ~ Poisson(lambda)} with

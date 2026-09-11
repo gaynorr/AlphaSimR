@@ -4,25 +4,75 @@
 \alias{RRBLUPMemUse}
 \title{RRBLUP Memory Usage}
 \usage{
-RRBLUPMemUse(nInd, nMarker, model = "REG")
+RRBLUPMemUse(
+  nInd,
+  nMarker,
+  model = "RRBLUP",
+  nTraits = 1L,
+  nFixEff = 1L,
+  nSubsample = 5000L
+)
 }
 \arguments{
 \item{nInd}{the number of individuals in the training population}
 
 \item{nMarker}{the number of markers per individual}
 
-\item{model}{either "REG", "GCA", or "SCA" for \code{\link{RRBLUP}}
-\code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} respectively.}
+\item{model}{the model being fitted, given as the name of the function
+that fits it. One of "fastRRBLUP", "RRBLUP", "RRBLUP2", "RRBLUP_D",
+"RRBLUP_D2", "RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
+The older values "REG", "GCA" and "SCA" are still accepted and are read as
+"RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".}
+
+\item{nTraits}{the number of traits fitted at once. Only
+\code{\link{RRBLUP}} fits more than one.}
+
+\item{nFixEff}{the number of fixed effect levels, which is the number of
+distinct values in the population's fixEff slot.}
+
+\item{nSubsample}{the number of records \code{\link{fastRRBLUP}} uses to
+estimate variance components. Ignored by every other model, and by
+fastRRBLUP itself when Vu and Ve are supplied.}
 }
 \value{
 Returns an estimate for the required gigabytes of RAM
 }
 \description{
-Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
-and its related functions for a given training population size.
-Note that this function may underestimate total usage.
+Estimates the amount of RAM needed to fit one of AlphaSimR's genomic
+selection models to a training population of a given size. The estimate
+covers the matrices the solvers hold at their peak, which is what decides
+whether a model can be fitted at all. It does not cover the population
+object itself or anything else in the R session, so it is a lower bound
+on what the whole simulation needs.
+}
+\details{
+The models differ in what they have to hold in memory, and the differences
+are large enough to decide which one is usable.
+
+\code{\link{fastRRBLUP}} keeps the genotypes as one byte per locus and
+iterates over them, so it holds no square matrix at all. Its estimate is
+dominated by the genotypes themselves and by the subset of records used
+for the variance components.
+
+\code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
+smaller of the number of records and the number of markers, because a
+matrix and its transpose share their nonzero eigenvalues.
+
+The numbered models set up Henderson's mixed model equations, whose
+coefficient matrix is square with dimensions equal to the number of fixed
+effects plus the number of random effects, so they grow with the number of
+markers rather than the number of records.
+
+The GCA, SCA and dominance models fit more than one random effect and hold
+a square matrix of the number of records for each, which makes them the
+most demanding of the set.
 }
 \examples{
 RRBLUPMemUse(nInd=1000, nMarker=5000)
+
+# The same training data, fitted three ways
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="fastRRBLUP")
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
 
 }

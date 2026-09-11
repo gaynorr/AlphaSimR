@@ -25,7 +25,7 @@ Convert a normal (Gaussian) trait to a count (Poisson) trait
 }
 \details{
 If input trait is normal (Gaussian) then this function generates a
-  count trait by sampling from the Poisson generalised linear model.
+  count trait by sampling from the Poisson generalized linear model.
   As such, this function's output is stochastic.
 
   Specifically, it generates \code{y | x ~ Poisson(lambda)} with

@@ -107,7 +107,7 @@ For linear algebra-heavy work (such as fitting genomic prediction models),
 a multithreaded `BLAS` can also help.
 This is separate to `OpenMP` support.
 In our experience, this is even more platform- and `R`-build-specific than `OpenMP`,
-so it is best treated as an advanced local optimisation.
+so it is best treated as an advanced local optimization.
 
 - Windows: We have had reasonable results with `OpenBLAS`:
   <https://github.com/OpenMathLib/OpenBLAS>.

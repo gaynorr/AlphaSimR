@@ -310,7 +310,7 @@ getFam = function(pop,famType){
 #' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 #' abline(v=pop3@pheno, col="red", lwd=2)
 #'
-#' #Select 5 least deviating from an optima (stabilising selection)
+#' #Select 5 least deviating from an optima (stabilizing selection)
 #' pop4 = selectInd(pop, 5, trait=squaredDeviation, selectTop=FALSE, simParam=SP)
 #' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 #' abline(v=pop4@pheno, col="red", lwd=2)

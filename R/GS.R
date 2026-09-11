@@ -33,12 +33,27 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' @title Fast RR-BLUP
 #'
 #' @description
-#' Solves an RR-BLUP model for genomic predictions given known variance
-#' components. This implementation is meant as a fast and low memory
-#' alternative to \code{\link{RRBLUP}} or \code{\link{RRBLUP2}}. Unlike
-#' those functions, fastRRBLUP does not estimate the variance components.
-#' Fixed effects are fit in the same way as \code{\link{RRBLUP}}, using
-#' the levels of the population's fixEff slot.
+#' Solves an RR-BLUP model for genomic predictions. This implementation is
+#' meant as a fast and low memory alternative to \code{\link{RRBLUP}} or
+#' \code{\link{RRBLUP2}}. Fixed effects are fit in the same way as
+#' \code{\link{RRBLUP}}, using the levels of the population's fixEff slot.
+#'
+#' The mixed model equations are solved by preconditioned conjugate
+#' gradient, iterating over the genotypes rather than over a stored
+#' coefficient matrix \insertCite{stranden_1999}{AlphaSimR}. Neither the
+#' coefficient matrix nor a numeric copy of the genotypes is formed, so
+#' memory use stays close to the size of the genotypes, and the iteration
+#' is shared across nThreads.
+#'
+#' Variance components are estimated by REML when they are not supplied.
+#' REML needs a matrix decomposition whose cost is the square of the number
+#' of records in memory and their cube in time, which is what this function
+#' is built to avoid, so the estimate is taken from a random subset of the
+#' records set by nSubsample. Variance components are nuisance parameters
+#' for genomic prediction and are estimated far more precisely than a
+#' breeding program needs, so a few thousand records give values good
+#' enough to shrink with. The marker effects are always solved for using
+#' every record.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name,
@@ -52,10 +67,14 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations.
-#' @param Vu marker effect variance. If value is NULL, a
-#' reasonable value is chosen automatically.
-#' @param Ve error variance. If value is NULL, a
-#' reasonable value is chosen automatically.
+#' @param Vu marker effect variance. If value is NULL, this variance
+#' and Ve are estimated by REML. See details.
+#' @param Ve error variance. If value is NULL, this variance and Vu
+#' are estimated by REML. See details.
+#' @param nSubsample the number of records used to estimate the variance
+#' components. Ignored when Vu and Ve are supplied. A value of zero uses
+#' every record, which is only advisable for small training populations,
+#' because the memory needed grows with the square of this value.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -63,6 +82,9 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -88,7 +110,7 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #' @export
 fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=1000, Vu=NULL, Ve=NULL,
-                      simParam=NULL, nThreads=NULL, ...){
+                      nSubsample=5000L, simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -115,33 +137,27 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
 
-  # Sort out Vu and Ve
-  if(is.function(traits)){
-    if(is.null(Vu)){
-      Vu = var(y)/nLoci
-    }
-    if(is.null(Ve)){
-      Ve = var(y)/2
+  # Sort out Vu and Ve. Both are estimated unless both are supplied.
+  estVarComp = is.null(Vu) | is.null(Ve)
+  if(estVarComp){
+    # Values are not used, but something has to be passed
+    Vu = 1
+    Ve = 1
+    nSubsample = as.integer(nSubsample)
+    if((nSubsample>0L) & (nSubsample<nrow(y))){
+      # Sampling here rather than in C++ keeps it under set.seed()
+      subset = sort(sample.int(nrow(y), nSubsample))
+    }else{
+      subset = seq_len(nrow(y))
     }
   }else{
-    stopifnot(length(traits)==1)
-    if(is.null(Vu)){
-      Vu = 2*simParam$varA[traits]/nLoci
-      if(is.na(Vu)){
-        Vu = var(y)/nLoci
-      }
-    }
-    if(is.null(Ve)){
-      Ve = simParam$varE[traits]
-      if(is.na(Ve)){
-        Ve = var(y)/2
-      }
-    }
+    subset = 1L
   }
 
   #Fit model
   ans = callFastRRBLUP(y,fixEff,pop@geno,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
+                       estVarComp,as.integer(subset),
                        nThreads)
 
   bv = new("TraitA",
@@ -165,8 +181,8 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                gv = list(gv),
                female = as.list(NULL),
                male = as.list(NULL),
-               Vu = as.matrix(Vu),
-               Ve = as.matrix(Ve))
+               Vu = as.matrix(ans$Vu),
+               Ve = as.matrix(ans$Ve))
 
   return(output)
 }
@@ -1578,56 +1594,126 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' @title RRBLUP Memory Usage
 #'
 #' @description
-#' Estimates the amount of RAM needed to run the \code{\link{RRBLUP}}
-#' and its related functions for a given training population size.
-#' Note that this function may underestimate total usage.
+#' Estimates the amount of RAM needed to fit one of AlphaSimR's genomic
+#' selection models to a training population of a given size. The estimate
+#' covers the matrices the solvers hold at their peak, which is what decides
+#' whether a model can be fitted at all. It does not cover the population
+#' object itself or anything else in the R session, so it is a lower bound
+#' on what the whole simulation needs.
 #'
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual
-#' @param model either "REG", "GCA", or "SCA" for \code{\link{RRBLUP}}
-#' \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} respectively.
+#' @param model the model being fitted, given as the name of the function
+#' that fits it. One of "fastRRBLUP", "RRBLUP", "RRBLUP2", "RRBLUP_D",
+#' "RRBLUP_D2", "RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
+#' The older values "REG", "GCA" and "SCA" are still accepted and are read as
+#' "RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".
+#' @param nTraits the number of traits fitted at once. Only
+#' \code{\link{RRBLUP}} fits more than one.
+#' @param nFixEff the number of fixed effect levels, which is the number of
+#' distinct values in the population's fixEff slot.
+#' @param nSubsample the number of records \code{\link{fastRRBLUP}} uses to
+#' estimate variance components. Ignored by every other model, and by
+#' fastRRBLUP itself when Vu and Ve are supplied.
+#'
+#' @details
+#' The models differ in what they have to hold in memory, and the differences
+#' are large enough to decide which one is usable.
+#'
+#' \code{\link{fastRRBLUP}} keeps the genotypes as one byte per locus and
+#' iterates over them, so it holds no square matrix at all. Its estimate is
+#' dominated by the genotypes themselves and by the subset of records used
+#' for the variance components.
+#'
+#' \code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
+#' smaller of the number of records and the number of markers, because a
+#' matrix and its transpose share their nonzero eigenvalues.
+#'
+#' The numbered models set up Henderson's mixed model equations, whose
+#' coefficient matrix is square with dimensions equal to the number of fixed
+#' effects plus the number of random effects, so they grow with the number of
+#' markers rather than the number of records.
+#'
+#' The GCA, SCA and dominance models fit more than one random effect and hold
+#' a square matrix of the number of records for each, which makes them the
+#' most demanding of the set.
 #'
 #' @return Returns an estimate for the required gigabytes of RAM
 #'
 #' @examples
 #' RRBLUPMemUse(nInd=1000, nMarker=5000)
 #'
+#' # The same training data, fitted three ways
+#' RRBLUPMemUse(nInd=5000, nMarker=2000, model="fastRRBLUP")
+#' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
+#' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
+#'
 #' @export
-RRBLUPMemUse = function(nInd,nMarker,model="REG"){
-  y = nInd
-  X = nInd #times fixed effects, assuming 1 here
-  M = nInd*nMarker
-  u = nMarker
-  if(toupper(model)=="REG"){
-    S = nInd*nInd
-    eigval = nInd
-    eigvec = nInd*nInd
-    eta = nInd
-    Hinv = nInd*nInd
-  }else if(toupper(model)=="GCA"){
-    M = M*2
-    V = nInd*nInd*3
-    W = W0 = WQX = nInd*nInd
-    WX = ee = nInd
-    u = u*2
-  }else if(toupper(model)=="SCA"){
-    M = M*3
-    V = nInd*nInd*4
-    W = W0 = WQX = nInd*nInd
-    WX = ee = nInd
-    u = u*3
+RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
+                        nFixEff=1L, nSubsample=5000L){
+  n = as.double(nInd)
+  m = as.double(nMarker)
+  q = as.double(nFixEff)
+  nT = as.double(nTraits)
+
+  # Names used before the models were named after their functions
+  model = switch(toupper(model),
+                 "REG" = "RRBLUP",
+                 "GCA" = "RRBLUP_GCA",
+                 "SCA" = "RRBLUP_SCA",
+                 model)
+
+  # Genotypes are read as one byte per locus before being turned into
+  # dosages, so both are held while the conversion runs
+  genoBytes = n*m
+
+  if(model=="fastRRBLUP"){
+    # No dosages are stored and no square matrix is formed. The solver holds
+    # six vectors of markers plus the column means, and a few of records.
+    doubles = 7*m+3*n+q*n
+    # Variance components come from a subset of the records. Whichever cross
+    # product is smaller is the one decomposed.
+    nSub = as.double(nSubsample)
+    if((nSub<=0) | (nSub>n)){
+      nSub = n
+    }
+    if(m<nSub){
+      doubles = doubles+nSub*m+5*m^2
+    }else{
+      doubles = doubles+3*nSub^2
+    }
+  }else if(model=="RRBLUP"){
+    if(nT>1){
+      # Rotation by the eigenvectors of the record cross product, plus one
+      # small inverse per record
+      doubles = n*m+3*n^2+nT^2*n
+    }else if(m<n){
+      # Decomposition over markers, with the fixed effects projected out of
+      # a second copy of the dosages
+      doubles = 2*n*m+3*m^2
+    }else{
+      # Decomposition over records
+      doubles = n*m+4*n^2
+    }
+  }else if(model=="RRBLUP2"){
+    doubles = n*m+2*(q+m)^2
+  }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+    nKernel = if(model=="RRBLUP_SCA") 3 else 2
+    if(m<n){
+      # The average information matrix is reached through the dosages
+      doubles = 2*nKernel*n*m+(nKernel+3)*n^2
+    }else{
+      # and through square matrices of the records
+      doubles = nKernel*n*m+(3*nKernel+3)*n^2
+    }
+  }else if(model %in% c("RRBLUP_D2","RRBLUP_GCA2","RRBLUP_SCA2")){
+    nKernel = if(model=="RRBLUP_SCA2") 3 else 2
+    doubles = nKernel*n*m+2*(q+nKernel*m)^2
   }else{
-    stop(paste0("model=",toupper(model)," not recognized"))
+    stop(paste0("model=",model," not recognized"))
   }
-  objects = ls()
-  objects = objects[objects!="model"]
-  bytes = sapply(objects,function(x) get(x))
-  bytes = 8*sum(bytes)
 
-  # Using base 2 calculation
-  #return(bytes/((2^10)^3)) #GB
-
-  # Using base 10 calculation, more conservative
-  # Incorrect, but accounts for sources of data usage
-  return(bytes/10^9) #GB
+  # Using base 10 rather than base 2, which is the more conservative of the
+  # two and leaves a little room for what is not counted here
+  return((8*doubles+genoBytes)/10^9) #GB
 }

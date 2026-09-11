@@ -35,16 +35,16 @@ solveRRBLUP <- function(y, X, M) {
 #' differ in the decomposition they search over.
 #'
 #' EMMA works with the fixed effects projected out. It needs the nonzero
-#' eigenvalues of S*M*M'*S for the projector S, and then has to factorise
+#' eigenvalues of S*M*M'*S for the projector S, and then has to factorize
 #' M*M'+delta*I a second time to reach the solutions.
 #'
 #' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
 #' every delta. One decomposition therefore supplies the likelihood, the
-#' generalised least squares solution for the fixed effects, and the BLUPs,
+#' generalized least squares solution for the fixed effects, and the BLUPs,
 #' and that decomposition is taken in whichever of the two spaces is
 #' smaller. When there are fewer markers than records the eigenvectors of
 #' M'*M serve in place of those of M*M', the rank deficient directions are
-#' summarised analytically, and no matrix larger than M is ever formed.
+#' summarized analytically, and no matrix larger than M is ever formed.
 #'
 #' This is an independent implementation of the published method. It shares
 #' no code with the FaST-LMM software distributed by Microsoft.
@@ -161,8 +161,8 @@ solveRRBLUP_EM3 <- function(Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, u
     .Call(`_AlphaSimR_solveRRBLUP_EM3`, Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, useEM)
 }
 
-callFastRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads)
+callFastRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
 callRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, nThreads) {

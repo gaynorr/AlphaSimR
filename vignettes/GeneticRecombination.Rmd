@@ -3,6 +3,7 @@ title: "Genetic Recombination"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
+bibliography: AlphaSimR.bib
 vignette: >
   %\VignetteIndexEntry{Genetic Recombination}
   %\VignetteEncoding{UTF-8}
@@ -67,8 +68,8 @@ part in any particular chiasma. Second, in the absence of *chromatid
 interference*, the pair of chromatids involved in each chiasma is chosen
 independently of the pairs involved in every other chiasma. AlphaSimR
 assumes no chromatid interference, which is well supported empirically
-and which makes the second step above a simple independent coin flip per
-chiasma.
+[@zhao_1995] and which makes the second step above a simple independent
+coin flip per chiasma.
 
 The first meiotic division separates the homologous chromosomes. This is
 the *reductional* division and it is where independent assortment
@@ -93,7 +94,7 @@ allopolyploids.
 Allopolyploids, such as bread wheat, carry multiple genome copies derived
 from different ancestral species. The copies are similar enough to
 coexist in the same nucleus but different enough that each chromosome has
-only one true homologue. Pairing is therefore *disomic*: chromosomes form
+only one true homolog. Pairing is therefore *disomic*: chromosomes form
 ordinary bivalents and meiosis proceeds essentially as it does in a
 diploid. From a modeling standpoint an allopolyploid can be treated as a
 collection of independent diploid genomes, and AlphaSimR handles it that
@@ -102,20 +103,22 @@ way.
 Autopolyploids, such as cultivated potato or alfalfa, carry multiple
 copies of the *same* genome. Every chromosome has more than one equally
 valid pairing partner, and this changes meiosis in ways that have no
-diploid analogue. In an autotetraploid, the four homologues of a
+diploid analog. In an autotetraploid, the four homologs of a
 chromosome may pair as two independent bivalents, or all four may
 associate into a single **quadrivalent**. Which of these happens is
 partly a property of the species and partly of the chromosome, and it is
-usually summarised as a probability of quadrivalent formation.
+usually summarized as a probability of quadrivalent formation
+[@sybenga_1975].
 
 Quadrivalent pairing has two consequences. It allows a gamete to inherit
-material from more than two of the four homologues, and it makes **double
+material from more than two of the four homologs, and it makes **double
 reduction** possible. Double reduction occurs when a gamete receives two
 copies of the same parental chromosome segment, that is, when the two
 chromosomes a gamete inherits are sister chromatids over some interval.
 This cannot happen under bivalent pairing. Under quadrivalent pairing it
 happens for loci that are separated from the centromere by a crossover,
-so its frequency increases with distance from the centromere. Because the
+so its frequency increases with distance from the centromere
+[@mather_1935]. Because the
 centromere position determines the pattern, AlphaSimR requires centromere
 positions for autopolyploid simulations, which is why the `MapPop` class
 carries a `centromere` slot.
@@ -123,10 +126,10 @@ carries a `centromere` slot.
 ## Genetic maps
 
 The raw material for a recombination model is a genetic map. The idea
-goes back to Morgan's fly lab, where Sturtevant recognised that the
-frequency with which two markers are separated during meiosis could be
-used to order them along a chromosome and to assign them positions on a
-linear scale. That scale is measured in Morgans; one Morgan is the
+goes back to Morgan's fly lab, where @sturtevant_1913 recognized that
+the frequency with which two markers are separated during meiosis could
+be used to order them along a chromosome and to assign them positions on
+a linear scale. That scale is measured in Morgans; one Morgan is the
 distance over which one crossover is expected per gamete per meiosis.
 
 A genetic map is not the same as a physical map. Physical distance is
@@ -147,17 +150,18 @@ a Poisson process, then
 
 $$r = \frac{1 - e^{-2d}}{2}$$
 
-which is Haldane's mapping function. Haldane's function assumes no
+which is Haldane's mapping function [@haldane_1919]. Haldane's function
+assumes no
 crossover interference, and real chromosomes show interference: the
 occurrence of one crossover suppresses others nearby. Kosambi's mapping
-function
+function [@kosambi_1944]
 
 $$r = \frac{1}{2}\tanh(2d)$$
 
 builds in a moderate amount of interference and generally fits observed
 data better. These functions matter here because they describe the
-behaviour a recombination model should reproduce, and because AlphaSimR's
-default parameterisation is chosen to approximate Kosambi.
+behavior a recombination model should reproduce, and because AlphaSimR's
+default parameterization is chosen to approximate Kosambi.
 
 In AlphaSimR a genetic map is a list with one element per chromosome.
 Each element is a named numeric vector giving the position of every
@@ -214,10 +218,11 @@ proportion of crossovers arising from a non-interfering pathway.
 
 ### The count-location model
 
-The simplest model treats chiasmata as a homogeneous Poisson process. The
-number of chiasmata on the chromosome is drawn from a Poisson
-distribution with mean $2L$, and each is placed at a position drawn
-uniformly along the map. There is no interference: the position of one
+The simplest model treats chiasmata as a homogeneous Poisson process,
+the simplest member of the count-location family of recombination models
+[@risch_1979]. The number of chiasmata on the chromosome is drawn from a
+Poisson distribution with mean $2L$, and each is placed at a position
+drawn uniformly along the map. There is no interference: the position of one
 chiasma tells you nothing about the position of any other. The resulting
 crossover process is exactly the one underlying Haldane's mapping
 function.
@@ -230,10 +235,10 @@ when a Haldane map is what is wanted.
 ### The gamma model
 
 Interference is easier to model in terms of the *spacing* between
-chiasmata than in terms of their positions. The gamma model, developed
-for this purpose by Broman, Weber, Zhao and others, treats chiasmata
-along a chromosome as a stationary renewal process whose inter-arrival
-distances follow a gamma distribution with shape $v$ and rate $2v$. The
+chiasmata than in terms of their positions. The gamma model, introduced
+for this purpose by @mcpeek_1995, treats chiasmata along a chromosome as
+a stationary renewal process whose inter-arrival distances follow a gamma
+distribution with shape $v$ and rate $2v$. The
 mean spacing is then $1/2$ Morgan, giving the required chiasma rate of two
 per Morgan, and the shape parameter alone controls interference.
 
@@ -253,7 +258,8 @@ One implementation detail is worth mentioning because it is a common
 source of bias in renewal-process simulations. A renewal process started
 at position zero is not stationary: the first interval is an ordinary
 gamma deviate, whereas the interval that happens to straddle an arbitrary
-point on a long chromosome is length-biased and stochastically larger.
+point on a long chromosome is length-biased and stochastically larger
+[@cox_1962].
 The usual remedy is to burn in from several Morgans upstream and discard
 everything before position zero, which costs twenty or so wasted random
 deviates per chromosome. AlphaSimR instead samples the equilibrium
@@ -267,10 +273,10 @@ deviates instead of twenty and with no approximation.
 ### The gamma sprinkling model
 
 There is good evidence in several species that crossovers arise from two
-distinct pathways. The dominant pathway is subject to interference; a
-second, minor pathway is not. The gamma sprinkling model, sometimes
-called the two-pathway model, accommodates this by combining the two
-processes.
+distinct pathways [@copenhaver_2002; @housworth_2003]. The dominant
+pathway is subject to interference; a second, minor pathway is not. The
+gamma sprinkling model, sometimes called the two-pathway model,
+accommodates this by combining the two processes.
 
 A proportion $p$ of crossovers is assigned to the non-interfering
 pathway. Interfering chiasmata are drawn from a gamma renewal process
@@ -315,10 +321,10 @@ density rather than to map length.
 ### Recombination models in autopolyploids
 
 For an autopolyploid, meiosis is simulated one pairing group at a time.
-The homologues of a chromosome are shuffled and then processed in groups
+The homologs of a chromosome are shuffled and then processed in groups
 of four. Each group of four either forms two independent bivalents or a
 single quadrivalent, with the quadrivalent chosen with probability
-`SP$quadProb`. If fewer than four homologues remain, the remainder is
+`SP$quadProb`. If fewer than four homologs remain, the remainder is
 handled as a bivalent. An autotetraploid therefore has one group of four;
 an autohexaploid has one group of four and one bivalent.
 
@@ -330,9 +336,11 @@ Bivalents within a polyploid are simulated exactly as they are in a
 diploid, using whichever of the three models `v` and `p` specify. The
 quadrivalent needs its own treatment.
 
-AlphaSimR models the quadrivalent as a *cross-type* configuration. An
-exchange point is sampled uniformly along the chromosome, and on either
-side of it the four homologues pair up in a different arrangement. This
+AlphaSimR models the quadrivalent as a *cross-type* configuration
+[@sved_1964], the configuration used by the PedigreeSim software
+[@voorrips_2012]. An exchange point is sampled uniformly along the
+chromosome, and on either
+side of it the four homologs pair up in a different arrangement. This
 gives four pairing arms: the heads of chromosomes 1 and 2, the tails of
 chromosomes 2 and 3, the heads of chromosomes 3 and 4, and the tails of
 chromosomes 1 and 4. Chiasmata are sampled along all four arms with
@@ -342,7 +350,7 @@ random and sampled from the stationary process described above; the
 remaining arms are then sampled conditional on the distance to the
 nearest chiasma already placed, so that the interference constraint
 carries across the whole configuration. When `p` is non-zero,
-non-interfering chiasmata are sprinkled onto each arm afterwards.
+non-interfering chiasmata are sprinkled onto each arm afterward.
 
 Each chiasma is assigned a pair of chromatids independently, as in the
 bivalent case. A quadrivalent yields two of the gamete's chromosomes, and
@@ -350,13 +358,13 @@ these are determined by choosing two centromeres. AlphaSimR always takes
 the centromere of the first chromosome and its first chromatid, and
 samples the second centromere from the remaining three chromosomes and
 either of their chromatids. Each gamete is then resolved by working
-backwards from its centromere to the head of the chromosome to establish
-which chromatid it starts on, and then forwards from head to tail
+backward from its centromere to the head of the chromosome to establish
+which chromatid it starts on, and then forward from head to tail
 recording every chiasma that involves the chromatid currently being
 followed.
 
 Because the two retained centromeres always come from different
-homologues, the two chromosomes a gamete receives are never sister
+homologs, the two chromosomes a gamete receives are never sister
 chromatids at the centromere itself. Distal to a crossover, however, they
 may both trace back to the same parental chromosome, and this is double
 reduction. Its frequency is zero at the centromere and increases with
@@ -408,7 +416,7 @@ The raw histories describe one meiosis. More often what is wanted is the
 origin of each segment in terms of the founders, several generations
 back. `pullIbdHaplo` provides this by walking the pedigree, composing the
 recombination histories along the way, and returning a matrix in which
-every locus is labelled with the founder haplotype it descends from.
+every locus is labeled with the founder haplotype it descends from.
 
 ```{r}
 pullIbdHaplo(pop, simParam = SP)
@@ -459,12 +467,15 @@ second parameter `p` adds a non-interfering pathway. Setting `p` to 1
 removes interference entirely and reduces the model to the
 count-location model.
 
-Autopolyploids are handled by pairing homologues in groups of four, each
+Autopolyploids are handled by pairing homologs in groups of four, each
 of which forms either two bivalents or a quadrivalent with probability
-`SP$quadProb`. The quadrivalent uses a cross-type configuration with
-interference operating across all four arms, and produces double
-reduction at a rate that increases with distance from the centromere.
+`SP$quadProb`. The quadrivalent uses a cross-type configuration
+[@sved_1964] with interference operating across all four arms, and
+produces double reduction at a rate that increases with distance from
+the centromere.
 
 Turning on `SP$setTrackRec(TRUE)` records every observable crossover, and
 `pullIbdHaplo` converts those records into founder-haplotype origins for
 any individual in the simulation.
+
+## References

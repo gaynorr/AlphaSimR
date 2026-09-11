@@ -265,7 +265,7 @@ arma::field<arma::vec> getGvIndexStd(const Rcpp::S4& trait,
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
   
   // What a locus contributes depends only on its dosage, so the value of
-  // each dosage is worked out once per locus and looked up afterwards
+  // each dosage is worked out once per locus and looked up afterward
   arma::mat effTab(nGeno,nLoci);
   for(arma::uword i=0; i<nLoci; ++i){
     if(hasD){
@@ -366,7 +366,7 @@ arma::field<arma::vec> getGvIndexE(const Rcpp::S4& trait,
   
   // Every term of the sum depends only on the two dosages, so the value of
   // each pair of dosages is worked out once per locus pair and looked up
-  // afterwards. The columns holding the two loci are recorded at the same
+  // afterward. The columns holding the two loci are recorded at the same
   // time, so neither the epistasis matrix nor the QTL index is read again.
   arma::mat effTab(nGeno*nGeno,nPair), gxeTab;
   if(hasGxe){

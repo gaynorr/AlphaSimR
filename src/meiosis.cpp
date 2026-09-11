@@ -350,7 +350,7 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
   arma::Col<int> take(X.n_rows,arma::fill::ones);
   
   // Remove unobserved crossovers (site doesn't change)
-  // Works backwards, because the last crossover is observed
+  // Works backward, because the last crossover is observed
   for(arma::uword i=(X.n_rows-2); i>0; --i){
     if(X(i,1) == X(i+1,1)){
       take(i) = 0;
@@ -476,7 +476,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
   chromosome(1) = alphasimrRng::sampleInt(1,3, rng)(0) + 2; // 2-4
   chromatid(1) = alphasimrRng::sampleInt(1,2, rng)(0); // 0-1
   
-  // Find starting chromosomes and chromatids by working backwards
+  // Find starting chromosomes and chromatids by working backward
   // from selected centromeres to start of chromosome (head)
   arma::uword currentChromosome, currentChromatid;
   for(arma::uword i=0; i<2; ++i){
@@ -847,7 +847,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
 // history. Both haplotypes hold nBytes bytes.
 //
 // The haplotypes are passed as pointers rather than as arma::Col so that a
-// caller can hand over a column of a cube without Armadillo materialising a
+// caller can hand over a column of a cube without Armadillo materializing a
 // temporary copy of it.
 void transferGeno(const unsigned char* inChr,
                   unsigned char* outChr,
