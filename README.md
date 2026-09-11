@@ -37,3 +37,47 @@ To install use:
 To install with vignettes use:
 
     devtools::install_github(repo="gaynorr/AlphaSimR@devel", build_vignettes=TRUE)
+
+## Tree-sequence export
+
+AlphaSimR can export a recorded pedigree and recombination history as
+[tskit](https://tskit.dev/) tree sequences. Recombination tracking must be
+enabled before creating the first population:
+
+```r
+library(AlphaSimR)
+
+founderPop = quickHaplo(nInd=20, nChr=3, segSites=100)
+SP = SimParam$new(founderPop)
+SP$setTrackRec(TRUE)
+
+founders = newPop(founderPop, simParam=SP)
+generation1 = randCross(founders, nCrosses=20, simParam=SP)
+generation2 = randCross(generation1, nCrosses=20, simParam=SP)
+
+# Export chromosome 1, including variants, and write a standard .trees file
+trees = asTreeSequence(generation2, chr=1, simParam=SP)
+writeTreeSequence(trees, "generation2_chr1.trees")
+```
+
+The exported samples follow the individual and homolog order in the supplied
+population. Variants are included by default, so current sampled haplotypes can
+be recovered exactly. Use `includeVariants=FALSE` when only ancestry is needed,
+or `simplify=FALSE` to retain the complete recorded pedigree instead of the
+sample-focused representation.
+
+The output can be opened by Python tskit:
+
+```python
+import tskit
+
+ts = tskit.load("generation2_chr1.trees")
+print(ts)
+print(ts.genotype_matrix())
+print(ts.metadata)
+```
+
+See the [tree-sequence vignette](vignettes/TreeSequences.Rmd) for multiple
+chromosomes, mixed-generation and mixed-ploidy samples, coordinates, metadata,
+and representation limits. In an installation built with vignettes, open it
+with `vignette("TreeSequences", package="AlphaSimR")`.
