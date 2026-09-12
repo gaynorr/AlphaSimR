@@ -1,4 +1,5 @@
 #include "alphasimr.h"
+#include <algorithm>
 
 /*
  * Genotype data is stored in a field of cubes.
@@ -6,6 +7,97 @@
  * Each cube has dimensions nLoci/8 by ploidy by nInd
  * Output returned with dimensions nInd by nLoci
  */
+
+namespace {
+
+// The packed cube stores the loci of one haplotype next to each other, which
+// is what meiosis wants, while the output matrix is column major and so
+// stores the individuals of one locus next to each other. Whichever of the
+// two is walked along its fast axis, the other is stepped through with a
+// stride, and for a large population that stride is a cache line per locus.
+// The copy is therefore done in tiles small enough to hold both ends in
+// cache: kIndBlock individuals by kLociBlock loci.
+const arma::uword kIndBlock = 64;
+const arma::uword kLociBlock = 256;
+
+// Individuals per tile. Falls below kIndBlock when there are too few
+// individuals to give every thread a tile of the full size.
+inline arma::uword indBlockSize(arma::uword nInd, int nThreads){
+  arma::uword block = kIndBlock;
+  if(nThreads>1){
+    arma::uword nT = (arma::uword) nThreads;
+    arma::uword perThread = (nInd+nT-1)/nT;
+    if(perThread<block){
+      block = (perThread>0) ? perThread : 1;
+    }
+  }
+  return block;
+}
+
+// Writes the allele dosage carried on haplotypes [pStart,pEnd) of one tile
+// into output(ind, outCol0+j).
+//
+// Raw pointers are used throughout because Armadillo's element accessors are
+// bounds checked in this package, and the check would be paid once per locus
+// per haplotype. The byte holding a locus is re-read for each haplotype
+// rather than cached across loci; within a tile it is already in L1, and
+// re-reading is measurably faster than carrying the branch that a cache
+// needs.
+inline void gatherDosage(const arma::Cube<unsigned char>& chrGeno,
+                         const arma::uvec& chrLociLoc,
+                         arma::uword pStart, arma::uword pEnd,
+                         arma::uword indStart, arma::uword indEnd,
+                         arma::uword lociStart, arma::uword lociEnd,
+                         arma::uword outCol0,
+                         arma::Mat<unsigned char>& output){
+  const arma::uword nBins = chrGeno.n_rows;
+  const arma::uword ploidy = chrGeno.n_cols;
+  const arma::uword nOutRow = output.n_rows;
+  const unsigned char* genoPtr = chrGeno.memptr();
+  const arma::uword* lociPtr = chrLociLoc.memptr();
+  unsigned char* outPtr = output.memptr();
+  for(arma::uword ind=indStart; ind<indEnd; ++ind){
+    const unsigned char* hap = genoPtr + nBins*ploidy*ind;
+    for(arma::uword j=lociStart; j<lociEnd; ++j){
+      const arma::uword byte = lociPtr[j]/8;
+      const arma::uword bit = lociPtr[j]%8;
+      unsigned int dose = 0;
+      for(arma::uword p=pStart; p<pEnd; ++p){
+        dose += (unsigned int) ((hap[byte+nBins*p]>>bit) & 1u);
+      }
+      outPtr[ind+nOutRow*(outCol0+j)] = (unsigned char) dose;
+    }
+  }
+}
+
+// As gatherDosage, but keeps the haplotypes apart, writing the allele of
+// haplotype p into output(ind*ploidy+p, outCol0+j).
+inline void gatherHaplo(const arma::Cube<unsigned char>& chrGeno,
+                        const arma::uvec& chrLociLoc,
+                        arma::uword indStart, arma::uword indEnd,
+                        arma::uword lociStart, arma::uword lociEnd,
+                        arma::uword outCol0,
+                        arma::Mat<unsigned char>& output){
+  const arma::uword nBins = chrGeno.n_rows;
+  const arma::uword ploidy = chrGeno.n_cols;
+  const arma::uword nOutRow = output.n_rows;
+  const unsigned char* genoPtr = chrGeno.memptr();
+  const arma::uword* lociPtr = chrLociLoc.memptr();
+  unsigned char* outPtr = output.memptr();
+  for(arma::uword ind=indStart; ind<indEnd; ++ind){
+    const unsigned char* hap = genoPtr + nBins*ploidy*ind;
+    for(arma::uword j=lociStart; j<lociEnd; ++j){
+      const arma::uword byte = lociPtr[j]/8;
+      const arma::uword bit = lociPtr[j]%8;
+      unsigned char* outCol = outPtr + nOutRow*(outCol0+j) + ind*ploidy;
+      for(arma::uword p=0; p<ploidy; ++p){
+        outCol[p] = (unsigned char) ((hap[byte+nBins*p]>>bit) & 1u);
+      }
+    }
+  }
+}
+
+} // namespace
 // [[Rcpp::export]]
 arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
                                  const arma::Col<int>& lociPerChr,
@@ -19,6 +111,7 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  arma::uword indBlock = indBlockSize(nInd,nThreads);
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   // One parallel region covers every chromosome, so threads start once
   // per call rather than once per chromosome. Every thread walks the
@@ -36,24 +129,20 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::Cube<unsigned char>& chrGeno = geno(i);
+      arma::uword nLociChr = chrLociLoc.n_elem;
+      arma::uword nIndBlock = (nInd+indBlock-1)/indBlock;
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
-      for(arma::uword ind=0; ind<nInd; ++ind){
-        std::bitset<8> workBits;
-        arma::uword currentByte, newByte;
-        for(arma::uword p=0; p<ploidy; ++p){
-          currentByte = chrLociLoc(0)/8;
-          workBits = toBits(geno(i)(currentByte,p,ind));
-          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
-          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
-            newByte = chrLociLoc(j)/8;
-            if(newByte != currentByte){
-              currentByte = newByte;
-              workBits = toBits(geno(i)(currentByte,p,ind));
-            }
-            output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
-          }
+      for(arma::uword ib=0; ib<nIndBlock; ++ib){
+        arma::uword indStart = ib*indBlock;
+        arma::uword indEnd = std::min(indStart+indBlock,nInd);
+        for(arma::uword j0=0; j0<nLociChr; j0+=kLociBlock){
+          arma::uword j1 = std::min(j0+kLociBlock,nLociChr);
+          gatherDosage(chrGeno,chrLociLoc,0,ploidy,
+                       indStart,indEnd,j0,j1,
+                       (arma::uword) loc1,output);
         }
       }
     }
@@ -125,6 +214,7 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  arma::uword indBlock = indBlockSize(nInd,nThreads);
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   // One parallel region covers every chromosome, so threads start once
   // per call rather than once per chromosome. Every thread walks the
@@ -142,24 +232,20 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::Cube<unsigned char>& chrGeno = geno(i);
+      arma::uword nLociChr = chrLociLoc.n_elem;
+      arma::uword nIndBlock = (nInd+indBlock-1)/indBlock;
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
-      for(arma::uword ind=0; ind<nInd; ++ind){
-        std::bitset<8> workBits;
-        arma::uword currentByte, newByte;
-        for(arma::uword p=0; p<ploidy/2; ++p){
-          currentByte = chrLociLoc(0)/8;
-          workBits = toBits(geno(i)(currentByte,p,ind));
-          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
-          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
-            newByte = chrLociLoc(j)/8;
-            if(newByte != currentByte){
-              currentByte = newByte;
-              workBits = toBits(geno(i)(currentByte,p,ind));
-            }
-            output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
-          }
+      for(arma::uword ib=0; ib<nIndBlock; ++ib){
+        arma::uword indStart = ib*indBlock;
+        arma::uword indEnd = std::min(indStart+indBlock,nInd);
+        for(arma::uword j0=0; j0<nLociChr; j0+=kLociBlock){
+          arma::uword j1 = std::min(j0+kLociBlock,nLociChr);
+          gatherDosage(chrGeno,chrLociLoc,0,ploidy/2,
+                       indStart,indEnd,j0,j1,
+                       (arma::uword) loc1,output);
         }
       }
     }
@@ -181,6 +267,7 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  arma::uword indBlock = indBlockSize(nInd,nThreads);
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr),arma::fill::zeros);
   // One parallel region covers every chromosome, so threads start once
   // per call rather than once per chromosome. Every thread walks the
@@ -198,24 +285,20 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::Cube<unsigned char>& chrGeno = geno(i);
+      arma::uword nLociChr = chrLociLoc.n_elem;
+      arma::uword nIndBlock = (nInd+indBlock-1)/indBlock;
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
-      for(arma::uword ind=0; ind<nInd; ++ind){
-        std::bitset<8> workBits;
-        arma::uword currentByte, newByte;
-        for(arma::uword p=ploidy/2; p<ploidy; ++p){
-          currentByte = chrLociLoc(0)/8;
-          workBits = toBits(geno(i)(currentByte,p,ind));
-          output(ind,loc1) += (unsigned char) workBits[chrLociLoc(0)%8];
-          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
-            newByte = chrLociLoc(j)/8;
-            if(newByte != currentByte){
-              currentByte = newByte;
-              workBits = toBits(geno(i)(currentByte,p,ind));
-            }
-            output(ind,j+loc1) += (unsigned char) workBits[chrLociLoc(j)%8];
-          }
+      for(arma::uword ib=0; ib<nIndBlock; ++ib){
+        arma::uword indStart = ib*indBlock;
+        arma::uword indEnd = std::min(indStart+indBlock,nInd);
+        for(arma::uword j0=0; j0<nLociChr; j0+=kLociBlock){
+          arma::uword j1 = std::min(j0+kLociBlock,nLociChr);
+          gatherDosage(chrGeno,chrLociLoc,ploidy/2,ploidy,
+                       indStart,indEnd,j0,j1,
+                       (arma::uword) loc1,output);
         }
       }
     }
@@ -238,6 +321,7 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  arma::uword indBlock = indBlockSize(nInd,nThreads);
   arma::Mat<unsigned char> output(nInd*ploidy,arma::sum(lociPerChr));
   // One parallel region covers every chromosome, so threads start once
   // per call rather than once per chromosome. Every thread walks the
@@ -255,24 +339,20 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::Cube<unsigned char>& chrGeno = geno(i);
+      arma::uword nLociChr = chrLociLoc.n_elem;
+      arma::uword nIndBlock = (nInd+indBlock-1)/indBlock;
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
-      for(arma::uword ind=0; ind<nInd; ++ind){
-        std::bitset<8> workBits;
-        arma::uword currentByte, newByte;
-        for(arma::uword p=0; p<ploidy; ++p){
-          currentByte = chrLociLoc(0)/8;
-          workBits = toBits(geno(i)(currentByte,p,ind));
-          output(ind*ploidy+p,loc1) = (unsigned char) workBits[chrLociLoc(0)%8];
-          for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
-            newByte = chrLociLoc(j)/8;
-            if(newByte != currentByte){
-              currentByte = newByte;
-              workBits = toBits(geno(i)(currentByte,p,ind));
-            }
-            output(ind*ploidy+p,j+loc1) = (unsigned char) workBits[chrLociLoc(j)%8];
-          }
+      for(arma::uword ib=0; ib<nIndBlock; ++ib){
+        arma::uword indStart = ib*indBlock;
+        arma::uword indEnd = std::min(indStart+indBlock,nInd);
+        for(arma::uword j0=0; j0<nLociChr; j0+=kLociBlock){
+          arma::uword j1 = std::min(j0+kLociBlock,nLociChr);
+          gatherHaplo(chrGeno,chrLociLoc,
+                      indStart,indEnd,j0,j1,
+                      (arma::uword) loc1,output);
         }
       }
     }
@@ -296,6 +376,8 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }
+  arma::uword hapIdx = (arma::uword) haplo;
+  arma::uword indBlock = indBlockSize(nInd,nThreads);
   arma::Mat<unsigned char> output(nInd,arma::sum(lociPerChr));
   // One parallel region covers every chromosome, so threads start once
   // per call rather than once per chromosome. Every thread walks the
@@ -313,22 +395,20 @@ arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char>
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::Cube<unsigned char>& chrGeno = geno(i);
+      arma::uword nLociChr = chrLociLoc.n_elem;
+      arma::uword nIndBlock = (nInd+indBlock-1)/indBlock;
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
-      for(arma::uword ind=0; ind<nInd; ++ind){
-        std::bitset<8> workBits;
-        arma::uword currentByte, newByte;
-        currentByte = chrLociLoc(0)/8;
-        workBits = toBits(geno(i)(currentByte,haplo,ind));
-        output(ind,loc1) = (unsigned char) workBits[chrLociLoc(0)%8];
-        for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
-          newByte = chrLociLoc(j)/8;
-          if(newByte != currentByte){
-            currentByte = newByte;
-            workBits = toBits(geno(i)(currentByte,haplo,ind));
-          }
-          output(ind,j+loc1) = (unsigned char) workBits[chrLociLoc(j)%8];
+      for(arma::uword ib=0; ib<nIndBlock; ++ib){
+        arma::uword indStart = ib*indBlock;
+        arma::uword indEnd = std::min(indStart+indBlock,nInd);
+        for(arma::uword j0=0; j0<nLociChr; j0+=kLociBlock){
+          arma::uword j1 = std::min(j0+kLociBlock,nLociChr);
+          gatherDosage(chrGeno,chrLociLoc,hapIdx,hapIdx+1,
+                       indStart,indEnd,j0,j1,
+                       (arma::uword) loc1,output);
         }
       }
     }

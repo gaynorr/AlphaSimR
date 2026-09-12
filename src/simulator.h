@@ -201,6 +201,12 @@ public:
   bool bInCurrentTree;
   // The current iteration along the unit length chromosome
   int iGraphIteration;
+  // Where this edge sits in pEdgeVectorByPop, and which population's
+  // vector that is. Recorded by GraphBuilder::addEdge so that
+  // GraphBuilder::deleteEdge can hand the slot straight back for reuse.
+  // Negative until the edge is added to the ARG.
+  int iVectorIndex;
+  unsigned int iVectorPop;
 private:
   NodePtr topNode,bottomNode;
   double dLength;
@@ -489,6 +495,14 @@ public:
   double length;
 };
 
+// Orders segregating sites by their position along the chromosome
+struct byMutationPos{
+  bool operator()(const AlphaSimRReturn & site1,
+                  const AlphaSimRReturn & site2) const{
+    return site1.length < site2.length;
+  }
+};
+
 class Mutation{
 public:
   Mutation(double dLocation,double dFreq);
@@ -506,6 +520,8 @@ public:
   double dTheta,dGlobalMigration,dRecombRateRAcrossSites,
   dGeneConvRatio,dSeqLength,dBasesToTrack;
   unsigned int iSampleSize,iIterations,iGeneConvTract;
+  // Maximum number of segregating sites to retain. Zero keeps every site.
+  unsigned int iMaxSites;
   unsigned short int iTotalPops;
   long iRandomSeed;
   bool bSNPAscertainment,bFlipAlleles;
@@ -553,7 +569,9 @@ public:
   void build();
   // Print the haplotypes in MS format
   void printHaplotypes();
-  vector<AlphaSimRReturn> getMutations();
+  // Returns the retained sites in position order. Returned by reference so
+  // the caller can move the haplotypes out instead of copying them.
+  vector<AlphaSimRReturn> & getMutations();
   
 private:
   // The random number generator
@@ -574,11 +592,19 @@ private:
   // and de allocation of the local tree list at every graph
   // iteration.
   unsigned int iTotalTreeEdges;
-  // total branch length of the ARG
-  double dArgLength;
   // Contains the total branch length of all edges
   // Should be updated when necessary by initializeCurrentTree()
   double dLastTreeLength;
+  // Cumulative lengths of the live edges of the current tree, and the
+  // index each one has in pEdgeVectorInTree. Rebuilt once per graph
+  // iteration by buildTreeIndex() so that getRandomEdgeOnTree() can
+  // binary search rather than walk the tree on every call.
+  vector<double> treePrefixSum;
+  vector<unsigned int> treePrefixIdx;
+  // Is the reservoir being used to cap the number of retained sites?
+  bool bReservoir;
+  // Number of segregating sites generated, retained or not
+  unsigned long long iSitesSeen;
   // grandMRCA stores the Node object which is the MRCA of the ARG
   // localMRCA is used when searching for the MRCA of the last tree
   NodePtr grandMRCA,localMRCA,xOverNode;
@@ -700,6 +726,9 @@ private:
   // Retallies the total edge length of the last tree.  Is called
   // after a series of branches are added or deleted
   void initializeCurrentTree();
+  // Rebuilds treePrefixSum/treePrefixIdx over the live edges of the
+  // current tree and clears their in-tree flags
+  void buildTreeIndex();
   // Traverses recusively down all edges until a sample node is reached
   // where the mutation bit is set.
   void mutateBelowEdge(EdgePtr & edge);
@@ -763,6 +792,9 @@ public:
   // case, constructs a new graphbuilder and calls the build() function
   void beginSimulation();
   vector<AlphaSimRReturn> beginSimulationMemory();
+  // Caps the number of segregating sites retained per simulation. Must be
+  // called after readInputParameters. Zero keeps every site.
+  void setMaxSites(unsigned int iMaxSites);
   Simulator();
   ~Simulator(); //destructor
   

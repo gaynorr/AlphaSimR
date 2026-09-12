@@ -1,6 +1,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <bitset>
+
 #include "rng.h"
 
 // Splits a loop into a fixed number of work blocks.
@@ -20,7 +22,16 @@ arma::uword blockStart(arma::uword nItem, arma::uword nBlock,
 arma::uword mapRow(const arma::uword& k, const arma::uword& n);
 arma::uword mapCol(const arma::uword& row, const arma::uword& k, const arma::uword& n);
 double choose(double n, double k);
-std::bitset<8> toBits(unsigned char byte);
-unsigned char toByte(std::bitset<8> bits);
+// Defined here rather than in misc.cpp so that they can be inlined. They are
+// called once per locus by the genotype accessors and once per byte by
+// meiosis, and a call into another translation unit for each of those is a
+// large share of the cost of both.
+inline std::bitset<8> toBits(unsigned char byte){
+  return std::bitset<8>(byte);
+}
+
+inline unsigned char toByte(std::bitset<8> bits){
+  return (unsigned char) bits.to_ulong();
+}
 
 #endif

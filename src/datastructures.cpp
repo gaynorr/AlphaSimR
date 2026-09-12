@@ -117,6 +117,8 @@ Edge::Edge(NodePtr & topNode,NodePtr & bottomNode):
   this->bInQueue = false;
   this->bInCurrentTree = false;
   this->iGraphIteration = 0;
+  this->iVectorIndex = -1;
+  this->iVectorPop = 0;
 }
 
 Edge::~Edge(){
@@ -354,7 +356,14 @@ GraphBuilder::GraphBuilder(Configuration *pConfig,RandNumGenerator * pRG){
   this->iGraphIteration = 0;
   this->bIncrementHistory = false;
   this->iTotalTreeEdges = 0;
-  this->dArgLength = 0.;
+  this->dLastTreeLength = 0.;
+  this->iSitesSeen = 0;
+  // Ascertainment needs the allele frequency of every site, so it cannot be
+  // combined with the reservoir
+  this->bReservoir = (pConfig->iMaxSites>0) && !pConfig->bSNPAscertainment;
+  if (this->bReservoir){
+    this->mutations.reserve(pConfig->iMaxSites);
+  }
   this->pConfig = pConfig;
   this->pChrPositionQueue = new ChrPositionQueue;
   this->dTrailingGap = pConfig->dBasesToTrack/pConfig->dSeqLength;
@@ -485,6 +494,15 @@ void GraphBuilder::insertNodeInEdge(NodePtr & newNode,
 void GraphBuilder::deleteEdge(EdgePtr & edge){
   if (!edge->bDeleted){
     edge->bDeleted = true;
+    // Hand the vector slot back straight away. It used to be recycled only
+    // when getRandomEdgeToCoalesce happened to draw it, so the vector filled
+    // up with deleted edges and the rejection sampler paid to skip them.
+    if (edge->iVectorIndex>=0 && !edge->bInQueue){
+      EdgeIndexQueue & queue = this->pVectorIndicesToRecycle->
+        at(edge->iVectorPop);
+      queue.push(edge->iVectorIndex);
+      edge->bInQueue = true;
+    }
   }
 }
 
@@ -506,12 +524,20 @@ void GraphBuilder::addEdge(EdgePtr & edge){
   EdgeIndexQueue & pVectorIndicesToRecycle = this->pVectorIndicesToRecycle->
     at(iPopulation);
   if (pVectorIndicesToRecycle.empty()){
+    edge->iVectorIndex = static_cast<int>(pEdgeVector.size());
     pEdgeVector.push_back(edge);
   }else{
     int iIndex = pVectorIndicesToRecycle.front();
     pVectorIndicesToRecycle.pop();
+    // The edge being evicted no longer owns this slot
+    if (pEdgeVector[iIndex]!=NULL){
+      pEdgeVector[iIndex]->iVectorIndex = -1;
+    }
+    edge->iVectorIndex = iIndex;
     pEdgeVector[iIndex] = edge;
   }
+  edge->iVectorPop = iPopulation;
+  edge->bInQueue = false;
 }
 
 void GraphBuilder::addEdgeToCurrentTree(EdgePtr & edge){
@@ -526,37 +552,46 @@ void GraphBuilder::addEdgeToCurrentTree(EdgePtr & edge){
 }
 
 
+void GraphBuilder::buildTreeIndex(){
+  // Walks the current tree once, recording a running total of the length of
+  // its live edges, and clears the in-tree flag as it goes. The running
+  // totals are what getRandomEdgeOnTree searches, and their final value is
+  // the total tree length, so both are produced by this single pass.
+  treePrefixSum.clear();
+  treePrefixIdx.clear();
+  double dRunningLength = 0.0;
+  for (unsigned int i=0;i<iTotalTreeEdges;++i){
+    EdgePtr & curEdge = pEdgeVectorInTree->at(i);
+    if (!curEdge->bDeleted){
+      dRunningLength+=curEdge->getLength();
+      treePrefixSum.push_back(dRunningLength);
+      treePrefixIdx.push_back(i);
+      curEdge->bInCurrentTree = false;
+    }
+  }
+  dLastTreeLength = dRunningLength;
+}
+
 void GraphBuilder::initializeCurrentTree(){
-  // this method does two things, traverses the edges
-  // to compute the total length, and clears out the status for
-  // in current tree
-  dLastTreeLength = 0.0;
-  dArgLength = 0.;
+  // this method does two things, drops the edges that have been marked for
+  // deletion, and rebuilds the index over the current tree
   if (iGraphIteration==0){
     EdgePtrList::iterator it;
     for (it=pEdgeListInARG->begin();it!=pEdgeListInARG->end();++it){
       EdgePtr curEdge=*it;
-      dLastTreeLength+=curEdge->getLength();
       this->addEdgeToCurrentTree(curEdge);
-      curEdge->bInCurrentTree = false;
     }
-    dArgLength = dLastTreeLength;
   }else{
     EdgePtrList::iterator it1=pEdgeListInARG->begin();
     while(it1!=pEdgeListInARG->end()){
-      EdgePtr curEdge = *it1;
-      if (!curEdge->bDeleted){
-        dArgLength+=curEdge->getLength();
-        if (curEdge->bInCurrentTree){
-          dLastTreeLength+=curEdge->getLength();
-          curEdge->bInCurrentTree = false;
-        }
+      if (!(*it1)->bDeleted){
         ++it1;
       }else{
         it1 = pEdgeListInARG->erase(it1);
       }
     }
   }
+  buildTreeIndex();
 }
 
 void GraphBuilder::printHaplotypes(){

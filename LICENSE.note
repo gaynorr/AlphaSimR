@@ -46,5 +46,29 @@ summary, the modifications are:
   * Headers, includes and declarations have been adjusted so that the
     code compiles as part of an R package.
 
+  * The simulation has been made faster and less memory hungry, without
+    changing the model being simulated. The cumulative branch lengths of
+    the current local tree are now held in an index, so the edge carrying
+    a crossover or a mutation is found by binary search instead of by
+    walking the tree. An edge marked for deletion now releases its slot
+    immediately instead of waiting to be drawn at random. Pruning the
+    ancestral recombination graph no longer rescans edges it has already
+    deleted. A segregating site is no longer copied through a temporary
+    object on its way into the result, and the results of a simulation
+    are moved rather than copied when they are returned to R.
+
+  * When AlphaSimR asks for a limited number of segregating sites, MaCS
+    now draws that sample while it simulates the chromosome, using
+    reservoir sampling, rather than generating every site and discarding
+    most of them afterwards. The retained sites are a simple random
+    sample of all the sites that were generated, which is the sample
+    AlphaSimR previously drew after the fact, and every site is retained
+    whenever fewer are generated than were asked for. Sites are returned
+    in position order. Allele frequency ascertainment needs the
+    frequency of every site, so it disables this behaviour.
+
+  * These changes alter the sequence in which random numbers are drawn,
+    so a given seed does not reproduce the output of earlier versions.
+
 Modifications are copyright the AlphaSimR authors and are released under
 the Apache License, Version 2.0, on the same terms as the original.

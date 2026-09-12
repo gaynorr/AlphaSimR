@@ -28,7 +28,9 @@ limitations under the License.
 #include <math.h>
 #include <algorithm> 
 #include <cctype>
+#include <iterator>
 #include <locale>
+#include <utility>
 
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
@@ -61,6 +63,7 @@ Configuration::Configuration(){
   dGeneConvRatio = 0.;
   iGeneConvTract = 1;
   iTotalPops = 1; // total populations declared
+  iMaxSites = 0; // zero keeps every segregating site
   dBasesToTrack = 1;
   iRandomSeed = time(NULL);
   iIterations = 1;
@@ -628,18 +631,31 @@ void Simulator::readInputParameters(CommandArguments arguments){
 }
 
 
+void Simulator::setMaxSites(unsigned int iMaxSites) {
+  pConfig->iMaxSites = iMaxSites;
+}
+
 vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
-  
+
   vector<AlphaSimRReturn> toRet;
-  
+
   try {
     RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
     for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
       GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
       graphBuilder.build();
-      vector<AlphaSimRReturn> tmp = graphBuilder.getMutations();
       graphBuilder.printHaplotypes();
-      toRet.insert(toRet.end(), tmp.begin(), tmp.end());
+      // Move the sites out rather than copying them. They are the bulk of
+      // what the simulation produces, so copying them doubled peak memory.
+      vector<AlphaSimRReturn> & tmp = graphBuilder.getMutations();
+      if (toRet.empty()) {
+        toRet = std::move(tmp);
+      } else {
+        toRet.reserve(toRet.size()+tmp.size());
+        toRet.insert(toRet.end(),
+                     std::make_move_iterator(tmp.begin()),
+                     std::make_move_iterator(tmp.end()));
+      }
     }
     delete rg;
   } catch (const char *message) {
@@ -674,7 +690,7 @@ Simulator::~Simulator() {
 
 // AlphaSimR specific functions
 
-vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
+vector<AlphaSimRReturn> runFromAlphaSimR(string in, unsigned int maxSites) {
   vector<std::string> words;
   Simulator simulator;
   
@@ -705,6 +721,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   }
   
   simulator.readInputParameters(arguments);
+  simulator.setMaxSites(maxSites);
   vector<AlphaSimRReturn> test = simulator.beginSimulationMemory();
   return test;
 }
@@ -749,6 +766,11 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   arma::field<arma::vec > genMap(nChr);
 
+  // Chromosomes that MaCS returned no segregating sites for. Recorded here
+  // and reported after the loop, because raising an R error from inside an
+  // OpenMP region is not safe.
+  arma::uvec noSites(nChr, arma::fill::zeros);
+
   //Loop through chromosomes
   //Chromosomes take different amounts of time to simulate, depending on
   //their length and on how many sites are kept, so the work is handed out
@@ -760,10 +782,20 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     // Run MaCS with the chromosome-specific seed and subsample sites with same seed
     vector<AlphaSimRReturn> macsOutput;
     std::string seedString = std::to_string(static_cast<unsigned long long>(seed[chr]));
-    macsOutput = runFromAlphaSimR(argsString + seedString);
+    macsOutput = runFromAlphaSimR(argsString + seedString,
+                                  static_cast<unsigned int>(maxSites(chr)));
     
     arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
+    if(nSites==0){
+      // There are no haplotypes to count, so the number of individuals
+      // cannot be worked out for this chromosome. Leave it empty and let
+      // the check after the loop report it.
+      noSites(chr) = 1;
+      geno(chr).set_size(0,ploidy,0);
+      genMap(chr).set_size(0);
+      continue;
+    }
     nHap = macsOutput[0].haplotypes.size();
     if(inbred){
       nInd = nHap;
@@ -772,16 +804,19 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     }
     arma::uvec selSites;
     if(maxSites(chr)>0){
-      if(nSites<maxSites(chr)){
+      // MaCS now draws the simple random sample of maxSites sites while it
+      // simulates the chromosome, and returns them in position order, so
+      // there is normally nothing left to subsample here. The sampling
+      // branch is kept for the case where MaCS was asked for every site.
+      if(nSites>maxSites(chr)){
+        selSites = alphasimrRng::sampleInt(maxSites(chr), nSites, seed[chr]);
+        nSites = maxSites(chr);
+      }else{
         maxSites(chr) = nSites;
+        selSites.set_size(nSites);
+        for(arma::uword i=0; i<nSites; ++i)
+          selSites(i) = i;
       }
-      if(nSites==0){
-        geno(chr).set_size(0,ploidy,nInd);
-        genMap(chr).set_size(0);
-        continue;
-      }
-      selSites = alphasimrRng::sampleInt(maxSites(chr), nSites, seed[chr]);
-      nSites = maxSites(chr);
     }else{
       selSites.set_size(nSites);
       for(arma::uword i=0; i<nSites; ++i)
@@ -860,6 +895,13 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
       }
     }
   }
+  if(arma::any(noSites)){
+    arma::uvec badChr = arma::find(noSites);
+    Rcpp::stop("MaCS returned no segregating sites for chromosome " +
+               std::to_string(static_cast<unsigned long long>(badChr(0)+1)) +
+               ". Check that the mutation rate is greater than zero.");
+  }
+
   return Rcpp::List::create(Rcpp::Named("geno")=geno,
                             Rcpp::Named("genMap")=genMap);
 }

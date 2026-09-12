@@ -26,8 +26,8 @@ library(AlphaSimR)
 
 Genomic selection is selection on a prediction of an individual's genetic
 merit made from its marker genotypes. AlphaSimR provides a family of
-ridge regression BLUP (RR-BLUP) models for making these predictions
-[@AlphaSim; @gaynor_2017]. They are fitted in C++ and are meant to be
+ridge regression BLUP (RR-BLUP) models for making these predictions. 
+They are fitted in C++ and are meant to be
 re-fitted many times over the course of a simulation, so they are
 deliberately narrow in scope: they are fast, they take their data
 directly from a population object, and they return an object that
@@ -77,13 +77,16 @@ Two choices here are worth copying into your own simulations.
 `runMacs` rather than `quickHaplo`. Genomic prediction works because
 markers are in linkage disequilibrium with QTL, and `quickHaplo` samples
 haplotypes at linkage equilibrium. A simulation built on `quickHaplo`
-will show almost no predictive ability unless the QTL themselves are
-used as markers, which makes it a poor choice for demonstrating or
-benchmarking genomic selection.
+will show almost no predictive ability in the founder population unless the QTL 
+themselves are used as markers, which makes it a poor choice for demonstrating 
+or benchmarking genomic selection. Simulations built using `quickHaplo` will 
+show predictive ability in later generations as linkage disequilibrium is 
+accumulated through the effects of selection and mating.
 
-`restrSegSites` to force the QTL and the SNP chip onto different
+`restrSegSites` is used to force the QTL and the SNP chip onto different
 segregating sites. Without it the two sets are sampled independently and
-may overlap, which quietly inflates accuracy.
+may overlap, which quietly inflates accuracy. For this reason, `restrSegSites` 
+as used as the default in AlphaSimR.
 
 ## The three steps
 
@@ -150,10 +153,10 @@ matter of memory and speed.
 |---|---|---|
 | Merit of a parent, additive trait | `RRBLUP` | `"bv"` or `"gv"` |
 | Several correlated traits at once | `RRBLUP` with `traits=1:n` | `"bv"` or `"gv"` |
-| Performance of a line or clone, with dominance | `RRBLUP_D` | `"gv"` |
+| Performance of an individual with dominance | `RRBLUP_D` | `"gv"` |
 | GCA of inbreds in a two-pool hybrid program | `RRBLUP_GCA` | `"female"`, `"male"` |
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
-| Any of the above, training population too large to fit | `fastRRBLUP` | as above |
+| Additive trait and training population too large to fit | `fastRRBLUP` | `"bv"` or `"gv"` |
 
 **`RRBLUP`** is the default choice. It fits additive marker effects and
 is the only model in the family that fits several traits at once;
@@ -174,9 +177,7 @@ set for each pool, so an allele can be worth something different
 depending on which parent contributed it. `RRBLUP_SCA` adds a dominance
 term on top, so specific combining ability can be predicted as well as
 general combining ability [@Massman13]. Both fill the `female` and
-`male` slots and leave `bv` empty. In practice they are paired with
-`setPhenoGCA`, which phenotypes candidate parents through testcrosses,
-and with `hybridCross` for producing the crosses themselves.
+`male` slots and leave `bv` empty. 
 
 @dejong_2023 compared these models for selecting inbred parents on
 predicted GCA in a simulated maize program, and found that models
@@ -193,8 +194,7 @@ simulation rather than assuming the more complex model wins.
 additive model as `RRBLUP` but never forms a square matrix, so its
 memory cost stays close to the cost of the genotypes themselves. Use it
 when the training population has grown large enough that the others will
-not fit. It is the only member of the family whose cost does not blow up
-with the number of records.
+not fit. 
 
 ### Fitting the same model more cheaply
 
@@ -226,8 +226,12 @@ If you let the numbered models estimate the variance components
 themselves they use an EM algorithm, which is slower and less reliable
 than the approach the unnumbered models use. `maxIter` defaults to a
 value that is usually too small to converge, and a warning is issued
-when it does not. Left to estimate their own variance components, the
-numbered models are rarely the better choice.
+when it does not. Left to estimate their own variance components to convergence, 
+the numbered models are rarely the better choice. The benefit is obtained only 
+when `useEM=FALSE` or `maxIter` is left at a small value to only allow small
+updates to the estimated variance components. These models also only add value 
+when the number of markers is small relative to the number of phenotypic 
+records.
 
 ## Using the models in a breeding program
 
@@ -309,8 +313,10 @@ if (year == startTP) {
 Capping the size matters for more than run time. Records from many
 generations back describe a population that no longer exists, and the
 linkage disequilibrium they carry has been broken up by recombination
-since. A window of the last few years is both cheaper and, often, more
-accurate than everything ever recorded.
+since. A window of the last few years is both cheaper and may be more
+accurate than one using everything ever recorded. The value of including 
+older lines will vary greatly between simulations is potentially an area 
+worth exploring in a simulation.
 
 ### How often to retrain
 

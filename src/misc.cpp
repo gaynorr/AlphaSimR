@@ -1,14 +1,6 @@
 // These functions may be called by R, but are not listed in the package namespace
 #include "alphasimr.h"
 
-std::bitset<8> toBits(unsigned char byte){
-  return std::bitset<8>(byte);
-}
-
-unsigned char toByte(std::bitset<8> bits){
-  return bits.to_ulong(); 
-}
-
 // Calculates population variance
 //' @title Population variance
 //' 
