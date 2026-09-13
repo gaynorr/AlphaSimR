@@ -10,7 +10,8 @@ RRBLUPMemUse(
   model = "RRBLUP",
   nTraits = 1L,
   nFixEff = 1L,
-  nSubsample = 5000L
+  nSubsample = 5000L,
+  useEM = TRUE
 )
 }
 \arguments{
@@ -33,6 +34,11 @@ distinct values in the population's fixEff slot.}
 \item{nSubsample}{the number of records \code{\link{fastRRBLUP}} uses to
 estimate variance components. Ignored by every other model, and by
 fastRRBLUP itself when Vu and Ve are supplied.}
+
+\item{useEM}{whether the numbered models will estimate their variance
+components. Estimating them holds one more square matrix, and for
+\code{\link{RRBLUP2}} it also decides which of its two solving methods is
+used. Ignored by the models that do not take a useEM argument.}
 }
 \value{
 Returns an estimate for the required gigabytes of RAM
@@ -61,7 +67,17 @@ matrix and its transpose share their nonzero eigenvalues.
 The numbered models set up Henderson's mixed model equations, whose
 coefficient matrix is square with dimensions equal to the number of fixed
 effects plus the number of random effects, so they grow with the number of
-markers rather than the number of records.
+markers rather than the number of records. Estimating variance components
+needs the trace of part of the inverse of that matrix, which is reached
+through the inverse of its Cholesky factor, so useEM costs one more matrix
+of the same size.
+
+\code{\link{RRBLUP2}} is the exception among them. It only sets up
+Henderson's equations when it has to, which is when it is estimating
+variance components, and otherwise takes whichever of its two solving
+methods holds the smaller square matrix. Its estimate therefore depends on
+useEM, and with useEM false it grows with the number of records once the
+markers outnumber them.
 
 The GCA, SCA and dominance models fit more than one random effect and hold
 a square matrix of the number of records for each, which makes them the
@@ -74,5 +90,10 @@ RRBLUPMemUse(nInd=1000, nMarker=5000)
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="fastRRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
+
+# RRBLUP2 with more markers than records, with and without estimating
+# variance components. The two use different methods and different memory.
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=TRUE)
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=FALSE)
 
 }

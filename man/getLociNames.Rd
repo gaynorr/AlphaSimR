@@ -9,7 +9,7 @@ getLociNames(lociPerChr, lociLoc, genMap)
 \arguments{
 \item{lociPerChr}{number of loci per chromosome}
 
-\item{lociLoc}{position of loci on chromosome}
+\item{lociLoc}{index of loci within each chromosome's segregating sites}
 
 \item{genMap}{internal AlphaSimR genetic map with names}
 }

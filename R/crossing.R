@@ -78,7 +78,9 @@ makeCross = function(pop, crossPlan, nProgeny=1,
                         rep(crossPlan[,2], each=nProgeny))
     }
   }else{
-    stopifnot("Length of nProgeny must equal 1 or nrow(crossPlan)" = nrow(crossPlan)==length(nProgeny))
+    if(nrow(crossPlan)!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or nrow(crossPlan)")
+    }
     
     crossPlan = cbind(rep(crossPlan[,1], times=nProgeny),
                       rep(crossPlan[,2], times=nProgeny))
@@ -194,7 +196,9 @@ randCross = function(pop, nCrosses, nProgeny=1,
   
   # Handle nProgeny
   if(length(nProgeny)>1){
-    stopifnot("Length of nProgeny must equal 1 or nCrosses" = nCrosses==length(nProgeny))
+    if(nCrosses!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or nCrosses")
+    }
     nProgeny = nProgeny[sample(nCrosses, nCrosses)]
   }
   
@@ -424,7 +428,9 @@ makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
                         rep(crossPlan[,2], each=nProgeny))
     }
   }else{
-    stopifnot("Length of nProgeny must equal 1 or nrow(crossPlan)" = nrow(crossPlan)==length(nProgeny))
+    if(nrow(crossPlan)!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or nrow(crossPlan)")
+    }
     
     crossPlan = cbind(rep(crossPlan[,1], times=nProgeny),
                       rep(crossPlan[,2], times=nProgeny))
@@ -563,7 +569,9 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
   
   # Handle nProgeny
   if(length(nProgeny)>1){
-    stopifnot("Length of nProgeny must equal 1 or nCrosses" = nCrosses==length(nProgeny))
+    if(nCrosses!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or nCrosses")
+    }
     nProgeny = nProgeny[sample(nCrosses, nCrosses)]
   }
   
@@ -646,7 +654,7 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
   }
   
   if(is(pop,"MultiPop")){
-    stopifnot(is.null(parents))
+    if(!is.null(parents)) stop("parents must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, self, nProgeny=nProgeny,
                       parents=NULL, keepParents=keepParents,
                       simParam=simParam, nThreads=nThreads)
@@ -668,7 +676,9 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
     crossPlan = rep(parents, each=nProgeny)
     
   }else{
-    stopifnot("Length of nProgeny must equal 1 or nInd(pop)" = nInd(pop)==length(nProgeny))
+    if(nInd(pop)!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or nInd(pop)")
+    }
     
     crossPlan = rep(parents, times=nProgeny)
   }
@@ -991,11 +1001,21 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }
   
   # Check input data
-  stopifnot(!any(duplicated(id)),
-            length(id)==length(mother),
-            length(id)==length(father),
-            length(id)==length(DH),
-            length(id)==length(nSelf))
+  if(any(duplicated(id))){
+    stop("id contains duplicates")
+  }
+  if(length(id)!=length(mother)){
+    stop("length(id) does not match length(mother)")
+  }
+  if(length(id)!=length(father)){
+    stop("length(id) does not match length(father)")
+  }
+  if(length(id)!=length(DH)){
+    stop("length(id) does not match length(DH)")
+  }
+  if(length(id)!=length(nSelf)){
+    stop("length(id) does not match length(nSelf)")
+  }
   
   # Sort pedigree (identifies potential problems)
   ped = sortPed(id=id, mother=mother, father=father,

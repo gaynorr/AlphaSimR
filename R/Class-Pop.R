@@ -87,10 +87,18 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="RawPop",
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci)
+                if(class(y)!="RawPop"){
+                  stop("All arguments must be a RawPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 geno = mergeGeno(x@geno,y@geno)
                 dim(geno) = NULL # Account for matrix bug in RcppArmadillo
@@ -188,11 +196,21 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="MapPop",
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci,
-                          all.equal(x@genMap, y@genMap))
+                if(class(y)!="MapPop"){
+                  stop("All arguments must be a MapPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
+                if(!isTRUE(all.equal(x@genMap, y@genMap))){
+                  stop("genMap does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 geno = mergeGeno(x@geno,y@geno)
                 dim(geno) = NULL # Account for matrix bug in RcppArmadillo
@@ -235,14 +253,17 @@ setClass("NamedMapPop",
 
 setValidity("NamedMapPop",function(object){
   errors = character()
-  if(any(grepl(" ",object@id,fixed=TRUE))){
-    errors = c(errors,"id can not contain spaces")
-  }
-  if(any(grepl(" ",object@mother,fixed=TRUE))){
-    errors = c(errors,"mother can not contain spaces")
-  }
-  if(any(grepl(" ",object@father,fixed=TRUE))){
-    errors = c(errors,"father can not contain spaces")
+  # Read in a single pass, and separately only if that pass finds something
+  if(any(grepl(" ",c(object@id,object@mother,object@father),fixed=TRUE))){
+    if(any(grepl(" ",object@id,fixed=TRUE))){
+      errors = c(errors,"id can not contain spaces")
+    }
+    if(any(grepl(" ",object@mother,fixed=TRUE))){
+      errors = c(errors,"mother can not contain spaces")
+    }
+    if(any(grepl(" ",object@father,fixed=TRUE))){
+      errors = c(errors,"father can not contain spaces")
+    }
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
@@ -286,11 +307,21 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(is(y,"NamedMapPop"),
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci,
-                          all.equal(x@genMap, y@genMap))
+                if(!is(y,"NamedMapPop")){
+                  stop("All arguments must be a NamedMapPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
+                if(!isTRUE(all.equal(x@genMap, y@genMap))){
+                  stop("genMap does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 x@id = c(x@id, y@id)
                 x@mother = c(x@mother, y@mother)
@@ -329,12 +360,16 @@ cChr = function(...){
     if(is(y,"NULL")){
       #Do nothing
     }else{
-      stopifnot(is(y,"MapPop"))
+      if(!is(y,"MapPop")) stop("All arguments must be a MapPop")
       if(!exists("x",inherits=FALSE)){
         x = y
       }else{
-        stopifnot(x@nInd==y@nInd,
-                  x@ploidy==y@ploidy)
+        if(x@nInd!=y@nInd){
+          stop("nInd does not match")
+        }
+        if(x@ploidy!=y@ploidy){
+          stop("ploidy does not match")
+        }
         x@nChr = x@nChr+y@nChr
         x@geno = c(x@geno,y@geno)
         x@genMap = c(x@genMap,y@genMap)
@@ -418,17 +453,13 @@ setClass("Pop",
                  miscPop="list"),
          contains="RawPop")
 
+# Checks the shape of a population: that the slots agree with each other on
+# how many individuals and how many traits there are. None of these costs
+# grow with the number of individuals, so they are cheap enough to run every
+# time a population is built, which R does through new(). The checks that do
+# grow with the population are in validPopContent below.
 setValidity("Pop",function(object){
   errors = character()
-  if(any(grepl(" ",object@id,fixed=TRUE))){
-    errors = c(errors,"id can not contain spaces")
-  }
-  if(any(grepl(" ",object@mother,fixed=TRUE))){
-    errors = c(errors,"mother can not contain spaces")
-  }
-  if(any(grepl(" ",object@father,fixed=TRUE))){
-    errors = c(errors,"father can not contain spaces")
-  }
   if(object@nInd!=length(object@sex)){
     errors = c(errors,"nInd!=length(sex)")
   }
@@ -491,6 +522,33 @@ setValidity("Pop",function(object){
     return(errors)
   }
 })
+
+# Checks the contents of a population rather than its shape, which at present
+# means the identifiers. Reading every name costs time in proportion to the
+# number of individuals, and only names that came from outside AlphaSimR can
+# fail, because the names the package generates itself are built from
+# integers. So this runs where a population enters AlphaSimR and not on every
+# population that is built from one.
+#
+# The three name vectors are read in a single pass. They are only examined
+# separately when that pass finds something, so that the error still says
+# which of them is at fault.
+validPopContent = function(object){
+  if(any(grepl(" ",c(object@id,object@mother,object@father),fixed=TRUE))){
+    errors = character()
+    if(any(grepl(" ",object@id,fixed=TRUE))){
+      errors = c(errors,"id can not contain spaces")
+    }
+    if(any(grepl(" ",object@mother,fixed=TRUE))){
+      errors = c(errors,"mother can not contain spaces")
+    }
+    if(any(grepl(" ",object@father,fixed=TRUE))){
+      errors = c(errors,"father can not contain spaces")
+    }
+    stop(paste(errors,collapse="\n"))
+  }
+  invisible(TRUE)
+}
 
 #' @describeIn Pop Extract Pop by index or id
 setMethod("[",
@@ -653,7 +711,12 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   if(missing(rawPop) && !is.null(ploidy)){
     return(newEmptyPop(ploidy=ploidy, simParam=simParam))
   }
-  return(.newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...))
+  pop = .newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...)
+  # This is where names from outside AlphaSimR arrive, so this is where they
+  # are read. Populations built by crossing inherit names that have already
+  # been through here, and are not read again.
+  validPopContent(pop)
+  return(pop)
 }
 
 #' @title Create new population
@@ -696,7 +759,9 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
     nThreads = as.integer(nThreads)
   }
 
-  stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
+  if(!all(lengths(simParam$genMap)==rawPop@nLoci)){
+    stop("Number of loci in rawPop does not match the genetic map in simParam")
+  }
 
   lastId = simParam$lastId
   iid = seq_len(rawPop@nInd) + lastId
@@ -742,8 +807,12 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
     }
   }
 
-  stopifnot(length(id)==length(mother),
-            length(id)==length(father))
+  if(length(id)!=length(mother)){
+    stop("length(id) does not match length(mother)")
+  }
+  if(length(id)!=length(father)){
+    stop("length(id) does not match length(father)")
+  }
 
   if(simParam$sexes=="no"){
     sex = rep("H", rawPop@nInd)
@@ -1315,7 +1384,9 @@ setMethod("c",
                 if(is(y,"Pop")){
                   x@pops = c(x@pops, y)
                 }else{
-                  stopifnot(is(y,"MultiPop"))
+                  if(!is(y,"MultiPop")){
+                    stop("All arguments must be a Pop or a MultiPop")
+                  }
                   x@pops = c(x@pops, y@pops)
                 }
               }
@@ -1370,7 +1441,9 @@ setMethod("length",
 newMultiPop = function(...){
   input = list(...)
   class = sapply(input, "class")
-  stopifnot(all(class=="Pop" | class=="MultiPop"))
+  if(!all(class=="Pop" | class=="MultiPop")){
+    stop("All arguments must be a Pop or a MultiPop")
+  }
   output = new("MultiPop", pops=input)
   return(output)
 }

@@ -16,8 +16,12 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
                 lociLoc=inLociLoc))
   }
   nChr = length(inLociPerChr)
-  stopifnot(any(chr%in%(1:nChr)),
-            max(chr)<=nChr)
+  if(!any(chr%in%(1:nChr))){
+    stop("chr does not name any chromosome in the population")
+  }
+  if(max(chr)>nChr){
+    stop("chr exceeds the number of chromosomes in the population")
+  }
   outLociPerChr = numeric(nChr)
   outLociPerChr[chr] = inLociPerChr[chr]
   outLociLoc = numeric(sum(outLociPerChr))
@@ -40,7 +44,7 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
 #' Retrieves marker names from genMap
 #'
 #' @param lociPerChr number of loci per chromosome
-#' @param lociLoc position of loci on chromosome
+#' @param lociLoc index of loci within each chromosome's segregating sites
 #' @param genMap internal AlphaSimR genetic map with names
 #'
 #' @keywords internal
@@ -75,7 +79,9 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
 mapLoci = function(markers, genMap){
   # Check that the markers are present on the map
   genMapMarkerNames = unlist(lapply(genMap, names))
-  stopifnot(all(markers%in%genMapMarkerNames))
+  if(!all(markers%in%genMapMarkerNames)){
+    stop("markers contains names that are not in the genetic map")
+  }
   
   # Create lociPerChr and lociLoc
   lociPerChr = integer(length(genMap))
@@ -1228,7 +1234,9 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
 #' @export
 setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
   # Check validity of rows
-  stopifnot(nrow(haplo)==(pop@nInd*pop@ploidy))
+  if(nrow(haplo)!=(pop@nInd*pop@ploidy)){
+    stop("nrow(haplo) must equal nInd(pop)*ploidy")
+  }
   
   # Get genetic map
   if(is(pop,"MapPop")){

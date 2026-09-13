@@ -344,32 +344,45 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' The RRBLUP2 function works best when the number of markers is not
-#' too large. This is because it solves the RR-BLUP problem by setting
-#' up and solving Henderson's mixed model equations. Solving these equations
-#' involves a square matrix with dimensions equal to the number of fixed
-#' effects plus the number of random effects (markers). Whereas the \code{\link{RRBLUP}}
-#' function solves the RR-BLUP problem using the EMMA approach. This approach involves
-#' a square matrix with dimensions equal to the number of phenotypic records. This means
-#' that the RRBLUP2 function uses less memory than RRBLUP when the number of markers
-#' is approximately equal to or smaller than the number of phenotypic records.
+#' What RRBLUP2 is for is retraining a model cheaply when the variance
+#' components are already known. Supply Vu and Ve, set useEM to false, and it
+#' solves the mixed model equations directly. A common pattern is to fit
+#' \code{\link{RRBLUP}} the first time the model is trained and then pass its
+#' variance components to RRBLUP2 for every later retraining in the
+#' simulation. We can make no claim to the general robustness of that
+#' approach, only that it is much faster.
 #'
-#' The RRBLUP2 function is not recommend for cases where the variance components are
-#' unknown. This is uses the EM algorithm to solve for unknown variance components,
-#' which is generally considerably slower than the EMMA approach of \code{\link{RRBLUP}}.
-#' The number of iterations for the EM algorithm is set by maxIter. The default value
-#' is typically too small for convergence. When the algorithm fails to converge a
-#' warning is displayed, but results are given for the last iteration. These results may
-#' be "good enough". However we make no claim to this effect, because we can not generalize
-#' to all possible use cases.
+#' Do not use RRBLUP2 when the variance components are unknown. It estimates
+#' them with the EM algorithm, which is generally far slower than the EMMA
+#' approach \code{\link{RRBLUP}} uses. The number of iterations is set by
+#' maxIter, whose default is typically too small for convergence. When the
+#' algorithm fails to converge a warning is displayed and the last iteration
+#' is returned. Those results may be good enough, but again we can make no
+#' claim to this effect, because we can not generalize to all possible use
+#' cases.
 #'
-#' The RRBLUP2 function can quickly solve the mixed model equations without estimating variance
-#' components. The variance components are set by defining Vu and Ve. Estimation of components
-#' is suppressed by setting useEM to false. This may be useful if the model is being retrained
-#' multiple times during the simulation. You could run \code{\link{RRBLUP}} function the first
-#' time the model is trained, and then use the variance components from this output for all
-#' future runs with the RRBLUP2 functions. Again, we can make no claim to the general robustness
-#' of this approach.
+#' @section How the model is solved:
+#' There are two ways to solve this model and RRBLUP2 uses whichever is
+#' cheaper, so how it behaves as a simulation grows depends on which one it
+#' picks.
+#'
+#' Henderson's mixed model equations work with a square matrix whose
+#' dimensions are the number of fixed effects plus the number of markers.
+#' Written on the records instead, the model works with a square matrix whose
+#' dimensions are the number of records, which is the same shape the EMMA
+#' approach of \code{\link{RRBLUP}} works with. The two give the same answer.
+#' The cost of each is the cost of the other with the number of records and
+#' the number of markers exchanged, so the smaller of those two numbers names
+#' the cheaper method, and the crossover sits where they are equal. Memory
+#' crosses over at the same place.
+#'
+#' Estimating variance components needs a quantity that only Henderson's
+#' equations supply, so useEM = TRUE always uses the marker side, and there
+#' the old advice holds: it works best when the markers do not greatly
+#' outnumber the records. With useEM = FALSE the choice is free and the
+#' cheaper method is taken, so more markers than records is no longer a
+#' problem. \code{\link{RRBLUPMemUse}} takes a useEM argument for this reason
+#' and will tell you what either choice costs.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1615,6 +1628,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' @param nSubsample the number of records \code{\link{fastRRBLUP}} uses to
 #' estimate variance components. Ignored by every other model, and by
 #' fastRRBLUP itself when Vu and Ve are supplied.
+#' @param useEM whether the numbered models will estimate their variance
+#' components. Estimating them holds one more square matrix, and for
+#' \code{\link{RRBLUP2}} it also decides which of its two solving methods is
+#' used. Ignored by the models that do not take a useEM argument.
 #'
 #' @details
 #' The models differ in what they have to hold in memory, and the differences
@@ -1632,7 +1649,17 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' The numbered models set up Henderson's mixed model equations, whose
 #' coefficient matrix is square with dimensions equal to the number of fixed
 #' effects plus the number of random effects, so they grow with the number of
-#' markers rather than the number of records.
+#' markers rather than the number of records. Estimating variance components
+#' needs the trace of part of the inverse of that matrix, which is reached
+#' through the inverse of its Cholesky factor, so useEM costs one more matrix
+#' of the same size.
+#'
+#' \code{\link{RRBLUP2}} is the exception among them. It only sets up
+#' Henderson's equations when it has to, which is when it is estimating
+#' variance components, and otherwise takes whichever of its two solving
+#' methods holds the smaller square matrix. Its estimate therefore depends on
+#' useEM, and with useEM false it grows with the number of records once the
+#' markers outnumber them.
 #'
 #' The GCA, SCA and dominance models fit more than one random effect and hold
 #' a square matrix of the number of records for each, which makes them the
@@ -1648,9 +1675,14 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
 #'
+#' # RRBLUP2 with more markers than records, with and without estimating
+#' # variance components. The two use different methods and different memory.
+#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=TRUE)
+#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=FALSE)
+#'
 #' @export
 RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
-                        nFixEff=1L, nSubsample=5000L){
+                        nFixEff=1L, nSubsample=5000L, useEM=TRUE){
   n = as.double(nInd)
   m = as.double(nMarker)
   q = as.double(nFixEff)
@@ -1696,7 +1728,21 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       doubles = n*m+4*n^2
     }
   }else if(model=="RRBLUP2"){
-    doubles = n*m+2*(q+m)^2
+    if(useEM | (m<=n)){
+      # Henderson's equations, whose coefficient matrix is the fixed effects
+      # plus the markers. The EM algorithm also holds the inverse of its
+      # Cholesky factor, because that is what supplies the trace it needs
+      if(useEM){
+        doubles = n*m+3*(q+m)^2
+      }else{
+        doubles = n*m+2*(q+m)^2
+      }
+    }else{
+      # The model written on the records, which holds a square matrix of the
+      # records instead. Reached only when the variance components are fixed
+      # and there are fewer records than markers
+      doubles = n*m+2*n^2
+    }
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
     nKernel = if(model=="RRBLUP_SCA") 3 else 2
     if(m<n){
@@ -1708,7 +1754,11 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     }
   }else if(model %in% c("RRBLUP_D2","RRBLUP_GCA2","RRBLUP_SCA2")){
     nKernel = if(model=="RRBLUP_SCA2") 3 else 2
-    doubles = nKernel*n*m+2*(q+nKernel*m)^2
+    if(useEM){
+      doubles = nKernel*n*m+3*(q+nKernel*m)^2
+    }else{
+      doubles = nKernel*n*m+2*(q+nKernel*m)^2
+    }
   }else{
     stop(paste0("model=",model," not recognized"))
   }

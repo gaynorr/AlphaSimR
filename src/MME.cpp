@@ -34,30 +34,47 @@ const double pi = 3.14159265358979323846;
 //
 // A matrix that is not positive definite, which happens when X is rank
 // deficient, falls back to the general inverse so that behavior is unchanged.
+//
+// Only the EM algorithm asks for a trace. Inverting the Cholesky factor costs
+// another third of a cube and holds a second matrix the size of C, so a
+// factorization that will only ever be solved against keeps the factor itself
+// and substitutes through it instead. Set needTrace to false in that case.
 class CoefMatFactor {
 public:
-  void compute(const arma::mat& C){
-    arma::mat L;
-    useChol = arma::chol(L, C, "lower");
-    if(useChol){
-      useChol = arma::inv(Linv, arma::trimatl(L));
+  void compute(const arma::mat& C, bool needTrace = true){
+    hasTrace = needTrace;
+    // Factored in place, so the factor is never held twice
+    useChol = arma::chol(Lfac, C, "lower");
+    if(useChol && needTrace){
+      useChol = arma::inv(Linv, arma::trimatl(Lfac));
+      Lfac.reset();
     }
     if(useChol){
       Full.reset();
     }else{
       Linv.reset();
+      Lfac.reset();
+      hasTrace = true; // The fallback inverse supplies a trace either way
       Full = arma::inv(C);
     }
   }
 
   arma::mat solve(const arma::mat& b) const {
     if(useChol){
-      return Linv.t()*(Linv*b);
+      if(hasTrace){
+        return Linv.t()*(Linv*b);
+      }
+      // Forward substitution through L, then back substitution through L'.
+      // Transposing the triangular view rather than the matrix keeps this
+      // from building a transposed copy of the factor.
+      return arma::solve(arma::trimatl(Lfac).t(),
+                         arma::solve(arma::trimatl(Lfac), b));
     }
     return Full*b;
   }
 
-  // Trace of the diagonal block of C^-1 spanning columns [first,last]
+  // Trace of the diagonal block of C^-1 spanning columns [first,last].
+  // Only valid when the factorization was computed with needTrace.
   double blockTrace(arma::uword first, arma::uword last) const {
     if(useChol){
       return arma::accu(arma::square(Linv.cols(first,last)));
@@ -67,10 +84,43 @@ public:
   }
 
 private:
-  arma::mat Linv; // inverse of the lower Cholesky factor
+  arma::mat Linv; // inverse of the lower Cholesky factor, for a trace
+  arma::mat Lfac; // the lower Cholesky factor itself, when no trace is wanted
   arma::mat Full; // full inverse, used only for the fallback
   bool useChol = false;
+  bool hasTrace = true;
 };
+
+// Chooses between the two ways of solving a single trait RR-BLUP model when
+// the variance components are already known.
+//
+// Henderson's mixed model equations work with a square matrix of the fixed
+// effects plus the markers. Forming M'M costs about n*m^2 and factoring the
+// result about m^3/6, so the marker side costs roughly
+//
+//   n*m^2 + m^3/6
+//
+// The same model written on the records works with a square matrix of the
+// records, because M*M' and M'M share their nonzero eigenvalues. Forming
+// M*M' costs about n^2*m and factoring it about n^3/6, so the record side
+// costs roughly
+//
+//   n^2*m + n^3/6
+//
+// One expression is the other with n and m exchanged, so the smaller of the
+// two dimensions names the cheaper method and the crossover sits at n equal
+// to m whatever the shared constant on the factorization turns out to be.
+// Memory crosses over at the same place, since the two methods hold an n by n
+// and an m by m matrix respectively on top of the genotypes they share. The
+// costs are written out rather than reduced to a comparison of n against m so
+// that the reasoning is visible, and so that there is somewhere to put a
+// correction if the two sides ever stop being symmetric.
+inline bool useRecordSide(arma::uword n, arma::uword m){
+  const double dn = double(n), dm = double(m);
+  const double recordSide = dn*dn*dm + dn*dn*dn/6.0;
+  const double markerSide = dn*dm*dm + dm*dm*dm/6.0;
+  return recordSide < markerSide;
+}
 
 // Inverts a symmetric positive definite matrix and returns its log
 // determinant. One Cholesky factorization supplies both, so the determinant
@@ -843,6 +893,20 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 //' @param useEM should EM algorithm be used. If false, no estimation of
 //' variance components is performed. The initial values are treated as true.
 //'
+//' @details
+//' The model is solved in one of two ways. Henderson's mixed model equations
+//' work with a square matrix of the fixed effects plus the markers. Written
+//' on the records instead, the model works with a square matrix of the
+//' records. The two give the same answer, and the cost of each is the cost of
+//' the other with the number of records and the number of markers exchanged,
+//' so the smaller of those two numbers names the cheaper method.
+//'
+//' Estimating variance components requires the trace of the marker block of
+//' the inverse coefficient matrix, which only Henderson's equations supply, so
+//' \code{useEM = TRUE} always uses the marker side however many records there
+//' are. With \code{useEM = FALSE} the choice is free and the cheaper method is
+//' taken.
+//'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
@@ -853,10 +917,29 @@ Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
   double delta=0,VeN=0,VuN=0;
   int iter=0;
   arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
-  if(!useEM & (n<m)){
-    arma::mat Vinv = inv_sympd(M*M.t()*Vu+arma::eye(n,n)*Ve);
-    arma::mat beta = solve(X.t()*Vinv*X, X.t()*Vinv*Y);
-    arma::mat u = M.t()*Vinv*(Y-X*beta)*Vu;
+  // The EM algorithm needs the trace of the marker block of the inverse
+  // coefficient matrix, which is a property of Henderson's equations, so
+  // estimating variance components always uses the marker side. With the
+  // variance components held fixed either method gives the same answer and
+  // the cheaper one is taken. See useRecordSide for how that is decided.
+  if(!useEM && useRecordSide(n,m)){
+    // V = M*M'*Vu + I*Ve, factored once and solved against the fixed effects
+    // and the response together. Nothing of size m by n is formed: M'
+    // multiplies a single vector of records rather than the whole of V^-1.
+    arma::mat V = M*M.t();
+    V *= Vu;
+    V.diag() += Ve;
+    arma::mat rhs = arma::join_rows(X,Y);
+    arma::mat Vinvrhs;
+    if(!arma::solve(Vinvrhs, V, rhs, arma::solve_opts::likely_sympd)){
+      Rcpp::stop("solveRRBLUP_EM: mixed model equations could not be solved");
+    }
+    V.reset();
+    rhs.reset();
+    const arma::mat VinvX = Vinvrhs.head_cols(q);
+    const arma::mat VinvY = Vinvrhs.tail_cols(1);
+    arma::mat beta = solve(X.t()*VinvX, X.t()*VinvY);
+    arma::mat u = M.t()*(VinvY-VinvX*beta)*Vu;
     return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                               Rcpp::Named("Ve")=Ve,
                               Rcpp::Named("beta")=beta,
@@ -873,7 +956,9 @@ Rcpp::List solveRRBLUP_EM(arma::mat& Y, arma::mat& X,
   Rvec(arma::span(0,q-1),0) = X.t()*Y;
   Rvec(arma::span(q,q+m-1),0) = M.t()*Y;
   CoefMatFactor RHSfac;
-  RHSfac.compute(RHS);
+  // Only the EM iterations ask for a trace, so a single solve keeps the
+  // Cholesky factor rather than paying to invert it
+  RHSfac.compute(RHS, useEM);
   LHS = RHSfac.solve(Rvec);
   if(useEM){
     const double YtY = as_scalar(Y.t()*Y);
@@ -977,7 +1062,9 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
   Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
   Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
   CoefMatFactor RHSfac;
-  RHSfac.compute(RHS);
+  // Only the EM iterations ask for a trace, so a single solve keeps the
+  // Cholesky factor rather than paying to invert it
+  RHSfac.compute(RHS, useEM);
   LHS = RHSfac.solve(Rvec);
   if(useEM){
     const double YtY = as_scalar(Y.t()*Y);
@@ -1119,7 +1206,9 @@ Rcpp::List solveRRBLUP_EM3(const arma::mat& Y, const arma::mat& X,
   Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
   Rvec(arma::span(q+2*m,q+3*m-1),0) = M3.t()*Y;
   CoefMatFactor RHSfac;
-  RHSfac.compute(RHS);
+  // Only the EM iterations ask for a trace, so a single solve keeps the
+  // Cholesky factor rather than paying to invert it
+  RHSfac.compute(RHS, useEM);
   LHS = RHSfac.solve(Rvec);
   if(useEM){
     const double YtY = as_scalar(Y.t()*Y);

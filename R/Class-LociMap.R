@@ -8,7 +8,7 @@
 #'
 #' @slot nLoci total number of loci
 #' @slot lociPerChr number of loci per chromosome
-#' @slot lociLoc physical position of loci
+#' @slot lociLoc index of loci within each chromosome's segregating sites
 #' @slot name optional name for LociMap object
 #'
 #' @export

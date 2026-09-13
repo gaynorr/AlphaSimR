@@ -44,18 +44,24 @@ mergePops = function(popList){
     popList = popList[-remove]
     classes = classes[-remove]
   }
-  stopifnot(all(classes=="Pop"))
+  if(!all(classes=="Pop")){
+    stop("All populations must be a Pop")
+  }
 
   #nChr
   nChr = do.call("c",lapply(popList,
                             function(x) x@nChr))
-  stopifnot(all(nChr==nChr[1]))
+  if(!all(nChr==nChr[1])){
+    stop("nChr does not match between populations")
+  }
   nChr = nChr[1]
 
   #ploidy
   ploidy = do.call("c",lapply(popList,
                               function(x) x@ploidy))
-  stopifnot(all(ploidy==ploidy[1]))
+  if(!all(ploidy==ploidy[1])){
+    stop("ploidy does not match between populations")
+  }
   ploidy = ploidy[1]
 
   #nLoci
@@ -63,7 +69,9 @@ mergePops = function(popList){
                              function(x){
                                all(x@nLoci==popList[[1]]@nLoci)
                              }))
-  stopifnot(all(nLoci))
+  if(!all(nLoci)){
+    stop("nLoci does not match between populations")
+  }
   nLoci = popList[[1]]@nLoci
 
   #id
@@ -136,7 +144,9 @@ mergePops = function(popList){
   #nTraits
   nTraits = do.call("c",lapply(popList,
                                function(x) x@nTraits))
-  stopifnot(all(nTraits==nTraits[1]))
+  if(!all(nTraits==nTraits[1])){
+    stop("nTraits does not match between populations")
+  }
   nTraits = nTraits[1]
 
   #nInd
@@ -260,7 +270,7 @@ mergePops = function(popList){
 #' @export
 flattenMultiPop = function(x, level=1) {
   if (isPop(x)) return(x)
-  stopifnot(isMultiPop(x))
+  if(!isMultiPop(x)) stop("x must be a Pop or a MultiPop")
   multi = which(sapply(x@pops, isMultiPop))
   while (level > 1) {
     level = level - 1

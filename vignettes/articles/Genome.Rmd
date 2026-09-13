@@ -4,7 +4,7 @@ author: "Rosalind Craddock"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{The Genome}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,16 +21,16 @@ library(AlphaSimR)
 **AlphaSimR** is built upon the basics of genetics for the stochastic simulation of crop and animal breeding programs. This vignette will provide an overview of the genome, it's inheritance, and the tools used to read it with supporting examples and code.
 
 # What is a genome?
-The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is package can vary substantial including the number of chromosome and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomnal, one non-autosomnal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
+The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is packaged can vary substantially, including the number of chromosomes and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomal, one non-autosomal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
 
 ## Genes, alleles, loci, genotypes, and haplotypes.
 Although similar, there are essential differences in the terminology used. This next section will provide a short glossary for genes, allele, loci, genotypes, and haplotypes.
 
-Genes are segments of DNA that are translated to proteins. Typically they will contain a few hundred to more than two billion bases-pairs with a codon (triplet base-pair) coding for either an amino acid or to start/stop. 
+Genes are segments of DNA that are translated to proteins. Typically they will contain a few hundred to more than two million base-pairs with a codon (triplet base-pair) coding for either an amino acid or to start/stop. 
 
 An allele in a gene is a gene variant. More generally, an allele represents a possible sequence of bases at a particular site on a genome (known as a locus). When biallelic (two variants per gene) the allele is either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new alleles arise from mutation.
 
-A genotype is the combination of alleles across chromosome copies that an organism has at a specified locus or across loci. For instance, there are three possible genotypes for a diploid at a biallelic locus with ancestral allele A and mutant allele a: ancestral homozygous (aa) with allele dosage 0, heterozygous (aA or Aa) with allele dosage 1, and mutant homozygous (AA) with allele dosage 2. Genotypes can differ between individuals due to random segregation in inheritance.
+A genotype is the combination of alleles across chromosome copies that an organism has at a specified locus or across loci. For instance, there are three possible genotypes for a diploid at a biallelic locus with ancestral allele A and mutant allele a: ancestral homozygous (AA) with allele dosage 0, heterozygous (Aa or aA) with allele dosage 1, and mutant homozygous (aa) with allele dosage 2. Genotypes can differ between individuals due to random segregation in inheritance.
 
 A haplotype (haploid genotype) describes the physical grouping of alleles along the same chromosome. This means that these group of alleles tend to be inherited together. New haplotypes are created through recombination.
 

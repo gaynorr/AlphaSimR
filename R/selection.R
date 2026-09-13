@@ -25,7 +25,9 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
     if(is.character(use)){
       use = tolower(use)
       if(use=="rand"){
-        return(rnorm(pop@nInd))
+        # A one column matrix, to match what every other option
+        # returns. Callers that read ncol() need the dimension.
+        return(matrix(rnorm(pop@nInd), ncol=1L))
       }else if(use=="gv"){
         response = trait(pop@gv,...)
       }else if(use=="ebv"){
@@ -57,7 +59,9 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
     if(is.character(use)){
       use = tolower(use)
       if(use=="rand"){
-        return(rnorm(pop@nInd))
+        # A one column matrix, to match what every other option
+        # returns. Callers that read ncol() need the dimension.
+        return(matrix(rnorm(pop@nInd), ncol=1L))
       }else if(use == "gv"){
         response = pop@gv[,trait,drop=FALSE]
       }else if(use=="ebv"){
@@ -157,7 +161,9 @@ calcPopValue = function(
       ...
     )
     if (is.matrix(response)) {
-      stopifnot(ncol(response) == 1)
+      if (ncol(response) != 1) {
+        stop("response must have a single column")
+      }
     }
     FUN.ARGS = append(FUN.ARGS, list(response), after = 0)
     return(do.call(FUN, FUN.ARGS))
@@ -331,7 +337,7 @@ getFam = function(pop,famType){
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -341,7 +347,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
@@ -360,7 +367,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
@@ -439,7 +446,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nFam>=0)
+  if(nFam<0) stop("nFam must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -449,7 +456,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
                       use=use, sex=sex, famType=famType,
                       selectTop=selectTop, returnPop=TRUE,
@@ -471,7 +479,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   response = response[eligible]
   #Calculate family means
@@ -558,7 +566,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
                            candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -568,7 +576,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
@@ -584,7 +593,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   warn = FALSE
   selInFam = function(selFam){
@@ -676,7 +685,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -686,7 +695,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(is.null(candidates))
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
                       pollenControl=pollenControl, trait=trait, use=use,
                       selectTop=selectTop, candidates=NULL,
@@ -838,7 +847,7 @@ selectPop = function(
   FUN = mean,
   FUN.ARGS = list()
 ) {
-  stopifnot(nPop >= 0)
+  if (nPop < 0) stop("nPop must be >= 0")
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
   }
@@ -846,7 +855,7 @@ selectPop = function(
   if (isPop(x)) {
     return(x)
   }
-  stopifnot(isMultiPop(x))
+  if (!isMultiPop(x)) stop("x must be a Pop or a MultiPop")
 
   multi = which(sapply(unname(x@pops), isMultiPop))
 

@@ -62,6 +62,10 @@
 
 * performance optimization of function in MME.cpp using Claude
 
+* performance optimization of the MaCS code in algorithm.cpp, datastructures.cpp and simulator.cpp using Claude. When a limited number of segregating sites is requested, MaCS now samples them while simulating a chromosome instead of generating every site and discarding most of them afterwards. The sites retained are drawn the same way as before, but `runMacs` and `runMacs2` now draw random numbers in a different order, so a given seed will not reproduce founder populations made by earlier versions.
+
+* performance optimization of the genotype and haplotype extraction functions in getGeno.cpp using Claude. This affects the speed of `pullSnpGeno`, `pullQtlGeno`, `pullSegSiteGeno` and the matching haplotype functions, but not their output.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages

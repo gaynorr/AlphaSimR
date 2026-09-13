@@ -108,6 +108,20 @@ solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
 #' @param useEM should EM algorithm be used. If false, no estimation of
 #' variance components is performed. The initial values are treated as true.
 #'
+#' @details
+#' The model is solved in one of two ways. Henderson's mixed model equations
+#' work with a square matrix of the fixed effects plus the markers. Written
+#' on the records instead, the model works with a square matrix of the
+#' records. The two give the same answer, and the cost of each is the cost of
+#' the other with the number of records and the number of markers exchanged,
+#' so the smaller of those two numbers names the cheaper method.
+#'
+#' Estimating variance components requires the trace of the marker block of
+#' the inverse coefficient matrix, which only Henderson's equations supply, so
+#' \code{useEM = TRUE} always uses the marker side however many records there
+#' are. With \code{useEM = FALSE} the choice is free and the cheaper method is
+#' taken.
+#'
 #' @export
 solveRRBLUP_EM <- function(Y, X, M, Vu, Ve, tol, maxIter, useEM) {
     .Call(`_AlphaSimR_solveRRBLUP_EM`, Y, X, M, Vu, Ve, tol, maxIter, useEM)

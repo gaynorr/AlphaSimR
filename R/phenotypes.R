@@ -9,12 +9,18 @@ addError = function(gv, varE, reps){
   nTraits = ncol(gv)
   nInd = nrow(gv)
   if(is.matrix(varE)){
-    stopifnot(isSymmetric(varE),
-              ncol(varE)==nTraits)
+    if(!isSymmetric(varE)){
+      stop("varE must be a symmetric matrix")
+    }
+    if(ncol(varE)!=nTraits){
+      stop("ncol(varE) does not match the number of traits")
+    }
     error = matrix(rnorm(nInd*nTraits),
                    ncol=nTraits)%*%transMat(varE)
   }else{
-    stopifnot(length(varE)==nTraits)
+    if(length(varE)!=nTraits){
+      stop("length(varE) does not match the number of traits")
+    }
     error = lapply(varE,function(x){
       if(is.na(x)){
         return(rep(NA_real_,nInd))
@@ -173,9 +179,15 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
   }else{
     traits = as.integer(traits)
-    stopifnot(all(traits>0L),
-              all(!duplicated(traits)),
-              max(traits)<=simParam$nTraits)
+    if(!all(traits>0L)){
+      stop("traits must be positive")
+    }
+    if(any(duplicated(traits))){
+      stop("traits contains duplicates")
+    }
+    if(max(traits)>simParam$nTraits){
+      stop("traits exceeds the number of traits in simParam")
+    }
   }
   nTraits = length(traits)
 
@@ -183,7 +195,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   if(length(reps)==1){
     reps = rep(reps, nTraits)
   }else{
-    stopifnot(length(reps)==nTraits)
+    if(length(reps)!=nTraits){
+      stop("Length of reps must equal 1 or the number of traits")
+    }
   }
 
   # Set p-value for GxE traits
@@ -192,7 +206,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   }else if(length(p)==1){
     p = rep(p, nTraits)
   }else{
-    stopifnot(length(p)==nTraits)
+    if(length(p)!=nTraits){
+      stop("Length of p must equal 1 or the number of traits")
+    }
   }
 
   # Calculate varE if using h2 or H2
@@ -203,9 +219,15 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     varA = simParam$varA[traits]
     varG = simParam$varG[traits]
 
-    stopifnot(length(h2)==nTraits,
-              all(varA>0),
-              all(varG>0))
+    if(length(h2)!=nTraits){
+      stop("Length of h2 must equal 1 or the number of traits")
+    }
+    if(!all(varA>0)){
+      stop("h2 requires additive variance greater than zero for every trait")
+    }
+    if(!all(varG>0)){
+      stop("h2 requires genetic variance greater than zero for every trait")
+    }
     varE = numeric(nTraits)
     for(i in seq_len(nTraits)){
       tmp = varA[i]/h2[i]-varG[i]
@@ -220,7 +242,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
     varG = simParam$varG[traits]
 
-    stopifnot(length(H2)==nTraits)
+    if(length(H2)!=nTraits){
+      stop("Length of H2 must equal 1 or the number of traits")
+    }
     varE = numeric(nTraits)
     for(i in seq_len(nTraits)){
       tmp = varG[i]/H2[i]-varG[i]
@@ -228,10 +252,16 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     }
   }else if(!is.null(varE)){
     if(is.matrix(varE)){
-      stopifnot(nTraits==nrow(varE),
-                isSymmetric(varE))
+      if(nrow(varE)!=nTraits){
+        stop("nrow(varE) does not match the number of traits")
+      }
+      if(!isSymmetric(varE)){
+        stop("varE must be a symmetric matrix")
+      }
     }else{
-      stopifnot(length(varE)==nTraits)
+      if(length(varE)!=nTraits){
+        stop("Length of varE must equal the number of traits")
+      }
     }
   }else{
     if(is.matrix(simParam$varE)){
@@ -246,8 +276,12 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     if(is.matrix(varE)){
       varE = diag(varE)
     }
-    stopifnot(length(varE)==nrow(corE),
-              isSymmetric(corE))
+    if(length(varE)!=nrow(corE)){
+      stop("length(varE) does not match nrow(corE)")
+    }
+    if(!isSymmetric(corE)){
+      stop("corE must be a symmetric matrix")
+    }
 
     varE = diag(sqrt(varE),
                 nrow=nTraits,
@@ -259,7 +293,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
   # Use lapply if object is a MultiPop
   # Only passing varE after previous processing
   if(is(pop,"MultiPop")){
-    stopifnot(!onlyPheno)
+    if(onlyPheno) stop("onlyPheno is not supported for a MultiPop")
     pop@pops = lapply(pop@pops, setPheno, h2=NULL, H2=NULL,
                       varE=varE, corE=NULL, reps=reps, fixEff=fixEff,
                       p=p, traits=traits, simParam=simParam)
