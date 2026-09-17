@@ -81,7 +81,12 @@ setMethod("[",
           signature(x = "HybridPop"),
           function(x, i){
             if(is.character(i)){
-              i = x@id%in%i
+              # match, not %in%: a membership mask returns the population's
+              # own order, collapses duplicates, and ignores unknown ids
+              i = match(i, x@id)
+              if(any(is.na(i))){
+                stop("Trying to select invalid individuals")
+              }
             }
             x@id = x@id[i]
             x@mother = x@mother[i]

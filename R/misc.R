@@ -54,7 +54,7 @@ isMale <- function(x) {
 #' @description
 #' Returns the population's pedigree as stored in the
 #' id, mother and father slots. NULL is returned if the
-#' input population lacks the required.
+#' input population lacks the required information.
 #'
 #' @param pop a population
 #'
@@ -108,14 +108,14 @@ selInt = function(p){
 #' @title Calculate Smith-Hazel weights
 #'
 #' @description
-#' Calculates weights for Smith-Hazel index given economice weights
+#' Calculates weights for Smith-Hazel index given economic weights
 #' and phenotypic and genotypic variance-covariance matrices.
 #'
 #' @param econWt vector of economic weights
 #' @param varG the genetic variance-covariance matrix
 #' @param varP the phenotypic variance-covariance matrix
 #'
-#' @return a vector of weight for calculating index values
+#' @return a vector of weights for calculating index values
 #'
 #' @examples
 #' G = 1.5*diag(2)-0.5
@@ -178,7 +178,7 @@ selIndex = function(Y,b,scale=FALSE){
 #' @description
 #' Edits selected loci of selected individuals to a homozygous
 #' state for either the 1 or 0 allele. The gv slot is recalculated to
-#' reflect the any changes due to editing, but other slots remain the same.
+#' reflect any changes due to editing, but other slots remain the same.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
@@ -263,8 +263,8 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #'
 #' @description
 #' Edits the top QTL (with the largest additive effect) to a homozygous
-#' state for the allele increasing. Only nonfixed QTL are edited The gv slot is
-#' recalculated to reflect the any changes due to editing, but other slots remain the same.
+#' state for the allele increasing. Only nonfixed QTL are edited. The gv slot is
+#' recalculated to reflect any changes due to editing, but other slots remain the same.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
@@ -337,10 +337,10 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
     while (nQtlInd < nQtl) {
       Qtl = Qtl + 1
       if(Qtl>ncol(QtlGeno)){
-        ret[[1]] = ret[[1]][1:nQtlInd]
-        ret[[2]] = ret[[2]][1:nQtlInd]
-        ret[[3]] = ret[[3]][1:nQtlInd]
-        ret[[4]] = ret[[4]][1:nQtlInd]
+        ret[[1]] = ret[[1]][seq_len(nQtlInd)]
+        ret[[2]] = ret[[2]][seq_len(nQtlInd)]
+        ret[[3]] = ret[[3]][seq_len(nQtlInd)]
+        ret[[4]] = ret[[4]][seq_len(nQtlInd)]
         nQtl = nQtlInd
         break()
       }
@@ -397,7 +397,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
 #'
 #' @description Calculates the usefulness criterion
 #'
-#' @param pop and object of \code{\link{Pop-class}} or
+#' @param pop an object of \code{\link{Pop-class}} or
 #' \code{\link{HybridPop-class}}
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
@@ -461,7 +461,7 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' sampled from a standard normal distribution to produce
 #' correlated deviates with an arbitrary correlation
 #' of R. If R is not positive semi-definite, the function
-#' returns smoothing and returns a warning (see details).
+#' applies smoothing and returns a warning (see details).
 #'
 #' @param R a correlation matrix
 #'
@@ -470,7 +470,7 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' matrix and used to test if it is positive semi-definite.
 #' If the matrix is not positive semi-definite, it is not a
 #' valid correlation matrix. In this case, smoothing is
-#' applied to the matrix (as described in the 'cor.smooth' of
+#' applied to the matrix (as described in the 'cor.smooth' function of
 #' the 'psych' library) to obtain a valid correlation matrix.
 #' The resulting deviates will thus not exactly match the
 #' desired correlation, but will hopefully be close if the
@@ -487,15 +487,29 @@ transMat = function(R){
     stop(nameR, " is not a symmetric matrix")
   }
 
+  # R may be a covariance matrix rather than a correlation matrix, so the
+  # scale is taken out before anything else. The smoothing below calls
+  # cov2cor and compares eigenvalues against a fixed tolerance, neither of
+  # which is meaningful until the diagonal is one.
+  scale = sqrt(diag(as.matrix(R)))
+  if(any(scale<=0)){
+    stop(nameR, " must have a positive diagonal")
+  }
+  corR = R/tcrossprod(scale)
+
   # Check if matrix is positive semi-definite
   # Provide a warning if it is not
-  eig = eigen(R, symmetric=TRUE)
+  eig = eigen(corR, symmetric=TRUE)
 
-  if(min(eig$values)<.Machine$double.eps){
+  # Relative to the largest eigenvalue, because an absolute tolerance is
+  # only the right size for a matrix whose entries are already order one.
+  tol = ncol(corR)*max(abs(eig$values))*.Machine$double.eps
+
+  if(min(eig$values)<tol){
     warning("Matrix is not positive semi-definite, see ?transMat for details")
     # Performing correlation matrix smoothing
-    eig$values[eig$values<.Machine$double.eps] = 100*.Machine$double.eps
-    m = ncol(R)
+    eig$values[eig$values<tol] = 100*tol
+    m = ncol(corR)
     totVar = sum(eig$values)
     eig$values = eig$values * m/totVar
     newR = eig$vectors%*%diag(eig$values)%*%t(eig$vectors)
@@ -503,11 +517,13 @@ transMat = function(R){
     eig = eigen(newR, symmetric=TRUE)
   }
 
-  return(
-    t(eig$vectors %*%
-        (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
-    )
+  # Symmetric square root of the correlation matrix, with the scale put
+  # back so that crossprod of the result returns R and not corR.
+  L = t(eig$vectors %*%
+          (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
   )
+
+  return(L %*% diag(scale, nrow=length(scale)))
 }
 
 #' @title Add Random Mutations
@@ -532,7 +548,7 @@ transMat = function(R){
 #' @return an object of \code{\link{Pop-class}} if
 #' returnPos=FALSE or a list containing a
 #' \code{\link{Pop-class}} and a data.frame containing the
-#' postions of mutations if returnPos=TRUE
+#' positions of mutations if returnPos=TRUE
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -586,9 +602,11 @@ mutateGenome = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
       # Sample mutation sites
       sites = sample.int(size = nMut[take], n = s)
 
-      # Resolve all mutations
-      chr = 1L
+      # Resolve all mutations. sites comes back from sample.int in no
+      # particular order and the walk below only ever moves forward, so
+      # the search has to start from the first chromosome each time.
       for(i in sites){
+        chr = 1L
         # Find chromosome
         repeat{
           if(i > sum(pop@nLoci[1L:chr])){
@@ -678,7 +696,7 @@ attrition = function(pop, p){
 #' 
 #' This function is designed for future expansion. The intent is to use it 
 #' to develop a GxE model based on compound symmetry. In this model, the 
-#' p-value used in the current GxE model will serve a a seed for sampling 
+#' p-value used in the current GxE model will serve as a seed for sampling 
 #' environmental effects.
 #'
 #' @param n number of deviates to sample

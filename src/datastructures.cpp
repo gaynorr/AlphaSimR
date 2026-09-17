@@ -562,11 +562,15 @@ void GraphBuilder::buildTreeIndex(){
   double dRunningLength = 0.0;
   for (unsigned int i=0;i<iTotalTreeEdges;++i){
     EdgePtr & curEdge = pEdgeVectorInTree->at(i);
+    // The flag is cleared for every edge this pass sees, deleted or not.
+    // Clearing it only for live edges leaves a deleted edge marked as
+    // already in the tree, and markEdgesAbove reads that flag as a signal
+    // to stop climbing.
+    curEdge->bInCurrentTree = false;
     if (!curEdge->bDeleted){
       dRunningLength+=curEdge->getLength();
       treePrefixSum.push_back(dRunningLength);
       treePrefixIdx.push_back(i);
-      curEdge->bInCurrentTree = false;
     }
   }
   dLastTreeLength = dRunningLength;

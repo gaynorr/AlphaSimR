@@ -86,7 +86,7 @@ accumulated through the effects of selection and mating.
 `restrSegSites` is used to force the QTL and the SNP chip onto different
 segregating sites. Without it the two sets are sampled independently and
 may overlap, which quietly inflates accuracy. For this reason, `restrSegSites` 
-as used as the default in AlphaSimR.
+is used as the default in AlphaSimR.
 
 ## The three steps
 
@@ -235,7 +235,7 @@ records.
 
 ## Using the models in a breeding program
 
-The three steps above are the whole API. What takes judgement is where
+The three steps above are the whole API. What takes judgment is where
 they go in a breeding cycle and what feeds them. @bancic_2025 work
 through complete plant breeding programs in AlphaSimR — line, clonal and
 hybrid — each with a genomic selection variant, and the patterns below
@@ -315,7 +315,7 @@ generations back describe a population that no longer exists, and the
 linkage disequilibrium they carry has been broken up by recombination
 since. A window of the last few years is both cheaper and may be more
 accurate than one using everything ever recorded. The value of including 
-older lines will vary greatly between simulations is potentially an area 
+older lines will vary greatly between simulations and is potentially an area
 worth exploring in a simulation.
 
 ### How often to retrain
@@ -617,7 +617,7 @@ environment drawn by the `p` argument of `setPheno`. Records from a
 first-year trial and a second-year trial are then on genuinely different
 scales. Pooling them without a label leaves that difference in the
 residual, where it inflates $V_e$, shrinks the marker effects too hard
-and lowers accuracy. Labelling each trial with its own `fixEff` lets the
+and lowers accuracy. Labeling each trial with its own `fixEff` lets the
 model absorb the shift:
 
 ```{r eval=FALSE}

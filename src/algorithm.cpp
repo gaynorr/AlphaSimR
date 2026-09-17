@@ -367,11 +367,16 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
   dMigrationMatrix = pConfig->dMigrationMatrix;
   //}
   // set up pile of coalesced nodes for building the prior tree
+  // Owned by a unique_ptr so that the set, and the nodes it still holds,
+  // are released when traverseEvents throws. pCoalescedNodes stays a raw
+  // pointer so that the uses below are unchanged.
+  std::unique_ptr<NodePtrSet> coalescedNodesOwner;
   NodePtrSet * pCoalescedNodes = NULL;
   if (!bBuildFromEventList){
     // store coalesced nodes in a temp vector
     //pCoalescedNodes = new NodePtrList();
-    pCoalescedNodes = new NodePtrSet();
+    coalescedNodesOwner.reset(new NodePtrSet());
+    pCoalescedNodes = coalescedNodesOwner.get();
     // set up the node list
     int iCounter = 0,iId=0;
     for (int i=0;i<iTotalPops;++i){
@@ -1045,9 +1050,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
     }
     dLastTime = dTime;
   }
-  if (!bBuildFromEventList){
-    delete pCoalescedNodes;
-  }
+  // coalescedNodesOwner releases the set, on this path and on a throw
 }
 
 void GraphBuilder::pruneARG(int iHistoryMax){

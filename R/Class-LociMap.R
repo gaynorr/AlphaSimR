@@ -77,7 +77,7 @@ isTraitA = function(x) {
 #' @title Sex specific additive trait
 #'
 #' @description Extends \code{\link{TraitA-class}}
-#' to model seperate additive effects for parent of
+#' to model separate additive effects for parent of
 #' origin. Used exclusively for genomic selection.
 #'
 #' @slot addEffMale additive effects

@@ -5,7 +5,7 @@
 #' crossing plan.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param crossPlan a matrix with two column representing
+#' @param crossPlan a matrix with two columns representing
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross. May be a single value for all 
@@ -73,7 +73,9 @@ makeCross = function(pop, crossPlan, nProgeny=1,
   
   # Handle nProgeny
   if(length(nProgeny)==1){
-    if(nProgeny>1){
+    # Any value other than 1 has to go through rep, including 0, which
+    # must yield an empty cross plan rather than one progeny per cross.
+    if(nProgeny!=1){
       crossPlan = cbind(rep(crossPlan[,1], each=nProgeny),
                         rep(crossPlan[,2], each=nProgeny))
     }
@@ -133,7 +135,7 @@ makeCross = function(pop, crossPlan, nProgeny=1,
 #'
 #' @description
 #' A wrapper for \code{\link{makeCross}} that randomly
-#' selects parental combinations for all possible combinantions.
+#' selects parental combinations for all possible combinations.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nCrosses total number of crosses to make
@@ -248,14 +250,14 @@ randCross = function(pop, nCrosses, nProgeny=1,
 #' This is a wrapper that combines the functionalities of
 #' \code{\link{randCross}} and \code{\link{selectInd}}. The
 #' purpose of this wrapper is to combine both selection and
-#' crossing in one function call that minimized the amount
+#' crossing in one function call that minimizes the amount
 #' of intermediate populations created. This reduces RAM usage
 #' and simplifies code writing. Note that this wrapper does not
 #' provide the full functionality of either function.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nInd the number of individuals to select. These individuals
-#' are selected without regards to sex and it supercedes values
+#' are selected without regard to sex and it supersedes values
 #' for nFemale and nMale. Thus if the simulation uses sexes, it is
 #' likely better to leave this value as NULL and use nFemale and nMale
 #' instead.
@@ -353,7 +355,7 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
 #'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
 #' @param males an object of \code{\link{Pop-class}} for male parents.
-#' @param crossPlan a matrix with two column representing
+#' @param crossPlan a matrix with two columns representing
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param nProgeny number of progeny per cross. May be a single value for all 
@@ -423,7 +425,9 @@ makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
   
   # Handle nProgeny
   if(length(nProgeny)==1){
-    if(nProgeny>1){
+    # Any value other than 1 has to go through rep, including 0, which
+    # must yield an empty cross plan rather than one progeny per cross.
+    if(nProgeny!=1){
       crossPlan = cbind(rep(crossPlan[,1], each=nProgeny),
                         rep(crossPlan[,2], each=nProgeny))
     }
@@ -483,7 +487,7 @@ makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
 #'
 #' @description
 #' A wrapper for \code{\link{makeCross2}} that randomly
-#' selects parental combinations for all possible combinantions between
+#' selects parental combinations for all possible combinations between
 #' two populations.
 #'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
@@ -676,8 +680,10 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
     crossPlan = rep(parents, each=nProgeny)
     
   }else{
-    if(nInd(pop)!=length(nProgeny)){
-      stop("Length of nProgeny must equal 1 or nInd(pop)")
+    # crossPlan repeats parents, which may be a subset of the population,
+    # so nProgeny is checked against parents and not the population size.
+    if(length(parents)!=length(nProgeny)){
+      stop("Length of nProgeny must equal 1 or length(parents)")
     }
     
     crossPlan = rep(parents, times=nProgeny)
@@ -919,7 +925,7 @@ sortPed = function(id, mother, father, maxCycle=100){
 #'
 #' @param founderPop a \code{\link{Pop-class}}
 #' @param id a vector of unique identifiers for individuals
-#' in the pedigree. The values of these IDs are seperate from
+#' in the pedigree. The values of these IDs are separate from
 #' the IDs in the founderPop if matchID=FALSE.
 #' @param mother a vector of identifiers for the mothers
 #' of individuals in the pedigree. Must match one of the
@@ -936,7 +942,7 @@ sortPed = function(id, mother, father, maxCycle=100){
 #' @param nSelf an optional vector indicating how many generations an
 #' individual should be selfed.
 #' @param useFemale If creating DH lines, should female recombination
-#' rates be used. This parameter has no effect if, recombRatio=1.
+#' rates be used. This parameter has no effect if recombRatio=1.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1084,16 +1090,18 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
         output[[i]] = founderPop[id[i]]
       }else{
         if(motherIsFounder[i]){
-          # Cross founder to newly created individual
-          output[[i]] = makeCross2(founderPop[id[i]],
+          # Cross founder to newly created individual. The founder here
+          # is this individual's mother, not the individual itself.
+          output[[i]] = makeCross2(founderPop[mother[i]],
                                    output[[ped$father[i]]],
                                    crossPlan=crossPlan,
                                    simParam=simParam,
                                    nThreads=nThreads)
         }else if(fatherIsFounder[i]){
-          # Cross newly created individual to founder
+          # Cross newly created individual to founder. The founder here
+          # is this individual's father, not the individual itself.
           output[[i]] = makeCross2(output[[ped$mother[i]]],
-                                   founderPop[id[i]],
+                                   founderPop[father[i]],
                                    crossPlan=crossPlan,
                                    simParam=simParam,
                                    nThreads=nThreads)

@@ -127,7 +127,10 @@ arma::vec sampleChiasmata(double end, double v,
     // No crossover interference
     // Switching to count-location model
     arma::uword n = alphasimrRng::samplePoisson(2.0*end, rng);
-    arma::vec x = alphasimrRng::runifVec(n, rng);
+    // Positions are uniform over the chromosome, so the deviates have to be
+    // scaled by its genetic length. Without the scale every chiasma lands in
+    // the first Morgan.
+    arma::vec x = alphasimrRng::runifVec(n, rng)*end;
     return sort(x);
 
   }else{

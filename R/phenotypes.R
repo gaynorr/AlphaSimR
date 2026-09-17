@@ -30,7 +30,10 @@ addError = function(gv, varE, reps){
     })
     error = do.call("cbind",error)
   }
-  error = error/sqrt(reps)
+  # error is nInd x nTraits in column-major order, so a per-trait reps
+  # vector has to be expanded to one value per individual or R recycles
+  # it down the rows and assigns the wrong reps to nearly every cell.
+  error = error/rep(sqrt(reps), each=nInd)
   pheno = gv + error
 
   return(pheno)
@@ -100,7 +103,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' used by GxE traits. If NULL, a value is
 #' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
-#' @param traits an integer vector indicate which traits to set. If NULL,
+#' @param traits an integer vector indicating which traits to set. If NULL,
 #' all traits will be set.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -127,14 +130,14 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #'
 #' The varE argument allows the user to specify the error variance
 #' directly. The user may supply a vector describing the error variance
-#' for each trait or supply a matrix that specify the covariance of
+#' for each trait or supply a matrix that specifies the covariance of
 #' the errors.
 #'
 #' The corE argument allows the user to specify correlations for the
-#' error covariance matrix. These correlations are be supplied in addition
+#' error covariance matrix. These correlations are to be supplied in addition
 #' to the h2, H2, or varE arguments. These correlations will be used to
 #' construct a covariance matrix from a vector of variances. If the user
-#' supplied a covariance matrix to varE, these correlations will supercede
+#' supplied a covariance matrix to varE, these correlations will supersede
 #' values provided in that matrix.
 #'
 #' The reps parameter is for convenient representation of replicated data.
@@ -245,9 +248,18 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     if(length(H2)!=nTraits){
       stop("Length of H2 must equal 1 or the number of traits")
     }
+    # The same guards the h2 branch applies. Without them a trait with no
+    # genetic variance divides by zero and an impossible H2 returns a
+    # negative error variance, which later becomes sqrt() of a negative.
+    if(!all(varG>0)){
+      stop("H2 requires genetic variance greater than zero for every trait")
+    }
     varE = numeric(nTraits)
     for(i in seq_len(nTraits)){
       tmp = varG[i]/H2[i]-varG[i]
+      if(tmp<0){
+        stop(paste0("H2=",H2[i]," is not possible for trait ",traits[i]))
+      }
       varE[i] = tmp
     }
   }else if(!is.null(varE)){
@@ -329,7 +341,7 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'  numeric shifts for all traits in \code{x} must be provided, and when list
 #'  shifts for all traits in \code{x} must be provided with possibility to pass
 #'  a \code{NULL} list node to skip the conversion for the trait (see examples).
-#' @details If input trait is normal (Gaussian) then this function generates
+#' @details If the input trait is normal (Gaussian) then this function generates
 #'   a log-normal trait by applying exponential link function on the input.
 #'   No sampling happens in this function, which makes it deterministic.
 #'
@@ -347,9 +359,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
 #'
 #'   The name \code{meanLogShift} is used to emphasize that this argument
 #'   is an additional mean shift applied during transformation, not the
-#'   primary way to set the latent trait mean. In normal AlphaSimR workflow,
+#'   primary way to set the latent trait mean. In a normal AlphaSimR workflow,
 #'   the latent mean is usually already set via
-#'   \code{SP$addTrait*(..., mean = ...)} in founding population and
+#'   \code{SP$addTrait*(..., mean = ...)} in the founding population and
 #'   \code{meanLogShift} should be left at its default unless an extra
 #'   transformation-specific shift on the latent (log) scale is needed.
 #'   One example is to control the mean of the observed values as shown below.
@@ -488,7 +500,7 @@ asLogNormal <- function(x, meanLogShift = NULL) {
 #' @param var numeric, assumed latent variance(s) of \code{x}; used only when
 #'   \code{p} is given to convert category probabilities to thresholds.
 #'   See also details.
-#' @param threshold \code{NULL}, numeric or, list, when numeric, provide
+#' @param threshold \code{NULL}, numeric, or list, when numeric, provide
 #'   a vector of category thresholds to convert continuous values into for
 #'   a single trait (the thresholds specify left-closed and right-opened
 #'   intervals [t1, t2), which can be changed with \code{include.lowest}
@@ -502,14 +514,14 @@ asLogNormal <- function(x, meanLogShift = NULL) {
 #'   differently than individuals close to the "average".
 #' @param include.lowest logical, see \code{\link{cut}}.
 #' @param right logical, see \code{\link{cut}}.
-#' @details If input trait is normal (Gaussian) then this function generates a
+#' @details If the input trait is normal (Gaussian) then this function generates a
 #'   categorical trait according to the ordered probit model.
 #'   No sampling happens in this function, which makes it deterministic.
 #'
 #'   When \code{p} is used, \code{mean} and \code{var} describe the latent
 #'   distribution of \code{x} and are used only to derive thresholds.
-#'   In normal AlphaSimR workflow, this latent mean and variance are usually
-#'   set via \code{SP$addTrait*(..., mean = ..., var = ...)} in founding
+#'   In a normal AlphaSimR workflow, this latent mean and variance are usually
+#'   set via \code{SP$addTrait*(..., mean = ..., var = ...)} in the founding
 #'   population and \code{SP$setVarE}. \code{p} or \code{threshold} values
 #'   should be established at the start of simulation and kept constant
 #'   for most use cases.
@@ -664,7 +676,7 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
 #'   pass a \code{NULL} list node to skip the conversion for a trait
 #'   (see examples).
 #' @return matrix of values with some traits recoded as counts
-#' @details If input trait is normal (Gaussian) then this function generates a
+#' @details If the input trait is normal (Gaussian) then this function generates a
 #'   count trait by sampling from the Poisson generalized linear model.
 #'   As such, this function's output is stochastic.
 #' 
@@ -685,9 +697,9 @@ asCategorical = function(x, p = NULL, mean = 0, var = 1,
 #' 
 #'   The name \code{meanLogShift} is used to emphasize that this argument
 #'   is an additional shift applied during transformation, not the primary
-#'   way to set the latent trait mean. In normal AlphaSimR workflow, the
+#'   way to set the latent trait mean. In a normal AlphaSimR workflow, the
 #'   latent mean and variance are usually already set via
-#'   \code{SP$addTrait*(..., mean = ..., var = ...)} in founding population
+#'   \code{SP$addTrait*(..., mean = ..., var = ...)} in the founding population
 #'   and \code{SP$setVarE}. Hence, \code{meanLogShift} should be left at
 #'   its default unless an extra transformation-specific shift is needed.
 #'   One example is to control the mean of the observed values as shown below.

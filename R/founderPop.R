@@ -107,17 +107,17 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' @param manualCommand user provided MaCS options. For advanced users only.
 #' @param manualGenLen user provided genetic length. This must be supplied if using
 #' manualCommand. If not using manualCommand, this value will replace the predefined
-#' genetic length for the species. However, this the genetic length is only used by
+#' genetic length for the species. However, this genetic length is only used by
 #' AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length.
 #' For advanced users only.
 #' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel.
 #' If the value is NULL, the number of threads is automatically detected.
 #'
 #' @details
-#' There are currently three species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
+#' There are currently four species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
 #'
 #' The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and
-#' models a population with an effective populations size that has gone through several historic
+#' models a population with an effective population size that has gone through several historic
 #' bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}}
 #' function, so the user should examine this function for the details of how the species is modeled.
 #'

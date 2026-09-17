@@ -24,7 +24,7 @@ matrix of values with some traits recoded as counts
 Convert a normal (Gaussian) trait to a count (Poisson) trait
 }
 \details{
-If input trait is normal (Gaussian) then this function generates a
+If the input trait is normal (Gaussian) then this function generates a
   count trait by sampling from the Poisson generalized linear model.
   As such, this function's output is stochastic.
 
@@ -45,9 +45,9 @@ If input trait is normal (Gaussian) then this function generates a
 
   The name \code{meanLogShift} is used to emphasize that this argument
   is an additional shift applied during transformation, not the primary
-  way to set the latent trait mean. In normal AlphaSimR workflow, the
+  way to set the latent trait mean. In a normal AlphaSimR workflow, the
   latent mean and variance are usually already set via
-  \code{SP$addTrait*(..., mean = ..., var = ...)} in founding population
+  \code{SP$addTrait*(..., mean = ..., var = ...)} in the founding population
   and \code{SP$setVarE}. Hence, \code{meanLogShift} should be left at
   its default unless an extra transformation-specific shift is needed.
   One example is to control the mean of the observed values as shown below.

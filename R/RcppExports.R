@@ -70,7 +70,7 @@ solveRRBLUP2 <- function(y, X, M) {
 #' @param X a matrix with n rows and x columns
 #' @param M a matrix with n rows and m columns
 #' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #'
 #' @export
 solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
@@ -163,7 +163,7 @@ solveRRBLUP_EM2 <- function(Y, X, M1, M2, Vu1, Vu2, Ve, tol, maxIter, useEM) {
 #' @param M3 a matrix with n rows and m3 columns
 #' @param Vu1 initial guess for variance of the first marker effects
 #' @param Vu2 initial guess for variance of the second marker effects
-#' @param Vu3 initial guess for variance of the second marker effects
+#' @param Vu3 initial guess for variance of the third marker effects
 #' @param Ve initial guess for error variance
 #' @param tol tolerance for declaring convergence
 #' @param maxIter maximum iteration for attempting convergence
@@ -240,7 +240,7 @@ solveUVM <- function(y, X, Z, K) {
 #' @param Z a matrix with n rows and m columns
 #' @param K a matrix with m rows and m columns
 #' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #'
 #' @export
 solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
@@ -256,7 +256,7 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
 #' @param X a matrix with n rows and x columns
 #' @param Zlist a list of Z matrices
 #' @param Klist a list of K matrices
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #' @param tol tolerance for convergence
 #'
 #' @export

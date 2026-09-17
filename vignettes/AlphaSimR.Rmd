@@ -59,7 +59,7 @@ SP$addTraitA(nQtlPerChr=1000)
 
 The 'A' at the end of `SP$addTraitA` indicates that the trait's QTL only have additive effects. All traits in AlphaSimR will include additive effects. Traits may also include any combination of three additional types of effects: dominance ("D"), epistasis ("E"), and genotype-by-environment ("G"). A specific combination of trait effects is requested by using a function with the appropriate letter ending. For example, a trait with additive and epistasis effects can be requested using `SP$addTraitAE`. The following trait types are currently offered: "A", "AD", "AE", "AG", "ADE", "ADG", "AEG", and "ADEG".
 
-The final line of code defines how sexes are determined in the simulation. Sex will be systematically assigned (i.e. male, female, male, ...). Systematic assignment is used to ensure that there is always equal numbers of males and females.
+The final line of code defines how sexes are determined in the simulation. Sex will be systematically assigned (i.e. male, female, male, ...). Systematic assignment is used to ensure that there are always equal numbers of males and females.
 
 ```{r eval=FALSE}
 SP$setSexes("yes_sys")
@@ -72,9 +72,9 @@ We are now ready to start modeling the breeding program. To begin, we need to ge
 ```{r eval=FALSE}
 pop = newPop(founderPop)
 ```
-A `Pop-class` object represents a population of individuals. A population is the most important units in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations.
+A `Pop-class` object represents a population of individuals. A population is the most important unit in AlphaSimR, because most AlphaSimR functions use one or more populations as an argument. In this regard, AlphaSimR can be thought of as modeling discrete populations as its basic unit. This contrasts with its predecessor, which used discrete generations.
 
-Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in AlphaSimR that lacks a built-in function. However, the example breeding program presented here is easily modeled using built-in functions.
+Populations are not a fixed unit in AlphaSimR. Many functions in AlphaSimR take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in AlphaSimR that lack a built-in function. However, the example breeding program presented here is easily modeled using built-in functions.
 
 Before continuing to model the breeding program, you should first think about the data you’ll need for examining the results in the next stage. This is because you must expressly request that the relevant data is saved. AlphaSimR is designed this way for increased speed and reduced memory usage.
 
@@ -84,7 +84,7 @@ In this example a plot of the generation mean over time is desired. All that is 
 genMean = meanG(pop)
 ```
 
-The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate function in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively.
+The final lines of code are for modeling 20 generations of selection and mating. AlphaSimR has a host of functions for modeling both selection and mating. In this example the `selectCross` function is used, because it efficiently combines both selection and mating in a single function call. The function itself actually uses two separate functions in AlphaSimR, `selectInd` and `randCross` for selection and mating, respectively.
 
 To model multiple generations of selection, the function call is placed within a loop with a line of code for tracking the population mean. Using a loop makes code easier to read and avoids needless duplication. In this loop “pop” is overwritten in each generation. Doing this keeps memory usage low and keeps the code simple. However, if the user needed to retain older populations there are several alternative approaches that could be adopted. These approaches include giving each population a unique name, storing populations as elements in a list, or dynamically growing populations with `c()`. The code for the loop is given below.
 

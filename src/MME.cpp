@@ -636,7 +636,7 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param M a matrix with n rows and m columns
 //' @param tol tolerance for convergence
-//' @param maxIter maximum number of iteration
+//' @param maxIter maximum number of iterations
 //'
 //' @export
 // [[Rcpp::export]]
@@ -1133,7 +1133,7 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
 //' @param M3 a matrix with n rows and m3 columns
 //' @param Vu1 initial guess for variance of the first marker effects
 //' @param Vu2 initial guess for variance of the second marker effects
-//' @param Vu3 initial guess for variance of the second marker effects
+//' @param Vu3 initial guess for variance of the third marker effects
 //' @param Ve initial guess for error variance
 //' @param tol tolerance for declaring convergence
 //' @param maxIter maximum iteration for attempting convergence
@@ -1789,7 +1789,7 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x,
     for(arma::uword i=0; i<M.n_rows; ++i){
       freq(M(i,j)) += 1;
     }
-    if(any(freq == M.n_cols)){
+    if(any(freq == M.n_rows)){
       fixed(j) = 1;
     }else{
       fixed(j) = 0;
@@ -2226,7 +2226,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 //' @param Z a matrix with n rows and m columns
 //' @param K a matrix with m rows and m columns
 //' @param tol tolerance for convergence
-//' @param maxIter maximum number of iteration
+//' @param maxIter maximum number of iterations
 //'
 //' @export
 // [[Rcpp::export]]
@@ -2326,7 +2326,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
 //' @param X a matrix with n rows and x columns
 //' @param Zlist a list of Z matrices
 //' @param Klist a list of K matrices
-//' @param maxIter maximum number of iteration
+//' @param maxIter maximum number of iterations
 //' @param tol tolerance for convergence
 //'
 //' @export

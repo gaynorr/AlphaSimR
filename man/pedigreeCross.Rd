@@ -22,7 +22,7 @@ pedigreeCross(
 \item{founderPop}{a \code{\link{Pop-class}}}
 
 \item{id}{a vector of unique identifiers for individuals
-in the pedigree. The values of these IDs are seperate from
+in the pedigree. The values of these IDs are separate from
 the IDs in the founderPop if matchID=FALSE.}
 
 \item{mother}{a vector of identifiers for the mothers
@@ -46,7 +46,7 @@ should be made a doubled haploid.}
 individual should be selfed.}
 
 \item{useFemale}{If creating DH lines, should female recombination
-rates be used. This parameter has no effect if, recombRatio=1.}
+rates be used. This parameter has no effect if recombRatio=1.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the

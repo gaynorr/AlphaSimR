@@ -37,7 +37,7 @@ value of NULL results in all sites being retained.}
 
 \item{manualGenLen}{user provided genetic length. This must be supplied if using
 manualCommand. If not using manualCommand, this value will replace the predefined
-genetic length for the species. However, this the genetic length is only used by
+genetic length for the species. However, this genetic length is only used by
 AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length.
 For advanced users only.}
 
@@ -52,10 +52,10 @@ Uses the MaCS software to produce founder haplotypes
 \insertCite{MaCS}{AlphaSimR}.
 }
 \details{
-There are currently three species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
+There are currently four species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
 
 The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and
-models a population with an effective populations size that has gone through several historic
+models a population with an effective population size that has gone through several historic
 bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}}
 function, so the user should examine this function for the details of how the species is modeled.
 

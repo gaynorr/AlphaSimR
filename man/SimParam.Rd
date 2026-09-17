@@ -9,7 +9,7 @@ as SP will allow it to be accessed by function defaults.
 }
 \note{
 By default the founder population is the population used to
-initalize the SimParam object. This population can be changed by
+initialize the SimParam object. This population can be changed by
 replacing the population in the founderPop slot. You must run
 \code{\link{resetPop}} on any existing populations to obtain the
 new trait values.
@@ -374,7 +374,7 @@ for setup details.}
 
     \item{\code{sexes}}{sexes used for mating}
 
-    \item{\code{sepMap}}{are there seperate genetic maps for
+    \item{\code{sepMap}}{are there separate genetic maps for
 males and females}
 
     \item{\code{genMap}}{list of chromosome genetic maps}
@@ -385,7 +385,7 @@ females}
     \item{\code{maleMap}}{list of chromosome genetic maps for
 males}
 
-    \item{\code{centromere}}{position of centromeres genetic map}
+    \item{\code{centromere}}{position of centromeres on genetic map}
 
     \item{\code{femaleCentromere}}{position of centromeres on female
 genetic map}
@@ -652,9 +652,9 @@ available when running addTrait and or addSnpChip functions.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{minQtlPerChr}}{the minimum number of segregating sites for
-QTLs. Can be a single value or a vector values for each chromosome.}
+QTLs. Can be a single value or a vector of values for each chromosome.}
       \item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
-Can be a single value or a vector values for each chromosome.}
+Can be a single value or a vector of values for each chromosome.}
       \item{\code{excludeQtl}}{an optional vector of segregating site names to
 exclude from consideration as a viable QTL.}
       \item{\code{excludeSnp}}{an optional vector of segregating site names to
@@ -683,7 +683,7 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 \if{latex}{\out{\hypertarget{method-SimParam-setSexes}{}}}
 \subsection{\code{SimParam$setSexes()}}{
   Changes how sexes are determined in the simulation.
-The default sexes is "no", indicating all individuals are hermaphrodites.
+The default value is "no", indicating all individuals are hermaphrodites.
 To add sexes to the simulation, run this function with "yes_sys" or
 "yes_rand". The value "yes_sys" will systematically assign
 sexes to newly created individuals as first male and then female.
@@ -698,7 +698,7 @@ individual.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{sexes}}{acceptable value are "no", "yes_sys", or
+      \item{\code{sexes}}{acceptable values are "no", "yes_sys", or
 "yes_rand"}
       \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -1008,11 +1008,11 @@ The mean and additive genetic variance will always be achieved exactly. The
 function attempts to achieve the desired dominance variance and inbreeding
 depression while staying within the user supplied constraints for the
 acceptable range of dominance degree mean and variance. If the desired values
-are not being achieved, the acceptable range need to be increased and/or the
-number of QTL may need to be increased. There are not limits to setting the
-range for dominance degree mean and variance, but care should be taken to
-with regards to the biological feasibility of the limits that are supplied.
-The default limits were somewhat arbitrarily set, so I make not claim to
+are not being achieved, the acceptable range needs to be increased and/or the
+number of QTL may need to be increased. There are no limits to setting the
+range for dominance degree mean and variance, but care should be taken
+with regard to the biological feasibility of the limits that are supplied.
+The default limits were somewhat arbitrarily set, so I make no claim as to
 how reasonable these limits are for routine use.
 
 Inbreeding depression in this function is defined as the difference in mean
@@ -1532,7 +1532,7 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{traitPos}}{an integer indicate which trait to switch}
+      \item{\code{traitPos}}{an integer indicating which trait to switch}
       \item{\code{lociMap}}{a new object descended from
 \code{\link{LociMap-class}}}
       \item{\code{varE}}{default error variance for phenotype, optional}
@@ -1570,11 +1570,11 @@ ignored. Only set to TRUE if you know what you are doing}
 \if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{\code{SimParam$setVarE()}}{
-  Defines a default values for error
+  Defines default values for error
 variances used in \code{\link{setPheno}}. These defaults
 will be used to automatically generate phenotypes when new
 populations are created. See the details section of \code{\link{setPheno}}
-for more information about each arguments and how they
+for more information about each argument and how they
 should be used.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
@@ -1710,7 +1710,7 @@ under the assumption of equivalent recombination landscapes.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{femaleRatio}}{relative ratio of recombination in females compared to
-males. A value of 2 indicate twice as much recombination in females. The
+males. A value of 2 indicates twice as much recombination in females. The
 value must be greater than 0. (default is 1)}
     }
     \if{html}{\out{</div>}}
@@ -1745,7 +1745,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 numeric vectors for the position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
+positions. If NULL, the centromeres are assumed to
 be metacentric.}
     }
     \if{html}{\out{</div>}}
@@ -1769,7 +1769,7 @@ be metacentric.}
 numeric vectors for the position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
+positions. If NULL, the centromeres are assumed to
 be metacentric.}
     }
     \if{html}{\out{</div>}}
@@ -1793,7 +1793,7 @@ be metacentric.}
 numeric vectors for the position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
+positions. If NULL, the centromeres are assumed to
 be metacentric.}
     }
     \if{html}{\out{</div>}}

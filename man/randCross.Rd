@@ -43,7 +43,7 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross}} that randomly
-selects parental combinations for all possible combinantions.
+selects parental combinations for all possible combinations.
 }
 \examples{
 #Create founder haplotypes

@@ -21,13 +21,43 @@ convertTraitsToNames = function(traits, simParam=NULL){
     if(any(is.na(take))){
       stop("'",traits[is.na(take)],"' did not match any trait names")
     }
-    traits = take
+    # The function returns names, so a validated name is returned as it
+    # stands rather than as the index it happened to match.
+    traits = simParam$traitNames[take]
   }else if(is.function(traits)){
     traits = "Custom Function"
   }else{
     traits = simParam$traitNames[traits]
   }
   return(traits)
+}
+
+#' @title Convert traits to indices
+#'
+#' @description Returns the position of each trait within the SimParam, or
+#' NULL when the response is a custom function and so has no trait behind
+#' it. Vectors such as varA and varE are unnamed and indexed by position,
+#' so they need this rather than \code{convertTraitsToNames}.
+#'
+#' @param traits an integer, a character or a function
+#' @param simParam an object of class \code{\link{SimParam}}
+#'
+#' @keywords internal
+convertTraitsToIndex = function(traits, simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(is.function(traits)){
+    return(NULL)
+  }
+  if(is.character(traits)){
+    take = match(traits, simParam$traitNames)
+    if(any(is.na(take))){
+      stop("'",traits[is.na(take)],"' did not match any trait names")
+    }
+    return(take)
+  }
+  return(as.integer(traits))
 }
 
 #' @title Fast RR-BLUP
@@ -422,6 +452,9 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
 
+  # varA and varE are unnamed and indexed by position, so the numeric
+  # index is taken before traits is replaced by its name.
+  traitIndex = convertTraitsToIndex(traits, simParam)
   traits = convertTraitsToNames(traits, simParam)
 
   fixEff = as.integer(factor(pop@fixEff))
@@ -437,7 +470,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   # Sort out Vu and Ve
-  if(is.function(traits)){
+  if(is.null(traitIndex)){
     if(is.null(Vu)){
       Vu = var(y)/nLoci
     }
@@ -447,13 +480,13 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     stopifnot(length(traits)==1)
     if(is.null(Vu)){
-      Vu = 2*simParam$varA[traits]/nLoci
+      Vu = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(Vu)){
         Vu = var(y)/nLoci
       }
     }
     if(is.null(Ve)){
-      Ve = simParam$varE[traits]
+      Ve = simParam$varE[traitIndex]
       if(is.na(Ve)){
         Ve = var(y)/2
       }
@@ -679,6 +712,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
 
+  # varA and varE are unnamed and indexed by position, so the numeric
+  # index is taken before traits is replaced by its name.
+  traitIndex = convertTraitsToIndex(traits, simParam)
   traits = convertTraitsToNames(traits, simParam)
 
   fixEff = as.integer(factor(pop@fixEff))
@@ -694,7 +730,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   # Sort out Va, Vd and Ve
-  if(is.function(traits)){
+  if(is.null(traitIndex)){
     if(is.null(Va)){
       Va = var(y)/nLoci
     }
@@ -707,19 +743,19 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     stopifnot(length(traits)==1)
     if(is.null(Va)){
-      Va = 2*simParam$varA[traits]/nLoci
+      Va = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(Va)){
         Va = var(y)/nLoci
       }
     }
     if(is.null(Vd)){
-      Vd = 2*simParam$varA[traits]/nLoci
+      Vd = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(Vd)){
         Vd = var(y)/nLoci
       }
     }
     if(is.null(Ve)){
-      Ve = simParam$varE[traits]
+      Ve = simParam$varE[traitIndex]
       if(is.na(Ve)){
         Ve = var(y)/2
       }
@@ -763,7 +799,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP GCA Model
 #'
 #' @description
-#' Fits an RR-BLUP model that estimates seperate marker effects for
+#' Fits an RR-BLUP model that estimates separate marker effects for
 #' females and males. Useful for predicting GCA of parents
 #' in single cross hybrids. Can also predict performance of specific
 #' single cross hybrids.
@@ -883,7 +919,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP GCA Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model that estimates seperate marker effects for
+#' Fits an RR-BLUP model that estimates separate marker effects for
 #' females and males. This implementation is meant for situations where
 #' \code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2
 #' is only faster in certain situations. Most users should use
@@ -955,6 +991,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
 
+  # varA and varE are unnamed and indexed by position, so the numeric
+  # index is taken before traits is replaced by its name.
+  traitIndex = convertTraitsToIndex(traits, simParam)
   traits = convertTraitsToNames(traits, simParam)
 
   fixEff = as.integer(factor(pop@fixEff))
@@ -970,7 +1009,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   # Sort out VuF, VuM and Ve
-  if(is.function(traits)){
+  if(is.null(traitIndex)){
     if(is.null(VuF)){
       VuF = var(y)/nLoci
     }
@@ -983,19 +1022,19 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     stopifnot(length(traits)==1)
     if(is.null(VuF)){
-      VuF = 2*simParam$varA[traits]/nLoci
+      VuF = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuF)){
         VuF = var(y)/nLoci
       }
     }
     if(is.null(VuM)){
-      VuM = 2*simParam$varA[traits]/nLoci
+      VuM = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuM)){
         VuM = var(y)/nLoci
       }
     }
     if(is.null(Ve)){
-      Ve = simParam$varE[traits]
+      Ve = simParam$varE[traitIndex]
       if(is.na(Ve)){
         Ve = var(y)/2
       }
@@ -1049,7 +1088,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP SCA Model
 #'
 #' @description
-#' An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects.
+#' An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
 #' Note that we have not seen any consistent benefit of this model over
 #' \code{\link{RRBLUP_GCA}}.
 #'
@@ -1169,7 +1208,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP SCA Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model that estimates seperate additive effects for
+#' Fits an RR-BLUP model that estimates separate additive effects for
 #' females and males and a dominance effect. This implementation is meant
 #' for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that
 #' RRBLUP_SCA2 is only faster in certain situations. Most users should use
@@ -1243,6 +1282,9 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
 
+  # varA and varE are unnamed and indexed by position, so the numeric
+  # index is taken before traits is replaced by its name.
+  traitIndex = convertTraitsToIndex(traits, simParam)
   traits = convertTraitsToNames(traits, simParam)
 
   fixEff = as.integer(factor(pop@fixEff))
@@ -1258,7 +1300,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   # Sort out VuF, VuM, VuD and Ve
-  if(is.function(traits)){
+  if(is.null(traitIndex)){
     if(is.null(VuF)){
       VuF = var(y)/nLoci
     }
@@ -1274,25 +1316,25 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     stopifnot(length(traits)==1)
     if(is.null(VuF)){
-      VuF = 2*simParam$varA[traits]/nLoci
+      VuF = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuF)){
         VuF = var(y)/nLoci
       }
     }
     if(is.null(VuM)){
-      VuM = 2*simParam$varA[traits]/nLoci
+      VuM = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuM)){
         VuM = var(y)/nLoci
       }
     }
     if(is.null(VuD)){
-      VuD = simParam$varA[traits]/nLoci
+      VuD = simParam$varA[traitIndex]/nLoci
       if(is.na(VuD)){
         VuD = var(y)/nLoci/2
       }
     }
     if(is.null(Ve)){
-      Ve = simParam$varE[traits]
+      Ve = simParam$varE[traitIndex]
       if(is.na(Ve)){
         Ve = var(y)/2
       }
@@ -1346,8 +1388,8 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title Set estimated breeding values (EBV)
 #'
 #' @description
-#' Adds genomic estimated values to a populations's EBV
-#' slot using output from a genomic selection functions.
+#' Adds genomic estimated values to a population's EBV
+#' slot using output from a genomic selection function.
 #' The genomic estimated values can be either estimated
 #' breeding values, estimated genetic values, or
 #' estimated general combining values.

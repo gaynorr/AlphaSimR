@@ -45,7 +45,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model that estimates seperate marker effects for
+Fits an RR-BLUP model that estimates separate marker effects for
 females and males. Useful for predicting GCA of parents
 in single cross hybrids. Can also predict performance of specific
 single cross hybrids.

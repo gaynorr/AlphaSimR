@@ -13,7 +13,7 @@ sampAddEff(qtlLoci, nTraits, corr, gamma, shape)
 
 \item{corr}{correlation between traits}
 
-\item{gamma}{indicator of trait should use a gamma distribution}
+\item{gamma}{indicator of whether trait should use a gamma distribution}
 
 \item{shape}{gamma distribution shape parameter}
 }

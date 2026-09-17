@@ -378,7 +378,7 @@ round(c(varA_before = before$varA[1,1],
 
 The dominance model requires special comment for autopolyploids, because
 a polyploid locus has more genotypes than a fully specified dominance
-model can be fitted with from a single parameter.
+model can describe with a single parameter.
 
 A diploid locus has one heterozygous genotype, and a single dominance
 effect $d$ describes it completely. An autotetraploid locus has three

@@ -639,27 +639,27 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 
   vector<AlphaSimRReturn> toRet;
 
-  try {
-    RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
-    for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
-      GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
-      graphBuilder.build();
-      graphBuilder.printHaplotypes();
-      // Move the sites out rather than copying them. They are the bulk of
-      // what the simulation produces, so copying them doubled peak memory.
-      vector<AlphaSimRReturn> & tmp = graphBuilder.getMutations();
-      if (toRet.empty()) {
-        toRet = std::move(tmp);
-      } else {
-        toRet.reserve(toRet.size()+tmp.size());
-        toRet.insert(toRet.end(),
-                     std::make_move_iterator(tmp.begin()),
-                     std::make_move_iterator(tmp.end()));
-      }
+  // The generator is owned by a unique_ptr so that it is released when the
+  // simulation throws. The exception itself is left to propagate: MaCS()
+  // catches it outside the OpenMP region and turns it into an R error there.
+  // Swallowing it here used to report the failure as "no segregating sites".
+  std::unique_ptr<RandNumGenerator> rg(
+    new RandNumGenerator(pConfig->iRandomSeed));
+  for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
+    GraphBuilder graphBuilder = GraphBuilder(pConfig, rg.get());
+    graphBuilder.build();
+    graphBuilder.printHaplotypes();
+    // Move the sites out rather than copying them. They are the bulk of
+    // what the simulation produces, so copying them doubled peak memory.
+    vector<AlphaSimRReturn> & tmp = graphBuilder.getMutations();
+    if (toRet.empty()) {
+      toRet = std::move(tmp);
+    } else {
+      toRet.reserve(toRet.size()+tmp.size());
+      toRet.insert(toRet.end(),
+                   std::make_move_iterator(tmp.begin()),
+                   std::make_move_iterator(tmp.end()));
     }
-    delete rg;
-  } catch (const char *message) {
-    Rcpp::Rcerr << "Simulator caught exception with message:" << endl << message << endl;
   }
   return  toRet;
 }
@@ -771,6 +771,13 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   // OpenMP region is not safe.
   arma::uvec noSites(nChr, arma::fill::zeros);
 
+  // Chromosomes whose simulation threw. An exception must not leave the
+  // structured block of an OpenMP region, and calling into R from a worker
+  // thread is not safe either, so the failure is recorded here and raised
+  // after the loop in the same way as noSites.
+  arma::uvec failed(nChr, arma::fill::zeros);
+  std::vector<std::string> failMsg(nChr);
+
   //Loop through chromosomes
   //Chromosomes take different amounts of time to simulate, depending on
   //their length and on how many sites are kept, so the work is handed out
@@ -782,8 +789,24 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     // Run MaCS with the chromosome-specific seed and subsample sites with same seed
     vector<AlphaSimRReturn> macsOutput;
     std::string seedString = std::to_string(static_cast<unsigned long long>(seed[chr]));
-    macsOutput = runFromAlphaSimR(argsString + seedString,
-                                  static_cast<unsigned int>(maxSites(chr)));
+    try{
+      macsOutput = runFromAlphaSimR(argsString + seedString,
+                                    static_cast<unsigned int>(maxSites(chr)));
+    }catch(const char *message){
+      failed(chr) = 1;
+      failMsg[chr] = std::string(message);
+    }catch(std::exception &e){
+      failed(chr) = 1;
+      failMsg[chr] = std::string(e.what());
+    }catch(...){
+      failed(chr) = 1;
+      failMsg[chr] = std::string("unknown error");
+    }
+    if(failed(chr)){
+      geno(chr).set_size(0,ploidy,0);
+      genMap(chr).set_size(0);
+      continue;
+    }
     
     arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
@@ -894,6 +917,12 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
         grp = grp%ploidy; 
       }
     }
+  }
+  if(arma::any(failed)){
+    arma::uvec badChr = arma::find(failed);
+    Rcpp::stop("MaCS failed for chromosome " +
+               std::to_string(static_cast<unsigned long long>(badChr(0)+1)) +
+               ": " + failMsg[badChr(0)]);
   }
   if(arma::any(noSites)){
     arma::uvec badChr = arma::find(noSites);

@@ -75,9 +75,12 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
   arma::Mat<int> output(sum(nRow),nCol);
   arma::uword start=0, end=0;
   for(arma::uword i=0; i<nRow.n_elem; i++){
-    if(nRow(i)>0){
-      end += nRow(i)-1;
+    // A block with no rows contributes nothing. Without this the assignment
+    // below would copy a zero-row matrix into a one-row span.
+    if(nRow(i)==0){
+      continue;
     }
+    end += nRow(i)-1;
     output.rows(start,end) = X(i);
     start += nRow(i);
     end = start;

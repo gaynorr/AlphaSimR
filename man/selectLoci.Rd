@@ -18,6 +18,6 @@ a list with lociPerChr and lociLoc
 }
 \description{
 This function alters the lociPerChr and lociLoc vectors to reflect 
-only loci on a specific chromosomes.
+only loci on specific chromosomes.
 }
 \keyword{internal}

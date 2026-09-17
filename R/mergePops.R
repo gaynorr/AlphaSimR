@@ -100,12 +100,16 @@ mergePops = function(popList){
                          function(x) x@fixEff))
 
   #misc
-  tmp = sapply(popList, function(x) length(x@misc))
-  if(!all(tmp == tmp[1])) {
+  # vapply rather than sapply, which returns a list for an empty popList,
+  # and the count is held separately because tmp is reused for the names
+  # below. Unnamed misc entries have NULL names, so taking the count from
+  # the names dropped every unnamed misc element.
+  nMisc = vapply(popList, function(x) length(x@misc), integer(1))
+  if(!all(nMisc == nMisc[1])) {
     warning("number of misc elements differs - setting misc to an empty list!")
     misc = list()
   } else {
-    if(tmp[1]>0) {
+    if(nMisc[1]>0) {
       tmp = lapply(popList, function(x) names(x@misc))
       allMatch = TRUE
       if(length(tmp)>1){
@@ -117,8 +121,8 @@ mergePops = function(popList){
         }
       }
       if(allMatch){
-        misc = vector("list", length=length(tmp[[1]]))
-        for(i in seq_len(length(tmp[[1]]))){
+        misc = vector("list", length=nMisc[1])
+        for(i in seq_len(nMisc[1])){
           miscTmp = lapply(popList, function(x) x@misc[[i]])
           if (is.matrix(miscTmp[[1]])) {
             misc[[i]] = do.call("rbind", miscTmp)
@@ -153,6 +157,15 @@ mergePops = function(popList){
   nInd = do.call("c",lapply(popList,
                             function(x) x@nInd))
 
+  # Populations with no individuals contribute no rows, so any check that
+  # looks at content rather than structure has to read the populations that
+  # actually contribute. Reading popList[[1]] unconditionally got the wrong
+  # answer whenever the first population was empty.
+  contrib = which(nInd>0)
+  if(length(contrib)==0L){
+    contrib = seq_len(length(popList))
+  }
+
   #gv
   gv = do.call("rbind",lapply(popList,
                               function(x) x@gv))
@@ -177,7 +190,10 @@ mergePops = function(popList){
   if(nTraits>=1){
     gxe = vector("list",length=nTraits)
     for(trait in seq_len(nTraits)){
-      if(!is.null(popList[[1]]@gxe[[trait]])){
+      hasGxe = any(vapply(popList[contrib],
+                          function(x) !is.null(x@gxe[[trait]]),
+                          logical(1)))
+      if(hasGxe){
         tmp = lapply(popList,function(x) x@gxe[[trait]])
         tmp = do.call("c",tmp)
         gxe[[trait]] = tmp
@@ -313,7 +329,7 @@ flattenMultiPop = function(x, level=1) {
 #'
 #' @param ... \code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
 #'   \code{NULL} values are ignored.
-#' @param level Integer scalar >= 0 to merge at a sepecific level of nesting;
+#' @param level Integer scalar >= 0 to merge at a specific level of nesting;
 #'   see Details.
 #'
 #' @details

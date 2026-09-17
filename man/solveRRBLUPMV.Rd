@@ -13,7 +13,7 @@ solveRRBLUPMV(Y, X, M, maxIter = 1000L, tol = 1e-06)
 
 \item{M}{a matrix with n rows and m columns}
 
-\item{maxIter}{maximum number of iteration}
+\item{maxIter}{maximum number of iterations}
 
 \item{tol}{tolerance for convergence}
 }

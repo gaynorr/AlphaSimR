@@ -22,7 +22,9 @@ limitations under the License.
 #include <vector>
 #include <set>
 #include <list>
+#include <memory>
 #include <queue>
+#include <string>
 //#include<stack>
 #include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>

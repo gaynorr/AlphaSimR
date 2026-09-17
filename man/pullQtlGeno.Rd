@@ -20,7 +20,7 @@ pullQtlGeno(
 QTL genotypes to retrieve.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
-all chromosome are retrieved.}
+all chromosomes are retrieved.}
 
 \item{asRaw}{return in raw (byte) format}
 

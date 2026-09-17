@@ -15,7 +15,7 @@ solveMKM(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-04)
 
 \item{Klist}{a list of K matrices}
 
-\item{maxIter}{maximum number of iteration}
+\item{maxIter}{maximum number of iterations}
 
 \item{tol}{tolerance for convergence}
 }

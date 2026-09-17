@@ -45,7 +45,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects.
+An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
 Note that we have not seen any consistent benefit of this model over
 \code{\link{RRBLUP_GCA}}.
 }

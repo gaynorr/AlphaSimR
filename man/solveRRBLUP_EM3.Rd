@@ -21,7 +21,7 @@ solveRRBLUP_EM3(Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, useEM)
 
 \item{Vu2}{initial guess for variance of the second marker effects}
 
-\item{Vu3}{initial guess for variance of the second marker effects}
+\item{Vu3}{initial guess for variance of the third marker effects}
 
 \item{Ve}{initial guess for error variance}
 

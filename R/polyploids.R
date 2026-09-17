@@ -227,11 +227,11 @@ doubleGenome = function(pop, keepParents=TRUE,
 #' @description
 #' This function is designed to model the pairing of gametes. The male
 #' and female individuals are treated as gametes, so the ploidy of newly 
-#' created individuals will be the sum of it parents.
+#' created individuals will be the sum of its parents.
 #'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
 #' @param males an object of \code{\link{Pop-class}} for male parents.
-#' @param crossPlan a matrix with two column representing
+#' @param crossPlan a matrix with two columns representing
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param simParam an object of class \code{\link{SimParam}}. If

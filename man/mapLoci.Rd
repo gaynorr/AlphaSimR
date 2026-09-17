@@ -13,12 +13,11 @@ mapLoci(markers, genMap)
 genetic map format}
 }
 \value{
-A list containing lociPerChr and lociLoc 
-that can be
+A list containing lociPerChr and lociLoc
 }
 \description{
 Used to generate lociPerChr and lociLoc 
-objects for a set of markers. These objects can be passed 
+objects for a set of markers. These objects can be passed to 
 other functions for pulling genotypes or haplotypes.
 }
 \keyword{internal}

@@ -1,6 +1,6 @@
 #' Returns a vector response from a population
 #'
-#' @param pop an object of class Pop or HybirdPop
+#' @param pop an object of class Pop or HybridPop
 #' @param trait a vector or custom function
 #' @param use a character ("rand", "gv", "ebv", "pheno", or "bv"; 
 #' note that "bv" doesn't work on class HybridPop)
@@ -255,7 +255,7 @@ getFam = function(pop,famType){
 #' @description Selects a subset of nInd individuals from a
 #' population.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating
@@ -383,7 +383,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @description Selects a subset of full-sib families from a
 #' population.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating
@@ -503,7 +503,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' full-sib family within a population. Will return all individuals
 #' from a full-sib family if it has less than or equal to nInd individuals.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating
@@ -625,9 +625,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' This function models selection in an open pollinating
 #' plant population. It allows for varying the percentage of
 #' selfing. The function also provides an option for modeling
-#' selection as occuring before or after pollination.
+#' selection as occurring before or after pollination.
 #'
-#' @param pop and object of \code{\link{Pop-class}}
+#' @param pop an object of \code{\link{Pop-class}}
 #'   or \code{\link{MultiPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
@@ -697,6 +697,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   if(is(pop,"MultiPop")){
     if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
+                      probSelf=probSelf,
                       pollenControl=pollenControl, trait=trait, use=use,
                       selectTop=selectTop, candidates=NULL,
                       simParam=simParam, nThreads=nThreads, ...)
@@ -706,13 +707,17 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                      use=use,sex="B",selectTop=selectTop,
                      returnPop=FALSE,candidates=candidates,
                      simParam=simParam,nThreads=nThreads,...)
+  # selectInd returns at most as many individuals as there are eligible
+  # candidates, which can be fewer than nInd. Everything below indexes
+  # female, so the count has to come from female itself.
+  nInd = length(female)
   nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)
   if(pollenControl){
     male = female
   }else{
-    male = 1:pop@nInd
+    male = seq_len(pop@nInd)
   }
-  crossPlan = lapply(1:nInd,function(x){
+  crossPlan = lapply(seq_len(nInd),function(x){
     male = male[!male==female[x]]
     if(length(male)==1){
       #Account for "convenience" feature of sample when length = 1

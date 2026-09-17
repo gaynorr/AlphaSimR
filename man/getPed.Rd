@@ -12,7 +12,7 @@ getPed(pop)
 \description{
 Returns the population's pedigree as stored in the
 id, mother and father slots. NULL is returned if the
-input population lacks the required.
+input population lacks the required information.
 }
 \examples{
 # Create a founder population

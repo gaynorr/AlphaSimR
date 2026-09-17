@@ -30,7 +30,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 an object of \code{\link{Pop-class}} if
 returnPos=FALSE or a list containing a
 \code{\link{Pop-class}} and a data.frame containing the
-postions of mutations if returnPos=TRUE
+positions of mutations if returnPos=TRUE
 }
 \description{
 Adds random mutations to individuals in a
