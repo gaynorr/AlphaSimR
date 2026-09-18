@@ -5,12 +5,10 @@
 \alias{MultiPop-class}
 \alias{show,MultiPop-method}
 \alias{[,MultiPop-method}
-\alias{[,MultiPop,ANY,ANY,ANY-method}
 \alias{[[,MultiPop-method}
 \alias{$,MultiPop-method}
 \alias{names,MultiPop-method}
 \alias{[<-,MultiPop-method}
-\alias{[<-,MultiPop,ANY,ANY,ANY-method}
 \alias{[[<-,MultiPop-method}
 \alias{$<-,MultiPop-method}
 \alias{names<-,MultiPop-method}
@@ -97,6 +95,7 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 \item{\code{pops}}{list of \code{\link{Pop-class}} or
 \code{MultiPop-class} objects (the latter gives nested structure)}
 }}
+
 \seealso{
 \code{\link{newMultiPop}}, \code{\link{newEmptyMultiPop}},
   and \code{\link{mergeMultiPops}} on how to merge one or more \code{MultiPop}

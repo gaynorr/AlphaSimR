@@ -4,7 +4,6 @@
 \name{HybridPop-class}
 \alias{HybridPop-class}
 \alias{[,HybridPop-method}
-\alias{[,HybridPop,ANY,ANY,ANY-method}
 \alias{c,HybridPop-method}
 \alias{isHybridPop}
 \title{Hybrid population}
@@ -59,3 +58,4 @@ nInd by nTraits.}
 
 \item{\code{gxe}}{list containing GxE slopes for GxE traits}
 }}
+

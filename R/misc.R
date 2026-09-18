@@ -589,7 +589,6 @@ mutateGenome = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
 
   # Number of total sites
   s = sum(pop@nLoci)
-  chromosomeEnds = cumsum(pop@nLoci)
 
   # Number of mutations per haplotype
   nMut = rbinom(nHap, s, mutRate)

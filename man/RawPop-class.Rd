@@ -4,7 +4,6 @@
 \name{RawPop-class}
 \alias{RawPop-class}
 \alias{[,RawPop-method}
-\alias{[,RawPop,ANY,ANY,ANY-method}
 \alias{c,RawPop-method}
 \alias{show,RawPop-method}
 \alias{isRawPop}
@@ -59,3 +58,4 @@ The raw population class contains only genotype data.
 Each element is a three dimensional array of raw values.
 The array dimensions are \code{nLoci} by \code{ploidy} by \code{nInd}.}
 }}
+
