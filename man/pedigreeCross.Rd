@@ -19,19 +19,23 @@ pedigreeCross(
 )
 }
 \arguments{
-\item{founderPop}{a \code{\link{Pop-class}}}
+\item{founderPop}{a \code{\link{Pop-class}}, \code{\link{MapPop-class}}
+or \code{\link{NamedMapPop-class}}. A map population is converted with
+\code{\link{newPop}} before the pedigree is used. Matching on ID needs
+a population that has IDs, so a \code{\link{MapPop-class}} can only be
+used with matchID=FALSE.}
 
 \item{id}{a vector of unique identifiers for individuals
 in the pedigree. The values of these IDs are separate from
 the IDs in the founderPop if matchID=FALSE.}
 
 \item{mother}{a vector of identifiers for the mothers
-of individuals in the pedigree. Must match one of the
-elements in the id vector or they will be treated as unknown.}
+of individuals in the pedigree. See details for the treatment of
+unknown parents.}
 
 \item{father}{a vector of identifiers for the fathers
-of individuals in the pedigree. Must match one of the
-elements in the id vector or they will be treated as unknown.}
+of individuals in the pedigree. See details for the treatment of
+unknown parents.}
 
 \item{matchID}{indicates if the IDs in founderPop should be
 matched to the id argument. See details.}
@@ -58,12 +62,35 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 \description{
 Creates a \code{\link{Pop-class}} from a generic
 pedigree and a set of founder individuals.
+}
+\details{
+An unknown parent is coded as \code{NA}, \code{0} or an empty string.
+Pedigrees may be incomplete in three ways, and each is handled
+differently.
+
+An individual with both parents unknown is a founder. It is taken from
+founderPop whole.
+
+An individual with one parent known and one parent unknown is a half
+founder. The unknown parent is given a founder genome of its own, so a
+pedigree with several half founders needs one extra founder for each of
+them. Two half founders never share a genome.
+
+An individual whose parent is named but has no row of its own in the
+pedigree is looked up in founderPop when matchID=TRUE, which means
+founders do not have to be listed as rows. When matchID=FALSE the name
+cannot be matched to anything, so the parent is treated as unknown and a
+warning is given.
 
 The way in which the user supplied pedigree is used depends on
 the value of matchID. If matchID is TRUE, the IDs in the user
-supplied pedigree are matched against founderNames. If matchID
-is FALSE, founder individuals in the user supplied pedigree are
-randomly sampled from founderPop.
+supplied pedigree are matched against the IDs in founderPop, and
+parents of unknown identity are drawn from the individuals in
+founderPop that the pedigree does not name. A pedigree row that has
+parents may not reuse the ID of a founderPop individual, because the
+pedigree would generate a different individual under a name already in
+use. If matchID is FALSE, founder individuals in the user supplied
+pedigree are randomly sampled from founderPop.
 }
 \examples{
 #Create founder haplotypes
@@ -81,6 +108,16 @@ id = 1:10
 mother = c(0,0,1,3:9)
 father = c(0,0,2,3:9)
 pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
+
+#An incomplete pedigree, with half founders in rows 3 and 4
+founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+pop = newPop(founderPop, simParam=SP)
+id = 1:5
+mother = c(0,0,0,1,1)
+father = c(0,0,2,0,2)
+pop3 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
 }
 \seealso{

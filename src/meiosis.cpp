@@ -1285,19 +1285,30 @@ Rcpp::List cross(
 // [[Rcpp::export]]
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
-    arma::uword nDH, const arma::field<arma::vec>& genMap, 
+    const arma::uvec& nDH, const arma::field<arma::vec>& genMap, 
     double v, double p, bool trackRec, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
+  // nDH holds one value per individual, so an individual's output slices
+  // no longer sit at a fixed stride. They start at the running total of
+  // the individuals before it. The offsets are built once, before the
+  // parallel region, so that every thread can work out its own write
+  // positions without coordinating with any other. Accumulating them as
+  // the loop ran would make the result depend on the thread count.
+  if(nDH.n_elem != nInd){
+    Rcpp::stop("nDH must have one value per individual");
+  }
+  arma::uword nOut = arma::accu(nDH);
+  arma::uvec offset = arma::cumsum(nDH) - nDH;
   //Output data
   // Sized up front so that gametes are written straight into the output
   arma::field<arma::Cube<unsigned char> > output(nChr);
   for(arma::uword chr=0; chr<nChr; ++chr){
-    output(chr).set_size(geno(chr).n_rows,2,nInd*nDH);
+    output(chr).set_size(geno(chr).n_rows,2,nOut);
   }
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd*nDH,nChr,2);
+    hist.setSize(nOut,nChr,2);
   }
   arma::uword nBlocks = countBlocks(nInd);
   arma::uword nWork = nChr*nBlocks;
@@ -1322,7 +1333,8 @@ Rcpp::List createDH2(
     arma::Cube<unsigned char>& tmp = output(chr);
     arma::uvec x = {0,1};
     for(arma::uword ind=indStart; ind<indEnd; ++ind){ //Individual loop
-      for(arma::uword i=0; i<nDH; ++i){ //nDH loop
+      for(arma::uword i=0; i<nDH(ind); ++i){ //nDH loop
+        arma::uword out = offset(ind)+i;
         alphasimrRng::shuffle(x, rng);
         bivalent(geno(chr).slice_colptr(ind, x(0)),
                  geno(chr).slice_colptr(ind, x(1)),
@@ -1330,18 +1342,18 @@ Rcpp::List createDH2(
                  genMap(chr),
                  v,
                  p,
-                 tmp.slice_colptr(i+ind*nDH, 0),
+                 tmp.slice_colptr(out, 0),
                  histMat,
                  rng);
         // Both haplotypes of a doubled haploid are the same gamete
-        std::memcpy(tmp.slice_colptr(i+ind*nDH, 1),
-                    tmp.slice_colptr(i+ind*nDH, 0), nBins);
+        std::memcpy(tmp.slice_colptr(out, 1),
+                    tmp.slice_colptr(out, 0), nBins);
         for(arma::uword j=0; j<2; ++j){ //ploidy loop
           if(trackRec){
             if((x(0)==1) & (j==0)){
               histMat.col(0).transform([](int val){return val%2+1;});
             }
-            hist.addHist(histMat,i+ind*nDH,chr,j);
+            hist.addHist(histMat,out,chr,j);
           }
         } //End ploidy loop
       } //End nDH loop
@@ -1358,22 +1370,42 @@ Rcpp::List createDH2(
 // [[Rcpp::export]]
 Rcpp::List createReducedGenome(
     const arma::field<arma::Cube<unsigned char> >& geno, 
-    arma::uword nProgeny, const arma::field<arma::vec>& genMap, 
+    const arma::uvec& nProgeny, const arma::field<arma::vec>& genMap, 
     double v, double p, bool trackRec, arma::uword ploidy,  
     arma::vec& centromere, double quadProb, int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
+  // nProgeny holds one value per individual. Unlike createDH2 the work
+  // loop below is partitioned over progeny rather than over individuals,
+  // so each output slice has to be able to name its own parent. With a
+  // single value that was ind/nProgeny; with a vector it is a lookup
+  // table, built once before the parallel region so that the answer does
+  // not depend on how the work was divided.
+  if(nProgeny.n_elem != nInd){
+    Rcpp::stop("nProgeny must have one value per individual");
+  }
+  arma::uword nOut = arma::accu(nProgeny);
+  arma::uvec parentOf(nOut);
+  {
+    arma::uword k=0;
+    for(arma::uword i=0; i<nInd; ++i){
+      for(arma::uword j=0; j<nProgeny(i); ++j){
+        parentOf(k) = i;
+        ++k;
+      }
+    }
+  }
   //Output data
   // Sized up front so that gametes are written straight into the output
   arma::field<arma::Cube<unsigned char> > output(nChr);
   for(arma::uword chr=0; chr<nChr; ++chr){
-    output(chr).set_size(geno(chr).n_rows,ploidy/2,nInd*nProgeny);
+    output(chr).set_size(geno(chr).n_rows,ploidy/2,nOut);
   }
   RecHist hist;
   if(trackRec){
-    hist.setSize(nInd*nProgeny,nChr,ploidy/2);
+    hist.setSize(nOut,nChr,ploidy/2);
   }
-  arma::uword nBlocks = countBlocks(nInd*nProgeny);
+  arma::uword nBlocks = countBlocks(nOut);
   arma::uword nWork = nChr*nBlocks;
   if(nWork < static_cast<arma::uword>(nThreads) ){
     nThreads = static_cast<int>(nWork);
@@ -1388,8 +1420,8 @@ Rcpp::List createReducedGenome(
   for(arma::uword work=0; work<nWork; ++work){ //Work loop
     arma::uword chr = work/nBlocks;
     arma::uword block = work%nBlocks;
-    arma::uword indStart = blockStart(nInd*nProgeny, nBlocks, block);
-    arma::uword indEnd = blockStart(nInd*nProgeny, nBlocks, block+1);
+    arma::uword indStart = blockStart(nOut, nBlocks, block);
+    arma::uword indEnd = blockStart(nOut, nBlocks, block+1);
     alphasimrRng::rngEngine& rng = *workRngs[work];
     arma::Mat<int> hist1, hist2;
     arma::uword nBins = geno(chr).n_rows;
@@ -1400,7 +1432,7 @@ Rcpp::List createReducedGenome(
     for(arma::uword ind=indStart; ind<indEnd; ++ind){ //Individual loop
       alphasimrRng::shuffle(x, rng);
       arma::uword progenyChr=0;
-      arma::uword par = ind/nProgeny;
+      arma::uword par = parentOf(ind);
       for(arma::uword y=0; y<ploidy; y+=4){
         if((ploidy-y)>2){
           if(alphasimrRng::runif(rng)>quadProb){

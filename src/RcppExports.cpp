@@ -702,13 +702,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // createDH2
-Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nDH, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, int nThreads);
+Rcpp::List createDH2(const arma::field<arma::Cube<unsigned char> >& geno, const arma::uvec& nDH, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, int nThreads);
 RcppExport SEXP _AlphaSimR_createDH2(SEXP genoSEXP, SEXP nDHSEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP pSEXP, SEXP trackRecSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type nDH(nDHSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type nDH(nDHSEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
     Rcpp::traits::input_parameter< double >::type p(pSEXP);
@@ -719,13 +719,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // createReducedGenome
-Rcpp::List createReducedGenome(const arma::field<arma::Cube<unsigned char> >& geno, arma::uword nProgeny, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, arma::uword ploidy, arma::vec& centromere, double quadProb, int nThreads);
+Rcpp::List createReducedGenome(const arma::field<arma::Cube<unsigned char> >& geno, const arma::uvec& nProgeny, const arma::field<arma::vec>& genMap, double v, double p, bool trackRec, arma::uword ploidy, arma::vec& centromere, double quadProb, int nThreads);
 RcppExport SEXP _AlphaSimR_createReducedGenome(SEXP genoSEXP, SEXP nProgenySEXP, SEXP genMapSEXP, SEXP vSEXP, SEXP pSEXP, SEXP trackRecSEXP, SEXP ploidySEXP, SEXP centromereSEXP, SEXP quadProbSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type nProgeny(nProgenySEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type nProgeny(nProgenySEXP);
     Rcpp::traits::input_parameter< const arma::field<arma::vec>& >::type genMap(genMapSEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
     Rcpp::traits::input_parameter< double >::type p(pSEXP);

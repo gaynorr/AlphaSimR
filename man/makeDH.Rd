@@ -16,7 +16,10 @@ makeDH(
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
 
-\item{nDH}{total number of DH lines per individual}
+\item{nDH}{total number of DH lines per individual. May be a single
+value for all individuals or a vector with values for each individual.
+A value of zero produces no DH lines for that individual, and if no
+individual produces any the function returns an empty population.}
 
 \item{useFemale}{should female recombination rates be used.}
 
