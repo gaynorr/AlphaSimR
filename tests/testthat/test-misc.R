@@ -116,7 +116,7 @@ test_that("mutate resolves unsorted sites across chromosomes", {
   pop = newPop(founderPop, simParam=SP)
   hapBefore = pullSegSiteHaplo(pop, simParam=SP)
 
-  result = mutate(pop, mutRate=1, returnPos=TRUE, simParam=SP)
+  result = mutateGenome(pop, mutRate=1, returnPos=TRUE, simParam=SP)
   hapAfter = pullSegSiteHaplo(result[[1L]], simParam=SP)
 
   expect_equal(unname(hapAfter), unname(1L - hapBefore))

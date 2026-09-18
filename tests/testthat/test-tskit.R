@@ -132,7 +132,7 @@ test_that("genome edits and mutations are represented on samples", {
   expect_gt(as.numeric(editedTs[[1]]$num_mutations()),
             as.numeric(originalTs[[1]]$num_mutations()))
 
-  mutated = mutate(pop, mutRate=1, simParam=SP)
+  mutated = mutateGenome(pop, mutRate=1, simParam=SP)
   mutatedTs = asTreeSequence(mutated, simParam=SP)
   expect_equal(
     as.numeric(mutatedTs[[1]]$num_sites()),
