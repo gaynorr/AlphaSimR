@@ -33,7 +33,7 @@ phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract Pop by index or id
+\item \code{Pop[]}: Extract Pop by index or id
 
 \item \code{c(Pop)}: Combine multiple Pops
 
@@ -64,7 +64,7 @@ gv reflects gv when p=0.5. Dimensions are nInd by nTraits.}
 \item{\code{pheno}}{matrix of phenotypic values. Dimensions are nInd by nTraits.}
 
 \item{\code{ebv}}{matrix of estimated breeding values. Dimensions are nInd rows and
-a variable number of columns. The variable number of columns enable storing
+a variable number of columns. The variable number of columns enables storing
 estimates for different traits and/or for different kinds of values per
 individual (for example, estimated breeding values and estimated genetic
 values, etc.). Column names should be used to distinguish the estimates of
@@ -87,7 +87,7 @@ open slot available for users to store extra information about individuals.}
 population (see example in \code{\link{newPop}}).
 This list is empty unless information is supplied by the user.
 Note that the list is emptied every time the population is subsetted or
-combined because the meta data for old population might not be valid anymore.}
+combined because the meta data for the old population might not be valid anymore.}
 }}
 
 \seealso{

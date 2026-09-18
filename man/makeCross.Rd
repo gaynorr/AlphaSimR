@@ -9,7 +9,7 @@ makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL, nThreads = NULL)
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{crossPlan}{a matrix with two column representing
+\item{crossPlan}{a matrix with two columns representing
 female and male parents. Either integers for the position in
 population or character strings for the IDs.}
 

@@ -91,7 +91,7 @@ test_that("misc_and_miscPop", {
   )
 })
 
-test_that("mutate", {
+test_that("mutateGenome", {
   founderPop = newMapPop(
     list(c(0, 0, 0)),
     list(matrix(c(0, 0, 0, 0, 0, 0), nrow = 2, ncol = 3))
@@ -100,10 +100,10 @@ test_that("mutate", {
   SP$nThreads = 1L
   pop = newPop(founderPop, simParam = SP)
   hapBefore = pullSegSiteHaplo(pop, simParam = SP)
-  pop = mutate(pop, mutRate = 0, simParam = SP)
+  pop = mutateGenome(pop, mutRate = 0, simParam = SP)
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 0)
-  pop = mutate(pop, mutRate = 1, simParam = SP)
+  pop = mutateGenome(pop, mutRate = 1, simParam = SP)
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 6)
 })

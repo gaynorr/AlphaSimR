@@ -33,14 +33,17 @@ setClass("HybridPop",
 
 setValidity("HybridPop",function(object){
   errors = character()
-  if(any(grepl(" ",object@id,fixed=TRUE))){
-    errors = c(errors,"id can not contain spaces")
-  }
-  if(any(grepl(" ",object@mother,fixed=TRUE))){
-    errors = c(errors,"mother can not contain spaces")
-  }
-  if(any(grepl(" ",object@father,fixed=TRUE))){
-    errors = c(errors,"father can not contain spaces")
+  # Read in a single pass, and separately only if that pass finds something
+  if(any(grepl(" ",c(object@id,object@mother,object@father),fixed=TRUE))){
+    if(any(grepl(" ",object@id,fixed=TRUE))){
+      errors = c(errors,"id can not contain spaces")
+    }
+    if(any(grepl(" ",object@mother,fixed=TRUE))){
+      errors = c(errors,"mother can not contain spaces")
+    }
+    if(any(grepl(" ",object@father,fixed=TRUE))){
+      errors = c(errors,"father can not contain spaces")
+    }
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
@@ -79,7 +82,12 @@ setMethod("[",
           signature(x = "HybridPop"),
           function(x, i){
             if(is.character(i)){
-              i = x@id%in%i
+              # match, not %in%: a membership mask returns the population's
+              # own order, collapses duplicates, and ignores unknown ids
+              i = match(i, x@id)
+              if(any(is.na(i))){
+                stop("Trying to select invalid individuals")
+              }
             }
             x@id = x@id[i]
             x@mother = x@mother[i]

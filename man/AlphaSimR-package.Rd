@@ -51,6 +51,7 @@ Other contributors:
   \item Philip Greenspoon (\href{https://orcid.org/0000-0001-6284-7248}{ORCID}) [contributor]
   \item Ros Craddock (\href{https://orcid.org/0009-0004-1578-1580}{ORCID}) [contributor]
   \item Jana Obsteter (\href{https://orcid.org/0000-0003-1511-3916}{ORCID}) [contributor]
+  \item Gary Chen (Author of the bundled MaCS software, see LICENSE.note) [contributor, copyright holder]
 }
 
 }

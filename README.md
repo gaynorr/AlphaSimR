@@ -8,6 +8,8 @@ R CMD checks: [![CRAN](https://cranchecks.info/badges/summary/AlphaSimR?label=CR
 [![R universe](https://gaynorr.r-universe.dev/AlphaSimR/badges/checks?label=R-universe)](https://gaynorr.r-universe.dev/AlphaSimR)
 [![GitHub](https://img.shields.io/github/actions/workflow/status/gaynorr/AlphaSimR/R-CMD-check.yaml?label=GitHub)](https://github.com/gaynorr/AlphaSimR/actions/workflows/R-CMD-check.yaml)
 
+Test coverage: [![Codecov](https://codecov.io/gh/gaynorr/AlphaSimR/branch/master/graph/badge.svg)](https://codecov.io/gh/gaynorr/AlphaSimR)
+
 The successor to the 'AlphaSim' software for breeding program simulation (Faux et al., 2016; https://doi.org/10.3835/plantgenome2016.02.0013). Used for stochastic simulations of breeding programs to the level of DNA sequence for every individual. Contained is a wide range of functions for modeling common tasks in a breeding program, such as selection and crossing. These functions allow for constructing simulations of highly complex plant and animal breeding programs via scripting in the R software environment. Such simulations can be used to evaluate overall breeding program performance and conduct research into breeding program design, such as implementation of genomic selection. Included is the 'Markovian Coalescent Simulator' ('MaCS') for fast simulation of biallelic sequences according to a population demographic history (Chen et al., 2009; https://doi.org/10.1101/gr.083634.108).
 
 ## Publications

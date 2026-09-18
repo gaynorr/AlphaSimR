@@ -1,4 +1,12 @@
-# AlphaSimR 2.1.0.9004
+# AlphaSimR 2.1.0.9006
+
+* Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
+
+* Fixed `SimParam$setRecombRatio` rescaling the centromeres from the sex-specific positions while rescaling the genetic maps from the sex-average. Repeated calls moved the centromeres relative to their maps. Both are now taken from the sex-average.
+
+* Fixed a bug in `reduceGenome` that always used the female centromere positions, even when `useFemale=FALSE` selected the male genetic map.
+
+* Fixed `SimParam$genMap` dropping chromosome names when sex-specific maps are in use. This removed the `chr` column from `getGenMap`, `getSnpMap` and `getQtlMap` output after any call to `setRecombRatio`, `switchFemaleMap` or `switchMaleMap`.
 
 * Added on-demand tskit tree-sequence export for recorded recombination histories, including exact current-sample variants after mutation, genome editing, and additional founders.
 
@@ -56,6 +64,16 @@
 
 * Added additional structure to help documents so that related functions will be shown in the "see also" section.
 
+* renamed `mutate` to `mutateGenome` to prevent clash with dplyr function
+
+* performance optimization of functions in meiosis.cpp using Claude
+
+* performance optimization of function in MME.cpp using Claude
+
+* performance optimization of the MaCS code in algorithm.cpp, datastructures.cpp and simulator.cpp using Claude. When a limited number of segregating sites is requested, MaCS now samples them while simulating a chromosome instead of generating every site and discarding most of them afterwards. The sites retained are drawn the same way as before, but `runMacs` and `runMacs2` now draw random numbers in a different order, so a given seed will not reproduce founder populations made by earlier versions.
+
+* performance optimization of the genotype and haplotype extraction functions in getGeno.cpp using Claude. This affects the speed of `pullSnpGeno`, `pullQtlGeno`, `pullSegSiteGeno` and the matching haplotype functions, but not their output.
+
 # AlphaSimR 2.1.0
 
 * changed R6 and methods from Depends to Imports to match current best practices for R packages
@@ -84,7 +102,7 @@
 
 * changed finalizePop function call in `.newPop` to pass simParam as an argument
 
-* updated version numbering to follow tidyverse format with a major version indicating backwards compatibility has been broken
+* updated version numbering to follow tidyverse format with a major version indicating backward compatibility has been broken
 
 # AlphaSimR 1.6.1
 
@@ -96,7 +114,7 @@
 
 * Changed all parameters of the CATTLE demographic model to exactly match Macleod et al. (2013) - specifically reducing the mutation rate from 2.5e-8 (from human literature) to 1.2e-8 (used in Macleod et al., 2013) and recombination rate from 1e-8 (generic) to 9.26e-9 (used in Macleod et al., 2013). These changes will reduce number of segregating sites to ~240K per chromosome for 100 samples and will run faster.
 
-* changed misc slot in Pop class from a list organised as ind x nodes to to a list organised as nodes x ind (this simplified code and increased speed)
+* changed misc slot in Pop class from a list organized as ind x nodes to a list organized as nodes x ind (this simplified code and increased speed)
 
 * removed `setMisc` and `getMisc` because the new misc slot structure makes it easy to set and get misc components with base R code
 
@@ -234,7 +252,7 @@
 
 # AlphaSimR 1.1.0
 
-* added snpChip argument to `pullIbdHaplo` for backwards compatibility
+* added snpChip argument to `pullIbdHaplo` for backward compatibility
 
 * exposed internal mixed model solvers
 

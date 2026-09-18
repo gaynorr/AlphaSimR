@@ -16,9 +16,8 @@ interest}
 an integer vector for relative positions of traitQtl on activeQtl
 }
 \description{
-Compares to a \code{\link{LociMap-class}} objects to determine if
-the first one is a superset of the second. If it is, the function returns NULL.
-If it is not, the function return a \code{\link{LociMap-class}} object that is
-a superset of both a \code{\link{LociMap-class}} objects.
+Finds the positions of a trait's QTL within the set of all
+active QTL. The QTL of the trait are assumed to be a subset of the active
+QTL, so every trait QTL is expected to be matched.
 }
 \keyword{internal}

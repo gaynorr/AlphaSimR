@@ -8,3 +8,4 @@
 ^\.positai$
 ^\.claude$
 ^local-experiments$
+^codecov\.yml$

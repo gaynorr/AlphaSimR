@@ -13,7 +13,7 @@ sampEpiEff(qtlLoci, nTraits, corr, gamma, shape, relVar)
 
 \item{corr}{correlation between epistatic effects}
 
-\item{gamma}{indicator of trait should use a gamma distribution}
+\item{gamma}{indicator of whether trait should use a gamma distribution}
 
 \item{shape}{gamma distribution shape parameter}
 

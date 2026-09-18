@@ -7,7 +7,7 @@
 getQtlMap(trait = 1, sex = "A", simParam = NULL)
 }
 \arguments{
-\item{trait}{an integer for the}
+\item{trait}{an integer indicating which trait's QTL to return}
 
 \item{sex}{determines which sex specific map 
 is returned. Options are "A" for average map, "F" 

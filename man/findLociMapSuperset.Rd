@@ -13,13 +13,13 @@ it is a superset}
 \item{lociMap2}{a second \code{\link{LociMap-class}} that is tested}
 }
 \value{
-NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it
+NULL if lociMap1 is a superset, or a \code{\link{LociMap-class}} if it
 is not
 }
 \description{
-Compares to a \code{\link{LociMap-class}} objects to determine if
+Compares two \code{\link{LociMap-class}} objects to determine if
 the first one is a superset of the second. If it is, the function returns NULL.
-If it is not, the function return a \code{\link{LociMap-class}} object that is
-a superset of both a \code{\link{LociMap-class}} objects.
+If it is not, the function returns a \code{\link{LociMap-class}} object that is
+a superset of both \code{\link{LociMap-class}} objects.
 }
 \keyword{internal}

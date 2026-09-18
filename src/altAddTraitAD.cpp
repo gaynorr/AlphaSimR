@@ -110,45 +110,48 @@ double objAltAD(arma::vec input, const Rcpp::List& args){
   arma::vec d = abs(a)%(domDegDev*stdDevDD + meanDD);
   
   // Allocate matrices for breeding values, dominance deviations, and means
-  // Number of threads used for efficient parallel computing
-  arma::mat bvMat(nInd, nThreads, arma::fill::zeros); // Breeding values
-  arma::mat ddMat(nInd, nThreads, arma::fill::zeros); // Dominance deviations
+  // Accumulators are indexed by work block, not by thread, so that
+  // their number and the order they are summed in do not depend on
+  // how many threads are available
+  arma::uword nBlocks = countBlocks(nLoci);
+  if(nBlocks < static_cast<arma::uword>(nThreads)){
+    nThreads = static_cast<int>(nBlocks);
+  }
+  arma::mat bvMat(nInd, nBlocks, arma::fill::zeros); // Breeding values
+  arma::mat ddMat(nInd, nBlocks, arma::fill::zeros); // Dominance deviations
   
   // Calculate breeding values and dominance deviations
   // Involves regressions for each locus
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword i=0; i<nLoci; ++i){
+  for(arma::uword tid=0; tid<nBlocks; ++tid){
+    arma::uword itemStart = blockStart(nLoci, nBlocks, tid);
+    arma::uword itemEnd = blockStart(nLoci, nBlocks, tid+1);
+    for(arma::uword i=itemStart; i<itemEnd; ++i){
     
-    // Assign thread ID
-    arma::uword tid; 
-#ifdef _OPENMP
-    tid = omp_get_thread_num();
-#else
-    tid = 0;
-#endif
     
-    // Decompose genetic values into breeding values and dominance deviations
-    arma::vec gv = xa*a(i) + xd*d(i);
-    double gvMu = accu(genoFreq.col(i)%gv); // Mean genetic value
-    gv = gv - gvMu; // Centering genetic values
-    arma::vec xc = x-genoMu(i); // Centered genotype dosage
+      // Decompose genetic values into breeding values and dominance deviations
+      arma::vec gv = xa*a(i) + xd*d(i);
+      double gvMu = accu(genoFreq.col(i)%gv); // Mean genetic value
+      gv = gv - gvMu; // Centering genetic values
+      arma::vec xc = x-genoMu(i); // Centered genotype dosage
     
-    // Calculate average effect of an allele substitution (regression coefficient)
-    double alpha = accu(genoFreq.col(i)%gv%xc)/
-      accu(genoFreq.col(i)%xc%xc);
+      // Calculate average effect of an allele substitution (regression coefficient)
+      double alpha = accu(genoFreq.col(i)%gv%xc)/
+        accu(genoFreq.col(i)%xc%xc);
     
-    // Calculate breeding values using alpha and dominance deviations using 
-    // lack-of-fit
-    arma::vec bv = xc*alpha;
-    arma::vec dd = gv - bv;
+      // Calculate breeding values using alpha and dominance deviations using 
+      // lack-of-fit
+      arma::vec bv = xc*alpha;
+      arma::vec dd = gv - bv;
     
-    // Fill matrices for breeding values and dominance deviations
-    // Accounts for the LD component of the variances
-    for(arma::uword j=0; j<nInd; ++j){
-      bvMat(j,tid) += bv(genoMat(j,i));
-      ddMat(j,tid) += dd(genoMat(j,i));
+      // Fill matrices for breeding values and dominance deviations
+      // Accounts for the LD component of the variances
+      for(arma::uword j=0; j<nInd; ++j){
+        bvMat(j,tid) += bv(genoMat(j,i));
+        ddMat(j,tid) += dd(genoMat(j,i));
+      }
     }
   }
   
@@ -197,45 +200,48 @@ Rcpp::List finAltAD(arma::vec input, const Rcpp::List& args){
   arma::vec d = abs(a)%(domDegDev*stdDevDD + meanDD);
   
   // Allocate matrices for breeding values, dominance deviations, and means
-  // Number of threads used for efficient parallel computing
-  arma::mat bvMat(nInd, nThreads, arma::fill::zeros); // Breeding values
-  arma::mat ddMat(nInd, nThreads, arma::fill::zeros); // Dominance deviations
+  // Accumulators are indexed by work block, not by thread, so that
+  // their number and the order they are summed in do not depend on
+  // how many threads are available
+  arma::uword nBlocks = countBlocks(nLoci);
+  if(nBlocks < static_cast<arma::uword>(nThreads)){
+    nThreads = static_cast<int>(nBlocks);
+  }
+  arma::mat bvMat(nInd, nBlocks, arma::fill::zeros); // Breeding values
+  arma::mat ddMat(nInd, nBlocks, arma::fill::zeros); // Dominance deviations
   
   // Calculate breeding values and dominance deviations
   // Involves regressions for each locus
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword i=0; i<nLoci; ++i){
+  for(arma::uword tid=0; tid<nBlocks; ++tid){
+    arma::uword itemStart = blockStart(nLoci, nBlocks, tid);
+    arma::uword itemEnd = blockStart(nLoci, nBlocks, tid+1);
+    for(arma::uword i=itemStart; i<itemEnd; ++i){
     
-    // Assign thread ID
-    arma::uword tid; 
-#ifdef _OPENMP
-    tid = omp_get_thread_num();
-#else
-    tid = 0;
-#endif
     
-    // Decompose genetic values into breeding values and dominance deviations
-    arma::vec gv = xa*a(i) + xd*d(i);
-    double gvMu = accu(genoFreq.col(i)%gv); // Mean genetic value
-    gv = gv - gvMu; // Centering genetic values
-    arma::vec xc = x-genoMu(i); // Centered genotype dosage
+      // Decompose genetic values into breeding values and dominance deviations
+      arma::vec gv = xa*a(i) + xd*d(i);
+      double gvMu = accu(genoFreq.col(i)%gv); // Mean genetic value
+      gv = gv - gvMu; // Centering genetic values
+      arma::vec xc = x-genoMu(i); // Centered genotype dosage
     
-    // Calculate average effect of an allele substitution (regression coefficient)
-    double alpha = accu(genoFreq.col(i)%gv%xc)/
-      accu(genoFreq.col(i)%xc%xc);
+      // Calculate average effect of an allele substitution (regression coefficient)
+      double alpha = accu(genoFreq.col(i)%gv%xc)/
+        accu(genoFreq.col(i)%xc%xc);
     
-    // Calculate breeding values using alpha and dominance deviations using 
-    // lack-of-fit
-    arma::vec bv = xc*alpha;
-    arma::vec dd = gv - bv;
+      // Calculate breeding values using alpha and dominance deviations using 
+      // lack-of-fit
+      arma::vec bv = xc*alpha;
+      arma::vec dd = gv - bv;
     
-    // Fill matrices for breeding values and dominance deviations
-    // Accounts for the LD component of the variances
-    for(arma::uword j=0; j<nInd; ++j){
-      bvMat(j,tid) += bv(genoMat(j,i));
-      ddMat(j,tid) += dd(genoMat(j,i));
+      // Fill matrices for breeding values and dominance deviations
+      // Accounts for the LD component of the variances
+      for(arma::uword j=0; j<nInd; ++j){
+        bvMat(j,tid) += bv(genoMat(j,i));
+        ddMat(j,tid) += dd(genoMat(j,i));
+      }
     }
   }
   
@@ -253,28 +259,27 @@ Rcpp::List finAltAD(arma::vec input, const Rcpp::List& args){
   double obsInbrDepr = accu(hetHWE%d);
   
   // Calculate GV
-  arma::mat gvMat(nInd, nThreads, arma::fill::zeros); // Genetic values
+  // Genetic values reuse the work blocks set up for the accumulators
+  // above, so nBlocks is already in scope
+  arma::mat gvMat(nInd, nBlocks, arma::fill::zeros); // Genetic values
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword i=0; i<nLoci; ++i){
+  for(arma::uword tid=0; tid<nBlocks; ++tid){
+    arma::uword itemStart = blockStart(nLoci, nBlocks, tid);
+    arma::uword itemEnd = blockStart(nLoci, nBlocks, tid+1);
+    for(arma::uword i=itemStart; i<itemEnd; ++i){
     
-    // Assign thread ID
-    arma::uword tid; 
-#ifdef _OPENMP
-    tid = omp_get_thread_num();
-#else
-    tid = 0;
-#endif
     
-    // Decompose genetic values into breeding values and dominance deviations
-    arma::vec gv = xa*a(i) + xd*d(i);
+      // Decompose genetic values into breeding values and dominance deviations
+      arma::vec gv = xa*a(i) + xd*d(i);
     
-    // Fill matrices for breeding values and dominance deviations
-    // Accounts for the LD component of the variances
-    for(arma::uword j=0; j<nInd; ++j){
-      gvMat(j,tid) += gv(genoMat(j,i));
+      // Fill matrices for breeding values and dominance deviations
+      // Accounts for the LD component of the variances
+      for(arma::uword j=0; j<nInd; ++j){
+        gvMat(j,tid) += gv(genoMat(j,i));
+      }
     }
   }
   

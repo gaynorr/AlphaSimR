@@ -23,7 +23,7 @@ matrix of log-normal values.
 Convert a normal (Gaussian) trait to a log-normal trait
 }
 \details{
-If input trait is normal (Gaussian) then this function generates
+If the input trait is normal (Gaussian) then this function generates
   a log-normal trait by applying exponential link function on the input.
   No sampling happens in this function, which makes it deterministic.
 
@@ -41,9 +41,9 @@ If input trait is normal (Gaussian) then this function generates
 
   The name \code{meanLogShift} is used to emphasize that this argument
   is an additional mean shift applied during transformation, not the
-  primary way to set the latent trait mean. In normal AlphaSimR workflow,
+  primary way to set the latent trait mean. In a normal AlphaSimR workflow,
   the latent mean is usually already set via
-  \code{SP$addTrait*(..., mean = ...)} in founding population and
+  \code{SP$addTrait*(..., mean = ...)} in the founding population and
   \code{meanLogShift} should be left at its default unless an extra
   transformation-specific shift on the latent (log) scale is needed.
   One example is to control the mean of the observed values as shown below.

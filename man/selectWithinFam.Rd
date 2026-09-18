@@ -20,7 +20,7 @@ selectWithinFam(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}},
+\item{pop}{an object of \code{\link{Pop-class}},
 \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of individuals to select within a family}

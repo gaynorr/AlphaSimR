@@ -51,7 +51,7 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross2}} that randomly
-selects parental combinations for all possible combinantions between
+selects parental combinations for all possible combinations between
 two populations.
 }
 \examples{

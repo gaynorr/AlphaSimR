@@ -1,3 +1,23 @@
+/**
+Copyright Gary K. Chen (gchen98@gmail.com)
+
+This file is part of the Markovian Coalescent Simulator (MaCS),
+<https://github.com/gchen98/macs>. It has been modified by the AlphaSimR
+authors for use in AlphaSimR. The file LICENSE.note, in the root of the
+AlphaSimR sources, describes those modifications.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**/
 #include <RcppArmadillo.h>
 #include <bitset>
 #include <iostream>
@@ -8,7 +28,9 @@
 #include <math.h>
 #include <algorithm> 
 #include <cctype>
+#include <iterator>
 #include <locale>
+#include <utility>
 
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
@@ -41,6 +63,7 @@ Configuration::Configuration(){
   dGeneConvRatio = 0.;
   iGeneConvTract = 1;
   iTotalPops = 1; // total populations declared
+  iMaxSites = 0; // zero keeps every segregating site
   dBasesToTrack = 1;
   iRandomSeed = time(NULL);
   iIterations = 1;
@@ -608,22 +631,35 @@ void Simulator::readInputParameters(CommandArguments arguments){
 }
 
 
+void Simulator::setMaxSites(unsigned int iMaxSites) {
+  pConfig->iMaxSites = iMaxSites;
+}
+
 vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
-  
+
   vector<AlphaSimRReturn> toRet;
-  
-  try {
-    RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
-    for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
-      GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
-      graphBuilder.build();
-      vector<AlphaSimRReturn> tmp = graphBuilder.getMutations();
-      graphBuilder.printHaplotypes();
-      toRet.insert(toRet.end(), tmp.begin(), tmp.end());
+
+  // The generator is owned by a unique_ptr so that it is released when the
+  // simulation throws. The exception itself is left to propagate: MaCS()
+  // catches it outside the OpenMP region and turns it into an R error there.
+  // Swallowing it here used to report the failure as "no segregating sites".
+  std::unique_ptr<RandNumGenerator> rg(
+    new RandNumGenerator(pConfig->iRandomSeed));
+  for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
+    GraphBuilder graphBuilder = GraphBuilder(pConfig, rg.get());
+    graphBuilder.build();
+    graphBuilder.printHaplotypes();
+    // Move the sites out rather than copying them. They are the bulk of
+    // what the simulation produces, so copying them doubled peak memory.
+    vector<AlphaSimRReturn> & tmp = graphBuilder.getMutations();
+    if (toRet.empty()) {
+      toRet = std::move(tmp);
+    } else {
+      toRet.reserve(toRet.size()+tmp.size());
+      toRet.insert(toRet.end(),
+                   std::make_move_iterator(tmp.begin()),
+                   std::make_move_iterator(tmp.end()));
     }
-    delete rg;
-  } catch (const char *message) {
-    Rcpp::Rcerr << "Simulator caught exception with message:" << endl << message << endl;
   }
   return  toRet;
 }
@@ -654,7 +690,7 @@ Simulator::~Simulator() {
 
 // AlphaSimR specific functions
 
-vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
+vector<AlphaSimRReturn> runFromAlphaSimR(string in, unsigned int maxSites) {
   vector<std::string> words;
   Simulator simulator;
   
@@ -685,6 +721,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
   }
   
   simulator.readInputParameters(arguments);
+  simulator.setMaxSites(maxSites);
   vector<AlphaSimRReturn> test = simulator.beginSimulationMemory();
   return test;
 }
@@ -729,18 +766,59 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   arma::field<arma::Cube<unsigned char> > geno(nChr);
   arma::field<arma::vec > genMap(nChr);
 
+  // Chromosomes that MaCS returned no segregating sites for. Recorded here
+  // and reported after the loop, because raising an R error from inside an
+  // OpenMP region is not safe.
+  arma::uvec noSites(nChr, arma::fill::zeros);
+
+  // Chromosomes whose simulation threw. An exception must not leave the
+  // structured block of an OpenMP region, and calling into R from a worker
+  // thread is not safe either, so the failure is recorded here and raised
+  // after the loop in the same way as noSites.
+  arma::uvec failed(nChr, arma::fill::zeros);
+  std::vector<std::string> failMsg(nChr);
+
   //Loop through chromosomes
+  //Chromosomes take different amounts of time to simulate, depending on
+  //their length and on how many sites are kept, so the work is handed out
+  //as threads become free rather than split evenly by count
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(nThreads)
 #endif
   for(arma::uword chr=0; chr<nChr; chr++){
     // Run MaCS with the chromosome-specific seed and subsample sites with same seed
     vector<AlphaSimRReturn> macsOutput;
     std::string seedString = std::to_string(static_cast<unsigned long long>(seed[chr]));
-    macsOutput = runFromAlphaSimR(argsString + seedString);
+    try{
+      macsOutput = runFromAlphaSimR(argsString + seedString,
+                                    static_cast<unsigned int>(maxSites(chr)));
+    }catch(const char *message){
+      failed(chr) = 1;
+      failMsg[chr] = std::string(message);
+    }catch(std::exception &e){
+      failed(chr) = 1;
+      failMsg[chr] = std::string(e.what());
+    }catch(...){
+      failed(chr) = 1;
+      failMsg[chr] = std::string("unknown error");
+    }
+    if(failed(chr)){
+      geno(chr).set_size(0,ploidy,0);
+      genMap(chr).set_size(0);
+      continue;
+    }
     
     arma::uword nSites, nBins, nHap, nInd;
     nSites = macsOutput.size();
+    if(nSites==0){
+      // There are no haplotypes to count, so the number of individuals
+      // cannot be worked out for this chromosome. Leave it empty and let
+      // the check after the loop report it.
+      noSites(chr) = 1;
+      geno(chr).set_size(0,ploidy,0);
+      genMap(chr).set_size(0);
+      continue;
+    }
     nHap = macsOutput[0].haplotypes.size();
     if(inbred){
       nInd = nHap;
@@ -749,16 +827,19 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     }
     arma::uvec selSites;
     if(maxSites(chr)>0){
-      if(nSites<maxSites(chr)){
+      // MaCS now draws the simple random sample of maxSites sites while it
+      // simulates the chromosome, and returns them in position order, so
+      // there is normally nothing left to subsample here. The sampling
+      // branch is kept for the case where MaCS was asked for every site.
+      if(nSites>maxSites(chr)){
+        selSites = alphasimrRng::sampleInt(maxSites(chr), nSites, seed[chr]);
+        nSites = maxSites(chr);
+      }else{
         maxSites(chr) = nSites;
+        selSites.set_size(nSites);
+        for(arma::uword i=0; i<nSites; ++i)
+          selSites(i) = i;
       }
-      if(nSites==0){
-        geno(chr).set_size(0,ploidy,nInd);
-        genMap(chr).set_size(0);
-        continue;
-      }
-      selSites = alphasimrRng::sampleInt(maxSites(chr), nSites, seed[chr]);
-      nSites = maxSites(chr);
     }else{
       selSites.set_size(nSites);
       for(arma::uword i=0; i<nSites; ++i)
@@ -837,6 +918,19 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
       }
     }
   }
+  if(arma::any(failed)){
+    arma::uvec badChr = arma::find(failed);
+    Rcpp::stop("MaCS failed for chromosome " +
+               std::to_string(static_cast<unsigned long long>(badChr(0)+1)) +
+               ": " + failMsg[badChr(0)]);
+  }
+  if(arma::any(noSites)){
+    arma::uvec badChr = arma::find(noSites);
+    Rcpp::stop("MaCS returned no segregating sites for chromosome " +
+               std::to_string(static_cast<unsigned long long>(badChr(0)+1)) +
+               ". Check that the mutation rate is greater than zero.");
+  }
+
   return Rcpp::List::create(Rcpp::Named("geno")=geno,
                             Rcpp::Named("genMap")=genMap);
 }

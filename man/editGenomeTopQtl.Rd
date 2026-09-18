@@ -37,8 +37,8 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Edits the top QTL (with the largest additive effect) to a homozygous
-state for the allele increasing. Only nonfixed QTL are edited The gv slot is
-recalculated to reflect the any changes due to editing, but other slots remain the same.
+state for the allele increasing. Only nonfixed QTL are edited. The gv slot is
+recalculated to reflect any changes due to editing, but other slots remain the same.
 }
 \examples{
 #Create founder haplotypes

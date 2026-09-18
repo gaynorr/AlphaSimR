@@ -392,7 +392,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
 #' The reps parameter is for convenient representation of replicated data.
 #' It was intended for representation of replicated yield trials in plant
 #' breeding programs. In this case, varE is set to the plot error and
-#' reps is set to the number plots per entry. The resulting phenotype
+#' reps is set to the number of plots per entry. The resulting phenotype
 #' would reflect the mean of all replications.
 #'
 #' @return Returns an object of \code{\link{Pop-class}} or

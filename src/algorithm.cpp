@@ -1,4 +1,25 @@
+/**
+Copyright Gary K. Chen (gchen98@gmail.com)
+
+This file is part of the Markovian Coalescent Simulator (MaCS),
+<https://github.com/gchen98/macs>. It has been modified by the AlphaSimR
+authors for use in AlphaSimR. The file LICENSE.note, in the root of the
+AlphaSimR sources, describes those modifications.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**/
 #include <Rcpp.h>
+#include <algorithm>
 #include <iostream>
 #include <math.h>
 #include <iomanip>
@@ -14,32 +35,22 @@ EdgePtr GraphBuilder::getRandomEdgeOnTree(double & dSplitPoint,
     dSplitPoint = gcNewEdge->getBottomNodeRef()->getHeight()+0.;
     return this->gcNewEdge;
   }
-  bool found = false;
-  double dRunningLength = 0.0;
-  EdgePtrVector::iterator it = pEdgeVectorInTree->begin();
-  EdgePtr curEdge;
-  // the linked list of tree edges are lined up so that a uniform point
-  // on the tree can be selected for where the crossover occurs
-  unsigned int counter=0;
-  while(!found && counter<iTotalTreeEdges){
-    curEdge = *it;
-    if (!curEdge->bDeleted){
-      if (dRandomSpot<dRunningLength+curEdge->getLength()){
-        // the random spot is within the current segment
-        // the reference var splitpoint returns the position
-        // relative to the bottom of this edge that the xover
-        // occurs
-        dSplitPoint = curEdge->getBottomNodeRef()->getHeight()+
-          (dRandomSpot - dRunningLength);
-        found = true;
-      }else{
-        dRunningLength+=curEdge->getLength();
-      }
-    }
-    ++counter;
-    ++it;
-  }
-  if (!found) throw "RandomSpot was out of range for xover";
+  // The tree edges are lined up so that a uniform point on the tree can be
+  // selected for where the crossover occurs. buildTreeIndex() holds their
+  // cumulative lengths, so the edge covering dRandomSpot is the first whose
+  // running total exceeds it, which is a binary search rather than a walk.
+  vector<double>::iterator it = upper_bound(treePrefixSum.begin(),
+                                            treePrefixSum.end(),
+                                            dRandomSpot);
+  if (it==treePrefixSum.end()) throw "RandomSpot was out of range for xover";
+  size_t iSlot = it-treePrefixSum.begin();
+  EdgePtr curEdge = pEdgeVectorInTree->at(treePrefixIdx[iSlot]);
+  // the running total before this edge, so that the reference var
+  // splitpoint returns the position relative to the bottom of this edge
+  // that the xover occurs
+  double dRunningLength = (iSlot==0) ? 0.0 : treePrefixSum[iSlot-1];
+  dSplitPoint = curEdge->getBottomNodeRef()->getHeight()+
+    (dRandomSpot - dRunningLength);
   return curEdge;
 }
 
@@ -356,11 +367,16 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
   dMigrationMatrix = pConfig->dMigrationMatrix;
   //}
   // set up pile of coalesced nodes for building the prior tree
+  // Owned by a unique_ptr so that the set, and the nodes it still holds,
+  // are released when traverseEvents throws. pCoalescedNodes stays a raw
+  // pointer so that the uses below are unchanged.
+  std::unique_ptr<NodePtrSet> coalescedNodesOwner;
   NodePtrSet * pCoalescedNodes = NULL;
   if (!bBuildFromEventList){
     // store coalesced nodes in a temp vector
     //pCoalescedNodes = new NodePtrList();
-    pCoalescedNodes = new NodePtrSet();
+    coalescedNodesOwner.reset(new NodePtrSet());
+    pCoalescedNodes = coalescedNodesOwner.get();
     // set up the node list
     int iCounter = 0,iId=0;
     for (int i=0;i<iTotalPops;++i){
@@ -1034,9 +1050,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
     }
     dLastTime = dTime;
   }
-  if (!bBuildFromEventList){
-    delete pCoalescedNodes;
-  }
+  // coalescedNodesOwner releases the set, on this path and on a throw
 }
 
 void GraphBuilder::pruneARG(int iHistoryMax){
@@ -1058,8 +1072,12 @@ void GraphBuilder::pruneARG(int iHistoryMax){
     EdgePtrList::iterator it2 = candidateEdges.begin();
     while(!found && it2!=candidateEdges.end()){
       EdgePtr curEdge = *it2;
-      if (!curEdge->bDeleted &&curEdge->getBottomNodeRef()->
-          getType()==Node::XOVER){
+      if (curEdge->bDeleted){
+        // An edge is never undeleted, so it can never become prunable again.
+        // Dropping it here keeps the rescan below from growing with the
+        // square of the number of edges pruned at this iteration.
+        it2 = candidateEdges.erase(it2);
+      }else if (curEdge->getBottomNodeRef()->getType()==Node::XOVER){
         oldEdge = curEdge;
         found = true;
       }else{
@@ -1096,6 +1114,7 @@ void GraphBuilder::pruneARG(int iHistoryMax){
 
 void GraphBuilder::addMutations(double startPos,double endPos){
   bool bEndMutate = false;
+  unsigned int iSampleSize = pConfig->iSampleSize;
   while(!bEndMutate){
     // find the next point on this interval
     startPos+=pRandNumGenerator->expRV(dLastTreeLength*
@@ -1103,23 +1122,42 @@ void GraphBuilder::addMutations(double startPos,double endPos){
     if (startPos>=endPos){
       bEndMutate = true;
     }else{
+      ++iSitesSeen;
+      // Decide whether to keep this site before doing any work on it. The
+      // decision does not depend on the site's haplotypes, so a site that is
+      // not kept costs nothing beyond drawing its position. Keeping the
+      // first iMaxSites sites and thereafter replacing a uniformly chosen
+      // one of them with probability iMaxSites/iSitesSeen leaves a simple
+      // random sample of iMaxSites sites, which is the same sample the
+      // caller used to draw once every site had been generated.
+      long int iSlot = static_cast<long int>(mutations.size());
+      if (bReservoir && mutations.size()>=pConfig->iMaxSites){
+        double dDraw = pRandNumGenerator->unifRV()*
+          static_cast<double>(iSitesSeen);
+        iSlot = (dDraw<static_cast<double>(pConfig->iMaxSites)) ?
+          static_cast<long int>(dDraw) : -1;
+      }
+      if (iSlot<0) continue;
+
       double dRandomSpot = pRandNumGenerator->unifRV() * dLastTreeLength;
       double dMutationTime=-1.;
       EdgePtr selectedEdge = getRandomEdgeOnTree(dMutationTime,dRandomSpot);
       //Rcpp::Rcerr<<"Mutation time is "<<dMutationTime<<endl;
       mutateBelowEdge(selectedEdge);
       // NodePtrVector::iterator it;
-      
-      unique_ptr<AlphaSimRReturn> temp(new AlphaSimRReturn());
-      temp->length = startPos;
-      unsigned int iSampleSize = pConfig->iSampleSize;
+
+      if (static_cast<size_t>(iSlot)>=mutations.size()){
+        mutations.resize(static_cast<size_t>(iSlot)+1);
+      }
+      AlphaSimRReturn & site = mutations[iSlot];
+      site.length = startPos;
+      site.haplotypes.assign(iSampleSize,false);
       for (unsigned int iSampleIndex=0;iSampleIndex<iSampleSize;++iSampleIndex){
         SampleNode * sample = static_cast<SampleNode*>(pSampleNodeArray[iSampleIndex].get());
         sites[iSampleIndex]=sample->bAffected;
-        temp->haplotypes.push_back(sample->bAffected);
+        site.haplotypes[iSampleIndex] = sample->bAffected;
         sample->bAffected=false;
       }
-      mutations.push_back(*temp);
       double dFreq=0.;
       if (pConfig->bSNPAscertainment){
         // first compute the MAF
@@ -1304,7 +1342,12 @@ void GraphBuilder::build(){
 
 }
 
-vector<AlphaSimRReturn> GraphBuilder::getMutations() {
+vector<AlphaSimRReturn> & GraphBuilder::getMutations() {
+  // The reservoir replaces sites in place, so the retained sites come out in
+  // the order their slots were last written rather than in position order.
+  if (!is_sorted(mutations.begin(),mutations.end(),byMutationPos())){
+    sort(mutations.begin(),mutations.end(),byMutationPos());
+  }
   return mutations;
 }
 

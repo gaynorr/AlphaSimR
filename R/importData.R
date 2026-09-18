@@ -159,12 +159,16 @@ importInbredGeno = function(geno, genMap, ped=NULL){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
-      genMap[[i]] = genMap[[i]][is.na(take)]
+      # take is NA for map markers with no genotype, so the markers that
+      # are kept are the ones where take is NOT missing. Dropping the
+      # complement kept exactly the wrong loci.
+      genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
+      # Re-zero the map at its new first locus
+      genMap[[i]] = genMap[[i]] - genMap[[i]][1]
       take = na.omit(take)
     }
-    haplotypes[[i]] = geno[,take]
+    haplotypes[[i]] = geno[,take,drop=FALSE]
   }
 
   founderPop = newMapPop(genMap=genMap,
@@ -186,10 +190,10 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' @title Import haplotypes
 #' 
 #' @description
-#' Formats haplotype in a matrix format to an 
+#' Formats haplotypes in a matrix format to an 
 #' AlphaSimR population that can be used to 
 #' initialize a simulation. This function serves 
-#' as wrapper for \code{\link{newMapPop}} that 
+#' as a wrapper for \code{\link{newMapPop}} that 
 #' utilizes a more user friendly input format.
 #' 
 #' @param haplo a matrix of haplotypes
@@ -271,9 +275,13 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
-      genMap[[i]] = genMap[[i]][is.na(take)]
+      # take is NA for map markers with no genotype, so the markers that
+      # are kept are the ones where take is NOT missing. Dropping the
+      # complement kept exactly the wrong loci.
+      genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
+      # Re-zero the map at its new first locus
+      genMap[[i]] = genMap[[i]] - genMap[[i]][1]
       take = na.omit(take)
     }
     haplotypes[[i]] = haplo[,take,drop=FALSE]

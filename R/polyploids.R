@@ -8,7 +8,11 @@
 #' or without genetic recombination.
 #' 
 #' @param pop an object of 'Pop' superclass
-#' @param nProgeny total number of progeny per individual
+#' @param nProgeny total number of progeny per individual. May be a
+#' single value for all individuals or a vector with values for each
+#' individual. A value of zero produces no progeny for that individual,
+#' and if no individual produces any the function returns an empty
+#' population.
 #' @param useFemale should female recombination rates be used. 
 #' @param keepParents should previous parents be used for mother and 
 #' father. 
@@ -51,11 +55,31 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
     stop("You cannot reduce odd ploidy levels")
   }
   
+  # Handle nProgeny. It is expanded to one value per individual here so
+  # that everything below can treat the single value and the vector alike.
+  if(length(nProgeny)==1){
+    nProgeny = rep(nProgeny, pop@nInd)
+  }else if(length(nProgeny)!=pop@nInd){
+    stop("Length of nProgeny must equal 1 or nInd(pop)")
+  }
+  nProgeny = as.integer(nProgeny)
+  if(anyNA(nProgeny) || any(nProgeny<0L)){
+    stop("nProgeny must be a non-negative integer")
+  }
+  
+  if(sum(nProgeny)==0L){
+    return(newEmptyPop(ploidy=as.integer(pop@ploidy/2), simParam=simParam))
+  }
+  
+  # The centromeres must come from the same map as the genetic positions,
+  # because they are interpreted as positions on that map
   if(simRecomb){
     if(useFemale){
       map = simParam$femaleMap
+      centromere = simParam$femaleCentromere
     }else{
       map = simParam$maleMap
+      centromere = simParam$maleCentromere
     }
   }else{
     # Create dummy map with zero genetic distance
@@ -64,6 +88,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
       map[[i]] = rep(0,pop@nLoci[i])
     }
     map = as.matrix(map)
+    centromere = rep(0,pop@nChr)
   }
   
   tmp = createReducedGenome(pop@geno, nProgeny,
@@ -72,13 +97,13 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                             simParam$p,
                             simParam$isTrackRec,
                             pop@ploidy,
-                            simParam$femaleCentromere,
+                            centromere,
                             simParam$quadProb,
                             nThreads)
   dim(tmp$geno) = NULL 
   
   rPop = new("RawPop",
-             nInd=as.integer(pop@nInd*nProgeny),
+             nInd=as.integer(sum(nProgeny)),
              nChr=pop@nChr,
              ploidy=as.integer(pop@ploidy/2),
              nLoci=pop@nLoci,
@@ -92,24 +117,24 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
   
   if(keepParents){
     return(newPop(rawPop=rPop,
-                  mother=rep(pop@mother,each=nProgeny),
-                  father=rep(pop@father,each=nProgeny),
+                  mother=rep(pop@mother,times=nProgeny),
+                  father=rep(pop@father,times=nProgeny),
                   simParam=simParam,
                   nThreads=nThreads,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
+                  iMother=rep(pop@iid,times=nProgeny),
+                  iFather=rep(pop@iid,times=nProgeny),
                   femaleParentPop=pop,
                   maleParentPop=pop,
                   hist=hist
     ))
   }else{
     return(newPop(rawPop=rPop,
-                  mother=rep(pop@id,each=nProgeny),
-                  father=rep(pop@id,each=nProgeny),
+                  mother=rep(pop@id,times=nProgeny),
+                  father=rep(pop@id,times=nProgeny),
                   simParam=simParam,
                   nThreads=nThreads,
-                  iMother=rep(pop@iid,each=nProgeny),
-                  iFather=rep(pop@iid,each=nProgeny),
+                  iMother=rep(pop@iid,times=nProgeny),
+                  iFather=rep(pop@iid,times=nProgeny),
                   femaleParentPop=pop,
                   maleParentPop=pop,
                   hist=hist
@@ -222,11 +247,11 @@ doubleGenome = function(pop, keepParents=TRUE,
 #' @description
 #' This function is designed to model the pairing of gametes. The male
 #' and female individuals are treated as gametes, so the ploidy of newly 
-#' created individuals will be the sum of it parents.
+#' created individuals will be the sum of its parents.
 #'
 #' @param females an object of \code{\link{Pop-class}} for female parents.
 #' @param males an object of \code{\link{Pop-class}} for male parents.
-#' @param crossPlan a matrix with two column representing
+#' @param crossPlan a matrix with two columns representing
 #' female and male parents. Either integers for the position in
 #' population or character strings for the IDs.
 #' @param simParam an object of class \code{\link{SimParam}}. If

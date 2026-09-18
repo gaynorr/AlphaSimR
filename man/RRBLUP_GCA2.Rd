@@ -64,7 +64,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model that estimates seperate marker effects for
+Fits an RR-BLUP model that estimates separate marker effects for
 females and males. This implementation is meant for situations where
 \code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2
 is only faster in certain situations. Most users should use

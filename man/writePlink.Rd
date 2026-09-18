@@ -48,7 +48,7 @@ traits}
 \description{
 Writes a Pop-class to PLINK PED and MAP files. The arguments 
 for this function were chosen for consistency with 
-\code{\link{RRBLUP2}}. The base pair coordinate will the locus
+\code{\link{RRBLUP2}}. The base pair coordinate will be the locus
 position as stored in AlphaSimR and not an actual base pair 
 position. This is because AlphaSimR doesn't track base pair 
 positions, only relative positions for the loci used in the 

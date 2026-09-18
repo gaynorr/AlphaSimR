@@ -43,8 +43,8 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 Returns an object of \code{\link{Pop-class}}
 }
 \description{
-Adds genomic estimated values to a populations's EBV
-slot using output from a genomic selection functions.
+Adds genomic estimated values to a population's EBV
+slot using output from a genomic selection function.
 The genomic estimated values can be either estimated
 breeding values, estimated genetic values, or
 estimated general combining values.

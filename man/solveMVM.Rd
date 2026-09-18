@@ -17,7 +17,7 @@ solveMVM(Y, X, Z, K, tol = 1e-06, maxIter = 1000L)
 
 \item{tol}{tolerance for convergence}
 
-\item{maxIter}{maximum number of iteration}
+\item{maxIter}{maximum number of iterations}
 }
 \description{
 Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}

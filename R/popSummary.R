@@ -161,7 +161,7 @@ varEBV = function(pop){
   return(ebv)
 }
 
-#' @title Sumarize genetic parameters
+#' @title Summarize genetic parameters
 #'
 #' @description
 #' Calculates genetic and genic additive and dominance variances
@@ -205,8 +205,8 @@ varEBV = function(pop){
 #' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
 #' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
 #' \item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
-#' \item{alpha}{a list of average allele subsitution effects with length nTraits}
-#' \item{alpha_HW}{a list of average allele subsitution effects at Hardy-Weinberg equilibrium with length nTraits}
+#' \item{alpha}{a list of average allele substitution effects with length nTraits}
+#' \item{alpha_HW}{a list of average allele substitution effects at Hardy-Weinberg equilibrium with length nTraits}
 #' }
 #'
 #' @examples

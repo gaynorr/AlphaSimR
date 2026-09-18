@@ -14,10 +14,10 @@ smithHazel(econWt, varG, varP)
 \item{varP}{the phenotypic variance-covariance matrix}
 }
 \value{
-a vector of weight for calculating index values
+a vector of weights for calculating index values
 }
 \description{
-Calculates weights for Smith-Hazel index given economice weights
+Calculates weights for Smith-Hazel index given economic weights
 and phenotypic and genotypic variance-covariance matrices.
 }
 \examples{

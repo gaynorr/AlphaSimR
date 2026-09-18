@@ -1,14 +1,6 @@
 // These functions may be called by R, but are not listed in the package namespace
 #include "alphasimr.h"
 
-std::bitset<8> toBits(unsigned char byte){
-  return std::bitset<8>(byte);
-}
-
-unsigned char toByte(std::bitset<8> bits){
-  return bits.to_ulong(); 
-}
-
 // Calculates population variance
 //' @title Population variance
 //' 
@@ -83,9 +75,12 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
   arma::Mat<int> output(sum(nRow),nCol);
   arma::uword start=0, end=0;
   for(arma::uword i=0; i<nRow.n_elem; i++){
-    if(nRow(i)>0){
-      end += nRow(i)-1;
+    // A block with no rows contributes nothing. Without this the assignment
+    // below would copy a zero-row matrix into a one-row span.
+    if(nRow(i)==0){
+      continue;
     }
+    end += nRow(i)-1;
     output.rows(start,end) = X(i);
     start += nRow(i);
     end = start;
@@ -104,6 +99,27 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
 arma::uword mapIndex(arma::uword i, arma::uword j,
                      arma::uword n){
   return (n*(n-1)/2) - (n-i)*((n-i)-1)/2 + j-i-1;
+}
+
+// The number of blocks used for nItem work items. Blocks are never empty,
+// and there is always at least one, so that a function allocating one
+// accumulator per block always has somewhere to put its results.
+arma::uword countBlocks(arma::uword nItem){
+  if(nItem<1){
+    return 1;
+  }
+  if(nItem<nWorkBlocks){
+    return nItem;
+  }
+  return nWorkBlocks;
+}
+
+// The first work item of a block. Called with block and block+1 to get the
+// half open range a block covers. Any remainder is spread over the blocks
+// instead of landing entirely on the last one.
+arma::uword blockStart(arma::uword nItem, arma::uword nBlock,
+                       arma::uword block){
+  return (nItem*block)/nBlock;
 }
 
 // Find row given mapping index

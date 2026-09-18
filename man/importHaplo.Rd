@@ -24,10 +24,10 @@ a \code{\link{MapPop-class}} if ped is NULL,
 otherwise a \code{\link{NamedMapPop-class}}
 }
 \description{
-Formats haplotype in a matrix format to an 
+Formats haplotypes in a matrix format to an 
 AlphaSimR population that can be used to 
 initialize a simulation. This function serves 
-as wrapper for \code{\link{newMapPop}} that 
+as a wrapper for \code{\link{newMapPop}} that 
 utilizes a more user friendly input format.
 }
 \details{

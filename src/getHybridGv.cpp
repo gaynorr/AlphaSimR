@@ -29,15 +29,22 @@ arma::field<arma::vec> getHybridGvE(const Rcpp::S4& trait,
   if(hasD){
     d = Rcpp::as<arma::vec>(trait.slot("domEff"));
   }
-  arma::mat gv(nInd,nThreads),gxe;
-  gv.fill(double(trait.slot("intercept"))/double(nThreads));
+  // Accumulators are indexed by work block, not by thread, so that
+  // their number and the order they are summed in do not depend on
+  // how many threads are available
+  arma::uword nBlocks = countBlocks(E.n_rows);
+  if(nBlocks < static_cast<arma::uword>(nThreads)){
+    nThreads = static_cast<int>(nBlocks);
+  }
+  arma::mat gv(nInd,nBlocks),gxe;
+  gv.fill(double(trait.slot("intercept"))/double(nBlocks));
   if(hasGxe){
     g = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
     output.set_size(2);
     output(0).set_size(nInd);
     output(1).set_size(nInd);
-    gxe.set_size(nInd,nThreads);
-    gxe.fill(double(trait.slot("gxeInt"))/double(nThreads));
+    gxe.set_size(nInd,nBlocks);
+    gxe.fill(double(trait.slot("gxeInt"))/double(nBlocks));
   }else{
     output.set_size(1);
     output(0).set_size(nInd);
@@ -57,32 +64,30 @@ arma::field<arma::vec> getHybridGvE(const Rcpp::S4& trait,
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword i=0; i<E.n_rows; ++i){
-    arma::uword tid;
-#ifdef _OPENMP
-    tid = omp_get_thread_num();
-#else
-    tid = 0;
-#endif
+  for(arma::uword tid=0; tid<nBlocks; ++tid){
+    arma::uword itemStart = blockStart(E.n_rows, nBlocks, tid);
+    arma::uword itemEnd = blockStart(E.n_rows, nBlocks, tid+1);
+    for(arma::uword i=itemStart; i<itemEnd; ++i){
     
-    unsigned char geno1, geno2;
-    for(arma::uword j=0; j<nInd; ++j){
-      geno1 = femaleGeno(femaleParents(j),(E(i,0)))+maleGeno(maleParents(j),(E(i,0)));
-      geno2 = femaleGeno(femaleParents(j),(E(i,1)))+maleGeno(maleParents(j),(E(i,1)));
-      if(hasD){
-        gv(j,tid) += a(E(i,0))*xa(geno1) + 
-          d(E(i,0))*xd(geno1) + 
-          a(E(i,1))*xa(geno2) + 
-          d(E(i,1))*xd(geno2) + 
-          E(i,2)*xa(geno1)*xa(geno2);
-      }else{
-        gv(j,tid) += a(E(i,0))*xa(geno1) + 
-          a(E(i,1))*xa(geno2) + 
-          E(i,2)*xa(geno1)*xa(geno2);
-      }
-      if(hasGxe){
-        gxe(j,tid) += g(E(i,0))*xa(geno1) + 
-          g(E(i,1))*xa(geno2);
+      unsigned char geno1, geno2;
+      for(arma::uword j=0; j<nInd; ++j){
+        geno1 = femaleGeno(femaleParents(j),(E(i,0)))+maleGeno(maleParents(j),(E(i,0)));
+        geno2 = femaleGeno(femaleParents(j),(E(i,1)))+maleGeno(maleParents(j),(E(i,1)));
+        if(hasD){
+          gv(j,tid) += a(E(i,0))*xa(geno1) + 
+            d(E(i,0))*xd(geno1) + 
+            a(E(i,1))*xa(geno2) + 
+            d(E(i,1))*xd(geno2) + 
+            E(i,2)*xa(geno1)*xa(geno2);
+        }else{
+          gv(j,tid) += a(E(i,0))*xa(geno1) + 
+            a(E(i,1))*xa(geno2) + 
+            E(i,2)*xa(geno1)*xa(geno2);
+        }
+        if(hasGxe){
+          gxe(j,tid) += g(E(i,0))*xa(geno1) + 
+            g(E(i,1))*xa(geno2);
+        }
       }
     }
   }
@@ -128,15 +133,22 @@ arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait,
   if(hasD){
     d = Rcpp::as<arma::vec>(trait.slot("domEff"));
   }
-  arma::mat gv(nInd,nThreads),gxe;
-  gv.fill(double(trait.slot("intercept"))/double(nThreads));
+  // Accumulators are indexed by work block, not by thread, so that
+  // their number and the order they are summed in do not depend on
+  // how many threads are available
+  arma::uword nBlocks = countBlocks(a.n_elem);
+  if(nBlocks < static_cast<arma::uword>(nThreads)){
+    nThreads = static_cast<int>(nBlocks);
+  }
+  arma::mat gv(nInd,nBlocks),gxe;
+  gv.fill(double(trait.slot("intercept"))/double(nBlocks));
   if(hasGxe){
     g = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
     output.set_size(2);
     output(0).set_size(nInd);
     output(1).set_size(nInd);
-    gxe.set_size(nInd,nThreads);
-    gxe.fill(double(trait.slot("gxeInt"))/double(nThreads));
+    gxe.set_size(nInd,nBlocks);
+    gxe.fill(double(trait.slot("gxeInt"))/double(nBlocks));
   }else{
     output.set_size(1);
     output(0).set_size(nInd);
@@ -155,30 +167,28 @@ arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait,
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword i=0; i<a.n_elem; ++i){
-    arma::uword tid;
-#ifdef _OPENMP
-    tid = omp_get_thread_num();
-#else
-    tid = 0;
-#endif
-    arma::vec eff(ploidy+1),gEff(ploidy+1);
-    eff = xa*a(i);
-    if(hasD){
-      eff += xd*d(i);
-    }
-    if(hasGxe){
-      gEff = xa*g(i);
-    }
-    for(arma::uword j=0; j<nInd; ++j){
-      gv(j,tid) += eff(femaleGeno(femaleParents(j),i)+
-        maleGeno(maleParents(j),i));
-      if(hasGxe){
-        gxe(j,tid) += gEff(femaleGeno(femaleParents(j),i)+
-          maleGeno(maleParents(j),i));
+  for(arma::uword tid=0; tid<nBlocks; ++tid){
+    arma::uword itemStart = blockStart(a.n_elem, nBlocks, tid);
+    arma::uword itemEnd = blockStart(a.n_elem, nBlocks, tid+1);
+    for(arma::uword i=itemStart; i<itemEnd; ++i){
+      arma::vec eff(ploidy+1),gEff(ploidy+1);
+      eff = xa*a(i);
+      if(hasD){
+        eff += xd*d(i);
       }
-    }
+      if(hasGxe){
+        gEff = xa*g(i);
+      }
+      for(arma::uword j=0; j<nInd; ++j){
+        gv(j,tid) += eff(femaleGeno(femaleParents(j),i)+
+          maleGeno(maleParents(j),i));
+        if(hasGxe){
+          gxe(j,tid) += gEff(femaleGeno(femaleParents(j),i)+
+            maleGeno(maleParents(j),i));
+        }
+      }
     
+    }
   }
   output(0) = sum(gv,1);
   if(hasGxe){

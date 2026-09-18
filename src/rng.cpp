@@ -75,7 +75,12 @@ arma::uvec sampleIntImpl(arma::uword n, arma::uword N,
         limit = N - n + 1;
       }
       for (arma::uword i = N - 1; i >= limit; --i) {
-        y2 *= double(top) / double(bottom);
+        // Method D's acceptance ratio is a falling factorial, so both terms
+        // advance on every step. Holding them fixed turns the product into a
+        // power and biases the sample.
+        y2 = (y2 * double(top)) / double(bottom);
+        --top;
+        --bottom;
       }
       u = alphasimrRng::runif(rng);
       if ((double(N) / (double(N) - x)) >=
@@ -138,6 +143,12 @@ dqrng::rng64_t createRng(uint64_t seed) {
 // For xoshiro256++, clone(stream) uses a long-jump-derived substream,
 // so callers should use stable logical work IDs such as chromosome indices
 // rather than OpenMP thread IDs.
+//
+// Note that dqrng applies the jump as a loop, so this costs stream long
+// jumps. Asking for a high numbered stream is therefore expensive, and
+// building n streams by their ids costs O(n^2). Code that needs many
+// streams should walk them instead, taking each one as clone(1) of the
+// last, which costs one jump per stream and reaches the same states.
 rngPtr cloneStream(const dqrng::rng64_t &baseRng, uint64_t stream) {
   return baseRng->clone(stream);
 }

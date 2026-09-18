@@ -68,7 +68,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model that estimates seperate additive effects for
+Fits an RR-BLUP model that estimates separate additive effects for
 females and males and a dominance effect. This implementation is meant
 for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that
 RRBLUP_SCA2 is only faster in certain situations. Most users should use

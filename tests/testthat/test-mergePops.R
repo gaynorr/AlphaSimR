@@ -113,13 +113,13 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                "Use mergePops() to merge multiple Pop objects", fixed = TRUE)
   # Merging invalid objects throws an error
   expect_error(mergeMultiPops(pop, SP),
-               'all(classes == "Pop") is not TRUE', fixed = TRUE)
+               "All populations must be a Pop", fixed = TRUE)
   expect_error(mergeMultiPops(mp1, SP),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
   expect_error(mergeMultiPops(pop, SP, mp1),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
   expect_error(mergeMultiPops(mp1, SP, pop),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
 
   # Combining a Pop and a MultiPop gives a MultiPop
   expect_identical(c(mp1, pop[6:10]),

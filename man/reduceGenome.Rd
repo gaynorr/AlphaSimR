@@ -17,7 +17,11 @@ reduceGenome(
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
 
-\item{nProgeny}{total number of progeny per individual}
+\item{nProgeny}{total number of progeny per individual. May be a
+single value for all individuals or a vector with values for each
+individual. A value of zero produces no progeny for that individual,
+and if no individual produces any the function returns an empty
+population.}
 
 \item{useFemale}{should female recombination rates be used.}
 

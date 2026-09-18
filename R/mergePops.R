@@ -44,18 +44,24 @@ mergePops = function(popList){
     popList = popList[-remove]
     classes = classes[-remove]
   }
-  stopifnot(all(classes=="Pop"))
+  if(!all(classes=="Pop")){
+    stop("All populations must be a Pop")
+  }
 
   #nChr
   nChr = do.call("c",lapply(popList,
                             function(x) x@nChr))
-  stopifnot(all(nChr==nChr[1]))
+  if(!all(nChr==nChr[1])){
+    stop("nChr does not match between populations")
+  }
   nChr = nChr[1]
 
   #ploidy
   ploidy = do.call("c",lapply(popList,
                               function(x) x@ploidy))
-  stopifnot(all(ploidy==ploidy[1]))
+  if(!all(ploidy==ploidy[1])){
+    stop("ploidy does not match between populations")
+  }
   ploidy = ploidy[1]
 
   #nLoci
@@ -63,7 +69,9 @@ mergePops = function(popList){
                              function(x){
                                all(x@nLoci==popList[[1]]@nLoci)
                              }))
-  stopifnot(all(nLoci))
+  if(!all(nLoci)){
+    stop("nLoci does not match between populations")
+  }
   nLoci = popList[[1]]@nLoci
 
   #id
@@ -92,12 +100,16 @@ mergePops = function(popList){
                          function(x) x@fixEff))
 
   #misc
-  tmp = sapply(popList, function(x) length(x@misc))
-  if(!all(tmp == tmp[1])) {
+  # vapply rather than sapply, which returns a list for an empty popList,
+  # and the count is held separately because tmp is reused for the names
+  # below. Unnamed misc entries have NULL names, so taking the count from
+  # the names dropped every unnamed misc element.
+  nMisc = vapply(popList, function(x) length(x@misc), integer(1))
+  if(!all(nMisc == nMisc[1])) {
     warning("number of misc elements differs - setting misc to an empty list!")
     misc = list()
   } else {
-    if(tmp[1]>0) {
+    if(nMisc[1]>0) {
       tmp = lapply(popList, function(x) names(x@misc))
       allMatch = TRUE
       if(length(tmp)>1){
@@ -109,8 +121,8 @@ mergePops = function(popList){
         }
       }
       if(allMatch){
-        misc = vector("list", length=length(tmp[[1]]))
-        for(i in seq_len(length(tmp[[1]]))){
+        misc = vector("list", length=nMisc[1])
+        for(i in seq_len(nMisc[1])){
           miscTmp = lapply(popList, function(x) x@misc[[i]])
           if (is.matrix(miscTmp[[1]])) {
             misc[[i]] = do.call("rbind", miscTmp)
@@ -136,12 +148,23 @@ mergePops = function(popList){
   #nTraits
   nTraits = do.call("c",lapply(popList,
                                function(x) x@nTraits))
-  stopifnot(all(nTraits==nTraits[1]))
+  if(!all(nTraits==nTraits[1])){
+    stop("nTraits does not match between populations")
+  }
   nTraits = nTraits[1]
 
   #nInd
   nInd = do.call("c",lapply(popList,
                             function(x) x@nInd))
+
+  # Populations with no individuals contribute no rows, so any check that
+  # looks at content rather than structure has to read the populations that
+  # actually contribute. Reading popList[[1]] unconditionally got the wrong
+  # answer whenever the first population was empty.
+  contrib = which(nInd>0)
+  if(length(contrib)==0L){
+    contrib = seq_len(length(popList))
+  }
 
   #gv
   gv = do.call("rbind",lapply(popList,
@@ -167,7 +190,10 @@ mergePops = function(popList){
   if(nTraits>=1){
     gxe = vector("list",length=nTraits)
     for(trait in seq_len(nTraits)){
-      if(!is.null(popList[[1]]@gxe[[trait]])){
+      hasGxe = any(vapply(popList[contrib],
+                          function(x) !is.null(x@gxe[[trait]]),
+                          logical(1)))
+      if(hasGxe){
         tmp = lapply(popList,function(x) x@gxe[[trait]])
         tmp = do.call("c",tmp)
         gxe[[trait]] = tmp
@@ -260,7 +286,7 @@ mergePops = function(popList){
 #' @export
 flattenMultiPop = function(x, level=1) {
   if (isPop(x)) return(x)
-  stopifnot(isMultiPop(x))
+  if(!isMultiPop(x)) stop("x must be a Pop or a MultiPop")
   multi = which(sapply(x@pops, isMultiPop))
   while (level > 1) {
     level = level - 1
@@ -303,7 +329,7 @@ flattenMultiPop = function(x, level=1) {
 #'
 #' @param ... \code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
 #'   \code{NULL} values are ignored.
-#' @param level Integer scalar >= 0 to merge at a sepecific level of nesting;
+#' @param level Integer scalar >= 0 to merge at a specific level of nesting;
 #'   see Details.
 #'
 #' @details

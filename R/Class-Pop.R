@@ -36,7 +36,7 @@ setValidity("RawPop",function(object){
   if(object@nChr!=length(object@nLoci)){
     errors = c(errors,"nChr!=length(nLoci)")
   }
-  for(i in 1:object@nChr){
+  for(i in seq_len(object@nChr)){
     DIM1 = object@nLoci[i]%/%8L + (object@nLoci[i]%%8L > 0L)
     if(DIM1!=dim(object@geno[[i]])[1]){
       errors = c(errors,
@@ -71,7 +71,7 @@ setMethod("[",
             if(any(abs(i)>x@nInd)){
               stop("Trying to select invalid individuals")
             }
-            for(chr in 1:x@nChr){
+            for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
@@ -88,10 +88,26 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="RawPop",
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci)
+                # Strict class equality, not inherits() or is(): a MapPop
+                # extends RawPop, and combining one here would build a
+                # RawPop and silently drop its genetic map. The class is
+                # read into a variable so that the comparison is not a
+                # class() == string test, which R CMD check rejects.
+                # as.character drops the package attribute an S4 class
+                # carries, which identical() would otherwise compare too.
+                yClass = as.character(class(y))
+                if(!identical(yClass,"RawPop")){
+                  stop("All arguments must be a RawPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 geno = mergeGeno(x@geno,y@geno)
                 dim(geno) = NULL # Account for matrix bug in RcppArmadillo
@@ -190,11 +206,25 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(class(y)=="MapPop",
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci,
-                          all.equal(x@genMap, y@genMap))
+                # See the note in the RawPop method above: strict class
+                # equality is required here, and it is written this way to
+                # avoid a class() == string comparison.
+                yClass = as.character(class(y))
+                if(!identical(yClass,"MapPop")){
+                  stop("All arguments must be a MapPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
+                if(!isTRUE(all.equal(x@genMap, y@genMap))){
+                  stop("genMap does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 geno = mergeGeno(x@geno,y@geno)
                 dim(geno) = NULL # Account for matrix bug in RcppArmadillo
@@ -237,14 +267,17 @@ setClass("NamedMapPop",
 
 setValidity("NamedMapPop",function(object){
   errors = character()
-  if(any(grepl(" ",object@id,fixed=TRUE))){
-    errors = c(errors,"id can not contain spaces")
-  }
-  if(any(grepl(" ",object@mother,fixed=TRUE))){
-    errors = c(errors,"mother can not contain spaces")
-  }
-  if(any(grepl(" ",object@father,fixed=TRUE))){
-    errors = c(errors,"father can not contain spaces")
+  # Read in a single pass, and separately only if that pass finds something
+  if(any(grepl(" ",c(object@id,object@mother,object@father),fixed=TRUE))){
+    if(any(grepl(" ",object@id,fixed=TRUE))){
+      errors = c(errors,"id can not contain spaces")
+    }
+    if(any(grepl(" ",object@mother,fixed=TRUE))){
+      errors = c(errors,"mother can not contain spaces")
+    }
+    if(any(grepl(" ",object@father,fixed=TRUE))){
+      errors = c(errors,"father can not contain spaces")
+    }
   }
   if(object@nInd!=length(object@id)){
     errors = c(errors,"nInd!=length(id)")
@@ -270,7 +303,7 @@ setMethod("[",
             if(any(abs(i)>x@nInd)){
               stop("Trying to select invalid individuals")
             }
-            for(chr in 1:x@nChr){
+            for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             x@nInd = dim(x@geno[[1]])[3]
@@ -289,11 +322,21 @@ setMethod("c",
               if(is(y,"NULL")){
                 # Do nothing
               }else{
-                stopifnot(is(y,"NamedMapPop"),
-                          x@nChr==y@nChr,
-                          x@ploidy==y@ploidy,
-                          x@nLoci==y@nLoci,
-                          all.equal(x@genMap, y@genMap))
+                if(!is(y,"NamedMapPop")){
+                  stop("All arguments must be a NamedMapPop")
+                }
+                if(x@nChr!=y@nChr){
+                  stop("nChr does not match")
+                }
+                if(x@ploidy!=y@ploidy){
+                  stop("ploidy does not match")
+                }
+                if(!all(x@nLoci==y@nLoci)){
+                  stop("nLoci does not match")
+                }
+                if(!isTRUE(all.equal(x@genMap, y@genMap))){
+                  stop("genMap does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 x@id = c(x@id, y@id)
                 x@mother = c(x@mother, y@mother)
@@ -332,12 +375,16 @@ cChr = function(...){
     if(is(y,"NULL")){
       #Do nothing
     }else{
-      stopifnot(is(y,"MapPop"))
+      if(!is(y,"MapPop")) stop("All arguments must be a MapPop")
       if(!exists("x",inherits=FALSE)){
         x = y
       }else{
-        stopifnot(x@nInd==y@nInd,
-                  x@ploidy==y@ploidy)
+        if(x@nInd!=y@nInd){
+          stop("nInd does not match")
+        }
+        if(x@ploidy!=y@ploidy){
+          stop("ploidy does not match")
+        }
         x@nChr = x@nChr+y@nChr
         x@geno = c(x@geno,y@geno)
         x@genMap = c(x@genMap,y@genMap)
@@ -381,7 +428,7 @@ isNamedMapPop = function(x) {
 #'   gv reflects gv when p=0.5. Dimensions are nInd by nTraits.
 #' @slot pheno matrix of phenotypic values. Dimensions are nInd by nTraits.
 #' @slot ebv matrix of estimated breeding values. Dimensions are nInd rows and
-#'   a variable number of columns. The variable number of columns enable storing
+#'   a variable number of columns. The variable number of columns enables storing
 #'   estimates for different traits and/or for different kinds of values per
 #'   individual (for example, estimated breeding values and estimated genetic
 #'   values, etc.). Column names should be used to distinguish the estimates of
@@ -400,7 +447,7 @@ isNamedMapPop = function(x) {
 #'   population (see example in \code{\link{newPop}}).
 #'   This list is empty unless information is supplied by the user.
 #'   Note that the list is emptied every time the population is subsetted or
-#'   combined because the meta data for old population might not be valid anymore.
+#'   combined because the meta data for the old population might not be valid anymore.
 #'
 #' @seealso \code{\link{newPop}}, \code{\link{newEmptyPop}}, \code{\link{resetPop}}
 #'
@@ -421,17 +468,13 @@ setClass("Pop",
                  miscPop="list"),
          contains="RawPop")
 
+# Checks the shape of a population: that the slots agree with each other on
+# how many individuals and how many traits there are. None of these costs
+# grow with the number of individuals, so they are cheap enough to run every
+# time a population is built, which R does through new(). The checks that do
+# grow with the population are in validPopContent below.
 setValidity("Pop",function(object){
   errors = character()
-  if(any(grepl(" ",object@id,fixed=TRUE))){
-    errors = c(errors,"id can not contain spaces")
-  }
-  if(any(grepl(" ",object@mother,fixed=TRUE))){
-    errors = c(errors,"mother can not contain spaces")
-  }
-  if(any(grepl(" ",object@father,fixed=TRUE))){
-    errors = c(errors,"father can not contain spaces")
-  }
   if(object@nInd!=length(object@sex)){
     errors = c(errors,"nInd!=length(sex)")
   }
@@ -495,6 +538,33 @@ setValidity("Pop",function(object){
   }
 })
 
+# Checks the contents of a population rather than its shape, which at present
+# means the identifiers. Reading every name costs time in proportion to the
+# number of individuals, and only names that came from outside AlphaSimR can
+# fail, because the names the package generates itself are built from
+# integers. So this runs where a population enters AlphaSimR and not on every
+# population that is built from one.
+#
+# The three name vectors are read in a single pass. They are only examined
+# separately when that pass finds something, so that the error still says
+# which of them is at fault.
+validPopContent = function(object){
+  if(any(grepl(" ",c(object@id,object@mother,object@father),fixed=TRUE))){
+    errors = character()
+    if(any(grepl(" ",object@id,fixed=TRUE))){
+      errors = c(errors,"id can not contain spaces")
+    }
+    if(any(grepl(" ",object@mother,fixed=TRUE))){
+      errors = c(errors,"mother can not contain spaces")
+    }
+    if(any(grepl(" ",object@father,fixed=TRUE))){
+      errors = c(errors,"father can not contain spaces")
+    }
+    stop(paste(errors,collapse="\n"))
+  }
+  invisible(TRUE)
+}
+
 #' @aliases [,Pop,ANY,ANY,ANY-method
 #' @describeIn Pop Extract Pop by index or id
 setMethod("[",
@@ -539,7 +609,7 @@ setMethod("[",
                 }
               }
             }
-            for(chr in 1:x@nChr){
+            for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
             return(x)
@@ -657,14 +727,19 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   if(missing(rawPop) && !is.null(ploidy)){
     return(newEmptyPop(ploidy=ploidy, simParam=simParam))
   }
-  return(.newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...))
+  pop = .newPop(rawPop=rawPop,simParam=simParam,nThreads=nThreads,...)
+  # This is where names from outside AlphaSimR arrive, so this is where they
+  # are read. Populations built by crossing inherit names that have already
+  # been through here, and are not read again.
+  validPopContent(pop)
+  return(pop)
 }
 
 #' @title Create new population
 #'
 #' @description
 #' Creates a new \code{\link{Pop-class}} from an object of
-#' of the Pop superclass.
+#' the Pop superclass.
 #'
 #' @param rawPop an object of the pop superclass
 #' @param id optional id for new individuals
@@ -700,11 +775,15 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
     nThreads = as.integer(nThreads)
   }
 
-  stopifnot(sapply(simParam$genMap,length)==rawPop@nLoci)
+  if(!all(lengths(simParam$genMap)==rawPop@nLoci)){
+    stop("Number of loci in rawPop does not match the genetic map in simParam")
+  }
 
   lastId = simParam$lastId
   iid = seq_len(rawPop@nInd) + lastId
-  lastId = max(iid)
+  # Advance by the number of individuals rather than taking max(iid), which
+  # is -Inf when there are none
+  lastId = lastId + rawPop@nInd
 
   if(is.null(id)){
     if(is(rawPop, "NamedMapPop")){
@@ -746,8 +825,12 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
     }
   }
 
-  stopifnot(length(id)==length(mother),
-            length(id)==length(father))
+  if(length(id)!=length(mother)){
+    stop("length(id) does not match length(mother)")
+  }
+  if(length(id)!=length(father)){
+    stop("length(id) does not match length(father)")
+  }
 
   if(simParam$sexes=="no"){
     sex = rep("H", rawPop@nInd)
@@ -873,8 +956,8 @@ resetPop = function(pop,simParam=NULL,nThreads=NULL){
   }
   pop@nTraits = simParam$nTraits
 
-  # Extract names to add back at the end
-  traitNames = colnames(pop@gv)
+  # The number of traits may have changed since this population was built,
+  # so the names come from simParam rather than from the old matrix
 
   # Create empty slots for traits
   pop@pheno = matrix(NA_real_,
@@ -900,8 +983,8 @@ resetPop = function(pop,simParam=NULL,nThreads=NULL){
     }
   }
 
-  # Add back trait names
-  colnames(pop@pheno) = colnames(pop@gv) = traitNames
+  # Add trait names
+  colnames(pop@pheno) = colnames(pop@gv) = simParam$traitNames
 
   return(pop)
 }
@@ -909,7 +992,7 @@ resetPop = function(pop,simParam=NULL,nThreads=NULL){
 
 #' @title Test if object is of a Population class
 #'
-#' @description Utilify function to test if object is of a Population class
+#' @description Utility function to test if object is of a Population class
 #'
 #' @param x \code{\link{Pop-class}}
 #'
@@ -1046,12 +1129,19 @@ setClass("MultiPop",
 
 setValidity("MultiPop",function(object){
   errors = character()
-    # Check that all populations are valid
+    # Check that all populations are valid. validObject() with test=FALSE
+    # throws rather than returning FALSE, so the class has to be tested
+    # first and validity asked for with test=TRUE.
     for(i in seq_len(length(object@pops))){
-      if(!validObject(object@pops[[i]]) &
-         (is(object@pops[[i]], "Pop") |
-                is(object@pops[[i]],"MultiPop"))){
-        errors = c(errors,paste("object",i,"is not a valid pop"))
+      if(!(is(object@pops[[i]], "Pop") |
+           is(object@pops[[i]], "MultiPop"))){
+        errors = c(errors,paste("object",i,"is not a Pop or a MultiPop"))
+      }else{
+        tmp = validObject(object@pops[[i]], test=TRUE)
+        if(!isTRUE(tmp)){
+          errors = c(errors,paste("object",i,"is not a valid pop:",
+                                  paste(tmp,collapse="; ")))
+        }
       }
     }
   if(length(errors)==0){
@@ -1099,7 +1189,7 @@ setMethod("show",
                 if (!is.null(names(obj))) {
                   nameLabels = paste0(" \"", names(obj), "\" - ")
                 } else {
-                  nameLabels = rep("", length(object))
+                  nameLabels = rep("", length(obj@pops))
                 }
                 
                 # Process each item in the MultiPop
@@ -1321,7 +1411,9 @@ setMethod("c",
                 if(is(y,"Pop")){
                   x@pops = c(x@pops, y)
                 }else{
-                  stopifnot(is(y,"MultiPop"))
+                  if(!is(y,"MultiPop")){
+                    stop("All arguments must be a Pop or a MultiPop")
+                  }
                   x@pops = c(x@pops, y@pops)
                 }
               }
@@ -1376,7 +1468,9 @@ setMethod("length",
 newMultiPop = function(...){
   input = list(...)
   class = sapply(input, "class")
-  stopifnot(all(class=="Pop" | class=="MultiPop"))
+  if(!all(class=="Pop" | class=="MultiPop")){
+    stop("All arguments must be a Pop or a MultiPop")
+  }
   output = new("MultiPop", pops=input)
   return(output)
 }
@@ -1512,7 +1606,7 @@ unnameMultiPop = function(x, level = Inf) {
 #'
 #' @keywords internal
 .depthMultiPop = function(mp) {
-  multi = which(sapply(mp@pops, isMultiPop))
+  multi = which(vapply(mp@pops, isMultiPop, logical(1)))
   if (length(multi) == 0L) {
     return(1L)
   }
@@ -1532,7 +1626,7 @@ unnameMultiPop = function(x, level = Inf) {
   if (any(is.infinite(levels)) || level %in% levels) {
     names(mp) = NULL
   }
-  multi = which(sapply(mp@pops, isMultiPop))
+  multi = which(vapply(mp@pops, isMultiPop, logical(1)))
   if (length(multi) > 0L) {
     mp@pops[multi] = lapply(mp@pops[multi], function(child) {
       .unname(child, level + 1L, levels)

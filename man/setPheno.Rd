@@ -45,7 +45,7 @@ sampled at random.}
 
 \item{onlyPheno}{should only the phenotype be returned, see return}
 
-\item{traits}{an integer vector indicate which traits to set. If NULL,
+\item{traits}{an integer vector indicating which traits to set. If NULL,
 all traits will be set.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
@@ -83,14 +83,14 @@ relates to the founder population and not the current population.
 
 The varE argument allows the user to specify the error variance
 directly. The user may supply a vector describing the error variance
-for each trait or supply a matrix that specify the covariance of
+for each trait or supply a matrix that specifies the covariance of
 the errors.
 
 The corE argument allows the user to specify correlations for the
-error covariance matrix. These correlations are be supplied in addition
+error covariance matrix. These correlations are to be supplied in addition
 to the h2, H2, or varE arguments. These correlations will be used to
 construct a covariance matrix from a vector of variances. If the user
-supplied a covariance matrix to varE, these correlations will supercede
+supplied a covariance matrix to varE, these correlations will supersede
 values provided in that matrix.
 
 The reps parameter is for convenient representation of replicated data.

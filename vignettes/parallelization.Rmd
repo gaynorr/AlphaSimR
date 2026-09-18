@@ -12,7 +12,7 @@ vignette: >
 ## Introduction
 
 `AlphaSimR` leverages `OpenMP`-type parallelization
-to speed-up execution of some underlying `C++` code called by `R` code.
+to speed up execution of some underlying `C++` code called by `R` code.
 This speed-up can be substantial for large-scale simulations.
 Depending on the version and source of your installed `R` and `AlphaSimR`,
 `OpenMP` might or might not be supported out of the box.
@@ -81,7 +81,7 @@ The code below reports time for simulating genomes with 10 chromosomes for 50 in
 in serial mode and in parallel mode.
 You can evaluate the speed-up due to parallelization by
 changing the number of chromosomes,
-and also increasing the size of simulation by increasing the number of individuals.
+and also increasing the size of the simulation by increasing the number of individuals.
 
 ```{r}
 system.time(runMacs(nInd = 50, nChr = 10, nThreads = 1L))
@@ -105,9 +105,9 @@ so we keep the guidance short and point to the relevant docs:
 
 For linear algebra-heavy work (such as fitting genomic prediction models),
 a multithreaded `BLAS` can also help.
-This is separate to `OpenMP` support.
+This is separate from `OpenMP` support.
 In our experience, this is even more platform- and `R`-build-specific than `OpenMP`,
-so it is best treated as an advanced local optimisation.
+so it is best treated as an advanced local optimization.
 
 - Windows: We have had reasonable results with `OpenBLAS`:
   <https://github.com/OpenMathLib/OpenBLAS>.

@@ -10,7 +10,7 @@ mergeMultiPops(..., level = 0)
 \item{...}{\code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
 \code{NULL} values are ignored.}
 
-\item{level}{Integer scalar >= 0 to merge at a sepecific level of nesting;
+\item{level}{Integer scalar >= 0 to merge at a specific level of nesting;
 see Details.}
 }
 \value{

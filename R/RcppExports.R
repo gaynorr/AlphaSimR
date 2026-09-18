@@ -4,15 +4,61 @@
 #' @title Solve RR-BLUP
 #'
 #' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
+#' EMMA algorithm \insertCite{kang_2008}{AlphaSimR}.
 #'
 #' @param y a matrix with n rows and 1 column
 #' @param X a matrix with n rows and x columns
 #' @param M a matrix with n rows and m columns
 #'
+#' @references
+#' \insertAllCited{}
+#'
 #' @export
 solveRRBLUP <- function(y, X, M) {
     .Call(`_AlphaSimR_solveRRBLUP`, y, X, M)
+}
+
+#' @title Solve RR-BLUP with FaST-LMM
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
+#' same arguments and returns the same values as \code{\link{solveRRBLUP}},
+#' but solves the mixed model equations using the factored spectral approach
+#' of FaST-LMM \insertCite{lippert_2011}{AlphaSimR} rather than the EMMA
+#' algorithm \insertCite{kang_2008}{AlphaSimR}. It is intended as an
+#' eventual replacement for \code{\link{solveRRBLUP}}.
+#'
+#' @details
+#' Both algorithms reduce the mixed model to a one dimensional search over
+#' delta, the ratio of the residual variance to the marker variance. They
+#' differ in the decomposition they search over.
+#'
+#' EMMA works with the fixed effects projected out. It needs the nonzero
+#' eigenvalues of S*M*M'*S for the projector S, and then has to factorize
+#' M*M'+delta*I a second time to reach the solutions.
+#'
+#' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
+#' every delta. One decomposition therefore supplies the likelihood, the
+#' generalized least squares solution for the fixed effects, and the BLUPs,
+#' and that decomposition is taken in whichever of the two spaces is
+#' smaller. When there are fewer markers than records the eigenvectors of
+#' M'*M serve in place of those of M*M', the rank deficient directions are
+#' summarized analytically, and no matrix larger than M is ever formed.
+#'
+#' This is an independent implementation of the published method. It shares
+#' no code with the FaST-LMM software distributed by Microsoft.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param M a matrix with n rows and m columns
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @export
+solveRRBLUP2 <- function(y, X, M) {
+    .Call(`_AlphaSimR_solveRRBLUP2`, y, X, M)
 }
 
 #' @title Solve Multivariate RR-BLUP
@@ -24,7 +70,7 @@ solveRRBLUP <- function(y, X, M) {
 #' @param X a matrix with n rows and x columns
 #' @param M a matrix with n rows and m columns
 #' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #'
 #' @export
 solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
@@ -61,6 +107,20 @@ solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
 #' @param maxIter maximum iteration for attempting convergence
 #' @param useEM should EM algorithm be used. If false, no estimation of
 #' variance components is performed. The initial values are treated as true.
+#'
+#' @details
+#' The model is solved in one of two ways. Henderson's mixed model equations
+#' work with a square matrix of the fixed effects plus the markers. Written
+#' on the records instead, the model works with a square matrix of the
+#' records. The two give the same answer, and the cost of each is the cost of
+#' the other with the number of records and the number of markers exchanged,
+#' so the smaller of those two numbers names the cheaper method.
+#'
+#' Estimating variance components requires the trace of the marker block of
+#' the inverse coefficient matrix, which only Henderson's equations supply, so
+#' \code{useEM = TRUE} always uses the marker side however many records there
+#' are. With \code{useEM = FALSE} the choice is free and the cheaper method is
+#' taken.
 #'
 #' @export
 solveRRBLUP_EM <- function(Y, X, M, Vu, Ve, tol, maxIter, useEM) {
@@ -103,7 +163,7 @@ solveRRBLUP_EM2 <- function(Y, X, M1, M2, Vu1, Vu2, Ve, tol, maxIter, useEM) {
 #' @param M3 a matrix with n rows and m3 columns
 #' @param Vu1 initial guess for variance of the first marker effects
 #' @param Vu2 initial guess for variance of the second marker effects
-#' @param Vu3 initial guess for variance of the second marker effects
+#' @param Vu3 initial guess for variance of the third marker effects
 #' @param Ve initial guess for error variance
 #' @param tol tolerance for declaring convergence
 #' @param maxIter maximum iteration for attempting convergence
@@ -115,8 +175,8 @@ solveRRBLUP_EM3 <- function(Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, u
     .Call(`_AlphaSimR_solveRRBLUP_EM3`, Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, useEM)
 }
 
-callFastRRBLUP <- function(y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP`, y, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, nThreads)
+callFastRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
 callRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, nThreads) {
@@ -180,7 +240,7 @@ solveUVM <- function(y, X, Z, K) {
 #' @param Z a matrix with n rows and m columns
 #' @param K a matrix with m rows and m columns
 #' @param tol tolerance for convergence
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #'
 #' @export
 solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
@@ -196,7 +256,7 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
 #' @param X a matrix with n rows and x columns
 #' @param Zlist a list of Z matrices
 #' @param Klist a list of K matrices
-#' @param maxIter maximum number of iteration
+#' @param maxIter maximum number of iterations
 #' @param tol tolerance for convergence
 #'
 #' @export

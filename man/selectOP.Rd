@@ -20,7 +20,7 @@ selectOP(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}}
+\item{pop}{an object of \code{\link{Pop-class}}
 or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of plants to select}
@@ -69,7 +69,7 @@ or \code{\link{MultiPop-class}}
 This function models selection in an open pollinating
 plant population. It allows for varying the percentage of
 selfing. The function also provides an option for modeling
-selection as occuring before or after pollination.
+selection as occurring before or after pollination.
 }
 \examples{
 #Create founder haplotypes
