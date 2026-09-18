@@ -2,6 +2,7 @@
 
 #' @useDynLib AlphaSimR, .registration = TRUE
 #' @import Rcpp
+#' @import RcppTskit
 #' @importFrom methods new validObject is .hasSlot slot
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate var cov2cor lm coef model.matrix

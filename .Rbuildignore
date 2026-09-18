@@ -7,4 +7,5 @@
 ^vignettes/web_only$
 ^\.positai$
 ^\.claude$
+^local-experiments$
 ^codecov\.yml$

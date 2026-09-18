@@ -134,3 +134,36 @@ test_that("selectOP",{
   tmp = abs(SP$pedigree[-(1:2),1L]-SP$pedigree[-(1:2),2L])
   expect_equal(unname(tmp),c(1L,1L))
 })
+
+test_that("sex-specific recombination scales polyploid centromeres", {
+  set.seed(91002)
+  founderPop = quickHaplo(
+    nInd=8,
+    nChr=2,
+    segSites=c(14, 16),
+    ploidy=4
+  )
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  originalCentromere = SP$centromere
+  SP$quadProb = 0.5
+  SP$setRecombRatio(3)
+
+  expect_length(SP$femaleCentromere, 2)
+  expect_length(SP$maleCentromere, 2)
+  expect_equal(
+    (SP$femaleCentromere + SP$maleCentromere) / 2,
+    originalCentromere
+  )
+  SP$setRecombRatio(0.5)
+  expect_equal(
+    (SP$femaleCentromere + SP$maleCentromere) / 2,
+    originalCentromere
+  )
+
+  pop = newPop(founderPop, simParam=SP)
+  expect_s4_class(
+    randCross(pop, nCrosses=7, simParam=SP),
+    "Pop"
+  )
+})

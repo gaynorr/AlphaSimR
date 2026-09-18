@@ -42,9 +42,10 @@ URL: https://github.com/gaynorr/AlphaSimR,
     https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr
 Encoding: UTF-8
 Depends: R (>= 4.0.0)
-Imports: Rcpp (>= 0.12.7), Rdpack, methods, R6
+Imports: Rcpp (>= 0.12.7), RcppTskit (>= 0.2.0), Rdpack, methods, R6
 RdMacros: Rdpack
-LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH, dqrng (>= 0.4.1)
+LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), RcppTskit (>= 0.2.0),
+    BH, dqrng (>= 0.4.1)
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true

@@ -63,6 +63,7 @@ setValidity("RawPop",function(object){
 })
 
 
+#' @aliases [,RawPop,ANY,ANY,ANY-method
 #' @describeIn RawPop Extract RawPop by index
 setMethod("[",
           signature(x = "RawPop"),
@@ -181,6 +182,7 @@ setValidity("MapPop",function(object){
   }
 })
 
+#' @aliases [,MapPop,ANY,ANY,ANY-method
 #' @describeIn MapPop Extract MapPop by index
 setMethod("[",
           signature(x = "MapPop"),
@@ -293,6 +295,7 @@ setValidity("NamedMapPop",function(object){
   }
 })
 
+#' @aliases [,NamedMapPop,ANY,ANY,ANY-method
 #' @describeIn NamedMapPop Extract NamedMapPop by index
 setMethod("[",
           signature(x = "NamedMapPop"),
@@ -562,6 +565,7 @@ validPopContent = function(object){
   invisible(TRUE)
 }
 
+#' @aliases [,Pop,ANY,ANY,ANY-method
 #' @describeIn Pop Extract Pop by index or id
 setMethod("[",
           signature(x = "Pop"),
@@ -1233,6 +1237,7 @@ setMethod("show",
           }
 )
 
+#' @aliases [,MultiPop,ANY,ANY,ANY-method
 #' @describeIn MultiPop Subset MultiPop by index
 setMethod("[",
           signature(x = "MultiPop"),
@@ -1269,6 +1274,7 @@ setMethod("names", signature(x = "MultiPop"), function(x) {
   return(n)
 })
 
+#' @aliases [<-,MultiPop,ANY,ANY,ANY-method
 #' @describeIn MultiPop Replace contents of a subset of elements in MultiPop
 setReplaceMethod("[", signature(x = "MultiPop"), function(x, i, value) {
   # Deletion

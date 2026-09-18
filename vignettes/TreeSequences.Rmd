@@ -1,0 +1,137 @@
+---
+title: "Tree-sequence export"
+author: "AlphaSimR contributors"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tree-sequence export}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+AlphaSimR can export its recorded pedigree and recombination history as
+[tskit](https://tskit.dev/) tree sequences. Export is deliberately on demand:
+AlphaSimR continues to use its native genotype representation while running a
+breeding-program simulation, and creates tree sequences only when requested.
+This preserves the behavior and performance assumptions of existing AlphaSimR
+scripts.
+
+## Recording and exporting ancestry
+
+Recombination tracking must be enabled before the first population is created.
+
+```{r eval=FALSE}
+library(AlphaSimR)
+
+founderPop = quickHaplo(nInd=20, nChr=3, segSites=100)
+SP = SimParam$new(founderPop)
+SP$setTrackRec(TRUE)
+
+founders = newPop(founderPop, simParam=SP)
+generation1 = randCross(founders, nCrosses=20, simParam=SP)
+generation2 = randCross(generation1, nCrosses=20, simParam=SP)
+
+trees = asTreeSequence(generation2, simParam=SP)
+writeTreeSequence(trees, "breeding-program.trees")
+```
+
+One tree sequence is returned per requested chromosome. When multiple
+chromosomes are written, the output names receive `_chr1`, `_chr2`, and so on.
+By default, each tree sequence is simplified to the requested population while
+retaining the founder-haplotype roots. Set `simplify=FALSE` when the complete
+recorded pedigree is needed.
+
+The returned objects can be inspected directly in R. For example, the first
+chromosome reports its sample, tree, site, and mutation counts through the
+RcppTskit interface.
+
+```{r eval=FALSE}
+trees[[1]]$num_samples()
+trees[[1]]$num_trees()
+trees[[1]]$num_sites()
+trees[[1]]$num_mutations()
+```
+
+Files written by `writeTreeSequence()` use the standard tskit `.trees` format
+and can be opened in Python without AlphaSimR.
+
+```{python eval=FALSE}
+import tskit
+
+ts = tskit.load("breeding-program_chr1.trees")
+print(ts)
+genotypes = ts.genotype_matrix()
+print(ts.metadata)
+```
+
+When a list containing more than one chromosome is written to
+`"breeding-program.trees"`, AlphaSimR creates
+`breeding-program_chr1.trees`, `breeding-program_chr2.trees`, and so on. A
+single requested chromosome is written to the path supplied by the user.
+
+## Samples and variants
+
+The samples are ordered exactly as the individuals and homologs in the supplied
+`Pop`. A `MultiPop` can be used to sample populations from different
+generations or with different ploidies, provided their chromosome and locus
+structures agree. The same recorded individual (identified internally by its
+AlphaSimR `iid`) cannot be supplied twice. Public `Pop@id` values are metadata,
+need not be unique, and are written exactly as they appear in the sampled
+population. This includes IDs assigned by `pedigreeCross()` or changed by the
+user after a population was created.
+
+With `includeVariants=TRUE`, every simulated locus is exported and the current
+sample haplotypes are reproduced exactly. Founder alleles are placed on shared
+founder-origin nodes when sampled tracked founders verify the correspondence
+between recorded origins and `SimParam$founderPop`. Otherwise they are inferred
+conservatively from the requested samples. Alleles introduced by `mutate()`,
+`editGenome()`, an additional founder, or a reordered founder population are
+represented parsimoniously when the recorded data allow it; remaining
+differences are represented as mutations on the affected sample lineages.
+These terminal sample lineages also keep a post-hoc edit to a sampled ancestor
+from changing descendants that were generated before the edit. This means
+current sample genotypes are exact even when AlphaSimR does not retain enough
+information to locate the historical event that produced a difference.
+
+Set `includeVariants=FALSE` for ancestry-only output. This avoids constructing
+the allele matrices and is preferable when only pedigree/recombination topology
+is required.
+
+## Coordinates and metadata
+
+Tree-sequence coordinates are locus indices rather than physical base-pair
+positions. A chromosome with `n` loci spans `[0, n)`, and locus `i` is at
+position `i - 0.5`. Recombination breakpoints lie on integer boundaries between
+loci. The coordinate system, chromosome, AlphaSimR version, individual IDs,
+homolog numbers, and locus indices are recorded as JSON metadata. Provenance
+records identify `asTreeSequence()` as the operation that created the file.
+The tables carry permissive JSON metadata schemas, so current Python tskit
+versions return decoded dictionaries from `ts.metadata`,
+`individual.metadata`, `node.metadata`, and `site.metadata`.
+
+Sample and recorded-individual node times are pedigree depths in generations,
+measured backwards from the deepest individual in the complete recorded
+pedigree. That deepest generation has time zero. Consequently, a sampled
+ancestor or a sample from a shallower branch can have a positive time, even if
+no descendant of that sample is also exported. Synthetic founder-origin roots
+are one generation older than founder lineage nodes. A sampled individual's
+internal ancestry proxy is placed at the next representable older floating-
+point time so that a current-genome override affects that sample without
+changing existing descendants. The top-level metadata records the origin,
+scale, founder-root offset, and proxy convention explicitly.
+
+## Representation limits
+
+`HybridPop` cannot be exported because it intentionally stores genetic values
+rather than haplotypes and recombination histories. Use
+`hybridCross(..., returnHybridPop=FALSE)` when tree-sequence output is needed.
+
+Histories generated by AlphaSimR versions containing the old quadrivalent
+homolog-remapping bug cannot be reconstructed reliably. Export detects those
+records and asks that the simulation be regenerated. Newly generated
+quadrivalent, doubled, reduced, merged, doubled-haploid, selfed, and
+unequal-ploidy histories are supported.
+
+The `simParam` argument must be the same `SimParam` object that recorded the
+population. In ancestry-only mode AlphaSimR cannot prove that a different
+simulation with coincident internal IDs was not supplied.

@@ -1,0 +1,75 @@
+on:
+  push:
+    branches: [main, master, devel]
+  pull_request:
+    branches: [main, master, devel]
+
+name: tskit-integration
+
+jobs:
+  roundtrip:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rcpptskit: "0.3.0"
+          - os: ubuntu-latest
+            rcpptskit: "0.2.0"
+          - os: macos-latest
+            rcpptskit: "0.3.0"
+          - os: windows-latest
+            rcpptskit: "0.3.0"
+    runs-on: ${{ matrix.os }}
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: local::.
+          needs: check
+
+      - name: Install Python tskit
+        shell: bash
+        run: python -m pip install numpy tskit
+
+      - name: Install minimum RcppTskit
+        if: matrix.rcpptskit == '0.2.0'
+        shell: bash
+        run: >-
+          Rscript -e 'install.packages(
+          "https://cran.r-project.org/src/contrib/Archive/RcppTskit/RcppTskit_0.2.0.tar.gz",
+          repos=NULL, type="source"); stopifnot(
+          packageVersion("RcppTskit") == "0.2.0")'
+
+      - name: Install RcppTskit 0.3.0
+        if: matrix.rcpptskit == '0.3.0'
+        shell: bash
+        run: >-
+          Rscript -e 'install.packages("bit64",
+          repos="https://cloud.r-project.org"); install.packages(
+          "https://highlanderlab.r-universe.dev/src/contrib/RcppTskit_0.3.0.tar.gz",
+          repos=NULL, type="source"); stopifnot(
+          packageVersion("RcppTskit") == "0.3.0")'
+
+      - name: Install AlphaSimR
+        shell: bash
+        run: R CMD INSTALL .
+
+      - name: Generate tree-sequence fixtures
+        shell: bash
+        run: Rscript tests/integration/tskit-roundtrip.R "$RUNNER_TEMP/alphasimr-tskit"
+
+      - name: Validate exact Python round-trips
+        shell: bash
+        run: python tests/integration/tskit-roundtrip.py "$RUNNER_TEMP/alphasimr-tskit"

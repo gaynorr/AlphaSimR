@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "${R_HOME}/bin/Rscript" tools/configure.R

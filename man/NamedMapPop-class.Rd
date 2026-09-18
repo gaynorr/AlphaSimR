@@ -4,6 +4,7 @@
 \name{NamedMapPop-class}
 \alias{NamedMapPop-class}
 \alias{[,NamedMapPop-method}
+\alias{[,NamedMapPop,ANY,ANY,ANY-method}
 \alias{c,NamedMapPop-method}
 \alias{isNamedMapPop}
 \title{Raw population with genetic map and id}
@@ -45,4 +46,3 @@ Extends \code{\link{MapPop-class}} with id, mother and father.
 
 \item{\code{father}}{the identifier of the individual's father}
 }}
-
