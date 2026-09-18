@@ -3,13 +3,14 @@
 \docType{class}
 \name{RawPop-class}
 \alias{RawPop-class}
+\alias{[,RawPop-method}
 \alias{[,RawPop,ANY,ANY,ANY-method}
 \alias{c,RawPop-method}
 \alias{show,RawPop-method}
 \alias{isRawPop}
 \title{Raw Population}
 \usage{
-\S4method{[}{RawPop,ANY,ANY,ANY}(x, i)
+\S4method{[}{RawPop}(x, i)
 
 \S4method{c}{RawPop}(x, ...)
 
@@ -31,7 +32,7 @@ The raw population class contains only genotype data.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{x = RawPop[i = ANY, j = ANY, drop = ANY]}: Extract RawPop by index
+\item \code{RawPop[]}: Extract RawPop by index
 
 \item \code{c(RawPop)}: Combine multiple RawPops
 
@@ -58,4 +59,3 @@ The raw population class contains only genotype data.
 Each element is a three dimensional array of raw values.
 The array dimensions are \code{nLoci} by \code{ploidy} by \code{nInd}.}
 }}
-
