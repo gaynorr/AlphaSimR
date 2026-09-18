@@ -3,14 +3,13 @@
 \docType{class}
 \name{Pop-class}
 \alias{Pop-class}
-\alias{[,Pop-method}
 \alias{[,Pop,ANY,ANY,ANY-method}
 \alias{c,Pop-method}
 \alias{show,Pop-method}
 \alias{length,Pop-method}
 \title{Population}
 \usage{
-\S4method{[}{Pop}(x, i)
+\S4method{[}{Pop,ANY,ANY,ANY}(x, i)
 
 \S4method{c}{Pop}(x, ...)
 
@@ -33,7 +32,7 @@ phenotypes, and pedigrees.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{Pop[]}: Extract Pop by index or id
+\item \code{x = Pop[i = ANY, j = ANY, drop = ANY]}: Extract Pop by index or id
 
 \item \code{c(Pop)}: Combine multiple Pops
 
