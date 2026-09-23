@@ -293,12 +293,21 @@ setValidity("NamedMapPop",function(object){
   }
 })
 
-#' @describeIn NamedMapPop Extract NamedMapPop by index
+#' @describeIn NamedMapPop Extract NamedMapPop by index or id
 setMethod("[",
           signature(x = "NamedMapPop"),
           function(x, i){
-            if(any(abs(i)>x@nInd)){
-              stop("Trying to select invalid individuals")
+            # A NamedMapPop carries IDs, so it is subset by ID in the same
+            # way as a Pop. A MapPop has no IDs and stays index only.
+            if(is.character(i)){
+              i = match(i, x@id)
+              if(any(is.na(i))){
+                stop("Trying to select invalid individuals")
+              }
+            }else{
+              if(any(abs(i)>x@nInd)){
+                stop("Trying to select invalid individuals")
+              }
             }
             for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]

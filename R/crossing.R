@@ -958,132 +958,72 @@ sortPed = function(id, mother, father, maxCycle=100){
   return(output)
 }
 
-#' @title Pedigree cross
-#'
-#' @description
-#' Creates a \code{\link{Pop-class}} from a generic
-#' pedigree and a set of founder individuals.
-#'
-#' @param founderPop a \code{\link{Pop-class}}, \code{\link{MapPop-class}}
-#' or \code{\link{NamedMapPop-class}}. A map population is converted with
-#' \code{\link{newPop}} before the pedigree is used. Matching on ID needs
-#' a population that has IDs, so a \code{\link{MapPop-class}} can only be
-#' used with matchID=FALSE.
-#' @param id a vector of unique identifiers for individuals
-#' in the pedigree. The values of these IDs are separate from
-#' the IDs in the founderPop if matchID=FALSE.
-#' @param mother a vector of identifiers for the mothers
-#' of individuals in the pedigree. See details for the treatment of
-#' unknown parents.
-#' @param father a vector of identifiers for the fathers
-#' of individuals in the pedigree. See details for the treatment of
-#' unknown parents.
-#' @param matchID indicates if the IDs in founderPop should be
-#' matched to the id argument. See details.
-#' @param maxCycle the maximum number of loops to make over the pedigree
-#' to sort it.
-#' @param DH an optional vector indicating if an individual
-#' should be made a doubled haploid.
-#' @param nSelf an optional vector indicating how many generations an
-#' individual should be selfed.
-#' @param useFemale If creating DH lines, should female recombination
-#' rates be used. This parameter has no effect if recombRatio=1.
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#'
-#' @details
-#' An unknown parent is coded as \code{NA}, \code{0} or an empty string.
-#' Pedigrees may be incomplete in three ways, and each is handled
-#' differently.
-#'
-#' An individual with both parents unknown is a founder. It is taken from
-#' founderPop whole.
-#'
-#' An individual with one parent known and one parent unknown is a half
-#' founder. The unknown parent is given a founder genome of its own, so a
-#' pedigree with several half founders needs one extra founder for each of
-#' them. Two half founders never share a genome.
-#'
-#' An individual whose parent is named but has no row of its own in the
-#' pedigree is looked up in founderPop when matchID=TRUE, which means
-#' founders do not have to be listed as rows. When matchID=FALSE the name
-#' cannot be matched to anything, so the parent is treated as unknown and a
-#' warning is given.
-#'
-#' The way in which the user supplied pedigree is used depends on
-#' the value of matchID. If matchID is TRUE, the IDs in the user
-#' supplied pedigree are matched against the IDs in founderPop, and
-#' parents of unknown identity are drawn from the individuals in
-#' founderPop that the pedigree does not name. A pedigree row that has
-#' parents may not reuse the ID of a founderPop individual, because the
-#' pedigree would generate a different individual under a name already in
-#' use. If matchID is FALSE, founder individuals in the user supplied
-#' pedigree are randomly sampled from founderPop.
-#'
-#' @family mating functions
-#'
-#' @examples
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
-#'
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#'
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#'
-#' #Pedigree for a biparental cross with 7 generations of selfing
-#' id = 1:10
-#' mother = c(0,0,1,3:9)
-#' father = c(0,0,2,3:9)
-#' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
-#'
-#' #An incomplete pedigree, with half founders in rows 3 and 4
-#' founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' pop = newPop(founderPop, simParam=SP)
-#' id = 1:5
-#' mother = c(0,0,0,1,1)
-#' father = c(0,0,2,0,2)
-#' pop3 = pedigreeCross(pop, id, mother, father, simParam=SP)
-#'
-#' @export
-pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
-                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE,
-                         simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
+# Check the recombination settings given to pedigreeCross through ...
+#
+# dots, the list of ... arguments
+#
+# Returns dots unchanged. Only v, p and quadProb are allowed: ... would
+# otherwise swallow a misspelled argument name without a word.
+checkRecombArgs = function(dots){
+  recombArgs = c("v", "p", "quadProb")
+  if(length(dots)==0L){
+    return(dots)
   }
-  
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
+  nm = names(dots)
+  if(is.null(nm)){
+    nm = rep("", length(dots))
   }
-  
-  if(simParam$sexes!="no"){
-    stop("pedigreeCross currently only works with sex='no'")
+  bad = c(rep("<unnamed>", sum(nm=="")), setdiff(nm[nm!=""], recombArgs))
+  if(length(bad)>0L){
+    stop(paste0("Unused arguments: ", paste(bad, collapse=", "),
+                ". Only ", paste(recombArgs, collapse=", "),
+                " may be passed through ..."))
   }
-  
-  # A map population carries genotypes but has not been through newPop, and
-  # only a NamedMapPop carries IDs. Converting here means everything below
-  # works with one class and can subset founders by name.
-  if(is(founderPop,"MapPop")){
-    if(matchID & !is(founderPop,"NamedMapPop")){
-      stop("matchID=TRUE needs a population with IDs. Supply a NamedMapPop or a Pop, or use matchID=FALSE")
+  for(arg in nm){
+    value = dots[[arg]]
+    if(!is.numeric(value) | length(value)!=1L){
+      stop(paste(arg, "must be a single number"))
     }
-    founderPop = newPop(founderPop, simParam=simParam, nThreads=nThreads)
+    if(!is.finite(value)){
+      stop(paste(arg, "must be a single number"))
+    }
   }
-  if(!is(founderPop,"Pop")){
-    stop("founderPop must be a Pop, a MapPop or a NamedMapPop")
+  if(!is.null(dots[["v"]])){
+    if(dots[["v"]]<=0){
+      stop("v must be greater than zero")
+    }
   }
-  
-  # Coerce input data
+  if(!is.null(dots[["p"]])){
+    if(dots[["p"]]<0 | dots[["p"]]>1){
+      stop("p must be between zero and one")
+    }
+  }
+  if(!is.null(dots[["quadProb"]])){
+    if(dots[["quadProb"]]<0 | dots[["quadProb"]]>1){
+      stop("quadProb must be between zero and one")
+    }
+  }
+  return(dots)
+}
+
+# Coerce, check and extend a pedigree given to pedigreeCross
+#
+# id, mother, father, the pedigree as the user supplied it
+# DH, nSelf, optional per individual vectors, either may be NULL
+#
+# All three pedigree vectors are coerced to character. An unknown parent is
+# NA_character_ and nothing else: a parent given any other value names an
+# individual. An unknown id is not allowed.
+#
+# The pedigree is then extended backwards. Any individual named as a parent
+# but without a row of its own is given one, with both of its parents
+# unknown, and those rows are placed ahead of the supplied pedigree. So a
+# pedigree of id "3" with mother "2" and father "1" comes back as three rows,
+# "1" and "2" with unknown parents and "3" as their cross.
+#
+# Returns the extended vectors, along with nAdded, the number of rows the
+# extension put in front.
+checkPedigreeInput = function(id, mother, father, DH, nSelf){
   id = as.character(id)
   mother = as.character(mother)
   father = as.character(father)
@@ -1097,6 +1037,9 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   }
   
   # Check input data
+  if(anyNA(id)){
+    stop("id can not contain NA, because every individual needs a name")
+  }
   if(any(duplicated(id))){
     stop("id contains duplicates")
   }
@@ -1123,130 +1066,368 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     stop("DH must be TRUE or FALSE for every individual")
   }
   
-  # Normalize the codes for an unknown parent, so that below a parent
-  # reference is either a name or nothing at all. Doing this before sortPed
-  # also stops a parent coded "0" from matching an individual named "0".
-  unknownCode = c("0", "")
-  motherRef = mother
-  motherRef[is.na(motherRef) | motherRef%in%unknownCode] = NA_character_
-  fatherRef = father
-  fatherRef[is.na(fatherRef) | fatherRef%in%unknownCode] = NA_character_
-  
-  # Sort pedigree (identifies potential problems)
-  ped = sortPed(id=id, mother=motherRef, father=fatherRef,
-                maxCycle=maxCycle)
-  
-  # Where each parent comes from. A parent is one of three things: another
-  # row of the pedigree, an individual of founderPop named by the pedigree
-  # but without a row of its own, or unknown. An unknown parent needs a
-  # founder genome all to itself, which is the case issue #131 was about.
-  motherPed = match(motherRef, id)
-  fatherPed = match(fatherRef, id)
-  motherNamed = !is.na(motherRef) & is.na(motherPed)
-  fatherNamed = !is.na(fatherRef) & is.na(fatherPed)
-  
-  if(matchID){
-    motherExt = motherNamed & (motherRef%in%founderPop@id)
-    fatherExt = fatherNamed & (fatherRef%in%founderPop@id)
-  }else{
-    motherExt = rep(FALSE, length(id))
-    fatherExt = rep(FALSE, length(id))
+  # Extend the pedigree backwards. Sorting the added names keeps the result
+  # the same however the supplied pedigree happened to be ordered.
+  named = unique(c(mother, father))
+  named = named[!is.na(named)]
+  toAdd = sort(setdiff(named, id))
+  nAdded = length(toAdd)
+  if(nAdded>0L){
+    id = c(toAdd, id)
+    mother = c(rep(NA_character_, nAdded), mother)
+    father = c(rep(NA_character_, nAdded), father)
+    # An added individual is a founder, so it is neither selfed nor doubled
+    DH = c(rep(FALSE, nAdded), DH)
+    nSelf = c(rep(0L, nAdded), nSelf)
   }
   
-  # A row with neither parent resolved is itself a founder
-  isFounderRow = is.na(motherPed) & !motherExt &
-                 is.na(fatherPed) & !fatherExt
-  hasParent = !isFounderRow
+  return(list(id=id, mother=mother, father=father, DH=DH, nSelf=nSelf,
+              nAdded=nAdded))
+}
+
+# Work out how every individual of an extended pedigree is to be made
+#
+# id, mother, father, the extended pedigree, unknown parents being NA
+# founderIds, the ids of the founder population, used only if matchID
+# nFounderInd, the size of the founder population, used only if not matchID
+# matchID, should the pedigree's names be matched to founderIds
+#
+# The pedigree has already been extended, so a parent is either another row
+# of it or unknown.
+#
+# With matchID, an individual whose name is in founderIds takes its genotype
+# from there and its own ancestry is not simulated. Everything descended from
+# such an individual is simulated, and nothing else can be made at all, so an
+# individual that is neither matched nor descended from a match is an error.
+#
+# Without matchID, the founders are the individuals whose parents are both
+# unknown, and every individual with exactly one unknown parent needs a
+# founder genome for that parent as well. All of them are drawn at random
+# from the founder population.
+#
+# Returns build, saying which rows the result contains; founderRowFP, the
+# position in the founder population to copy an individual from, or NA if it
+# is to be crossed; motherPed and fatherPed, the rows its parents are; and
+# motherFP and fatherFP, the positions to take a parent of unknown identity
+# from. This takes no population and no SimParam so that it can be checked on
+# its own.
+resolveFounders = function(id, mother, father, founderIds, nFounderInd,
+                           matchID){
+  n = length(id)
+  motherPed = match(mother, id)
+  fatherPed = match(father, id)
   
-  # Parent slots that need a founder genome of their own
-  needMother = hasParent & is.na(motherPed) & !motherExt
-  needFather = hasParent & is.na(fatherPed) & !fatherExt
-  
-  # Where founder genomes come from, as positions in founderPop
-  founderRowFP = rep(NA_integer_, length(id))
-  motherFP = rep(NA_integer_, length(id))
-  fatherFP = rep(NA_integer_, length(id))
+  founderRowFP = rep(NA_integer_, n)
+  motherFP = rep(NA_integer_, n)
+  fatherFP = rep(NA_integer_, n)
   
   if(matchID){
-    # A row that has parents would be generated by crossing, so reusing the
-    # name of a founderPop individual would quietly replace it
-    clash = hasParent & (id%in%founderPop@id)
-    if(any(clash)){
-      stop(paste("The pedigree gives parents to individuals that already exist in founderPop:",
-                 paste(id[clash], collapse=", "),
-                 "- rename them or remove their parents"))
+    matched = id%in%founderIds
+    if(!any(matched)){
+      stop("matchID=TRUE, but no individual in the pedigree matches an ID in founderPop")
+    }
+    founderRowFP[matched] = match(id[matched], founderIds)
+    
+    # An individual can be made if it was matched, or if both of its parents
+    # can be made. Ancestors of a matched individual are skipped, so they
+    # need no genotype of their own.
+    build = matched
+    repeat{
+      canCross = !build &
+                 !is.na(motherPed) & !is.na(fatherPed) &
+                 build[ifelse(is.na(motherPed), 1L, motherPed)] &
+                 build[ifelse(is.na(fatherPed), 1L, fatherPed)]
+      if(!any(canCross)){
+        break
+      }
+      build = build | canCross
     }
     
-    # Founder rows, and named parents without rows, must be present
-    wanted = c(id[isFounderRow],
-               unique(c(motherRef[motherNamed], fatherRef[fatherNamed])))
-    wanted = unique(wanted)
-    absent = wanted[!(wanted%in%founderPop@id)]
-    if(length(absent)>0){
-      stop(paste("The following founders are missing:",
-                 paste(absent, collapse=", ")))
+    # Skipping an ancestor is fine, but an individual that is neither made
+    # nor an ancestor of one cannot be accounted for at all
+    isAncestor = rep(FALSE, n)
+    repeat{
+      wanted = build | isAncestor
+      parents = unique(c(motherPed[wanted], fatherPed[wanted]))
+      parents = parents[!is.na(parents)]
+      newAncestor = isAncestor
+      newAncestor[parents] = TRUE
+      if(all(newAncestor==isAncestor)){
+        break
+      }
+      isAncestor = newAncestor
     }
-    
-    founderRowFP[isFounderRow] = match(id[isFounderRow], founderPop@id)
-    motherFP[motherExt] = match(motherRef[motherExt], founderPop@id)
-    fatherFP[fatherExt] = match(fatherRef[fatherExt], founderPop@id)
-    
-    # Parents of unknown identity are drawn from the individuals that the
-    # pedigree does not name
-    nAnon = sum(needMother) + sum(needFather)
-    # Named means named anywhere, as a row or as somebody's parent. An
-    # individual the pedigree already points at must not be handed out a
-    # second time as a parent of unknown identity.
-    named = unique(c(id, motherRef[motherNamed], fatherRef[fatherNamed]))
-    available = which(!(founderPop@id%in%named))
-    if(nAnon>length(available)){
-      stop(paste("Pedigree requires", nAnon,
-                 "founders for parents of unknown identity, but only",
-                 length(available),
-                 "individuals in founderPop are not named in the pedigree"))
-    }
-    if(nAnon>0){
-      pool = available[sample.int(length(available), nAnon)]
-    }else{
-      pool = integer(0)
+    orphan = !build & !isAncestor
+    if(any(orphan)){
+      stop(paste("Not enough individuals in founderPop match the pedigree.",
+                 "These individuals are neither matched nor descended from a",
+                 "match:", paste(id[orphan], collapse=", ")))
     }
   }else{
-    # A named parent cannot be matched to anything when matchID=FALSE, so it
-    # is treated as unknown. That is quiet enough to hide a typo, so say so.
-    strays = unique(c(motherRef[motherNamed], fatherRef[fatherNamed]))
-    if(length(strays)>0){
-      warning(paste("The following parents are named but have no row in the pedigree",
-                    "and were treated as unknown:",
-                    paste(strays, collapse=", ")))
-    }
+    # The founders are the individuals with no known parents, and a single
+    # unknown parent needs a founder genome of its own
+    build = rep(TRUE, n)
+    isFounderRow = is.na(motherPed) & is.na(fatherPed)
+    needMother = !isFounderRow & is.na(motherPed)
+    needFather = !isFounderRow & is.na(fatherPed)
     
-    # Every founder row and every unresolved parent slot needs a genome
     nAnon = sum(isFounderRow) + sum(needMother) + sum(needFather)
-    if(nAnon>founderPop@nInd){
-      stop(paste("Pedigree requires",nAnon,"founders, but only",founderPop@nInd,"were supplied"))
+    if(nAnon>nFounderInd){
+      stop(paste("Pedigree requires",nAnon,"founders, but only",nFounderInd,"were supplied"))
     }
     
     # Randomly assign individuals as founders. The shuffle is deliberate: it
     # makes repeated gene drop replicates from an imported pedigree easy.
-    pool = sample.int(founderPop@nInd, nAnon)
-  }
-  
-  # Hand out the founder genomes in a fixed order
-  taken = 0L
-  if(!matchID){
+    pool = sample.int(nFounderInd, nAnon)
+    
+    # Hand out the founder genomes in a fixed order
+    taken = 0L
     for(i in which(isFounderRow)){
       taken = taken + 1L
       founderRowFP[i] = pool[taken]
     }
+    for(i in which(needMother)){
+      taken = taken + 1L
+      motherFP[i] = pool[taken]
+    }
+    for(i in which(needFather)){
+      taken = taken + 1L
+      fatherFP[i] = pool[taken]
+    }
   }
-  for(i in which(needMother)){
-    taken = taken + 1L
-    motherFP[i] = pool[taken]
+  
+  return(list(build=build,
+              founderRowFP=founderRowFP,
+              motherPed=motherPed,
+              fatherPed=fatherPed,
+              motherFP=motherFP,
+              fatherFP=fatherFP))
+}
+
+#' @title Pedigree cross
+#'
+#' @description
+#' Creates a \code{\link{Pop-class}} from a generic
+#' pedigree and a set of founder individuals.
+#'
+#' @param founderPop a \code{\link{Pop-class}}, \code{\link{MapPop-class}}
+#' or \code{\link{NamedMapPop-class}}. A map population is taken to mean
+#' that no simulation has been set up yet: see details. Matching on ID needs
+#' a population that has IDs, so a \code{\link{MapPop-class}} can only be
+#' used with matchID=FALSE.
+#' @param id a vector of unique identifiers for individuals
+#' in the pedigree. The values of these IDs are separate from
+#' the IDs in the founderPop if matchID=FALSE.
+#' @param mother a vector of identifiers for the mothers
+#' of individuals in the pedigree. See details for the treatment of
+#' unknown parents.
+#' @param father a vector of identifiers for the fathers
+#' of individuals in the pedigree. See details for the treatment of
+#' unknown parents.
+#' @param matchID indicates if the IDs in founderPop should be
+#' matched to the id argument. See details.
+#' @param maxCycle the maximum number of loops to make over the pedigree
+#' to sort it.
+#' @param DH an optional vector indicating if an individual
+#' should be made a doubled haploid.
+#' @param nSelf an optional vector indicating how many generations an
+#' individual should be selfed.
+#' @param useFemale If creating DH lines, should female recombination
+#' rates be used. This parameter has no effect if recombRatio=1.
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment. Ignored, with a warning, when founderPop is a map
+#' population.
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... the recombination settings \code{v}, \code{p} and
+#' \code{quadProb}, used only when founderPop is a map population. Any that
+#' are not given keep the \code{\link{SimParam}} defaults. Passing them
+#' with a \code{\link{Pop-class}} is an error, because that simulation
+#' already defines them.
+#'
+#' @return a \code{\link{Pop-class}}, or a
+#' \code{\link{NamedMapPop-class}} when founderPop is a map population.
+#' With matchID=TRUE this holds the matched individuals and their
+#' descendants, which may be fewer than the pedigree supplied.
+#'
+#' @details
+#' A map population and a population are handled differently, because they
+#' mean different things about where the user is.
+#'
+#' Passing a \code{\link{Pop-class}} means a simulation is already running,
+#' so the pedigree is built with the user's \code{\link{SimParam}} and the
+#' result is a \code{\link{Pop-class}} belonging to that simulation.
+#'
+#' Passing a \code{\link{MapPop-class}} or a
+#' \code{\link{NamedMapPop-class}} means no simulation has been set up yet.
+#' No \code{\link{SimParam}} is looked for and none is created for the user:
+#' the function makes a temporary one of its own, uses it to run the crossing,
+#' and discards it. The result is a \code{\link{NamedMapPop-class}} carrying
+#' the supplied genetic map and the pedigree's IDs, which the user can then
+#' pass to \code{SimParam$new()} to start a simulation from. Because the
+#' temporary \code{\link{SimParam}} defines no traits, nothing about traits
+#' or SNP chips survives the call. The recombination settings it uses can be
+#' given as \code{v}, \code{p} and \code{quadProb} through \code{...}.
+#' The id, mother and father vectors are always taken as character vectors,
+#' and anything else is coerced to one. An unknown parent is \code{NA} and
+#' nothing else: a parent given any other value, including \code{0}, names
+#' an individual. An id of \code{NA} is not allowed.
+#'
+#' The pedigree is extended backwards before it is used. Any individual
+#' named as a parent but without a row of its own is given one, with both of
+#' its parents unknown, and those rows are placed ahead of the supplied
+#' pedigree. A pedigree of id "3" with mother "2" and father "1" therefore
+#' becomes three individuals: "1" and "2" with unknown parents, and "3" as
+#' their cross. After this every parent is either another row of the
+#' pedigree or unknown.
+#'
+#' What happens next depends on matchID.
+#'
+#' If matchID is FALSE, the founders are the individuals whose parents are
+#' both unknown, and they are randomly sampled from founderPop. An
+#' individual with exactly one unknown parent is a half founder, and that
+#' parent is given a founder genome of its own, so a pedigree with several
+#' half founders needs one extra founder for each of them. Two half founders
+#' never share a genome. Every individual in the extended pedigree is
+#' returned.
+#'
+#' If matchID is TRUE, an individual whose id is found in founderPop takes
+#' its genotype from there, and its own ancestry is not simulated. Only the
+#' matched individuals and what descends from them are simulated, so the
+#' returned population is smaller than the extended pedigree whenever the
+#' pedigree reaches back beyond a match. An individual that is neither
+#' matched nor descended from a match cannot be made at all, and the
+#' function stops rather than guessing.
+#'
+#' @family mating functions
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#'
+#' #Pedigree for a biparental cross with 7 generations of selfing.
+#' #An unknown parent is NA.
+#' id = as.character(1:10)
+#' mother = c(NA, NA, "1", as.character(3:9))
+#' father = c(NA, NA, "2", as.character(3:9))
+#' pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
+#'
+#' #The same cross written without its founder rows, which the backwards
+#' #extension adds
+#' pop3 = pedigreeCross(pop, id=as.character(3:10),
+#'                      mother=c("1", as.character(3:9)),
+#'                      father=c("2", as.character(3:9)),
+#'                      simParam=SP)
+#'
+#' #An incomplete pedigree, with half founders in rows 3 and 4
+#' founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' pop = newPop(founderPop, simParam=SP)
+#' id = as.character(1:5)
+#' mother = c(NA, NA, NA, "1", "1")
+#' father = c(NA, NA, "2", NA, "2")
+#' pop4 = pedigreeCross(pop, id, mother, father, simParam=SP)
+#'
+#' @export
+pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
+                         maxCycle=100, DH=NULL, nSelf=NULL, useFemale=TRUE,
+                         simParam=NULL, nThreads=NULL, ...){
+  dots = checkRecombArgs(list(...))
+
+  # A map population is what the user has before a simulation exists, so it
+  # is taken to mean that there is no SimParam to find. The global
+  # environment is not consulted and nothing is left behind for the user.
+  mapInput = is(founderPop,"MapPop")
+  
+  if(mapInput){
+    if(!is.null(simParam)){
+      warning("simParam is ignored when founderPop is a map population, because a temporary SimParam is used")
+    }
+    if(matchID & !is(founderPop,"NamedMapPop")){
+      stop("matchID=TRUE needs a population with IDs. Supply a NamedMapPop or a Pop, or use matchID=FALSE")
+    }
+    mapPop = founderPop
+    
+    # Private to this call. It carries no traits, is never written to the
+    # global environment, and goes out of scope when the function returns.
+    simParam = SimParam$new(mapPop)
+    # Anything not supplied keeps SimParam's own default, so the defaults
+    # are never written down twice
+    if(!is.null(dots[["v"]])){
+      simParam$v = dots[["v"]]
+    }
+    if(!is.null(dots[["p"]])){
+      simParam$p = dots[["p"]]
+    }
+    if(!is.null(dots[["quadProb"]])){
+      simParam$quadProb = dots[["quadProb"]]
+    }
+    if(!is.null(nThreads)){
+      simParam$nThreads = as.integer(nThreads)
+    }
+    nThreads = simParam$nThreads
+    
+    founderPop = newPop(mapPop, simParam=simParam, nThreads=nThreads)
+  }else{
+    # A SimParam is an R6 object, so setting these would change the user's
+    # own simulation for good rather than just for this call
+    if(length(dots)>0L){
+      stop(paste("v, p and quadProb can only be set when founderPop is a map",
+                 "population. Set them on the SimParam instead"))
+    }
+    
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
+    }
+    
+    if(is.null(nThreads)){
+      nThreads = simParam$nThreads
+    }else{
+      nThreads = as.integer(nThreads)
+    }
   }
-  for(i in which(needFather)){
-    taken = taken + 1L
-    fatherFP[i] = pool[taken]
+  
+  if(simParam$sexes!="no"){
+    stop("pedigreeCross currently only works with sex='no'")
   }
+  
+  if(!is(founderPop,"Pop")){
+    stop("founderPop must be a Pop, a MapPop or a NamedMapPop")
+  }
+  
+  # Coerce and check the pedigree, then extend it back to unknown parents
+  input = checkPedigreeInput(id=id, mother=mother, father=father,
+                             DH=DH, nSelf=nSelf)
+  id = input$id
+  mother = input$mother
+  father = input$father
+  DH = input$DH
+  nSelf = input$nSelf
+  
+  # Sort pedigree (identifies potential problems)
+  ped = sortPed(id=id, mother=mother, father=father,
+                maxCycle=maxCycle)
+  
+  # How every individual is to be made
+  plan = resolveFounders(id=id, mother=mother, father=father,
+                         founderIds=founderPop@id,
+                         nFounderInd=founderPop@nInd,
+                         matchID=matchID)
+  build = plan$build
+  founderRowFP = plan$founderRowFP
+  motherPed = plan$motherPed
+  fatherPed = plan$fatherPed
+  motherFP = plan$motherFP
+  fatherFP = plan$fatherFP
   
   # Create list for new population
   output = vector("list", length=length(id))
@@ -1254,9 +1435,9 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   # Create individuals
   crossPlan = matrix(c(1,1),ncol=2)
   for(gen in seq_len(max(ped$gen))){
-    for(i in which(ped$gen==gen)){
-      if(isFounderRow[i]){
-        # Copy over founder individual
+    for(i in which(ped$gen==gen & build)){
+      if(!is.na(founderRowFP[i])){
+        # Copy the individual straight out of founderPop
         output[[i]] = founderPop[founderRowFP[i]]
       }else{
         if(is.na(motherPed[i])){
@@ -1293,13 +1474,35 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     }
   }
   
-  # Collapse list to a population
-  output = mergePops(output)
+  # Collapse list to a population. With matchID the ancestors of a matched
+  # individual are skipped, so the result holds the matched individuals and
+  # what descends from them rather than every row of the pedigree.
+  output = mergePops(output[build])
   
   # Copy over names
-  output@id = id
-  output@mother = mother
-  output@father = father
+  output@id = id[build]
+  output@mother = mother[build]
+  output@father = father[build]
+  
+  if(mapInput){
+    # Give back what the user can start a simulation from: their genetic map,
+    # the genotypes the pedigree produced, and the pedigree's own names. The
+    # temporary SimParam does not escape with it.
+    return(new("NamedMapPop",
+               id=output@id,
+               mother=output@mother,
+               father=output@father,
+               nInd=output@nInd,
+               nChr=output@nChr,
+               ploidy=output@ploidy,
+               nLoci=output@nLoci,
+               geno=output@geno,
+               genMap=mapPop@genMap,
+               centromere=mapPop@centromere,
+               # Crossing breaks inbreeding, and the flag describes how the
+               # haplotypes were built rather than what they now are
+               inbred=FALSE))
+  }
   
   return(output)
 }

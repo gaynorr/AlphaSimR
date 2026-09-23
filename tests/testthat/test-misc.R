@@ -107,3 +107,41 @@ test_that("mutateGenome", {
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 6)
 })
+
+test_that("NamedMapPop subsetting by id", {
+  mapPop = quickHaplo(nInd=4, nChr=2, segSites=10)
+  named = new("NamedMapPop",
+              id=c("a","b","c","d"),
+              mother=c("0","0","a","b"),
+              father=c("0","0","b","a"),
+              mapPop)
+
+  # A single id
+  expect_equal(named["c"]@id, "c")
+  expect_equal(named["c"]@nInd, 1L)
+
+  # Several ids, in the order given rather than the order stored
+  sub = named[c("d","a")]
+  expect_equal(sub@id, c("d","a"))
+  expect_equal(sub@mother, c("b","0"))
+  expect_equal(sub@father, c("a","0"))
+  expect_equal(sub@nInd, 2L)
+
+  # The genotypes follow the ids
+  expect_equal(pullSegSiteGeno(sub),
+               pullSegSiteGeno(named)[c("d","a"), , drop=FALSE])
+
+  # Integer indexing is unchanged, and agrees with the ids
+  expect_equal(pullSegSiteGeno(named[c(4,1)]), pullSegSiteGeno(sub))
+
+  # A repeated id is a repeated individual, as it is for a Pop
+  expect_equal(named[c("a","a")]@id, c("a","a"))
+
+  # Unknown ids and out of range indices are both refused
+  expect_error(named["z"], "invalid individuals")
+  expect_error(named[c("a","z")], "invalid individuals")
+  expect_error(named[5], "invalid individuals")
+
+  # A MapPop carries no ids, so it stays index only
+  expect_error(mapPop["a"])
+})

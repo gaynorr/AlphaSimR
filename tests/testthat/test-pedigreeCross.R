@@ -1,11 +1,12 @@
 context("pedigreeCross")
 
-# Issue #79. pedigreeCross had no test coverage at all, so this file is in
-# two parts.
+# pedigreeCross takes a pedigree and builds the individuals it describes.
 #
-#   PART 1 pins the behavior that exists today and must survive the change.
-#   PART 2 specifies the four things issue #79 asks for. Those tests fail
-#          until the feature is written, which is the point of them.
+# Three rules shape everything below. id, mother and father are character
+# vectors. An unknown parent is NA and nothing else, so a parent given any
+# other value names an individual. Any parent named but without a row of its
+# own is added to the front of the pedigree as a founder before anything
+# else happens.
 #
 # The structural check used throughout is Mendelian consistency, which holds
 # exactly and needs no reference implementation: a diploid child takes one
@@ -30,8 +31,8 @@ pedSP = function(nInd=4, nChr=2, segSites=20, seed=11001, trackRec=FALSE){
 asNamedMapPop = function(mapPop, id){
   return(new("NamedMapPop",
              id = as.character(id),
-             mother = rep("0", mapPop@nInd),
-             father = rep("0", mapPop@nInd),
+             mother = rep(NA_character_, mapPop@nInd),
+             father = rep(NA_character_, mapPop@nInd),
              nInd = mapPop@nInd,
              nChr = mapPop@nChr,
              ploidy = mapPop@ploidy,
@@ -52,10 +53,10 @@ expect_mendelian = function(child, mother, father, label=""){
               info=paste(label, "child carries a 1 allele neither parent had"))
 }
 
-# The Mendelian bound above only holds for a direct cross. Once a line is
-# selfed or doubled, a heterozygous locus can go to either homozygote, so
-# the only thing that still holds over any number of generations is that a
-# locus where both ancestors were fixed for the same allele stays fixed.
+# The bound above only holds for a direct cross. Once a line is selfed or
+# doubled, a heterozygous locus can go to either homozygote, so the only
+# thing that still holds is that a locus where both ancestors were fixed for
+# the same allele stays fixed.
 expect_descendant = function(child, p1, p2, label=""){
   bothZero = (p1==0) & (p2==0)
   bothTwo = (p1==2) & (p2==2)
@@ -68,12 +69,12 @@ expect_descendant = function(child, p1, p2, label=""){
 # The pedigree used by the help page: a biparental cross then a chain of selfs
 biparentalPed = function(){
   return(list(id = as.character(1:10),
-              mother = as.character(c(0,0,1,3:9)),
-              father = as.character(c(0,0,2,3:9))))
+              mother = c(NA, NA, "1", as.character(3:9)),
+              father = c(NA, NA, "2", as.character(3:9))))
 }
 
 # ---------------------------------------------------------------------------
-# PART 1  Behavior that exists today and must not change
+# PART 1  Building a pedigree, matchID = FALSE
 # ---------------------------------------------------------------------------
 
 test_that("a fully specified pedigree builds the population it describes", {
@@ -91,7 +92,6 @@ test_that("a fully specified pedigree builds the population it describes", {
   expect_equal(out@father, p$father)
   expect_true(isTRUE(validObject(out, test=TRUE)))
 
-  # Every non founder is consistent with the parents the pedigree names
   geno = pullSegSiteGeno(out, simParam=d$SP)
   for(i in 3:10){
     m = match(p$mother[i], p$id)
@@ -117,100 +117,75 @@ test_that("pedigreeCross is reproducible from a seed", {
                unname(pullSegSiteHaplo(outB, simParam=b$SP)))
 })
 
-test_that("matchID uses the named founders from the population", {
-  # founderPop holds exactly the two founders. A larger one would collide
-  # with pedigree rows 3 and 4, which is now an error in its own right.
-  d = pedSP(nInd=2)
-  pop = newPop(d$map, simParam=d$SP)
-  # newPop numbers individuals from one, so the founders are "1" and "2"
-  expect_equal(pop@id[1:2], c("1","2"))
-
-  p = biparentalPed()
-  out = pedigreeCross(pop, p$id, p$mother, p$father, matchID=TRUE,
-                      simParam=d$SP)
-
-  expect_equal(nInd(out), 10L)
-  expect_equal(out@id, p$id)
-
-  # The two founders are the founderPop individuals of those names, copied
-  # rather than generated, so their genotypes match exactly
-  fromPed = pullSegSiteGeno(out, simParam=d$SP)[1:2,,drop=FALSE]
-  fromPop = pullSegSiteGeno(pop[c("1","2")], simParam=d$SP)
-  expect_equal(unname(fromPed), unname(fromPop))
-})
-
-test_that("matchID reports founders that are absent from the population", {
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
-
-  expect_error(pedigreeCross(pop, id=c("x","y","z"),
-                             mother=c("0","0","x"),
-                             father=c("0","0","y"),
-                             matchID=TRUE, simParam=d$SP),
-               "missing")
-})
-
 test_that("a pedigree needing more founders than supplied is refused", {
   d = pedSP(nInd=2)
   pop = newPop(d$map, simParam=d$SP)
 
-  expect_error(pedigreeCross(pop, id=c("1","2","3","4"),
-                             mother=c("0","0","0","1"),
-                             father=c("0","0","0","2"),
+  expect_error(pedigreeCross(pop, id=as.character(1:4),
+                             mother=c(NA,NA,NA,"1"),
+                             father=c(NA,NA,NA,"2"),
                              simParam=d$SP),
                "founders")
+})
+
+test_that("half founders each get a founder genome of their own", {
+  # An individual with one parent known and one unknown needs a genome for
+  # the unknown parent, and no two half founders may share one
+  d = pedSP(nInd=8, nChr=1, segSites=40, seed=11021, trackRec=TRUE)
+  pop = newPop(d$map, simParam=d$SP)
+
+  id     = c("1","2","A","B")
+  mother = c(NA, NA, NA, NA)
+  father = c(NA, NA, "1", "1")
+
+  set.seed(303)
+  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
+  expect_equal(nInd(out), 4L)
+
+  ibd = pullIbdHaplo(out, simParam=d$SP)
+  founderOf = function(hap) return((hap+1L)%/%2L)
+  rows = match(c("A_1","A_2","B_1","B_2"), rownames(ibd))
+  expect_false(any(is.na(rows)))
+  # One shared father plus two distinct mothers
+  expect_equal(length(unique(founderOf(c(ibd[rows,])))), 3L)
 })
 
 test_that("DH and nSelf are applied to the individuals they name", {
   d = pedSP(nInd=4)
   pop = newPop(d$map, simParam=d$SP)
 
-  id = c("1","2","3","4")
-  mother = c("0","0","1","1")
-  father = c("0","0","2","2")
+  id = as.character(1:4)
+  mother = c(NA, NA, "1", "1")
+  father = c(NA, NA, "2", "2")
 
-  set.seed(303)
+  set.seed(404)
   out = pedigreeCross(pop, id, mother, father,
                       DH=c(FALSE,FALSE,TRUE,FALSE),
                       nSelf=c(0,0,0,2),
                       simParam=d$SP)
 
   expect_equal(nInd(out), 4L)
-  expect_equal(out@id, id)
-
-  # A doubled haploid is homozygous everywhere
   geno = pullSegSiteGeno(out, simParam=d$SP)
   expect_true(all(geno[3,] %in% c(0,2)))
   expect_descendant(geno[3,], geno[1,], geno[2,], label="doubled haploid")
-
-  # Individual 4 is the cross of 1 and 2 followed by two generations of
-  # selfing, so only the weaker ancestry invariant applies to it
   expect_descendant(geno[4,], geno[1,], geno[2,], label="selfed individual")
 })
 
 test_that("the input vectors are checked against each other", {
+  # Enumerated against checkPedigreeInput in the CHECKPED block below
   d = pedSP()
   pop = newPop(d$map, simParam=d$SP)
 
-  expect_error(pedigreeCross(pop, id=c("1","1"), mother=c("0","0"),
-                             father=c("0","0"), simParam=d$SP),
+  expect_error(pedigreeCross(pop, id=c("1","1"), mother=c(NA,NA),
+                             father=c(NA,NA), simParam=d$SP),
                "duplicates")
-  expect_error(pedigreeCross(pop, id=c("1","2"), mother=c("0"),
-                             father=c("0","0"), simParam=d$SP),
+  expect_error(pedigreeCross(pop, id=c("1","2"), mother=NA_character_,
+                             father=c(NA,NA), simParam=d$SP),
                "length\\(mother\\)")
-  expect_error(pedigreeCross(pop, id=c("1","2"), mother=c("0","0"),
-                             father=c("0"), simParam=d$SP),
-               "length\\(father\\)")
-  expect_error(pedigreeCross(pop, id=c("1","2"), mother=c("0","0"),
-                             father=c("0","0"), DH=TRUE, simParam=d$SP),
-               "length\\(DH\\)")
-  expect_error(pedigreeCross(pop, id=c("1","2"), mother=c("0","0"),
-                             father=c("0","0"), nSelf=0, simParam=d$SP),
-               "length\\(nSelf\\)")
 })
 
 test_that("pedigreeCross refuses a simulation that uses sexes", {
-  set.seed(11021)
+  set.seed(11031)
   founderPop = quickHaplo(nInd=4, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
@@ -218,20 +193,18 @@ test_that("pedigreeCross refuses a simulation that uses sexes", {
   SP$addTraitA(nQtlPerChr=5)
   pop = newPop(founderPop, simParam=SP)
 
-  expect_error(pedigreeCross(pop, id=c("1","2","3"), mother=c("0","0","1"),
-                             father=c("0","0","2"), simParam=SP),
+  expect_error(pedigreeCross(pop, id=c("1","2","3"), mother=c(NA,NA,"1"),
+                             father=c(NA,NA,"2"), simParam=SP),
                "sex")
 })
 
 test_that("a pedigree given out of order still sorts", {
-  # sortPed makes repeated passes, so a pedigree listed youngest first needs
-  # one pass per generation but must still come out right
   d = pedSP(nInd=4)
   pop = newPop(d$map, simParam=d$SP)
 
   id     = c("5","4","3","2","1")
-  mother = c("4","3","2","1","0")
-  father = c("4","3","2","1","0")
+  mother = c("4","3","2","1",NA)
+  father = c("4","3","2","1",NA)
 
   out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
   expect_equal(nInd(out), 5L)
@@ -244,54 +217,235 @@ test_that("a pedigree given out of order still sorts", {
   }
 })
 
-test_that("a single absent parent is already looked up in founderPop", {
-  # This is the asymmetry issue #79 ask 4 is about. "2" has no pedigree row
-  # but is found in founderPop, and one missing parent is handled today.
-  # Two missing parents are not, which is what the ISSUE79 block below
-  # specifies.
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
-
-  out = pedigreeCross(pop, id=c("1","kid"),
-                      mother=c("0","1"),
-                      father=c("0","2"),
-                      matchID=TRUE, simParam=d$SP)
-
-  expect_equal(nInd(out), 2L)
-  expect_equal(out@id, c("1","kid"))
-
-  geno = pullSegSiteGeno(out, simParam=d$SP)
-  par2 = pullSegSiteGeno(pop["2"], simParam=d$SP)[1,]
-  expect_mendelian(geno[2,], geno[1,], par2, label="kid")
-})
-
-test_that("an unsortable pedigree is an error", {
+test_that("an unsortable pedigree is reported", {
   d = pedSP()
   pop = newPop(d$map, simParam=d$SP)
 
   # A and B are each other's parents
   expect_error(pedigreeCross(pop, id=c("A","B"), mother=c("B","A"),
-                             father=c("B","A"), simParam=d$SP))
+                             father=c("B","A"), simParam=d$SP),
+               "cycle")
+  expect_error(pedigreeCross(pop, id=c("A","B"), mother=c("B","A"),
+                             father=c("B","A"), simParam=d$SP),
+               "A")
+
+  # Running out of passes is a different failure
+  expect_error(pedigreeCross(pop, id=c("5","4","3","2","1"),
+                             mother=c("4","3","2","1",NA),
+                             father=c("4","3","2","1",NA),
+                             maxCycle=2, simParam=d$SP),
+               "maxCycle")
 })
 
 # ---------------------------------------------------------------------------
-# PART 2  Issue #79. These fail until the feature is written.
+# PART 2  Extending the pedigree backwards
 # ---------------------------------------------------------------------------
 
-test_that("ISSUE79 pedigreeCross accepts a MapPop", {
-  # Ask 1. A MapPop has no id slot, so only matchID=FALSE makes sense
-  d = pedSP(nInd=4)
-  p = biparentalPed()
+test_that("EXTEND a parent without a row of its own is added as a founder", {
+  # The example from the specification: one row naming two parents becomes
+  # three individuals
+  d = pedSP(nInd=4, seed=12001)
+  pop = newPop(d$map, simParam=d$SP)
 
-  set.seed(404)
-  out = pedigreeCross(d$map, p$id, p$mother, p$father, simParam=d$SP)
+  out = pedigreeCross(pop, id="3", mother="2", father="1", simParam=d$SP)
 
-  expect_true(isPop(out))
-  expect_equal(nInd(out), 10L)
-  expect_equal(out@id, p$id)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
+  expect_equal(nInd(out), 3L)
+  expect_equal(out@id, c("1","2","3"))
+  expect_equal(out@mother, c(NA,NA,"2"))
+  expect_equal(out@father, c(NA,NA,"1"))
 
   geno = pullSegSiteGeno(out, simParam=d$SP)
+  expect_mendelian(geno[3,], geno[2,], geno[1,], label="extended cross")
+})
+
+test_that("EXTEND added founders come before the supplied pedigree", {
+  d = pedSP(nInd=8, seed=12011)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("kid","grandkid"),
+                      mother=c("mum","kid"),
+                      father=c("dad","kid"),
+                      simParam=d$SP)
+
+  # mum and dad are added and sorted, then the rows as supplied
+  expect_equal(out@id, c("dad","mum","kid","grandkid"))
+  expect_equal(nInd(out), 4L)
+})
+
+test_that("EXTEND a pedigree that needs no extension is left alone", {
+  d = pedSP(nInd=4, seed=12021)
+  pop = newPop(d$map, simParam=d$SP)
+  p = biparentalPed()
+
+  out = pedigreeCross(pop, p$id, p$mother, p$father, simParam=d$SP)
+  expect_equal(out@id, p$id)
+  expect_equal(nInd(out), 10L)
+})
+
+test_that("EXTEND zero is a name, not an unknown parent", {
+  # "0" used to mean unknown. It now names an individual, which the
+  # extension adds as a founder.
+  d = pedSP(nInd=4, seed=12031)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id="3", mother="0", father="1", simParam=d$SP)
+
+  expect_equal(nInd(out), 3L)
+  expect_true("0" %in% out@id)
+  expect_equal(out@mother[out@id=="3"], "0")
+})
+
+test_that("EXTEND added founders count towards the founder budget", {
+  # Two added founders plus the supplied row need two founder genomes, and
+  # only one individual is on offer
+  d = pedSP(nInd=1, seed=12041)
+  pop = newPop(d$map, simParam=d$SP)
+
+  expect_error(pedigreeCross(pop, id="3", mother="2", father="1",
+                             simParam=d$SP),
+               "founders")
+})
+
+# ---------------------------------------------------------------------------
+# PART 3  matchID = TRUE
+# ---------------------------------------------------------------------------
+
+test_that("MATCHID a matched individual is copied from founderPop", {
+  d = pedSP(nInd=4, seed=13001)
+  pop = newPop(d$map, simParam=d$SP)
+  expect_equal(pop@id, as.character(1:4))
+  p = biparentalPed()
+
+  out = pedigreeCross(pop, p$id, p$mother, p$father, matchID=TRUE,
+                      simParam=d$SP)
+
+  # "1" to "4" are matched, and 5 to 10 descend from them
+  expect_equal(nInd(out), 10L)
+  expect_equal(out@id, p$id)
+
+  # The matched individuals are copies, so their genotypes are identical
+  fromPed = pullSegSiteGeno(out, simParam=d$SP)[1:2,,drop=FALSE]
+  fromPop = pullSegSiteGeno(pop[c("1","2")], simParam=d$SP)
+  expect_equal(unname(fromPed), unname(fromPop))
+})
+
+test_that("MATCHID the ancestors of a match are skipped", {
+  # "2" is in founderPop, so its own parents are not simulated and do not
+  # appear in the result
+  d = pedSP(nInd=4, seed=13011)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("A","B","2","kid"),
+                      mother=c(NA,NA,"A","2"),
+                      father=c(NA,NA,"B","2"),
+                      matchID=TRUE, simParam=d$SP)
+
+  expect_equal(nInd(out), 2L)
+  expect_equal(out@id, c("2","kid"))
+  # The pedigree it reports is the one it was given
+  expect_equal(out@mother, c("A","2"))
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  fromPop = pullSegSiteGeno(pop["2"], simParam=d$SP)
+  expect_equal(unname(geno[1,]), unname(fromPop[1,]))
+  expect_mendelian(geno[2,], geno[1,], geno[1,], label="kid")
+})
+
+test_that("MATCHID an unmatched pedigree is an error", {
+  d = pedSP(nInd=4, seed=13021)
+  pop = newPop(d$map, simParam=d$SP)
+
+  expect_error(pedigreeCross(pop, id=c("x","y","z"),
+                             mother=c(NA,NA,"x"),
+                             father=c(NA,NA,"y"),
+                             matchID=TRUE, simParam=d$SP),
+               "matches")
+})
+
+test_that("MATCHID an individual that cannot be reached is an error", {
+  # "2" is matched, but X and Y hang off nothing that can be made
+  d = pedSP(nInd=4, seed=13031)
+  pop = newPop(d$map, simParam=d$SP)
+
+  expect_error(pedigreeCross(pop, id=c("2","X","Y"),
+                             mother=c(NA,NA,"X"),
+                             father=c(NA,NA,"X"),
+                             matchID=TRUE, simParam=d$SP),
+               "X")
+})
+
+test_that("MATCHID extension and matching work together", {
+  # "1" and "2" are named as parents without rows of their own. They are
+  # added by the extension and then matched against founderPop.
+  d = pedSP(nInd=4, seed=13041)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id="kid", mother="1", father="2",
+                      matchID=TRUE, simParam=d$SP)
+
+  expect_equal(nInd(out), 3L)
+  expect_equal(out@id, c("1","2","kid"))
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  par = pullSegSiteGeno(pop[c("1","2")], simParam=d$SP)
+  expect_equal(unname(geno[1:2,]), unname(par))
+  expect_mendelian(geno[3,], geno[1,], geno[2,], label="kid")
+})
+
+test_that("MATCHID reuses an id rather than refusing it", {
+  # A row whose name is already in founderPop is matched, which is the
+  # point of matchID, rather than being rejected as a clash
+  d = pedSP(nInd=4, seed=13051)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("1","2","3"),
+                      mother=c(NA,NA,"1"),
+                      father=c(NA,NA,"2"),
+                      matchID=TRUE, simParam=d$SP)
+
+  expect_equal(nInd(out), 3L)
+  # "3" is in founderPop, so it is a copy and not the cross the pedigree
+  # describes
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  fromPop = pullSegSiteGeno(pop["3"], simParam=d$SP)
+  expect_equal(unname(geno[3,]), unname(fromPop[1,]))
+})
+
+test_that("MATCHID needs no founder budget", {
+  # Nothing is sampled at random, so a founderPop with one individual is
+  # enough as long as the pedigree reaches it
+  d = pedSP(nInd=1, seed=13061)
+  pop = newPop(d$map, simParam=d$SP)
+  expect_equal(pop@id, "1")
+
+  out = pedigreeCross(pop, id=c("1","kid"),
+                      mother=c(NA,"1"),
+                      father=c(NA,"1"),
+                      matchID=TRUE, simParam=d$SP)
+  expect_equal(nInd(out), 2L)
+})
+
+# ---------------------------------------------------------------------------
+# PART 4  Map populations
+# ---------------------------------------------------------------------------
+
+test_that("MAP a MapPop means no simulation has been set up yet", {
+  d = pedSP(nInd=4, seed=14001)
+  p = biparentalPed()
+  expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
+
+  set.seed(505)
+  out = pedigreeCross(d$map, p$id, p$mother, p$father)
+
+  expect_true(isNamedMapPop(out))
+  expect_false(isPop(out))
+  expect_equal(nInd(out), 10L)
+  expect_equal(out@id, p$id)
+  expect_equal(out@genMap, d$map@genMap)
+  expect_true(isTRUE(validObject(out, test=TRUE)))
+  expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
+
+  geno = pullSegSiteGeno(out)
   for(i in 3:10){
     m = match(p$mother[i], p$id)
     f = match(p$father[i], p$id)
@@ -299,321 +453,356 @@ test_that("ISSUE79 pedigreeCross accepts a MapPop", {
   }
 })
 
-test_that("ISSUE79 pedigreeCross accepts a NamedMapPop with matchID", {
-  # Ask 1. A NamedMapPop carries ids, so it can be matched against
-  d = pedSP(nInd=4)
+test_that("MAP the returned map population starts a simulation", {
+  d = pedSP(nInd=4, seed=14011)
+  p = biparentalPed()
+
+  set.seed(515)
+  out = pedigreeCross(d$map, p$id, p$mother, p$father)
+
+  SP = SimParam$new(out)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr=5)
+  SP$setVarE(h2=0.5)
+  pop = newPop(out, simParam=SP)
+
+  expect_true(isPop(pop))
+  expect_equal(pop@id, p$id)
+  expect_true(all(is.finite(c(gv(pop)))))
+})
+
+test_that("MAP a supplied simParam is ignored with a warning", {
+  d = pedSP(nInd=4, seed=14021)
+  p = biparentalPed()
+
+  expect_warning(pedigreeCross(d$map, p$id, p$mother, p$father,
+                               simParam=d$SP),
+                 "ignored")
+})
+
+test_that("MAP a NamedMapPop can be matched on", {
+  d = pedSP(nInd=4, seed=14031)
   named = asNamedMapPop(d$map, id=c("F1","F2","F3","F4"))
 
   out = pedigreeCross(named, id=c("F1","F2","kid"),
-                      mother=c("0","0","F1"),
-                      father=c("0","0","F2"),
-                      matchID=TRUE, simParam=d$SP)
+                      mother=c(NA,NA,"F1"),
+                      father=c(NA,NA,"F2"),
+                      matchID=TRUE)
 
-  expect_true(isPop(out))
+  expect_true(isNamedMapPop(out))
   expect_equal(nInd(out), 3L)
   expect_equal(out@id, c("F1","F2","kid"))
 
-  geno = pullSegSiteGeno(out, simParam=d$SP)
+  geno = pullSegSiteGeno(out)
   expect_mendelian(geno[3,], geno[1,], geno[2,], label="kid")
 })
 
-test_that("ISSUE79 matchID on a MapPop says why it cannot work", {
-  # Ask 1 and ask 2. A plain MapPop has no ids to match, and the error
-  # should say so rather than failing on a missing slot
-  d = pedSP(nInd=4)
+test_that("MAP matchID on a plain MapPop says why it cannot work", {
+  d = pedSP(nInd=4, seed=14041)
   p = biparentalPed()
 
   expect_error(pedigreeCross(d$map, p$id, p$mother, p$father,
-                             matchID=TRUE, simParam=d$SP),
+                             matchID=TRUE),
                "matchID")
 })
 
-test_that("ISSUE79 population members can be founders without pedigree rows", {
-  # Ask 4. "1" and "2" are in founderPop but have no rows of their own.
-  # Today both parents being absent makes the child itself a founder and
-  # the two names are discarded; they should be looked up instead.
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
-  expect_equal(pop@id[1:2], c("1","2"))
+# ---------------------------------------------------------------------------
+# PART 5  Recombination settings passed through ...
+# ---------------------------------------------------------------------------
 
-  out = pedigreeCross(pop, id="kid", mother="1", father="2",
-                      matchID=TRUE, simParam=d$SP)
+test_that("RECOMB not passing v, p and quadProb uses the SimParam defaults", {
+  d = pedSP(nInd=4, nChr=1, segSites=60, seed=15001)
+  ped = biparentalPed()
 
-  expect_equal(nInd(out), 1L)
-  expect_equal(out@id, "kid")
+  set.seed(2101)
+  bare = pedigreeCross(d$map, ped$id, ped$mother, ped$father)
+  set.seed(2101)
+  spelled = pedigreeCross(d$map, ped$id, ped$mother, ped$father,
+                          v=2.6, p=0, quadProb=0)
 
-  kid = pullSegSiteGeno(out, simParam=d$SP)[1,]
-  par = pullSegSiteGeno(pop[c("1","2")], simParam=d$SP)
-  expect_mendelian(kid, par[1,], par[2,], label="implicit founder cross")
+  expect_equal(unname(pullSegSiteHaplo(bare)),
+               unname(pullSegSiteHaplo(spelled)))
 })
 
-test_that("ISSUE79 replacing an existing id is an error", {
-  # Ask 3. "3" names an individual in founderPop, but the pedigree gives it
-  # parents, so the pedigree would generate a different individual under a
-  # name already in use
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
-  expect_equal(pop@id[1:3], c("1","2","3"))
+test_that("RECOMB v and p reach the meiosis", {
+  d = pedSP(nInd=4, nChr=1, segSites=60, seed=15011)
+  ped = biparentalPed()
 
-  expect_error(pedigreeCross(pop, id=c("1","2","3"),
-                             mother=c("0","0","1"),
-                             father=c("0","0","2"),
-                             matchID=TRUE, simParam=d$SP),
-               "3")
+  set.seed(2102)
+  kosambi = pedigreeCross(d$map, ped$id, ped$mother, ped$father)
+  set.seed(2102)
+  haldane = pedigreeCross(d$map, ped$id, ped$mother, ped$father, v=1)
+  expect_false(isTRUE(all.equal(unname(pullSegSiteHaplo(kosambi)),
+                                unname(pullSegSiteHaplo(haldane)))))
 
-  # The same pedigree under a name that is free is fine
-  out = pedigreeCross(pop, id=c("1","2","kid"),
-                      mother=c("0","0","1"),
-                      father=c("0","0","2"),
-                      matchID=TRUE, simParam=d$SP)
-  expect_equal(nInd(out), 3L)
-
-  # And matchID=FALSE is unaffected, because ids are not matched at all
-  set.seed(505)
-  free = pedigreeCross(pop, id=c("1","2","3"),
-                       mother=c("0","0","1"),
-                       father=c("0","0","2"),
-                       simParam=d$SP)
-  expect_equal(nInd(free), 3L)
+  set.seed(2103)
+  noPath = pedigreeCross(d$map, ped$id, ped$mother, ped$father)
+  set.seed(2103)
+  withPath = pedigreeCross(d$map, ped$id, ped$mother, ped$father, p=0.5)
+  expect_false(isTRUE(all.equal(unname(pullSegSiteHaplo(noPath)),
+                                unname(pullSegSiteHaplo(withPath)))))
 })
 
-test_that("ISSUE79 a cycle is reported as a cycle and names the individuals", {
-  # Ask 2
-  d = pedSP()
-  pop = newPop(d$map, simParam=d$SP)
+test_that("RECOMB quadProb reaches the meiosis of an autopolyploid", {
+  skip_on_cran()
+  set.seed(15021)
+  mapPop = quickHaplo(nInd=6, nChr=1, segSites=60, ploidy=4L)
 
-  expect_error(pedigreeCross(pop, id=c("A","B"), mother=c("B","A"),
-                             father=c("B","A"), simParam=d$SP),
-               "A")
-  expect_error(pedigreeCross(pop, id=c("A","B"), mother=c("B","A"),
-                             father=c("B","A"), simParam=d$SP),
-               "cycle")
+  id     = as.character(1:4)
+  mother = c(NA, NA, "1", "3")
+  father = c(NA, NA, "2", "2")
 
-  # An individual that is its own parent is the same failure
-  expect_error(pedigreeCross(pop, id=c("1","2","3"),
-                             mother=c("0","0","3"),
-                             father=c("0","0","2"),
-                             simParam=d$SP),
-               "3")
+  set.seed(2104)
+  bivalent = pedigreeCross(mapPop, id, mother, father, quadProb=0)
+  set.seed(2104)
+  quadrivalent = pedigreeCross(mapPop, id, mother, father, quadProb=1)
+
+  expect_equal(bivalent@ploidy, 4L)
+  expect_equal(nInd(quadrivalent), 4L)
+  expect_false(isTRUE(all.equal(unname(pullSegSiteHaplo(bivalent)),
+                                unname(pullSegSiteHaplo(quadrivalent)))))
 })
 
-test_that("ISSUE79 running out of cycles is reported separately", {
-  # Ask 2. The current message blames "maxGen", which is not an argument
-  d = pedSP(nInd=4)
+test_that("RECOMB the arguments are checked and a Pop refuses them", {
+  # Enumerated against checkRecombArgs in the CHECKARGS block below
+  d = pedSP(nInd=4, seed=15031)
+  ped = biparentalPed()
+  cross = function(...) pedigreeCross(d$map, ped$id, ped$mother, ped$father, ...)
+
+  # maxCycles is not a prefix of maxCycle, so R does not partial match it
+  expect_error(cross(maxCycles=2), "Unused arguments")
+  expect_error(cross(v=0), "greater than zero")
+  expect_error(cross(p=1.5), "between zero and one")
+
+  # The edges of the ranges run the whole cross, not just the check
+  expect_equal(nInd(cross(p=0)), 10L)
+  expect_equal(nInd(cross(p=1)), 10L)
+
   pop = newPop(d$map, simParam=d$SP)
-
-  id     = c("5","4","3","2","1")
-  mother = c("4","3","2","1","0")
-  father = c("4","3","2","1","0")
-
-  expect_error(pedigreeCross(pop, id, mother, father, maxCycle=2,
-                             simParam=d$SP),
-               "maxCycle")
-  # The same pedigree sorts when given enough passes
-  expect_equal(nInd(pedigreeCross(pop, id, mother, father, maxCycle=100,
-                                  simParam=d$SP)), 5L)
+  expect_error(pedigreeCross(pop, ped$id, ped$mother, ped$father,
+                             simParam=d$SP, v=1),
+               "map population")
+  expect_equal(d$SP$v, 2.6)
 })
 
-test_that("ISSUE79 an unknown parent is warned about", {
-  # Ask 2, the incomplete pedigree case. "ghost" is neither a pedigree row
-  # nor a founderPop individual, so it becomes a silent extra founder today
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
+# ---------------------------------------------------------------------------
+# PART 6  checkRecombArgs on its own
+#
+# pedigreeCross cannot test an unnamed argument at all: R matches a bare
+# value positionally to matchID long before it reaches the dots.
+# ---------------------------------------------------------------------------
 
-  expect_warning(pedigreeCross(pop, id=c("1","2","3"),
-                               mother=c("0","0","ghost"),
-                               father=c("0","0","2"),
-                               simParam=d$SP),
-                 "ghost")
+checkArgs = function(...) AlphaSimR:::checkRecombArgs(list(...))
 
-  # The conventional unknown marker is not worth a warning
-  expect_warning(pedigreeCross(pop, id=c("1","2","3"),
-                               mother=c("0","0","1"),
-                               father=c("0","0","2"),
-                               simParam=d$SP),
-                 NA)
+test_that("CHECKARGS nothing to check is nothing to complain about", {
+  expect_equal(AlphaSimR:::checkRecombArgs(list()), list())
+  expect_equal(checkArgs(v=1.5), list(v=1.5))
+  expect_equal(checkArgs(v=2.6, p=0.25, quadProb=0.5),
+               list(v=2.6, p=0.25, quadProb=0.5))
 })
 
-test_that("ISSUE79 DH and nSelf are validated", {
-  # Ask 2
-  d = pedSP(nInd=4)
-  pop = newPop(d$map, simParam=d$SP)
-  id = c("1","2","3")
-  mother = c("0","0","1")
-  father = c("0","0","2")
-
-  expect_error(pedigreeCross(pop, id, mother, father,
-                             nSelf=c(0,0,-1), simParam=d$SP),
-               "nSelf")
-  expect_error(pedigreeCross(pop, id, mother, father,
-                             nSelf=c(0,0,NA), simParam=d$SP),
-               "nSelf")
-  expect_error(pedigreeCross(pop, id, mother, father,
-                             DH=c(FALSE,FALSE,NA), simParam=d$SP),
-               "DH")
+test_that("CHECKARGS only the three recombination names are allowed", {
+  expect_error(checkArgs(maxCycles=2), "Unused arguments")
+  expect_error(checkArgs(V=1), "Unused arguments")
+  expect_error(checkArgs(v=1, nonsense=2), "nonsense")
+  expect_error(AlphaSimR:::checkRecombArgs(list(2.6)), "Unused arguments")
+  expect_error(AlphaSimR:::checkRecombArgs(list(v=1, 2)), "Unused arguments")
 })
 
-test_that("ISSUE79 an empty pedigree is rejected cleanly", {
-  # Ask 2. Today this reaches max() on an empty vector
-  d = pedSP()
-  pop = newPop(d$map, simParam=d$SP)
+test_that("CHECKARGS each value is a single finite number", {
+  expect_error(checkArgs(v="a"), "single number")
+  expect_error(checkArgs(v=TRUE), "single number")
+  expect_error(checkArgs(v=c(1,2)), "single number")
+  expect_error(checkArgs(v=numeric(0)), "single number")
+  expect_error(checkArgs(p=NA_real_), "single number")
+  expect_error(checkArgs(p=Inf), "single number")
+  expect_error(checkArgs(quadProb="a"), "quadProb")
+})
 
-  expect_error(pedigreeCross(pop, id=character(0), mother=character(0),
-                             father=character(0), simParam=d$SP),
+test_that("CHECKARGS the ranges are enforced at their edges", {
+  expect_error(checkArgs(v=0), "greater than zero")
+  expect_error(checkArgs(p=-0.1), "between zero and one")
+  expect_error(checkArgs(quadProb=2), "between zero and one")
+
+  expect_equal(checkArgs(v=1e-8)$v, 1e-8)
+  expect_equal(checkArgs(p=0)$p, 0)
+  expect_equal(checkArgs(p=1)$p, 1)
+  expect_equal(checkArgs(quadProb=1)$quadProb, 1)
+})
+
+# ---------------------------------------------------------------------------
+# PART 7  checkPedigreeInput on its own
+# ---------------------------------------------------------------------------
+
+checkPed = function(id, mother, father, DH=NULL, nSelf=NULL){
+  return(AlphaSimR:::checkPedigreeInput(id=id, mother=mother, father=father,
+                                        DH=DH, nSelf=nSelf))
+}
+
+test_that("CHECKPED the pedigree comes back coerced to character", {
+  r = checkPed(id=1:3, mother=c(NA,NA,1), father=c(NA,NA,2))
+
+  expect_equal(r$id, c("1","2","3"))
+  expect_equal(r$mother, c(NA,NA,"1"))
+  expect_equal(r$father, c(NA,NA,"2"))
+  expect_true(is.character(r$id))
+  expect_equal(r$DH, c(FALSE,FALSE,FALSE))
+  expect_equal(r$nSelf, c(0L,0L,0L))
+  expect_true(is.integer(r$nSelf))
+  expect_equal(r$nAdded, 0L)
+})
+
+test_that("CHECKPED the pedigree is extended back to unknown parents", {
+  r = checkPed(id="3", mother="2", father="1")
+
+  expect_equal(r$id, c("1","2","3"))
+  expect_equal(r$mother, c(NA_character_, NA_character_, "2"))
+  expect_equal(r$father, c(NA_character_, NA_character_, "1"))
+  expect_equal(r$nAdded, 2L)
+  # The added founders are neither selfed nor doubled
+  expect_equal(r$DH, c(FALSE,FALSE,FALSE))
+  expect_equal(r$nSelf, c(0L,0L,0L))
+})
+
+test_that("CHECKPED extension keeps the supplied per individual vectors", {
+  r = checkPed(id=c("3","4"), mother=c("2","3"), father=c("1","3"),
+               DH=c(TRUE,FALSE), nSelf=c(0,2))
+
+  expect_equal(r$id, c("1","2","3","4"))
+  expect_equal(r$nAdded, 2L)
+  # The added rows take defaults, the supplied rows keep their values
+  expect_equal(r$DH, c(FALSE,FALSE,TRUE,FALSE))
+  expect_equal(r$nSelf, c(0L,0L,0L,2L))
+})
+
+test_that("CHECKPED only NA is an unknown parent", {
+  # "0" used to mean unknown and now names an individual
+  r = checkPed(id="A", mother="0", father=NA)
+
+  expect_equal(r$id, c("0","A"))
+  expect_equal(r$mother, c(NA_character_, "0"))
+  expect_equal(r$father, c(NA_character_, NA_character_))
+  expect_equal(r$nAdded, 1L)
+})
+
+test_that("CHECKPED an id of NA is refused", {
+  expect_error(checkPed(id=c("1",NA), mother=c(NA,NA), father=c(NA,NA)),
+               "id can not contain NA")
+})
+
+test_that("CHECKPED the vectors are checked against each other", {
+  expect_error(checkPed(id=c("1","1"), mother=c(NA,NA), father=c(NA,NA)),
+               "duplicates")
+  expect_error(checkPed(id=c("1","2"), mother=NA_character_,
+                        father=c(NA,NA)),
+               "length\\(mother\\)")
+  expect_error(checkPed(id=c("1","2"), mother=c(NA,NA), father=NA_character_),
+               "length\\(father\\)")
+  expect_error(checkPed(id=c("1","2"), mother=c(NA,NA), father=c(NA,NA),
+                        DH=TRUE),
+               "length\\(DH\\)")
+  expect_error(checkPed(id=c("1","2"), mother=c(NA,NA), father=c(NA,NA),
+                        nSelf=0),
+               "length\\(nSelf\\)")
+  expect_error(checkPed(id=character(0), mother=character(0),
+                        father=character(0)),
                "empty")
 })
 
+test_that("CHECKPED nSelf and DH are checked", {
+  with3 = function(...) checkPed(id=c("1","2","3"),
+                                 mother=c(NA,NA,"1"),
+                                 father=c(NA,NA,"2"), ...)
+
+  expect_error(with3(nSelf=c(0,0,-1)), "nSelf")
+  expect_error(with3(nSelf=c(0,0,NA)), "nSelf")
+  expect_error(with3(nSelf=c(0,0,"a")), "nSelf")
+  expect_error(with3(DH=c(FALSE,FALSE,NA)), "DH")
+
+  expect_equal(with3(nSelf=c(0,1,2))$nSelf, c(0L,1L,2L))
+  expect_equal(with3(DH=c(TRUE,FALSE,TRUE))$DH, c(TRUE,FALSE,TRUE))
+})
 
 # ---------------------------------------------------------------------------
-# PART 3  Issue #131, half founders. An individual with one parent known and
-# one unknown needs a founder genome for the unknown parent, and no two of
-# them may share one.
+# PART 8  resolveFounders on its own
+#
+# Founder allocation is where every bug in this function has been. The
+# blocks above reach it through a whole simulation; these reach it directly,
+# with no population, no SimParam and no genotypes. The pedigree it is given
+# has already been extended, so a parent is either a row or NA.
 # ---------------------------------------------------------------------------
 
-test_that("ISSUE131 the pedigree from the bug report works", {
-  # Individual 3 has no mother and individual 4 has no father
-  d = pedSP(nInd=4, nChr=1, segSites=10, seed=13101)
-  pop = newPop(d$map, simParam=d$SP)
+resolve = function(id, mother, father, founderIds=character(0),
+                   nFounderInd=0L, matchID=FALSE){
+  return(AlphaSimR:::resolveFounders(id=id, mother=mother, father=father,
+                                     founderIds=founderIds,
+                                     nFounderInd=nFounderInd,
+                                     matchID=matchID))
+}
 
-  id = as.character(1:12)
-  mother = as.character(c(0,0,0,1,1,3:9))
-  father = as.character(c(0,0,2,0,2,3:9))
+test_that("RESOLVE a biparental pedigree names two founders", {
+  r = resolve(id=c("1","2","3"),
+              mother=c(NA,NA,"1"),
+              father=c(NA,NA,"2"),
+              nFounderInd=5L)
 
-  set.seed(606)
-  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
-
-  expect_equal(nInd(out), 12L)
-  expect_equal(out@id, id)
-  expect_equal(out@mother, mother)
-  expect_equal(out@father, father)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
+  expect_true(all(r$build))
+  expect_equal(r$motherPed, c(NA_integer_,NA_integer_,1L))
+  expect_equal(r$fatherPed, c(NA_integer_,NA_integer_,2L))
+  expect_equal(sum(!is.na(r$founderRowFP)), 2L)
+  expect_true(all(is.na(r$motherFP)))
 })
 
-test_that("ISSUE131 several half founders of the same kind each get a genome", {
-  # Every unknown parent is coded "0", so counting founders by name gives
-  # one where three are needed, and the founder population is undersized
-  d = pedSP(nInd=8, nChr=1, segSites=10, seed=13111)
-  pop = newPop(d$map, simParam=d$SP)
+test_that("RESOLVE every half founder gets a genome of its own", {
+  set.seed(18001)
+  r = resolve(id=c("1","2","A","B"),
+              mother=c(NA,NA,NA,NA),
+              father=c(NA,NA,"1","1"),
+              nFounderInd=8L)
 
-  id     = c("1","2","A","B","C")
-  mother = c("0","0","0","0","0")
-  father = c("0","0","1","1","2")
-
-  set.seed(707)
-  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
-
-  expect_equal(nInd(out), 5L)
-  expect_equal(out@id, id)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
+  expect_false(any(is.na(r$motherFP[3:4])))
+  expect_false(r$motherFP[3]==r$motherFP[4])
+  taken = c(r$founderRowFP, r$motherFP, r$fatherFP)
+  taken = taken[!is.na(taken)]
+  expect_equal(length(taken), 4L)
+  expect_equal(anyDuplicated(taken), 0L)
 })
 
-test_that("ISSUE131 two half founders never share a founder genome", {
-  # A and B have the same father and each has an unknown mother. If the two
-  # unknown mothers collapse onto one founder, the number of distinct
-  # founders behind A and B drops from three to two. IBD makes that visible.
-  d = pedSP(nInd=8, nChr=1, segSites=40, seed=13121, trackRec=TRUE)
-  pop = newPop(d$map, simParam=d$SP)
-
-  id     = c("1","2","A","B")
-  mother = c("0","0","0","0")
-  father = c("0","0","1","1")
-
-  set.seed(808)
-  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
-  expect_equal(nInd(out), 4L)
-
-  ibd = pullIbdHaplo(out, simParam=d$SP)
-  # Founder haplotypes are numbered two per individual, in order
-  founderOf = function(hap) return((hap+1L)%/%2L)
-  rows = match(c("A_1","A_2","B_1","B_2"), rownames(ibd))
-  expect_false(any(is.na(rows)))
-  used = unique(founderOf(c(ibd[rows,])))
-
-  # One shared father plus two distinct mothers
-  expect_equal(length(used), 3L)
-})
-
-test_that("ISSUE131 NA and 0 both mean unknown", {
-  d = pedSP(nInd=4, nChr=1, segSites=10, seed=13131)
-  pop = newPop(d$map, simParam=d$SP)
-
-  id     = c("1","2","A","B")
-  mother = c("0", NA, "0", NA)
-  father = c(NA, "0", "1", "2")
-
-  set.seed(909)
-  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
-
-  # Two founder rows and two unknown mothers, so four founders in total
-  expect_equal(nInd(out), 4L)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
-})
-
-test_that("ISSUE131 half founders are counted in the founder budget", {
-  # Two founder rows and two half founders need four, not two
-  d = pedSP(nInd=3, nChr=1, segSites=10, seed=13141)
-  pop = newPop(d$map, simParam=d$SP)
-
-  expect_error(pedigreeCross(pop, id=as.character(1:5),
-                             mother=as.character(c(0,0,0,1,1)),
-                             father=as.character(c(0,0,2,0,2)),
-                             simParam=d$SP),
+test_that("RESOLVE half founders count towards the founder budget", {
+  expect_error(resolve(id=c("1","2","A","B"),
+                       mother=c(NA,NA,NA,NA),
+                       father=c(NA,NA,"1","1"),
+                       nFounderInd=3L),
                "founders")
 })
 
-test_that("ISSUE131 Gregor's partial pedigree works", {
-  # The worked example from the issue thread, which needs exactly eight
-  # founders: four founder rows and four half founders
-  d = pedSP(nInd=8, nChr=1, segSites=10, seed=13151)
-  pop = newPop(d$map, simParam=d$SP)
+test_that("RESOLVE matchID copies a match and skips its ancestors", {
+  r = resolve(id=c("A","B","2","kid"),
+              mother=c(NA,NA,"A","2"),
+              father=c(NA,NA,"B","2"),
+              founderIds=as.character(1:4), matchID=TRUE)
 
-  id     = as.character(1:10)
-  mother = as.character(c(0,0,1,0,1,3,3,0,0,NA))
-  father = as.character(c(0,0,0,2,2,4,0,4,0,NA))
-
-  set.seed(1010)
-  out = pedigreeCross(pop, id, mother, father, simParam=d$SP)
-
-  expect_equal(nInd(out), 10L)
-  expect_equal(out@id, id)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
+  expect_equal(r$build, c(FALSE,FALSE,TRUE,TRUE))
+  # "2" is the second individual of founderPop
+  expect_equal(r$founderRowFP[3], 2L)
+  # kid is crossed from its parents, not copied
+  expect_true(is.na(r$founderRowFP[4]))
+  expect_equal(r$motherPed[4], 3L)
+  # matchID never draws an anonymous founder
+  expect_true(all(is.na(r$motherFP)))
+  expect_true(all(is.na(r$fatherFP)))
 })
 
-test_that("ISSUE131 matchID draws unknown parents from unnamed individuals", {
-  d = pedSP(nInd=6, nChr=1, segSites=40, seed=13161, trackRec=TRUE)
-  pop = newPop(d$map, simParam=d$SP)
-  expect_equal(pop@id, as.character(1:6))
-
-  id     = c("1","2","A")
-  mother = c("0","0","0")
-  father = c("0","0","1")
-
-  set.seed(1111)
-  out = pedigreeCross(pop, id, mother, father, matchID=TRUE, simParam=d$SP)
-  expect_equal(nInd(out), 3L)
-
-  ibd = pullIbdHaplo(out, simParam=d$SP)
-  founderOf = function(hap) return((hap+1L)%/%2L)
-  rows = match(c("A_1","A_2"), rownames(ibd))
-  used = sort(unique(founderOf(c(ibd[rows,]))))
-
-  # The father is individual 1, and the unknown mother has to be one of the
-  # individuals the pedigree does not name, so not individual 2
-  expect_equal(length(used), 2L)
-  expect_true(1L %in% used)
-  expect_false(2L %in% used)
-  expect_true(all(used %in% c(1L,3L,4L,5L,6L)))
+test_that("RESOLVE matchID needs at least one match", {
+  expect_error(resolve(id=c("x","y"), mother=c(NA,NA), father=c(NA,NA),
+                       founderIds=c("1","2"), matchID=TRUE),
+               "matches")
 })
 
-test_that("ISSUE131 matchID needs unnamed individuals to draw from", {
-  # Every individual in founderPop is named by the pedigree, so there is
-  # nobody left to be the unknown mother
-  d = pedSP(nInd=2, nChr=1, segSites=10, seed=13171)
-  pop = newPop(d$map, simParam=d$SP)
-
-  expect_error(pedigreeCross(pop, id=c("1","2","A"),
-                             mother=c("0","0","0"),
-                             father=c("0","0","1"),
-                             matchID=TRUE, simParam=d$SP),
-               "founders")
+test_that("RESOLVE matchID refuses an individual it cannot reach", {
+  expect_error(resolve(id=c("2","X","Y"),
+                       mother=c(NA,NA,"X"),
+                       father=c(NA,NA,"X"),
+                       founderIds=as.character(1:4), matchID=TRUE),
+               "X")
 })
