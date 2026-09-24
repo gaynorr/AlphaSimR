@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9012
+# AlphaSimR 2.1.0.9013
 
 * Changed `pedigreeCross` to use `NA` for an unknown parent. A value of `0` now names an individual, as any other value does.
 
@@ -74,7 +74,7 @@
 
 * Added additional structure to help documents so that related functions will be shown in the "see also" section.
 
-* renamed `mutate` to `mutateGenome` to prevent clash with dplyr function
+* Changed `mutate` into an S4 generic dispatching on its first argument. Anything that is not a population is passed to the next `mutate` on the search path, so attaching AlphaSimR after a package such as dplyr no longer takes `mutate` away from it. Attaching that package after AlphaSimR still masks this one, where `AlphaSimR::mutate` is needed.
 
 * performance optimization of functions in meiosis.cpp using Claude
 

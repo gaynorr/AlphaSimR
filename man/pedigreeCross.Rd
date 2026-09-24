@@ -10,7 +10,7 @@ pedigreeCross(
   mother,
   father,
   matchID = FALSE,
-  maxCycle = 100,
+  maxCycle = NULL,
   DH = NULL,
   nSelf = NULL,
   useFemale = TRUE,
@@ -42,8 +42,12 @@ unknown parents.}
 \item{matchID}{indicates if the IDs in founderPop should be
 matched to the id argument. See details.}
 
-\item{maxCycle}{the maximum number of loops to make over the pedigree
-to sort it.}
+\item{maxCycle}{the maximum number of passes to make over the pedigree
+while working out which generation each individual belongs to. If
+\code{NULL}, the number of individuals is used, which is the deepest a
+pedigree of that size can be and so is always enough. A pedigree that
+cannot be sorted is reported as such whatever this is set to, because a
+pass that places nobody is a cycle and is detected as one.}
 
 \item{DH}{an optional vector indicating if an individual
 should be made a doubled haploid.}

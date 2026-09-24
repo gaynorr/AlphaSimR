@@ -91,7 +91,7 @@ test_that("misc_and_miscPop", {
   )
 })
 
-test_that("mutateGenome", {
+test_that("mutate", {
   founderPop = newMapPop(
     list(c(0, 0, 0)),
     list(matrix(c(0, 0, 0, 0, 0, 0), nrow = 2, ncol = 3))
@@ -100,12 +100,48 @@ test_that("mutateGenome", {
   SP$nThreads = 1L
   pop = newPop(founderPop, simParam = SP)
   hapBefore = pullSegSiteHaplo(pop, simParam = SP)
-  pop = mutateGenome(pop, mutRate = 0, simParam = SP)
+  pop = mutate(pop, mutRate = 0, simParam = SP)
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 0)
-  pop = mutateGenome(pop, mutRate = 1, simParam = SP)
+  pop = mutate(pop, mutRate = 1, simParam = SP)
   hapAfter = pullSegSiteHaplo(pop, simParam = SP)
   expect_true(sum(hapAfter - hapBefore) == 6)
+})
+
+test_that("mutate is a generic that forwards what it cannot handle", {
+  expect_true(isGeneric("mutate"))
+  expect_true(existsMethod("mutate", "Pop"))
+  expect_true(existsMethod("mutate", "ANY"))
+
+  # A data.frame is not a population, so it goes to the next mutate on the
+  # search path rather than to an error. The call is qualified because an
+  # attached mutate would otherwise be found before the generic, which is
+  # exactly the situation being modelled.
+  other = new.env()
+  assign("mutate", function(pop, ...) "forwarded", envir = other)
+  attach(other, name = "testOtherMutate", warn.conflicts = FALSE)
+  on.exit(detach("testOtherMutate"), add = TRUE)
+
+  expect_equal(AlphaSimR::mutate(data.frame(x = 1)), "forwarded")
+
+  # A population still reaches the Pop method while the other one is
+  # attached, because dispatch happens inside the generic
+  founderPop = quickHaplo(nInd = 2, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+  expect_s4_class(AlphaSimR::mutate(pop, mutRate = 0, simParam = SP), "Pop")
+})
+
+test_that("mutate says so when there is nothing to forward to", {
+  # Only meaningful when nothing else on the search path provides one
+  hasOther = vapply(search(), function(w){
+    !identical(w, "package:AlphaSimR") &&
+      exists("mutate", envir = as.environment(w), inherits = FALSE)
+  }, logical(1))
+  skip_if(any(hasOther), "another mutate is attached")
+
+  expect_error(AlphaSimR::mutate(data.frame(x = 1)), "expects a Pop")
 })
 
 test_that("NamedMapPop subsetting by id", {

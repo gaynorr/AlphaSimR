@@ -544,11 +544,26 @@ transMat = function(R){
 #' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... arguments passed on to the method, or to another package's
+#' \code{mutate} when pop is not a population. See details.
 #'
 #' @return an object of \code{\link{Pop-class}} if
 #' returnPos=FALSE or a list containing a
 #' \code{\link{Pop-class}} and a data.frame containing the
 #' positions of mutations if returnPos=TRUE
+#'
+#' @details
+#' \code{mutate} is a generic, and dispatches on its first argument. This
+#' is so that attaching AlphaSimR does not take \code{mutate} away from a
+#' package that also provides one, such as dplyr. Anything that is not a
+#' \code{\link{Pop-class}} is passed on to the next \code{mutate} on the
+#' search path, and an error is raised only when there is no other one to
+#' pass it to.
+#'
+#' The reverse is not true. If AlphaSimR is attached first and another
+#' package providing \code{mutate} is attached after it, that package's
+#' function is found first and this one is not reached. Call
+#' \code{AlphaSimR::mutate} in that case.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -564,14 +579,27 @@ transMat = function(R){
 #' hapBefore = pullSegSiteHaplo(pop)
 #'
 #' #Introduce mutations
-#' mutateGenome(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
-#' pop = mutateGenome(pop, mutRate = 0.1, simParam=SP)
+#' mutate(pop, mutRate = 0.1, returnPos=TRUE, simParam=SP)
+#' pop = mutate(pop, mutRate = 0.1, simParam=SP)
 #' hapAfter = pullSegSiteHaplo(pop)
 #' hapAfter - hapBefore
-#' 
+#'
+#' @rdname mutate
 #' @export
-mutateGenome = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
-                        nThreads=NULL){
+setGeneric("mutate", function(pop, ...) standardGeneric("mutate"))
+
+# This is the package's only setGeneric. The generic and both of its
+# methods are kept in this one file because DESCRIPTION has no Collate
+# field, so files are sourced in alphabetical order and a method defined
+# in an earlier file would not find the generic. Moving either method
+# elsewhere means adding Collate.
+
+#' @rdname mutate
+#' @export
+setMethod("mutate",
+          signature(pop = "Pop"),
+          function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
+                   nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -657,6 +685,35 @@ mutateGenome = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
     return(pop)
   }
 }
+)
+
+#' @rdname mutate
+#' @export
+setMethod("mutate",
+          signature(pop = "ANY"),
+          function(pop, ...){
+            # Not a population, so this call was meant for whatever else
+            # provides mutate. Hand it to the next one on the search path,
+            # skipping this package so that the search cannot come back
+            # here and recurse.
+            here = "package:AlphaSimR"
+            for(where in search()){
+              if(identical(where, here)){
+                next
+              }
+              env = as.environment(where)
+              if(exists("mutate", envir=env, inherits=FALSE)){
+                nextMutate = get("mutate", envir=env, inherits=FALSE)
+                if(is.function(nextMutate)){
+                  return(nextMutate(pop, ...))
+                }
+              }
+            }
+            stop("mutate() expects a Pop, and was given a ",
+                 paste(class(pop), collapse="/"),
+                 ". No other mutate() is attached to pass it to.")
+          }
+)
 
 #' @title Lose individuals at random
 #'

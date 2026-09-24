@@ -27,7 +27,7 @@ pullSegSiteHaplo(founderGenome)
 ## -----------------------------------------------------------------------------
 basePop = newPop(founderGenome)
 
-mutatedBasePop = mutateGenome(basePop, mutRate = 0.1, simParam = SP)
+mutatedBasePop = mutate(basePop, mutRate = 0.1, simParam = SP)
 
 pullSegSiteGeno(basePop)
 

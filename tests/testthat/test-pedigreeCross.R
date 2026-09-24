@@ -3,10 +3,11 @@ context("pedigreeCross")
 # pedigreeCross takes a pedigree and builds the individuals it describes.
 #
 # Three rules shape everything below. id, mother and father are character
-# vectors. An unknown parent is NA and nothing else, so a parent given any
-# other value names an individual. Any parent named but without a row of its
-# own is added to the front of the pedigree as a founder before anything
-# else happens.
+# vectors. An unknown parent is NA or one of the unknownParent codes, and a
+# parent given any other value names an individual. A parent named but
+# without a row of its own is added to the front of the pedigree as a
+# founder before anything else happens, when it is used twice or more or
+# when matchID is TRUE; otherwise it is treated as unknown.
 #
 # The structural check used throughout is Mendelian consistency, which holds
 # exactly and needs no reference implementation: a diploid child takes one

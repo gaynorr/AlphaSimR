@@ -975,6 +975,284 @@ sortPed = function(id, mother, father, maxCycle=NULL){
   return(gen)
 }
 
+# Check the recombination settings given to pedigreeCross through ...
+#
+# dots, the list of ... arguments
+#
+# Returns dots unchanged. Only v, p and quadProb are allowed: ... would
+# otherwise swallow a misspelled argument name without a word.
+checkRecombArgs = function(dots){
+  recombArgs = c("v", "p", "quadProb")
+  if(length(dots)==0L){
+    return(dots)
+  }
+  nm = names(dots)
+  if(is.null(nm)){
+    nm = rep("", length(dots))
+  }
+  bad = c(rep("<unnamed>", sum(nm=="")), setdiff(nm[nm!=""], recombArgs))
+  if(length(bad)>0L){
+    stop(paste0("Unused arguments: ", paste(bad, collapse=", "),
+                ". Only ", paste(recombArgs, collapse=", "),
+                " may be passed through ..."))
+  }
+  for(arg in nm){
+    value = dots[[arg]]
+    if(!is.numeric(value) | length(value)!=1L){
+      stop(paste(arg, "must be a single number"))
+    }
+    if(!is.finite(value)){
+      stop(paste(arg, "must be a single number"))
+    }
+  }
+  if(!is.null(dots[["v"]])){
+    if(dots[["v"]]<=0){
+      stop("v must be greater than zero")
+    }
+  }
+  if(!is.null(dots[["p"]])){
+    if(dots[["p"]]<0 | dots[["p"]]>1){
+      stop("p must be between zero and one")
+    }
+  }
+  if(!is.null(dots[["quadProb"]])){
+    if(dots[["quadProb"]]<0 | dots[["quadProb"]]>1){
+      stop("quadProb must be between zero and one")
+    }
+  }
+  return(dots)
+}
+
+# Coerce, check and extend a pedigree given to pedigreeCross
+#
+# id, mother, father, the pedigree as the user supplied it
+# DH, nSelf, optional per individual vectors, either may be NULL
+# unknownParent, the values in mother and father that mean the parent is
+#   unknown, as well as NA
+# matchID, whether the pedigree's names will be matched to founderPop
+#
+# All three pedigree vectors are coerced to character, and so are the
+# unknownParent codes, so that a code of 0 matches a parent of "0". A parent
+# that is NA or one of those codes comes back as NA_character_, and any other
+# value names an individual. An id that is NA or one of those codes is not
+# allowed, because it could never be told apart from an unknown parent.
+#
+# The pedigree is then extended backwards. A name used as a parent but
+# without a row of its own is given one, with both of its parents unknown,
+# and those rows are placed ahead of the supplied pedigree. With matchID
+# every such name is added, because a name needs a row before it can be
+# matched. Without it, only a name used twice or more, counting the mother
+# and father vectors together, is added: a name used once carries no
+# relationship to anything, so it is recoded as unknown instead.
+#
+# Returns the extended vectors, along with nAdded, the number of rows the
+# extension put in front.
+checkPedigreeInput = function(id, mother, father, DH, nSelf,
+                              unknownParent=NA_character_, matchID=FALSE){
+  id = as.character(id)
+  mother = as.character(mother)
+  father = as.character(father)
+  unknownParent = as.character(unknownParent)
+  unknownParent = unknownParent[!is.na(unknownParent)]
+  if(is.null(DH)){
+    DH = logical(length(id))
+  }else{
+    DH = as.logical(DH)
+  }
+  if(is.null(nSelf)){
+    nSelf = rep(0, length(id))
+  }
+
+  # Check input data
+  if(anyNA(id)){
+    stop("id can not contain NA, because every individual needs a name")
+  }
+  if(any(id%in%unknownParent)){
+    stop("id can not contain a value given in unknownParent: ",
+         paste(unique(id[id%in%unknownParent]), collapse=", "))
+  }
+  if(any(duplicated(id))){
+    stop("id contains duplicates")
+  }
+  if(length(id)!=length(mother)){
+    stop("length(id) does not match length(mother)")
+  }
+  if(length(id)!=length(father)){
+    stop("length(id) does not match length(father)")
+  }
+  if(length(id)!=length(DH)){
+    stop("length(id) does not match length(DH)")
+  }
+  if(length(id)!=length(nSelf)){
+    stop("length(id) does not match length(nSelf)")
+  }
+  if(length(id)==0L){
+    stop("The pedigree is empty")
+  }
+  nSelf = suppressWarnings(as.integer(nSelf))
+  if(anyNA(nSelf) | any(nSelf<0L)){
+    stop("nSelf must be a non-negative integer for every individual")
+  }
+  if(anyNA(DH)){
+    stop("DH must be TRUE or FALSE for every individual")
+  }
+
+  # Every way of writing an unknown parent becomes NA from here on
+  mother[mother%in%unknownParent] = NA_character_
+  father[father%in%unknownParent] = NA_character_
+
+  # A parent with no row of its own. Uses are counted across both vectors,
+  # so a name that is both parents of one individual counts twice and a
+  # self is not turned into an outcross.
+  parents = c(mother, father)
+  missing = parents[!is.na(parents) & !(parents%in%id)]
+  if(matchID){
+    toAdd = unique(missing)
+  }else{
+    nUse = table(missing)
+    toAdd = names(nUse)[nUse>=2L]
+    dropped = names(nUse)[nUse<2L]
+    mother[mother%in%dropped] = NA_character_
+    father[father%in%dropped] = NA_character_
+  }
+
+  # Sorting the added names keeps the result the same however the supplied
+  # pedigree happened to be ordered
+  toAdd = sort(toAdd)
+  nAdded = length(toAdd)
+  if(nAdded>0L){
+    id = c(toAdd, id)
+    mother = c(rep(NA_character_, nAdded), mother)
+    father = c(rep(NA_character_, nAdded), father)
+    # An added individual is a founder, so it is neither selfed nor doubled
+    DH = c(rep(FALSE, nAdded), DH)
+    nSelf = c(rep(0L, nAdded), nSelf)
+  }
+
+  return(list(id=id, mother=mother, father=father, DH=DH, nSelf=nSelf,
+              nAdded=nAdded))
+}
+
+# Work out how every individual of an extended pedigree is to be made
+#
+# id, mother, father, the extended pedigree, unknown parents being NA
+# founderIds, the ids of the founder population, used only if matchID
+# nFounderInd, the size of the founder population, used only if not matchID
+# matchID, should the pedigree's names be matched to founderIds
+#
+# The pedigree has already been extended, so a parent is either another row
+# of it or unknown.
+#
+# With matchID, an individual whose name is in founderIds takes its genotype
+# from there and its own ancestry is not simulated. Everything descended from
+# such an individual is simulated, and nothing else can be made at all, so an
+# individual that is neither matched nor descended from a match is an error.
+#
+# Without matchID, the founders are the individuals whose parents are both
+# unknown, and every individual with exactly one unknown parent needs a
+# founder genome for that parent as well. All of them are drawn at random
+# from the founder population.
+#
+# Returns build, saying which rows the result contains; founderRowFP, the
+# position in the founder population to copy an individual from, or NA if it
+# is to be crossed; motherPed and fatherPed, the rows its parents are; and
+# motherFP and fatherFP, the positions to take a parent of unknown identity
+# from. This takes no population and no SimParam so that it can be checked on
+# its own.
+resolveFounders = function(id, mother, father, founderIds, nFounderInd,
+                           matchID){
+  n = length(id)
+  motherPed = match(mother, id)
+  fatherPed = match(father, id)
+  
+  founderRowFP = rep(NA_integer_, n)
+  motherFP = rep(NA_integer_, n)
+  fatherFP = rep(NA_integer_, n)
+  
+  if(matchID){
+    matched = id%in%founderIds
+    if(!any(matched)){
+      stop("matchID=TRUE, but no individual in the pedigree matches an ID in founderPop")
+    }
+    founderRowFP[matched] = match(id[matched], founderIds)
+    
+    # An individual can be made if it was matched, or if both of its parents
+    # can be made. Ancestors of a matched individual are skipped, so they
+    # need no genotype of their own.
+    build = matched
+    repeat{
+      canCross = !build &
+                 !is.na(motherPed) & !is.na(fatherPed) &
+                 build[ifelse(is.na(motherPed), 1L, motherPed)] &
+                 build[ifelse(is.na(fatherPed), 1L, fatherPed)]
+      if(!any(canCross)){
+        break
+      }
+      build = build | canCross
+    }
+    
+    # Skipping an ancestor is fine, but an individual that is neither made
+    # nor an ancestor of one cannot be accounted for at all
+    isAncestor = rep(FALSE, n)
+    repeat{
+      wanted = build | isAncestor
+      parents = unique(c(motherPed[wanted], fatherPed[wanted]))
+      parents = parents[!is.na(parents)]
+      newAncestor = isAncestor
+      newAncestor[parents] = TRUE
+      if(all(newAncestor==isAncestor)){
+        break
+      }
+      isAncestor = newAncestor
+    }
+    orphan = !build & !isAncestor
+    if(any(orphan)){
+      stop(paste("Not enough individuals in founderPop match the pedigree.",
+                 "These individuals are neither matched nor descended from a",
+                 "match:", paste(id[orphan], collapse=", ")))
+    }
+  }else{
+    # The founders are the individuals with no known parents, and a single
+    # unknown parent needs a founder genome of its own
+    build = rep(TRUE, n)
+    isFounderRow = is.na(motherPed) & is.na(fatherPed)
+    needMother = !isFounderRow & is.na(motherPed)
+    needFather = !isFounderRow & is.na(fatherPed)
+    
+    nAnon = sum(isFounderRow) + sum(needMother) + sum(needFather)
+    if(nAnon>nFounderInd){
+      stop(paste("Pedigree requires",nAnon,"founders, but only",nFounderInd,"were supplied"))
+    }
+    
+    # Randomly assign individuals as founders. The shuffle is deliberate: it
+    # makes repeated gene drop replicates from an imported pedigree easy.
+    pool = sample.int(nFounderInd, nAnon)
+    
+    # Hand out the founder genomes in a fixed order
+    taken = 0L
+    for(i in which(isFounderRow)){
+      taken = taken + 1L
+      founderRowFP[i] = pool[taken]
+    }
+    for(i in which(needMother)){
+      taken = taken + 1L
+      motherFP[i] = pool[taken]
+    }
+    for(i in which(needFather)){
+      taken = taken + 1L
+      fatherFP[i] = pool[taken]
+    }
+  }
+  
+  return(list(build=build,
+              founderRowFP=founderRowFP,
+              motherPed=motherPed,
+              fatherPed=fatherPed,
+              motherFP=motherFP,
+              fatherFP=fatherFP))
+}
+
+
 #' @title Pedigree cross
 #'
 #' @description
