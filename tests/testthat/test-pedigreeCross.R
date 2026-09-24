@@ -241,35 +241,76 @@ test_that("an unsortable pedigree is reported", {
 # PART 2  Extending the pedigree backwards
 # ---------------------------------------------------------------------------
 
-test_that("EXTEND a parent without a row of its own is added as a founder", {
-  # The example from the specification: one row naming two parents becomes
-  # three individuals
+test_that("EXTEND a parent used once is dropped and its child is a founder", {
+  # "3" names two parents that appear nowhere else. Neither carries a
+  # relationship to anything, so both are treated as unknown and "3" is a
+  # founder rather than the cross of two added rows.
   d = pedSP(nInd=4, seed=12001)
   pop = newPop(d$map, simParam=d$SP)
 
   out = pedigreeCross(pop, id="3", mother="2", father="1", simParam=d$SP)
 
-  expect_equal(nInd(out), 3L)
-  expect_equal(out@id, c("1","2","3"))
-  expect_equal(out@mother, c(NA,NA,"2"))
-  expect_equal(out@father, c(NA,NA,"1"))
+  expect_equal(nInd(out), 1L)
+  expect_equal(out@id, "3")
+  expect_equal(out@mother, NA_character_)
+  expect_equal(out@father, NA_character_)
 
+  # The genome came whole from founderPop rather than being made
   geno = pullSegSiteGeno(out, simParam=d$SP)
-  expect_mendelian(geno[3,], geno[2,], geno[1,], label="extended cross")
+  founders = pullSegSiteGeno(pop, simParam=d$SP)
+  isCopy = apply(founders, 1L, function(x) all(x==geno[1,]))
+  expect_true(any(isCopy))
 })
 
-test_that("EXTEND added founders come before the supplied pedigree", {
+test_that("EXTEND a parent used more than once is added", {
+  # "mum" and "dad" are each the parent of two individuals, so dropping
+  # them would leave two full sibs unrelated
   d = pedSP(nInd=8, seed=12011)
   pop = newPop(d$map, simParam=d$SP)
 
-  out = pedigreeCross(pop, id=c("kid","grandkid"),
-                      mother=c("mum","kid"),
-                      father=c("dad","kid"),
+  out = pedigreeCross(pop, id=c("a","b"),
+                      mother=c("mum","mum"),
+                      father=c("dad","dad"),
                       simParam=d$SP)
 
-  # mum and dad are added and sorted, then the rows as supplied
-  expect_equal(out@id, c("dad","mum","kid","grandkid"))
+  # The added rows are sorted, and come before the supplied pedigree
+  expect_equal(out@id, c("dad","mum","a","b"))
   expect_equal(nInd(out), 4L)
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  expect_mendelian(geno[3,], geno[2,], geno[1,], label="a")
+  expect_mendelian(geno[4,], geno[2,], geno[1,], label="b")
+})
+
+test_that("EXTEND a half sib group keeps the parent they share", {
+  # The shared mother is added, the two fathers are used once each and are
+  # dropped, which leaves the two half sibs as half founders
+  d = pedSP(nInd=8, seed=12013)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("a","b"),
+                      mother=c("mum","mum"),
+                      father=c("dad1","dad2"),
+                      simParam=d$SP)
+
+  expect_equal(out@id, c("mum","a","b"))
+  expect_equal(out@mother, c(NA,"mum","mum"))
+  expect_equal(out@father, c(NA_character_, NA_character_, NA_character_))
+})
+
+test_that("EXTEND a name used as both parents of one individual is added", {
+  # Two uses, but only one individual. Dropping it would turn a self into
+  # an outcross of two unrelated founders.
+  d = pedSP(nInd=4, seed=12016)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id="kid", mother="p", father="p", simParam=d$SP)
+
+  expect_equal(out@id, c("p","kid"))
+  expect_equal(nInd(out), 2L)
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  expect_mendelian(geno[2,], geno[1,], geno[1,], label="self")
 })
 
 test_that("EXTEND a pedigree that needs no extension is left alone", {
@@ -282,27 +323,45 @@ test_that("EXTEND a pedigree that needs no extension is left alone", {
   expect_equal(nInd(out), 10L)
 })
 
-test_that("EXTEND zero is a name, not an unknown parent", {
-  # "0" used to mean unknown. It now names an individual, which the
-  # extension adds as a founder.
+test_that("EXTEND zero is a name unless unknownParent says otherwise", {
   d = pedSP(nInd=4, seed=12031)
   pop = newPop(d$map, simParam=d$SP)
 
-  out = pedigreeCross(pop, id="3", mother="0", father="1", simParam=d$SP)
-
-  expect_equal(nInd(out), 3L)
+  # Used twice, so "0" names an individual and is added
+  out = pedigreeCross(pop, id=c("3","4"), mother=c("0","0"),
+                      father=c(NA,NA), simParam=d$SP)
   expect_true("0" %in% out@id)
   expect_equal(out@mother[out@id=="3"], "0")
+
+  # Saying that "0" means unknown makes both rows founders instead
+  out = pedigreeCross(pop, id=c("3","4"), mother=c("0","0"),
+                      father=c(NA,NA), unknownParent="0", simParam=d$SP)
+  expect_equal(out@id, c("3","4"))
+  expect_true(all(is.na(out@mother)))
+  expect_true(all(is.na(out@father)))
+})
+
+test_that("EXTEND several unknown codes can be given at once", {
+  d = pedSP(nInd=4, seed=12036)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("a","b"), mother=c("0","a"),
+                      father=c("", "a"),
+                      unknownParent=c("0",""), simParam=d$SP)
+
+  expect_equal(out@id, c("a","b"))
+  expect_equal(out@mother, c(NA,"a"))
+  expect_equal(out@father, c(NA,"a"))
 })
 
 test_that("EXTEND added founders count towards the founder budget", {
-  # Two added founders plus the supplied row need two founder genomes, and
-  # only one individual is on offer
+  # "1" and "2" are each used twice, so both are added, and the two added
+  # rows need two founder genomes where only one is on offer
   d = pedSP(nInd=1, seed=12041)
   pop = newPop(d$map, simParam=d$SP)
 
-  expect_error(pedigreeCross(pop, id="3", mother="2", father="1",
-                             simParam=d$SP),
+  expect_error(pedigreeCross(pop, id=c("3","4"), mother=c("2","2"),
+                             father=c("1","1"), simParam=d$SP),
                "founders")
 })
 
@@ -634,9 +693,12 @@ test_that("CHECKARGS the ranges are enforced at their edges", {
 # PART 7  checkPedigreeInput on its own
 # ---------------------------------------------------------------------------
 
-checkPed = function(id, mother, father, DH=NULL, nSelf=NULL){
+checkPed = function(id, mother, father, DH=NULL, nSelf=NULL,
+                    unknownParent=NA_character_, matchID=FALSE){
   return(AlphaSimR:::checkPedigreeInput(id=id, mother=mother, father=father,
-                                        DH=DH, nSelf=nSelf))
+                                        DH=DH, nSelf=nSelf,
+                                        unknownParent=unknownParent,
+                                        matchID=matchID))
 }
 
 test_that("CHECKPED the pedigree comes back coerced to character", {
@@ -652,20 +714,64 @@ test_that("CHECKPED the pedigree comes back coerced to character", {
   expect_equal(r$nAdded, 0L)
 })
 
-test_that("CHECKPED the pedigree is extended back to unknown parents", {
+test_that("CHECKPED a missing name used once is treated as unknown", {
   r = checkPed(id="3", mother="2", father="1")
+
+  expect_equal(r$id, "3")
+  expect_equal(r$mother, NA_character_)
+  expect_equal(r$father, NA_character_)
+  expect_equal(r$nAdded, 0L)
+  expect_equal(r$DH, FALSE)
+  expect_equal(r$nSelf, 0L)
+})
+
+test_that("CHECKPED a missing name used twice is added", {
+  r = checkPed(id=c("3","4"), mother=c("2","2"), father=c("1","1"))
+
+  expect_equal(r$id, c("1","2","3","4"))
+  expect_equal(r$mother, c(NA_character_, NA_character_, "2", "2"))
+  expect_equal(r$father, c(NA_character_, NA_character_, "1", "1"))
+  expect_equal(r$nAdded, 2L)
+  # The added founders are neither selfed nor doubled
+  expect_equal(r$DH, rep(FALSE, 4))
+  expect_equal(r$nSelf, rep(0L, 4))
+})
+
+test_that("CHECKPED uses are counted across mother and father together", {
+  # One individual, but two uses, so the name is kept and the individual
+  # comes back as a self rather than as a founder
+  r = checkPed(id="kid", mother="p", father="p")
+
+  expect_equal(r$id, c("p","kid"))
+  expect_equal(r$mother, c(NA_character_, "p"))
+  expect_equal(r$father, c(NA_character_, "p"))
+  expect_equal(r$nAdded, 1L)
+})
+
+test_that("CHECKPED a name that already has a row is never counted", {
+  # "3" is used twice, but it is a row of the pedigree, so nothing is added
+  # and the singleton "2" is still dropped
+  r = checkPed(id=c("3","4"), mother=c("2","3"), father=c(NA,"3"))
+
+  expect_equal(r$id, c("3","4"))
+  expect_equal(r$mother, c(NA_character_, "3"))
+  expect_equal(r$father, c(NA_character_, "3"))
+  expect_equal(r$nAdded, 0L)
+})
+
+test_that("CHECKPED matchID adds every missing name", {
+  # A name has to have a row before it can be matched, so the extension is
+  # not limited when matchID is TRUE
+  r = checkPed(id="3", mother="2", father="1", matchID=TRUE)
 
   expect_equal(r$id, c("1","2","3"))
   expect_equal(r$mother, c(NA_character_, NA_character_, "2"))
   expect_equal(r$father, c(NA_character_, NA_character_, "1"))
   expect_equal(r$nAdded, 2L)
-  # The added founders are neither selfed nor doubled
-  expect_equal(r$DH, c(FALSE,FALSE,FALSE))
-  expect_equal(r$nSelf, c(0L,0L,0L))
 })
 
 test_that("CHECKPED extension keeps the supplied per individual vectors", {
-  r = checkPed(id=c("3","4"), mother=c("2","3"), father=c("1","3"),
+  r = checkPed(id=c("3","4"), mother=c("2","2"), father=c("1","1"),
                DH=c(TRUE,FALSE), nSelf=c(0,2))
 
   expect_equal(r$id, c("1","2","3","4"))
@@ -675,14 +781,56 @@ test_that("CHECKPED extension keeps the supplied per individual vectors", {
   expect_equal(r$nSelf, c(0L,0L,0L,2L))
 })
 
-test_that("CHECKPED only NA is an unknown parent", {
-  # "0" used to mean unknown and now names an individual
-  r = checkPed(id="A", mother="0", father=NA)
+test_that("CHECKPED only NA is an unknown parent by default", {
+  # "0" names an individual unless it is given as unknownParent
+  r = checkPed(id=c("A","B"), mother=c("0","0"), father=c(NA,NA))
 
-  expect_equal(r$id, c("0","A"))
-  expect_equal(r$mother, c(NA_character_, "0"))
-  expect_equal(r$father, c(NA_character_, NA_character_))
+  expect_equal(r$id, c("0","A","B"))
+  expect_equal(r$mother, c(NA_character_, "0", "0"))
   expect_equal(r$nAdded, 1L)
+})
+
+test_that("CHECKPED unknownParent recodes the parent vectors", {
+  r = checkPed(id=c("A","B"), mother=c("0","0"), father=c(NA,NA),
+               unknownParent="0")
+
+  expect_equal(r$id, c("A","B"))
+  expect_equal(r$mother, c(NA_character_, NA_character_))
+  expect_equal(r$father, c(NA_character_, NA_character_))
+  expect_equal(r$nAdded, 0L)
+})
+
+test_that("CHECKPED unknownParent takes more than one code", {
+  r = checkPed(id=c("A","B","C"), mother=c("0","","-9"),
+               father=c("0","","A"),
+               unknownParent=c("0","","-9"))
+
+  expect_equal(r$id, c("A","B","C"))
+  expect_equal(r$mother, c(NA_character_, NA_character_, NA_character_))
+  expect_equal(r$father, c(NA_character_, NA_character_, "A"))
+})
+
+test_that("CHECKPED unknownParent is coerced like the pedigree", {
+  r = checkPed(id=c("A","B"), mother=c("0","0"), father=c(NA,NA),
+               unknownParent=0)
+
+  expect_equal(r$id, c("A","B"))
+  expect_true(all(is.na(r$mother)))
+})
+
+test_that("CHECKPED NA stays unknown whatever unknownParent is", {
+  r = checkPed(id=c("A","B"), mother=c("0",NA), father=c(NA,"A"),
+               unknownParent="0")
+
+  expect_equal(r$id, c("A","B"))
+  expect_equal(r$mother, c(NA_character_, NA_character_))
+  expect_equal(r$father, c(NA_character_, "A"))
+})
+
+test_that("CHECKPED an id that is an unknown code is refused", {
+  expect_error(checkPed(id=c("0","A"), mother=c(NA,"0"), father=c(NA,NA),
+                        unknownParent="0"),
+               "unknownParent")
 })
 
 test_that("CHECKPED an id of NA is refused", {
@@ -805,4 +953,168 @@ test_that("RESOLVE matchID refuses an individual it cannot reach", {
                        father=c(NA,NA,"X"),
                        founderIds=as.character(1:4), matchID=TRUE),
                "X")
+})
+
+# ---------------------------------------------------------------------------
+# PART 9  Generations, and building one generation at a time
+#
+# A generation number is one more than the larger of its parents', so it is
+# the longest path back to a founder. It decides both which individuals are
+# made together and the order they are made in, so a change to it would move
+# every seeded result.
+# ---------------------------------------------------------------------------
+
+sortGen = function(id, mother, father, maxCycle=NULL){
+  return(AlphaSimR:::sortPed(id=id, mother=mother, father=father,
+                             maxCycle=maxCycle))
+}
+
+test_that("SORTPED an individual with no known parent is generation one", {
+  g = sortGen(id=c("a","b"), mother=c(NA,NA), father=c(NA,NA))
+  expect_equal(g, c(1L,1L))
+  expect_true(is.integer(g))
+})
+
+test_that("SORTPED a generation is one past the later of its parents", {
+  # "4" has a founder for a mother and a second generation father, so it is
+  # third rather than second
+  g = sortGen(id=c("1","2","3","4"),
+              mother=c(NA,NA,"1","1"),
+              father=c(NA,NA,"2","3"))
+  expect_equal(g, c(1L,1L,2L,3L))
+})
+
+test_that("SORTPED an unknown parent counts as nothing", {
+  # A half founder is one generation past its one known parent
+  g = sortGen(id=c("1","2"), mother=c(NA,"1"), father=c(NA,NA))
+  expect_equal(g, c(1L,2L))
+})
+
+test_that("SORTPED the order the pedigree arrives in does not matter", {
+  id = c("1","2","3","4")
+  mother = c(NA,NA,"1","3")
+  father = c(NA,NA,"2","3")
+  forward = sortGen(id, mother, father)
+
+  back = sortGen(rev(id), rev(mother), rev(father))
+  expect_equal(rev(back), forward)
+})
+
+test_that("SORTPED a deep pedigree sorts", {
+  n = 60L
+  id = as.character(1:n)
+  parent = c(NA, as.character(1:(n-1)))
+  expect_equal(sortGen(id, parent, parent), 1:n)
+})
+
+test_that("SORTPED the default bound follows the size of the pedigree", {
+  # A chain is the deepest a pedigree of a given size can be, so the number
+  # of individuals is always enough. This one used to need maxCycle raising
+  # by hand, because it is more than 100 deep.
+  n = 150L
+  id = as.character(1:n)
+  parent = c(NA, as.character(1:(n-1)))
+  expect_equal(sortGen(id, parent, parent), 1:n)
+})
+
+test_that("SORTPED a pedigree deeper than a given maxCycle is reported", {
+  id = as.character(1:5)
+  parent = c(NA, as.character(1:4))
+  expect_error(sortGen(id, parent, parent, maxCycle=3), "maxCycle")
+})
+
+test_that("SORTPED a cycle is reported and names the individuals in it", {
+  expect_error(sortGen(id=c("A","B"), mother=c("B","A"), father=c("B","A")),
+               "cycle")
+  expect_error(sortGen(id=c("A","B"), mother=c("B","A"), father=c("B","A")),
+               "A, B")
+})
+
+test_that("SORTPED a cycle is told apart from running out of passes", {
+  # Both leave individuals unassigned, and the two are worth distinguishing
+  expect_error(sortGen(id=c("A","B"), mother=c("B","A"), father=c("B","A"),
+                       maxCycle=100),
+               "cycle")
+})
+
+test_that("BATCH a generation mixing copies and crosses keeps its order", {
+  # "3" is matched and copied, "kid" is crossed, and both are second
+  # generation, so they are made in the same batch
+  d = pedSP(nInd=4, seed=14001)
+  pop = newPop(d$map, simParam=d$SP)
+
+  out = pedigreeCross(pop, id=c("1","2","3","kid"),
+                      mother=c(NA,NA,"1","1"),
+                      father=c(NA,NA,"2","2"),
+                      matchID=TRUE, simParam=d$SP)
+
+  expect_equal(out@id, c("1","2","3","kid"))
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  fromPop = pullSegSiteGeno(pop, simParam=d$SP)
+  expect_equal(unname(geno["3",]), unname(fromPop["3",]))
+  expect_mendelian(geno["kid",], geno["1",], geno["2",], label="kid")
+})
+
+test_that("BATCH a generation selfed different amounts keeps its order", {
+  d = pedSP(nInd=6, seed=14011)
+  pop = newPop(d$map, simParam=d$SP)
+
+  id = c("p1","p2","a","b","c")
+  mother = c(NA,NA,"p1","p1","p1")
+  father = c(NA,NA,"p2","p2","p2")
+
+  out = pedigreeCross(pop, id, mother, father,
+                      nSelf=c(0,0,0,2,1), simParam=d$SP)
+
+  expect_equal(out@id, id)
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  # "a" is a direct cross, so the Mendelian bound holds. "b" and "c" have
+  # been selfed, so only the weaker bound does.
+  expect_mendelian(geno["a",], geno["p1",], geno["p2",], label="a")
+  expect_descendant(geno["b",], geno["p1",], geno["p2",], label="b")
+  expect_descendant(geno["c",], geno["p1",], geno["p2",], label="c")
+})
+
+test_that("BATCH a generation with only some doubled haploids keeps its order", {
+  d = pedSP(nInd=6, seed=14021)
+  pop = newPop(d$map, simParam=d$SP)
+
+  id = c("p1","p2","a","b","c")
+  mother = c(NA,NA,"p1","p1","p1")
+  father = c(NA,NA,"p2","p2","p2")
+
+  out = pedigreeCross(pop, id, mother, father,
+                      DH=c(FALSE,FALSE,TRUE,FALSE,TRUE), simParam=d$SP)
+
+  expect_equal(out@id, id)
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  # The two doubled haploids are homozygous everywhere and "b", which was
+  # left out of the same call, is not
+  expect_false(any(geno["a",]==1))
+  expect_false(any(geno["c",]==1))
+  expect_true(any(geno["b",]==1))
+})
+
+test_that("BATCH selfing and doubled haploids combine in one generation", {
+  d = pedSP(nInd=6, seed=14031)
+  pop = newPop(d$map, simParam=d$SP)
+
+  id = c("p1","p2","a","b")
+  mother = c(NA,NA,"p1","p1")
+  father = c(NA,NA,"p2","p2")
+
+  out = pedigreeCross(pop, id, mother, father,
+                      nSelf=c(0,0,2,0),
+                      DH=c(FALSE,FALSE,TRUE,TRUE),
+                      simParam=d$SP)
+
+  expect_equal(out@id, id)
+
+  geno = pullSegSiteGeno(out, simParam=d$SP)
+  expect_false(any(geno["a",]==1))
+  expect_false(any(geno["b",]==1))
+  expect_descendant(geno["a",], geno["p1",], geno["p2",], label="a")
 })

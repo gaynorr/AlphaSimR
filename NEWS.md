@@ -1,4 +1,22 @@
-# AlphaSimR 2.1.0.9006
+# AlphaSimR 2.1.0.9012
+
+* Changed `pedigreeCross` to use `NA` for an unknown parent. A value of `0` now names an individual, as any other value does.
+
+* Added an `unknownParent` argument to `pedigreeCross`, giving the values in `mother` and `father` that mean the parent is unknown, such as `"0"` or `""`. More than one may be given. `NA` is always treated as unknown.
+
+* Changed `pedigreeCross` to extend a pedigree backwards, adding a founder row for any individual named as a parent but lacking a row of its own. With `matchID=FALSE`, only names used as a parent twice or more are added, because a name used once carries no relationship and its child can be a founder. With `matchID=TRUE` every missing name is added, since a name must have a row before it can be matched.
+
+* Changed `pedigreeCross` with `matchID=TRUE` to return the matched individuals and their descendants. The ancestry above a match is no longer simulated, and an individual that is neither matched nor descended from a match is now an error.
+
+* Changed `pedigreeCross` to accept a `MapPop` or `NamedMapPop` as meaning that no simulation has been set up yet. It then builds a temporary `SimParam` of its own and returns a `NamedMapPop` that can be passed to `SimParam$new`. The recombination settings `v`, `p` and `quadProb` may be passed through `...` in this case.
+
+* Added ID based subsetting to `NamedMapPop`, so `pop["a"]` works as it does for a `Pop`.
+
+* Changed `pedigreeCross` to build a pedigree one generation at a time, making all of a generation's crosses in a single `makeCross2` call and batching its selfing and doubled haploid steps the same way. The number of calls into the crossing code now follows the depth of the pedigree rather than its size. Generation numbers are also assigned with a vectorised pass, so sorting a deep pedigree no longer loops over every individual in every pass. Results from a given seed differ from earlier versions, because the order in which random numbers are drawn has changed.
+
+* Changed the default for `maxCycle` in `pedigreeCross` to `NULL`, which uses the number of individuals in the pedigree. That is the deepest a pedigree of that size can be, so the bound is never what stops a pedigree being sorted. A pedigree more than 100 generations deep previously had to have `maxCycle` raised by hand.
+
+* Added a "Gene Drop Simulations" article covering `pedigreeCross`, with an emphasis on using an external pedigree and external genotypes.
 
 * Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
 

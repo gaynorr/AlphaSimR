@@ -16,6 +16,7 @@ pedigreeCross(
   useFemale = TRUE,
   simParam = NULL,
   nThreads = NULL,
+  unknownParent = NA_character_,
   ...
 )
 }
@@ -61,6 +62,11 @@ population.}
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
+\item{unknownParent}{the values in mother and father that mean the
+parent is unknown, such as \code{"0"} or \code{""}. More than one may
+be given. \code{NA} is always treated as unknown, whatever this is set
+to, because it cannot name an individual.}
+
 \item{...}{the recombination settings \code{v}, \code{p} and
 \code{quadProb}, used only when founderPop is a map population. Any that
 are not given keep the \code{\link{SimParam}} defaults. Passing them
@@ -96,30 +102,44 @@ temporary \code{\link{SimParam}} defines no traits, nothing about traits
 or SNP chips survives the call. The recombination settings it uses can be
 given as \code{v}, \code{p} and \code{quadProb} through \code{...}.
 The id, mother and father vectors are always taken as character vectors,
-and anything else is coerced to one. An unknown parent is \code{NA} and
-nothing else: a parent given any other value, including \code{0}, names
-an individual. An id of \code{NA} is not allowed.
+and anything else is coerced to one. A parent is unknown if it is
+\code{NA} or one of the values given as unknownParent, and any other
+value names an individual. By default \code{NA} is the only unknown
+value, so a parent of \code{0} names an individual called "0" unless
+\code{unknownParent="0"} is given. An id of \code{NA}, or an id that is
+one of the unknownParent values, is not allowed.
 
-The pedigree is extended backwards before it is used. Any individual
+The pedigree is extended backwards before it is used, so that every
+parent is either another row of the pedigree or unknown. An individual
 named as a parent but without a row of its own is given one, with both of
 its parents unknown, and those rows are placed ahead of the supplied
-pedigree. A pedigree of id "3" with mother "2" and father "1" therefore
-becomes three individuals: "1" and "2" with unknown parents, and "3" as
-their cross. After this every parent is either another row of the
-pedigree or unknown.
+pedigree. How much is added depends on matchID.
 
-What happens next depends on matchID.
+What happens next also depends on matchID.
 
-If matchID is FALSE, the founders are the individuals whose parents are
-both unknown, and they are randomly sampled from founderPop. An
-individual with exactly one unknown parent is a half founder, and that
-parent is given a founder genome of its own, so a pedigree with several
-half founders needs one extra founder for each of them. Two half founders
-never share a genome. Every individual in the extended pedigree is
-returned.
+If matchID is FALSE, only the missing names that are needed are added. A
+missing name is added when it is used as a parent twice or more, counting
+the mother and father vectors together, because leaving it out would
+break a relationship: two half sibs would come back unrelated, and an
+individual whose mother and father are the same missing name would come
+back as an outcross rather than a self. A missing name used once carries
+no relationship, so it is treated as unknown, and the individual it
+belonged to becomes a founder. A pedigree of id "3" with mother "2" and
+father "1" is therefore the single founder "3", because neither "1" nor
+"2" is used anywhere else. The returned mother and father show what was
+simulated, so a dropped name comes back as \code{NA}.
 
-If matchID is TRUE, an individual whose id is found in founderPop takes
-its genotype from there, and its own ancestry is not simulated. Only the
+The founders are then the individuals whose parents are both unknown, and
+they are randomly sampled from founderPop. An individual with exactly one
+unknown parent is a half founder, and that parent is given a founder
+genome of its own, so a pedigree with several half founders needs one
+extra founder for each of them. Two half founders never share a genome.
+Every individual in the extended pedigree is returned.
+
+If matchID is TRUE, every missing name is added, because a name has to
+have a row of its own before it can be matched. An individual whose id is
+found in founderPop takes its genotype from there, and its own ancestry
+is not simulated. Only the
 matched individuals and what descends from them are simulated, so the
 returned population is smaller than the extended pedigree whenever the
 pedigree reaches back beyond a match. An individual that is neither
@@ -144,13 +164,6 @@ mother = c(NA, NA, "1", as.character(3:9))
 father = c(NA, NA, "2", as.character(3:9))
 pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
-#The same cross written without its founder rows, which the backwards
-#extension adds
-pop3 = pedigreeCross(pop, id=as.character(3:10),
-                     mother=c("1", as.character(3:9)),
-                     father=c("2", as.character(3:9)),
-                     simParam=SP)
-
 #An incomplete pedigree, with half founders in rows 3 and 4
 founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
@@ -159,7 +172,24 @@ pop = newPop(founderPop, simParam=SP)
 id = as.character(1:5)
 mother = c(NA, NA, NA, "1", "1")
 father = c(NA, NA, "2", NA, "2")
+pop3 = pedigreeCross(pop, id, mother, father, simParam=SP)
+
+#A pedigree naming parents that have no row of their own. "A" is used
+#twice, so it is added and "11" and "12" come back as half sibs. "B" and
+#"C" are used once, so they are treated as unknown and "13" comes back as
+#a founder.
+id = c("11", "12", "13")
+mother = c("A", "A", "B")
+father = c(NA, NA, "C")
 pop4 = pedigreeCross(pop, id, mother, father, simParam=SP)
+getPed(pop4)
+
+#A pedigree that writes an unknown parent as 0
+id = as.character(1:3)
+mother = c("0", "0", "1")
+father = c("0", "0", "2")
+pop5 = pedigreeCross(pop, id, mother, father, unknownParent="0",
+                     simParam=SP)
 
 }
 \seealso{

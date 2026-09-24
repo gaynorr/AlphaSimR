@@ -54,17 +54,30 @@ These are always character vectors. Anything else is coerced with
 becomes character internally and the IDs on the returned population will
 be character.
 
-An unknown parent is `NA` and nothing else. This matters, because many
-pedigree files use `0` to mean unknown, and AlphaSimR does not. A parent
-recorded as `"0"` names an individual called "0", it does not say that the
-parent is unknown. Recoding the file is usually a one line job, and is
-covered below. An `NA` in `id` is an error, since every individual needs a
-name.
+An unknown parent is `NA` by default. This matters, because many pedigree
+files use `0` to mean unknown, and AlphaSimR does not read it that way on
+its own: a parent recorded as `"0"` names an individual called "0". The
+`unknownParent` argument says which values mean unknown, so a file using
+`0` is handled by passing `unknownParent = "0"`, and a merged file using
+several conventions by passing them all. `NA` is always unknown, whatever
+else is given, because it cannot name anything. An `NA` in `id` is an
+error, since every individual needs a name, and an `id` that is one of the
+`unknownParent` values is an error for the same reason.
 
-The pedigree is extended backwards before it is used. Any individual named
-as a parent but without a row of its own is given one, with both of its
-parents unknown, and those rows are placed ahead of the supplied pedigree.
-So this pedigree:
+The pedigree is extended backwards before it is used, so that every parent
+is either another row of the pedigree or unknown. Which names get a row of
+their own depends on whether they carry any information about how
+individuals are related.
+
+A name used as a parent twice or more, counting the mother and father
+columns together, is added as a founder row. Leaving it out would change
+the pedigree: two half sibs sharing an unrecorded mother would come back
+unrelated, and an individual whose mother and father are the same
+unrecorded name would come back as an outcross rather than a self.
+
+A name used once is different. It links its child to nothing else in the
+pedigree, so the child can simply be a founder in its own right. Such a
+name is treated as unknown and no row is added for it. This pedigree:
 
 ```{r}
 ped = data.frame(id = "3",
@@ -72,7 +85,10 @@ ped = data.frame(id = "3",
                  father = "1")
 ```
 
-is the same as this one:
+is therefore a single founder called "3". Neither "1" nor "2" appears
+anywhere else, so neither is worth simulating, and individual "3" takes a
+genome from `founderPop` directly. If you want the cross, write the
+founders out:
 
 ```{r}
 ped = data.frame(id = c("1", "2", "3"),
@@ -80,14 +96,18 @@ ped = data.frame(id = c("1", "2", "3"),
                  father = c(NA, NA, "1"))
 ```
 
-This means you never have to write out the founder rows yourself. It also
-means the returned population may be longer than the pedigree you supplied.
+The returned `mother` and `father` show what was actually simulated, so a
+name that was dropped this way comes back as `NA` rather than as you wrote
+it. Matching on ID is the exception to all of this: with `matchID = TRUE`
+every missing name gets a row, because a name has to have a row before it
+can be matched against `founderPop`.
 
 The pedigree does not have to be sorted. `pedigreeCross()` sorts it, and in
 doing so it will detect a few problems: duplicated IDs, and loops in which
-an individual ends up being its own ancestor. The `maxCycle` argument sets
-how many passes over the pedigree are made while sorting, and only needs
-raising for very deep pedigrees.
+an individual ends up being its own ancestor. The `maxCycle` argument bounds
+how many passes over the pedigree are made while sorting; left at `NULL` it
+follows the size of the pedigree, which is always enough, so it is not
+something you normally need to set.
 
 # A first example
 
@@ -154,7 +174,24 @@ Four inbred founders are crossed in pairs, the two single crosses are
 crossed to give `C3`, and three doubled haploid lines are derived from
 `C3`.
 
-Recoding the unknown parents is a single pass over the two parent columns:
+The `0` codes are handled by `unknownParent`, so the file can be used as
+it is:
+
+```{r, eval = FALSE}
+pedigreeCross(founderPop, ped$id, ped$mother, ped$father,
+              unknownParent = "0")
+```
+
+A merged pedigree often uses several conventions at once, and they can all
+be given together:
+
+```{r, eval = FALSE}
+pedigreeCross(founderPop, ped$id, ped$mother, ped$father,
+              unknownParent = c("0", "", "NA", "*", "-9"))
+```
+
+For the rest of this article we will recode once instead, so that the
+calls that follow stay short:
 
 ```{r}
 ped$mother[ped$mother == "0"] = NA
@@ -162,18 +199,10 @@ ped$father[ped$father == "0"] = NA
 ped
 ```
 
-If the file uses several conventions, which is common when pedigrees have
-been merged, widen the test rather than repeating it:
-
-```{r, eval = FALSE}
-unknown = c("0", "", "NA", "*", "-9")
-ped$mother[ped$mother %in% unknown] = NA
-ped$father[ped$father %in% unknown] = NA
-```
-
 It is worth checking, before simulating, that every named parent is either
-a row of the pedigree or unknown. Anything else is a typo, and the
-backwards extension will silently turn it into an extra founder:
+a row of the pedigree or unknown. Anything else is a typo, and a typo is
+silent: a misspelt parent name used once is simply treated as unknown, and
+its child becomes a founder.
 
 ```{r}
 named = unique(c(ped$mother, ped$father))
@@ -181,8 +210,8 @@ named = named[!is.na(named)]
 setdiff(named, ped$id)
 ```
 
-An empty result means the pedigree is complete. Here it is, so nothing
-will be added.
+An empty result means the pedigree is complete. Here it is, so nothing is
+added and nothing is dropped.
 
 # Working with external genotypes
 
@@ -301,6 +330,34 @@ founder genomes are drawn from `founderPop` even though the pedigree only
 names one individual with two unknown parents. The unknown mothers of `B`
 and `C` are not the same individual, and they are not rows of the returned
 population; only the named individuals are returned.
+
+The other thing that shapes the founder count is the extension rule from
+the first section. A parent named only once is treated as unknown, so an
+individual whose parents are both unrecorded singletons is one founder
+rather than the cross of two:
+
+```{r}
+oncePed = data.frame(id     = c("X", "Y", "Z"),
+                     mother = c("m1", "shared", "shared"),
+                     father = c("f1", NA, NA))
+
+onceDrop = pedigreeCross(founderPop = founderPop,
+                         id = oncePed$id, mother = oncePed$mother,
+                         father = oncePed$father)
+getPed(onceDrop)
+```
+
+`m1` and `f1` are each used once, so both are treated as unknown and `X`
+is a founder. `shared` is used twice, so it is added, and `Y` and `Z` come
+back as the half sibs the pedigree says they are. Four founder genomes are
+used in all: one for `X`, one for `shared`, and one each for the unknown
+fathers of `Y` and `Z`.
+
+This keeps the founder count close to what the pedigree actually
+constrains, but it is a genetic difference and not only a bookkeeping one.
+`X` is now a single individual taken from `founderPop`, where it would
+otherwise have been the cross of two. With an inbred `founderPop`, that
+means `X` is inbred where it used to be heterozygous.
 
 ## matchID = TRUE
 
@@ -510,8 +567,14 @@ be reported.
 
 **Unknown parents must be `NA`.** A `0` in a parent column names an
 individual called "0", and because every row with that parent then shares
-a single genome, unrelated individuals come out related. Recode the file
-before dropping it.
+a single genome, unrelated individuals come out related. Pass
+`unknownParent = "0"`, or recode the file before dropping it.
+
+**A parent named once is not simulated.** Under `matchID = FALSE`, a
+parent that appears nowhere else in the pedigree is treated as unknown and
+its child becomes a founder. This is usually what you want, and it keeps
+the founder count down, but it means a misspelt parent name fails quietly.
+The `setdiff()` check above catches it.
 
 **`matchID = FALSE` samples founders at random.** The IDs in the pedigree
 and the IDs in `founderPop` are unconnected under this setting, so a
@@ -538,8 +601,9 @@ confirm that the drop did what was intended.
 # Summary
 
 `pedigreeCross()` drops founder genomes through a pedigree. The pedigree
-is three character vectors with `NA` for unknown parents, and it is
-extended backwards so that founder rows can be left out. Founders are
+is three character vectors, with unknown parents written as `NA` or as
+whatever `unknownParent` says, and it is extended backwards over the
+parent names that carry a relationship. Founders are
 either sampled at random, with `matchID = FALSE`, or matched by name to
 genotyped individuals, with `matchID = TRUE`. Given a map population it
 builds and discards its own `SimParam` and returns a `NamedMapPop`, which
