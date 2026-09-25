@@ -10,35 +10,78 @@ hybridCross(
   crossPlan = "testcross",
   returnHybridPop = FALSE,
   simParam = NULL,
-  nThreads = NULL
+  nThreads = NULL,
+  ...
 )
 }
 \arguments{
-\item{females}{female population, an object of \code{\link{Pop-class}}}
+\item{females}{female population, an object of \code{\link{Pop-class}},
+\code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. A map
+population is taken to mean that no simulation has been set up yet: see
+details.}
 
-\item{males}{male population, an object of \code{\link{Pop-class}}}
+\item{males}{male population, of the same kind as females}
 
 \item{crossPlan}{either "testcross" for all possible combinations
 or a matrix with two columns for designed crosses}
 
 \item{returnHybridPop}{should results be returned as
 \code{\link{HybridPop-class}}. If false returns results as
-\code{\link{Pop-class}}. Population must be fully inbred if TRUE.}
+\code{\link{Pop-class}}. Population must be fully inbred if TRUE.
+Must be FALSE when females and males are map populations, because they
+have no traits.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
-global environment.}
+global environment. Ignored, with a warning, when females and males are
+map populations.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{...}{the recombination settings \code{v}, \code{p} and
+\code{quadProb}, used only when females and males are map populations.
+Any that are not given keep the \code{\link{SimParam}} defaults. Passing
+them with a \code{\link{Pop-class}} is an error, because that simulation
+already defines them.}
+}
+\value{
+a \code{\link{Pop-class}} or \code{\link{HybridPop-class}}. When
+females and males are map populations, a \code{\link{NamedMapPop-class}}
+if both are a \code{\link{NamedMapPop-class}} and otherwise a
+\code{\link{MapPop-class}}.
 }
 \description{
 A convenient function for hybrid plant breeding simulations. Allows for
 easy specification of a test cross scheme and/or creation of an object
 of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
 should only be used if the parents were created using the \code{\link{makeDH}}
-function or \code{\link{newPop}} using inbred founders. The id for
-new individuals is [mother_id]_[father_id]
+function or \code{\link{newPop}} using inbred founders. When a
+\code{\link{Pop-class}} is returned, new individuals are given ids from
+the \code{\link{SimParam}}'s counter in the same way as any other cross.
+When a \code{\link{HybridPop-class}} or \code{\link{NamedMapPop-class}}
+is returned, the id for new individuals is [mother_id]_[father_id].
+}
+\details{
+Passing a \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}
+for both females and males means no simulation has been set up yet. This
+is intended for making hybrids to use as the founder population of a
+hybrid breeding program. No \code{\link{SimParam}} is looked for and none
+is created for the user: the function makes a temporary one of its own,
+uses it to make the crosses, and discards it. The recombination settings
+it uses can be given as \code{v}, \code{p} and \code{quadProb} through
+\code{...}. Both populations must share the same genetic map, and the
+result carries that map, so it can be passed to \code{SimParam$new()}.
+
+When both populations are a \code{\link{NamedMapPop-class}}, the result
+is a \code{\link{NamedMapPop-class}} whose id is [mother_id]_[father_id]
+and whose mother and father are the parents' ids. A crossPlan that makes
+the same cross more than once would repeat an id, so every copy of a
+repeated id is given a further underscore and letters to tell the copies
+apart, as in "A_B_a", "A_B_b" and so on, with "aa" following "z". When
+either population is a plain \code{\link{MapPop-class}} its parents have
+no ids to name the hybrids after, so the result is a
+\code{\link{MapPop-class}}.
 }
 \examples{
 #Create founder haplotypes
@@ -53,6 +96,14 @@ pop = newPop(founderPop, simParam=SP)
 
 #Make crosses for full diallele
 pop2 = hybridCross(pop, pop, simParam=SP)
+
+#Make hybrid founders before a simulation is set up, using inbred
+#haplotypes as the parents
+inbreds = quickHaplo(nInd=4, nChr=1, segSites=10, inbred=TRUE)
+hybridFounders = hybridCross(inbreds[1:2], inbreds[3:4], nThreads=1L)
+SP = SimParam$new(hybridFounders)
+\dontshow{SP$nThreads = 1L}
+pop3 = newPop(hybridFounders, simParam=SP)
 
 }
 \seealso{

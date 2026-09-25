@@ -5,21 +5,61 @@
 #' easy specification of a test cross scheme and/or creation of an object
 #' of \code{\link{HybridPop-class}}. Note that the \code{\link{HybridPop-class}}
 #' should only be used if the parents were created using the \code{\link{makeDH}}
-#' function or \code{\link{newPop}} using inbred founders. The id for
-#' new individuals is [mother_id]_[father_id]
+#' function or \code{\link{newPop}} using inbred founders. When a
+#' \code{\link{Pop-class}} is returned, new individuals are given ids from
+#' the \code{\link{SimParam}}'s counter in the same way as any other cross.
+#' When a \code{\link{HybridPop-class}} or \code{\link{NamedMapPop-class}}
+#' is returned, the id for new individuals is [mother_id]_[father_id].
 #'
-#' @param females female population, an object of \code{\link{Pop-class}}
-#' @param males male population, an object of \code{\link{Pop-class}}
+#' @param females female population, an object of \code{\link{Pop-class}},
+#' \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}. A map
+#' population is taken to mean that no simulation has been set up yet: see
+#' details.
+#' @param males male population, of the same kind as females
 #' @param crossPlan either "testcross" for all possible combinations
 #' or a matrix with two columns for designed crosses
 #' @param returnHybridPop should results be returned as
 #' \code{\link{HybridPop-class}}. If false returns results as
 #' \code{\link{Pop-class}}. Population must be fully inbred if TRUE.
+#' Must be FALSE when females and males are map populations, because they
+#' have no traits.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
+#' global environment. Ignored, with a warning, when females and males are
+#' map populations.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... the recombination settings \code{v}, \code{p} and
+#' \code{quadProb}, used only when females and males are map populations.
+#' Any that are not given keep the \code{\link{SimParam}} defaults. Passing
+#' them with a \code{\link{Pop-class}} is an error, because that simulation
+#' already defines them.
+#'
+#' @return a \code{\link{Pop-class}} or \code{\link{HybridPop-class}}. When
+#' females and males are map populations, a \code{\link{NamedMapPop-class}}
+#' if both are a \code{\link{NamedMapPop-class}} and otherwise a
+#' \code{\link{MapPop-class}}.
+#'
+#' @details
+#' Passing a \code{\link{MapPop-class}} or \code{\link{NamedMapPop-class}}
+#' for both females and males means no simulation has been set up yet. This
+#' is intended for making hybrids to use as the founder population of a
+#' hybrid breeding program. No \code{\link{SimParam}} is looked for and none
+#' is created for the user: the function makes a temporary one of its own,
+#' uses it to make the crosses, and discards it. The recombination settings
+#' it uses can be given as \code{v}, \code{p} and \code{quadProb} through
+#' \code{...}. Both populations must share the same genetic map, and the
+#' result carries that map, so it can be passed to \code{SimParam$new()}.
+#'
+#' When both populations are a \code{\link{NamedMapPop-class}}, the result
+#' is a \code{\link{NamedMapPop-class}} whose id is [mother_id]_[father_id]
+#' and whose mother and father are the parents' ids. A crossPlan that makes
+#' the same cross more than once would repeat an id, so every copy of a
+#' repeated id is given a further underscore and letters to tell the copies
+#' apart, as in "A_B_a", "A_B_b" and so on, with "aa" following "z". When
+#' either population is a plain \code{\link{MapPop-class}} its parents have
+#' no ids to name the hybrids after, so the result is a
+#' \code{\link{MapPop-class}}.
 #'
 #' @family mating functions
 #'
@@ -37,18 +77,76 @@
 #' #Make crosses for full diallele
 #' pop2 = hybridCross(pop, pop, simParam=SP)
 #'
+#' #Make hybrid founders before a simulation is set up, using inbred
+#' #haplotypes as the parents
+#' inbreds = quickHaplo(nInd=4, nChr=1, segSites=10, inbred=TRUE)
+#' hybridFounders = hybridCross(inbreds[1:2], inbreds[3:4], nThreads=1L)
+#' SP = SimParam$new(hybridFounders)
+#' \dontshow{SP$nThreads = 1L}
+#' pop3 = newPop(hybridFounders, simParam=SP)
+#'
 #' @export
 hybridCross = function(females, males,
                        crossPlan="testcross",
                        returnHybridPop=FALSE,
-                       simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
+                       simParam=NULL,nThreads=NULL,...){
+  dots = checkRecombArgs(list(...))
+
+  # A map population is what the user has before a simulation exists, so a
+  # pair of them is taken to mean that there is no SimParam to find. The
+  # global environment is not consulted and nothing is left behind for the
+  # user.
+  mapInput = is(females,"MapPop")
+  if(mapInput != is(males,"MapPop")){
+    stop("females and males must both be map populations or both be populations")
   }
-  if(is.null(nThreads)){
+
+  if(mapInput){
+    if(!is.null(simParam)){
+      warning("simParam is ignored when females and males are map populations, because a temporary SimParam is used")
+    }
+    if(returnHybridPop){
+      stop("returnHybridPop=TRUE needs traits, which map populations do not have")
+    }
+    # One temporary SimParam serves both populations, so they have to share
+    # its genetic map. newPop only checks the number of loci.
+    if(females@nChr!=males@nChr){
+      stop("nChr does not match between females and males")
+    }
+    if(females@ploidy!=males@ploidy){
+      stop("ploidy does not match between females and males")
+    }
+    if(!all(females@nLoci==males@nLoci)){
+      stop("nLoci does not match between females and males")
+    }
+    if(!isTRUE(all.equal(females@genMap, males@genMap)) |
+       !isTRUE(all.equal(females@centromere, males@centromere))){
+      stop("genMap does not match between females and males")
+    }
+    namedInput = is(females,"NamedMapPop") & is(males,"NamedMapPop")
+    mapPop = females
+
+    # Private to this call; see mapSimParam
+    simParam = mapSimParam(mapPop, dots=dots, nThreads=nThreads)
     nThreads = simParam$nThreads
+
+    females = newPop(females, simParam=simParam, nThreads=nThreads)
+    males = newPop(males, simParam=simParam, nThreads=nThreads)
   }else{
-    nThreads = as.integer(nThreads)
+    # A SimParam is an R6 object, so setting these would change the user's
+    # own simulation for good rather than just for this call
+    if(length(dots)>0L){
+      stop(paste("v, p and quadProb can only be set when females and males",
+                 "are map populations. Set them on the SimParam instead"))
+    }
+    if(is.null(simParam)){
+      simParam = get("SP",envir=.GlobalEnv)
+    }
+    if(is.null(nThreads)){
+      nThreads = simParam$nThreads
+    }else{
+      nThreads = as.integer(nThreads)
+    }
   }
   if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
@@ -71,11 +169,44 @@ hybridCross = function(females, males,
 
   #Return Pop-class
   if(!returnHybridPop){
-    return(makeCross2(females=females,
-                      males=males,
-                      crossPlan=crossPlan,
-                      simParam=simParam,
-                      nThreads=nThreads))
+    output = makeCross2(females=females,
+                        males=males,
+                        crossPlan=crossPlan,
+                        simParam=simParam,
+                        nThreads=nThreads)
+    if(!mapInput){
+      return(output)
+    }
+
+    # Give back what the user can start a simulation from: their genetic
+    # map and the hybrids' genotypes. The temporary SimParam does not escape
+    # with it. Crossing breaks inbreeding, and the flag describes how the
+    # haplotypes were built rather than what they now are.
+    if(namedInput){
+      return(new("NamedMapPop",
+                 id=uniqueHybridId(id),
+                 mother=femaleParents,
+                 father=maleParents,
+                 nInd=output@nInd,
+                 nChr=output@nChr,
+                 ploidy=output@ploidy,
+                 nLoci=output@nLoci,
+                 geno=output@geno,
+                 genMap=mapPop@genMap,
+                 centromere=mapPop@centromere,
+                 inbred=FALSE))
+    }
+    # The parents' ids came from the temporary SimParam and mean nothing
+    # outside this call, so no ids are returned
+    return(new("MapPop",
+               nInd=output@nInd,
+               nChr=output@nChr,
+               ploidy=output@ploidy,
+               nLoci=output@nLoci,
+               geno=output@geno,
+               genMap=mapPop@genMap,
+               centromere=mapPop@centromere,
+               inbred=FALSE))
   }
 
   #Return HybridPop-class
@@ -113,6 +244,55 @@ hybridCross = function(females, males,
                pheno=pheno,
                gxe=gxe)
   return(output)
+}
+
+# Make hybrid ids unique
+#
+# id, the [mother_id]_[father_id] ids, which repeat when a crossPlan makes
+#   the same cross more than once
+#
+# Returns id with every copy of a repeated id given an underscore and a
+# letter code, as in "A_B_a" and "A_B_b". An id that is not repeated is left
+# alone. A code whose result is already an id, such as "A_B_a" when a
+# female "A" was crossed to a male "B_a", is skipped, so the result is
+# always unique.
+uniqueHybridId = function(id){
+  repeated = unique(id[duplicated(id)])
+  if(length(repeated)==0L){
+    return(id)
+  }
+  taken = unique(id)
+  for(base in repeated){
+    k = 0L
+    for(j in which(id==base)){
+      repeat{
+        k = k + 1L
+        candidate = paste(base, letterCode(k), sep="_")
+        if(!(candidate %in% taken)){
+          break
+        }
+      }
+      id[j] = candidate
+      taken = c(taken, candidate)
+    }
+  }
+  return(id)
+}
+
+# Letter code for a positive integer, counting a to z and then aa, ab and so
+# on, in the manner of spreadsheet columns
+#
+# k, a positive integer
+#
+# Returns the code as a single string
+letterCode = function(k){
+  code = character(0)
+  while(k>0L){
+    r = (k - 1L) %% 26L
+    code = c(letters[r + 1L], code)
+    k = (k - 1L) %/% 26L
+  }
+  return(paste(code, collapse=""))
 }
 
 #' @title Calculate GCA

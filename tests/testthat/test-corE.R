@@ -100,6 +100,18 @@ test_that("corE is checked for shape and symmetry", {
                "corE")
 })
 
+test_that("corE must be a correlation matrix, not a covariance matrix", {
+  d = corPop(nInd=50)
+  covE = matrix(c(4, 1, 1, 9), nrow=2)
+
+  expect_error(setPheno(d$pop, varE=c(1,1), corE=covE, simParam=d$SP),
+               "corE must have ones")
+  expect_error(d$SP$setVarE(varE=c(1,1), corE=covE), "corE must have ones")
+  expect_error(suppressWarnings(d$SP$setCorE(covE)), "corE must have ones")
+  expect_error(d$SP$setVarE(varE=c(1,1), corE=matrix(c(1,2,2,1), nrow=2)),
+               "outside")
+})
+
 test_that("varE is checked against the number of traits", {
   d = corPop(nInd=50)
 

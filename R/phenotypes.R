@@ -288,11 +288,9 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
     if(is.matrix(varE)){
       varE = diag(varE)
     }
+    checkCorMat(corE, nTraits)
     if(length(varE)!=nrow(corE)){
       stop("length(varE) does not match nrow(corE)")
-    }
-    if(!isSymmetric(corE)){
-      stop("corE must be a symmetric matrix")
     }
 
     varE = diag(sqrt(varE),

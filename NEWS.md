@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9013
+# AlphaSimR 2.1.0.9014
 
 * Changed `pedigreeCross` to use `NA` for an unknown parent. A value of `0` now names an individual, as any other value does.
 
@@ -10,6 +10,8 @@
 
 * Changed `pedigreeCross` to accept a `MapPop` or `NamedMapPop` as meaning that no simulation has been set up yet. It then builds a temporary `SimParam` of its own and returns a `NamedMapPop` that can be passed to `SimParam$new`. The recombination settings `v`, `p` and `quadProb` may be passed through `...` in this case.
 
+* Changed `hybridCross` to accept a pair of `MapPop` or `NamedMapPop` objects as meaning that no simulation has been set up yet, so that hybrids can be made to serve as the founder population of a hybrid breeding program. It then builds a temporary `SimParam` of its own and returns a `NamedMapPop` when both inputs are a `NamedMapPop`, and a `MapPop` otherwise. The recombination settings `v`, `p` and `quadProb` may be passed through `...` in this case, and `returnHybridPop` must be `FALSE`. Hybrid ids are [mother_id]_[father_id], and when a `crossPlan` repeats a cross every copy of the repeated id is given a further underscore and letter code, as in `A_B_a` and `A_B_b`.
+
 * Added ID based subsetting to `NamedMapPop`, so `pop["a"]` works as it does for a `Pop`.
 
 * Changed `pedigreeCross` to build a pedigree one generation at a time, making all of a generation's crosses in a single `makeCross2` call and batching its selfing and doubled haploid steps the same way. The number of calls into the crossing code now follows the depth of the pedigree rather than its size. Generation numbers are also assigned with a vectorised pass, so sorting a deep pedigree no longer loops over every individual in every pass. Results from a given seed differ from earlier versions, because the order in which random numbers are drawn has changed.
@@ -17,6 +19,10 @@
 * Changed the default for `maxCycle` in `pedigreeCross` to `NULL`, which uses the number of individuals in the pedigree. That is the deepest a pedigree of that size can be, so the bound is never what stops a pedigree being sorted. A pedigree more than 100 generations deep previously had to have `maxCycle` raised by hand.
 
 * Added a "Gene Drop Simulations" article covering `pedigreeCross`, with an emphasis on using an external pedigree and external genotypes.
+
+* Changed the `addTrait` functions to give gamma distributed effects (`gamma=TRUE`) the requested correlation. Effects were sampled as correlated normal deviates and then transformed to a gamma distribution, which pulled the correlations towards zero, most strongly for small values of `shape`. For example, a requested correlation of 0.6 between two traits with `shape=0.2` gave about 0.45. The normal deviates are now sampled at an adjusted correlation that allows for the transform, so the effects match the requested correlation within sampling error. This applies to both additive and additive-by-additive effects. Traits whose effects follow different distributions, such as a normal trait and a gamma trait, cannot reach every correlation. A requested correlation beyond the attainable limit now gives a warning and uses the limit. Results from a given seed differ from earlier versions when `gamma=TRUE`.
+
+* Added checks that `corA`, `corDD`, `corAA` and `corGxE` in the `addTrait` functions, and `corE` in `setPheno`, `SimParam$setVarE` and `SimParam$setCorE`, are valid correlation matrices. Each must be a numeric matrix with one row and column per trait, with no missing values, symmetric, with ones on the diagonal and all entries between -1 and 1. A covariance matrix was previously accepted without error and is now refused. A matrix that is not positive semi-definite is still smoothed with a warning, as before.
 
 * Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
 

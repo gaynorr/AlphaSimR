@@ -975,7 +975,8 @@ sortPed = function(id, mother, father, maxCycle=NULL){
   return(gen)
 }
 
-# Check the recombination settings given to pedigreeCross through ...
+# Check the recombination settings given through ... by a crossing function
+# that accepts a map population, such as pedigreeCross or hybridCross
 #
 # dots, the list of ... arguments
 #
@@ -1021,6 +1022,35 @@ checkRecombArgs = function(dots){
     }
   }
   return(dots)
+}
+
+# Build the temporary SimParam used when a crossing function is given a map
+# population, which is taken to mean that no simulation has been set up yet
+#
+# mapPop, the MapPop or NamedMapPop defining the genetic map
+# dots, the list of ... arguments, already passed through checkRecombArgs
+# nThreads, the nThreads argument as the user gave it, possibly NULL
+#
+# Returns the SimParam. It is private to the calling function: it carries no
+# traits, is never written to the global environment, and goes out of scope
+# when the caller returns.
+mapSimParam = function(mapPop, dots, nThreads){
+  simParam = SimParam$new(mapPop)
+  # Anything not supplied keeps SimParam's own default, so the defaults
+  # are never written down twice
+  if(!is.null(dots[["v"]])){
+    simParam$v = dots[["v"]]
+  }
+  if(!is.null(dots[["p"]])){
+    simParam$p = dots[["p"]]
+  }
+  if(!is.null(dots[["quadProb"]])){
+    simParam$quadProb = dots[["quadProb"]]
+  }
+  if(!is.null(nThreads)){
+    simParam$nThreads = as.integer(nThreads)
+  }
+  return(simParam)
 }
 
 # Coerce, check and extend a pedigree given to pedigreeCross
@@ -1438,24 +1468,9 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       stop("matchID=TRUE needs a population with IDs. Supply a NamedMapPop or a Pop, or use matchID=FALSE")
     }
     mapPop = founderPop
-    
-    # Private to this call. It carries no traits, is never written to the
-    # global environment, and goes out of scope when the function returns.
-    simParam = SimParam$new(mapPop)
-    # Anything not supplied keeps SimParam's own default, so the defaults
-    # are never written down twice
-    if(!is.null(dots[["v"]])){
-      simParam$v = dots[["v"]]
-    }
-    if(!is.null(dots[["p"]])){
-      simParam$p = dots[["p"]]
-    }
-    if(!is.null(dots[["quadProb"]])){
-      simParam$quadProb = dots[["quadProb"]]
-    }
-    if(!is.null(nThreads)){
-      simParam$nThreads = as.integer(nThreads)
-    }
+
+    # Private to this call; see mapSimParam
+    simParam = mapSimParam(mapPop, dots=dots, nThreads=nThreads)
     nThreads = simParam$nThreads
     
     founderPop = newPop(mapPop, simParam=simParam, nThreads=nThreads)

@@ -588,9 +588,8 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                length(mean)==nrow(corA),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -667,10 +666,9 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                length(mean)==nrow(corA),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -882,13 +880,11 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corGxE),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -993,15 +989,12 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                isSymmetric(corGxE),
-                nrow(corA)==nTraits,
-                nrow(corGxE)==nTraits,
-                nrow(corDD)==nTraits,
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1114,12 +1107,11 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corAA),
                 length(relAA)==length(mean),
-                length(mean)==nrow(corA),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corAA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1216,14 +1208,12 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corAA),
-                length(mean)==nrow(corDD),
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corAA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1323,16 +1313,13 @@ SimParam = R6Class(
       }
       stopifnot(length(mean)==length(var),
                 length(relAA)==length(mean),
-                isSymmetric(corA),
-                isSymmetric(corGxE),
-                isSymmetric(corAA),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corAA),
-                length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corAA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1459,19 +1446,15 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                isSymmetric(corGxE),
-                isSymmetric(corAA),
-                nrow(corA)==nTraits,
-                nrow(corGxE)==nTraits,
-                nrow(corDD)==nTraits,
-                nrow(corAA)==nTraits,
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits,
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corAA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1804,8 +1787,7 @@ SimParam = R6Class(
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
       # Check validity of corE, if supplied
       if(!is.null(corE)){
-        stopifnot(isSymmetric(corE),
-                  nrow(corE)==self$nTraits)
+        checkCorMat(corE, self$nTraits)
       }
 
       # Set error variances (.varE)
@@ -1878,9 +1860,8 @@ SimParam = R6Class(
     #' SP$setCorE(E)
     setCorE = function(corE){
       warning("This function has been deprecated. Use simParam$setVarE instead.")
-      stopifnot(isSymmetric(corE),
-                nrow(corE)==self$nTraits,
-                length(private$.varE)==self$nTraits,
+      checkCorMat(corE, self$nTraits)
+      stopifnot(length(private$.varE)==self$nTraits,
                 !any(is.na(private$.varE)))
       if(is.matrix(private$.varE)){
         varE = diag(private$.varE)
@@ -2838,6 +2819,180 @@ SimParam = R6Class(
 
 #### External helpers ----
 
+#' @title Check a correlation matrix
+#'
+#' @description Stops with an informative error if a trait correlation
+#' argument is not a valid correlation matrix of the right size
+#'
+#' @param R the matrix supplied by the user
+#' @param nTraits number of traits
+#'
+#' @details
+#' The matrix must be numeric, nTraits by nTraits, free of missing values,
+#' symmetric, with ones on the diagonal and every entry in [-1, 1].
+#' Positive semi-definiteness is not required here: \code{\link{transMat}}
+#' smooths a matrix that fails it and warns.
+#'
+#' @returns invisibly TRUE
+#'
+#' @keywords internal
+checkCorMat = function(R, nTraits){
+  nameR = deparse(substitute(R))
+  if(!is.matrix(R) || !is.numeric(R)){
+    stop(nameR, " must be a numeric matrix")
+  }
+  if(nrow(R)!=nTraits || ncol(R)!=nTraits){
+    stop(nameR, " must be a ", nTraits, " by ", nTraits,
+         " matrix, with one row and column per trait")
+  }
+  if(anyNA(R)){
+    stop(nameR, " contains missing values")
+  }
+  if(!isSymmetric(R)){
+    stop(nameR, " is not a symmetric matrix")
+  }
+  # A covariance matrix passes every check above, so the diagonal is what
+  # tells the two apart. The tolerance allows for a matrix that was itself
+  # computed, for example by cov2cor.
+  if(!isTRUE(all.equal(unname(diag(R)), rep(1, nTraits)))){
+    stop(nameR, " must have ones on its diagonal to be a correlation matrix")
+  }
+  if(any(abs(R) > 1+sqrt(.Machine$double.eps))){
+    stop(nameR, " has entries outside [-1, 1]")
+  }
+  invisible(TRUE)
+}
+
+#' @title Symmetric gamma transform
+#'
+#' @description Maps standard normal deviates to gamma deviates with a
+#' random sign, preserving their order
+#'
+#' @param z standard normal deviates
+#' @param shape gamma distribution shape parameter
+#'
+#' @returns a vector the same length as z
+#'
+#' @keywords internal
+gammaTransform = function(z, shape){
+  # |z| maps to the uniform deviate 2*pnorm(|z|)-1 and that to a gamma
+  # quantile, while the sign of z is kept. Working with the upper tail on the
+  # log scale keeps precision for large |z|, where 2*pnorm(|z|)-1 rounds to
+  # one and qgamma would return Inf.
+  sign(z)*qgamma(log(2)+pnorm(-abs(z),log.p=TRUE),shape=shape,
+                 lower.tail=FALSE,log.p=TRUE)
+}
+
+#' @title Hermite coefficients of the symmetric gamma transform
+#'
+#' @description Computes the coefficients of \code{\link{gammaTransform}}
+#' in the basis of orthonormal Hermite polynomials
+#'
+#' @param shape gamma distribution shape parameter
+#' @param nCoef number of coefficients, starting from order one
+#'
+#' @returns a vector of length nCoef whose k-th element is the coefficient
+#' of order k
+#'
+#' @keywords internal
+gammaHermCoef = function(shape, nCoef=51L){
+  # The transform is odd, so the coefficients of even order are zero and
+  # only odd orders are integrated. The product of the transform and an odd
+  # Hermite polynomial is even, so each integral is twice its value over
+  # the positive half line. The normal density underflows well before 40.
+  coef = numeric(nCoef)
+  for(k in seq(1L, nCoef, by=2L)){
+    integrand = function(z){
+      # Orthonormal Hermite polynomials from the three-term recurrence,
+      # which stays stable at high order where the explicit form does not
+      h0 = rep(1, length(z))
+      h1 = z
+      m = 1L
+      while(m<k){
+        h2 = (z*h1-sqrt(m)*h0)/sqrt(m+1)
+        h0 = h1
+        h1 = h2
+        m = m+1L
+      }
+      2*gammaTransform(z,shape)*h1*dnorm(z)
+    }
+    coef[k] = integrate(integrand, 0, 40, subdivisions=2000L,
+                        rel.tol=1e-10)$value
+  }
+  return(coef)
+}
+
+#' @title Latent correlation for gamma distributed effects
+#'
+#' @description Finds the correlation matrix for the normal deviates that
+#' gives the requested correlation after gamma distributed traits pass
+#' through \code{\link{gammaTransform}}
+#'
+#' @param R the requested correlation matrix
+#' @param gamma indicator of whether trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#' @param nCoef number of Hermite coefficients used for each trait
+#'
+#' @details
+#' By Mehler's formula, when two standard normal deviates have correlation
+#' rho, transformed deviates have correlation
+#' sum_k b_ik b_jk rho^k / (sd_i sd_j), where b_ik are the Hermite
+#' coefficients of trait i's transform. That series is inverted for each
+#' pair of traits with \code{uniroot}. Pairs of normal traits and pairs with
+#' a requested correlation of zero are left unchanged.
+#'
+#' Traits whose effects have different distributions cannot reach every
+#' correlation. When a requested correlation is beyond the attainable
+#' maximum, the maximum is used and a warning is given. The returned matrix
+#' may not be positive semi-definite, which \code{\link{transMat}} handles.
+#'
+#' @returns a correlation matrix with the same dimensions as R
+#'
+#' @keywords internal
+gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
+  nTraits = ncol(R)
+  # A normal trait's transform is the identity, which is the Hermite
+  # polynomial of order one alone. Traits sharing a shape share their
+  # coefficients, so each shape is integrated once.
+  coef = matrix(0, nrow=nCoef, ncol=nTraits)
+  coef[1,] = 1
+  for(s in unique(shape[gamma])){
+    take = gamma & shape==s
+    coef[,take] = gammaHermCoef(s, nCoef)
+  }
+  # Normalising by the variance the truncated series captures, rather than
+  # the exact variance, makes two traits with the same shape reach exactly
+  # one at rho=1. A requested correlation of one then stays attainable.
+  coef = sweep(coef, 2, sqrt(colSums(coef^2)), "/")
+  Rz = R
+  for(i in seq_len(nTraits-1L)){
+    for(j in (i+1L):nTraits){
+      if(!(gamma[i] || gamma[j]) || R[i,j]==0){
+        next
+      }
+      w = coef[,i]*coef[,j]
+      corFun = function(rho) sum(w*rho^seq_len(nCoef))
+      # Only odd orders are nonzero, so the attainable range is symmetric
+      maxCor = corFun(1)
+      if(abs(R[i,j])>=maxCor){
+        if(abs(R[i,j])>maxCor+1e-8){
+          warning(sprintf(paste("A correlation of %.3f between traits %d and",
+                                "%d cannot be reached with these effect",
+                                "distributions. The attainable limit of %.3f",
+                                "is used instead."),
+                          R[i,j], i, j, sign(R[i,j])*maxCor))
+        }
+        Rz[i,j] = sign(R[i,j])
+      }else{
+        Rz[i,j] = uniroot(function(rho) corFun(rho)-R[i,j],
+                          c(-1,1), tol=1e-10)$root
+      }
+      Rz[j,i] = Rz[i,j]
+    }
+  }
+  return(Rz)
+}
+
 #' @title Sample additive effects
 #'
 #' @description Samples deviates from a normal distribution or gamma distribution
@@ -2853,14 +3008,19 @@ SimParam = R6Class(
 #'
 #' @keywords internal
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
+  # The gamma transform is nonlinear, which pulls correlations towards zero.
+  # Sampling the normal deviates at an adjusted correlation undoes this, so
+  # the transformed effects have the requested correlation.
+  if(any(gamma)){
+    corr = gammaLatentCorr(corr,gamma,shape)
+  }
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      x = (pnorm(addEff[,i])-0.5)*2
       # shape holds one value per trait, so trait i takes shape[i].
       # Passing the whole vector recycles it down the loci instead.
-      addEff[,i] = sign(x)*qgamma(abs(x),shape=shape[i])
+      addEff[,i] = gammaTransform(addEff[,i],shape[i])
     }
   }
   return(addEff)
@@ -2908,13 +3068,16 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #'
 #' @keywords internal
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
+  # As in sampAddEff, the correlation is adjusted for the gamma transform
+  if(any(gamma)){
+    corr = gammaLatentCorr(corr,gamma,shape)
+  }
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
                   ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      x = (pnorm(epiEff[,i])-0.5)*2
       # As in sampAddEff, shape is per trait
-      epiEff[,i] = sign(x)*qgamma(abs(x),shape=shape[i])
+      epiEff[,i] = gammaTransform(epiEff[,i],shape[i])
     }
   }
   epiEff = sweep(epiEff,2,sqrt(relVar),"*")
