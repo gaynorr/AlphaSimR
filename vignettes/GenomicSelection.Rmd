@@ -84,7 +84,7 @@ show predictive ability in later generations as linkage disequilibrium is
 accumulated through the effects of selection and mating.
 
 
-In AlphaSimR, QTL and SNP chip sites are kept separate to avoid inflating 
+In AlphaSimR, QTL and SNP chip sites are kept separate by default, in order to avoid inflating 
 accuracy. Once a site is designated for use as a QTL, it cannot be selected 
 for the SNP chip, and vice versa. This separation occurs automatically without 
 invoking the `restrSegSites` function. Overlapping of these sites is permitted 
