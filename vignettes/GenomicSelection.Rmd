@@ -83,10 +83,13 @@ or benchmarking genomic selection. Simulations built using `quickHaplo` will
 show predictive ability in later generations as linkage disequilibrium is 
 accumulated through the effects of selection and mating.
 
-`restrSegSites` is used to force the QTL and the SNP chip onto different
-segregating sites. Without it the two sets are sampled independently and
-may overlap, which quietly inflates accuracy. For this reason, `restrSegSites` 
-is used as the default in AlphaSimR.
+
+In AlphaSimR, QTL and SNP chip sites are kept separate to avoid inflating 
+accuracy. Once a site is designated for use as a QTL, it cannot be selected 
+for the SNP chip, and vice versa. This separation occurs automatically without 
+invoking the `restrSegSites` function. Overlapping of these sites is permitted 
+only if specifically requested with `restrSegSites(overlap = TRUE)`.
+
 
 ## The three steps
 
