@@ -2,10 +2,12 @@
 title: "Genomic Selection in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-bibliography: AlphaSimR.bib
+output:
+  rmarkdown::html_vignette:
+    toc: true
+bibliography: '`r normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
-  %\VignetteIndexEntry{Genomic Selection}
+  %\VignetteIndexEntry{Genomic Selection in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 editor_options:
@@ -26,7 +28,7 @@ library(AlphaSimR)
 
 Genomic selection is selection on a prediction of an individual's genetic
 merit made from its marker genotypes. AlphaSimR provides a family of
-ridge regression BLUP (RR-BLUP) models for making these predictions. 
+ridge regression BLUP (RR-BLUP) models for making these predictions.
 They are fitted in C++ and are meant to be
 re-fitted many times over the course of a simulation, so they are
 deliberately narrow in scope: they are fast, they take their data
@@ -34,18 +36,19 @@ directly from a population object, and they return an object that
 AlphaSimR knows how to turn back into estimated values for any
 population you like.
 
-This article is mostly about *using* those functions: which one to call,
+This vignette is mostly about *using* those functions: which one to call,
 what to hand it, and where the call belongs in a breeding cycle. The
 model each one fits is described later, in a section you can skip on a
 first reading.
 
-Two earlier articles are assumed. The article on the genome explains how
+Two earlier vignettes are assumed.
+The vignette("articles/Genome") explains how
 QTL and SNP chips are defined and how genotypes are stored and pulled.
-The article on quantitative genetics explains the distinction between a
-genetic value and a breeding value, and why a breeding value is a
-property of a *reference population* rather than of an individual on its
-own. That distinction reappears below, because it determines what
-`setEBV` gives you.
+The `vignette("QuanGen")` explains
+the distinction between a genetic value and a breeding value,
+and why a breeding value is a property of a *reference population*
+rather than of an individual on its own.
+That distinction reappears below, because it determines what `setEBV` gives you.
 
 ## Setting up an example
 
@@ -77,10 +80,10 @@ Two choices here are worth copying into your own simulations.
 `runMacs` rather than `quickHaplo`. Genomic prediction works because
 markers are in linkage disequilibrium with QTL, and `quickHaplo` samples
 haplotypes at linkage equilibrium. A simulation built on `quickHaplo`
-will show almost no predictive ability in the founder population unless the QTL 
-themselves are used as markers, which makes it a poor choice for demonstrating 
-or benchmarking genomic selection. Simulations built using `quickHaplo` will 
-show predictive ability in later generations as linkage disequilibrium is 
+will show almost no predictive ability in the founder population unless the QTL
+themselves are used as markers, which makes it a poor choice for demonstrating
+or benchmarking genomic selection. Simulations built using `quickHaplo` will
+show predictive ability in later generations as linkage disequilibrium is
 accumulated through the effects of selection and mating.
 
 
@@ -169,9 +172,9 @@ covariance matrix. If you are unsure, start here.
 
 **`RRBLUP_D`** adds a dominance covariate for each marker. Reach for it
 when the trait was defined with dominance *and* you care about the
-genetic value rather than only the breeding value — predicting the
+genetic value rather than only the breeding value - predicting the
 performance of a cross or a clone, for instance, rather than the merit
-of a parent [@xiang_2016]. If you only ever select parents on additive
+of a parent [@xiang2016Genomic]. If you only ever select parents on additive
 merit, the extra term buys you little.
 
 **`RRBLUP_GCA`** and **`RRBLUP_SCA`** are for hybrid programs with two
@@ -179,15 +182,15 @@ heterotic pools. Rather than one set of additive effects they estimate a
 set for each pool, so an allele can be worth something different
 depending on which parent contributed it. `RRBLUP_SCA` adds a dominance
 term on top, so specific combining ability can be predicted as well as
-general combining ability [@Massman13]. Both fill the `female` and
-`male` slots and leave `bv` empty. 
+general combining ability [@massman2013Genomewide]. Both fill the `female` and
+`male` slots and leave `bv` empty.
 
-@dejong_2023 compared these models for selecting inbred parents on
+@dejong2023Comparison compared these models for selecting inbred parents on
 predicted GCA in a simulated maize program, and found that models
 fitting pool-specific effects together with dominance gave the best fit
 and the highest genetic gain. They also found that the ranking depends
 on marker density, with the models differing more in genetic gain at low
-density and more in heterosis at high density — a useful warning against
+density and more in heterosis at high density - a useful warning against
 assuming one model is uniformly best. The help page for `RRBLUP_SCA`
 notes that no consistent benefit over `RRBLUP_GCA` has been observed in
 AlphaSimR's own testing, so it is worth checking both in your own
@@ -197,7 +200,7 @@ simulation rather than assuming the more complex model wins.
 additive model as `RRBLUP` but never forms a square matrix, so its
 memory cost stays close to the cost of the genotypes themselves. Use it
 when the training population has grown large enough that the others will
-not fit. 
+not fit.
 
 ### Fitting the same model more cheaply
 
@@ -222,27 +225,27 @@ pattern is to fit `RRBLUP` once at the start of a simulation, keep its
 `Vu` and `Ve`, and use `RRBLUP2` with those values for every subsequent
 re-training. Whether holding the variance components fixed is acceptable
 depends on how far the population drifts over the simulation, and that
-is a question only the simulation can answer — check against a full
+is a question only the simulation can answer - check against a full
 re-fit before relying on it.
 
 If you let the numbered models estimate the variance components
 themselves they use an EM algorithm, which is slower and less reliable
 than the approach the unnumbered models use. `maxIter` defaults to a
 value that is usually too small to converge, and a warning is issued
-when it does not. Left to estimate their own variance components to convergence, 
-the numbered models are rarely the better choice. The benefit is obtained only 
+when it does not. Left to estimate their own variance components to convergence,
+the numbered models are rarely the better choice. The benefit is obtained only
 when `useEM=FALSE` or `maxIter` is left at a small value to only allow small
-updates to the estimated variance components. These models also only add value 
-when the number of markers is small relative to the number of phenotypic 
+updates to the estimated variance components. These models also only add value
+when the number of markers is small relative to the number of phenotypic
 records.
 
 ## Using the models in a breeding program
 
 The three steps above are the whole API. What takes judgment is where
-they go in a breeding cycle and what feeds them. @bancic_2025 work
-through complete plant breeding programs in AlphaSimR — line, clonal and
-hybrid — each with a genomic selection variant, and the patterns below
-follow that paper. Its scripts are a good companion to this article.
+they go in a breeding cycle and what feeds them. @bancic2025Plant work
+through complete plant breeding programs in AlphaSimR - line, clonal and
+hybrid - each with a genomic selection variant, and the patterns below
+follow that paper. Its scripts are a good companion to this vignette.
 
 The examples in this section are sketches rather than runnable code;
 they assume a pipeline of yield trial stages with the usual names.
@@ -287,7 +290,7 @@ newParents = selectInd(DH, nNewParents, use = "ebv", simParam = SP)
 Parents = c(Parents[-(1:nNewParents)], newParents)
 ```
 
-Taken further, this becomes the two-part strategy of @gaynor_2017: a
+Taken further, this becomes the two-part strategy of @gaynor2017Two: a
 product development component that still runs on phenotypes, and a
 population improvement component that runs entirely on EBVs and cycles
 several times per year.
@@ -362,7 +365,7 @@ for (cycle in 1:3) {
 ```
 
 The mean genetic value rises each cycle, and the training population
-grows as it does — which is exactly the cost that the options above are
+grows as it does - which is exactly the cost that the options above are
 there to control.
 
 ### Hybrid programs
@@ -382,7 +385,7 @@ newMaleParents = selectInd(maleDH, 10, use = "ebv", simParam = SP)
 newFemaleParents = selectInd(femaleDH, 10, use = "ebv", simParam = SP)
 ```
 
-A simpler alternative, which @bancic_2025 use as their default, is to
+A simpler alternative, which @bancic2025Plant use as their default, is to
 fit an ordinary `RRBLUP` to the hybrid training population and read the
 result as a general combining ability. That works because a
 hybrid-trained additive model estimates the average effect of an allele
@@ -411,7 +414,7 @@ quantities and rank individuals differently.
 
 `append` controls whether the new estimates replace the contents of the
 `ebv` slot or are added as an extra column. Appending is how you carry
-several estimates at once — a genetic value and a breeding value from
+several estimates at once - a genetic value and a breeding value from
 the same fit, or estimates for several traits to be combined in an
 index.
 
@@ -511,7 +514,7 @@ the marker effects is set by the ratio $V_e / V_u$, so the variance
 components have to be estimated before the effects can be.
 
 Markers are coded on the same scale AlphaSimR uses for trait effects:
-for a diploid, the additive covariate takes the values −1, 0 and 1 for
+for a diploid, the additive covariate takes the values -1, 0 and 1 for
 the three genotypes, and the dominance covariate takes the value 1 for
 the heterozygote and 0 otherwise. Estimated effects are therefore
 directly comparable with the true QTL effects in `SP$traits`, which is
@@ -527,7 +530,7 @@ ans@Ve
 ```
 
 `Vu` and `Ve` hold the estimated marker and residual variances. The
-remaining four — `gv`, `bv`, `female` and `male` — hold *trait objects*,
+remaining four - `gv`, `bv`, `female` and `male` - hold *trait objects*,
 the same kind of object `SimParam` uses to define a real trait. This is
 what makes a solution portable: a fitted model is stored as an estimated
 trait, so applying it to a new population is the same operation as
@@ -567,7 +570,7 @@ the common case, the unnumbered functions use less.
 **`fastRRBLUP`** forms no square matrix at all. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the
 genotypes rather than over a stored coefficient matrix
-[@stranden_1999]. Neither the coefficient matrix nor a numeric copy of
+[@stranden1999Solving]. Neither the coefficient matrix nor a numeric copy of
 the genotypes is ever formed, so its memory cost stays close to the cost
 of the genotypes themselves, and both halves of each iteration are
 shared across `nThreads`.
@@ -579,7 +582,7 @@ to avoid, so it estimates the variance components from a random subset
 of the records. `nSubsample` sets the size of that subset and defaults
 to 5000. Variance components are nuisance parameters here, estimated far
 more precisely than a breeding program needs, so a few thousand records
-give values good enough to shrink with — and the marker effects
+give values good enough to shrink with - and the marker effects
 themselves are always solved for using every record. Supplying `Vu` and
 `Ve` skips the estimation entirely.
 
@@ -613,8 +616,8 @@ same way, the fitted fixed effects estimate nothing.
 This detail matters in one situation in particular: **combining
 populations phenotyped in different environments into a single training
 population, when the trait has a genotype-by-environment component.**
-A trait created with `varGxE` and `varEnv` — through `addTraitAG`,
-`addTraitADG` and their relatives — has an environment effect that
+A trait created with `varGxE` and `varEnv` - through `addTraitAG`,
+`addTraitADG` and their relatives - has an environment effect that
 shifts the mean of every record taken in that environment, with the
 environment drawn by the `p` argument of `setPheno`. Records from a
 first-year trial and a second-year trial are then on genuinely different
@@ -624,7 +627,7 @@ and lowers accuracy. Labeling each trial with its own `fixEff` lets the
 model absorb the shift:
 
 ```{r eval=FALSE}
-# Each trial phenotyped in its own environment, and labelled as such
+# Each trial phenotyped in its own environment, and labeled as such
 PYT = setPheno(PYT, reps = repPYT, p = pYear, fixEff = year, simParam = SP)
 AYT = setPheno(AYT, reps = repAYT, p = pYear, fixEff = year, simParam = SP)
 
@@ -639,8 +642,8 @@ alone.
 ## Using external software
 
 The AlphaSimR models cover ridge regression and its close relatives. For
-anything else — a Bayesian model, a GBLUP with a particular relationship
-matrix, a machine learning method — export the genotypes and do the
+anything else - a Bayesian model, a GBLUP with a particular relationship
+matrix, a machine learning method - export the genotypes and do the
 prediction elsewhere.
 
 Genotypes come out as an ordinary matrix, with individuals in rows and
@@ -683,9 +686,9 @@ exactly as it would after `setEBV`, and every selection function with
 `use="ebv"` will work.
 
 Two R packages worth mentioning here are `rrBLUP` and `sommer`
-[@sommer], both of which fit mixed models with arbitrary covariance
+[@covarrubiaspazaran2016Genome], both of which fit mixed models with arbitrary covariance
 structures and accept the matrices produced above without modification.
-`EMMREML` [@EMMREML] is another option for models with known covariance
+`EMMREML` [@akdemir2015EMMREML] is another option for models with known covariance
 structures.
 
 ## References

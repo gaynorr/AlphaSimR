@@ -24,6 +24,10 @@ a matrix with dimensions qtlLoci by nTraits
 }
 \description{
 Samples epistatic effects from a normal distribution or gamma distribution
-with a variance relative to the variance of the additive effects
+with a variance relative to the variance of the additive genotypic effects
+}
+\details{
+See \code{vignette("traits", package = "AlphaSimR")} for the
+implemented trait model and genotypic effects.
 }
 \keyword{internal}

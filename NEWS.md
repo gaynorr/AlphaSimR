@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9014
 
+* Standardized all vignettes and articles to use the shared `REFERENCES.bib` bibliography, with forward slashes on Windows to avoid Pandoc resource-path errors during package builds.
+
 * Changed `pedigreeCross` to use `NA` for an unknown parent. A value of `0` now names an individual, as any other value does.
 
 * Added an `unknownParent` argument to `pedigreeCross`, giving the values in `mother` and `father` that mean the parent is unknown, such as `"0"` or `""`. More than one may be given. `NA` is always treated as unknown.
@@ -24,6 +26,28 @@
 
 * Added checks that `corA`, `corDD`, `corAA` and `corGxE` in the `addTrait` functions, and `corE` in `setPheno`, `SimParam$setVarE` and `SimParam$setCorE`, are valid correlation matrices. Each must be a numeric matrix with one row and column per trait, with no missing values, symmetric, with ones on the diagonal and all entries between -1 and 1. A covariance matrix was previously accepted without error and is now refused. A matrix that is not positive semi-definite is still smoothed with a warning, as before.
 
+* Epistatic trait validity checks now reject malformed locus pairs, including repeated, missing, non-integer, non-finite, and out-of-range indices. This also applies to epistatic GxE traits.
+
+* Added unit tests for `genParam`.
+
+* Fixed the HWE substitution-effect guard for a fixed locus in an epistatic pair. It now sets that locus's effect to zero while preserving the other locus's effect.
+
+* Fixed epistatic genic variance calculations to use each locus's own HWE substitution effect. Unequal effects or allele frequencies could previously produce incorrect genic variances and HWE adjustments that depended on epistatic pair order.
+
+* Added vignette about recombination.
+
+* Added vignette about quantitative genetic quantities.
+
+* Added vignette about general and specific combining ability (MUST BE REVISED).
+
+* Polished quantitative genetics terminology across the vignettes and documentation.
+
+* Added vignette about genomic prediction and selection functionality.
+
+* Added total non-additive deviations `nd` and associated variance `varN` for the breeding value parameterization and non-additive genotypic effect contributions `gv_n` to genetic values for the genotypic parameterization. These capture both dominance and epistasis.
+
+* Parent average and Mendelian sampling had a bug when `use="bv"` and this option is currently not available.
+
 * Fixed a bug in `SimParam$setRecombRatio` that left the male centromere positions empty. The male centromeres were scaled from a `NULL` starting value, which R silently returns as a zero length vector, so `SP$maleCentromere` and `SP$centromere` both became empty. This caused an out of bounds read in autopolyploid crosses using quadrivalent pairing.
 
 * Fixed `SimParam$setRecombRatio` rescaling the centromeres from the sex-specific positions while rescaling the genetic maps from the sex-average. Repeated calls moved the centromeres relative to their maps. Both are now taken from the sex-average.
@@ -33,8 +57,6 @@
 * Fixed `SimParam$genMap` dropping chromosome names when sex-specific maps are in use. This removed the `chr` column from `getGenMap`, `getSnpMap` and `getQtlMap` output after any call to `setRecombRatio`, `switchFemaleMap` or `switchMaleMap`.
 
 * Added vector support for nProgeny in `self`, `randCross`, `randCross2`, `makeCross`, and `makeCross2`
-
-* Added asPoisson() function.
 
 * Added MultiPop accessors (`[[`, `[`, `$`, and `names`), and their replacement methods (`[[<-`, `[<-`, `$<-`, and `names<-`).
 
@@ -51,6 +73,8 @@
 * Added `newEmptyMultiPop()` function to create an empty MultiPop. It has the same outcome as `newMultiPop()` with no arguments. To make this behavior consistent with `newEmptyPop()`, `newPop()` now also supports creating an empty population with defined ploidy.
 
 * Update `mergePops()` to handle nested MultiPop objects.
+
+* Added asPoisson() function.
 
 * Added asLogNormal() function.
 
@@ -82,93 +106,95 @@
 
 * Changed `mutate` into an S4 generic dispatching on its first argument. Anything that is not a population is passed to the next `mutate` on the search path, so attaching AlphaSimR after a package such as dplyr no longer takes `mutate` away from it. Attaching that package after AlphaSimR still masks this one, where `AlphaSimR::mutate` is needed.
 
-* performance optimization of functions in meiosis.cpp using Claude
+* Added a regression test for `mutate()` assigning mutation sites across chromosomes.
 
-* performance optimization of function in MME.cpp using Claude
+* Performance optimization of functions in meiosis.cpp using Claude
 
-* performance optimization of the MaCS code in algorithm.cpp, datastructures.cpp and simulator.cpp using Claude. When a limited number of segregating sites is requested, MaCS now samples them while simulating a chromosome instead of generating every site and discarding most of them afterwards. The sites retained are drawn the same way as before, but `runMacs` and `runMacs2` now draw random numbers in a different order, so a given seed will not reproduce founder populations made by earlier versions.
+* Performance optimization of function in MME.cpp using Claude
 
-* performance optimization of the genotype and haplotype extraction functions in getGeno.cpp using Claude. This affects the speed of `pullSnpGeno`, `pullQtlGeno`, `pullSegSiteGeno` and the matching haplotype functions, but not their output.
+* Performance optimization of the MaCS code in algorithm.cpp, datastructures.cpp and simulator.cpp using Claude. When a limited number of segregating sites is requested, MaCS now samples them while simulating a chromosome instead of generating every site and discarding most of them afterwards. The sites retained are drawn the same way as before, but `runMacs` and `runMacs2` now draw random numbers in a different order, so a given seed will not reproduce founder populations made by earlier versions.
+
+* Performance optimization of the genotype and haplotype extraction functions in getGeno.cpp using Claude. This affects the speed of `pullSnpGeno`, `pullQtlGeno`, `pullSegSiteGeno` and the matching haplotype functions, but not their output.
 
 # AlphaSimR 2.1.0
 
-* changed R6 and methods from Depends to Imports to match current best practices for R packages
+* Changed R6 and methods from Depends to Imports to match current best practices for R packages
 
 * Change order of call to `finalizePop` in `.newPop` to allow access to recombination tracking data
 
-* added `parentAverage` and `mendelianSampling` functions
+* Added `parentAverage` and `mendelianSampling` functions
 
-* fixed bug in `c` for RawPop, MapPop, and NamedMapPop
+* Fixed bug in `c` for RawPop, MapPop, and NamedMapPop
 
-* changed `popVar` to an R wrapper to automate casting of vectors to matrices
+* Changed `popVar` to an R wrapper to automate casting of vectors to matrices
 
-* warn when misc lists don't match in length or names in `c(pop, pop2)`
+* Warn when misc lists don't match in length or names in `c(pop, pop2)`
 
-* corrected bibliography entry month from sept to sep
+* Corrected bibliography entry month from sept to sep
 
 # AlphaSimR 2.0.0
 
-* added names to `SP$recHist`
+* Added names to `SP$recHist`
 
-* added `asCategorical` to convert a normal (Gaussian) trait to an ordered categorical (threshold) trait
+* Added `asCategorical` to convert a normal (Gaussian) trait to an ordered categorical (threshold) trait
 
-* improved computational performance of simulations with multiple traits
+* Improved computational performance of simulations with multiple traits
 
-* added support for data.frames in SimParam genetic map switching functions
+* Added support for data.frames in SimParam genetic map switching functions
 
-* changed finalizePop function call in `.newPop` to pass simParam as an argument
+* Changed finalizePop function call in `.newPop` to pass simParam as an argument
 
-* updated version numbering to follow tidyverse format with a major version indicating backward compatibility has been broken
+* Updated version numbering to follow tidyverse format with a major version indicating backward compatibility has been broken
 
 # AlphaSimR 1.6.1
 
-* fixed bug in `mergePops` and `[` (subset) methods - they were failing for populations that had a misc slot with a matrix - we now check if a misc slot element is a matrix and rbind them for `mergePops` and subset rows for `[` (assuming the first dimension represents individuals)
+* Fixed bug in `mergePops` and `[` (subset) methods - they were failing for populations that had a misc slot with a matrix - we now check if a misc slot element is a matrix and rbind them for `mergePops` and subset rows for `[` (assuming the first dimension represents individuals)
 
 # AlphaSimR 1.6.0
 
-* exported `meanEBV` and added `varEBV` to complement `meanP`/`varP` and `meanG`/`varG`
+* Exported `meanEBV` and added `varEBV` to complement `meanP`/`varP` and `meanG`/`varG`
 
 * Changed all parameters of the CATTLE demographic model to exactly match Macleod et al. (2013) - specifically reducing the mutation rate from 2.5e-8 (from human literature) to 1.2e-8 (used in Macleod et al., 2013) and recombination rate from 1e-8 (generic) to 9.26e-9 (used in Macleod et al., 2013). These changes will reduce number of segregating sites to ~240K per chromosome for 100 samples and will run faster.
 
 * changed misc slot in Pop class from a list organized as ind x nodes to a list organized as nodes x ind (this simplified code and increased speed)
 
-* removed `setMisc` and `getMisc` because the new misc slot structure makes it easy to set and get misc components with base R code
+* Removed `setMisc` and `getMisc` because the new misc slot structure makes it easy to set and get misc components with base R code
 
-* added `length` method for Pop class that returns number of individuals (like `nInd`)
+* Added `length` method for Pop class that returns number of individuals (like `nInd`)
 
-* added `length` method for MultiPop class that returns number of populations
+* Added `length` method for MultiPop class that returns number of populations
 
-* fixed bug in quadrivalent pairing resulting in distribution of double reductions not respecting the centromere
+* Fixed bug in quadrivalent pairing resulting in distribution of double reductions not respecting the centromere
 
 # AlphaSimR 1.5.3
 
-* fixed bug in `SimParam$restrSegSites` with excluding sites at end of chromosome
+* Fixed bug in `SimParam$restrSegSites` with excluding sites at end of chromosome
 
 # AlphaSimR 1.5.2
 
-* fix SimParam examples for CRAN
+* Fix SimParam examples for CRAN
 
 # AlphaSimR 1.5.1
 
-* deleted bad example code for `setMisc`
+* Deleted bad example code for `setMisc`
 
-* changed examples to use a single thread for CRAN testing this change is not shown in the documentation
+* Changed examples to use a single thread for CRAN testing this change is not shown in the documentation
 
 # AlphaSimR 1.5.0
 
-* renamed `MegaPop` to `MultiPop`
+* Renamed `MegaPop` to `MultiPop`
 
-* fixed bug in `writePlink` to correctly export map positions in cM
+* Fixed bug in `writePlink` to correctly export map positions in cM
 
-* fixed bug in `writeRecords` due to removed reps slot in pops
+* Fixed bug in `writeRecords` due to removed reps slot in pops
 
-* added `altAddTraitAD` for specifying traits with dominance effects using dominance variance and inbreeding depression
+* Added `altAddTraitAD` for specifying traits with dominance effects using dominance variance and inbreeding depression
 
-* add miscPop slot to class `Pop`
+* Add miscPop slot to class `Pop`
 
 # AlphaSimR 1.4.2
 
-* updated MaCS citation to https site
+* Updated MaCS citation to https site
 
 # AlphaSimR 1.4.1
 
@@ -176,49 +202,49 @@
 
 # AlphaSimR 1.4.0
 
-* fixed a bug in IBD tracking
+* Fixed a bug in IBD tracking
 
-* add `setFounderHap` to SimParam for applying custom haplotypes to founders
+* Add `setFounderHap` to SimParam for applying custom haplotypes to founders
 
-* added `addSnpChipByName` to SimParam for defining SNP chips by marker names
+* Added `addSnpChipByName` to SimParam for defining SNP chips by marker names
 
 # AlphaSimR 1.3.4
 
-* changed C++ using `sprintf` to use `snprintf`
+* Changed C++ using `sprintf` to use `snprintf`
 
 # AlphaSimR 1.3.3
 
-* fixed bug in calculation of genic variance
+* Fixed bug in calculation of genic variance
 
-* fixed `importHaplo` not passing ploidy to `newMapPop`
+* Fixed `importHaplo` not passing ploidy to `newMapPop`
 
-* fixed bug with correlated error variances
+* Fixed bug with correlated error variances
 
 # AlphaSimR 1.3.2
 
-* fixed column name bug with multiple traits in `setEBV`
+* Fixed column name bug with multiple traits in `setEBV`
 
-* fixed CTD caused by `runMacs` when too many segSites are requested
+* Fixed CTD caused by `runMacs` when too many segSites are requested
 
-* fixed missing names in GV when using `resetPop`
+* Fixed missing names in GV when using `resetPop`
 
-* fixed bug in `importTrait`
+* Fixed bug in `importTrait`
 
 * `popVar` now deals with matrices having 1 row
 
 # AlphaSimR 1.3.1
 
-* updated link to Gaynor, 2017
+* Updated link to Gaynor, 2017
 
 # AlphaSimR 1.3.0
 
-* added ability to exclude loci by name in `SimParam$restrSegSites`
+* Added ability to exclude loci by name in `SimParam$restrSegSites`
 
 * `pullMarkerGeno` and `pullMarkerHaplo` now work with a MapPop class
 
-* added `setMarkerHaplo` to manually change genotypes in a Pop or MapPop
+* Added `setMarkerHaplo` to manually change genotypes in a Pop or MapPop
 
-* added `addSegSite` for manually adding segregating sites to a MapPop class
+* Added `addSegSite` for manually adding segregating sites to a MapPop class
 
 * `simParam$setCorE` has been deprecated in favor of a corE argument in `simParam$setVarE`
 
@@ -226,301 +252,301 @@
 
 * `setPheno` now allows the user to set phenotypes for a subset of traits
 
-* add `newEmptyPop` to create populations with zero individuals
+* Add `newEmptyPop` to create populations with zero individuals
 
-* removed reps slot from populations and heterogeneous residual variance GS models
+* Removed reps slot from populations and heterogeneous residual variance GS models
 
-* added h2, H2, and corE to `setPhenoGCA` and `setPhenoProgTest`
+* Added h2, H2, and corE to `setPhenoGCA` and `setPhenoProgTest`
 
-* the "EUROPEAN" species history was removed from `runMacs` due to lengthy runtime
+* The "EUROPEAN" species history was removed from `runMacs` due to lengthy runtime
 
 # AlphaSimR 1.2.2
 
-* added `getPed` to quick extract a population's pedigree
+* Added `getPed` to quick extract a population's pedigree
 
-* added `getGenMap` to pull a genetic map in data.frame format
+* Added `getGenMap` to pull a genetic map in data.frame format
 
 # AlphaSimR 1.2.1
 
-* fixed bugs relating to `importData` functions
+* Fixed bugs relating to `importData` functions
 
-* fixed `writePlink` errors and no longer requires equal length chromosomes
+* Fixed `writePlink` errors and no longer requires equal length chromosomes
 
 # AlphaSimR 1.2.0
 
-* added `importGenMap` to format genetic maps for AlphaSimR
+* Added `importGenMap` to format genetic maps for AlphaSimR
 
-* added `importInbredGeno` and `importHaplo` to make it easier to create a simulation from external data
+* Added `importInbredGeno` and `importHaplo` to make it easier to create a simulation from external data
 
-* added `importSnpChip`, `importTrait` to `SimParam` to make it easier to manually define traits
+* Added `importSnpChip`, `importTrait` to `SimParam` to make it easier to manually define traits
 
-* added `pullMarkerGeno` and `pullMarkerHaplo` to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip
+* Added `pullMarkerGeno` and `pullMarkerHaplo` to make it easier to extract genotypes and haplotypes of specific loci without defining a trait or SNP chip
 
 * `reduceGenome`, `mergeGenome` and `doubleGenome` should really now work with pedigree and recombination tracking
 
 # AlphaSimR 1.1.2
 
-* added missing #ifdef _OPENMP to OCS.cpp
+* Added missing #ifdef _OPENMP to OCS.cpp
 
 # AlphaSimR 1.1.1
 
-* removed use of PI variable in C++ code due to it being compiler specific
+* Removed use of PI variable in C++ code due to it being compiler specific
 
 # AlphaSimR 1.1.0
 
-* added snpChip argument to `pullIbdHaplo` for backward compatibility
+* Added snpChip argument to `pullIbdHaplo` for backward compatibility
 
-* exposed internal mixed model solvers
+* Exposed internal mixed model solvers
 
-* all selection functions now return a warning when there are not enough individuals
+* All selection functions now return a warning when there are not enough individuals
 
-* fixed error in `pullIbdHaplo` when chr isn't NULL
+* Fixed error in `pullIbdHaplo` when chr isn't NULL
 
-* fixed an error with assigning 1 QTL and/or SNP
+* Fixed an error with assigning 1 QTL and/or SNP
 
-* changed geno slot from matrix to list to support future RcppArmadillo changes
+* Changed geno slot from matrix to list to support future RcppArmadillo changes
 
 * `doubleGenome` and `reduceGenome` now work with IBD tracking
 
 # AlphaSimR 1.0.4
 
-* fixed errors in implementation of Gamma Sprinkling model
+* Fixed errors in implementation of Gamma Sprinkling model
 
 # AlphaSimR 1.0.3
 
-* fixed formatting error in genetic maps created by runMacs that broke genotype extraction functions
+* Fixed formatting error in genetic maps created by runMacs that broke genotype extraction functions
 
 # AlphaSimR 1.0.2
 
-* added h2 and H2 to `setPhenoGCA`
+* Added h2 and H2 to `setPhenoGCA`
 
 * `pullGeno` and `pullHaplo` functions now report marker names from the genetic map
 
 # AlphaSimR 1.0.1
 
-* removed lazyData field in DESCRIPTION
+* Removed lazyData field in DESCRIPTION
 
 # AlphaSimR 1.0.0
 
 * AlphaSimR manuscript has been published in G3 (citation added)
 
-* changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
+* Changed to a Gamma Sprinkling model for crossovers, default is still a Gamma model
 
-* change default interference parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)
+* Change default interference parameter (v) to 2.6 to be consistent with the Kosambi mapping function (was 1, consistent with the Haldane mapping function)
 
-* new internal id (iid) that allows user to freely change id slot in populations
+* New internal id (iid) that allows user to freely change id slot in populations
 
 * `runMacs2` now adjusts Ne for autopolyploids
 
-* parent populations are now passed to `finalizePop`
+* Parent populations are now passed to `finalizePop`
 
-* check added that throws an error when use of discontinued "gender" argument is detected
+* Check added that throws an error when use of discontinued "gender" argument is detected
 
-* added experimental `MegaPop-class`
+* Added experimental `MegaPop-class`
 
 # AlphaSimR 0.13.0
 
-* references to gender have been changed to the more appropriate terms sex or sexes
+* References to gender have been changed to the more appropriate terms sex or sexes
 
-* added misc slot to populations
+* Added misc slot to populations
 
-* added `finalizePop` to `SimParam`
+* Added `finalizePop` to `SimParam`
 
-* added physical positions to `getSnpMap` and `getQtlMap`
+* Added physical positions to `getSnpMap` and `getQtlMap`
 
-* you can now use h2 and H2 to specify error variance in `setPheno`
+* You can now use h2 and H2 to specify error variance in `setPheno`
 
 * `SimParam$setVarE` now accepts a matrix for varE
 
-* fixed a bug in `editGenome` when making multiple edits
+* Fixed a bug in `editGenome` when making multiple edits
 
-* adding merging of centromere vector in `cChr`
+* Adding merging of centromere vector in `cChr`
 
 # AlphaSimR 0.12.2
 
 * GxE traits now default to random sampling of p-values
 
-* fixed a bug in `restrSegSites`
+* Fixed a bug in `restrSegSites`
 
 # AlphaSimR 0.12.1
 
-* fixed a bug in selection of segSites
+* Fixed a bug in selection of segSites
 
 # AlphaSimR 0.12.0
 
-* changed output of `genParam` to match Bulmer, 1976
+* Changed output of `genParam` to match Bulmer, 1976
 
-* nProgeny added to `makeCross` and `makeCross2`
+* `nProgeny` added to `makeCross` and `makeCross2`
 
-* all `SimParam` documentation is now in `?SimParam`
+* All `SimParam` documentation is now in `?SimParam`
 
-* non-overlapping QTL and SNP is now the default
+* Non-overlapping QTL and SNP is now the default
 
-* new interface for `restrSegSites` in `SimParam`
+* New interface for `restrSegSites` in `SimParam`
 
-* fixed subset by id for populations
+* Fixed subset by id for populations
 
-* fixed major bug in `newMapPop`
+* Fixed major bug in `newMapPop`
 
 # AlphaSimR 0.11.1
 
-* switched to a circular design for the balance option in `randCross` and `randCross2`
+* Switched to a circular design for the balance option in `randCross` and `randCross2`
 
-* added `reduceGenome` and `doubleGenome` for changing ploidy levels
+* Added `reduceGenome` and `doubleGenome` for changing ploidy levels
 
-* added minSnpFreq to SimParam_addSnpChip for any reference population
+* Added minSnpFreq to SimParam_addSnpChip for any reference population
 
-* the `c` function now merges individuals for MapPop objects (was chromosomes before)
+* The `c` function now merges individuals for MapPop objects (was chromosomes before)
 
-* the `cChr` function new merges chromosomes for MapPop objects
+* The `cChr` function new merges chromosomes for MapPop objects
 
-* fixed broken SimParam_addStructuredSnpChip
+* Fixed broken SimParam_addStructuredSnpChip
 
-* removed broken `pullMultipleSnpGeno` and `pullMultipleSnpHaplo`
+* Removed broken `pullMultipleSnpGeno` and `pullMultipleSnpHaplo`
 
-* fixed broken `writePlink`
+* Fixed broken `writePlink`
 
 # AlphaSimR 0.11.0
 
-* rework of `setEBV` (breaks some scripts)
+* Rework of `setEBV` (breaks some scripts)
 
-* genotype data now stored as bits (was bytes)
+* Genotype data now stored as bits (was bytes)
 
-* implemented a gamma model for crossover interference
+* Implemented a gamma model for crossover interference
 
-* added the mutate function to model random mutations
+* Added the mutate function to model random mutations
 
-* added a vignette explaining the biological model for traits
+* Added a vignette explaining the biological model for traits
 
 * GS models now handle polyploids
 
-* heterogenous error variance is now optional in GS models (default is homogeneous error)
+* Heterogenous error variance is now optional in GS models (default is homogeneous error)
 
-* improved gene drop functionality of pedigreeCross
+* Improved gene drop functionality of pedigreeCross
 
-* added keepParents option to makeDH and self (indirectly extends `selectFam` and `selectWithinFam`)
+* Added keepParents option to makeDH and self (indirectly extends `selectFam` and `selectWithinFam`)
 
-* added RRBLUP_SCA2
+* Added RRBLUP_SCA2
 
-* set methods for the "show" function when applied to populations
+* Set methods for the "show" function when applied to populations
 
-* fixed a bug returning the first individual when selecting 0
+* Fixed a bug returning the first individual when selecting 0
 
-* fixed error in recombination track when using `makeDH`
+* Fixed error in recombination track when using `makeDH`
 
-* fixed error causing epistatic effects to mask GxE effects
+* Fixed error causing epistatic effects to mask GxE effects
 
-* fixed an error with `pullSegSiteGeno` and `pullSegSiteHaplo` with variable number of sites per chromosome
+* Fixed an error with `pullSegSiteGeno` and `pullSegSiteHaplo` with variable number of sites per chromosome
 
 # AlphaSimR 0.10.0
 
-* added traits with epistasis
+* Added traits with epistasis
 
 * Max number of threads automatically detected
 
-* added RRBLUP_D2
+* Added RRBLUP_D2
 
-* added version tracking to `SimParam`
+* Added version tracking to `SimParam`
 
-* removed `trackHaploPop` (super-ceded by `pullIbdHaplo`)
+* Removed `trackHaploPop` (super-ceded by `pullIbdHaplo`)
 
-* added `fastRRBLUP`
+* Added `fastRRBLUP`
 
-* fixed faulty double crossover logic
+* Fixed faulty double crossover logic
 
-* fixed broken `writePlink`
+* Fixed broken `writePlink`
 
-* fixed broken `pullIbdHaplo`
+* Fixed broken `pullIbdHaplo`
 
 * `mergePops` no longer assumes diploidy
 
 # AlphaSimR 0.9.0
 
-* added support for autopolyploids
+* Added support for autopolyploids
 
-* added `RRBLUP_GCA2`
+* Added `RRBLUP_GCA2`
 
 * `randCross2` can now "balance" crossing when not using gender
 
-* fixed recombination tracking bug in `createDH2`
+* Fixed recombination tracking bug in `createDH2`
 
-* removed bug in `setEBV` with append=TRUE
+* Removed bug in `setEBV` with append=TRUE
 
 # AlphaSimR 0.8.2
 
-* fixed ambiguous overloading in optimize.cpp
+* Fixed ambiguous overloading in optimize.cpp
 
 # AlphaSimR 0.8.1
 
 * `setPheno` (not `setPhenoGCA`) passes the number of reps to populations
 
-* fixed bug in `editGenomeTopQtl`
+* Fixed bug in `editGenomeTopQtl`
 
-* fixed bug in `RRBLUP_D`
+* Fixed bug in `RRBLUP_D`
 
-* fixed bug in `resetPop`
+* Fixed bug in `resetPop`
 
-* fixed bug in SimParam_rescaleTraits
+* Fixed bug in SimParam_rescaleTraits
 
-* removed unimplemented SimParam_restrSnpSites and SimParam_restrQtlSites
+* Removed unimplemented SimParam_restrSnpSites and SimParam_restrQtlSites
 
-* add error message for no traits in `calcGCA`
+* Add error message for no traits in `calcGCA`
 
 # AlphaSimR 0.8.0
 
-* added GxE traits with zero environmental variance
+* Added GxE traits with zero environmental variance
 
-* faster trait scaling
+* Faster trait scaling
 
-* faster calculation of genetic values
+* Faster calculation of genetic values
 
-* dsyevr now called via arma_fortran
+* `dsyevr` now called via arma_fortran
 
-* added OpenMP support
+* Added OpenMP support
 
-* parallelized `cross2`
+* Parallelized `cross2`
 
-* parallelized `runMacs`
+* Parallelized `runMacs`
 
-* parallelized calculation of genetic values
+* Parallelized calculation of genetic values
 
-* variance calculations now account for inbreeding
+* Variance calculations now account for inbreeding
 
-* fixes for male selection in `selectOP`
+* Fixes for male selection in `selectOP`
 
 # AlphaSimR 0.7.1
 
-* add fixEff to `setPhenoGCA`
+* Add fixEff to `setPhenoGCA`
 
 # AlphaSimR 0.7.0
 
-* added default `runMacs` option to return all segSites
+* Added default `runMacs` option to return all segSites
 
-* added ability to specify separate male and female genetic maps
+* Added ability to specify separate male and female genetic maps
 
 * `pullGeno` and `pullHaplo` functions can now specify chromosomes
 
-* added `RRBLUP2` for special GS cases
+* Added `RRBLUP2` for special GS cases
 
-* improved speed by replacing Rcpp random number generators
+* Improved speed by replacing Rcpp random number generators
 
-* changed available MaCS species
+* Changed available MaCS species
 
 * GS functions now use populations directly
 
-* added `pullIbdHaplo`
+* Added `pullIbdHaplo`
 
-* added `writePlink`
+* Added `writePlink`
 
-* fixed population sub-setting checks to prevent invalid selections
+* Fixed population sub-setting checks to prevent invalid selections
 
-* fixed slow `calcGCA`
+* Fixed slow `calcGCA`
 
-* fixed error in `addTraitAG` preventing multiple traits
+* Fixed error in `addTraitAG` preventing multiple traits
 
-* fixed bug with `mergePops` when merging ebv
+* Fixed bug with `mergePops` when merging ebv
 
-* fixed bug in `setVarE` when using H2 and multiple traits
+* Fixed bug in `setVarE` when using H2 and multiple traits
 
 # AlphaSimR 0.6.1
 

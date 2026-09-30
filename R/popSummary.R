@@ -6,6 +6,14 @@
 #'
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #'
+#' @details
+#' The mean is calculated from the genetic values in \code{pop}.
+#' It includes the trait intercept and can differ from both the intercept
+#' and the requested founder mean.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -13,7 +21,6 @@
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -56,6 +63,12 @@ meanP = function(pop){
 #'
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #'
+#' @details
+#' This function calculated the mean of values stored in the \code{ebv} slot;
+#' supplied by the user or \code{\link{setEBV}}.
+#' Depending on how it was populated, it can contain estimated breeding
+#' values, estimated genetic values, or other estimated/predicted values.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -83,6 +96,16 @@ meanEBV = function(pop){
 #'
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #'
+#' @details
+#' This is the variance of genetic values in \code{pop}.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nTraits by nTraits matrix of variances and covariances between traits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -90,7 +113,6 @@ meanEBV = function(pop){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -137,6 +159,12 @@ varP = function(pop){
 #'
 #' @param pop an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}
 #'
+#' @details
+#' This function calculated the variance of values stored in the \code{ebv} slot;
+#' supplied by the user or \code{\link{setEBV}}.
+#' Depending on how it was populated, it can contain estimated breeding
+#' values, estimated genetic values, or other estimated/predicted values.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -161,10 +189,10 @@ varEBV = function(pop){
   return(ebv)
 }
 
-#' @title Summarize genetic parameters
+#' @title Calculate quantitative genetic quantities
 #'
 #' @description
-#' Calculates genetic and genic additive and dominance variances
+#' Calculates quantitative genetic quantities and their variances
 #' for an object of \code{\link{Pop-class}}
 #'
 #' @param pop an object of \code{\link{Pop-class}}
@@ -174,39 +202,132 @@ varEBV = function(pop){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} and
+#' \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory on trait and quantitative genetics implementation in AlphaSimR.
+#' The text below is a very short summary of the theory.
+#'
+#' In quantitative genetics and AlphaSimR we use
+#' different parameterizations of genetic values.
+#' While these are equivalent
+#' in the sense that they all parameterize the variation of genetic values,
+#' the terms within each parameterization can have different meanings.
+#'
+#' To generate trait genetic values, AlphaSimR uses a trait model with
+#' the genotypic parameterization of genetic values into
+#' the trait intercept (\code{gv_mu}; fixed for a given trait definition) and
+#' contributions from additive (\code{gv_a}), dominance (\code{gv_d}), and
+#' additive-by-additive epistatic (\code{gv_aa}) genotypic effects.
+#' For trait \code{t},
+#' \code{gv[, t] = gv_mu[t] + gv_a[, t] + gv_d[, t] + gv_aa[, t] =
+#' gv_mu[t] + gv_a[, t] + gv_n[, t]}.
+#' Here, \code{gv_n = gv_d + gv_aa}. These contributions need not have
+#' the population mean of zero. The intercept is calibrated to achieve the
+#' requested founder mean and need not equal the population mean genetic value.
+#' This genotypic parameterization is also called the "functional" or "biological" model,
+#' though it is a simplified representation of the underlying trait biology.
+#'
+#' To generate classic quantitative genetic quantities, AlphaSimR uses
+#' the breeding value parameterization of genetic values into
+#' the population mean genetic value (\code{mu}; variable),
+#' breeding value (\code{bv}), dominance deviation (\code{dd}), and
+#' additive-by-additive epistatic deviation (\code{aa}).
+#' For trait \code{t},
+#' \code{gv[, t] = mu[t] + bv[, t] + dd[, t] + aa[, t] =
+#' mu[t] + bv[, t] + nd[, t]}.
+#' Here, \code{nd = dd + aa}.
+#' The breeding values and all deviations have mean zero in \code{pop}.
+#' The reference quantities are calculated from \code{pop}, so the same
+#' individual can have different breeding values and deviations when
+#' evaluated in different populations.
+#' This breeding value parameterization is also called the "statistical" model
+#' because it depends on statistical decomposition of genetic values.
+#'
+#' Note, the output \code{gv_mu} is the trait intercept \eqn{\mu_0},
+#' whereas \code{mu} is the population mean of genetic value \eqn{\bar{G}}.
+#' Despite its name, \code{gv_mu} is not the mean of \code{gv}.
+#' For the returned quantities, the following identity holds
+#' \code{mu = gv_mu + colMeans(gv_a + gv_d + gv_aa)}.
+#' After scaling the genotypic effects,
+#' the trait intercept is chosen as
+#' the requested founder mean minus
+#' the mean contribution of the genotypic effects in the founder population.
+#' With the trait definition held fixed,
+#' the intercept remains constant while the population mean can change.
+#'
+#' Each \code{covX_HW} is the difference between the corresponding genic
+#' variance calculated using observed and Hardy-Weinberg genotype frequencies.
+#' Each \code{covX_L}, for \code{X} in \code{G}, \code{A}, \code{D},
+#' \code{AA}, and \code{N}, is calculated as \code{diag(varX) - genicVarX - covX_HW}.
+#' These are within-trait variance contributions, which can be negative,
+#' rather than covariances between traits.
+#' The cross-component terms \code{covAD_L}, \code{covAAA_L}, \code{covDAA_L}, and
+#' \code{covAN_L} are covariances.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than sample divisor \code{nInd - 1}.
+#'
 #' @return
 #' \describe{
-#' \item{varA}{an nTrait by nTrait matrix of additive genetic variances}
-#' \item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
-#' \item{varAA}{an nTrait by nTrait matrix of additive-by-additive genetic variances}
-#' \item{varG}{an nTrait by nTrait matrix of total genetic variances}
-#' \item{genicVarA}{an nTrait vector of additive genic variances}
-#' \item{genicVarD}{an nTrait vector of dominance genic variances}
-#' \item{genicVarAA}{an nTrait vector of additive-by-additive genic variances}
-#' \item{genicVarG}{an nTrait vector of total genic variances}
-#' \item{covA_HW}{an nTrait vector of additive covariances due to non-random mating}
-#' \item{covD_HW}{an nTrait vector of dominance covariances due to non-random mating}
-#' \item{covAA_HW}{an nTrait vector of additive-by-additive covariances due to non-random mating}
-#' \item{covG_HW}{an nTrait vector of total genic covariances due to non-random mating}
-#' \item{covA_L}{an nTrait vector of additive covariances due to linkage disequilibrium}
-#' \item{covD_L}{an nTrait vector of dominance covariances due to linkage disequilibrium}
-#' \item{covAA_L}{an nTrait vector of additive-by-additive covariances due to linkage disequilibrium}
-#' \item{covAD_L}{an nTrait vector of additive by dominance covariances due to linkage disequilibrium}
-#' \item{covAAA_L}{an nTrait vector of additive by additive-by-additive covariances due to linkage disequilibrium}
-#' \item{covDAA_L}{an nTrait vector of dominance by additive-by-additive covariances due to linkage disequilibrium}
-#' \item{covG_L}{an nTrait vector of total genic covariances due to linkage disequilibrium}
-#' \item{mu}{an nTrait vector of trait means}
-#' \item{mu_HW}{an nTrait vector of expected trait means under random mating}
+#' \item{varG}{an nTraits by nTraits matrix of total genetic variances and covariances between traits}
+#' \item{varA}{an nTraits by nTraits matrix of additive genetic variances and covariances between traits}
+#' \item{varD}{an nTraits by nTraits matrix of dominance genetic variances and covariances between traits}
+#' \item{varAA}{an nTraits by nTraits matrix of additive-by-additive epistatic genetic variances and covariances between traits}
+#' \item{varN}{an nTraits by nTraits matrix of non-additive genetic variances and covariances between traits}
+#' \item{genicVarG}{an nTraits vector of total genic variances}
+#' \item{genicVarA}{an nTraits vector of additive genic variances}
+#' \item{genicVarD}{an nTraits vector of dominance genic variances}
+#' \item{genicVarAA}{an nTraits vector of additive-by-additive epistatic genic variances}
+#' \item{genicVarN}{an nTraits vector of non-additive genic variances}
+#' \item{covG_HW}{an nTraits vector of adjustments to total genic variances
+#'   due to departures from Hardy-Weinberg genotype frequencies}
+#' \item{covA_HW}{an nTraits vector of adjustments to additive genic variances
+#'   due to departures from Hardy-Weinberg genotype frequencies}
+#' \item{covD_HW}{an nTraits vector of adjustments to dominance genic variances
+#'   due to departures from Hardy-Weinberg genotype frequencies}
+#' \item{covAA_HW}{an nTraits vector of adjustments to additive-by-additive epistatic genic variances
+#'   due to departures from Hardy-Weinberg genotype frequencies}
+#' \item{covN_HW}{an nTraits vector of adjustments to non-additive genic variances
+#'   due to departures from Hardy-Weinberg genotype frequencies}
+#' \item{covG_L}{an nTraits vector of contributions to total genetic variances
+#'   due to linkage disequilibrium}
+#' \item{covA_L}{an nTraits vector of contributions to additive genetic variances
+#'   due to linkage disequilibrium}
+#' \item{covD_L}{an nTraits vector of contributions to dominance genetic variances
+#'   due to linkage disequilibrium}
+#' \item{covAA_L}{an nTraits vector of contributions to additive-by-additive epistatic genetic variances
+#'   due to linkage disequilibrium}
+#' \item{covN_L}{an nTraits vector of contributions to non-additive genetic variances
+#'   due to linkage disequilibrium}
+#' \item{covAD_L}{an nTraits vector of within-trait covariances
+#'   between breeding values and dominance deviations}
+#' \item{covAAA_L}{an nTraits vector of within-trait covariances
+#'   between breeding values and additive-by-additive epistatic deviations}
+#' \item{covDAA_L}{an nTraits vector of within-trait covariances
+#'   between dominance deviations and additive-by-additive epistatic deviations}
+#' \item{covAN_L}{an nTraits vector of within-trait covariances
+#'   between breeding values and non-additive deviations}
 #' \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
-#' \item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
-#' \item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
-#' \item{aa}{a matrix of additive-by-additive epistatic deviations with dimensions nInd by nTraits}
-#' \item{gv_mu}{an nTrait vector of intercepts with dimensions nInd by nTraits}
-#' \item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
-#' \item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
-#' \item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
-#' \item{alpha}{a list of average allele substitution effects with length nTraits}
-#' \item{alpha_HW}{a list of average allele substitution effects at Hardy-Weinberg equilibrium with length nTraits}
+#' \item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
+#' \item{mu_HW}{an nTraits vector of genetic value means expected under
+#'   Hardy-Weinberg and linkage equilibrium at the observed allele frequencies}
+#' \item{bv}{an nInd by nTraits matrix of breeding values (breeding value parameterization)}
+#' \item{dd}{an nInd by nTraits matrix of dominance deviations (breeding value parameterization)}
+#' \item{aa}{an nInd by nTraits matrix of additive-by-additive epistatic deviations (breeding value parameterization)}
+#' \item{nd}{an nInd by nTraits matrix of non-additive deviations (breeding value parameterization)}
+#' \item{gv_mu}{an nTraits vector of trait intercepts \eqn{\mu_0} (genotypic parameterization)}
+#' \item{gv_a}{an nInd by nTraits matrix of additive genotypic effect
+#'   contributions to genetic values (genotypic parameterization)}
+#' \item{gv_d}{an nInd by nTraits matrix of dominance genotypic effect
+#'   contributions to genetic values (genotypic parameterization)}
+#' \item{gv_aa}{an nInd by nTraits matrix of additive-by-additive epistatic genotypic effect
+#'   contributions to genetic values (genotypic parameterization)}
+#' \item{gv_n}{an nInd by nTraits matrix of non-additive genotypic effects
+#'   contributions to genetic values (genotypic parameterization)}
+#' \item{alpha}{a list of average effects of allele substitution
+#'   calculated using observed marginal genotype frequencies, with length nTraits}
+#' \item{alpha_HW}{a list of average effects of allele substitution
+#'   calculated using Hardy-Weinberg genotype frequencies at the observed
+#'   allele frequencies, with length nTraits}
 #' }
 #'
 #' @examples
@@ -215,13 +336,12 @@ varEBV = function(pop){
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' ans = genParam(pop, simParam=SP)
+#' genParam(pop, simParam=SP)
 #'
 #' @export
 genParam = function(pop,simParam=NULL,nThreads=NULL){
@@ -241,14 +361,15 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   # Blank nInd x nTrait matrices
   gv = matrix(NA_real_, nrow=nInd, ncol=nTraits)
   colnames(gv) = traitNames
-  bv = dd = aa = gv_a = gv_d = gv_aa = gv
+  bv = dd = aa = nd = gv_a = gv_d = gv_aa = gv_n = gv
 
   # Blank nTrait vectors
   genicVarA = rep(NA_real_, nTraits)
   names(genicVarA) = traitNames
-  genicVarD = genicVarAA = covA_HW = covD_HW = covAA_HW =
-    covG_HW = mu = mu_HW = gv_mu = covAAA_L = covDAA_L =
-    covAD_L = genicVarA
+  genicVarD = genicVarAA = genicVarN =
+    covG_HW = covA_HW = covD_HW = covAA_HW = covN_HW =
+    covAD_L = covAAA_L = covDAA_L = covAN_L =
+    mu = mu_HW = gv_mu = genicVarA
 
   # Average effect of an allele substitution
   alpha = vector("list", length=nTraits)
@@ -260,18 +381,26 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
     trait = simParam$traits[[i]]
     tmp = calcGenParam(trait,pop,nThreads)
     genicVarA[i] = tmp$genicVarA2
+    genicVarN[i] = 0
     covA_HW[i] = tmp$genicVarA-tmp$genicVarA2
+    covN_HW[i] = 0
     gv[,i] = tmp$gv
-    bv[,i] = tmp$bv
-    mu[i] = tmp$mu
+    mu[i] = tmp$mu # mean gv for the trait in the pop
     mu_HW[i] = tmp$mu_HWE
+    bv[,i] = tmp$bv
+    nd[,i] = rep(0,pop@nInd)
+    gv_mu[i] = tmp$gv_mu # trait gv intercept
     gv_a[,i] = tmp$gv_a
-    gv_mu[i] = tmp$gv_mu
+    gv_n[,i] = rep(0,pop@nInd)
     if(.hasSlot(trait,"domEff")){
       genicVarD[i] = tmp$genicVarD2
+      genicVarN[i] = genicVarN[i] + genicVarD[i]
       covD_HW[i] = tmp$genicVarD-tmp$genicVarD2
+      covN_HW[i] = covN_HW[i] + covD_HW[i]
       dd[,i] = tmp$dd
+      nd[,i] = nd[,i] + dd[,i]
       gv_d[,i] = tmp$gv_d
+      gv_n[,i] = gv_n[,i] + gv_d[,i]
     }else{
       genicVarD[i] = 0
       covD_HW[i] = 0
@@ -280,9 +409,13 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
     }
     if(.hasSlot(trait,"epiEff")){
       genicVarAA[i] = tmp$genicVarAA2
+      genicVarN[i] = genicVarN[i] + genicVarAA[i]
       covAA_HW[i] = tmp$genicVarAA-tmp$genicVarAA2
+      covN_HW[i] = covN_HW[i] + covAA_HW[i]
       aa[,i] = tmp$aa
+      nd[,i] = nd[,i] + aa[,i]
       gv_aa[,i] = tmp$gv_aa
+      gv_n[,i] = gv_n[,i] + gv_aa[,i]
     }else{
       genicVarAA[i] = 0
       covAA_HW[i] = 0
@@ -293,14 +426,19 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
       covAD_L[i] = 0
       covAAA_L[i] = 0
       covDAA_L[i] = 0
+      covAN_L[i] = 0
     } else {
       covAD_L[i] = popVar(cbind(bv[,i],dd[,i]))[1,2]
       covAAA_L[i] = popVar(cbind(bv[,i],aa[,i]))[1,2]
       covDAA_L[i] = popVar(cbind(dd[,i],aa[,i]))[1,2]
+      covAN_L[i] = popVar(cbind(bv[,i],nd[,i]))[1,2]
     }
     alpha[[i]] = tmp$alpha
     alpha_HW[[i]] = tmp$alpha_HW
   }
+
+  varG = popVar(gv)
+  rownames(varG) = colnames(varG) = traitNames
 
   varA = popVar(bv)
   rownames(varA) = colnames(varA) = traitNames
@@ -311,49 +449,56 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   varAA = popVar(aa)
   rownames(varAA) = colnames(varAA) = traitNames
 
-  varG = popVar(gv)
-  rownames(varG) = colnames(varG) = traitNames
+  varN = popVar(nd)
+  rownames(varN) = colnames(varN) = traitNames
 
   genicVarG = genicVarA + genicVarD + genicVarAA
   covG_HW = covA_HW + covD_HW + covAA_HW
 
-  output = list(varA=varA,
+  output = list(varG=varG,
+                varA=varA,
                 varD=varD,
                 varAA=varAA,
-                varG=varG,
+                varN=varN,
+                genicVarG=genicVarG,
                 genicVarA=genicVarA,
                 genicVarD=genicVarD,
                 genicVarAA=genicVarAA,
-                genicVarG=genicVarG,
+                genicVarN=genicVarN,
+                covG_HW=covG_HW,
                 covA_HW=covA_HW,
                 covD_HW=covD_HW,
                 covAA_HW=covAA_HW,
-                covG_HW=covG_HW,
+                covN_HW=covN_HW,
+                covG_L=diag(varG)-genicVarG-covG_HW,
                 covA_L=diag(varA)-genicVarA-covA_HW,
                 covD_L=diag(varD)-genicVarD-covD_HW,
                 covAA_L=diag(varAA)-genicVarAA-covAA_HW,
+                covN_L=diag(varN)-genicVarN-covN_HW,
                 covAD_L=covAD_L,
                 covAAA_L=covAAA_L,
                 covDAA_L=covDAA_L,
-                covG_L=diag(varG)-genicVarG-covG_HW,
-                mu=mu,
-                mu_HW=mu_HW,
+                covAN_L=covAN_L,
                 gv=gv,
+                mu=mu, # mean gv for the trait in the pop
+                mu_HW=mu_HW,
                 bv=bv,
                 dd=dd,
                 aa=aa,
-                gv_mu=gv_mu,
+                nd=nd,
+                gv_mu=gv_mu, # trait gv intercept
                 gv_a=gv_a,
                 gv_d=gv_d,
                 gv_aa=gv_aa,
+                gv_n=gv_n,
                 alpha=alpha,
                 alpha_HW=alpha_HW)
   return(output)
 }
 
-#' @title Additive variance
+#' @title Additive genetic variance
 #'
-#' @description Returns additive variance for all traits
+#' @description Returns additive genetic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of class \code{\link{SimParam}}. If
@@ -362,6 +507,16 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' This is the variance of additive genetic (breeding) values in \code{pop}.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nTraits by nTraits matrix of variances and covariances between traits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -369,7 +524,6 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -381,9 +535,9 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$varA
 }
 
-#' @title Dominance variance
+#' @title Dominance genetic variance
 #'
-#' @description Returns dominance variance for all traits
+#' @description Returns dominance genetic variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of class \code{\link{SimParam}}. If
@@ -392,6 +546,16 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' This is the variance of dominance deviations in \code{pop}.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nTraits by nTraits matrix of variances and covariances between traits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -399,7 +563,6 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -411,9 +574,9 @@ varD = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$varD
 }
 
-#' @title Additive-by-additive epistatic variance
+#' @title Additive-by-additive epistatic genetic variance
 #'
-#' @description Returns additive-by-additive epistatic
+#' @description Returns additive-by-additive epistatic genetic
 #' variance for all traits
 #'
 #' @param pop an object of \code{\link{Pop-class}}
@@ -423,14 +586,23 @@ varD = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' This is the variance of additive-by-additive epistatic deviations in \code{pop}.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nTraits by nTraits matrix of variances and covariances between traits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -440,6 +612,62 @@ varD = function(pop,simParam=NULL,nThreads=NULL){
 #' @export
 varAA = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$varAA
+}
+
+#' @title Non-additive genetic variance
+#'
+#' @description Returns non-additive genetic variance for all traits
+#'   (includes dominance and epistatic genetic variance)
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @details
+#' This is the variance of total non-additive deviations in \code{pop}.
+#' Variances and covariances use the population divisor \code{nInd},
+#' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+#' Since \code{nd = dd + aa}, the variance includes twice the covariance
+#' between dominance and additive-by-additive epistatic deviations.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nTraits by nTraits matrix of variances and covariances between traits.
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varG(pop)
+#' varA(pop, simParam=SP)
+#' varN(pop, simParam=SP)
+#'
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' varG(pop)
+#' varA(pop, simParam=SP)
+#' varD(pop, simParam=SP)
+#' varAA(pop, simParam=SP)
+#' varN(pop, simParam=SP)
+#'
+#' @export
+varN = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$varN
 }
 
 #' @title Breeding value
@@ -453,6 +681,18 @@ varAA = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Breeding values derive from the breeding value parameterization of genetic values.
+#' They have mean zero in \code{pop},
+#' which supplies the reference quantities used by \code{\link{genParam}}.
+#' Evaluating the same individual in a different population can therefore
+#' change its returned values.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nInd by nTraits matrix.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -460,7 +700,6 @@ varAA = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -483,6 +722,18 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Dominance deviations derive from the breeding value parameterization of genetic values.
+#' They have mean zero in \code{pop},
+#' which supplies the reference quantities used by \code{\link{genParam}}.
+#' Evaluating the same individual in a different population can therefore
+#' change returned values.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nInd by nTraits matrix.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -490,7 +741,6 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -514,14 +764,25 @@ dd = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Additive-by-additive epistatic deviations derive from the breeding value parameterization of genetic values.
+#' They have mean zero in \code{pop},
+#' which supplies the reference quantities used by \code{\link{genParam}}.
+#' Evaluating the same individual in a different population can therefore
+#' change its returned values.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nInd by nTraits matrix.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -531,6 +792,94 @@ dd = function(pop,simParam=NULL,nThreads=NULL){
 #' @export
 aa = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$aa
+}
+
+#' @title Non-additive deviations
+#'
+#' @description Returns non-additive deviations for all traits
+#'   (includes dominance and epistatic deviations)
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @details
+#' Non-additive deviations derive from the breeding value parameterization of genetic values.
+#' They have mean zero in \code{pop},
+#' which supplies the reference quantities used by \code{\link{genParam}}.
+#' Evaluating the same individual in a different population can therefore
+#' change its returned values.
+#' The total non-additive deviation is \code{nd = dd + aa}.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return An nInd by nTraits matrix.
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' cbind(dd(pop, simParam=SP),
+#'       aa(pop, simParam=SP),
+#'       nd(pop, simParam=SP))
+#'
+#' @export
+nd = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$nd
+}
+
+#' @title Total genic variance
+#'
+#' @description Returns total genic variance for all traits
+#'
+#' @param pop an object of \code{\link{Pop-class}}
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#' @param nThreads number of threads to use if OpenMP is available.
+#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @details
+#' Genic variances refer to an idealized population with the same allele
+#' frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+#' and linkage equilibrium.
+#' They are theoretical expectations under this reference distribution,
+#' rather than variances of values evaluated in the observed population.
+#' See \code{\link{genParam}} for the corresponding genetic variances
+#' and contributions from departures from equilibrium.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return A vector of length nTraits.
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' genicVarG(pop, simParam=SP)
+#'
+#' @export
+genicVarG = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarG
 }
 
 #' @title Additive genic variance
@@ -544,6 +893,20 @@ aa = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Genic variances refer to an idealized population with the same allele
+#' frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+#' and linkage equilibrium.
+#' They are theoretical expectations under this reference distribution,
+#' rather than variances of values evaluated in the observed population.
+#' See \code{\link{genParam}} for the corresponding genetic variances
+#' and contributions from departures from equilibrium.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return A vector of length nTraits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -551,7 +914,6 @@ aa = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -574,6 +936,20 @@ genicVarA = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Genic variances refer to an idealized population with the same allele
+#' frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+#' and linkage equilibrium.
+#' They are theoretical expectations under this reference distribution,
+#' rather than variances of values evaluated in the observed population.
+#' See \code{\link{genParam}} for the corresponding genetic variances
+#' and contributions from departures from equilibrium.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return A vector of length nTraits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -581,7 +957,6 @@ genicVarA = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -593,7 +968,7 @@ genicVarD = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarD
 }
 
-#' @title Additive-by-additive genic variance
+#' @title Additive-by-additive epistatic genic variance
 #'
 #' @description Returns additive-by-additive epistatic
 #' genic variance for all traits
@@ -605,14 +980,27 @@ genicVarD = function(pop,simParam=NULL,nThreads=NULL){
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
+#' @details
+#' Genic variances refer to an idealized population with the same allele
+#' frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+#' and linkage equilibrium.
+#' They are theoretical expectations under this reference distribution,
+#' rather than variances of values evaluated in the observed population.
+#' See \code{\link{genParam}} for the corresponding genetic variances
+#' and contributions from departures from equilibrium.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return A vector of length nTraits.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
@@ -624,16 +1012,30 @@ genicVarAA = function(pop,simParam=NULL,nThreads=NULL){
   genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarAA
 }
 
-#' @title Total genic variance
+#' @title Non-additive genic variance
 #'
-#' @description Returns total genic variance for all traits
-#'
+#' @description Returns non-additive genic variance for all traits
+#'   (includes dominance and epistatic genic variance)
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#'
+#' @details
+#' Genic variances refer to an idealized population with the same allele
+#' frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+#' and linkage equilibrium.
+#' They are theoretical expectations under this reference distribution,
+#' rather than variances of values evaluated in the observed population.
+#' See \code{\link{genParam}} for the corresponding genetic variances
+#' and contributions from departures from equilibrium.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' @return A vector of length nTraits.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -642,16 +1044,29 @@ genicVarAA = function(pop,simParam=NULL,nThreads=NULL){
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' genicVarG(pop, simParam=SP)
+#' genicVarA(pop, simParam=SP)
+#' genicVarN(pop, simParam=SP)
+#'
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' genicVarG(pop, simParam=SP)
+#' genicVarA(pop, simParam=SP)
+#' genicVarD(pop, simParam=SP)
+#' genicVarAA(pop, simParam=SP)
+#' genicVarN(pop, simParam=SP)
 #'
 #' @export
-genicVarG = function(pop,simParam=NULL,nThreads=NULL){
-  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarG
+genicVarN = function(pop,simParam=NULL,nThreads=NULL){
+  genParam(pop,simParam=simParam,nThreads=nThreads)$genicVarN
 }
 
 #' @title Genetic value
@@ -659,6 +1074,25 @@ genicVarG = function(pop,simParam=NULL,nThreads=NULL){
 #' @description A wrapper for accessing the gv slot
 #'
 #' @param pop a \code{\link{Pop-class}} or similar object
+#'
+#' @details
+#' Genetic values include the trait intercept and the contributions of
+#' additive, dominance, and additive-by-additive epistatic genotypic effects
+#' present in the trait model.
+#' For a fixed trait definition, these values do not depend on the population,
+#' unlike the breeding values and non-additive deviations.
+#' For traits with genotype-by-environment effects, these genetic values
+#' refer to the target environment, where the environmental covariate is zero.
+#'
+#' See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
+#'
+#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' background theory and its demonstration.
+#'
+#' See \code{vignette("GxE", package = "AlphaSimR")} for
+#' the genotype-by-environment model
+#'
+#' @return An nInd by nTraits matrix of genetic values.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -710,19 +1144,26 @@ pheno = function(pop){
 #'
 #' @param pop a \code{\link{Pop-class}} or similar object
 #'
+#' @details
+#' The \code{ebv} slot stores predictions supplied by the user or
+#' \code{\link{setEBV}}.
+#' Depending on how it was populated, it can contain estimated breeding
+#' values, estimated genetic values, or other estimated/predicted values.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
+#' SP$addTraitA(10)
+#' trtH2 = 0.5
+#' SP$setVarE(h2=trtH2)
 #' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitAD(10, meanDD=0.5)
-#' SP$setVarE(h2=0.5)
 #'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
-#' pop@ebv = matrix(rnorm(pop@nInd), nrow=pop@nInd, ncol=1)
+#' pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
 #' ebv(pop)
 #'
 #' @export
@@ -740,7 +1181,7 @@ ebv = function(pop){
 #'   if \code{NULL} must provide \code{parents}
 #' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
 #'   if \code{NULL} must provide \code{parents}
-#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#' @param use character, calculate using \code{"\link{gv}"},
 #'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -801,27 +1242,29 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
       ret = 0.5 * (slot(object = mothers, name = use)[matchMothers, , drop = FALSE] +
                    slot(object = fathers, name = use)[matchFathers, , drop = FALSE])
     }
-  } else if (use == "bv") {
-    if (!is.null(parents)) {
-      ret = 0.5 * (bv(parents, simParam = simParam,
-                      nThreads=nThreads)[matchMothers, , drop = FALSE] +
-                   bv(parents, simParam = simParam,
-                      nThreads=nThreads)[matchFathers, , drop = FALSE])
-    } else {
-      ret = 0.5 * (bv(mothers, simParam = simParam,
-                      nThreads=nThreads)[matchMothers, , drop = FALSE] +
-                   bv(fathers, simParam = simParam,
-                      nThreads=nThreads)[matchFathers, , drop = FALSE])
-    }
+  # Commented out because bv() uses different reference populations for parents and offspring.
+  # TODO: See https://github.com/gaynorr/AlphaSimR/issues/291
+  # } else if (use == "bv") {
+  #   if (!is.null(parents)) {
+  #     ret = 0.5 * (bv(parents, simParam = simParam,
+  #                     nThreads=nThreads)[matchMothers, , drop = FALSE] +
+  #                  bv(parents, simParam = simParam,
+  #                     nThreads=nThreads)[matchFathers, , drop = FALSE])
+  #   } else {
+  #     ret = 0.5 * (bv(mothers, simParam = simParam,
+  #                     nThreads=nThreads)[matchMothers, , drop = FALSE] +
+  #                  bv(fathers, simParam = simParam,
+  #                     nThreads=nThreads)[matchFathers, , drop = FALSE])
+  #   }
   } else {
-    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+    stop("use must be one of 'gv', 'ebv', or 'pheno'!")
   }
   return(ret)
 }
 
 #' @title Calculate Mendelian sampling
 #'
-#' @param pop \code{\link{Pop-class}} with individuals whose parent average
+#' @param pop \code{\link{Pop-class}} with individuals whose Mendelian samplings
 #'   will be calculated
 #' @param parents \code{\link{Pop-class}} with mothers and fathers of individuals
 #'   in \code{pop}; if \code{NULL} must provide \code{mothers} and \code{fathers}
@@ -829,7 +1272,7 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #'   if \code{NULL} must provide \code{parents}
 #' @param fathers \code{\link{Pop-class}} with fathers of individuals in \code{pop};
 #'   if \code{NULL} must provide \code{parents}
-#' @param use character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+#' @param use character, calculate using \code{"\link{gv}"},
 #'   \code{"\link{ebv}"}, or \code{"\link{pheno}"}
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -848,7 +1291,7 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #' SP$addTraitAD(10, meanDD=0.5)
 #' SP$setVarE(h2=0.5)
 #' \dontshow{SP$nThreads = 1L}
-#' 
+#'
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #' pop2 = randCross(pop, nCrosses=10, nProgeny=2)
@@ -870,10 +1313,12 @@ mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL
                      use = use, simParam = simParam, nThreads=nThreads)
   if (use %in% c("gv", "ebv", "pheno")) {
     ret = slot(object = pop, name = use) - pa
-  } else if (use == "bv") {
-    ret = bv(pop, simParam = simParam, nThreads=nThreads) - pa
+  # Commented out because bv() uses different reference populations for parents and offspring.
+  # TODO: See https://github.com/gaynorr/AlphaSimR/issues/291
+  # } else if (use == "bv") {
+  #   ret = bv(pop, simParam = simParam, nThreads=nThreads) - pa
   } else {
-    stop("use must be one of 'gv', 'bv', 'ebv', or 'pheno'!")
+    stop("use must be one of 'gv', 'ebv', or 'pheno'!")
   }
   return(ret)
 }

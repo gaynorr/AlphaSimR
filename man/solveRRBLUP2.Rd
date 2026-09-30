@@ -17,8 +17,8 @@ solveRRBLUP2(y, X, M)
 Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
 same arguments and returns the same values as \code{\link{solveRRBLUP}},
 but solves the mixed model equations using the factored spectral approach
-of FaST-LMM \insertCite{lippert_2011}{AlphaSimR} rather than the EMMA
-algorithm \insertCite{kang_2008}{AlphaSimR}. It is intended as an
+of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR} rather than the EMMA
+algorithm \insertCite{kang2008Efficient}{AlphaSimR}. It is intended as an
 eventual replacement for \code{\link{solveRRBLUP}}.
 }
 \details{

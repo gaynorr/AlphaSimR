@@ -9,9 +9,15 @@ Extends \code{\link{TraitA-class}}
 to model separate additive effects for parent of
 origin. Used exclusively for genomic selection.
 }
+\details{
+Trait effects and intercept are parameters of the trait model described in
+\code{vignette("traits", package = "AlphaSimR")}.
+Multiplying effects by the corresponding scaled genotype dosages from a population
+gives corresponding contributions to genetic values.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{addEffMale}}{additive effects}
+\item{\code{addEffMale}}{additive genotypic effects of paternally inherited alleles}
 }}
 

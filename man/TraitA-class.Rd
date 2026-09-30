@@ -8,11 +8,18 @@
 Extends \code{\link{LociMap-class}}
 to model additive traits
 }
+\details{
+Trait effects and intercept are parameters of the trait model described in
+\code{vignette("traits", package = "AlphaSimR")}.
+Multiplying effects by the corresponding scaled genotype dosages from a population
+gives corresponding contributions to genetic values.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{addEff}}{additive effects}
+\item{\code{addEff}}{additive genotypic effects}
 
-\item{\code{intercept}}{adjustment factor for gv}
+\item{\code{intercept}}{trait intercept in the genotypic parameterization of genetic values
+calibrated to obtain the requested founder mean}
 }}
 

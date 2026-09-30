@@ -74,6 +74,17 @@ for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that
 RRBLUP_SCA2 is only faster in certain situations. Most users should use
 \code{\link{RRBLUP_SCA}}.
 }
+\details{
+The model uses separate maternal and paternal marker dosages from
+the training population.
+The solution can be applied with \code{\link{setEBV}}:
+\code{value="female"} or \code{value="male"} gives parental
+predictions, while \code{value="gv"} predicts total hybrid genetic value.
+These model predictions obviously differ from the observed cross means
+returned by \code{\link{calcGCA}}.
+The dominance terms allow cross-specific deviations,
+but SCA's are not returned.
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)

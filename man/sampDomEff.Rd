@@ -2,7 +2,7 @@
 % Please edit documentation in R/Class-SimParam.R
 \name{sampDomEff}
 \alias{sampDomEff}
-\title{Sample dominance effects}
+\title{Sample dominance genotypic effects}
 \usage{
 sampDomEff(qtlLoci, nTraits, addEff, corDD, meanDD, varDD)
 }
@@ -11,7 +11,7 @@ sampDomEff(qtlLoci, nTraits, addEff, corDD, meanDD, varDD)
 
 \item{nTraits}{number of traits}
 
-\item{addEff}{previously sampled additive effects}
+\item{addEff}{previously sampled additive genotypic effects}
 
 \item{corDD}{correlation between dominance degrees}
 
@@ -24,7 +24,11 @@ a matrix with dimensions qtlLoci by nTraits
 }
 \description{
 Samples dominance deviation effects from a normal distribution
-and uses previously sampled additive effects to form dominance
+and uses previously sampled additive genotypic effects to form dominance
 effects
+}
+\details{
+See \code{vignette("traits", package = "AlphaSimR")} for the
+implemented trait model and genotypic effects.
 }
 \keyword{internal}

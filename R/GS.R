@@ -70,7 +70,7 @@ convertTraitsToIndex = function(traits, simParam=NULL){
 #'
 #' The mixed model equations are solved by preconditioned conjugate
 #' gradient, iterating over the genotypes rather than over a stored
-#' coefficient matrix \insertCite{stranden_1999}{AlphaSimR}. Neither the
+#' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}. Neither the
 #' coefficient matrix nor a numeric copy of the genotypes is formed, so
 #' memory use stays close to the size of the genotypes, and the iteration
 #' is shared across nThreads.
@@ -823,6 +823,15 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param ... additional arguments if using a function for
 #' traits
 #'
+#' @details
+#' The model uses separate maternal and paternal marker dosages from
+#' the training population.
+#' The solution can be applied with \code{\link{setEBV}}:
+#' \code{value="female"} or \code{value="male"} gives parental
+#' predictions, while \code{value="gv"} predicts total hybrid genetic value.
+#' These model predictions obviously differ from the observed cross means
+#' returned by \code{\link{calcGCA}}.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
@@ -952,6 +961,15 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
+#'
+#' @details
+#' The model uses separate maternal and paternal marker dosages from
+#' the training population.
+#' The solution can be applied with \code{\link{setEBV}}:
+#' \code{value="female"} or \code{value="male"} gives parental
+#' predictions, while \code{value="gv"} predicts total hybrid genetic value.
+#' These model predictions obviously differ from the observed cross means
+#' returned by \code{\link{calcGCA}}.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1111,6 +1129,17 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param ... additional arguments if using a function for
 #' traits
 #'
+#' @details
+#' The model uses separate maternal and paternal marker dosages from
+#' the training population.
+#' The solution can be applied with \code{\link{setEBV}}:
+#' \code{value="female"} or \code{value="male"} gives parental
+#' predictions, while \code{value="gv"} predicts total hybrid genetic value.
+#' These model predictions obviously differ from the observed cross means
+#' returned by \code{\link{calcGCA}}.
+#' The dominance terms allow cross-specific deviations,
+#' but SCA's are not returned.
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=2, nChr=1, segSites=20)
@@ -1243,6 +1272,17 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
+#'
+#' @details
+#' The model uses separate maternal and paternal marker dosages from
+#' the training population.
+#' The solution can be applied with \code{\link{setEBV}}:
+#' \code{value="female"} or \code{value="male"} gives parental
+#' predictions, while \code{value="gv"} predicts total hybrid genetic value.
+#' These model predictions obviously differ from the observed cross means
+#' returned by \code{\link{calcGCA}}.
+#' The dominance terms allow cross-specific deviations,
+#' but SCA's are not returned.
 #'
 #' @examples
 #' #Create founder haplotypes

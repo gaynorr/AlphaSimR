@@ -152,7 +152,7 @@ batch2 = setPheno(pop[201:400], fixEff = 2L, simParam = SP)
 table(c(batch1, batch2)@fixEff)
 
 ## ----eval=FALSE---------------------------------------------------------------
-# # Each trial phenotyped in its own environment, and labelled as such
+# # Each trial phenotyped in its own environment, and labeled as such
 # PYT = setPheno(PYT, reps = repPYT, p = pYear, fixEff = year, simParam = SP)
 # AYT = setPheno(AYT, reps = repAYT, p = pYear, fixEff = year, simParam = SP)
 # 

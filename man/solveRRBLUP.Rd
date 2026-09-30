@@ -15,7 +15,7 @@ solveRRBLUP(y, X, M)
 }
 \description{
 Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
-EMMA algorithm \insertCite{kang_2008}{AlphaSimR}.
+EMMA algorithm \insertCite{kang2008Efficient}{AlphaSimR}.
 }
 \references{
 \insertAllCited{}

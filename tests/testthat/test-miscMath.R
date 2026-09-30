@@ -79,7 +79,7 @@ test_that("selIndex forms the weighted sum of trait values", {
   expect_equal(nrow(selIndex(Y, b)), 3L)
   expect_equal(ncol(selIndex(Y, b)), 1L)
 
-  # Scaling centres and standardizes each column first, so the result has
+  # Scaling centers and standardizes each column first, so the result has
   # mean zero
   scaled = selIndex(Y, b, scale=TRUE)
   expect_equal(mean(scaled), 0, tolerance=1e-10)

@@ -9,8 +9,19 @@ varG(pop)
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}}
 }
+\value{
+An nTraits by nTraits matrix of variances and covariances between traits.
+}
 \description{
 Returns total genetic variance for all traits
+}
+\details{
+This is the variance of genetic values in \code{pop}.
+Variances and covariances use the population divisor \code{nInd},
+rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 #Create founder haplotypes
@@ -19,7 +30,6 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
-SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

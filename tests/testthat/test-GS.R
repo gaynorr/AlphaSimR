@@ -149,12 +149,12 @@ test_that("setEBV reproduces the model's own predictions", {
 
   # Worked out by hand from the marker effects and the dosages. A locus
   # contributes its effect times (dosage - ploidy/2) * (2/ploidy), so the
-  # dosages are centred before they are weighted rather than used raw.
+  # dosages are centered before they are weighted rather than used raw.
   M = pullSnpGeno(d$pop, simParam=d$SP)
   a = addEff(ans)
   p = d$pop@ploidy
-  centred = (M - p/2) * (2/p)
-  byHand = c(centred %*% a) + ans@gv[[1]]@intercept
+  centered = (M - p/2) * (2/p)
+  byHand = c(centered %*% a) + ans@gv[[1]]@intercept
   expect_equal(unname(c(ebv(pred))), unname(byHand), tolerance=1e-6)
 
   # The model was fitted on these records, so it should fit them well

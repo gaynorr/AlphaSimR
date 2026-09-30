@@ -70,6 +70,15 @@ females and males. This implementation is meant for situations where
 is only faster in certain situations. Most users should use
 \code{\link{RRBLUP_GCA}}.
 }
+\details{
+The model uses separate maternal and paternal marker dosages from
+the training population.
+The solution can be applied with \code{\link{setEBV}}:
+\code{value="female"} or \code{value="male"} gives parental
+predictions, while \code{value="gv"} predicts total hybrid genetic value.
+These model predictions obviously differ from the observed cross means
+returned by \code{\link{calcGCA}}.
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)

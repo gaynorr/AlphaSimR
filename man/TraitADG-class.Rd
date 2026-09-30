@@ -8,10 +8,16 @@
 Extends \code{\link{TraitAD-class}}
 to add GxE effects
 }
+\details{
+Trait effects and intercept are parameters of the trait model described in
+\code{vignette("traits", package = "AlphaSimR")}.
+Multiplying effects by the corresponding scaled genotype dosages from a population
+gives corresponding contributions to genetic values.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{gxeEff}}{GxE effects}
+\item{\code{gxeEff}}{genotype-by-environment genotypic effects}
 
 \item{\code{gxeInt}}{GxE intercept}
 

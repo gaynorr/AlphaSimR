@@ -542,12 +542,13 @@ SimParam = R6Class(
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive traits.
     #' If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive effects.
+    #' with correlated additive genotypic effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -614,14 +615,17 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive effects
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #    If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -700,14 +704,14 @@ SimParam = R6Class(
     },
 
     #' @description
-    #' An alternative method for adding a trait with additive  and dominance effects
+    #' An alternative method for adding a trait with additive and dominance genotypic effects
     #' to an AlphaSimR simulation. The function attempts to create a trait matching
     #' user defined values for number of QTL, inbreeding depression, additive genetic
     #' variance and dominance genetic variance.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome.
     #' Can be a single value or nChr values.
-    #' @param mean desired mean of the trait
+    #' @param mean requested founder mean (mean genetic value) of the trait
     #' @param varA desired additive variance
     #' @param varD desired dominance variance
     #' @param inbrDepr desired inbreeding depression, see details
@@ -722,7 +726,7 @@ SimParam = R6Class(
     #'
     #' @details
     #' This function will always add a trait to 'SimParam', unless an error occurs
-    #' with picking QTLs. The resulting trait will always have the desired mean and
+    #' with picking QTLs. The resulting trait will always have the requested founder mean and
     #' additive genetic variance. However, it may not have the desired values for
     #' inbreeding depression and dominance variance. Thus, it is strongly recommended
     #' to check the output printed to the console to determine how close the trait's
@@ -832,12 +836,13 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -933,16 +938,20 @@ SimParam = R6Class(
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive effects
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1053,17 +1062,23 @@ SimParam = R6Class(
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
     #' traits. If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive effects.
+    #' with correlated additive genotypic effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1150,17 +1165,23 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1256,17 +1277,23 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1383,19 +1410,26 @@ SimParam = R6Class(
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1554,17 +1588,20 @@ SimParam = R6Class(
     #' inputs. This function only works for A and AD trait types.
     #'
     #' @param markerNames a vector of names for the QTL
-    #' @param addEff a matrix of additive effects (nLoci x nTraits).
+    #' @param addEff a matrix of additive genotypic effects (nLoci x nTraits).
     #' Alternatively, a vector of length nLoci can be supplied for
     #' a single trait.
-    #' @param domEff optional dominance effects for each locus
-    #' @param intercept optional intercepts for each trait
+    #' @param domEff optional dominance genotypic effects for each locus
+    #' @param intercept optional trait intercepts in the genotypic parameterization
     #' @param name optional name(s) for the trait(s)
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
+    #'
+    #' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+    #' implemented trait model and genotypic effects.
     importTrait = function(markerNames,
                            addEff,
                            domEff=NULL,
@@ -1880,11 +1917,14 @@ SimParam = R6Class(
     #' Linearly scales all traits to achieve desired
     #' values of means and variances in the founder population.
     #'
-    #' @param mean a vector of new trait means
-    #' @param var a vector of new trait variances
+    #' @param mean a vector of requested mean genetic values in the founder population
+    #' @param var a vector of requested genetic variances in the founder population
     #' @param varEnv a vector of new environmental variances
     #' @param varGxE a vector of new GxE variances
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
@@ -2993,7 +3033,7 @@ gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
   return(Rz)
 }
 
-#' @title Sample additive effects
+#' @title Sample additive genotypic effects
 #'
 #' @description Samples deviates from a normal distribution or gamma distribution
 #' with a random sign
@@ -3003,6 +3043,9 @@ gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
 #' @param corr correlation between traits
 #' @param gamma indicator of whether trait should use a gamma distribution
 #' @param shape gamma distribution shape parameter
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'
@@ -3026,18 +3069,21 @@ sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
   return(addEff)
 }
 
-#' @title Sample dominance effects
+#' @title Sample dominance genotypic effects
 #'
 #' @description Samples dominance deviation effects from a normal distribution
-#' and uses previously sampled additive effects to form dominance
+#' and uses previously sampled additive genotypic effects to form dominance
 #' effects
 #'
 #' @param qtlLoci total number of loci
 #' @param nTraits number of traits
-#' @param addEff previously sampled additive effects
+#' @param addEff previously sampled additive genotypic effects
 #' @param corDD correlation between dominance degrees
 #' @param meanDD mean value of dominance degrees
 #' @param varDD variance of dominance degrees
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'
@@ -3055,7 +3101,7 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @title Sample epistatic effects
 #'
 #' @description Samples epistatic effects from a normal distribution or gamma distribution
-#' with a variance relative to the variance of the additive effects
+#' with a variance relative to the variance of the additive genotypic effects
 #'
 #' @param qtlLoci total number of loci
 #' @param nTraits number of traits
@@ -3063,6 +3109,9 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @param gamma indicator of whether trait should use a gamma distribution
 #' @param shape gamma distribution shape parameter
 #' @param relVar desired variance for epistatic effects
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'

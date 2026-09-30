@@ -1,15 +1,17 @@
 ---
-title: "Genotype-by-environment interactions in AlphaSimR"
+title: "Genotype-by-Environment Interactions in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-bibliography: AlphaSimR.bib
+output:
+  rmarkdown::html_vignette:
+    toc: true
+bibliography: '`r normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
-  %\VignetteIndexEntry{Quantitative Genetics}
+  %\VignetteIndexEntry{Genotype-by-Environment Interactions in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -25,7 +27,7 @@ SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxE=1, legacyGxE=TRUE)
 
 # New GxE trait
 SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxL=1, varGxL_Y=1)
-  
+
 SP$setVarE(H2=0.5, useGxE=TRUE)
 
 # Legacy GxE
@@ -40,6 +42,4 @@ pop = setPheno(pop, year=year, reps=1, locs=2)
 PYT = setPheno(PYT, year=year, fixEff=paste0("PYT_", year))
 
 pheno_df = setPheno(PYT, year=year, fixEff=paste0("PYT_", year), returnPheno=TRUE)
-
-
 ```

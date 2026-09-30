@@ -2,7 +2,7 @@
 % Please edit documentation in R/popSummary.R
 \name{varA}
 \alias{varA}
-\title{Additive variance}
+\title{Additive genetic variance}
 \usage{
 varA(pop, simParam = NULL, nThreads = NULL)
 }
@@ -16,8 +16,19 @@ global environment.}
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
+\value{
+An nTraits by nTraits matrix of variances and covariances between traits.
+}
 \description{
-Returns additive variance for all traits
+Returns additive genetic variance for all traits
+}
+\details{
+This is the variance of additive genetic (breeding) values in \code{pop}.
+Variances and covariances use the population divisor \code{nInd},
+rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 #Create founder haplotypes
@@ -26,7 +37,6 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

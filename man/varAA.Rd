@@ -2,7 +2,7 @@
 % Please edit documentation in R/popSummary.R
 \name{varAA}
 \alias{varAA}
-\title{Additive-by-additive epistatic variance}
+\title{Additive-by-additive epistatic genetic variance}
 \usage{
 varAA(pop, simParam = NULL, nThreads = NULL)
 }
@@ -16,9 +16,20 @@ global environment.}
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
+\value{
+An nTraits by nTraits matrix of variances and covariances between traits.
+}
 \description{
-Returns additive-by-additive epistatic
+Returns additive-by-additive epistatic genetic
 variance for all traits
+}
+\details{
+This is the variance of additive-by-additive epistatic deviations in \code{pop}.
+Variances and covariances use the population divisor \code{nInd},
+rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 #Create founder haplotypes
@@ -26,8 +37,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
+SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

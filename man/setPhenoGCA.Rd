@@ -72,8 +72,8 @@ Returns an object of \code{\link{Pop-class}} or
 a matrix if onlyPheno=TRUE
 }
 \description{
-Calculates general combining ability from a set of testers and
-returns these values as phenotypes for a population.
+Calculates mean testcross performance against a set of testers and
+returns these values as phenotypes for the population.
 }
 \examples{
 #Create founder haplotypes
@@ -87,7 +87,7 @@ SP$addTraitA(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Set phenotype to average per
+#Set phenotype to mean testcross performance
 pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
 
 }

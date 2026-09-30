@@ -195,7 +195,7 @@ void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
 // Thread-local node ids make ordering deterministic (only within a thread).
 thread_local unsigned long long Node::sNextId = 0;
 // thread_local will not work across OpenMP threads, but we don't need that,
-// in fact it will slow OpenMP parallelisation!
+// in fact it will slow OpenMP parallelization!
 
 Node::Node(NodeType iType,short int iPopulation,double dHeight):
   PtrRefCountable(){
@@ -204,7 +204,7 @@ Node::Node(NodeType iType,short int iPopulation,double dHeight):
   // Assign a stable id so NodePtrSet ordering is reproducible (only within a thread).
   this->iNodeId = sNextId++;
   // sNextId++ will not work across OpenMP threads, but we don't need that,
-  // in fact it will slow OpenMP parallelisation!
+  // in fact it will slow OpenMP parallelization!
   this->iType = iType;
   this->iPopulation = iPopulation;
   this->dHeight = dHeight;

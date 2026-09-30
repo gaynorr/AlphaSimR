@@ -8,9 +8,15 @@
 Extends \code{\link{TraitA2-class}}
 to add dominance
 }
+\details{
+Trait effects and intercept are parameters of the trait model described in
+\code{vignette("traits", package = "AlphaSimR")}.
+Multiplying effects by the corresponding scaled genotype dosages from a population
+gives corresponding contributions to genetic values.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{domEff}}{dominance effects}
+\item{\code{domEff}}{dominance genotypic effects}
 }}
 
