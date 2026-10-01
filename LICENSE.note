@@ -41,7 +41,8 @@ summary, the modifications are:
 
   * Random number seeds are supplied by R, one per chromosome, so that
     MaCS simulations can be reproduced with set.seed() and several
-    chromosomes can be simulated in parallel.
+    chromosomes can be simulated in parallel. We fixed reproducibility
+    of MaCS by fixing a bug in node iteration (see details in PR #265).
 
   * Headers, includes and declarations have been adjusted so that the
     code compiles as part of an R package.
@@ -65,7 +66,7 @@ summary, the modifications are:
     AlphaSimR previously drew after the fact, and every site is retained
     whenever fewer are generated than were asked for. Sites are returned
     in position order. Allele frequency ascertainment needs the
-    frequency of every site, so it disables this behaviour.
+    frequency of every site, so it disables this behavior.
 
   * These changes alter the sequence in which random numbers are drawn,
     so a given seed does not reproduce the output of earlier versions.

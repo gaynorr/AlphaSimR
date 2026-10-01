@@ -67,7 +67,7 @@ meant as a fast and low memory alternative to \code{\link{RRBLUP}} or
 
 The mixed model equations are solved by preconditioned conjugate
 gradient, iterating over the genotypes rather than over a stored
-coefficient matrix \insertCite{stranden_1999}{AlphaSimR}. Neither the
+coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}. Neither the
 coefficient matrix nor a numeric copy of the genotypes is formed, so
 memory use stays close to the size of the genotypes, and the iteration
 is shared across nThreads.

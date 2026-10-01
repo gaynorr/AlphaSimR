@@ -12,6 +12,12 @@ varEBV(pop)
 \description{
 Returns variance of estimated breeding values for all traits
 }
+\details{
+This function calculated the variance of values stored in the \code{ebv} slot;
+supplied by the user or \code{\link{setEBV}}.
+Depending on how it was populated, it can contain estimated breeding
+values, estimated genetic values, or other estimated/predicted values.
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)

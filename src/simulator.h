@@ -277,7 +277,7 @@ private:
   // Thread-local monotonic counter for stable node ids (only within a thread).
   static thread_local unsigned long long sNextId;
   // thread_local will not work across OpenMP threads, but we don't need that,
-  // in fact it will slow OpenMP parallelisation!
+  // in fact it will slow OpenMP parallelization!
   // Stable id used by NodePtrSet comparator.
   unsigned long long iNodeId;
   EventPtr event;

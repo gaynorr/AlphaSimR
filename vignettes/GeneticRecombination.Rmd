@@ -1,11 +1,13 @@
 ---
-title: "Genetic Recombination"
+title: "Genetic Recombination in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-bibliography: AlphaSimR.bib
+output:
+  rmarkdown::html_vignette:
+    toc: true
+bibliography: '`r normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
-  %\VignetteIndexEntry{Genetic Recombination}
+  %\VignetteIndexEntry{Genetic Recombination in AlphaSimR}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:
@@ -22,7 +24,7 @@ knitr::opts_chunk$set(
 library(AlphaSimR)
 ```
 
-This article provides an overview of the biology of genetic
+This vignette provides an overview of the biology of genetic
 recombination and how it is modeled within AlphaSimR. I will first
 provide a brief review of meiosis with special emphasis on how the
 process differs between diploid and autopolyploid species. I will then
@@ -68,7 +70,7 @@ part in any particular chiasma. Second, in the absence of *chromatid
 interference*, the pair of chromatids involved in each chiasma is chosen
 independently of the pairs involved in every other chiasma. AlphaSimR
 assumes no chromatid interference, which is well supported empirically
-[@zhao_1995] and which makes the second step above a simple independent
+[@zhao1995Statistical] and which makes the second step above a simple independent
 coin flip per chiasma.
 
 The first meiotic division separates the homologous chromosomes. This is
@@ -108,7 +110,7 @@ chromosome may pair as two independent bivalents, or all four may
 associate into a single **quadrivalent**. Which of these happens is
 partly a property of the species and partly of the chromosome, and it is
 usually summarized as a probability of quadrivalent formation
-[@sybenga_1975].
+[@sybenga1975Quantitative].
 
 Quadrivalent pairing has two consequences. It allows a gamete to inherit
 material from more than two of the four homologs, and it makes **double
@@ -118,7 +120,7 @@ chromosomes a gamete inherits are sister chromatids over some interval.
 This cannot happen under bivalent pairing. Under quadrivalent pairing it
 happens for loci that are separated from the centromere by a crossover,
 so its frequency increases with distance from the centromere
-[@mather_1935]. Because the
+[@mather1935Reductional]. Because the
 centromere position determines the pattern, AlphaSimR requires centromere
 positions for autopolyploid simulations, which is why the `MapPop` class
 carries a `centromere` slot.
@@ -126,7 +128,7 @@ carries a `centromere` slot.
 ## Genetic maps
 
 The raw material for a recombination model is a genetic map. The idea
-goes back to Morgan's fly lab, where @sturtevant_1913 recognized that
+goes back to Morgan's fly lab, where @sturtevant1913Linear recognized that
 the frequency with which two markers are separated during meiosis could
 be used to order them along a chromosome and to assign them positions on
 a linear scale. That scale is measured in Morgans; one Morgan is the
@@ -150,11 +152,11 @@ a Poisson process, then
 
 $$r = \frac{1 - e^{-2d}}{2}$$
 
-which is Haldane's mapping function [@haldane_1919]. Haldane's function
+which is Haldane's mapping function [@haldane1919Combination]. Haldane's function
 assumes no
 crossover interference, and real chromosomes show interference: the
 occurrence of one crossover suppresses others nearby. Kosambi's mapping
-function [@kosambi_1944]
+function [@kosambi1943Estimation]
 
 $$r = \frac{1}{2}\tanh(2d)$$
 
@@ -220,7 +222,7 @@ proportion of crossovers arising from a non-interfering pathway.
 
 The simplest model treats chiasmata as a homogeneous Poisson process,
 the simplest member of the count-location family of recombination models
-[@risch_1979]. The number of chiasmata on the chromosome is drawn from a
+[@risch1979Alternative]. The number of chiasmata on the chromosome is drawn from a
 Poisson distribution with mean $2L$, and each is placed at a position
 drawn uniformly along the map. There is no interference: the position of one
 chiasma tells you nothing about the position of any other. The resulting
@@ -236,7 +238,7 @@ when a Haldane map is what is wanted.
 
 Interference is easier to model in terms of the *spacing* between
 chiasmata than in terms of their positions. The gamma model, introduced
-for this purpose by @mcpeek_1995, treats chiasmata along a chromosome as
+for this purpose by @mcpeek1995Modeling, treats chiasmata along a chromosome as
 a stationary renewal process whose inter-arrival distances follow a gamma
 distribution with shape $v$ and rate $2v$. The
 mean spacing is then $1/2$ Morgan, giving the required chiasma rate of two
@@ -259,7 +261,7 @@ source of bias in renewal-process simulations. A renewal process started
 at position zero is not stationary: the first interval is an ordinary
 gamma deviate, whereas the interval that happens to straddle an arbitrary
 point on a long chromosome is length-biased and stochastically larger
-[@cox_1962].
+[@cox1962Renewal].
 The usual remedy is to burn in from several Morgans upstream and discard
 everything before position zero, which costs twenty or so wasted random
 deviates per chromosome. AlphaSimR instead samples the equilibrium
@@ -273,7 +275,7 @@ deviates instead of twenty and with no approximation.
 ### The gamma sprinkling model
 
 There is good evidence in several species that crossovers arise from two
-distinct pathways [@copenhaver_2002; @housworth_2003]. The dominant
+distinct pathways [@copenhaver2002Crossover; @housworth2003Crossover]. The dominant
 pathway is subject to interference; a second, minor pathway is not. The
 gamma sprinkling model, sometimes called the two-pathway model,
 accommodates this by combining the two processes.
@@ -337,8 +339,8 @@ diploid, using whichever of the three models `v` and `p` specify. The
 quadrivalent needs its own treatment.
 
 AlphaSimR models the quadrivalent as a *cross-type* configuration
-[@sved_1964], the configuration used by the PedigreeSim software
-[@voorrips_2012]. An exchange point is sampled uniformly along the
+[@sved1964Relationship], the configuration used by the PedigreeSim software
+[@voorrips2012Simulation]. An exchange point is sampled uniformly along the
 chromosome, and on either
 side of it the four homologs pair up in a different arrangement. This
 gives four pairing arms: the heads of chromosomes 1 and 2, the tails of
@@ -470,7 +472,7 @@ count-location model.
 Autopolyploids are handled by pairing homologs in groups of four, each
 of which forms either two bivalents or a quadrivalent with probability
 `SP$quadProb`. The quadrivalent uses a cross-type configuration
-[@sved_1964] with interference operating across all four arms, and
+[@sved1964Relationship] with interference operating across all four arms, and
 produces double reduction at a rate that increases with distance from
 the centromere.
 

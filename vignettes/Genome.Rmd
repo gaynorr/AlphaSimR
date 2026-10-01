@@ -1,10 +1,13 @@
 ---
-title: "The Genome"
+title: "The Genome in AlphaSimR"
 author: "Rosalind Craddock"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
+bibliography: '`r normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
-  %\VignetteIndexEntry{The Genome}
+  %\VignetteIndexEntry{The Genome in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,55 +24,56 @@ library(AlphaSimR)
 **AlphaSimR** is built upon the basics of genetics for the stochastic simulation of crop and animal breeding programs. This vignette will provide an overview of the genome, its inheritance, and the tools used to read it with supporting examples and code.
 
 # What is a genome?
+
 The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is packaged can vary substantially, including the number of chromosomes and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomal, one non-autosomal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
 
 ## Genes, alleles, loci, genotypes, and haplotypes.
 Although similar, there are essential differences in the terminology used. This next section will provide a short glossary for genes, alleles, loci, genotypes, and haplotypes.
 
-Genes are segments of DNA that are translated to proteins. Typically they will contain a few hundred to more than two million base-pairs with a codon (triplet base-pair) coding for either an amino acid or to start/stop. 
+Genes are segments of DNA that are translated to proteins. Typically they will contain a few hundred to more than two million base-pairs with a codon (triplet base-pair) coding for either an amino acid or to start/stop.
 
-An allele in a gene is a gene variant. More generally, an allele represents a possible sequence of bases at a particular site on a genome (known as a locus). When biallelic (two variants per gene) the allele is either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new alleles arise from mutation.
+An allele in a gene is a gene variant. More generally, an allele represents a possible sequence of bases at a particular site on a genome (known as a locus). When biallelic (two variants per gene) the allele is either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new alleles arise from mutation. It is common to not have information about the ancestral state, in which case the most (less) frequent allele is coded as 0 (1). AlphaSimR uses ancestral state information, unless `quickHaplo` is used, which generates alleles at random.
 
 A genotype is the combination of alleles across chromosome copies that an organism has at a specified locus or across loci. For instance, there are three possible genotypes for a diploid at a biallelic locus with ancestral allele A and mutant allele a: ancestral homozygous (AA) with allele dosage 0, heterozygous (Aa or aA) with allele dosage 1, and mutant homozygous (aa) with allele dosage 2. Genotypes can differ between individuals due to random segregation in inheritance.
 
 A haplotype (haploid genotype) describes the physical grouping of alleles along the same chromosome. This means that these groups of alleles tend to be inherited together. New haplotypes are created through recombination.
 
-What does this look like in **AlphaSimR**? 
+What does this look like in **AlphaSimR**?
 
 Let's start with creating the founding genome using `runMacs`. As mentioned, cattle have 30 pairs of chromosomes, but for the purpose of this simulation we are only interested in three. When we inspect the founderGenome we see that it has a ploidy of two with 12 loci across three chromosomes (with four segregating sites on each).
 
 ```{r}
-founderGenome = runMacs(nInd = 10, 
-                        nChr = 3, 
-                        segSites = 4, 
-                        species = "CATTLE")
+founderGenomes = runMacs(nInd = 10,
+                         nChr = 3,
+                         segSites = 4,
+                         species = "CATTLE")
 # Set simulation parameters
-SP = SimParam$new(founderGenome)
+SP = SimParam$new(founderGenomes)
 SP$setTrackRec(TRUE)
-# Inspect the founderGenome
-founderGenome
+# Inspect the founder genomes
+founderGenomes
 
 ```
 Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined locus labeled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes. Where the ancestral allele is not known, the allele dosage will be randomly assigned.
 
 ```{r}
-pullSegSiteGeno(founderGenome)
+pullSegSiteGeno(founderGenomes)
 ```
 
-The haplotypes can be observed with `pullSegSiteHaplo`. Each row represents the sequence of alleles on each chromosome per individual. Since this is diploid, we observe two for each individual: one maternal (id_1) and the other paternal (id_2). All will have a value of 0 or 1 for either ancestral or mutant allele respectively. As before, each column represents a defined locus.
+The haplotypes can be observed with `pullSegSiteHaplo`. Each row represents the sequence of alleles on each chromosome per individual. Since this is diploid, we observe two for each individual: one maternal (id_1) and the other paternal (id_2). All will have a value of 0 or 1 respectively for ancestral or mutant allele. As before, each column represents a defined locus.
 
 ```{r}
-pullSegSiteHaplo(founderGenome)
+pullSegSiteHaplo(founderGenomes)
 ```
 
-
 # How are genomes inherited?
-Genetic code is inherited from an individual's mother and father. This involves cells known as gametes: eggs (from mother) and sperm (from father). These cells have half as many chromosomes as other cells in the species. For example, in diploid species like humans gametes are haploid cells. These have been developed through interphase (DNA replication) and meiosis (cell division). The mechanisms of interphase and meiosis are outside the scope of this vignette, however they are important due to their contribution to genetic variation.
+Genetic code is inherited from an individual's mother and father. This involves cells known as gametes, for example, eggs (from mother) and sperm (from father). These cells have half the number of chromosomes as other cells in the species. For example, in diploid species like humans gametes are haploid cells. These have been developed through interphase (DNA replication) and meiosis (cell division). The mechanisms of interphase and meiosis are outside the scope of this vignette, however they are important due to their contribution to genetic variation. See `vignette("GeneticRecombination")` for more details.
 
 ## Genetic Variation: the DNA lottery
-Broadly speaking, there are three contributions to genetic variation: mutation, crossing over (or recombination), and independent assortment.
 
-Mutation occurs during DNA replication in interphase. Although the rate is very small (~2.5x10^-8^ mutation per nucleotide), when considering the whole genome mutation is not negligible.
+Broadly speaking, there are three contributions to genetic variation: mutation, crossing over (recombination), and independent assortment (segregation).
+
+Mutation occurs during DNA replication in interphase. Although the rate is small (commonly on the order of 10^-8^ mutation per nucleotide), when considering the whole genome and the number of individuals in a population over a longer time period mutation is not negligible.
 
 Both crossing over and independent assortment occur in the first part of meiosis known as the reductional division. Crossing over refers to the swapping of genetic material at random between chromatids resulting in variation. Independent Assortment refers to the random orientation of homologous chromosome pairs resulting in gametes with many different assortments of chromosomes. (Recall there are 23 pairs in a human).
 
@@ -80,7 +84,7 @@ In **AlphaSimR**:
 1) Random mutations can be added to individuals in populations with `mutate`. For the purpose of demonstration, the mutation is at a much higher rate than would be expected.
 
 ```{r}
-basePop = newPop(founderGenome)
+basePop = newPop(founderGenomes)
 
 mutatedBasePop = mutate(basePop, mutRate = 0.1, simParam = SP)
 
@@ -103,7 +107,7 @@ mother = as.integer(secondGenPop@mother[1])
 father = as.integer(secondGenPop@father[1])
 ```
 
-Then, the haplotypes can be extracted for the mother, father, and two progeny to observe the inheritance. Recall that id_1 is the maternal haplotype (inherited from mother) and id_2 is the paternal haplotype (inherited from father). For clarity, no mutation is included in this example. All variation observed is due to independent assortment and/or recombination.
+Then, the haplotypes can be extracted for the mother, father, and two progeny to observe the inheritance. Recall that id_1 is the maternal haplotype (inherited from mother) and id_2 is the paternal haplotype (inherited from father). For clarity, no mutation is included in this example. All variation observed is due to crossing over and independent assortment.
 
 ```{r}
 pullSegSiteHaplo(basePop[basePop@iid == mother,])
@@ -116,27 +120,30 @@ pullSegSiteHaplo(basePop[basePop@iid == father,])
 ```{r}
 pullSegSiteHaplo(secondGenPop)
 ```
-In the above, independent assortment will always be observed. This is clear since despite being full siblings they inherit a different arrangement of haplotypes from the mother and the father. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the vignette on Recombination.
+
+In the above, independent assortment will always be observed. This is clear since despite being full siblings they inherit a different arrangement of haplotypes from the mother and the father. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the `vignette("GeneticRecombination")`.
 
 ```{r}
 pullIbdHaplo(basePop[basePop@iid == mother,])
 pullIbdHaplo(basePop[basePop@iid == father,])
 pullIbdHaplo(secondGenPop)
 ```
+
 # How are genomes read?
-For a genome to be read, first it needs to be sequenced. The techniques for this include Sanger sequencing or next-generation sequencing. These are then used to identify single nucleotide polymorphisms (SNPs). SNPs highlight variation at specific loci; equivalent to markers. Other terminology includes traits and QTL: Quantitative Trait Locus. Traits are characteristics of interest such as milk yield or growth rate that have a genetic component. QTL are regions of DNA that are associated with a specific trait that varies in the population. This could be identifiable by a marker (e.g. SNP) or could only be correlated.
+
+For a genome to be read, first it needs to be sequenced. The techniques for this include Sanger sequencing or next-generation sequencing. These are then used to identify single nucleotide polymorphisms (SNPs). SNPs highlight variation at specific loci and are often neutral markers of the variation in the genome. Other terminology includes traits and QTL (Quantitative Trait Loci). Traits are characteristics of interest such as milk yield or grain yield that are affected by an individual's genotype and environment. QTL are positions in the genome that affect specific traits. These could be identifiable by a marker (such as a SNP) or could only be correlated with nearby markers.
 
 In **AlphaSimR**:
 
 Let's start a new population.
 
 ```{r}
-founderGenome = runMacs(nInd = 10, 
-                        nChr = 3, 
-                        segSites = 4, 
+founderGenomes = runMacs(nInd = 10,
+                        nChr = 3,
+                        segSites = 4,
                         species = "CATTLE")
 # Set simulation parameters
-SP = SimParam$new(founderGenome)
+SP = SimParam$new(founderGenomes)
 ```
 
 Then, add an additive trait with three QTLs per chromosome using `SP$addTraitA` and one SNP per chromosome with `SP$addSnpChip`.
@@ -149,7 +156,7 @@ SP$addSnpChip(nSnpPerChr = 1)
 After, create a base population.
 
 ```{r}
-basePop = newPop(founderGenome, simParam = SP)
+basePop = newPop(founderGenomes, simParam = SP)
 
 # Inspect basePop
 basePop
@@ -167,7 +174,6 @@ location = colnames(SNP)
 pullMarkerGeno(basePop, markers = location)
 ```
 
-
 The defined trait (Trait 1) can be inspected via the genetic values calculated for each individual.
 
 ```{r}
@@ -179,10 +185,9 @@ The genetic map for the QTLs can be retrieved via `getQtlMap`. Here the site of 
 getQtlMap(trait = 1, simParam = SP)
 ```
 
-
 ## What is a genetic map?
 
-A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. Although **AlphaSimR** can import a physical map for all loci through the `lociMap-class`, it can only output genetic maps of defined segregating sites, including QTLs, SNPs, and all defined loci. For this, the observed recombination frequencies between loci are used to show how genetic information is shuffled in chromosomes. This highlights how markers are inherited.
+A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. Although **AlphaSimR** can import a physical map for all loci through the `lociMap-class`, it can only output genetic maps of defined segregating sites, including QTLs, SNPs, and all defined loci. For this, the observed recombination frequencies between loci are used to show how genetic information is shuffled in chromosomes. This highlights how markers are inherited. See `vignette("GeneticRecombination")` for more details.
 
 For a genetic map of all defined loci (or segregating sites), `getGenMap` is used. `getSnpMap` can be used for the genetic map of the SNP(s) on each chromosome. As hinted previously, `getQtlMap` can be used for the genetic map of the QTL(s).
 
@@ -191,9 +196,8 @@ getGenMap(SP)
 getSnpMap(snpChip = 1, simParam = SP)
 ```
 
-
 # How is this used in plant and animal breeding?
 By understanding the genome, breeders can produce crops and livestock with desirable traits for use in specific production systems. For example, a breeder may desire to have polled cattle to increase animal welfare and human safety. When considering the breeding design for a species, breed, and/or system, there are many factors to consider with potential to introduce unintended consequences. These include balancing the trade-off between short-term genetic gain and long-term loss in genetic variation as well as antagonistic relationships between desired traits commonly observed between production and functional traits in animals. **AlphaSimR** provides a fast and inexpensive way to explore and test a wide range of breeding designs for long-term genetic improvement across plants and animals through forward-in-time stochastic simulations.
 
-For a more detailed overview of AlphaSimR in plant and animal breeding with exercises, please see the edX course: Breeding Programme Modelling with AlphaSimR. Available at: https://learning.edx.org/course/course-v1:EdinburghX+ISB001+1T2021/home
+For a more detailed overview of AlphaSimR in plant and animal breeding with exercises, please see the edX course: Breeding Programme Modelling with AlphaSimR. Available at: https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr
 

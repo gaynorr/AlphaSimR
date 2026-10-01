@@ -63,7 +63,7 @@ the manualCommand argument of \code{\link{runMacs}}.
 \description{
 A wrapper function for \code{\link{runMacs}}. This wrapper is designed
 to provide a more intuitive interface for writing custom commands
-in MaCS \insertCite{MaCS}{AlphaSimR}. It effectively automates the creation
+in MaCS \insertCite{chen2009Fast}{AlphaSimR}. It effectively automates the creation
 of an appropriate line for the manualCommand argument in \code{\link{runMacs}}
 using user supplied variables, but only allows for a subset of the functionality
 offered by this argument. The default arguments of this function were chosen to match

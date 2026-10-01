@@ -2,7 +2,7 @@ context("runMacs")
 
 # MaCS draws the requested number of segregating sites while it simulates a
 # chromosome, using reservoir sampling, rather than generating every site and
-# subsampling afterwards. These tests cover the properties that behaviour has
+# subsampling afterwards. These tests cover the properties that behavior has
 # to keep. The statistical comparison of the retained sites against a uniform
 # subset of all sites is too slow for the test suite and lives in
 # macs_check.R at the top of the package.

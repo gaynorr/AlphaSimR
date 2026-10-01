@@ -415,8 +415,8 @@ calcGCA = function(pop,use="pheno"){
 #' @title Set GCA as phenotype
 #'
 #' @description
-#' Calculates general combining ability from a set of testers and
-#' returns these values as phenotypes for a population.
+#' Calculates mean testcross performance against a set of testers and
+#' returns these values as phenotypes for the population.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param testers an object of \code{\link{Pop-class}}
@@ -465,7 +465,7 @@ calcGCA = function(pop,use="pheno"){
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Set phenotype to average per
+#' #Set phenotype to mean testcross performance
 #' pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
 #'
 #' @export

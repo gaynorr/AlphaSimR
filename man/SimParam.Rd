@@ -840,7 +840,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 \subsection{\code{SimParam$addTraitA()}}{
   Randomly assigns eligible QTLs for one or more additive traits.
 If simulating more than one trait, all traits will be pleiotropic
-with correlated additive effects.
+with correlated additive genotypic effects.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$addTraitA(
@@ -860,9 +860,10 @@ with correlated additive effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -918,14 +919,16 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -955,7 +958,7 @@ SP$addTraitAD(10, meanDD=0.5)
 \if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
 \subsection{\code{SimParam$altAddTraitAD()}}{
-  An alternative method for adding a trait with additive  and dominance effects
+  An alternative method for adding a trait with additive and dominance genotypic effects
 to an AlphaSimR simulation. The function attempts to create a trait matching
 user defined values for number of QTL, inbreeding depression, additive genetic
 variance and dominance genetic variance.
@@ -981,7 +984,7 @@ variance and dominance genetic variance.
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome.
 Can be a single value or nChr values.}
-      \item{\code{mean}}{desired mean of the trait}
+      \item{\code{mean}}{requested founder mean (mean genetic value) of the trait}
       \item{\code{varA}}{desired additive variance}
       \item{\code{varD}}{desired dominance variance}
       \item{\code{inbrDepr}}{desired inbreeding depression, see details}
@@ -998,7 +1001,7 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   }
   \subsection{Details}{
     This function will always add a trait to 'SimParam', unless an error occurs
-with picking QTLs. The resulting trait will always have the desired mean and
+with picking QTLs. The resulting trait will always have the requested founder mean and
 additive genetic variance. However, it may not have the desired values for
 inbreeding depression and dominance variance. Thus, it is strongly recommended
 to check the output printed to the console to determine how close the trait's
@@ -1073,12 +1076,13 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1136,16 +1140,20 @@ SP$addTraitAG(10, varGxE=2)
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1177,7 +1185,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 \subsection{\code{SimParam$addTraitAE()}}{
   Randomly assigns eligible QTLs for one or more additive and epistasis
 traits. If simulating more than one trait, all traits will be pleiotropic
-with correlated additive effects.
+with correlated additive genotypic effects.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$addTraitAE(
@@ -1200,14 +1208,20 @@ with correlated additive effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1265,17 +1279,23 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1333,17 +1353,23 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1404,19 +1430,26 @@ epistasis and GxE.
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1497,11 +1530,11 @@ inputs. This function only works for A and AD trait types.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{markerNames}}{a vector of names for the QTL}
-      \item{\code{addEff}}{a matrix of additive effects (nLoci x nTraits).
+      \item{\code{addEff}}{a matrix of additive genotypic effects (nLoci x nTraits).
 Alternatively, a vector of length nLoci can be supplied for
 a single trait.}
-      \item{\code{domEff}}{optional dominance effects for each locus}
-      \item{\code{intercept}}{optional intercepts for each trait}
+      \item{\code{domEff}}{optional dominance genotypic effects for each locus}
+      \item{\code{intercept}}{optional trait intercepts in the genotypic parameterization}
       \item{\code{name}}{optional name(s) for the trait(s)}
       \item{\code{varE}}{default error variance for phenotype, optional}
       \item{\code{force}}{should the check for a running simulation be
@@ -1510,6 +1543,10 @@ ignored. Only set to TRUE if you know what you are doing}
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
     }
     \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    See \code{vignette("traits", package = "AlphaSimR")} for the
+implemented trait model and genotypic effects.
   }
 }
 
@@ -1661,11 +1698,14 @@ values of means and variances in the founder population.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{mean}}{a vector of new trait means}
-      \item{\code{var}}{a vector of new trait variances}
+      \item{\code{mean}}{a vector of requested mean genetic values in the founder population}
+      \item{\code{var}}{a vector of requested genetic variances in the founder population}
       \item{\code{varEnv}}{a vector of new environmental variances}
       \item{\code{varGxE}}{a vector of new GxE variances}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
     }

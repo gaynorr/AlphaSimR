@@ -2,7 +2,10 @@
 title: "Parallelization in AlphaSimR"
 author: "Gregor Gorjanc and Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
+bibliography: '`r normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
   %\VignetteIndexEntry{Parallelization in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}

@@ -16,9 +16,22 @@ global environment.}
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
+\value{
+An nInd by nTraits matrix.
+}
 \description{
 Returns additive-by-additive epistatic
 deviations for all traits
+}
+\details{
+Additive-by-additive epistatic deviations derive from the breeding value parameterization of genetic values.
+They have mean zero in \code{pop},
+which supplies the reference quantities used by \code{\link{genParam}}.
+Evaluating the same individual in a different population can therefore
+change its returned values.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 #Create founder haplotypes
@@ -26,8 +39,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
+SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

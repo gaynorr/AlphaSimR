@@ -113,6 +113,65 @@ test_that("addTraitADEG",{
   expect_equal(unname(c(ans$varA)),1,tolerance=1e-6)
 })
 
+
+local({
+  # AE/ADE enforce pair membership; their GxE subclasses inherit that validity.
+  classes = c("TraitAE", "TraitADE", "TraitAEG", "TraitADEG")
+  makeTrait = function(class, epiEff) {
+    args = list(Class=class, nLoci=4L, lociPerChr=4L, lociLoc=1:4,
+                addEff=c(1, 2, 3, 4), intercept=10, epiEff=epiEff)
+    if(class %in% c("TraitADE", "TraitADEG")) args$domEff = rep(1, 4)
+    if(class %in% c("TraitAEG", "TraitADEG")) {
+      args$gxeEff = rep(1, 4)
+      args$gxeInt = 0
+      args$envVar = 1
+    }
+    do.call(new, args)
+  }
+  pairs = rbind(c(1, 2, 0.5), c(3, 4, -0.2))
+
+  test_that("epistatic traits allow arbitrary pair orientation and row order", {
+    for(class in classes) {
+      for(rows in list(1:2, 2:1)) {
+        for(columns in list(1:3, c(2, 1, 3))) {
+          expect_true(validObject(makeTrait(class, pairs[rows, columns])))
+        }
+      }
+      # Integer matrices are also valid; the third column contains effects.
+      expect_true(validObject(makeTrait(class, matrix(c(4L, 2L, 1L, 3L, -1L, 0L), 2))))
+    }
+  })
+
+  test_that("all epistatic traits reject malformed locus indices", {
+    invalid = list(
+      overlap = rbind(c(1, 2, 0.5), c(1, 3, -0.2)),
+      self_pair = rbind(c(1, 1, 0.5), c(3, 4, -0.2)),
+      duplicate_pair = rbind(c(1, 2, 0.5), c(1, 2, -0.2))
+    )
+    for(value in list(0, -1, 5, 1.5, NA_real_, NaN, Inf, -Inf, "1", 1+1i)) {
+      bad = pairs
+      bad[1, 1] = value
+      invalid[[length(invalid)+1]] = bad
+    }
+    for(class in classes) {
+      for(bad in invalid) {
+        expect_error(makeTrait(class, bad), "each locus index as numeric 1:nLoci exactly once", fixed=TRUE)
+      }
+      # Also check an existing object after direct slot modification.
+      trait = makeTrait(class, pairs)
+      trait@epiEff = invalid$overlap
+      expect_error(validObject(trait), "each locus index as numeric 1:nLoci exactly once", fixed=TRUE)
+    }
+  })
+
+  test_that("epistatic traits retain their matrix dimension checks", {
+    for(class in classes) {
+      expect_error(makeTrait(class, pairs[, 1, drop=FALSE]), "ncol(epiEff)!=3", fixed=TRUE)
+      expect_error(makeTrait(class, pairs[1, , drop=FALSE]), "nLoci!=2*nrow(epiEff)", fixed=TRUE)
+    }
+  })
+})
+
 # Correlation arguments must be valid correlation matrices. A covariance
 # matrix used to be accepted silently, and for gamma distributed effects it
 # distorted the marginal distribution.

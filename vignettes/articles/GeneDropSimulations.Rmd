@@ -3,6 +3,7 @@ title: "Gene Drop Simulations"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
+bibliography: '`r normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)`'
 vignette: >
   %\VignetteIndexEntry{Gene Drop Simulations}
   %\VignetteEngine{knitr::rmarkdown}

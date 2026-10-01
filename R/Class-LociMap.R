@@ -46,8 +46,15 @@ isLociMap = function(x) {
 #' @description Extends \code{\link{LociMap-class}}
 #' to model additive traits
 #'
-#' @slot addEff additive effects
-#' @slot intercept adjustment factor for gv
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot addEff additive genotypic effects
+#' @slot intercept trait intercept in the genotypic parameterization of genetic values
+#'   calibrated to obtain the requested founder mean
 #'
 #' @export
 setClass("TraitA",
@@ -80,7 +87,13 @@ isTraitA = function(x) {
 #' to model separate additive effects for parent of
 #' origin. Used exclusively for genomic selection.
 #'
-#' @slot addEffMale additive effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot addEffMale additive genotypic effects of paternally inherited alleles
 #'
 #' @export
 setClass("TraitA2",
@@ -111,7 +124,13 @@ isTraitA2 = function(x) {
 #' @description Extends \code{\link{TraitA-class}}
 #' to add epistasis
 #'
-#' @slot epiEff epistatic effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot epiEff additive-by-additive epistatic genotypic effects
 #'
 #' @export
 setClass("TraitAE",
@@ -125,6 +144,13 @@ setValidity("TraitAE",function(object){
   }
   if(ncol(object@epiEff)!=3){
     errors = c(errors,"ncol(epiEff)!=3")
+  }else{
+    # Every locus must belong to exactly one pair; pair and row order are arbitrary.
+    loci = as.vector(object@epiEff[,1:2,drop=FALSE])
+    if(!is.numeric(loci) || any(!is.finite(loci)) ||
+       !identical(sort(as.numeric(loci)), as.numeric(seq_len(object@nLoci)))){
+      errors = c(errors,"epiEff columns 1 and 2 must contain each locus index as numeric 1:nLoci exactly once")
+    }
   }
   if(length(errors)==0){
     return(TRUE)
@@ -145,7 +171,13 @@ isTraitAE = function(x) {
 #' @description Extends \code{\link{TraitA-class}}
 #' to add dominance
 #'
-#' @slot domEff dominance effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot domEff dominance genotypic effects
 #'
 #' @export
 setClass("TraitAD",
@@ -176,7 +208,13 @@ isTraitAD = function(x) {
 #' @description Extends \code{\link{TraitA2-class}}
 #' to add dominance
 #'
-#' @slot domEff dominance effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot domEff dominance genotypic effects
 #'
 #' @export
 setClass("TraitA2D",
@@ -207,7 +245,13 @@ isTraitA2D = function(x) {
 #' @description Extends \code{\link{TraitAD-class}}
 #' to add epistasis
 #'
-#' @slot epiEff epistatic effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot epiEff additive-by-additive epistatic genotypic effects
 #'
 #' @export
 setClass("TraitADE",
@@ -221,6 +265,13 @@ setValidity("TraitADE",function(object){
   }
   if(ncol(object@epiEff)!=3){
     errors = c(errors,"ncol(epiEff)!=3")
+  }else{
+    # Every locus must belong to exactly one pair; pair and row order are arbitrary.
+    loci = as.vector(object@epiEff[,1:2,drop=FALSE])
+    if(!is.numeric(loci) || any(!is.finite(loci)) ||
+       !identical(sort(as.numeric(loci)), as.numeric(seq_len(object@nLoci)))){
+      errors = c(errors,"epiEff columns 1 and 2 must contain each locus index as numeric 1:nLoci exactly once")
+    }
   }
   if(length(errors)==0){
     return(TRUE)
@@ -241,7 +292,13 @@ isTraitADE = function(x) {
 #' @description Extends \code{\link{TraitA-class}}
 #' to add GxE effects
 #'
-#' @slot gxeEff GxE effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot gxeEff genotype-by-environment genotypic effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
 #'
@@ -276,7 +333,13 @@ isTraitAG = function(x) {
 #' @description Extends \code{\link{TraitAE-class}}
 #' to add GxE effects
 #'
-#' @slot gxeEff GxE effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot gxeEff genotype-by-environment genotypic effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
 #'
@@ -311,7 +374,13 @@ isTraitAEG = function(x) {
 #' @description Extends \code{\link{TraitAD-class}}
 #' to add GxE effects
 #'
-#' @slot gxeEff GxE effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot gxeEff genotype-by-environment genotypic effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
 #'
@@ -346,7 +415,13 @@ isTraitADG = function(x) {
 #' @description Extends \code{\link{TraitADE-class}}
 #' to add GxE effects
 #'
-#' @slot gxeEff GxE effects
+#' @details
+#' Trait effects and intercept are parameters of the trait model described in
+#' \code{vignette("traits", package = "AlphaSimR")}.
+#' Multiplying effects by the corresponding scaled genotype dosages from a population
+#' gives corresponding contributions to genetic values.
+#'
+#' @slot gxeEff genotype-by-environment genotypic effects
 #' @slot gxeInt GxE intercept
 #' @slot envVar Environmental variance
 #'

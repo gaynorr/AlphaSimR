@@ -9,8 +9,28 @@ gv(pop)
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} or similar object}
 }
+\value{
+An nInd by nTraits matrix of genetic values.
+}
 \description{
 A wrapper for accessing the gv slot
+}
+\details{
+Genetic values include the trait intercept and the contributions of
+additive, dominance, and additive-by-additive epistatic genotypic effects
+present in the trait model.
+For a fixed trait definition, these values do not depend on the population,
+unlike the breeding values and non-additive deviations.
+For traits with genotype-by-environment effects, these genetic values
+refer to the target environment, where the environmental covariate is zero.
+
+See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
+
+See \code{vignette("GxE", package = "AlphaSimR")} for
+the genotype-by-environment model
 }
 \examples{
 #Create founder haplotypes

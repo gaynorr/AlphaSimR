@@ -2,7 +2,7 @@
 % Please edit documentation in R/popSummary.R
 \name{genParam}
 \alias{genParam}
-\title{Summarize genetic parameters}
+\title{Calculate quantitative genetic quantities}
 \usage{
 genParam(pop, simParam = NULL, nThreads = NULL)
 }
@@ -18,42 +18,136 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
 \value{
 \describe{
-\item{varA}{an nTrait by nTrait matrix of additive genetic variances}
-\item{varD}{an nTrait by nTrait matrix of dominance genetic variances}
-\item{varAA}{an nTrait by nTrait matrix of additive-by-additive genetic variances}
-\item{varG}{an nTrait by nTrait matrix of total genetic variances}
-\item{genicVarA}{an nTrait vector of additive genic variances}
-\item{genicVarD}{an nTrait vector of dominance genic variances}
-\item{genicVarAA}{an nTrait vector of additive-by-additive genic variances}
-\item{genicVarG}{an nTrait vector of total genic variances}
-\item{covA_HW}{an nTrait vector of additive covariances due to non-random mating}
-\item{covD_HW}{an nTrait vector of dominance covariances due to non-random mating}
-\item{covAA_HW}{an nTrait vector of additive-by-additive covariances due to non-random mating}
-\item{covG_HW}{an nTrait vector of total genic covariances due to non-random mating}
-\item{covA_L}{an nTrait vector of additive covariances due to linkage disequilibrium}
-\item{covD_L}{an nTrait vector of dominance covariances due to linkage disequilibrium}
-\item{covAA_L}{an nTrait vector of additive-by-additive covariances due to linkage disequilibrium}
-\item{covAD_L}{an nTrait vector of additive by dominance covariances due to linkage disequilibrium}
-\item{covAAA_L}{an nTrait vector of additive by additive-by-additive covariances due to linkage disequilibrium}
-\item{covDAA_L}{an nTrait vector of dominance by additive-by-additive covariances due to linkage disequilibrium}
-\item{covG_L}{an nTrait vector of total genic covariances due to linkage disequilibrium}
-\item{mu}{an nTrait vector of trait means}
-\item{mu_HW}{an nTrait vector of expected trait means under random mating}
+\item{varG}{an nTraits by nTraits matrix of total genetic variances and covariances between traits}
+\item{varA}{an nTraits by nTraits matrix of additive genetic variances and covariances between traits}
+\item{varD}{an nTraits by nTraits matrix of dominance genetic variances and covariances between traits}
+\item{varAA}{an nTraits by nTraits matrix of additive-by-additive epistatic genetic variances and covariances between traits}
+\item{varN}{an nTraits by nTraits matrix of non-additive genetic variances and covariances between traits}
+\item{genicVarG}{an nTraits vector of total genic variances}
+\item{genicVarA}{an nTraits vector of additive genic variances}
+\item{genicVarD}{an nTraits vector of dominance genic variances}
+\item{genicVarAA}{an nTraits vector of additive-by-additive epistatic genic variances}
+\item{genicVarN}{an nTraits vector of non-additive genic variances}
+\item{covG_HW}{an nTraits vector of adjustments to total genic variances
+  due to departures from Hardy-Weinberg genotype frequencies}
+\item{covA_HW}{an nTraits vector of adjustments to additive genic variances
+  due to departures from Hardy-Weinberg genotype frequencies}
+\item{covD_HW}{an nTraits vector of adjustments to dominance genic variances
+  due to departures from Hardy-Weinberg genotype frequencies}
+\item{covAA_HW}{an nTraits vector of adjustments to additive-by-additive epistatic genic variances
+  due to departures from Hardy-Weinberg genotype frequencies}
+\item{covN_HW}{an nTraits vector of adjustments to non-additive genic variances
+  due to departures from Hardy-Weinberg genotype frequencies}
+\item{covG_L}{an nTraits vector of contributions to total genetic variances
+  due to linkage disequilibrium}
+\item{covA_L}{an nTraits vector of contributions to additive genetic variances
+  due to linkage disequilibrium}
+\item{covD_L}{an nTraits vector of contributions to dominance genetic variances
+  due to linkage disequilibrium}
+\item{covAA_L}{an nTraits vector of contributions to additive-by-additive epistatic genetic variances
+  due to linkage disequilibrium}
+\item{covN_L}{an nTraits vector of contributions to non-additive genetic variances
+  due to linkage disequilibrium}
+\item{covAD_L}{an nTraits vector of within-trait covariances
+  between breeding values and dominance deviations}
+\item{covAAA_L}{an nTraits vector of within-trait covariances
+  between breeding values and additive-by-additive epistatic deviations}
+\item{covDAA_L}{an nTraits vector of within-trait covariances
+  between dominance deviations and additive-by-additive epistatic deviations}
+\item{covAN_L}{an nTraits vector of within-trait covariances
+  between breeding values and non-additive deviations}
 \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
-\item{bv}{a matrix of breeding values with dimensions nInd by nTraits}
-\item{dd}{a matrix of dominance deviations with dimensions nInd by nTraits}
-\item{aa}{a matrix of additive-by-additive epistatic deviations with dimensions nInd by nTraits}
-\item{gv_mu}{an nTrait vector of intercepts with dimensions nInd by nTraits}
-\item{gv_a}{a matrix of additive genetic values with dimensions nInd by nTraits}
-\item{gv_d}{a matrix of dominance genetic values with dimensions nInd by nTraits}
-\item{gv_aa}{a matrix of additive-by-additive genetic values with dimensions nInd by nTraits}
-\item{alpha}{a list of average allele substitution effects with length nTraits}
-\item{alpha_HW}{a list of average allele substitution effects at Hardy-Weinberg equilibrium with length nTraits}
+\item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
+\item{mu_HW}{an nTraits vector of genetic value means expected under
+  Hardy-Weinberg and linkage equilibrium at the observed allele frequencies}
+\item{bv}{an nInd by nTraits matrix of breeding values (breeding value parameterization)}
+\item{dd}{an nInd by nTraits matrix of dominance deviations (breeding value parameterization)}
+\item{aa}{an nInd by nTraits matrix of additive-by-additive epistatic deviations (breeding value parameterization)}
+\item{nd}{an nInd by nTraits matrix of non-additive deviations (breeding value parameterization)}
+\item{gv_mu}{an nTraits vector of trait intercepts \eqn{\mu_0} (genotypic parameterization)}
+\item{gv_a}{an nInd by nTraits matrix of additive genotypic effect
+  contributions to genetic values (genotypic parameterization)}
+\item{gv_d}{an nInd by nTraits matrix of dominance genotypic effect
+  contributions to genetic values (genotypic parameterization)}
+\item{gv_aa}{an nInd by nTraits matrix of additive-by-additive epistatic genotypic effect
+  contributions to genetic values (genotypic parameterization)}
+\item{gv_n}{an nInd by nTraits matrix of non-additive genotypic effects
+  contributions to genetic values (genotypic parameterization)}
+\item{alpha}{a list of average effects of allele substitution
+  calculated using observed marginal genotype frequencies, with length nTraits}
+\item{alpha_HW}{a list of average effects of allele substitution
+  calculated using Hardy-Weinberg genotype frequencies at the observed
+  allele frequencies, with length nTraits}
 }
 }
 \description{
-Calculates genetic and genic additive and dominance variances
+Calculates quantitative genetic quantities and their variances
 for an object of \code{\link{Pop-class}}
+}
+\details{
+See \code{vignette("traits", package = "AlphaSimR")} and
+\code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory on trait and quantitative genetics implementation in AlphaSimR.
+The text below is a very short summary of the theory.
+
+In quantitative genetics and AlphaSimR we use
+different parameterizations of genetic values.
+While these are equivalent
+in the sense that they all parameterize the variation of genetic values,
+the terms within each parameterization can have different meanings.
+
+To generate trait genetic values, AlphaSimR uses a trait model with
+the genotypic parameterization of genetic values into
+the trait intercept (\code{gv_mu}; fixed for a given trait definition) and
+contributions from additive (\code{gv_a}), dominance (\code{gv_d}), and
+additive-by-additive epistatic (\code{gv_aa}) genotypic effects.
+For trait \code{t},
+\code{gv[, t] = gv_mu[t] + gv_a[, t] + gv_d[, t] + gv_aa[, t] =
+gv_mu[t] + gv_a[, t] + gv_n[, t]}.
+Here, \code{gv_n = gv_d + gv_aa}. These contributions need not have
+the population mean of zero. The intercept is calibrated to achieve the
+requested founder mean and need not equal the population mean genetic value.
+This genotypic parameterization is also called the "functional" or "biological" model,
+though it is a simplified representation of the underlying trait biology.
+
+To generate classic quantitative genetic quantities, AlphaSimR uses
+the breeding value parameterization of genetic values into
+the population mean genetic value (\code{mu}; variable),
+breeding value (\code{bv}), dominance deviation (\code{dd}), and
+additive-by-additive epistatic deviation (\code{aa}).
+For trait \code{t},
+\code{gv[, t] = mu[t] + bv[, t] + dd[, t] + aa[, t] =
+mu[t] + bv[, t] + nd[, t]}.
+Here, \code{nd = dd + aa}.
+The breeding values and all deviations have mean zero in \code{pop}.
+The reference quantities are calculated from \code{pop}, so the same
+individual can have different breeding values and deviations when
+evaluated in different populations.
+This breeding value parameterization is also called the "statistical" model
+because it depends on statistical decomposition of genetic values.
+
+Note, the output \code{gv_mu} is the trait intercept \eqn{\mu_0},
+whereas \code{mu} is the population mean of genetic value \eqn{\bar{G}}.
+Despite its name, \code{gv_mu} is not the mean of \code{gv}.
+For the returned quantities, the following identity holds
+\code{mu = gv_mu + colMeans(gv_a + gv_d + gv_aa)}.
+After scaling the genotypic effects,
+the trait intercept is chosen as
+the requested founder mean minus
+the mean contribution of the genotypic effects in the founder population.
+With the trait definition held fixed,
+the intercept remains constant while the population mean can change.
+
+Each \code{covX_HW} is the difference between the corresponding genic
+variance calculated using observed and Hardy-Weinberg genotype frequencies.
+Each \code{covX_L}, for \code{X} in \code{G}, \code{A}, \code{D},
+\code{AA}, and \code{N}, is calculated as \code{diag(varX) - genicVarX - covX_HW}.
+These are within-trait variance contributions, which can be negative,
+rather than covariances between traits.
+The cross-component terms \code{covAD_L}, \code{covAAA_L}, \code{covDAA_L}, and
+\code{covAN_L} are covariances.
+Variances and covariances use the population divisor \code{nInd},
+rather than sample divisor \code{nInd - 1}.
 }
 \examples{
 #Create founder haplotypes
@@ -61,12 +155,11 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
+SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 \dontshow{SP$nThreads = 1L}
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
-ans = genParam(pop, simParam=SP)
+genParam(pop, simParam=SP)
 
 }

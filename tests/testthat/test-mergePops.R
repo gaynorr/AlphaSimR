@@ -2,6 +2,20 @@
 
 context("mergePops")
 
+test_that("RawPop and MapPop concatenation rejects subclasses to preserve slots", {
+  map = quickHaplo(nInd=3, nChr=1, segSites=10)
+  raw = as(map, "RawPop")
+  named = new("NamedMapPop", map, id=as.character(1:3),
+              mother=rep("0", 3), father=rep("0", 3))
+
+  expect_identical(c(raw[1:2], raw[3], NULL), raw)
+  expect_error(c(raw[1:2], map[3]), "All arguments must be a RawPop", fixed=TRUE)
+  expect_identical(c(map[1:2], map[3], NULL), map)
+  expect_error(c(map[1:2], named[3]), "All arguments must be a MapPop", fixed=TRUE)
+  expect_error(c(raw, 1), "All arguments must be a RawPop", fixed=TRUE)
+  expect_error(c(map, raw), "All arguments must be a MapPop", fixed=TRUE)
+})
+
 test_that("cPop_and_mergePops", {
   founderPop = quickHaplo(nInd=3, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
