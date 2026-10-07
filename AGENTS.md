@@ -228,6 +228,21 @@ there.
   `\dontshow{SP$nThreads = 1L}` so that checks run single threaded. New
   examples need it too.
 
+### Local test coverage
+
+For behavior-changing work, use local test coverage to check whether tests
+exercise the changed lines and to investigate gaps reported by CI.
+From the package root (the directory containing `DESCRIPTION`), run:
+
+```sh
+Rscript -e 'cov <- covr::package_coverage(clean = TRUE); print(cov); covr::report(cov)'
+```
+
+This requires `covr` and a working package build toolchain. Inspect the
+changed functions in the report and add tests for relevant uncovered paths.
+Coverage shows which lines ran; assertions still need to verify the expected
+behavior. This supplements the existing tests and R CMD check.
+
 ## Finishing a change
 
 Add an entry to `NEWS.md` under its top heading for anything a user would
