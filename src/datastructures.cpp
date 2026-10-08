@@ -241,7 +241,7 @@ GenericEvent::GenericEvent(EventType iType,double dTime,
                            double dParameterValue):
   Event(iType,dTime){
   this->dParameterValue = dParameterValue;
-  //Rcpp::Rcerr<<"destroying generic event at height "<<dTime<<endl;
+  //macsMessages()<<"destroying generic event at height "<<dTime<<endl;
 }
 
 double GenericEvent::getParamValue(){
@@ -434,9 +434,9 @@ void GraphBuilder::checkPopCountIntegrity(PopVector & pPopList,
   
   for (int j=0;j<iTotalPops;++j){
     if (pPopList[j].getChrSampled()!=iCounts[j]){
-      Rcpp::Rcerr<<"At time: "<<dTime<<endl;
-      Rcpp::Rcerr<<"pop:"<<j<<",size:"<<pPopList[j].getChrSampled()<<endl;
-      Rcpp::Rcerr<<"pop:"<<j<<",found:"<<iCounts[j]<<endl;
+      macsMessages()<<"At time: "<<dTime<<endl;
+      macsMessages()<<"pop:"<<j<<",size:"<<pPopList[j].getChrSampled()<<endl;
+      macsMessages()<<"pop:"<<j<<",found:"<<iCounts[j]<<endl;
       printDataStructures();
       throw "Mismatch in pop counts in CheckPopCountIntegrity" ;
     }
@@ -624,7 +624,7 @@ void GraphBuilder::printHaplotypes(){
         }
       }while(!bSufficientObs && !bZeroCellCount);
       if (bZeroCellCount){
-        Rcpp::Rcerr<<"Warning: Some observed SNP counts were zero when they should have been positive.\n"<<
+        macsMessages()<<"Warning: Some observed SNP counts were zero when they should have been positive.\n"<<
           "No ascertainment correction was applied.\n"<<
             "Try expanding frequency bin sizes and/or increasing mutation rate.\n";
         iReducedSites = 0;
@@ -648,7 +648,7 @@ void GraphBuilder::printHaplotypes(){
           }
         }
         iReducedSites = tally;
-        Rcpp::Rcerr<<"Total sites reduced from "<<iTotalSites<<" to "<<iReducedSites<<endl;
+        macsMessages()<<"Total sites reduced from "<<iTotalSites<<" to "<<iReducedSites<<endl;
       }
     }
     // if (iReducedSites){
@@ -660,12 +660,12 @@ void GraphBuilder::printHaplotypes(){
 
 
 void GraphBuilder::printDataStructures(){
-  Rcpp::Rcerr<<endl<<"*** Begin printing structures ***"<<endl;
+  macsMessages()<<endl<<"*** Begin printing structures ***"<<endl;
   
-  Rcpp::Rcerr<<"Full ARG (list of edges)\n";
+  macsMessages()<<"Full ARG (list of edges)\n";
   for (EdgePtrList::iterator it=pEdgeListInARG->begin();it!=pEdgeListInARG->end();it++){
     EdgePtr curEdge = *it;
-    Rcpp::Rcerr<<"low:ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
+    macsMessages()<<"low:ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
       ",type:"<<curEdge->getBottomNodeRef()->getTypeStr()<<
         ",pop:"<<curEdge->getBottomNodeRef()->getPopulation()<<
           ";high:ht:"<<curEdge->getTopNodeRef()->getHeight()<<
@@ -676,13 +676,13 @@ void GraphBuilder::printDataStructures(){
   }
   
   
-  Rcpp::Rcerr<<"Last tree (list of edges)\n";
+  macsMessages()<<"Last tree (list of edges)\n";
   EdgePtrVector::iterator it=pEdgeVectorInTree->begin();
   unsigned int count=0;
   while(count<iTotalTreeEdges){
     //    for (EdgePtrVector::iterator it=pEdgeVectorInTree->begin();it!=pEdgeVectorInTree->end();++it){
     EdgePtr curEdge = *it;
-    Rcpp::Rcerr<<"low_ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
+    macsMessages()<<"low_ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
       ",type:"<<curEdge->getBottomNodeRef()->getTypeStr()<<
         ",pop:"<<curEdge->getBottomNodeRef()->getPopulation()<<
           ";high_ht:"<<curEdge->getTopNodeRef()->getHeight()<<
@@ -691,11 +691,11 @@ void GraphBuilder::printDataStructures(){
     ++count;
     ++it;
   }
-  Rcpp::Rcerr<<"MRCA: "<<localMRCA->getHeight()<<endl;
-  Rcpp::Rcerr<<"Graph grandMRCA: "<<grandMRCA->getHeight()<<endl;
-  //    Rcpp::Rcerr<<"true length:"<<trueLen<<endl;
+  macsMessages()<<"MRCA: "<<localMRCA->getHeight()<<endl;
+  macsMessages()<<"Graph grandMRCA: "<<grandMRCA->getHeight()<<endl;
+  //    macsMessages()<<"true length:"<<trueLen<<endl;
   
-  Rcpp::Rcerr<<"*** Done printing structures ***"<<endl;
+  macsMessages()<<"*** Done printing structures ***"<<endl;
 }
 
 string GraphBuilder::getNewickTree(double lastCoalHeight,NodePtr & curNode){

@@ -138,3 +138,36 @@ test_that("selectOP",{
   tmp = abs(SP$pedigree[-(1:2),1L]-SP$pedigree[-(1:2),2L])
   expect_equal(unname(tmp),c(1L,1L))
 })
+
+test_that("REFUSE self parents outside the population",{
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  pop = newPop(founderPop,simParam=SP)
+  # The C++ code indexes the genotypes with parents directly
+  for(bad in list(0, -1, 3, NA, c(1, 3))){
+    expect_error(self(pop,parents=bad,simParam=SP),
+                 regexp = "Invalid parents")
+  }
+  # Nothing was made, so the IDs have not moved on
+  expect_equal(SP$lastId,2L)
+  pop1 = self(pop,parents=c(2,1),nProgeny=2,simParam=SP)
+  expect_equal(pop1@nInd,4L)
+  expect_equal(unname(SP$pedigree[-(1:2),1L]),c(2L,2L,1L,1L))
+})
+
+test_that("REFUSE invalid parents in the C++ crossing code",{
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop,simParam=SP)
+  doCross = function(mother, father){
+    AlphaSimR:::cross(pop@geno, mother, pop@geno, father,
+                      SP$femaleMap, SP$maleMap, FALSE, 2L, 2L,
+                      SP$v, SP$p, SP$femaleCentromere, SP$maleCentromere,
+                      SP$quadProb, 1L)
+  }
+  expect_error(doCross(c(1L,0L), c(1L,2L)), regexp = "Invalid parent index")
+  expect_error(doCross(c(1L,2L), c(1L,5L)), regexp = "Invalid parent index")
+  expect_error(doCross(c(1L,-1L), c(1L,2L)), regexp = "Invalid parent index")
+  expect_error(doCross(c(1L,2L), 1L), regexp = "same length")
+})

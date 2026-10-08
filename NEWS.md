@@ -1,4 +1,13 @@
-# AlphaSimR 2.1.0.9014
+# AlphaSimR 2.1.0.9015
+
+* Fixed several places where invalid input could read or write memory outside a population's genotypes, or outside internal MaCS structures, instead of giving an error. These now stop with an error:
+  * `haplo` in `pullSnpHaplo`, `pullQtlHaplo`, `pullSegSiteHaplo` and `pullMarkerHaplo` must be `"all"` or a single whole number from 1 to the ploidy level.
+  * A `LociMap`, such as a trait passed to `SimParam$manAddTrait`, whose loci fall outside their chromosome.
+  * `parents` in `self` and `crossPlan` in `hybridCross` with `returnHybridPop=TRUE` must index individuals in the population. `hybridCross` now also accepts a `crossPlan` of IDs for `returnHybridPop=TRUE`, as `makeCross2` does.
+  * `segSites` in `runMacs` must have length 1 or `nChr`.
+  * Population IDs in a `runMacs` `manualCommand` (the `-n`, `-g` and `-m` options and the `-en`, `-eg`, `-es`, `-ej` and `-em` events) must name a population that exists, and the number of populations given to `-I` must be a positive whole number.
+
+* Changed MaCS to pass its messages to R after the chromosomes have been simulated, instead of writing them from worker threads, which is not safe. A warning about the command is now shown once rather than once per chromosome, and when MaCS fails the error includes what MaCS reported.
 
 * Standardized all vignettes and articles to use the shared `REFERENCES.bib` bibliography, with forward slashes on Windows to avoid Pandoc resource-path errors during package builds.
 

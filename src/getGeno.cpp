@@ -97,11 +97,49 @@ inline void gatherHaplo(const arma::Cube<unsigned char>& chrGeno,
   }
 }
 
+// Checks that a set of loci fits the genotypes it is about to be read
+// from. The gather functions above use raw pointers and do no bounds
+// checking of their own, so a locus outside its chromosome would read or
+// write memory that does not belong to the genotypes. The LociMap validity
+// method cannot catch this, because it never sees the genotypes. The check
+// runs on the calling thread, before any parallel region, because an
+// exception must not leave an OpenMP region. lociLoc is still one based
+// here, so a zero or negative locus from R has become 0 or a very large
+// value and is caught by the same comparison.
+void checkLoci(const arma::field<arma::Cube<unsigned char> >& geno,
+               const arma::Col<int>& lociPerChr,
+               const arma::uvec& lociLoc){
+  if(lociPerChr.n_elem!=geno.n_elem){
+    Rcpp::stop("Length of lociPerChr does not match the number of chromosomes");
+  }
+  arma::uword start = 0;
+  for(arma::uword i=0; i<lociPerChr.n_elem; ++i){
+    if(lociPerChr(i)<0){
+      Rcpp::stop("lociPerChr contains a negative value");
+    }
+    arma::uword nLociChr = (arma::uword) lociPerChr(i);
+    if(nLociChr>lociLoc.n_elem-start){
+      Rcpp::stop("sum(lociPerChr) is greater than length(lociLoc)");
+    }
+    arma::uword maxLoc = geno(i).n_rows*8;
+    for(arma::uword j=start; j<start+nLociChr; ++j){
+      if((lociLoc(j)<1) || (lociLoc(j)>maxLoc)){
+        Rcpp::stop("A locus in lociLoc is outside its chromosome");
+      }
+    }
+    start += nLociChr;
+  }
+  if(start!=lociLoc.n_elem){
+    Rcpp::stop("sum(lociPerChr) is less than length(lociLoc)");
+  }
+}
+
 } // namespace
 // [[Rcpp::export]]
-arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno,
                                  const arma::Col<int>& lociPerChr,
                                  arma::uvec lociLoc, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
   
@@ -205,9 +243,10 @@ arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& 
 arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
                                          const arma::Col<int>& lociPerChr,
                                          arma::uvec lociLoc, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
-  
+
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
@@ -255,9 +294,10 @@ arma::Mat<unsigned char> getMaternalGeno(const arma::field<arma::Cube<unsigned c
 }
 
 // [[Rcpp::export]]
-arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno, 
+arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned char> >& geno,
                                          const arma::Col<int>& lociPerChr,
                                          arma::uvec lociLoc, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
   
@@ -309,9 +349,10 @@ arma::Mat<unsigned char> getPaternalGeno(const arma::field<arma::Cube<unsigned c
 
 // Returns haplotype data in a matrix of nInd*ploidy by nLoci
 // [[Rcpp::export]]
-arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 
+arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >& geno,
                                   const arma::Col<int>& lociPerChr,
                                   arma::uvec lociLoc, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
   
@@ -367,10 +408,17 @@ arma::Mat<unsigned char> getHaplo(const arma::field<arma::Cube<unsigned char> >&
 arma::Mat<unsigned char> getOneHaplo(const arma::field<arma::Cube<unsigned char> >& geno, 
                                      const arma::Col<int>& lociPerChr,
                                      arma::uvec lociLoc, int haplo, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
+  // haplo picks the haplotype that gatherDosage reads through a raw
+  // pointer, so it is checked here and not left to the R wrappers alone.
+  // NA_integer_ is the most negative int and fails the first comparison.
+  if((haplo<1) || (static_cast<arma::uword>(haplo)>geno(0).n_cols)){
+    Rcpp::stop("haplo must be between 1 and the ploidy level");
+  }
   // R to C++ index correction
   lociLoc -= 1;
   haplo -= 1;
-  
+
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   if(nInd < static_cast<arma::uword>(nThreads) ){
@@ -423,12 +471,19 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
                                                  const arma::Mat<unsigned char>& haplo,
                                                  const arma::Col<int>& lociPerChr,
                                                  arma::uvec lociLoc, int nThreads){
+  checkLoci(geno, lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
-  
+
   arma::uword nInd = geno(0).n_slices;
   arma::uword nChr = geno.n_elem;
   arma::uword ploidy = geno(0).n_cols;
+  // haplo is read with bounds checked accessors inside the parallel region
+  // below, where the exception they throw cannot be caught safely, so its
+  // shape is checked here first.
+  if((haplo.n_rows!=nInd*ploidy) || (haplo.n_cols!=lociLoc.n_elem)){
+    Rcpp::stop("haplo must have nInd*ploidy rows and one column per locus");
+  }
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
   }

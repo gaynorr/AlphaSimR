@@ -1046,6 +1046,22 @@ Rcpp::List cross(
     const arma::vec& fatherCentromere,
     double quadProb,
     int nThreads){
+  // The parents pick the genotype slices that meiosis reads through raw
+  // pointers, so they are checked here, before the parallel region. The
+  // indexes are still one based, and a zero or negative index from R has
+  // become 0 or a very large value.
+  if(mother.n_elem!=father.n_elem){
+    Rcpp::stop("mother and father must have the same length");
+  }
+  if((motherGeno.n_elem==0) || (fatherGeno.n_elem!=motherGeno.n_elem)){
+    Rcpp::stop("mother and father genotypes must have the same chromosomes");
+  }
+  if(mother.n_elem>0){
+    if((mother.min()<1) || (mother.max()>motherGeno(0).n_slices) ||
+       (father.min()<1) || (father.max()>fatherGeno(0).n_slices)){
+      Rcpp::stop("Invalid parent index");
+    }
+  }
   mother -= 1; // R to C++
   father -= 1; // R to C++
   arma::uword ploidy = (motherPloidy+fatherPloidy)/2;

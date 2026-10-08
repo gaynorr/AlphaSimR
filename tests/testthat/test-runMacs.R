@@ -86,3 +86,56 @@ test_that("runMacs site sampling does not depend on the thread count", {
   expect_equal(pullSegSiteHaplo(newPop(pop1, simParam = SP1), simParam = SP1),
                pullSegSiteHaplo(newPop(popN, simParam = SPN), simParam = SPN))
 })
+
+test_that("REFUSE segSites whose length is not 1 or nChr", {
+  # One seed is drawn per chromosome, and the C++ code reads a seed for
+  # every element of segSites
+  expect_error(runMacs(nInd = 4, nChr = 2, segSites = c(5, 5, 5),
+                       nThreads = 1),
+               "segSites must have length 1 or nChr")
+  expect_error(runMacs(nInd = 4, nChr = 3, segSites = c(5, 5),
+                       nThreads = 1),
+               "segSites must have length 1 or nChr")
+  expect_error(AlphaSimR:::MaCS("8 1E6 -t 1E-4 -r 1E-4 -s ", c(5L, 5L),
+                                FALSE, 2L, 1L, 1L),
+               "same length")
+  set.seed(6009)
+  pop = runMacs(nInd = 4, nChr = 2, segSites = c(5, 7), nThreads = 1)
+  expect_equal(unname(pop@nLoci), c(5L, 7L))
+})
+
+test_that("REFUSE MaCS population IDs that do not exist", {
+  # nInd = 4 diploids is 8 chromosomes, split over two populations with
+  # migration between them, so that every lineage can coalesce
+  base = "1E6 -t 1E-4 -r 1E-4 -I 2 4 4 1.0"
+  runCommand = function(extra) {
+    runMacs(nInd = 4, nChr = 1, segSites = 5, nThreads = 1,
+            manualCommand = paste(base, extra), manualGenLen = 1)
+  }
+  # Options applied as the command is read
+  for (extra in c("-n 0 1.0", "-n 3 1.0", "-n -1 1.0", "-n x 1.0",
+                  "-g 0 1.0", "-g 3 1.0",
+                  "-m 0 1 1.0", "-m 1 3 1.0", "-m -1 2 1.0",
+                  "-en 0.001 0 1.0", "-eg 0.001 -1 1.0",
+                  "-es 0.001 0 0.5", "-ej 0.001 0 1",
+                  "-em 0.001 1 0 1.0")) {
+    expect_error(runCommand(extra), "MaCS failed", info = extra)
+  }
+  # Historical events, whose upper bound is only known when they run
+  for (extra in c("-en 0.001 3 1.0", "-eg 0.001 3 1.0",
+                  "-es 0.001 3 0.5", "-em 0.001 1 3 1.0",
+                  "-em 0.001 3 1 1.0")) {
+    expect_error(runCommand(extra), "does not exist", info = extra)
+  }
+  # The number of populations must be a positive whole number
+  for (I in c("-I 0", "-I -1", "-I x")) {
+    expect_error(runMacs(nInd = 4, nChr = 1, segSites = 5, nThreads = 1,
+                         manualCommand = paste("1E6 -t 1E-4 -r 1E-4", I),
+                         manualGenLen = 1),
+                 "MaCS failed", info = I)
+  }
+  # IDs that exist still work
+  set.seed(6010)
+  pop = runCommand("-n 2 1.0 -g 1 0.0 -m 1 2 1.0 -en 0.001 2 2.0")
+  expect_equal(unname(pop@nLoci), 5L)
+})

@@ -24,6 +24,7 @@ limitations under the License.
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
+#include <cstdlib>
 #include <tuple>
 #include <math.h>
 #include <algorithm> 
@@ -39,6 +40,33 @@ limitations under the License.
 #include "misc.h"
 
 const double Node::MAX_HEIGHT=1e50;
+
+std::ostringstream & macsMessages(){
+  thread_local std::ostringstream stream;
+  return stream;
+}
+
+namespace {
+
+// Reads a one based population ID from a MaCS option and returns it zero
+// based. The ID indexes the population list and the migration matrix
+// without bounds checking, so anything other than a whole number of at
+// least one is refused here. maxPop is the number of populations when that
+// is known, and zero when it is not. The number of populations is not
+// known for a historical event, because a split before it adds one, so
+// its upper bound is checked when the event runs.
+int readPopId(const std::string & word, unsigned int maxPop){
+  char * end = NULL;
+  long popId = strtol(word.c_str(), &end, 10);
+  if ((end==word.c_str()) || (*end!='\0') || (popId<1) ||
+      (popId>32767) || ((maxPop>0) && (popId>(long)maxPop))){
+    macsMessages()<<"Invalid pop ID "<<word<<endl;
+    throw "Argument error";
+  }
+  return (int) (popId-1);
+}
+
+} // namespace
 
 AlphaSimRReturn::AlphaSimRReturn(){}
 
@@ -155,34 +183,34 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       case 'h' :
         if (arguments[iCurrentArg].size()!=2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single integer for retaining the number of previous trees\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
           return;
         }
         pConfig->dBasesToTrack = atof(arguments[iCurrentArg][1].data());
         break;
       case 's' :
         if (arguments[iCurrentArg].size()<2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single integer for the random seed\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         pConfig->iRandomSeed = atoi(arguments[iCurrentArg][1].data());
         break;
       case 't' :  // set mutation parameter
         if (arguments[iCurrentArg].size()!=2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single float value for the mutation parameter\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         pConfig->dTheta = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
         break;
       case 'F':
         if (arguments[iCurrentArg].size()!=3){
-          Rcpp::Rcerr<<"For the SNP ascertainment feature you must enter the filename of the SNP "<<
+          macsMessages()<<"For the SNP ascertainment feature you must enter the filename of the SNP "<<
             "frequency list and whether to flip the alleles."<<endl;
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         filename = arguments[iCurrentArg][1].data();
         flipAllele = pConfig->bFlipAlleles = atoi(arguments[iCurrentArg][2].data());
@@ -220,29 +248,29 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       case 'r' :
         if (arguments[iCurrentArg].size()!=2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single float value for the recombination parameter\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         pConfig->dRecombRateRAcrossSites = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
         break;
       case 'c' :
         if (arguments[iCurrentArg].size()!=3) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter the conversion to xover ratio followed by the mean tract length in bp.\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         pConfig->dGeneConvRatio = atof(arguments[iCurrentArg][1].data());
         pConfig->iGeneConvTract = atoi(arguments[iCurrentArg][2].data());
         if (pConfig->dGeneConvRatio<0){
-          Rcpp::Rcerr<<"The gene conversion parameters must be positive\n";
-          Rcpp::stop("Argument error");
+          macsMessages()<<"The gene conversion parameters must be positive\n";
+          throw "Argument error";
         }
         break;
       case 'R':
         if (arguments[iCurrentArg].size()!=2){
-          Rcpp::Rcerr<<"For the hotspot feature you must enter the filename of the hotspot list."<<endl;
-          Rcpp::stop("Argument error");
+          macsMessages()<<"For the hotspot feature you must enter the filename of the hotspot list."<<endl;
+          throw "Argument error";
         }
         filename = arguments[iCurrentArg][1].data();
         inFile.open(filename);
@@ -264,19 +292,33 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       case 'i' :
         if (arguments[iCurrentArg].size()!=2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", you must enter a single int value for the number of iterations\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         pConfig->iIterations = atoi(arguments[iCurrentArg][1].data());
         break;
       case 'I' :
         if (arguments[iCurrentArg].size()<2) {
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", the first parameter needs to the number of population islands\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
-        pConfig->iTotalPops = atoi( arguments[iCurrentArg][1].data());
+        {
+          // iTotalPops is unsigned, so a negative count would wrap round to
+          // a large one, and a count of zero would leave the population
+          // list empty for the options below to index. Population IDs are
+          // held as a short int, which bounds the count from above.
+          char * end = NULL;
+          const char * word = arguments[iCurrentArg][1].c_str();
+          long nPops = strtol(word, &end, 10);
+          if ((end==word) || (*end!='\0') || (nPops<1) || (nPops>32767)){
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
+              ", the number of population islands must be a positive whole number\n";
+            throw "Argument error";
+          }
+          pConfig->iTotalPops = (unsigned short int) nPops;
+        }
         iNoMigrPops=2+pConfig->iTotalPops;
         iMigrPops=3+pConfig->iTotalPops;
         
@@ -288,7 +330,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
             const char * arg = arguments[iCurrentArg][2+i].data();
             newPop.setChrSampled(atoi(arg));
             iRunningSample+=newPop.getChrSampled();
-            //Rcpp::Rcerr<<"INPUT: Setting chr sampled for pop "<<(i+1)<<" to "<<newPop.getChrSampled()<<endl;
+            //macsMessages()<<"INPUT: Setting chr sampled for pop "<<(i+1)<<" to "<<newPop.getChrSampled()<<endl;
             newPop.setPopSize(dDefaultPopSize) ;
             newPop.setGrowthAlpha(dDefaultGrowthAlpha);
             newPop.setLastTime(0);
@@ -300,9 +342,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
             pConfig->dGlobalMigration = dDefaultMigrationRate;
           }
         }else{
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0][1]<<
             ", the number of island sample sizes entered does not match the first parameter\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         if (iRunningSample!=iSampleSize){
           throw "The number of chromosomes entered in the -I option doesn't match the total sample size";
@@ -320,15 +362,15 @@ void Simulator::readInputParameters(CommandArguments arguments){
         break;
       case 'm' :
         if( pConfig->iTotalPops < 2 ) {
-          Rcpp::Rcerr<<"You must use -I option first (i.e. specify more than one population)."<<endl;
-          Rcpp::stop("Argument error");
+          macsMessages()<<"You must use -I option first (i.e. specify more than one population)."<<endl;
+          throw "Argument error";
         }
         if (arguments[iCurrentArg][0][2]=='a') {
           iTotalCells = pConfig->iTotalPops * pConfig->iTotalPops + 1;
           if (arguments[iCurrentArg].size()!=iTotalCells){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", the number of matrix cells does not match the total populations squared\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }
           iSubOption = 0;
           for(int pop1 = 0; pop1 <pConfig->iTotalPops; ++pop1){
@@ -349,12 +391,12 @@ void Simulator::readInputParameters(CommandArguments arguments){
         } else {
           //                    // lets the user enter the entire migration by specified element
           if (arguments[iCurrentArg].size()!=4){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need the source pop, dest pop, and the migration rate.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
-            int i = atoi( arguments[iCurrentArg][1].data() ) -1;
-            int j = atoi( arguments[iCurrentArg][2].data() ) -1;
+            int i = readPopId(arguments[iCurrentArg][1], pConfig->iTotalPops);
+            int j = readPopId(arguments[iCurrentArg][2], pConfig->iTotalPops);
             double mij = atof( arguments[iCurrentArg][3].data() );
             pConfig->dMigrationMatrix[i][i] += mij -
               pConfig->dMigrationMatrix[i][j];
@@ -365,46 +407,38 @@ void Simulator::readInputParameters(CommandArguments arguments){
       case 'n' :
         //                    // specify population size for each population
         if (arguments[iCurrentArg].size()!=3){
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
             ", you need to specify the pop ID and the population size.\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }else{
-          popId = atoi( arguments[iCurrentArg][1].data() ) -1;
+          popId = readPopId(arguments[iCurrentArg][1], pConfig->iTotalPops);
           popSize = atof( arguments[iCurrentArg][2].data() );
-          if (popId>pConfig->iTotalPops){
-            Rcpp::Rcerr<<"Invalid pop ID"<<endl;
-            Rcpp::stop("Argument error");
-          }
           pConfig->pPopList[popId].setPopSize(popSize) ;
         }
         break;
       case 'g' :
         //                    // specify growth rates
         if (arguments[iCurrentArg].size()!=3){
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
             ", you need to specify the pop ID and the population growth rate.\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }else{
-          popId = atoi( arguments[iCurrentArg][1].data() ) -1;
+          popId = readPopId(arguments[iCurrentArg][1], pConfig->iTotalPops);
           dDefaultGrowthAlpha = atof( arguments[iCurrentArg][2].data() );
-          if (popId>pConfig->iTotalPops){
-            Rcpp::Rcerr<<"Invalid pop ID"<<endl;
-            Rcpp::stop("Argument error");
-          }
           pConfig->pPopList[popId].setGrowthAlpha(dDefaultGrowthAlpha);
         }
         break;
       case 'G' :
         //                    // specify growth rates across all populations
         if (arguments[iCurrentArg].size()!=2){
-          Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+          macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
             ", you need to specify a single growth rate for all populations.\n";
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }else{
           float g = atof(arguments[iCurrentArg][1].data());
           if (g<0) throw "Global growth rate must be positive";
           dDefaultGrowthAlpha = atof( arguments[iCurrentArg][1].data() );
-          //                    Rcpp::Rcerr<<"INPUT: Growth rate for all pop "<<dDefaultGrowthAlpha<<endl;
+          //                    macsMessages()<<"INPUT: Growth rate for all pop "<<dDefaultGrowthAlpha<<endl;
           for(int i=0; i<pConfig->iTotalPops; ++i){
             pConfig->pPopList[i].setGrowthAlpha(dDefaultGrowthAlpha);
           }
@@ -416,15 +450,15 @@ void Simulator::readInputParameters(CommandArguments arguments){
         if ((arguments[iCurrentArg][0][3])=='a') bAcceptFullMigrMatrix = true;
         else bAcceptFullMigrMatrix = false;
         if (arguments[iCurrentArg].size()<2){
-          Rcpp::Rcerr<<"For event flags, you need to specify at least a time after "<<
+          macsMessages()<<"For event flags, you need to specify at least a time after "<<
             arguments[iCurrentArg][0]<<endl;
-          Rcpp::stop("Argument error");
+          throw "Argument error";
         }
         dTime = atof(arguments[iCurrentArg][1].data());
         if (eventTimes.find(dTime)==eventTimes.end()){
           eventTimes.insert(dTime);
         }else{
-          Rcpp::Rcerr<<"Error, this event is redundant with a previous time.  Please increment it slightly from "<<dTime<<" to prevent unpredictable results\n";
+          macsMessages()<<"Error, this event is redundant with a previous time.  Please increment it slightly from "<<dTime<<" to prevent unpredictable results\n";
           throw "Invalid input";
         }
         int iPop1,iPop2;
@@ -432,23 +466,23 @@ void Simulator::readInputParameters(CommandArguments arguments){
         switch(chType){
         case 'N': // global population size
           if (arguments[iCurrentArg].size()!=3){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify a single pop size for all populations.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             //int iType = Event::GLOBAL_POPSIZE;
             wrapper = EventPtr(new GenericEvent(
               Event::GLOBAL_POPSIZE,dTime,
               atof(arguments[iCurrentArg][2].data())));
-            //Rcpp::Rcerr<<"Global pop size is "<<
+            //macsMessages()<<"Global pop size is "<<
             //  atof( arguments[iCurrentArg][2].data() )<<endl;
           }
           break;
         case 'G': // global growth rate
           if (arguments[iCurrentArg].size()!=3){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify a single growth rate for all populations.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             float g = atof(arguments[iCurrentArg][2].data());
             //if (g<0) throw "Global event growth rate must be positive";
@@ -456,86 +490,86 @@ void Simulator::readInputParameters(CommandArguments arguments){
             wrapper = EventPtr(new GenericEvent(
               Event::GLOBAL_POPGROWTH,dTime,
               g));
-            //Rcpp::Rcerr<<"Global growth rate is "<<
+            //macsMessages()<<"Global growth rate is "<<
             //  g<<endl;
           }
           break;
         case 'M': // global migration rate
           pConfig->bMigrationChangeEventDefined = true;
           if (arguments[iCurrentArg].size()!=3){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify a single migration rate for all populations.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             //iType = Event::GLOBAL_MIGRATIONRATE;
             wrapper = EventPtr(new GenericEvent(
               Event::GLOBAL_MIGRATIONRATE,dTime,
               atof(arguments[iCurrentArg][2].data())));
-            //Rcpp::Rcerr<<"Global migration rate is "<<
+            //macsMessages()<<"Global migration rate is "<<
             //  atof( arguments[iCurrentArg][2].data() )<<endl;
           }
           break;
         case 'n' :  // subpopulation size
           if (arguments[iCurrentArg].size()!=4){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify pop id followed by the new size.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             //iType = Event::POPSIZE;
             wrapper = EventPtr(new PopSizeChangeEvent(
-              Event::POPSIZE,dTime,atoi( arguments[iCurrentArg][2].data() ) -1,
+              Event::POPSIZE,dTime,readPopId(arguments[iCurrentArg][2], 0),
               atof( arguments[iCurrentArg][3].data() )));
-            //Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
+            //macsMessages()<<"For population "<<arguments[iCurrentArg][2]<<
             //  ", pop size is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
           }
           break;
         case 'g' :  // subpopulation growth
           if (arguments[iCurrentArg].size()!=4){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify pop id followed by the new growth rate.\n";
-            Rcpp::stop("Argument error");;
+            throw "Argument error";
           }else{
             //iType = Event::GROWTH;
             wrapper = EventPtr(new PopSizeChangeEvent(
-              Event::GROWTH,dTime,atoi( arguments[iCurrentArg][2].data() ) -1,
+              Event::GROWTH,dTime,readPopId(arguments[iCurrentArg][2], 0),
               atof( arguments[iCurrentArg][3].data() )));
-            //Rcpp::Rcerr<<"For population "<<arguments[iCurrentArg][2]<<
+            //macsMessages()<<"For population "<<arguments[iCurrentArg][2]<<
             //  ", pop growth rate is now "<<atof( arguments[iCurrentArg][3].data() )<<endl;
           }
           break;
         case 's' :  // split
           pConfig->bMigrationChangeEventDefined = true;
           if (arguments[iCurrentArg].size()!=4){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify pop id followed by the proportion of the split.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             //iType = Event::POPSPLIT;
-            iPop1 = atoi( arguments[iCurrentArg][2].data() )-1;
+            iPop1 = readPopId(arguments[iCurrentArg][2], 0);
             dProportion = atof( arguments[iCurrentArg][3].data() );
             wrapper = EventPtr(new PopSizeChangeEvent(
               Event::POPSPLIT,dTime,iPop1,dProportion));
-            //Rcpp::Rcerr<<"Population "<<arguments[iCurrentArg][2]<<
+            //macsMessages()<<"Population "<<arguments[iCurrentArg][2]<<
             //  " splits at proportion "<<dProportion<<endl;
           }
           break;
         case 'j':   // move lineages from pop1 to pop2
           
           if (arguments[iCurrentArg].size()!=4){
-            Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+            macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
               ", you need to specify source pop id followed by the destination pop id.\n";
-            Rcpp::stop("Argument error");
+            throw "Argument error";
           }else{
             //iType = Event::POPJOIN;
-            iPop1 = atoi( arguments[iCurrentArg][2].data() ) -1;
-            iPop2 = atoi( arguments[iCurrentArg][3].data() ) -1;
+            iPop1 = readPopId(arguments[iCurrentArg][2], 0);
+            iPop2 = readPopId(arguments[iCurrentArg][3], 0);
             if (iPop1>=pConfig->iTotalPops||
                 iPop2>=pConfig->iTotalPops){
-              Rcpp::Rcerr<<"WARNING: The pop IDs used in pop join is greater than the number specified in -I.  You must have a split event before this join event.\n";
+              macsMessages()<<"WARNING: The pop IDs used in pop join is greater than the number specified in -I.  You must have a split event before this join event.\n";
             }
             wrapper = EventPtr(new PopJoinEvent(
               Event::POPJOIN,dTime,iPop1,iPop2));
-            //Rcpp::Rcerr<<"Population "<<
+            //macsMessages()<<"Population "<<
             //  arguments[iCurrentArg][2].data()<<
             //    " will merge with "<<
             //      arguments[iCurrentArg][3].data()<<endl;
@@ -546,16 +580,16 @@ void Simulator::readInputParameters(CommandArguments arguments){
           if (bAcceptFullMigrMatrix){ // the -ema iTotalPops
             //                            //<matrix element list>
             if (arguments[iCurrentArg].size()<3){
-              Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+              macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
                 ", you need to at least specify the total number of populations.\n";
-              Rcpp::stop("Argument error");
+              throw "Argument error";
             }
             int iTotalPops = atoi(arguments[iCurrentArg][2].data());
             iTotalCells = iTotalPops * iTotalPops + 3;
             if (arguments[iCurrentArg].size()!=iTotalCells){
-              Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+              macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
                 ", the number of cells do not match the number of pops specified squared.\n";
-              Rcpp::stop("Argument error");
+              throw "Argument error";
             }
             //iType = Event::MIGRATION_MATRIX_RATE;
             iSubOption = 2;
@@ -583,46 +617,46 @@ void Simulator::readInputParameters(CommandArguments arguments){
                                  MigrationRateMatrixEvent(
                                    Event::MIGRATION_MATRIX_RATE,dTime,
                                    dMigrationMatrix));
-            //Rcpp::Rcerr<<"Full migration matrix provided by the user\n";
+            //macsMessages()<<"Full migration matrix provided by the user\n";
             
           }else{
             // the -em t i j x option specify just
             //part of the migration matrix
             if (arguments[iCurrentArg].size()!=5){
-              Rcpp::Rcerr<<"For flag "<<arguments[iCurrentArg][0]<<
+              macsMessages()<<"For flag "<<arguments[iCurrentArg][0]<<
                 ", you must specify the source pop, dest pop, and the migration rate.\n";
-              Rcpp::stop("Argument error");
+              throw "Argument error";
             }else{
               //iType = Event::MIGRATION_RATE;
-              //Rcpp::Rcerr<<"Mig rate of source pop "<<arguments[iCurrentArg][2] <<" to dest pop "<<arguments[iCurrentArg][3]<<" set to "<<arguments[iCurrentArg][4]<<".\n";
+              //macsMessages()<<"Mig rate of source pop "<<arguments[iCurrentArg][2] <<" to dest pop "<<arguments[iCurrentArg][3]<<" set to "<<arguments[iCurrentArg][4]<<".\n";
               wrapper = EventPtr(new MigrationRateEvent(
                 Event::MIGRATION_RATE,dTime,
-                atoi( arguments[iCurrentArg][2].data() ) -1,
-                atoi( arguments[iCurrentArg][3].data() ) -1,atof( arguments[iCurrentArg][4].data() ) ));
+                readPopId(arguments[iCurrentArg][2], 0),
+                readPopId(arguments[iCurrentArg][3], 0),atof( arguments[iCurrentArg][4].data() ) ));
             }
           }
           break;
         default:
-          Rcpp::Rcerr<<"Invalid suboption, you entered"<<chType<<endl;
+          macsMessages()<<"Invalid suboption, you entered"<<chType<<endl;
         break;
         }
         pEventList->push_back(wrapper);
         break;
       default:
-        Rcpp::Rcerr<<"Invalid option, you entered "<<arguments[iCurrentArg][0][1]<<endl;
+        macsMessages()<<"Invalid option, you entered "<<arguments[iCurrentArg][0][1]<<endl;
       }
     }catch(const out_of_range & e){
-      Rcpp::Rcerr<<"There were too many arguments.\n";
+      macsMessages()<<"There were too many arguments.\n";
     }
   }
   
   // Final sanity checks for the program before we begin:
   
   if (pConfig->iGeneConvTract>pConfig->dBasesToTrack) {
-    Rcpp::Rcerr<<"Warning: the gene conversion tract (-c 2nd parameter) cannot be "<<
+    macsMessages()<<"Warning: the gene conversion tract (-c 2nd parameter) cannot be "<<
       "longer than the length of sequence (-h parameter) to retain. ";
     pConfig->dBasesToTrack=2.0*pConfig->iGeneConvTract;
-    //Rcpp::Rcerr<<"The -h parameter is now revised to the recommend value of 2*tractlen = "
+    //macsMessages()<<"The -h parameter is now revised to the recommend value of 2*tractlen = "
     //    <<pConfig->dBasesToTrack<<endl;
   }
   
@@ -676,7 +710,7 @@ void Simulator::beginSimulation() {
     }
     delete rg;
   } catch (const char *message) {
-    Rcpp::Rcerr << "Simulator caught exception with message:" << endl << message << endl;
+    macsMessages() << "Simulator caught exception with message:" << endl << message << endl;
   }
 }
 
@@ -695,12 +729,16 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in, unsigned int maxSites) {
   Simulator simulator;
   
   if (in == ""){
-    Rcpp::stop("Not enough args for macs call");
+    throw "Not enough args for macs call";
   }
   if (in.empty()) {
-    Rcpp::stop("Not enough args for macs call");
+    throw "Not enough args for macs call";
   }
   boost::split(words, in, boost::is_any_of(", "), boost::token_compress_on);
+  // The sample size and sequence length are read below without a check
+  if (words.size() < 2) {
+    throw "Not enough args for macs call";
+  }
   CommandArguments arguments;
   vector<string> subOption;
   // sample size
@@ -717,7 +755,7 @@ vector<AlphaSimRReturn> runFromAlphaSimR(string in, unsigned int maxSites) {
     }
   }
   if (arguments.size() == 0) {
-    Rcpp::stop("Not enough args for macs call");
+    throw "Not enough args for macs call";
   }
   
   simulator.readInputParameters(arguments);
@@ -758,9 +796,14 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   if (args == "") {
     Rcpp::stop("error passing argument string - it's empty");
   }
+  // Every chromosome reads its own seed, so the two must match before the
+  // parallel loop starts
+  if (maxSites.n_elem != seed.n_elem) {
+    Rcpp::stop("maxSites and seed must have the same length");
+  }
   // cast for the later concatenation
   std::string argsString = args;
-  
+
   // Output objects
   arma::uword nChr = maxSites.n_elem;
   arma::field<arma::Cube<unsigned char> > geno(nChr);
@@ -778,6 +821,10 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   arma::uvec failed(nChr, arma::fill::zeros);
   std::vector<std::string> failMsg(nChr);
 
+  // Messages MaCS wrote for each chromosome. They are written from worker
+  // threads, so they are collected here and passed to R after the loop.
+  std::vector<std::string> macsLog(nChr);
+
   //Loop through chromosomes
   //Chromosomes take different amounts of time to simulate, depending on
   //their length and on how many sites are kept, so the work is handed out
@@ -789,6 +836,9 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     // Run MaCS with the chromosome-specific seed and subsample sites with same seed
     vector<AlphaSimRReturn> macsOutput;
     std::string seedString = std::to_string(static_cast<unsigned long long>(seed[chr]));
+    // A thread runs several chromosomes, so its stream is emptied first
+    macsMessages().str("");
+    macsMessages().clear();
     try{
       macsOutput = runFromAlphaSimR(argsString + seedString,
                                     static_cast<unsigned int>(maxSites(chr)));
@@ -802,6 +852,7 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
       failed(chr) = 1;
       failMsg[chr] = std::string("unknown error");
     }
+    macsLog[chr] = macsMessages().str();
     if(failed(chr)){
       geno(chr).set_size(0,ploidy,0);
       genMap(chr).set_size(0);
@@ -920,9 +971,27 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
   }
   if(arma::any(failed)){
     arma::uvec badChr = arma::find(failed);
+    // What MaCS wrote before failing usually says what was wrong
+    std::string detail = macsLog[badChr(0)];
+    while(!detail.empty() && detail[detail.size()-1]=='\n'){
+      detail.erase(detail.size()-1);
+    }
+    if(!detail.empty()){
+      detail = "\n" + detail;
+    }
     Rcpp::stop("MaCS failed for chromosome " +
                std::to_string(static_cast<unsigned long long>(badChr(0)+1)) +
-               ": " + failMsg[badChr(0)]);
+               ": " + failMsg[badChr(0)] + detail);
+  }
+  // Every chromosome is run with the same options, so a warning about them
+  // would otherwise be repeated once per chromosome
+  std::vector<std::string> shown;
+  for(arma::uword chr=0; chr<nChr; ++chr){
+    if(!macsLog[chr].empty() &&
+       (std::find(shown.begin(), shown.end(), macsLog[chr])==shown.end())){
+      Rcpp::Rcerr<<macsLog[chr];
+      shown.push_back(macsLog[chr]);
+    }
   }
   if(arma::any(noSites)){
     arma::uvec badChr = arma::find(noSites);

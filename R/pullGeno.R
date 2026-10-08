@@ -41,6 +41,32 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
               lociLoc=outLociLoc))
 }
 
+#' Check a haplotype selector
+#'
+#' Checks the haplo argument of the pull*Haplo functions. A single
+#' haplotype is read through a raw pointer in C++, so a value outside
+#' 1 to ploidy would read memory outside the genotypes.
+#'
+#' @param haplo either "all" or a single haplotype number
+#' @param ploidy ploidy level of the population
+#'
+#' @return "all", or haplo as an integer
+#'
+#' @keywords internal
+checkHaplo = function(haplo, ploidy){
+  if(identical(haplo, "all")){
+    return(haplo)
+  }
+  # The range is checked before the whole number test so that a very large
+  # value never reaches as.integer, which would turn it into NA
+  if((length(haplo)!=1L) || !is.numeric(haplo) || is.na(haplo) ||
+     (haplo<1) || (haplo>ploidy) || (haplo!=round(haplo))){
+    stop(paste0("haplo must be \"all\" or a whole number from 1 to ",
+                ploidy))
+  }
+  return(haplo)
+}
+
 #' Retrieves marker names from genMap
 #'
 #' @param lociPerChr number of loci per chromosome
@@ -651,6 +677,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   lociPerChr = tmp$lociPerChr
   lociLoc = tmp$lociLoc
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
@@ -667,7 +694,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),nThreads)
+                         haplo,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -751,6 +778,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   
   lociLoc = tmp$lociLoc
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
@@ -767,7 +795,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),nThreads)
+                         haplo,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -856,6 +884,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
   }else{
     chr = 1:pop@nChr
   }
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,
                       lociTot,
@@ -877,7 +906,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
     output = getOneHaplo(pop@geno,
                          lociTot,
                          allLoci,
-                         as.integer(haplo),
+                         haplo,
                          nThreads)
     
     if(!asRaw){
@@ -1151,6 +1180,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
   # Map markers to genetic map
   lociMap = mapLoci(markers, genMap)
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, nThreads)
     
@@ -1167,7 +1197,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
     }
   }else{
     output = getOneHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc,
-                         as.integer(haplo), nThreads)
+                         haplo, nThreads)
     
     if(!asRaw){
       output = convToImat(output)

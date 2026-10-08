@@ -161,6 +161,24 @@ hybridCross = function(females, males,
       stop(paste0("crossPlan=",crossPlan," is not a valid option"))
     }
   }
+  if(is.matrix(crossPlan) && is.character(crossPlan)){ #Match by ID
+    crossPlan = cbind(match(crossPlan[,1],females@id),
+                      match(crossPlan[,2],males@id))
+    if(any(is.na(crossPlan))){
+      stop("Failed to match supplied IDs")
+    }
+  }
+  # makeCross2 checks crossPlan as well, but returnHybridPop=TRUE does not
+  # go through it, and the C++ code indexes the genotypes with crossPlan
+  # directly
+  if(!is.matrix(crossPlan) || !is.numeric(crossPlan) ||
+     (ncol(crossPlan)!=2L) ||
+     any(is.na(crossPlan)) ||
+     any(crossPlan<1) ||
+     any(crossPlan[,1]>nInd(females)) ||
+     any(crossPlan[,2]>nInd(males))){
+    stop("Invalid crossPlan")
+  }
 
   #Set id
   femaleParents = females@id[crossPlan[,1]]

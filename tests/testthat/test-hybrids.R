@@ -263,3 +263,40 @@ test_that("ARGS recombination settings are checked and refused for a Pop", {
   # Refusing them leaves the user's SimParam as it was
   expect_equal(SP$v, SimParam$new(d$females)$v)
 })
+
+test_that("REFUSE a hybrid crossPlan outside the populations",{
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr=1,mean=0,var=1)
+  pop = newPop(founderPop,simParam=SP)
+  # returnHybridPop=TRUE does not go through makeCross2, and the C++ code
+  # indexes the genotypes with crossPlan directly
+  bad = list(cbind(c(1,0),c(1,1)),
+             cbind(c(1,5),c(1,1)),
+             cbind(c(1,1),c(1,5)),
+             cbind(c(1,NA),c(1,1)),
+             c(1,2))
+  for(returnHybridPop in c(TRUE,FALSE)){
+    for(crossPlan in bad){
+      expect_error(hybridCross(pop,pop,crossPlan=crossPlan,
+                               returnHybridPop=returnHybridPop,
+                               simParam=SP),
+                   "Invalid crossPlan")
+    }
+    expect_error(hybridCross(pop,pop,crossPlan=cbind("1","9"),
+                             returnHybridPop=returnHybridPop,
+                             simParam=SP),
+                 "Failed to match supplied IDs")
+  }
+  # A crossPlan of IDs works for a HybridPop, as it does for a Pop
+  hybrid = hybridCross(pop,pop,crossPlan=cbind(c("1","2"),c("2","1")),
+                       returnHybridPop=TRUE,simParam=SP)
+  expect_equal(hybrid@id,c("1_2","2_1"))
+  # The C++ code checks the indexes as well
+  expect_error(AlphaSimR:::getHybridGv(SP$traits[[1]],pop,c(1L,0L),
+                                       pop,c(1L,1L),1L),
+               "Invalid parent index")
+  expect_error(AlphaSimR:::getHybridGv(SP$traits[[1]],pop,c(1L,5L),
+                                       pop,c(1L,1L),1L),
+               "Invalid parent index")
+})

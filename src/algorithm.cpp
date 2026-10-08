@@ -143,7 +143,7 @@ bool GraphBuilder::markEdgesAbove(bool bFirstSample,bool  bCalledFromParent,
           return false;
         }else{
           if (localMRCA!=topNode){
-            Rcpp::Rcerr<<"proposed grandMRCA != top Node\n";
+            macsMessages()<<"proposed grandMRCA != top Node\n";
           }
           // here the current height is EQUAL to the proposed MRCA,
           // this is good and we can proceed to the next sampled node
@@ -415,7 +415,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
       pNextNewEvent = *currentEventIt;
       bUserEventAvailable = true;
       if (bBuildFromEventList){
-        //Rcpp::Rcerr<<"Xover height "<<dXoverHeight<<endl;
+        //macsMessages()<<"Xover height "<<dXoverHeight<<endl;
         if (dXoverHeight>dLastTime &&
             dXoverHeight<=pNextNewEvent->getTime()){
           EventPtr eventWrapper = EventPtr(new XoverEvent(
@@ -558,7 +558,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         
         if ((iSourcePop>=iTotalPops||
             iDestPop>=iTotalPops)) {
-          Rcpp::Rcerr<<"Invalid past migration event at time "
+          macsMessages()<<"Invalid past migration event at time "
               <<dTime<<",source,dest pop "<<iSourcePop<<","<<
           iDestPop<<endl;
           throw "Num of pops is too small for migration!";
@@ -575,7 +575,7 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         <MigrationRateMatrixEvent*>(pNextNewEvent.get());
         dMigrationMatrix = migRateMatrixEvent->getMigrationMatrix();
         if (dMigrationMatrix.size()!=pPopList.size()){
-          Rcpp::Rcerr<<"Error in specifying new migration matrix event.  The dimension of the matrix "<<dMigrationMatrix.size()<<" must equal the number of populations: "<<pPopList.size()<<endl;
+          macsMessages()<<"Error in specifying new migration matrix event.  The dimension of the matrix "<<dMigrationMatrix.size()<<" must equal the number of populations: "<<pPopList.size()<<endl;
           throw "Invalid migration matrix";
         }
       }else if (eventType==Event::MIGRATION_RATE){
@@ -584,6 +584,17 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         short int  iSourcePop = migRateEvent->getSourcePop();
         short int iDestPop = migRateEvent->getDestPop();
         double dMigRate = migRateEvent->getRate();
+        // The parser only knows that a population ID is positive, because a
+        // split before this event may have added populations. The upper
+        // bound is checked here, against the populations that now exist.
+        if (iSourcePop<0 || iDestPop<0 ||
+            iSourcePop>=(int)dMigrationMatrix.size() ||
+            iDestPop>=(int)dMigrationMatrix.size()){
+          macsMessages()<<"Invalid migration rate event at time "
+              <<dTime<<",source,dest pop "<<iSourcePop+1<<","<<
+          iDestPop+1<<endl;
+          throw "Population ID in migration rate event does not exist";
+        }
         dMigrationMatrix[iSourcePop][iSourcePop]+=
           dMigRate-dMigrationMatrix[iSourcePop][iDestPop];
         dMigrationMatrix[iSourcePop][iDestPop] = dMigRate;
@@ -604,6 +615,12 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         PopSizeChangeEvent * growthEvent = static_cast
         <PopSizeChangeEvent *>(pNextNewEvent.get());
         short int pop = growthEvent->getPopulationIndex();
+        // See the migration rate event above
+        if (pop<0 || pop>=(int)pPopList.size()){
+          macsMessages()<<"Invalid growth event at time "<<dTime<<
+            ", pop "<<pop+1<<endl;
+          throw "Population ID in growth event does not exist";
+        }
         pPopList[pop].setPopSize(pPopList[pop].getPopSize()*
           exp( - pPopList[pop].getGrowthAlpha()*(
               dTime-pPopList[pop].getLastTime()) ))  ;
@@ -613,6 +630,12 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         PopSizeChangeEvent * growthEvent = static_cast
         <PopSizeChangeEvent *>(pNextNewEvent.get());
         short int pop = growthEvent->getPopulationIndex();
+        // See the migration rate event above
+        if (pop<0 || pop>=(int)pPopList.size()){
+          macsMessages()<<"Invalid population size event at time "<<dTime<<
+            ", pop "<<pop+1<<endl;
+          throw "Population ID in population size event does not exist";
+        }
         pPopList[pop].setPopSize(growthEvent->getPopChangeParam());
         pPopList[pop].setGrowthAlpha(0);
       }else if (eventType==Event::POPJOIN){
@@ -621,14 +644,19 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         <PopJoinEvent *>(pNextNewEvent.get());
         short int iSourcePop = joinEvent->getSourcePop();
         short int iDestPop = joinEvent->getDestPop();
+        // The upper bounds are checked below. A negative ID would pass them.
+        if (iSourcePop<0 || iDestPop<0){
+          macsMessages()<<"Invalid pop join event at time "<<dTime<<endl;
+          throw "Population ID in pop join event does not exist";
+        }
         if (iSourcePop>=iTotalPops){
-          Rcpp::Rcerr <<"Source pop and total pops are "<<iSourcePop<<","<<iTotalPops<<" in POP JOIN event at history "<<iGraphIteration<<". It is recommended that you increase the migration rates and/or number of sampled chromosomes.\n";
+          macsMessages() <<"Source pop and total pops are "<<iSourcePop<<","<<iTotalPops<<" in POP JOIN event at history "<<iGraphIteration<<". It is recommended that you increase the migration rates and/or number of sampled chromosomes.\n";
           
           throw "Invalid data structure";
         }
         
         if (iDestPop>=iTotalPops){
-          Rcpp::Rcerr <<"Dest pop and total pops are "<<iDestPop<<","<<iTotalPops<<" in POP JOIN event\n";
+          macsMessages() <<"Dest pop and total pops are "<<iDestPop<<","<<iTotalPops<<" in POP JOIN event\n";
           throw "Invalid data structure";
         }
         if (iDestPop==iTotalPops){
@@ -725,6 +753,12 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
         <PopSizeChangeEvent *>(pNextNewEvent.get());
         short int iSourcePop = splitEvent->getPopulationIndex();
         short int iDestPop = iTotalPops;
+        // See the migration rate event above
+        if (iSourcePop<0 || iSourcePop>=(int)pPopList.size()){
+          macsMessages()<<"Invalid pop split event at time "<<dTime<<
+            ", pop "<<iSourcePop+1<<endl;
+          throw "Population ID in pop split event does not exist";
+        }
         double dProportion = splitEvent->getPopChangeParam();
         // GKC: 2015-07-05 Add epsilon to migration node
         // to make sure POPSPLIT happens first
@@ -867,14 +901,14 @@ void GraphBuilder::traverseEvents(bool bBuildFromEventList,
           pop.setGrowthAlpha(0);
         }
       }else{
-        Rcpp::Rcerr<<"Found an event of type "<<pNextNewEvent->getType()
+        macsMessages()<<"Found an event of type "<<pNextNewEvent->getType()
             <<endl;
         throw "Event is not implemented yet!";
       }
       ++currentEventIt;
       bool found = false;
       while(!found && currentEventIt!=lastEventIt){
-        if (*currentEventIt==NULL) Rcpp::Rcerr<<"null\n";
+        if (*currentEventIt==NULL) macsMessages()<<"null\n";
         if ((*currentEventIt)->bMarkedForDelete) {
           currentEventIt=pEventList->erase(currentEventIt);
         }
@@ -1142,7 +1176,7 @@ void GraphBuilder::addMutations(double startPos,double endPos){
       double dRandomSpot = pRandNumGenerator->unifRV() * dLastTreeLength;
       double dMutationTime=-1.;
       EdgePtr selectedEdge = getRandomEdgeOnTree(dMutationTime,dRandomSpot);
-      //Rcpp::Rcerr<<"Mutation time is "<<dMutationTime<<endl;
+      //macsMessages()<<"Mutation time is "<<dMutationTime<<endl;
       mutateBelowEdge(selectedEdge);
       // NodePtrVector::iterator it;
 
@@ -1207,7 +1241,7 @@ bool GraphBuilder::getNextPos(double & curPos,HotSpotBinPtrList::iterator & hotS
         curPos = startPos;
       }
     }else{
-      Rcpp::Rcerr<<"startPos is "<<startPos<<" endPos is "
+      macsMessages()<<"startPos is "<<startPos<<" endPos is "
           <<endPos<<" and curPos is "<<curPos<<endl;
       throw "Shouldn't be here for variable recomb";
     }

@@ -110,6 +110,22 @@ arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait,
                                    const Rcpp::S4& males,
                                    arma::uvec maleParents,
                                    int nThreads){
+  // The parents index the genotype matrices inside a parallel region, where
+  // the exception an out of range index throws cannot be caught safely, so
+  // they are checked here first. This covers getHybridGvE as well. The
+  // indexes are still one based, and a zero or negative index from R has
+  // become 0 or a very large value.
+  if(femaleParents.n_elem!=maleParents.n_elem){
+    Rcpp::stop("femaleParents and maleParents must have the same length");
+  }
+  if(femaleParents.n_elem>0){
+    arma::uword nFemale = Rcpp::as<arma::uword>(females.slot("nInd"));
+    arma::uword nMale = Rcpp::as<arma::uword>(males.slot("nInd"));
+    if((femaleParents.min()<1) || (femaleParents.max()>nFemale) ||
+       (maleParents.min()<1) || (maleParents.max()>nMale)){
+      Rcpp::stop("Invalid parent index");
+    }
+  }
   if(trait.hasSlot("epiEff")){
     return getHybridGvE(trait, females, femaleParents,
                         males, maleParents, nThreads);

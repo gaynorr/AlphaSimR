@@ -39,6 +39,14 @@ summary, the modifications are:
     simulation raises an R condition instead of writing to standard
     error or terminating the process.
 
+  * Population IDs and the number of populations in the command are
+    checked before they are used to index the population list or the
+    migration matrix. IDs in historical events are checked against the
+    populations that exist when the event runs. Messages are collected
+    per chromosome and passed to R after the parallel loop, and errors
+    are raised by throwing, because calling into R from a worker thread
+    is not safe.
+
   * Random number seeds are supplied by R, one per chromosome, so that
     MaCS simulations can be reproduced with set.seed() and several
     chromosomes can be simulated in parallel. We fixed reproducibility

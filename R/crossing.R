@@ -669,8 +669,15 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
     parents = 1:pop@nInd
   }else{
     parents = as.integer(parents)
+    # The C++ code indexes the genotypes with these directly, so an index
+    # outside the population would read memory beyond them
+    if(any(is.na(parents)) ||
+       any(parents<1L) ||
+       any(parents>pop@nInd)){
+      stop("Invalid parents")
+    }
   }
-  
+
   if(pop@ploidy%%2L != 0L){
     stop("You can not self aneuploids")
   }

@@ -25,6 +25,7 @@ limitations under the License.
 #include <memory>
 #include <queue>
 #include <string>
+#include <sstream>
 //#include<stack>
 #include <boost/weak_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -34,6 +35,13 @@ limitations under the License.
 #include "constants.h"
 
 using namespace std;
+
+// MaCS runs inside an OpenMP region, one chromosome per task, and calling
+// into R from a worker thread is not safe. Its messages are therefore
+// written to this stream, which is private to the calling thread, and MaCS()
+// passes them on to R after the parallel loop. Errors are raised by
+// throwing, and MaCS() catches them in the same way.
+std::ostringstream & macsMessages();
 
 
 

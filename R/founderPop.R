@@ -159,6 +159,10 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
     segSites = rep(0L,nChr)
   }else if(length(segSites)==1L){
     segSites = rep(as.integer(segSites),nChr)
+  }else if(length(segSites)!=nChr){
+    # One seed is drawn per chromosome below, and the C++ code reads a seed
+    # for every element of segSites
+    stop("segSites must have length 1 or nChr")
   }
 
   popSize = ifelse(inbred,nInd,ploidy*nInd)

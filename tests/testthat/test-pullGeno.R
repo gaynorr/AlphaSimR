@@ -148,3 +148,100 @@ test_that("genotypes of a crossed population equal the sum of its haplotypes", {
                     H[seq(2, nrow(H), by = 2), ]))
   expect_true(all(G >= 0L) && all(G <= 2L))
 })
+
+# A single haplotype and the loci are read through raw pointers in C++, so a
+# value outside the population would read memory beyond its genotypes. Both
+# the R wrappers and the C++ code refuse them.
+test_that("REFUSE a haplo outside 1 to ploidy", {
+  set.seed(5008)
+  x = knownPop(nInd = 5L, nPerChr = c(20L, 12L))
+  # Traits have to be added before any individuals are made
+  x$SP$resetPed()
+  x$SP$addTraitA(nQtlPerChr = 2L)
+  x$pop = newPop(x$SP$founderPop, simParam = x$SP)
+  markers = colnames(pullSegSiteHaplo(x$pop, simParam = x$SP))
+  for (bad in list(0, -1, 3, NA, 1.5, c(1, 2), "1")) {
+    expect_error(pullSegSiteHaplo(x$pop, haplo = bad, simParam = x$SP),
+                 "haplo must be")
+    expect_error(pullQtlHaplo(x$pop, haplo = bad, simParam = x$SP),
+                 "haplo must be")
+    expect_error(pullMarkerHaplo(x$pop, markers = markers, haplo = bad,
+                                 simParam = x$SP),
+                 "haplo must be")
+  }
+  # Valid selectors still work, and as a double as well as an integer
+  expect_equal(pullSegSiteHaplo(x$pop, haplo = 2, simParam = x$SP),
+               pullSegSiteHaplo(x$pop, haplo = 2L, simParam = x$SP))
+  expect_equal(nrow(pullSegSiteHaplo(x$pop, haplo = "all", simParam = x$SP)),
+               2L * x$pop@nInd)
+
+  geno = x$pop@geno
+  lociPerChr = x$pop@nLoci
+  lociLoc = c(seq_len(20L), seq_len(12L))
+  for (bad in c(0L, -1L, 3L, NA_integer_)) {
+    expect_error(AlphaSimR:::getOneHaplo(geno, lociPerChr, lociLoc, bad, 1L),
+                 "haplo must be between")
+  }
+})
+
+test_that("REFUSE loci outside their chromosome", {
+  set.seed(5009)
+  x = knownPop(nInd = 5L, nPerChr = c(20L, 12L))
+  geno = x$pop@geno
+  lociPerChr = x$pop@nLoci
+  lociLoc = c(seq_len(20L), seq_len(12L))
+  # The last chromosome holds 12 loci in 2 bytes, so 17 is past its end
+  for (bad in c(0L, -1L, 17L, NA_integer_)) {
+    badLoc = lociLoc
+    badLoc[32L] = bad
+    expect_error(AlphaSimR:::getGeno(geno, lociPerChr, badLoc, 1L),
+                 "outside its chromosome")
+    expect_error(AlphaSimR:::getHaplo(geno, lociPerChr, badLoc, 1L),
+                 "outside its chromosome")
+    expect_error(AlphaSimR:::getMaternalGeno(geno, lociPerChr, badLoc, 1L),
+                 "outside its chromosome")
+    expect_error(AlphaSimR:::getPaternalGeno(geno, lociPerChr, badLoc, 1L),
+                 "outside its chromosome")
+    expect_error(AlphaSimR:::getOneHaplo(geno, lociPerChr, badLoc, 1L, 1L),
+                 "outside its chromosome")
+  }
+  # lociPerChr has to account for every locus and every chromosome
+  expect_error(AlphaSimR:::getGeno(geno, c(20L, 13L), lociLoc, 1L),
+               "greater than length")
+  expect_error(AlphaSimR:::getGeno(geno, c(20L, 11L), lociLoc, 1L),
+               "less than length")
+  expect_error(AlphaSimR:::getGeno(geno, 32L, lociLoc, 1L),
+               "number of chromosomes")
+  expect_error(AlphaSimR:::getGeno(geno, c(-1L, 33L), lociLoc, 1L),
+               "negative")
+  # setHaplo writes rather than reads, and checks the haplotypes it is given
+  haplo = AlphaSimR:::getHaplo(geno, lociPerChr, lociLoc, 1L)
+  badLoc = lociLoc
+  badLoc[1L] = 0L
+  expect_error(AlphaSimR:::setHaplo(geno, haplo, lociPerChr, badLoc, 1L),
+               "outside its chromosome")
+  expect_error(AlphaSimR:::setHaplo(geno, haplo[-1L, ], lociPerChr,
+                                    lociLoc, 1L),
+               "haplo must have")
+  # The loci that are valid still give the genotypes
+  expect_equal(AlphaSimR:::getGeno(geno, lociPerChr, lociLoc, 1L),
+               unname(pullSegSiteGeno(x$pop, asRaw = TRUE, simParam = x$SP)))
+})
+
+test_that("REFUSE a manual trait with loci outside their chromosome", {
+  set.seed(5010)
+  x = knownPop(nInd = 5L, nPerChr = c(20L, 12L))
+  # Traits have to be added before any individuals are made
+  x$SP$resetPed()
+  x$SP$addTraitA(nQtlPerChr = 2L)
+  trait = x$SP$traits[[1L]]
+  # The LociMap validity method only checks counts, so these are valid
+  # objects that do not fit the genotypes
+  for (bad in c(0L, 100L)) {
+    badTrait = trait
+    badTrait@lociLoc[1L] = bad
+    expect_true(validObject(badTrait))
+    expect_error(x$SP$manAddTrait(badTrait), "outside its chromosome")
+  }
+  expect_equal(x$SP$nTraits, 1L)
+})

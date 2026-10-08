@@ -7,25 +7,25 @@ knitr::opts_chunk$set(
 library(AlphaSimR)
 
 ## -----------------------------------------------------------------------------
-founderGenome = runMacs(nInd = 10, 
-                        nChr = 3, 
-                        segSites = 4, 
-                        species = "CATTLE")
+founderGenomes = runMacs(nInd = 10,
+                         nChr = 3,
+                         segSites = 4,
+                         species = "CATTLE")
 # Set simulation parameters
-SP = SimParam$new(founderGenome)
+SP = SimParam$new(founderGenomes)
 SP$setTrackRec(TRUE)
-# Inspect the founderGenome
-founderGenome
+# Inspect the founder genomes
+founderGenomes
 
 
 ## -----------------------------------------------------------------------------
-pullSegSiteGeno(founderGenome)
+pullSegSiteGeno(founderGenomes)
 
 ## -----------------------------------------------------------------------------
-pullSegSiteHaplo(founderGenome)
+pullSegSiteHaplo(founderGenomes)
 
 ## -----------------------------------------------------------------------------
-basePop = newPop(founderGenome)
+basePop = newPop(founderGenomes)
 
 mutatedBasePop = mutate(basePop, mutRate = 0.1, simParam = SP)
 
@@ -57,19 +57,19 @@ pullIbdHaplo(basePop[basePop@iid == father,])
 pullIbdHaplo(secondGenPop)
 
 ## -----------------------------------------------------------------------------
-founderGenome = runMacs(nInd = 10, 
-                        nChr = 3, 
-                        segSites = 4, 
+founderGenomes = runMacs(nInd = 10,
+                        nChr = 3,
+                        segSites = 4,
                         species = "CATTLE")
 # Set simulation parameters
-SP = SimParam$new(founderGenome)
+SP = SimParam$new(founderGenomes)
 
 ## -----------------------------------------------------------------------------
 SP$addTraitA(nQtlPerChr = 3)
 SP$addSnpChip(nSnpPerChr = 1)
 
 ## -----------------------------------------------------------------------------
-basePop = newPop(founderGenome, simParam = SP)
+basePop = newPop(founderGenomes, simParam = SP)
 
 # Inspect basePop
 basePop
