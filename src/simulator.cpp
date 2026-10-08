@@ -41,9 +41,20 @@ limitations under the License.
 
 const double Node::MAX_HEIGHT=1e50;
 
+// The stream for the current thread is owned by the loop in MaCS(), and only
+// a pointer to it is thread local. A thread local with a destructor, such as
+// the stream itself, crashes R on Windows, where MinGW runs the destructors
+// of OpenMP worker threads unreliably at thread exit.
+thread_local std::ostringstream * macsStream = NULL;
+
 std::ostringstream & macsMessages(){
-  thread_local std::ostringstream stream;
-  return stream;
+  // MaCS is only run from the loop in MaCS(), which sets the pointer, so
+  // this sink is a guard against a future caller rather than a real path
+  static std::ostringstream unused;
+  if(macsStream==NULL){
+    return unused;
+  }
+  return *macsStream;
 }
 
 namespace {
@@ -836,9 +847,9 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
     // Run MaCS with the chromosome-specific seed and subsample sites with same seed
     vector<AlphaSimRReturn> macsOutput;
     std::string seedString = std::to_string(static_cast<unsigned long long>(seed[chr]));
-    // A thread runs several chromosomes, so its stream is emptied first
-    macsMessages().str("");
-    macsMessages().clear();
+    // Each chromosome gets a fresh stream for its messages
+    std::ostringstream chrMessages;
+    macsStream = &chrMessages;
     try{
       macsOutput = runFromAlphaSimR(argsString + seedString,
                                     static_cast<unsigned int>(maxSites(chr)));
@@ -852,7 +863,8 @@ Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred,
       failed(chr) = 1;
       failMsg[chr] = std::string("unknown error");
     }
-    macsLog[chr] = macsMessages().str();
+    macsLog[chr] = chrMessages.str();
+    macsStream = NULL;
     if(failed(chr)){
       geno(chr).set_size(0,ploidy,0);
       genMap(chr).set_size(0);

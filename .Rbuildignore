@@ -9,3 +9,4 @@
 ^\.claude$
 ^codecov\.yml$
 ^AGENTS\.md$
+^TODO\.txt$

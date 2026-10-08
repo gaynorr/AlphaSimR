@@ -38,9 +38,9 @@ using namespace std;
 
 // MaCS runs inside an OpenMP region, one chromosome per task, and calling
 // into R from a worker thread is not safe. Its messages are therefore
-// written to this stream, which is private to the calling thread, and MaCS()
-// passes them on to R after the parallel loop. Errors are raised by
-// throwing, and MaCS() catches them in the same way.
+// written to a stream that MaCS() sets for each chromosome on the thread
+// running it, and MaCS() passes them on to R after the parallel loop.
+// Errors are raised by throwing, and MaCS() catches them in the same way.
 std::ostringstream & macsMessages();
 
 
