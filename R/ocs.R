@@ -21,8 +21,8 @@
 #' @param useK should \eqn{YY'} be precomputed
 #'
 #' @return a list with the number of loci, the penalty for the whole
-#' population, and functions for the penalty and the expected fixation
-#' of a selected set
+#' population, each individual's \eqn{z_i'z_i}, and functions for the
+#' penalty and the expected fixation of a selected set
 #'
 #' @keywords internal
 .ocsKernel = function(Y, ploidy, useK=nrow(Y)<=ncol(Y)){
@@ -37,6 +37,7 @@
   if(useK){
     K = tcrossprod(Y)
     rm(Y)
+    self = diag(K)/s
     zu = function(take){
       rowSums(K[,take,drop=FALSE])/(s*length(take))
     }
@@ -44,6 +45,7 @@
       sum(K[a,b,drop=FALSE])
     }
   }else{
+    self = rowSums(Y^2)/s
     zu = function(take){
       drop(Y%*%colSums(Y[take,,drop=FALSE]))/(s*length(take))
     }
@@ -63,17 +65,17 @@
     (cross(takeF,takeF)/nF^2 + 2*cross(takeF,takeM)/(nF*nM) +
        cross(takeM,takeM)/nM^2)/(4*s*nLoci)
   }
-  return(list(nLoci=nLoci, zu0=zu(seq_len(nInd)), zu=zu, fix=fix,
-              fixPool=fixPool))
+  return(list(nLoci=nLoci, zu0=zu(seq_len(nInd)), self=self, zu=zu,
+              fix=fix, fixPool=fixPool))
 }
 
 #' @title Restricted inbreeding truncation without sexes
 #'
 #' @description
 #' Selects \code{N} candidates for a fixed penalty \code{kappa} by
-#' iterating truncation selection on \code{m - kappa*Z\%*\%u} until the
-#' penalties, which follow the allele frequencies of the selected set,
-#' converge.
+#' iterating truncation selection on
+#' \code{m - kappa*(Z\%*\%u + rowSums(Z^2)/(2*N))} until the penalties,
+#' which follow the allele frequencies of the selected set, converge.
 #'
 #' @param kappa the penalty on shared alleles
 #' @param ker a kernel from \code{.ocsKernel}
@@ -90,8 +92,15 @@
   # Zu holds Z%*%u, starting from the whole population's allele
   # frequencies
   Zu = ker$zu0
+  # Replacing j with i in a set of N moves u by (z_i - z_j)/N, which
+  # raises fixation by 2(z_i - z_j)'u/N + |z_i - z_j|^2/N^2. The first
+  # part is Zu. The second contains z_i'z_i/N^2 for each candidate on
+  # its own, mostly its homozygosity, and that part is included here.
+  # The remaining part, from the pair, cannot be split between
+  # candidates and so cannot enter a ranking.
+  own = ker$self/(2*N)
   for(it in seq_len(maxit)){
-    take = order(m - kappa*Zu, decreasing=TRUE)[seq_len(N)]
+    take = order(m - kappa*(Zu+own), decreasing=TRUE)[seq_len(N)]
     # A running average rather than a fixed damping factor, because a
     # fixed factor lets one or two borderline candidates flip in and
     # out of the set indefinitely. Convergence is judged on the
@@ -134,10 +143,16 @@
 .ocsTruncSex = function(kappa, ker, m, female, male, nFemale, nMale,
                         maxit=200L, tol=1e-5){
   Zu = ker$zu0
+  # As in .ocsTrunc, but each selected female contributes 1/(2*nFemale)
+  # and each male 1/(2*nMale), so replacing one moves u by half as much
+  # per individual and the term for a candidate on its own is scaled
+  # by its sex
+  ownF = ker$self[female]/(4*nFemale)
+  ownM = ker$self[male]/(4*nMale)
   for(it in seq_len(maxit)){
-    takeF = female[order(m[female] - kappa*Zu[female],
+    takeF = female[order(m[female] - kappa*(Zu[female]+ownF),
                          decreasing=TRUE)[seq_len(nFemale)]]
-    takeM = male[order(m[male] - kappa*Zu[male],
+    takeM = male[order(m[male] - kappa*(Zu[male]+ownM),
                        decreasing=TRUE)[seq_len(nMale)]]
     # Running average and convergence test, as in .ocsTrunc
     d = ((ker$zu(takeF)+ker$zu(takeM))/2-Zu)/(it+1)
@@ -297,10 +312,16 @@
 #' Selection on merit \eqn{m_i}, given by \code{trait} and \code{use},
 #' subject to \eqn{F \le F^*} is relaxed with a Lagrange multiplier.
 #' Each candidate \eqn{i} is then scored as
-#' \deqn{s_i = m_i - \kappa z_i'u,}
-#' which penalizes candidates carrying alleles that are common among
-#' the selected individuals and rewards those carrying alleles that are
-#' rare among them, pulling allele frequencies toward 0.5. For a
+#' \deqn{s_i = m_i - \kappa\left(z_i'u + \frac{c}{2} z_i'z_i\right),}{s_i = m_i - kappa (z_i'u + (c/2) z_i'z_i),}
+#' where \eqn{c} is the contribution of each selected individual:
+#' \eqn{1/N} for \eqn{N} individuals, or \eqn{1/(2N_f)} for a female
+#' and \eqn{1/(2N_m)} for a male when using sexes. The first term
+#' penalizes candidates carrying alleles that are common among the
+#' selected individuals and rewards those carrying alleles that are
+#' rare among them, pulling allele frequencies toward 0.5. The second
+#' is the candidate's own contribution to fixation, which grows with
+#' its homozygosity and matters most when few individuals are
+#' selected. For a
 #' given \eqn{\kappa}, \eqn{u} starts from the allele frequencies of
 #' \code{pop}, the top candidates on \eqn{s_i} are selected, and
 #' \eqn{u} is updated toward their frequencies with a running
@@ -314,13 +335,16 @@
 #' \eqn{\kappa} tried are returned. A message reports \eqn{\kappa}, the
 #' achieved \eqn{F}, the target and \eqn{F_t}.
 #'
-#' Equal contributions alone increase expected fixation by about
-#' \eqn{(1 - F_t)/(kN)} for \eqn{N} selected individuals of ploidy
-#' \eqn{k}. When using sexes, \eqn{N} is replaced by
-#' \eqn{4N_fN_m/(N_f + N_m)} for \eqn{N_f} females and \eqn{N_m}
-#' males. The number selected must therefore be well above
-#' \eqn{1/(k\Delta F)}{1/(k Delta F)}, which is 50 for a diploid with
-#' the default, or the target cannot be met.
+#' A random set of \eqn{N} individuals of ploidy \eqn{k}, contributing
+#' equally, increases expected fixation by about \eqn{(1 - F_t)/(kN)}.
+#' When using sexes, \eqn{N} is replaced by \eqn{4N_fN_m/(N_f + N_m)}
+#' for \eqn{N_f} females and \eqn{N_m} males. A selected set can do
+#' better than a random one by choosing individuals whose alleles
+#' balance each other, so the target can be met with fewer than
+#' \eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for a
+#' diploid with the default. Most of the restriction is then spent on
+#' keeping allele frequencies balanced, though, so much less gain in
+#' merit is made than with a larger number.
 #'
 #' The target holds only if the selected individuals are used as
 #' assumed: each contributes equally to the next generation and, with
@@ -334,8 +358,11 @@
 #'
 #' The method is a Lagrangian relaxation solved by repeated
 #' linearization rather than an exact solution of optimal contribution
-#' selection. It ignores the second order effect of swapping two
-#' candidates, which includes the candidates' own homozygosity.
+#' selection. Swapping one selected individual for another changes
+#' fixation through a second order term with three parts: two for the
+#' individuals on their own, which the score includes, and one for the
+#' relationship between them, which cannot be split between candidates
+#' and so is ignored.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}, or the indices
 #' of the selected individuals if \code{returnPop=FALSE}. With

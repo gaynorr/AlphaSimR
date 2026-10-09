@@ -133,10 +133,16 @@ suitable reference.
 Selection on merit \eqn{m_i}, given by \code{trait} and \code{use},
 subject to \eqn{F \le F^*} is relaxed with a Lagrange multiplier.
 Each candidate \eqn{i} is then scored as
-\deqn{s_i = m_i - \kappa z_i'u,}
-which penalizes candidates carrying alleles that are common among
-the selected individuals and rewards those carrying alleles that are
-rare among them, pulling allele frequencies toward 0.5. For a
+\deqn{s_i = m_i - \kappa\left(z_i'u + \frac{c}{2} z_i'z_i\right),}{s_i = m_i - kappa (z_i'u + (c/2) z_i'z_i),}
+where \eqn{c} is the contribution of each selected individual:
+\eqn{1/N} for \eqn{N} individuals, or \eqn{1/(2N_f)} for a female
+and \eqn{1/(2N_m)} for a male when using sexes. The first term
+penalizes candidates carrying alleles that are common among the
+selected individuals and rewards those carrying alleles that are
+rare among them, pulling allele frequencies toward 0.5. The second
+is the candidate's own contribution to fixation, which grows with
+its homozygosity and matters most when few individuals are
+selected. For a
 given \eqn{\kappa}, \eqn{u} starts from the allele frequencies of
 \code{pop}, the top candidates on \eqn{s_i} are selected, and
 \eqn{u} is updated toward their frequencies with a running
@@ -150,13 +156,16 @@ warning is given and the individuals selected with the largest
 \eqn{\kappa} tried are returned. A message reports \eqn{\kappa}, the
 achieved \eqn{F}, the target and \eqn{F_t}.
 
-Equal contributions alone increase expected fixation by about
-\eqn{(1 - F_t)/(kN)} for \eqn{N} selected individuals of ploidy
-\eqn{k}. When using sexes, \eqn{N} is replaced by
-\eqn{4N_fN_m/(N_f + N_m)} for \eqn{N_f} females and \eqn{N_m}
-males. The number selected must therefore be well above
-\eqn{1/(k\Delta F)}{1/(k Delta F)}, which is 50 for a diploid with
-the default, or the target cannot be met.
+A random set of \eqn{N} individuals of ploidy \eqn{k}, contributing
+equally, increases expected fixation by about \eqn{(1 - F_t)/(kN)}.
+When using sexes, \eqn{N} is replaced by \eqn{4N_fN_m/(N_f + N_m)}
+for \eqn{N_f} females and \eqn{N_m} males. A selected set can do
+better than a random one by choosing individuals whose alleles
+balance each other, so the target can be met with fewer than
+\eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for a
+diploid with the default. Most of the restriction is then spent on
+keeping allele frequencies balanced, though, so much less gain in
+merit is made than with a larger number.
 
 The target holds only if the selected individuals are used as
 assumed: each contributes equally to the next generation and, with
@@ -170,8 +179,11 @@ further drift in the progeny that the method does not account for.
 
 The method is a Lagrangian relaxation solved by repeated
 linearization rather than an exact solution of optimal contribution
-selection. It ignores the second order effect of swapping two
-candidates, which includes the candidates' own homozygosity.
+selection. Swapping one selected individual for another changes
+fixation through a second order term with three parts: two for the
+individuals on their own, which the score includes, and one for the
+relationship between them, which cannot be split between candidates
+and so is ignored.
 }
 \examples{
 #Create founder haplotypes

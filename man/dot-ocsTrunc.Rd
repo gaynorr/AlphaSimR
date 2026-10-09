@@ -25,8 +25,8 @@ fixation
 }
 \description{
 Selects \code{N} candidates for a fixed penalty \code{kappa} by
-iterating truncation selection on \code{m - kappa*Z\%*\%u} until the
-penalties, which follow the allele frequencies of the selected set,
-converge.
+iterating truncation selection on
+\code{m - kappa*(Z\%*\%u + rowSums(Z^2)/(2*N))} until the penalties,
+which follow the allele frequencies of the selected set, converge.
 }
 \keyword{internal}

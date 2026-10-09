@@ -250,6 +250,8 @@ test_that("AGREE between the precomputed and direct penalty kernels",{
     takeM = c(5, 60, 199)
     # Both work in whole numbers, so they agree exactly
     expect_identical(kerK$zu0, kerD$zu0)
+    expect_identical(kerK$self, kerD$self)
+    expect_equal(kerK$self, rowSums(Z^2))
     expect_identical(kerK$zu(take), kerD$zu(take))
     expect_identical(kerK$fix(take), kerD$fix(take))
     expect_identical(kerK$fixPool(take, takeM), kerD$fixPool(take, takeM))
@@ -272,9 +274,8 @@ test_that("MEET a relative target in a tetraploid",{
   Z = pullSnpGeno(s$pop, simParam=s$SP)/2 - 1
   Ft = mean(colMeans(Z)^2)
   target = Ft + 0.01*(1-Ft)
-  # Forty diploid parents would cost 1/(2*40) of the heterozygosity
-  # from sampling alone, more than the target allows, but forty
-  # tetraploid parents cost only 1/(4*40)
+  # A random set of forty tetraploid parents costs about 1/(4*40) of
+  # the heterozygosity, leaving room within the target for selection
   expect_silent(take <- suppressMessages(
     selectOCS(s$pop, nInd=40, use="gv", returnPop=FALSE,
               simParam=s$SP)))
@@ -295,7 +296,8 @@ test_that("WARN when the restriction is approximate or not met",{
   # The warning is about random crossing, so selectOCS does not give it
   expect_silent(suppressMessages(
     selectOCS(s$pop, nInd=100, use="gv", simParam=s$SP)))
-  # Two parents cannot reach zero expected fixation
+  # Zero expected fixation needs the two parents to have an allele
+  # frequency of exactly 0.5 at every locus, which is not found here
   expect_warning(suppressMessages(
     selectCross(s$pop, nFemale=1, nMale=1, nCrosses=2, use="gv",
                 restrInbr=TRUE, inbrTarget=0, inbrType="absolute",

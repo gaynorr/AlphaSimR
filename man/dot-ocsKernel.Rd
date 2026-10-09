@@ -16,8 +16,8 @@ the allele dosage and \eqn{k} the ploidy}
 }
 \value{
 a list with the number of loci, the penalty for the whole
-population, and functions for the penalty and the expected fixation
-of a selected set
+population, each individual's \eqn{z_i'z_i}, and functions for the
+penalty and the expected fixation of a selected set
 }
 \description{
 Precomputes what the restricted inbreeding helpers need from the
