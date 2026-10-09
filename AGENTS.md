@@ -68,6 +68,10 @@ Do not add or remove the marker.
 
 Comments explain *why*, in full prose sentences, in `src/` as well as `R/`.
 
+Use American English spelling in code, comments, documentation, tests
+and `NEWS.md`: "penalize", "behavior", "toward", not "penalise",
+"behaviour", "towards".
+
 ## Changes that break things silently
 
 None of these produces an error, and most will not fail an existing test.
@@ -93,7 +97,7 @@ There is no stored expected output anywhere in the package: no
 another run in the same build — the same seed twice, and one thread against
 two — and the thread comparisons skip themselves when only one thread is
 available. A change that moves the RNG stream therefore passes the entire
-suite. Review and a `NEWS.md` entry are the only defence.
+suite. Review and a `NEWS.md` entry are the only defense.
 
 **Results must not depend on `nThreads`.** The invariant is the constant in
 `src/misc.h`:
@@ -109,7 +113,7 @@ every machine. `blockStart` hands out the ranges, and `makeWorkRngs` in
 `src/meiosis.cpp` gives each of the `nChr * nBlocks` work items its own RNG
 substream. The dependency runs one way only: the thread count is capped by
 the work, never the reverse. Deriving the block count from `nThreads` is
-the obvious optimisation, it compiles, and it passes every test.
+the obvious optimization, it compiles, and it passes every test.
 
 Most other block-partitioned loops draw no random numbers, so for them the
 invariant is about summation order alone; that is true of `MME.cpp`,
@@ -218,7 +222,7 @@ there.
 - Internal functions are tested through `AlphaSimR:::`.
 - Larger test files divide blocks into sections with numbered banner
   comments, and most block names carry an uppercase tag naming the
-  behaviour under test, as in `test_that("EXTEND a parent used once ...")`.
+  behavior under test, as in `test_that("EXTEND a parent used once ...")`.
   `tests/testthat/test-pedigreeCross.R` is the current example.
 - A genetic test should assert something that must hold rather than a value
   that happened to come out. The Mendelian bound holds for a direct cross;

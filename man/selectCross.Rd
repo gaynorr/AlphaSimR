@@ -17,7 +17,12 @@ selectCross(
   simParam = NULL,
   nThreads = NULL,
   ...,
-  balance = TRUE
+  balance = TRUE,
+  restrInbr = FALSE,
+  inbrTarget = 0.01,
+  inbrType = "relative",
+  snpChip = 1,
+  useQtl = FALSE
 )
 }
 \arguments{
@@ -62,6 +67,36 @@ trait}
 \item{balance}{if using sexes, this option will balance the number
 of progeny per parent. This argument occurs after ..., so the argument
 name must be matched exactly.}
+
+\item{restrInbr}{should selection restrict the expected increase
+in fixation, using \code{\link{selectOCS}}. If FALSE, parents are
+selected by truncation on \code{trait} and \code{use}. This argument
+occurs after ..., so the argument name must be matched exactly.}
+
+\item{inbrTarget}{the target for expected fixation when
+\code{restrInbr=TRUE}. Its meaning depends on \code{inbrType}. The
+default of 0.01 with \code{inbrType="relative"} allows a loss of 1\%
+of the current heterozygosity per generation, which corresponds to an
+effective population size of 50 for a diploid. See
+\code{\link{selectOCS}}. This argument occurs after ..., so the
+argument name must be matched exactly.}
+
+\item{inbrType}{either "relative", where \code{inbrTarget} is the
+allowed increase in expected fixation as a proportion of the
+remaining heterozygosity in \code{pop}, or "absolute", where
+\code{inbrTarget} is the maximum allowed expected fixation. This
+argument occurs after ..., so the argument name must be matched
+exactly.}
+
+\item{snpChip}{an integer indicating which SNP chip genotypes are
+used to measure expected fixation when \code{restrInbr=TRUE}. This
+argument occurs after ..., so the argument name must be matched
+exactly.}
+
+\item{useQtl}{should QTL genotypes be used instead of a SNP chip
+to measure expected fixation. If TRUE, snpChip specifies which
+trait's QTL to use. This argument occurs after ..., so the argument
+name must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}
@@ -74,6 +109,20 @@ crossing in one function call that minimizes the amount
 of intermediate populations created. This reduces RAM usage
 and simplifies code writing. Note that this wrapper does not
 provide the full functionality of either function.
+}
+\details{
+When \code{restrInbr=TRUE}, parents are selected with
+\code{\link{selectOCS}}, an approximation to optimal contribution
+selection that maximizes merit while restricting the expected
+increase in fixation. They are then crossed at random, exactly as
+when \code{restrInbr=FALSE}. See \code{\link{selectOCS}} for the
+method and for how \code{inbrTarget} and \code{inbrType} set the
+target.
+
+The method assumes every selected parent contributes equally to the
+next generation. Setting \code{nInd} when the simulation uses sexes
+only approximates this, because crosses must be between sexes, so a
+warning is given.
 }
 \examples{
 #Create founder haplotypes
@@ -90,6 +139,11 @@ pop = newPop(founderPop, simParam=SP)
 
 #Select 4 individuals and make 8 crosses
 pop2 = selectCross(pop, nInd=4, nCrosses=8, simParam=SP)
+
+#Select 4 individuals while restricting the increase in expected
+#fixation measured at the QTL, and make 8 crosses
+pop3 = selectCross(pop, nInd=4, nCrosses=8, restrInbr=TRUE,
+                   inbrTarget=0.5, useQtl=TRUE, simParam=SP)
 
 }
 \seealso{
@@ -109,6 +163,7 @@ Other mating functions:
 Other selection functions:
 \code{\link[=selectFam]{selectFam()}},
 \code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
 \code{\link[=selectOP]{selectOP()}},
 \code{\link[=selectWithinFam]{selectWithinFam()}}
 }

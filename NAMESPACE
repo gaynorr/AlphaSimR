@@ -95,6 +95,7 @@ export(selInt)
 export(selectCross)
 export(selectFam)
 export(selectInd)
+export(selectOCS)
 export(selectOP)
 export(selectPop)
 export(selectWithinFam)
@@ -173,6 +174,7 @@ importFrom(stats,
   rnorm,
   rpois,
   runif,
+  sd,
   setNames,
   uniroot,
   var

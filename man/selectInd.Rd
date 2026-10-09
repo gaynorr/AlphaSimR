@@ -115,6 +115,7 @@ pop6@id
 Other selection functions:
 \code{\link[=selectCross]{selectCross()}},
 \code{\link[=selectFam]{selectFam()}},
+\code{\link[=selectOCS]{selectOCS()}},
 \code{\link[=selectOP]{selectOP()}},
 \code{\link[=selectWithinFam]{selectWithinFam()}}
 }

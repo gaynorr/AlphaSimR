@@ -100,6 +100,7 @@ Other selection functions:
 \code{\link[=selectCross]{selectCross()}},
 \code{\link[=selectFam]{selectFam()}},
 \code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
 \code{\link[=selectOP]{selectOP()}}
 }
 \concept{selection functions}

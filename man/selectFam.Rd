@@ -98,6 +98,7 @@ pop3 = selectFam(pop2, 2, simParam=SP)
 Other selection functions:
 \code{\link[=selectCross]{selectCross()}},
 \code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
 \code{\link[=selectOP]{selectOP()}},
 \code{\link[=selectWithinFam]{selectWithinFam()}}
 }
