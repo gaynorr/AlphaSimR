@@ -37,16 +37,8 @@ mergePops = function(popList){
     popList = popList@pops
   }
 
-  classes = do.call("c",lapply(popList,
-                               function(x) class(x)))
-  if(any(classes=="NULL")){
-    remove = which(classes=="NULL")
-    popList = popList[-remove]
-    classes = classes[-remove]
-  }
-  if(!all(classes=="Pop")){
-    stop("All populations must be a Pop")
-  }
+  popList <- Filter(Negate(is.null), popList)
+  stopifnot(all(vapply(popList, isPop, logical(1))))
 
   #nChr
   nChr = do.call("c",lapply(popList,
@@ -335,8 +327,8 @@ flattenMultiPop = function(x, level=1) {
 #' @details
 #' The function accepts multiple inputs and merges them according to the
 #' \code{level} argument.
-#' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
-#'   inputs into a single \code{Pop} object (the inputs are first completely 
+#' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the
+#'   inputs into a single \code{Pop} object (the inputs are first completely
 #'   flattened then merged).  \cr
 #' - \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
 #'   \code{Pop} (level 1). Each input is first flattened to level 1 and its
