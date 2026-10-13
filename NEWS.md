@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9016
+# AlphaSimR 2.1.0.9017
 
 * Added `restrInbr` to `selectCross`, which selects parents with a restriction on the expected increase in fixation, an approximation to optimal contribution selection with equal contributions. Fixation is measured at a SNP chip or at a trait's QTL, chosen with `snpChip` and `useQtl` as in `RRBLUP`. The target is set with `inbrTarget` and `inbrType`, either relative to the current population or as an absolute maximum. The default is `FALSE`, which leaves `selectCross` unchanged. The new function `selectOCS` makes the same selection without crossing, so the selected individuals can be crossed with a custom crossing plan, for example with `makeCross`.
 
