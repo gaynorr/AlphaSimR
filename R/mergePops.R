@@ -37,8 +37,10 @@ mergePops = function(popList){
     popList = popList@pops
   }
 
-  popList <- Filter(Negate(is.null), popList)
-  stopifnot(all(sapply(popList, isPop)))
+  popList = Filter(Negate(is.null), popList)
+  if(!all(sapply(popList, isPop))){
+    stop("All populations must be a Pop")
+  }
 
   #nChr
   nChr = do.call("c",lapply(popList,
