@@ -38,7 +38,7 @@ mergePops = function(popList){
   }
 
   popList <- Filter(Negate(is.null), popList)
-  stopifnot(all(vapply(popList, isPop, logical(1))))
+  stopifnot(all(sapply(popList, isPop)))
 
   #nChr
   nChr = do.call("c",lapply(popList,
