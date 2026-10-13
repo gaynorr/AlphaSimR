@@ -27,8 +27,8 @@ merging is controlled by the \code{level} argument (see Details).
 \details{
 The function accepts multiple inputs and merges them according to the
 \code{level} argument.
-- \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
-  inputs into a single \code{Pop} object (the inputs are first completely 
+- \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the
+  inputs into a single \code{Pop} object (the inputs are first completely
   flattened then merged).  \cr
 - \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
   \code{Pop} (level 1). Each input is first flattened to level 1 and its
