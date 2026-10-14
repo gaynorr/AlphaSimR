@@ -413,7 +413,8 @@ male genetic map}
 
     \item{\code{recHist}}{list of historic recombination events}
 
-    \item{\code{haplotypes}}{list of computed IBD haplotypes}
+    \item{\code{haplotypes}}{list of computed IBD haplotypes, named by
+internal ID}
 
     \item{\code{varA}}{additive genetic variance in founderPop}
 
@@ -742,7 +743,8 @@ is not fully documented, because it is still experimental.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{hapMap}}{a list of founder haplotypes}
+      \item{\code{hapMap}}{a list of founder haplotypes, one per individual in
+the order of their internal IDs, or named by internal ID}
     }
     \if{html}{\out{</div>}}
   }
