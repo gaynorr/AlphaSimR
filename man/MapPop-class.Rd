@@ -47,5 +47,10 @@ for creating initial populations and setting traits in the
 \item{\code{centromere}}{vector of centromere positions}
 
 \item{\code{inbred}}{indicates whether the individuals are fully inbred}
+
+\item{\code{genLen}}{vector of chromosome genetic lengths in Morgans. A
+chromosome runs from position 0 to its genetic length, which can lie
+past its last locus. An empty vector means each chromosome ends at its
+last locus.}
 }}
 

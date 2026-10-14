@@ -393,6 +393,16 @@ genetic map}
     \item{\code{maleCentromere}}{position of centromeres on male
 genetic map}
 
+    \item{\code{genLen}}{genetic length of each chromosome. A chromosome
+runs from position 0 to its genetic length, which can lie past
+its last locus.}
+
+    \item{\code{femaleGenLen}}{genetic length of each chromosome on the
+female genetic map}
+
+    \item{\code{maleGenLen}}{genetic length of each chromosome on the
+male genetic map}
+
     \item{\code{lastId}}{last ID number assigned}
 
     \item{\code{isTrackPed}}{is pedigree being tracked}
@@ -1775,7 +1785,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
   Replaces existing genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchGenMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchGenMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -1786,7 +1796,12 @@ numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to
-be metacentric.}
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }
@@ -1799,7 +1814,7 @@ be metacentric.}
   Replaces existing female genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -1810,7 +1825,12 @@ numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to
-be metacentric.}
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }
@@ -1823,7 +1843,7 @@ be metacentric.}
   Replaces existing male genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchMaleMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchMaleMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -1834,7 +1854,12 @@ numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to
-be metacentric.}
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }

@@ -70,8 +70,9 @@ in a drastic increase to runtime.
 
 Segregating sites are placed at absolute genetic map positions, scaled
 from their positions on the simulated chromosome by its genetic length.
-Each chromosome's centromere is placed at half of that genetic length,
-whichever sites are returned.
+Each chromosome keeps that genetic length, which extends past its last
+site, and its centromere is placed at half of it, whichever sites are
+returned.
 }
 \examples{
 # Creates a populations of 10 outbred individuals
