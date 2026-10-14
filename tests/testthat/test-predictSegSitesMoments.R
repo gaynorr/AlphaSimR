@@ -96,3 +96,49 @@ test_that("Relaxed integration tolerance retains accurate moments", {
     expect_error(predictMoments(20,tolerance=x),"tolerance must")
   }
 })
+
+test_that("Finite inputs that overflow the coalescent scale are rejected", {
+  # Individually finite inputs can still overflow when multiplied or rescaled.
+  expect_error(predictMoments(2,Ne=1e200,bp=1,mutRate=1e200,
+                              histNe=NULL,histGen=NULL),
+               "mutation parameter .* must be finite")
+  expect_error(predictMoments(2,Ne=1e-200,bp=1,mutRate=0,
+                              histNe=1e200,histGen=1),
+               "cannot be represented on the reference scale")
+  expect_error(predictMoments(2,Ne=1e-200,bp=1,mutRate=0,
+                              histNe=1,histGen=1e200),
+               "cannot be represented on the reference scale")
+  # A positive historical size can also become zero after rescaling.
+  expect_error(predictMoments(2,Ne=1e200,bp=1,mutRate=0,
+                              histNe=1e-200,histGen=1),
+               "cannot be represented on the reference scale")
+})
+
+test_that("Numerically unrepresentable integration fails explicitly", {
+  # A nonzero epoch can be too short to divide into representable steps.
+  tiny = .Machine$double.xmin * .Machine$double.eps
+  expect_error(predictMoments(2,Ne=0.5,bp=1,mutRate=0,
+                              histNe=1,histGen=tiny),
+               "integration step underflow")
+  # An unachievable tolerance must not silently return inaccurate moments.
+  expect_error(predictMoments(2,Ne=100,bp=1,mutRate=0,
+                              histNe=1000,histGen=100,tolerance=tiny),
+               "Non-finite tree moments during integration")
+  # Raw second moments overflow before the corresponding mean does.
+  expect_error(predictMoments(2,Ne=1,bp=1,mutRate=0,
+                              histNe=1e200,histGen=1),
+               "Invalid calculated tree moments")
+})
+
+test_that("Mutation rate changes site moments without changing ancestry", {
+  a = predictMoments(20,bp=100,mutRate=1e-3,histNe=500,histGen=70)
+  b = predictMoments(20,bp=100,mutRate=2e-3,histNe=500,histGen=70)
+  expect_equal(b$expectedTc,a$expectedTc)
+  expect_equal(b$varianceTc,a$varianceTc)
+  expect_equal(b$expectedS,2*a$expectedS)
+  # Conditional mutation counts contribute a linear Poisson term;
+  # variation in ancestry contributes the remaining quadratic term.
+  expect_equal(b$varianceS-b$expectedS,4*(a$varianceS-a$expectedS))
+  expect_equal(b,predictMoments(20,bp=200,mutRate=1e-3,
+                                histNe=500,histGen=70))
+})

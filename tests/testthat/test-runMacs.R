@@ -168,3 +168,40 @@ test_that("preset and user-given mutation rates work", {
   lower = runMacs(nInd=2, species="GENERIC", nThreads=1, mutRate=1e-9)
   expect_true(lower@nLoci < original@nLoci)
 })
+
+test_that("Gene conversion produces reproducible valid founder haplotypes", {
+  command = "1000 -t 0.01 -r 0.001 -c 10 100 -h 200"
+  set.seed(6024)
+  a = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  set.seed(6024)
+  b = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  expect_identical(a@geno,b@geno)
+  expect_identical(a@genMap,b@genMap)
+  h = pullSegSiteHaplo(a,nThreads=1)
+  expect_equal(nrow(h),8L)
+  expect_gt(ncol(h),0)
+  expect_true(all(colSums(h)>0 & colSums(h)<8))
+  expect_false(is.unsorted(a@genMap[[1]]))
+  expect_true(all(a@genMap[[1]]>=0 & a@genMap[[1]]<=0.01))
+})
+
+test_that("MaCS reads multiple allele-frequency bins from a file", {
+  bins = tempfile()
+  on.exit(unlink(bins),add=TRUE)
+  writeLines(c("0.25 0.5","1.0 0.5"),bins)
+  command = paste("1000 -t 0.02 -r 0.001 -F",bins,"0")
+  set.seed(6025)
+  a = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  set.seed(6025)
+  b = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  expect_identical(a@geno,b@geno)
+  expect_identical(a@genMap,b@genMap)
+  h = pullSegSiteHaplo(a,nThreads=1)
+  expect_equal(nrow(h),8L)
+  expect_gt(ncol(h),0)
+  expect_true(all(colSums(h)>0 & colSums(h)<8))
+  # Invalid ranges must fail during parsing, rather than corrupt bin lookup.
+  writeLines(c("0.25 0.5","0.2 0.5"),bins)
+  expect_error(runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1),
+               "freq range entered is incorrect")
+})

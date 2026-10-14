@@ -376,3 +376,80 @@ test_that("REFUSE invalid parents in the C++ crossing code",{
   expect_error(doCross(c(1L,-1L), c(1L,2L)), regexp = "Invalid parent index")
   expect_error(doCross(c(1L,2L), 1L), regexp = "same length")
 })
+
+test_that("All noninterfering quadrivalent crossovers match the Poisson pathway", {
+  set.seed(6016)
+  founders = quickHaplo(nInd=4,nChr=2,segSites=40,ploidy=4)
+  sp = SimParam$new(founders)
+  sp$nThreads = 1L
+  sp$quadProb = 1
+  pop = newPop(founders,simParam=sp)
+  sp$p = 1
+  sp$v = 2.6
+  set.seed(6017)
+  allType2 = makeCross(pop,crossPlan=matrix(c(1,2,3,4),2,2),simParam=sp)
+  # With no interference, the equivalent type-1 renewal process has v=1.
+  sp$p = 0
+  sp$v = 1
+  set.seed(6017)
+  poisson = makeCross(pop,crossPlan=matrix(c(1,2,3,4),2,2),simParam=sp)
+  expect_equal(allType2@ploidy,4L)
+  expect_equal(allType2@nInd,2L)
+  expect_identical(allType2@geno,poisson@geno)
+})
+
+test_that("Mixed quadrivalent pathways preserve fixed alleles on long chromosomes", {
+  # Long arms exhaust the initial batch of gamma draws in both pathways.
+  h = matrix(rep(c(0,1),each=16),nrow=16,ncol=40)
+  founders = newMapPop(list(seq(0.1,30,length.out=40)),list(h),ploidy=4,genLen=31)
+  sp = SimParam$new(founders)
+  sp$nThreads = 1L
+  sp$quadProb = 1
+  sp$p = 0.5
+  set.seed(6020)
+  pop = newPop(founders,simParam=sp)
+  kids = makeCross(pop,cbind(1:4,4:1),nProgeny=4,simParam=sp)
+  expect_equal(unname(pullSegSiteHaplo(kids,simParam=sp)),
+               matrix(rep(c(0,1),each=64),nrow=64,ncol=40))
+})
+
+test_that("Meiosis kernels validate dimensions and normalize thread requests", {
+  set.seed(6021)
+  f = quickHaplo(2,1,10)
+  sp = SimParam$new(f)
+  crossArgs = list(motherGeno=f@geno,mother=1L,fatherGeno=f@geno,father=2L,
+    femaleMap=sp$femaleMap,maleMap=sp$maleMap,
+    femaleGenLen=sp$femaleGenLen,maleGenLen=sp$maleGenLen,
+    trackRec=FALSE,motherPloidy=2L,fatherPloidy=2L,v=sp$v,p=sp$p,
+    motherCentromere=sp$femaleCentromere,fatherCentromere=sp$maleCentromere,
+    quadProb=sp$quadProb,nThreads=1L)
+  dhArgs = list(geno=f@geno,nDH=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,nThreads=1L)
+  rgArgs = list(geno=f@geno,nProgeny=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,ploidy=2L,
+                centromere=f@centromere,quadProb=sp$quadProb,nThreads=1L)
+  badCross = crossArgs
+  badCross$fatherGeno = c(f@geno,f@geno)
+  expect_error(do.call(AlphaSimR:::cross,badCross),
+               "same chromosomes")
+  expect_error(do.call(AlphaSimR:::cross,modifyList(crossArgs,list(femaleGenLen=numeric()))),
+               "genLen must")
+  expect_error(do.call(AlphaSimR:::createDH2,modifyList(dhArgs,list(genLen=numeric()))),
+               "genLen must")
+  expect_error(do.call(AlphaSimR:::createDH2,modifyList(dhArgs,list(nDH=1L))),
+               "nDH must")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,modifyList(rgArgs,list(genLen=numeric()))),
+               "genLen must")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,modifyList(rgArgs,list(nProgeny=1L))),
+               "nProgeny must")
+  for(case in list(list(fun=AlphaSimR:::cross,args=crossArgs),
+                  list(fun=AlphaSimR:::createDH2,args=dhArgs),
+                  list(fun=AlphaSimR:::createReducedGenome,args=rgArgs))){
+    set.seed(6022)
+    ref = do.call(case$fun,case$args)
+    for(threads in c(0L,4L)){
+      set.seed(6022)
+      expect_identical(do.call(case$fun,modifyList(case$args,list(nThreads=threads))),ref)
+    }
+  }
+})
