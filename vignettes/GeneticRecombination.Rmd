@@ -167,8 +167,12 @@ default parameterization is chosen to approximate Kosambi.
 
 In AlphaSimR a genetic map is a list with one element per chromosome.
 Each element is a named numeric vector giving the position of every
-segregating site in Morgans, with the first site placed at zero. The map
-is held by the `SimParam` object and can be inspected with `getGenMap`.
+segregating site in Morgans. Positions are absolute: the chromosome
+starts at position zero, and the first site need not sit there.
+Crossovers are sampled from position zero, so some fall before the first
+site, where they only change which parental chromosome a gamete starts
+on. The map is held by the `SimParam` object and can be inspected with
+`getGenMap`.
 
 ```{r}
 founderPop = quickHaplo(nInd = 10, nChr = 2, segSites = 5, genLen = 1)

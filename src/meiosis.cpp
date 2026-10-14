@@ -1,4 +1,5 @@
 #include "alphasimr.h"
+#include <algorithm>
 #include <cstring>
 #include <vector>
 
@@ -296,73 +297,51 @@ arma::field<arma::vec> sampleQuadChiasmata(double exchange, double end, double v
 }
 
 
-// Searches for an interval in x containing value
-// Result reported as left most element of the interval
-// Returns an error if value is smaller than the values of x
-// Returns last element if value is greater than values of x
-// Set left to the smallest value of the interval to search
-arma::uword intervalSearch(const arma::vec& x, double& value, arma::uword left=0){
-  // Check if crossover is before beginning
-  if(x[left]>value){
-    Rcpp::stop("intervalSearch searching in impossible interval");
-  }
-  arma::uword end = x.n_elem-1;
-  
-  // Check if crossover is at or past end
-  if(x[end]<=value){
-    return end;
-  }
-  
-  // Perform search
-  arma::uword right = end;
-  while((right-left)>1){ // Interval can be decreased
-    arma::uword middle = (left + right) / 2;
-    if (x[middle] == value){
-      left = middle;
-      
-      // Check if at the end of the vector
-      if(left<end){
-        // Check for identical values to the right
-        while(x[left+1]==value){
-          left += 1;
-          if(left==end){
-            break;
-          }
-        }
-      }
-      break;
-    } else if (x[middle]>value){
-      right = middle;
-    }else{
-      left = middle;
-    }
-  }
-  return left;
+// Counts the loci in genMap whose positions are at or before value. The
+// search begins at start, which must not exceed the count, so a caller
+// resolving crossovers in increasing order can pass the previous result.
+//
+// Genetic map positions are absolute, so a crossover can fall before the
+// first locus, giving a count of zero, or after the last, giving the number
+// of loci. Neither is an error. The count plus one is the 1-indexed site at
+// which the segment following the crossover begins, which is the form a
+// recombination history records.
+arma::uword countLociBefore(const arma::vec& genMap, double value,
+                            arma::uword start=0){
+  return static_cast<arma::uword>(
+    std::upper_bound(genMap.begin()+start, genMap.end(), value) -
+      genMap.begin());
 }
 
 // Removes hidden crossovers from recombination map
-// Assumes first row is always site 1 and no other row
-// will have a value of 1. This logic is based on 
-// the implementation of intervalSearch.
+// Assumes the first row is site 1 and that sites never decrease. Several
+// rows can share site 1, because every crossover before the first locus is
+// recorded there, and the last of them sets the starting chromosome.
 arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
-  if(X.n_rows<3){
+  if(X.n_rows<2){
     return X;
   }
-  
+
   // Initially assume all rows are useful
   arma::Col<int> take(X.n_rows,arma::fill::ones);
-  
+
   // Remove unobserved crossovers (site doesn't change)
-  // Works backward, because the last crossover is observed
-  for(arma::uword i=(X.n_rows-2); i>0; --i){
-    if(X(i,1) == X(i+1,1)){
-      take(i) = 0;
+  // Works backward, because the last crossover is observed. Row 0 is
+  // included so that crossovers before the first locus collapse into it.
+  for(arma::uword i=(X.n_rows-1); i>0; --i){
+    if(X(i-1,1) == X(i,1)){
+      take(i-1) = 0;
     }
   }
   
   // Remove redundant records (chromosome doesn't change)
-  int lastChr = X(0,0);
-  for(arma::uword i=1; i<X.n_rows; ++i){
+  // Starts from the first row kept, which is the last row at site 1
+  arma::uword first = 0;
+  while(take(first) == 0){
+    ++first;
+  }
+  int lastChr = X(first,0);
+  for(arma::uword i=first+1; i<X.n_rows; ++i){
     if(take(i) == 1){
       if(X(i,0) == lastChr){
         take(i) = 0;
@@ -381,7 +360,10 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 // rng, the explicit dqrng stream used for all random draws in this call
 arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
                               alphasimrRng::rngEngine& rng){
-  arma::uword startPos=0, endPos, readChr=0, nCO;
+  arma::uword nBefore=0, readChr=0, nCO;
+  // Map positions are absolute, so the chromosome runs from position 0 to
+  // the last locus and chiasmata are sampled over all of it. Those falling
+  // before the first locus are resolved to site 1 below.
   double genLen = genMap(genMap.n_elem-1);
   
   // Find crossover positions
@@ -407,10 +389,9 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
   for(arma::uword i=0; i<nCO; ++i){
     ++readChr;
     readChr = readChr%2;
-    endPos = intervalSearch(genMap,posCO(i),startPos);
+    nBefore = countLociBefore(genMap,posCO(i),nBefore);
     output(i+1,0) = readChr+1;
-    output(i+1,1) = endPos+2;
-    startPos = endPos;
+    output(i+1,1) = nBefore+1;
   }
   
   return removeDoubleCO(output);
@@ -665,7 +646,7 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
     }
     
     // Fill in crossover map by working from head to tail
-    arma::uword startPos=0, endPos, nCO=0;
+    arma::uword nBefore=0, nCO=0;
     output(i)(0,0) = currentChromosome;
     output(i)(0,1) = 1;
     
@@ -681,10 +662,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             currentChromosome = 2;
             currentChromatid = chromatidPairs(0)(j,1);
             ++nCO;
-            endPos = intervalSearch(genMap,posCO(0)(j),startPos);
+            nBefore = countLociBefore(genMap,posCO(0)(j),nBefore);
             output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = endPos+2;
-            startPos = endPos;
+            output(i)(nCO,1) = nBefore+1;
           }
           break;
         case 2:
@@ -692,10 +672,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             currentChromosome = 1;
             currentChromatid = chromatidPairs(0)(j,0);
             ++nCO;
-            endPos = intervalSearch(genMap,posCO(0)(j),startPos);
+            nBefore = countLociBefore(genMap,posCO(0)(j),nBefore);
             output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = endPos+2;
-            startPos = endPos;
+            output(i)(nCO,1) = nBefore+1;
           }
         }
       }
@@ -709,10 +688,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 4;
               currentChromatid = chromatidPairs(3)(j,1);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
             break;
           case 4:
@@ -720,10 +698,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 1;
               currentChromatid = chromatidPairs(3)(j,0);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
           }
         }
@@ -735,10 +712,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 3;
               currentChromatid = chromatidPairs(1)(j,1);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
             break;
           case 3:
@@ -746,10 +722,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 2;
               currentChromatid = chromatidPairs(1)(j,0);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
           }
         }
@@ -764,10 +739,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             currentChromosome = 4;
             currentChromatid = chromatidPairs(2)(j,1);
             ++nCO;
-            endPos = intervalSearch(genMap,posCO(2)(j),startPos);
+            nBefore = countLociBefore(genMap,posCO(2)(j),nBefore);
             output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = endPos+2;
-            startPos = endPos;
+            output(i)(nCO,1) = nBefore+1;
           }
           break;
         case 4:
@@ -775,10 +749,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             currentChromosome = 3;
             currentChromatid = chromatidPairs(2)(j,0);
             ++nCO;
-            endPos = intervalSearch(genMap,posCO(2)(j),startPos);
+            nBefore = countLociBefore(genMap,posCO(2)(j),nBefore);
             output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = endPos+2;
-            startPos = endPos;
+            output(i)(nCO,1) = nBefore+1;
           }
         }
       }
@@ -792,10 +765,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 4;
               currentChromatid = chromatidPairs(3)(j,1);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
             break;
           case 4:
@@ -803,10 +775,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 1;
               currentChromatid = chromatidPairs(3)(j,0);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(3)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
           }
         }
@@ -818,10 +789,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 3;
               currentChromatid = chromatidPairs(1)(j,1);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
             break;
           case 3:
@@ -829,10 +799,9 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
               currentChromosome = 2;
               currentChromatid = chromatidPairs(1)(j,0);
               ++nCO;
-              endPos = intervalSearch(genMap,posCO(1)(j),startPos);
+              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
               output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = endPos+2;
-              startPos = endPos;
+              output(i)(nCO,1) = nBefore+1;
             }
           }
         }
@@ -925,8 +894,10 @@ void bivalent(const unsigned char* chr1,
               alphasimrRng::rngEngine& rng){
   hist = findBivalentCO(genMap, v, p, rng);
   if(hist.n_rows==1){
-    // No crossovers, so the gamete is a copy of chromosome 1
-    std::memcpy(output, chr1, nBins);
+    // No crossovers between loci, so the gamete is a copy of one chromosome.
+    // It is not always chromosome 1, because crossovers before the first
+    // locus change which chromosome the gamete starts on.
+    std::memcpy(output, (hist(0,0)==1) ? chr1 : chr2, nBins);
   }else{
     int nSites = int(nBins)*8+1;
 

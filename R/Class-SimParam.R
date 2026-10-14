@@ -100,7 +100,8 @@ SimParam = R6Class(
       private$.traits = list()
       private$.segSites = founderPop@nLoci
       private$.sexes = "no"
-      private$.femaleMap = lapply(founderPop@genMap, function(x) x-x[1]) # Set position 1 to 0
+      .checkGenMap(founderPop@genMap)
+      private$.femaleMap = founderPop@genMap
       private$.maleMap = NULL
       private$.sepMap = FALSE
       private$.femaleCentromere = founderPop@centromere
@@ -2079,7 +2080,7 @@ SimParam = R6Class(
     #' Replaces existing genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
@@ -2088,13 +2089,14 @@ SimParam = R6Class(
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
+                centromere>=0,
                 centromere<=sapply(genMap,max))
 
       tmp = do.call("c",lapply(genMap,length))
@@ -2112,7 +2114,7 @@ SimParam = R6Class(
     #' Replaces existing female genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
@@ -2121,13 +2123,14 @@ SimParam = R6Class(
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
+                centromere>=0,
                 centromere<=sapply(genMap,max))
 
       tmp = do.call("c",lapply(genMap,length))
@@ -2150,7 +2153,7 @@ SimParam = R6Class(
     #' Replaces existing male genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
@@ -2159,13 +2162,14 @@ SimParam = R6Class(
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
       if(is.null(centromere)){
         centromere=sapply(genMap,max)/2
       }
       stopifnot(length(genMap)==self$nChr,
+                centromere>=0,
                 centromere<=sapply(genMap,max))
 
       tmp = do.call("c",lapply(genMap,length))

@@ -2,8 +2,10 @@
 #' 
 #' @description
 #' Formats a genetic map stored in a data.frame to
-#' AlphaSimR's internal format. Map positions must be 
-#' in Morgans. 
+#' AlphaSimR's internal format. Map positions must be
+#' in Morgans. Positions are absolute, measured from the
+#' start of the chromosome, and are kept as supplied, so
+#' they must be non-negative.
 #' 
 #' @param genMap genetic map as a data.frame. The first  
 #' three columns must be: marker name, chromosome, and 
@@ -45,8 +47,9 @@ importGenMap = function(genMap){
     tmpPos = tmpPos[take]
     names(tmpPos) = tmpName[take]
 
-    genMap[[uniqueChr[i] ]] = tmpPos - tmpPos[1]
+    genMap[[uniqueChr[i] ]] = tmpPos
   }
+  .checkGenMap(genMap)
 
   return(genMap)
 }
@@ -164,8 +167,6 @@ importInbredGeno = function(geno, genMap, ped=NULL){
       # complement kept exactly the wrong loci.
       genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      # Re-zero the map at its new first locus
-      genMap[[i]] = genMap[[i]] - genMap[[i]][1]
       take = na.omit(take)
     }
     haplotypes[[i]] = geno[,take,drop=FALSE]
@@ -280,8 +281,6 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
       # complement kept exactly the wrong loci.
       genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      # Re-zero the map at its new first locus
-      genMap[[i]] = genMap[[i]] - genMap[[i]][1]
       take = na.omit(take)
     }
     haplotypes[[i]] = haplo[,take,drop=FALSE]

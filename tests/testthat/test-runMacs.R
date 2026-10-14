@@ -19,9 +19,10 @@ test_that("the retained sites form a valid genetic map", {
   pop = runMacs(nInd = 6, nChr = 2, segSites = 15, nThreads = 1)
   for (chr in seq_along(pop@genMap)) {
     pos = pop@genMap[[chr]]
-    # Sites come back in position order, starting at zero, with no repeats
+    # Sites come back in position order, at absolute positions within the
+    # 1 Morgan chromosome, with no repeats
     expect_false(is.unsorted(pos, strictly = TRUE))
-    expect_equal(unname(pos[1]), 0)
+    expect_true(all(pos >= 0 & pos <= 1))
     expect_false(any(duplicated(pos)))
   }
 })

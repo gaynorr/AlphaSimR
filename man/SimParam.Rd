@@ -1782,7 +1782,7 @@ SP$setRecombRatio(2) #Twice as much recombination in females
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to
@@ -1806,7 +1806,7 @@ be metacentric.}
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to
@@ -1830,7 +1830,7 @@ be metacentric.}
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
 positions. If NULL, the centromeres are assumed to

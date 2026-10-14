@@ -24,9 +24,11 @@ Creates a new \code{\link{MapPop-class}} from user supplied
 genetic maps and haplotypes.
 }
 \details{
-Each item of genMap must be a vector of ordered genetic lengths in
-Morgans. The first value must be zero. The length of the vector
-determines the number of segregating sites on the chromosome.
+Each item of genMap must be a vector of ordered genetic positions in
+Morgans. Positions are absolute, measured from the start of the
+chromosome, so they must be non-negative but the first need not be
+zero. The length of the vector determines the number of segregating
+sites on the chromosome.
 
 Each item of haplotypes must be coercible to a matrix. The columns
 of this matrix correspond to segregating sites. The number of rows

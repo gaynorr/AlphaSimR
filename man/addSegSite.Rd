@@ -13,7 +13,7 @@ addSegSite(mapPop, siteName, chr, mapPos, haplo, nThreads = NULL)
 
 \item{chr}{which chromosome to add the site}
 
-\item{mapPos}{genetic map position of site in Morgans}
+\item{mapPos}{absolute genetic map position of site in Morgans}
 
 \item{haplo}{haplotypes for the site}
 
