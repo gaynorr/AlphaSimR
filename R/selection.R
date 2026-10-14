@@ -1045,14 +1045,17 @@ selectPop = function(
 
   out = list()
   nm = names(x@pops)
+  if (!is.null(nm)) {
+    valid_names = !is.na(nm) & nzchar(nm)
+    duplicated_names = valid_names & duplicated(nm) |
+      valid_names & duplicated(nm, fromLast = TRUE)
+  } else {
+    valid_names = duplicated_names = logical(length(x@pops))
+  }
 
   for (i in seq_along(x@pops)) {
     child = x@pops[[i]]
-    label = ifelse(
-      !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
-      nm[i],
-      i
-    )
+    label = if (valid_names[i] && !duplicated_names[i]) nm[i] else i
     childPath = c(path, list(label))
     out = c(out, .collectLeafPaths(child, path = childPath))
   }

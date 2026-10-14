@@ -462,7 +462,9 @@ meanGPop = function(x, level = 0, .req_level) {
 #'
 #' @export
 meanPPop = function(x, level = 0, .req_level) {
-  if (!is.numeric(level) || length(level) != 1L || is.na(level)) {
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
     stop("`level` must be a single non-NA integer value.")
   }
   level = as.integer(level)
@@ -488,6 +490,13 @@ meanPPop = function(x, level = 0, .req_level) {
     level = level - 1,
     .req_level = .req_level
   )
+  value_names = lapply(
+    popValueList,
+    function(v) if (is.null(dim(v))) names(v) else colnames(v)
+  )
+  if (!all(vapply(value_names, identical, logical(1), value_names[[1]]))) {
+    stop("Population values do not have consistent trait names.")
+  }
   popValues = do.call('rbind', popValueList)
 
   if (level < 1) {
@@ -815,10 +824,12 @@ varGPop = function(x, level = 1L) {
 varPPop = function(x, level = 1L) {
   m = meanPPop(x, level = level)
   if (is.vector(m)) {
+    m = t(m)
+  }
+  if (nrow(m) == 1L) {
     warning(
       "Returning a variance-covariance matrix of zeros. You may want to increase the value of `level`."
     )
-    m = t(m)
   }
   G = popVar(m)
   rownames(G) = colnames(G) = colnames(m)

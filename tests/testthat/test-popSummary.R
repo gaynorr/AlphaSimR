@@ -225,7 +225,50 @@ test_that("slots_means_and_variances", {
     colMeans(mnP1)
   )
 
+  # Duplicate MultiPop names preserve source rows
+    mp = newMultiPop(
+      dup = newMultiPop(
+        left = pop[1:2],
+        right = pop[3:4]
+      ),
+      dup = newMultiPop(
+        left = pop[5:6],
+        right = pop[7:8]
+      )
+    )
+
+    result = meanGPop(mp, level = 1)
+    source = attr(result, "source")
+
+    expect_equal(nrow(result), 2L)
+    expect_equal(nrow(source), 2L)
+    expect_false(identical(source[1, ], source[2, ]))
+  
+  # A MultiPop from independently created pop objects
+  founderPop2 = quickHaplo(nInd = 4, nChr = 1, segSites = 10)
+  SP2 = SimParam$new(founderPop2)
+  SP2$nThreads = 1L
+  SP2$addTraitA(10, mean = 10, var = 1, name = 'A1')
+  SP2$setVarE(h2 = 0.5)
+
+  pop2 = newPop(founderPop2, simParam = SP2)
+
+  chimera_mp = newMultiPop(
+    dup = newMultiPop(
+      left = pop[1:2],
+      right = pop[3:4]
+    ),
+    dup = newMultiPop(
+      left = pop2[1:2],
+      right = pop2[3:4]
+    )
+  )
+
   # Expected errors and warnings
+  expect_warning(
+    gv(chimera_mp, simplify = TRUE),
+    "Some values returned by FUN do not have consistent column names. Returning list output."
+  )
   expect_warning(
     gv(mp, simplify = TRUE, level = 0),
     "`level` should be >= 1. Setting default `level=1`"
@@ -257,6 +300,14 @@ test_that("slots_means_and_variances", {
   expect_warning(
     varPPop(mp, level = 0),
     "Returning a variance-covariance matrix of zeros. You may want to increase the value of `level`."
+  )
+  expect_error(
+    meanGPop(chimera_mp),
+    "Population values do not have consistent trait names."
+  )
+  expect_error(
+    meanPPop(chimera_mp),
+    "Population values do not have consistent trait names."
   )
   expect_error(
     meanGPop(newEmptyPop(ploidy = 2L, simParam = SP)),
