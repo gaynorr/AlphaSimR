@@ -120,7 +120,8 @@ hybridCross = function(females, males,
       stop("nLoci does not match between females and males")
     }
     if(!isTRUE(all.equal(females@genMap, males@genMap)) |
-       !isTRUE(all.equal(females@centromere, males@centromere))){
+       !isTRUE(all.equal(females@centromere, males@centromere)) |
+       !isTRUE(all.equal(.getGenLen(females), .getGenLen(males)))){
       stop("genMap does not match between females and males")
     }
     namedInput = is(females,"NamedMapPop") & is(males,"NamedMapPop")
@@ -212,7 +213,8 @@ hybridCross = function(females, males,
                  geno=output@geno,
                  genMap=mapPop@genMap,
                  centromere=mapPop@centromere,
-                 inbred=FALSE))
+                 inbred=FALSE,
+                 genLen=.getGenLen(mapPop)))
     }
     # The parents' ids came from the temporary SimParam and mean nothing
     # outside this call, so no ids are returned
@@ -224,7 +226,8 @@ hybridCross = function(females, males,
                geno=output@geno,
                genMap=mapPop@genMap,
                centromere=mapPop@centromere,
-               inbred=FALSE))
+               inbred=FALSE,
+               genLen=.getGenLen(mapPop)))
   }
 
   #Return HybridPop-class

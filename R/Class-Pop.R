@@ -155,12 +155,17 @@ isRawPop = function(x) {
 #' @slot genMap list of chromosome genetic maps
 #' @slot centromere vector of centromere positions
 #' @slot inbred indicates whether the individuals are fully inbred
+#' @slot genLen vector of chromosome genetic lengths in Morgans. A
+#' chromosome runs from position 0 to its genetic length, which can lie
+#' past its last locus. An empty vector means each chromosome ends at its
+#' last locus.
 #'
 #' @export
 setClass("MapPop",
          slots=c(genMap="list",
                  centromere="numeric",
-                 inbred="logical"),
+                 inbred="logical",
+                 genLen="numeric"),
          contains="RawPop")
 
 setValidity("MapPop",function(object){
@@ -172,6 +177,21 @@ setValidity("MapPop",function(object){
     if(object@nLoci[i]!=length(object@genMap[[i]])){
       errors = c(errors,
                  paste0("nLoci[",i,"]!=length(genMap[[",i,"]]"))
+    }
+  }
+  # A MapPop saved before genLen existed has no slot, and one built
+  # directly with new() may leave it empty. Both mean that each chromosome
+  # ends at its last locus, so neither is an error.
+  if(.hasSlot(object,"genLen") && length(object@genLen)>0L){
+    if(length(object@genLen)!=object@nChr){
+      errors = c(errors,"length(genLen)!=nChr")
+    }else{
+      lastLocus = .lastLocus(object@genMap)
+      if(any(!is.finite(object@genLen)) ||
+         any(object@genLen<lastLocus)){
+        errors = c(errors,
+                   "genLen must be finite and at least the last locus position")
+      }
     }
   }
   if(length(errors)==0){
@@ -223,6 +243,9 @@ setMethod("c",
                 if(!isTRUE(all.equal(x@genMap, y@genMap))){
                   stop("genMap does not match")
                 }
+                if(!isTRUE(all.equal(.getGenLen(x), .getGenLen(y)))){
+                  stop("genLen does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 geno = mergeGeno(x@geno,y@geno)
                 dim(geno) = NULL # Account for matrix bug in RcppArmadillo
@@ -233,6 +256,24 @@ setMethod("c",
             return(x)
           }
 )
+
+# The position of each chromosome's last locus, or 0 for a chromosome with
+# no loci
+.lastLocus = function(genMap){
+  return(vapply(genMap,
+                function(x) if(length(x)>0L) max(x) else 0,
+                numeric(1), USE.NAMES=FALSE))
+}
+
+# The genetic length of each chromosome of a MapPop. A MapPop saved before
+# genLen existed has no slot, and one built directly with new() may leave it
+# empty, so both fall back to the position of the last locus.
+.getGenLen = function(mapPop){
+  if(.hasSlot(mapPop,"genLen") && length(mapPop@genLen)>0L){
+    return(unname(mapPop@genLen))
+  }
+  return(.lastLocus(mapPop@genMap))
+}
 
 #' @describeIn MapPop Test if object is of a MapPop class
 #' @export
@@ -343,6 +384,9 @@ setMethod("c",
                 if(!isTRUE(all.equal(x@genMap, y@genMap))){
                   stop("genMap does not match")
                 }
+                if(!isTRUE(all.equal(.getGenLen(x), .getGenLen(y)))){
+                  stop("genLen does not match")
+                }
                 x@nInd = x@nInd+y@nInd
                 x@id = c(x@id, y@id)
                 x@mother = c(x@mother, y@mother)
@@ -391,9 +435,13 @@ cChr = function(...){
         if(x@ploidy!=y@ploidy){
           stop("ploidy does not match")
         }
+        # Read before the maps are joined, because an empty genLen is
+        # filled in from the maps
+        genLen = c(.getGenLen(x),.getGenLen(y))
         x@nChr = x@nChr+y@nChr
         x@geno = c(x@geno,y@geno)
         x@genMap = c(x@genMap,y@genMap)
+        x@genLen = genLen
         x@centromere = c(x@centromere,y@centromere)
         x@nLoci = c(x@nLoci,y@nLoci)
         x@inbred = x@inbred & y@inbred

@@ -366,7 +366,8 @@ test_that("REFUSE invalid parents in the C++ crossing code",{
   pop = newPop(founderPop,simParam=SP)
   doCross = function(mother, father){
     AlphaSimR:::cross(pop@geno, mother, pop@geno, father,
-                      SP$femaleMap, SP$maleMap, FALSE, 2L, 2L,
+                      SP$femaleMap, SP$maleMap,
+                      SP$femaleGenLen, SP$maleGenLen, FALSE, 2L, 2L,
                       SP$v, SP$p, SP$femaleCentromere, SP$maleCentromere,
                       SP$quadProb, 1L)
   }

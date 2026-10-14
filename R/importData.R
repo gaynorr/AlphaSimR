@@ -74,6 +74,11 @@ importGenMap = function(genMap){
 #' coerced using as.character. See \link{importGenMap}
 #' @param ped an optional pedigree for the supplied 
 #' genotypes. See details. 
+#' @param genLen an optional vector of chromosome genetic lengths in
+#' Morgans, either one value or one per chromosome in the order the
+#' chromosomes first appear in genMap. Each must be at least the
+#' position of the chromosome's last marker. If NULL, each chromosome
+#' ends at its last marker. See \code{\link{newMapPop}}.
 #'
 #' @details 
 #' The optional pedigree can be a data.frame, matrix or a vector. 
@@ -105,7 +110,7 @@ importGenMap = function(genMap){
 #'                               ped=ped)
 #' 
 #' @export
-importInbredGeno = function(geno, genMap, ped=NULL){
+importInbredGeno = function(geno, genMap, ped=NULL, genLen=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
@@ -174,7 +179,8 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 
   founderPop = newMapPop(genMap=genMap,
                          haplotypes=haplotypes,
-                         inbred=TRUE)
+                         inbred=TRUE,
+                         genLen=genLen)
 
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",
@@ -205,6 +211,11 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' @param ploidy ploidy level of the organism
 #' @param ped an optional pedigree for the supplied 
 #' genotypes. See details. 
+#' @param genLen an optional vector of chromosome genetic lengths in
+#' Morgans, either one value or one per chromosome in the order the
+#' chromosomes first appear in genMap. Each must be at least the
+#' position of the chromosome's last marker. If NULL, each chromosome
+#' ends at its last marker. See \code{\link{newMapPop}}.
 #' 
 #' @details 
 #' The optional pedigree can be a data.frame, matrix or a vector. 
@@ -239,7 +250,8 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #'                          ped=ped)
 #' 
 #' @export
-importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
+importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
+                       genLen=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
@@ -288,7 +300,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   
   founderPop = newMapPop(genMap=genMap,
                          haplotypes=haplotypes,
-                         ploidy=ploidy)
+                         ploidy=ploidy,
+                         genLen=genLen)
   
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",

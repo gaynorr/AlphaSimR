@@ -9,6 +9,10 @@
 #' can be coerced to matrices. See details.
 #' @param inbred are individuals fully inbred
 #' @param ploidy ploidy level of the organism
+#' @param genLen an optional vector of chromosome genetic lengths in
+#' Morgans, either one value or one per chromosome. Each must be at
+#' least the position of the chromosome's last locus. If NULL, each
+#' chromosome ends at its last locus.
 #'
 #' @details
 #' Each item of genMap must be a vector of ordered genetic positions in
@@ -16,6 +20,10 @@
 #' chromosome, so they must be non-negative but the first need not be
 #' zero. The length of the vector determines the number of segregating
 #' sites on the chromosome.
+#'
+#' A chromosome runs from position 0 to its genetic length, which can
+#' extend past the last locus. Crossovers are simulated over the whole
+#' chromosome. The centromere is placed at half of the genetic length.
 #'
 #' Each item of haplotypes must be coercible to a matrix. The columns
 #' of this matrix correspond to segregating sites. The number of rows
@@ -43,9 +51,10 @@
 #'
 #' @export
 newMapPop = function(genMap, haplotypes, inbred=FALSE,
-                     ploidy=2L){
+                     ploidy=2L, genLen=NULL){
   stopifnot(length(genMap)==length(haplotypes))
   .checkGenMap(genMap)
+  genLen = .checkGenLen(genLen, genMap)
   nRow = lapply(haplotypes,nrow)
   nRow = unlist(nRow)
   ploidy = as.integer(ploidy)
@@ -81,8 +90,9 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
                         nLoci=as.integer(segSites[chr]),
                         geno=list(geno),
                         genMap=genMap[chr],
-                        centromere=max(genMap[[chr]])/2,
-                        inbred=inbred)
+                        centromere=genLen[chr]/2,
+                        inbred=inbred,
+                        genLen=genLen[chr])
     if(is.null(names(output[[chr]]@genMap))){
       names(output[[chr]]@genMap) = as.character(chr)
     }
@@ -112,6 +122,29 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
     }
   }
   invisible(NULL)
+}
+
+# Checks the chromosome genetic lengths given for a genetic map and returns
+# one per chromosome. A chromosome runs from position 0 to its genetic
+# length, which can lie past its last locus but not before it. NULL means
+# each chromosome ends at its last locus, and a single value is used for
+# every chromosome.
+.checkGenLen = function(genLen, genMap){
+  lastLocus = .lastLocus(genMap)
+  if(is.null(genLen)){
+    return(lastLocus)
+  }
+  if(length(genLen)==1L){
+    genLen = rep(genLen, length(genMap))
+  }
+  if(!is.numeric(genLen) || length(genLen)!=length(genMap) ||
+     !all(is.finite(genLen))){
+    stop("genLen must be finite numbers, one value or one per chromosome")
+  }
+  if(any(genLen<lastLocus)){
+    stop("genLen must be at least the position of the last locus")
+  }
+  return(unname(as.numeric(genLen)))
 }
 
 #' @title Create founder haplotypes using MaCS
@@ -155,8 +188,9 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #'
 #' Segregating sites are placed at absolute genetic map positions, scaled
 #' from their positions on the simulated chromosome by its genetic length.
-#' Each chromosome's centromere is placed at half of that genetic length,
-#' whichever sites are returned.
+#' Each chromosome keeps that genetic length, which extends past its last
+#' site, and its centromere is placed at half of it, whichever sites are
+#' returned.
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #'
@@ -294,8 +328,9 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
   }
   names(genMap) = as.character(1:nChr)
 
-  # The centromere sits in the middle of the chromosome MaCS was asked to
-  # simulate, so it does not depend on which sites happened to be returned
+  # The chromosome is as long as MaCS was asked to simulate, and the
+  # centromere sits in its middle, so neither depends on which sites
+  # happened to be returned
   output = new("MapPop",
                nInd=nInd,
                nChr=nChr,
@@ -304,7 +339,8 @@ runMacs = function(nInd,nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
                geno=macsOut$geno,
                genMap=genMap,
                centromere=as.numeric(genLen)/2,
-               inbred=inbred)
+               inbred=inbred,
+               genLen=as.numeric(genLen))
   return(output)
 }
 
@@ -473,7 +509,8 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
                         geno=list(geno),
                         genMap=mapPop@genMap[chr],
                         centromere=mapPop@centromere[chr],
-                        inbred=inbred)
+                        inbred=inbred,
+                        genLen=.getGenLen(mapPop)[chr])
   }
   output = do.call("cChr",output)
   return(output)
@@ -537,7 +574,8 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
              geno=geno,
              genMap=genMap,
              centromere=centromere,
-             inbred=inbred))
+             inbred=inbred,
+             genLen=as.numeric(genLen)))
 }
 
 #' @title Add segregating site to MapPop
@@ -553,6 +591,10 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 #' @param haplo haplotypes for the site
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{getNumThreads()}.
+#' @param extendGenLen should the chromosome's genetic length be
+#' extended to \code{mapPos} when the site lies past it. If FALSE, a
+#' site past the end of the chromosome is an error. The centromere is
+#' not moved.
 #'
 #' @return an object of \code{\link{MapPop-class}}
 #'
@@ -570,7 +612,8 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 #' pullSegSiteHaplo(founderPop2)
 #'
 #' @export
-addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL){
+addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL,
+                      extendGenLen=FALSE){
   # Check validity of input data
   stopifnot(is(mapPop, "MapPop"))
   stopifnot(length(haplo)==(mapPop@nInd*mapPop@ploidy))
@@ -599,6 +642,19 @@ addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL){
   if(is.character(chr)){
     chr = match(chr, names(mapPop@genMap))
   }
+
+  # A site past the end of the chromosome changes how long the chromosome
+  # is, so it is only allowed when asked for
+  genLen = .getGenLen(mapPop)
+  if(mapPos>genLen[chr]){
+    if(isTRUE(extendGenLen)){
+      genLen[chr] = mapPos
+    }else{
+      stop("mapPos is past the end of the chromosome (genLen=", genLen[chr],
+           "), use extendGenLen=TRUE to extend it")
+    }
+  }
+  mapPop@genLen = genLen
 
   # Extract temporary map and geno for target chromosome
   chrMap = mapPop@genMap[[chr]]
