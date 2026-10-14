@@ -4,11 +4,11 @@
 \name{MultiPop-class}
 \alias{MultiPop-class}
 \alias{show,MultiPop-method}
-\alias{[,MultiPop,ANY,ANY,ANY-method}
+\alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
 \alias{$,MultiPop-method}
 \alias{names,MultiPop-method}
-\alias{[<-,MultiPop,ANY,ANY,ANY-method}
+\alias{[<-,MultiPop-method}
 \alias{[[<-,MultiPop-method}
 \alias{$<-,MultiPop-method}
 \alias{names<-,MultiPop-method}
@@ -19,7 +19,7 @@
 \usage{
 \S4method{show}{MultiPop}(object)
 
-\S4method{[}{MultiPop,ANY,ANY,ANY}(x, i)
+\S4method{[}{MultiPop}(x, i)
 
 \S4method{[[}{MultiPop}(x, i)
 
@@ -27,7 +27,7 @@
 
 \S4method{names}{MultiPop}(x)
 
-\S4method{[}{MultiPop,ANY,ANY,ANY}(x, i) <- value
+\S4method{[}{MultiPop}(x, i) <- value
 
 \S4method{[[}{MultiPop}(x, i) <- value
 
@@ -63,7 +63,7 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 \itemize{
 \item \code{show(MultiPop)}: Show MultiPop object summary
 
-\item \code{x = MultiPop[i = ANY, j = ANY, drop = ANY]}: Subset MultiPop by index
+\item \code{MultiPop[]}: Subset MultiPop by index
 
 \item \code{MultiPop[[]]}: Extract a population by index
 
@@ -71,7 +71,7 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 
 \item \code{names(MultiPop)}: Access names of pops in MultiPop
 
-\item \code{x = MultiPop[i = ANY, j = ANY] <- value}: Replace contents of a subset of elements in MultiPop
+\item \code{MultiPop[] <- value}: Replace contents of a subset of elements in MultiPop
 
 \item \code{MultiPop[[]] <- value}: Replace contents of a single element in MultiPop
 
