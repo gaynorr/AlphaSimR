@@ -171,10 +171,10 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' @param manualCommand user provided `MaCS` options. For advanced users only.
 #' See the \code{vignette("DemographicModels", package = "AlphaSimR")} for details.
 #' @param manualGenLen user provided genetic length. This must be supplied if using
-#' manualCommand. If not using manualCommand, this value will replace the predefined
-#' genetic length for the species. However, this genetic length is only used by
-#' AlphaSimR and is not passed to `MaCS`, so `MaCS` still uses the predefined genetic length.
-#' For advanced users only.
+#' \code{manualCommand}. If not using \code{manualCommand},
+#' this value will replace the predefined genetic length for the species.
+#' However, this genetic length is only used by AlphaSimR and is not passed to `MaCS`,
+#' so `MaCS` still uses the predefined genetic length. For advanced users only.
 #' @param nThreads if OpenMP is available, this will allow for simulating chromosomes in parallel.
 #' If the value is NULL, the number of threads is automatically detected.
 #' @param mutRate optional mutation rate per base pair per generation

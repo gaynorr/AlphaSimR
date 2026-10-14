@@ -662,26 +662,28 @@ consecutive pairs of haplotypes belong to the same individual.
 ```{r alphasimrImport, eval=runPython}
 # Prepare inputs for AlphaSimR
 haplotypes = genMap = vector("list", nChr)
+genLen = numeric(nChr)
 for(chr in seq_len(nChr)){
   # Extract haplotype and physical map for each chromosome
   ts = treeSequences[[chr]]
   haplo = t(ts$genotype_matrix())
   pos = ts$tables$sites$position
 
-  # Retain sites segregating in the sampled founders.
+  # Retain sites segregating in the sampled founders
   freq = colMeans(haplo)
   keep = freq > 0 & freq < 1
   haplotypes[[chr]] = haplo[, keep, drop=FALSE]
   pos = pos[keep]
 
-  # Convert base-pair positions to Morgans, starting at zero
-  genMap[[chr]] = (pos - pos[1]) * recRate
+  # Genetic map and chromosome length in Morgans
+  genMap[[chr]] = pos * recRate
+  genLen[chr] = ts$sequence_length * recRate
 }
 cat("Approximate memory usage for haplotypes: ", object.size(haplotypes), " bytes\n")
 
 # Convert to AlphaSimR's MapPop object
 foundersMsprime = newMapPop(genMap=genMap, haplotypes=haplotypes,
-                           inbred=FALSE, ploidy=2L)
+                            inbred=FALSE, ploidy=2L, genLen=genLen)
 print(foundersMsprime)
 print(foundersMsprime@nLoci)
 haps = pullSegSiteHaplo(foundersMsprime)
@@ -693,6 +695,9 @@ as expected by `AlphaSimR`.
 We remove sites fixed in the sampled founders,
 keeping the haplotype columns and map positions in the same order.
 Multiplying positions by the constant recombination rate gives Morgans.
+Passing `genLen` preserves the full simulated chromosome,
+including the region beyond the last retained site.
+Without `genLen`, `newMapPop()` ends each chromosome at its last segregating site.
 We report the approximate R object size of the haplotype matrices.
 For one chromosome with `nInd * ploidy` haplotypes and `nLoci` sites,
 the matrix has `nInd * ploidy * nLoci` entries. R integer matrices use
