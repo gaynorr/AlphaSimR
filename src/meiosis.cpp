@@ -1,4 +1,5 @@
 #include "alphasimr.h"
+#include "ibd.h"
 #include <algorithm>
 #include <cstring>
 #include <vector>
@@ -81,6 +82,9 @@ public:
   arma::Mat<int> getHist(arma::uword ind, 
                          arma::uword chr,
                          arma::uword par);
+
+  // Packs each individual's history into one integer vector for R
+  Rcpp::List pack();
 };
 
 // Allocates space for history
@@ -109,6 +113,16 @@ arma::Mat<int> RecHist::getHist(arma::uword ind,
                                 arma::uword chr,
                                 arma::uword par){
   return hist(ind)(chr)(par);
+}
+
+// Packs each individual's history into one integer vector for R. Returning
+// the nested field made R allocate about thirty objects per individual.
+Rcpp::List RecHist::pack(){
+  Rcpp::List output(hist.n_elem);
+  for(arma::uword i=0; i<hist.n_elem; ++i){
+    output[i] = packRecord(hist(i));
+  }
+  return output;
 }
 
 // Samples the locations for chiasmata via a gamma process
@@ -1282,7 +1296,7 @@ Rcpp::List cross(
   } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=geno,
-                              Rcpp::Named("recHist")=hist.hist);
+                              Rcpp::Named("recHist")=hist.pack());
   }
   return Rcpp::List::create(Rcpp::Named("geno")=geno);
 }
@@ -1373,7 +1387,7 @@ Rcpp::List createDH2(
   } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=output,
-                              Rcpp::Named("recHist")=hist.hist);
+                              Rcpp::Named("recHist")=hist.pack());
   }
   return Rcpp::List::create(Rcpp::Named("geno")=output);
 }
@@ -1550,7 +1564,7 @@ Rcpp::List createReducedGenome(
   } //End work loop
   if(trackRec){
     return Rcpp::List::create(Rcpp::Named("geno")=output,
-                              Rcpp::Named("recHist")=hist.hist);
+                              Rcpp::Named("recHist")=hist.pack());
   }
   return Rcpp::List::create(Rcpp::Named("geno")=output);
 }

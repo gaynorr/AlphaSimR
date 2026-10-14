@@ -636,38 +636,52 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getNonFounderIbd
-arma::field<    arma::field<      arma::Mat<int> > > getNonFounderIbd(const arma::field<arma::field<arma::Mat<int> > >& recHist, const arma::field<arma::field<arma::Mat<int> > >& mother, const arma::field<arma::field<arma::Mat<int> > >& father);
-RcppExport SEXP _AlphaSimR_getNonFounderIbd(SEXP recHistSEXP, SEXP motherSEXP, SEXP fatherSEXP) {
+// packHist
+Rcpp::List packHist(const Rcpp::List& x);
+RcppExport SEXP _AlphaSimR_packHist(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type recHist(recHistSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type mother(motherSEXP);
-    Rcpp::traits::input_parameter< const arma::field<arma::field<arma::Mat<int> > >& >::type father(fatherSEXP);
-    rcpp_result_gen = Rcpp::wrap(getNonFounderIbd(recHist, mother, father));
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(packHist(x));
     return rcpp_result_gen;
 END_RCPP
 }
-// getFounderIbd
-arma::field<    arma::field<      arma::field<        arma::Mat<int> > > > getFounderIbd(const arma::field<arma::ivec>& founder, arma::uword nChr);
-RcppExport SEXP _AlphaSimR_getFounderIbd(SEXP founderSEXP, SEXP nChrSEXP) {
+// unpackHist
+Rcpp::List unpackHist(const Rcpp::List& x);
+RcppExport SEXP _AlphaSimR_unpackHist(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::field<arma::ivec>& >::type founder(founderSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type nChr(nChrSEXP);
-    rcpp_result_gen = Rcpp::wrap(getFounderIbd(founder, nChr));
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(unpackHist(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// computeIbd
+Rcpp::List computeIbd(const Rcpp::IntegerVector& uid, const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::LogicalVector& isFounder, const Rcpp::List& recHist, const Rcpp::List& hap, int nChr);
+RcppExport SEXP _AlphaSimR_computeIbd(SEXP uidSEXP, SEXP motherSEXP, SEXP fatherSEXP, SEXP isFounderSEXP, SEXP recHistSEXP, SEXP hapSEXP, SEXP nChrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type uid(uidSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::LogicalVector& >::type isFounder(isFounderSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type recHist(recHistSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type hap(hapSEXP);
+    Rcpp::traits::input_parameter< int >::type nChr(nChrSEXP);
+    rcpp_result_gen = Rcpp::wrap(computeIbd(uid, mother, father, isFounder, recHist, hap, nChr));
     return rcpp_result_gen;
 END_RCPP
 }
 // createIbdMat
-arma::Mat<int> createIbdMat(arma::field<arma::field<arma::field<arma::Mat<int> > > >& ibd, arma::uvec chr, arma::uvec nLoci, arma::uword ploidy, arma::uword nThreads);
+arma::Mat<int> createIbdMat(const Rcpp::List& ibd, arma::uvec chr, arma::uvec nLoci, arma::uword ploidy, arma::uword nThreads);
 RcppExport SEXP _AlphaSimR_createIbdMat(SEXP ibdSEXP, SEXP chrSEXP, SEXP nLociSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::field<arma::field<arma::field<arma::Mat<int> > > >& >::type ibd(ibdSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ibd(ibdSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type chr(chrSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type nLoci(nLociSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type ploidy(ploidySEXP);
@@ -946,8 +960,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_getGv", (DL_FUNC) &_AlphaSimR_getGv, 3},
     {"_AlphaSimR_getGvIndex", (DL_FUNC) &_AlphaSimR_getGvIndex, 6},
     {"_AlphaSimR_getHybridGv", (DL_FUNC) &_AlphaSimR_getHybridGv, 6},
-    {"_AlphaSimR_getNonFounderIbd", (DL_FUNC) &_AlphaSimR_getNonFounderIbd, 3},
-    {"_AlphaSimR_getFounderIbd", (DL_FUNC) &_AlphaSimR_getFounderIbd, 2},
+    {"_AlphaSimR_packHist", (DL_FUNC) &_AlphaSimR_packHist, 1},
+    {"_AlphaSimR_unpackHist", (DL_FUNC) &_AlphaSimR_unpackHist, 1},
+    {"_AlphaSimR_computeIbd", (DL_FUNC) &_AlphaSimR_computeIbd, 7},
     {"_AlphaSimR_createIbdMat", (DL_FUNC) &_AlphaSimR_createIbdMat, 5},
     {"_AlphaSimR_cross", (DL_FUNC) &_AlphaSimR_cross, 17},
     {"_AlphaSimR_createDH2", (DL_FUNC) &_AlphaSimR_createDH2, 8},

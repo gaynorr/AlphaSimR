@@ -219,15 +219,13 @@ SimParam = R6Class(
       if(private$.isTrackRec){
         private$.recHist = private$.recHist[0:lastId]
       }
-      # .hasHap and .isFounder are indexed by iid and .hap is keyed by id,
-      # so they have to be cut back with the pedigree. Left in place, the
-      # next individual to take a reused iid inherits the old individual's
-      # haplotype record.
+      # .hasHap, .isFounder and .hap are indexed by iid, so they have to be
+      # cut back with the pedigree. Left in place, the next individual to
+      # take a reused iid inherits the old individual's haplotype record.
       private$.hasHap = private$.hasHap[seq_len(lastId)]
       private$.isFounder = private$.isFounder[seq_len(lastId)]
-      if(length(private$.hap)>0L){
-        private$.hap =
-          private$.hap[as.integer(names(private$.hap))<=lastId]
+      if(length(private$.hap)>lastId){
+        private$.hap = private$.hap[seq_len(lastId)]
       }
       if(lastId==0L){
         private$.lastHaplo = 0L
@@ -391,11 +389,24 @@ SimParam = R6Class(
     #' Allows for the manual setting of founder haplotypes. This functionality
     #' is not fully documented, because it is still experimental.
     #'
-    #' @param hapMap a list of founder haplotypes
+    #' @param hapMap a list of founder haplotypes, one per individual in
+    #' the order of their internal IDs, or named by internal ID
     setFounderHap = function(hapMap){
-      private$.hap = hapMap
-      private$.hasHap = rep(TRUE, length(hapMap))
-      private$.isFounder = rep(FALSE, length(hapMap))
+      n = length(hapMap)
+      if(is.null(names(hapMap))){
+        iid = seq_len(n)
+      }else{
+        iid = suppressWarnings(as.integer(names(hapMap)))
+        if(anyNA(iid) || anyDuplicated(iid) || any(iid<1L | iid>n)){
+          stop("names of hapMap must be the internal IDs 1 to ", n)
+        }
+      }
+      # The cache is indexed by iid and held packed
+      hap = vector("list", n)
+      hap[iid] = packHist(hapMap)
+      private$.hap = hap
+      private$.hasHap = rep(TRUE, n)
+      private$.isFounder = rep(FALSE, n)
       invisible(self)
     },
 
@@ -2250,15 +2261,21 @@ SimParam = R6Class(
         }
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
-        names(newRecHist) = id
         private$.recHist = c(private$.recHist, newRecHist)
         private$.lastHaplo = tmpLastHaplo
       }else{
-        # Add hist to recombination history
+        # Histories are stored packed, one integer vector per individual,
+        # which is what meiosis returns. A history built in R as nested
+        # lists, as doubleGenome and mergeGenome do, is packed here. The
+        # IDs are not stored with it, because the pedigree's row names
+        # already hold them.
+        stopifnot(length(hist)==nNewInd)
+        if(is.list(hist[[1]])){
+          hist = packHist(hist)
+        }
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
-        names(hist) = id
-        private$.recHist = c(private$.recHist, hist)
+        private$.recHist = c(private$.recHist, unname(hist))
       }
       private$.pedigree = rbind(private$.pedigree, tmp)
       private$.lastId = lastId
@@ -2270,54 +2287,41 @@ SimParam = R6Class(
     #'
     #' @param iid internal ID
     ibdHaplo = function(iid){
-      if(all(private$.hasHap[iid])){
-        # Return relevant haplotypes
-        return(private$.hap[as.character(iid)])
+      # The cache is a list indexed by iid. It was once keyed by name, and
+      # every lookup and insertion then searched or copied the whole list,
+      # which made filling it quadratic in the size of the pedigree.
+      if(length(private$.hap)<private$.lastId){
+        length(private$.hap) = private$.lastId
       }
 
-      ## Fill in missing haplotypes
-
-      # Determine unique iid for needed individuals without hap data
-      uid = list()
-      i = 1L
-      uid[[i]] = unique(iid)
-      while(any(uid[[i]]!=0L)){
-        i = i+1L
-        uid[[i]] = unique(c(private$.pedigree[uid[[i-1]],1:2]))
-      }
-      uid = unique(unlist(uid))
-      uid = sort(uid)[-1] # First one is always zero
-      uid = uid[!private$.hasHap[uid]]
-
-      # Split uid by founder and non-founder
-      fuid = uid[private$.isFounder[uid]]
-      nfuid = uid[!private$.isFounder[uid]]
-
-      # Set hap for founders
-      if(length(fuid)>0){
-        nChr = length(private$.femaleMap)
-        newHap = getFounderIbd(founder=private$.recHist[fuid],
-                               nChr=nChr)
-        names(newHap) = as.character(fuid)
-        private$.hap = c(private$.hap, newHap)
-        private$.hasHap[fuid] = TRUE
-      }
-
-      # Set hap for non-founders
-      if(length(nfuid)>0){
-        for(id in nfuid){
-          mother = as.character(private$.pedigree[id,1])
-          father = as.character(private$.pedigree[id,2])
-          private$.hap[[as.character(id)]] =
-            getNonFounderIbd(recHist=private$.recHist[[id ]],
-                             mother=private$.hap[[mother]],
-                             father=private$.hap[[father]])
-          private$.hasHap[id] = TRUE
+      if(!all(private$.hasHap[iid])){
+        # Find the individuals lacking IBD haplotypes that are needed:
+        # those requested and, recursively, their parents. The ancestors of
+        # an individual that already has them are not needed.
+        need = logical(private$.lastId)
+        cur = unique(iid)
+        while(length(cur)>0L){
+          cur = cur[cur>0L]
+          cur = cur[!need[cur] & !(private$.hasHap[cur] %in% TRUE)]
+          need[cur] = TRUE
+          cur = unique(c(private$.pedigree[cur,1:2]))
         }
+        uid = which(need)
+
+        # Parents always have smaller iids than their progeny, so a single
+        # pass in iid order computes every parent before it is used
+        private$.hap[uid] = computeIbd(uid=uid,
+                                       mother=private$.pedigree[uid,1],
+                                       father=private$.pedigree[uid,2],
+                                       isFounder=private$.isFounder[uid],
+                                       recHist=private$.recHist[uid],
+                                       hap=private$.hap,
+                                       nChr=length(private$.femaleMap))
+        private$.hasHap[uid] = TRUE
       }
 
-      # Return relevant haplotypes
-      return(private$.hap[as.character(iid)])
+      # Return relevant haplotypes, packed as by packHist
+      return(private$.hap[iid])
     },
 
     #' @description For internal use only.
@@ -2859,16 +2863,30 @@ SimParam = R6Class(
     #' @field recHist list of historic recombination events
     recHist=function(value){
       if(missing(value)){
-        private$.recHist
+        # Histories are stored packed and are expanded here into the
+        # nested lists, named by ID, that this field has always returned
+        output = unpackHist(private$.recHist)
+        if(length(output)>0L){
+          names(output) = rownames(private$.pedigree)[seq_along(output)]
+        }
+        output
       }else{
         stop("`$recHist` is read only",call.=FALSE)
       }
     },
 
-    #' @field haplotypes list of computed IBD haplotypes
+    #' @field haplotypes list of computed IBD haplotypes, named by
+    #' internal ID
     haplotypes=function(value){
       if(missing(value)){
-        private$.hap
+        # Stored packed and indexed by iid, so expanded and named here
+        take = which(private$.hasHap)
+        take = take[take<=length(private$.hap)]
+        output = unpackHist(private$.hap[take])
+        if(length(output)>0L){
+          names(output) = as.character(take)
+        }
+        output
       }else{
         stop("`$haplotypes` is read only",call.=FALSE)
       }

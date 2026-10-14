@@ -226,3 +226,156 @@ test_that("IBD agrees with genotypes in tetraploids with quadrivalents", {
     }
   }
 })
+
+
+# Checks every IBD label against the genotypes. Founder haplotypes are
+# numbered one per row in order, so the allele at each locus of a haplotype
+# must equal the allele of the founder haplotype its IBD names.
+expectIbdMatchesGeno = function(pop, founderHaplo, SP, label){
+  ibd = pullIbdHaplo(pop, simParam=SP)
+  haplo = pullSegSiteHaplo(pop, simParam=SP)
+  expect_equal(dim(ibd), dim(haplo), info=label)
+  expected = founderHaplo[cbind(c(ibd), rep(seq_len(ncol(ibd)),
+                                            each=nrow(ibd)))]
+  expect_equal(unname(c(haplo)), unname(expected), info=label)
+}
+
+test_that("IBD agrees with genotypes through every kind of meiosis", {
+  set.seed(9921)
+  founderPop = quickHaplo(nInd=10, nChr=2, segSites=50)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackRec(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  founderHaplo = pullSegSiteHaplo(pop, simParam=SP)
+
+  f1 = randCross(pop, nCrosses=10, simParam=SP)
+  progeny = list(f1=f1,
+                 dh=makeDH(f1, nDH=2, simParam=SP),
+                 self=self(f1, nProgeny=2, simParam=SP),
+                 haploid=reduceGenome(f1, nProgeny=2, simParam=SP))
+  # doubleGenome and mergeGenome build their histories in R rather than
+  # in meiosis
+  progeny$doubled = doubleGenome(progeny$haploid, simParam=SP)
+  progeny$merged = mergeGenome(progeny$haploid[1:5], progeny$haploid[6:10],
+                               crossPlan=cbind(1:5, 5:1), simParam=SP)
+  progeny$f2 = randCross(c(progeny$dh, progeny$doubled, progeny$merged),
+                         nCrosses=10, simParam=SP)
+
+  for(type in names(progeny)){
+    expectIbdMatchesGeno(progeny[[type]], founderHaplo, SP, type)
+  }
+})
+
+test_that("IBD pulled in pieces matches IBD pulled at once", {
+  # Haplotypes are cached as they are computed, so a later call reuses the
+  # ancestors computed by an earlier one
+  run = function(piecemeal){
+    set.seed(9931)
+    founderPop = quickHaplo(nInd=8, nChr=2, segSites=30)
+    SP = SimParam$new(founderPop)
+    SP$nThreads = 1L
+    SP$setTrackRec(TRUE)
+    pop = newPop(founderPop, simParam=SP)
+    f1 = randCross(pop, nCrosses=8, simParam=SP)
+    f2 = randCross(f1, nCrosses=8, simParam=SP)
+    f3 = randCross(f2, nCrosses=8, simParam=SP)
+    if(piecemeal){
+      pullIbdHaplo(f1[1:3], simParam=SP)
+      pullIbdHaplo(f2, simParam=SP)
+    }
+    return(list(ibd=pullIbdHaplo(f3, simParam=SP), SP=SP))
+  }
+  once = run(FALSE)
+  pieces = run(TRUE)
+  expect_identical(pieces$ibd, once$ibd)
+
+  # The cache is named by internal ID. The piecemeal run also holds the
+  # individuals pulled earlier that are not ancestors of f3, and the two
+  # agree wherever both hold an individual.
+  onceHap = once$SP$haplotypes
+  piecesHap = pieces$SP$haplotypes
+  expect_identical(names(onceHap),
+                   as.character(sort(as.integer(names(onceHap)))))
+  expect_true(all(names(onceHap) %in% names(piecesHap)))
+  expect_true(all(as.character(25:32) %in% names(onceHap)))
+  expect_identical(piecesHap[names(onceHap)], onceHap)
+})
+
+test_that("recHist is returned as nested lists named by ID", {
+  d = ibdPop(nInd=4, nChr=2, segSites=20)
+  progeny = randCross(d$pop, nCrosses=3, simParam=d$SP)
+  recHist = d$SP$recHist
+
+  expect_identical(names(recHist), c(d$pop@id, progeny@id))
+  # Founders list their founder haplotypes
+  expect_identical(recHist[[d$pop@id[2]]], 3:4)
+  # Progeny hold a two column matrix per copy of each chromosome
+  for(id in progeny@id){
+    expect_equal(length(recHist[[id]]), 2L)
+    for(chr in recHist[[id]]){
+      expect_equal(length(chr), 2L)
+      for(m in chr){
+        expect_true(is.integer(m) && is.matrix(m) && ncol(m)==2L)
+        expect_true(all(m[,1] %in% 1:2))
+        expect_equal(m[1,2], 1L)
+      }
+    }
+  }
+})
+
+test_that("packed recombination records round trip", {
+  x = list(1:2,
+           list(list(matrix(c(1L,1L), 1, 2), matrix(c(2L,1L,1L,7L), 2, 2)),
+                list(matrix(c(2L,1L), 1, 2), matrix(c(1L,2L,1L,3L,1L,1L,
+                                                    4L,9L), 3, 2))))
+  packed = AlphaSimR:::packHist(x)
+  expect_identical(packed[[1]], 1:2)
+  expect_true(is.integer(packed[[2]]) && packed[[2]][1] == -2L)
+  unpacked = AlphaSimR:::unpackHist(packed)
+  expect_identical(unpacked[[1]], 1:2)
+  for(chr in 1:2){
+    for(k in 1:2){
+      expect_identical(unpacked[[2]][[chr]][[k]], x[[2]][[chr]][[k]])
+    }
+  }
+})
+
+test_that("resetPed discards the cached IBD of removed individuals", {
+  set.seed(9941)
+  founderPop = quickHaplo(nInd=6, nChr=1, segSites=30)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackRec(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  founderHaplo = pullSegSiteHaplo(pop, simParam=SP)
+  f1 = randCross(pop, nCrosses=6, simParam=SP)
+  pullIbdHaplo(f1, simParam=SP)
+
+  # The new individuals take the iids of the ones removed
+  SP$resetPed(6L)
+  f1b = randCross(pop, nCrosses=6, simParam=SP)
+  expect_identical(f1b@iid, f1@iid)
+  expectIbdMatchesGeno(f1b, founderHaplo, SP, "after resetPed")
+})
+
+test_that("founder haplotypes can be supplied with setFounderHap", {
+  set.seed(9951)
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackRec(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  hapMap = lapply(1:4, function(i)
+    list(list(matrix(c(100L+i, 1L), 1, 2), matrix(c(200L+i, 1L), 1, 2))))
+  names(hapMap) = as.character(4:1)
+  expect_error(SP$setFounderHap(setNames(hapMap, c("1","2","3","9"))),
+               "internal IDs")
+  SP$setFounderHap(hapMap)
+
+  ibd = pullIbdHaplo(pop, simParam=SP)
+  expect_equal(unname(ibd[,1]), c(104L, 204L, 103L, 203L,
+                                  102L, 202L, 101L, 201L))
+  progeny = randCross(pop, nCrosses=6, simParam=SP)
+  expect_true(all(pullIbdHaplo(progeny, simParam=SP) %in% c(ibd)))
+})
