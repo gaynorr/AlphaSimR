@@ -459,6 +459,10 @@ rngDiagnosticsSamplePoisson <- function(lambda, reps, seed) {
     .Call(`_AlphaSimR_rngDiagnosticsSamplePoisson`, lambda, reps, seed)
 }
 
+.segSitesTreeMoments <- function(n, sizes, times, tolerance) {
+    .Call(`_AlphaSimR_segSitesTreeMoments`, n, sizes, times, tolerance)
+}
+
 MaCS <- function(args, maxSites, inbred, ploidy, nThreads, seed) {
     .Call(`_AlphaSimR_MaCS`, args, maxSites, inbred, ploidy, nThreads, seed)
 }

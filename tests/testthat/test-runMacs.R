@@ -140,3 +140,31 @@ test_that("REFUSE MaCS population IDs that do not exist", {
   pop = runCommand("-n 2 1.0 -g 1 0.0 -m 1 2 1.0 -en 0.001 2 2.0")
   expect_equal(unname(pop@nLoci), 5L)
 })
+
+test_that("preset and user-given mutation rates work", {
+  for(rate in list(0, -1, NA_real_, NaN, Inf, -Inf, numeric(),
+                   c(1e-8, 2e-8), "1e-8", TRUE)){
+    expect_error(runMacs(nInd=2, mutRate=rate),
+                 "mutRate must be a single positive finite number")
+  }
+  expect_error(runMacs(nInd=2, mutRate=1e-8,
+                       manualCommand="1E6 -t 1E-4 -r 1E-4", manualGenLen=1),
+               "mutRate cannot be combined with manualCommand")
+  skip_on_cran() # not very fast
+  # Check that preset and equal user-given mutation rates give the same number of segregating sites
+  rates = c(GENERIC=1e-8, CATTLE=9.4e-9, WHEAT=2e-9, MAIZE=1.25e-8)
+  for(species in names(rates)){
+    set.seed(6011)
+    original = runMacs(nInd=2, species=species, nThreads=1)
+    set.seed(6011)
+    explicit = runMacs(nInd=2, species=species, nThreads=1,
+                       mutRate=unname(rates[species]))
+    expect_identical(explicit@nLoci, original@nLoci, info=species)
+  }
+  # Check that lower user-given mutation rates gives fewer segregating sites
+  set.seed(6011)
+  original = runMacs(nInd=2, species="GENERIC", nThreads=1)
+  set.seed(6011)
+  lower = runMacs(nInd=2, species="GENERIC", nThreads=1, mutRate=1e-9)
+  expect_true(lower@nLoci < original@nLoci)
+})

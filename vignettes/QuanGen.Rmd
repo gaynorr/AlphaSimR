@@ -10,9 +10,6 @@ vignette: >
   %\VignetteIndexEntry{Quantitative Genetics in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-editor_options:
-  markdown:
-    wrap: 72
 ---
 
 ```{r setup, include = FALSE}
@@ -26,7 +23,7 @@ library(AlphaSimR)
 
 ## Introduction and reading guide
 
-This vignette explains how AlphaSimR constructs genetic values from genotypic effects,
+This vignette explains how `AlphaSimR` constructs genetic values from genotypic effects,
 decomposes them into population-specific components, and calculates their variances.
 It is expected that the reader is familiar with the background theory
 [@falconer1996Introduction; @lynch1998Genetics].
@@ -46,7 +43,7 @@ For an application to cross performance involving multiple populations (pools / 
 | How inbreeding affects genetic variance | [Departures from Hardy-Weinberg proportions](#hardy-weinberg-departures) |
 | How selection affects genetic variance | [Linkage disequilibrium and the Bulmer effect](#disequilibrium) |
 | What changes for polyploids | [Polyploids and digenic dominance](#polyploids) |
-| How AlphaSimR implementation relates to classical quantitative genetics | [Relationship to classical theory](#classical-theory) |
+| How `AlphaSimR` implementation relates to classical quantitative genetics | [Relationship to classical theory](#classical-theory) |
 
 The examples build on earlier code:
 use the links to navigate when reading,
@@ -57,7 +54,7 @@ User-friendly functions, such as `bv`, internally call `genParam`.
 
 For a more detailed numerical walkthrough,
 see the `genParam` unit tests in `tests/testthat/test-genParam.R`
-in the AlphaSimR source package or git repository.
+in the `AlphaSimR` source package or git repository.
 
 ## Two parameterizations of genetic values {#two-parameterizations}
 
@@ -105,7 +102,7 @@ so symbol definitions should be read carefully.
 
 ### Genotype coding and the genetic value model
 
-AlphaSimR builds the genetic value of an individual from biallelic loci
+`AlphaSimR` builds the genetic value of an individual from biallelic loci
 using scaled genotype dosages following the *genotypic parameterization*.
 For a locus with raw dosage $x$ (the number of copies of the "1" allele)
 in an organism of ploidy $P$,
@@ -127,19 +124,19 @@ $e_{(i,j)}$ is an additive-by-additive epistatic effect between the pair of loci
 The additive and dominance sums are over the causal (quantitative trait) loci (QTL),
 while the epistatic sum is over the *pairs* of QTL.
 
-AlphaSimR assigns each QTL to exactly one epistatic pair,
+`AlphaSimR` assigns each QTL to exactly one epistatic pair,
 so these pairs are disjoint and the number of pairs is half the number of QTL.
 This means the two-locus calculations described below
 can be carried out one pair at a time and summed.
 Note that the only modeled epistasis is additive-by-additive.
 Additive-by-dominance or dominance-by-dominance epistasis are not supported.
 
-Note that genetic values in AlphaSimR include the trait intercept $\mu_0$,
+Note that genetic values in `AlphaSimR` include the trait intercept $\mu_0$,
 while standard literature often removes it (or the trait mean of a population)
 [@fisher1919Correlation, @falconer1996Introduction, @lynch1998Genetics].
 While this difference only shifts the "baseline" of genetic values,
 it is convenient for seamless comparisons across populations and time.
-Since there are several "baseline"-related quantities in AlphaSimR,
+Since there are several "baseline"-related quantities in `AlphaSimR`,
 we next explain these concretely.
 
 ### Founder mean, trait intercept, and population mean {#means-and-intercept}
@@ -165,7 +162,7 @@ Then:
 $$G_i = \mu_0 + C_i \qquad \text{and} \qquad \bar{G} = \mu_0 + \bar{C}.$$
 
 After scaling the effects to achieve the requested founder variance,
-AlphaSimR chooses the trait intercept as:
+`AlphaSimR` chooses the trait intercept as:
 
 $$\mu_0 = m_{\mathrm{target}} - \bar{C}_{\mathrm{founders}}.$$
 
@@ -231,7 +228,7 @@ tmp[id, "mu0"] + tmp[id, "x_A_a"] + tmp[id, "x_D_d"]
 ### Average effects and breeding values
 
 Under the *breeding value parameterization*
-AlphaSimR decomposes the genetic value of an individual with genotype $x$ into
+`AlphaSimR` decomposes the genetic value of an individual with genotype $x$ into
 the population mean $\bar{G}$, breeding value $A(x)$, and non-additive deviations $N(x)$:
 
 $$G(x) = \bar{G} + A(x) + N(x).$$
@@ -251,7 +248,7 @@ and the coefficient of that projection is
 the average effect of allele substitution in the population,
 usually denoted as $\alpha$.
 
-AlphaSimR calculates these regression coefficients using the observed genotype frequencies,
+`AlphaSimR` calculates these regression coefficients using the observed genotype frequencies,
 without requiring Hardy–Weinberg proportions.
 When genotype frequencies depart from these proportions,
 the resulting additive genetic values remain valid
@@ -291,7 +288,7 @@ Breeding values then account for all of the genetic variation.
 Third, breeding values are centered on the population mean by construction,
 since $\sum_x f(x)(x - \bar{x}) = 0$.
 
-AlphaSimR computes two versions of $\alpha$ for every locus using `genParam` function.
+`AlphaSimR` computes two versions of $\alpha$ for every locus using `genParam` function.
 The first uses the genotype frequencies actually observed in the population and
 is returned as `alpha`.
 The second uses the genotype frequencies expected under Hardy-Weinberg equilibrium
@@ -306,7 +303,7 @@ For $P = 2$ we obtain the usual genotype frequencies of $p^2$, $2pq$, and $q^2$.
 The two versions of $\alpha$ can differ
 when the population departs from Hardy-Weinberg proportions,
 for example through inbreeding or non-random mating.
-The difference between these settings is what AlphaSimR reports as
+The difference between these settings is what `AlphaSimR` reports as
 the non-random-mating components of variance.
 
 We now return to demonstration.
@@ -365,7 +362,7 @@ mean(ans$gv_d)
 
 We now have all the ingredients to reproduce the well-known figure of
 breeding value parameterization of genetic values from @falconer1996Introduction.
-We will mirror AlphaSimR calculation by
+We will mirror `AlphaSimR` calculation by
 showing the projection of genetic values onto dosages.
 
 First, prepare all the ingredients.
@@ -573,7 +570,7 @@ Under LD,
 additive-by-additive effects can induce a marginal dominance component,
 which a parameterization built on the joint two-locus genotype frequencies
 reports as dominance variance [@alvarezcastro2019Orthogonal].
-AlphaSimR's implementation can not accommodate this.
+`AlphaSimR`'s implementation can not accommodate this.
 Because the marginalization makes the epistatic contribution exactly linear
 in a locus's own dosage,
 a trait with no dominance effects has
@@ -581,11 +578,11 @@ dominance deviations of exactly zero however strong the disequilibrium, and
 the variance in question is reported as additive-by-additive instead.
 The genetic values and their variance are however unaffected
 because $G(x) = \bar{G} + A(x) + D(x) + AA(x)$ as shown above.
-This is one of the reasons why AlphaSimR also reports
+This is one of the reasons why `AlphaSimR` also reports
 the sum of all non-additive deviations $G(x) = \bar{G} + A(x) + N(x)$ as shown below.
 
 Two things limit how much this consequence matters in practice.
-AlphaSimR assigns epistatic QTL pairs by a random permutation across the genome,
+`AlphaSimR` assigns epistatic QTL pairs by a random permutation across the genome,
 so interacting pairs are not preferentially tightly linked.
 Recombination erodes LD between loosely linked loci,
 while drift, selection, and population structure can generate new LD.
@@ -597,7 +594,7 @@ but does not make the full variance decomposition orthogonal.
 
 ### Total non-additive deviations
 
-AlphaSimR also reports the total non-additive deviation as $N = D + AA = G - \bar{G} - A$,
+`AlphaSimR` also reports the total non-additive deviation as $N = D + AA = G - \bar{G} - A$,
 available through `nd(pop)` or `genParam(pop)$nd`.
 It has population mean zero because its components have mean zero.
 For traits without epistasis it equals the dominance deviation;
@@ -634,7 +631,7 @@ variance of genetic values in a population:
 $$\sigma^2_G = \frac{\sum_i \big(G_i - \bar{G}\big)^2}{n},$$
 
 where summation is across individuals $(i)$ of a population with size $n$.
-Note that AlphaSimR reports population variance, where we divide by $n$,
+Note that `AlphaSimR` reports population variance, where we divide by $n$,
 instead of sample variance, where we divide by $n-1$.
 This leads to only a small difference for large populations,
 but can be substantial for small populations.
@@ -662,7 +659,7 @@ var(gv(pop[1:nSmall]))
 
 Having access to breeding values and non-additive deviations,
 we can calculate their variances and covariances in the same way.
-AlphaSimR does this for three different "reference" populations
+`AlphaSimR` does this for three different "reference" populations
 (observed population, linkage-equilibrium population, and idealized population)
 and understanding these is the key to understanding the output of `genParam`.
 
@@ -672,7 +669,7 @@ Variances computed here are the *genetic* variances of the population
 (`varG` for $\sigma^2_G$, `varA` for $\sigma^2_A$, etc.).
 These variances include deviations from Hardy-Weinberg or other equilibria,
 such as linkage disequilibrium (LD).
-This is best demonstrated with AlphaSimR code.
+This is best demonstrated with `AlphaSimR` code.
 
 ```{r}
 # Additive genetic variance
@@ -751,7 +748,7 @@ The total genic variance is then sum of the component genic variances.
 
 Following the distinction between
 Hardy-Weinberg and linkage disequilibrium contributions described by @bulmer1976Effect,
-AlphaSimR expresses genetic variance as genic variance plus two additional terms.
+`AlphaSimR` expresses genetic variance as genic variance plus two additional terms.
 For additive genetic variance we have:
 
 $$\sigma^{2}_{A} = \sigma^{2}_{A,\text{genic}} + \sigma_{A,HW} + \sigma_{A,L}.$$
@@ -971,7 +968,7 @@ c(varG = varG, varG_via_partsADAA = varG_via_partsADAA, varG_via_partsAN = varG_
 
 ### Genotype coding and model limitations
 
-AlphaSimR uses one dominance genotypic effect $d$ per locus.
+`AlphaSimR` uses one dominance genotypic effect $d$ per locus.
 For diploids, this describes the departure of the heterozygote's genetic value
 from the midpoint of the two homozygotes.
 An autotetraploid locus has three heterozygous genotypes,
@@ -980,7 +977,7 @@ Describing their departures independently requires three dominance parameters,
 conventionally expressed as digenic, trigenic, and quadrigenic effects,
 respectively involving two, three, and four alleles at the locus [@gallais2003Quantitative].
 
-AlphaSimR models only digenic dominance.
+`AlphaSimR` models only digenic dominance.
 Its scaled dominance dosage, $x_D = x(P-x)(2/P)^2$,
 is proportional to the number of heterozygous allele pairs:
 each of the $x$ copies of the "1" allele pairs with
@@ -994,7 +991,7 @@ This restriction concerns the assumed genotypic model,
 not the completeness of its decomposition.
 The identity $G = \bar{G} + A + D + AA$ still holds for polyploids,
 with dominance deviations calculated from the modeled genetic values.
-AlphaSimR does not represent trigenic or quadrigenic dominance genotypic effects,
+`AlphaSimR` does not represent trigenic or quadrigenic dominance genotypic effects,
 so its reported dominance variance reflects only the digenic dominance
 included in the model.
 
@@ -1009,7 +1006,7 @@ Quadrivalent pairing,
 described in the `vignette("GeneticRecombination")`,
 produces double reduction and therefore an excess of homozygotes
 relative to the binomial expectation.
-AlphaSimR does not model this in its Hardy-Weinberg reference,
+`AlphaSimR` does not model this in its Hardy-Weinberg reference,
 so in a simulation with `SP$quadProb > 0`
 the resulting excess homozygosity appears in the `covD_HW` and `covA_HW` terms
 as though it were non-random mating.
@@ -1023,12 +1020,12 @@ as a pure measure of the mating system in an autopolyploid simulation.
 In the idealized population, the decomposition described here follows the
 least-squares partition introduced by @fisher1919Correlation and extended
 to epistasis by @cockerham1954Extension and @kempthorne1954Correlation.
-The additive-by-additive contrast used by AlphaSimR
+The additive-by-additive contrast used by `AlphaSimR`
 is the product of the two single-locus additive contrasts,
 which is the standard construction and the one that makes the components
 orthogonal in an idealized population.
 In the terminology of the natural and orthogonal interactions framework of @alvarezcastro2007Unified,
-AlphaSimR computes the breeding value parameterization
+`AlphaSimR` computes the breeding value parameterization
 against the observed genotype frequencies,
 which is what makes `alpha` and `alpha_HW` differ.
 
@@ -1051,7 +1048,7 @@ The second convention refits the effects against the observed multilocus genotyp
 which restores orthogonality at the cost of absorbing the disequilibrium into
 the components themselves;
 @alvarezcastro2019Orthogonal give such a decomposition for epistatic traits.
-AlphaSimR retains covariances between components while recomputing the
+`AlphaSimR` retains covariances between components while recomputing the
 average effects of allele substitution from the current marginal genotype frequencies.
 
 One further point of interpretation, made forcefully by @hill2008Data,

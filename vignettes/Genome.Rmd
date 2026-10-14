@@ -25,7 +25,7 @@ library(AlphaSimR)
 
 # What is a genome?
 
-The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is packaged can vary substantially, including the number of chromosomes and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomal, one non-autosomal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.7 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
+The genome is the complete set of genetic information within an organism. It is made up of deoxyribonucleic acid (DNA), consisting of sequences of four types of nucleotide bases: adenine (A), cytosine (C), guanine (G), and thymine (T). Within one DNA molecule, there are two strands joined by base-pairs: A binds with T and C binds with G. This forms a double helix structure which can be visualized as a spiral ladder. These DNA molecules are condensed around supporting protein to form a thread-like structure known as chromosomes. Due to the different demographic history across species, how the DNA is packaged can vary substantially, including the number of chromosomes and the number of chromosome copies (ploidy). For example, humans have 23 pairs of chromosomes (22 autosomal, one non-autosomal) for ~three billion base-pairs. Whereas cattle have 30 pairs of chromosomes for fewer base-pairs at ~2.8 billion. As these species are both diploid, in each chromosome pair, one has been inherited from the father (paternal) and one has been inherited from the mother (maternal).
 
 ## Genes, alleles, loci, genotypes, and haplotypes.
 Although similar, there are essential differences in the terminology used. This next section will provide a short glossary for genes, alleles, loci, genotypes, and haplotypes.
@@ -52,8 +52,8 @@ SP = SimParam$new(founderGenomes)
 SP$setTrackRec(TRUE)
 # Inspect the founder genomes
 founderGenomes
-
 ```
+
 Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined locus labeled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes. Where the ancestral allele is not known, the allele dosage will be randomly assigned.
 
 ```{r}
@@ -197,6 +197,7 @@ getSnpMap(snpChip = 1, simParam = SP)
 ```
 
 # How is this used in plant and animal breeding?
+
 By understanding the genome, breeders can produce crops and livestock with desirable traits for use in specific production systems. For example, a breeder may desire to have polled cattle to increase animal welfare and human safety. When considering the breeding design for a species, breed, and/or system, there are many factors to consider with potential to introduce unintended consequences. These include balancing the trade-off between short-term genetic gain and long-term loss in genetic variation as well as antagonistic relationships between desired traits commonly observed between production and functional traits in animals. **AlphaSimR** provides a fast and inexpensive way to explore and test a wide range of breeding designs for long-term genetic improvement across plants and animals through forward-in-time stochastic simulations.
 
 For a more detailed overview of AlphaSimR in plant and animal breeding with exercises, please see the edX course: Breeding Programme Modelling with AlphaSimR. Available at: https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr

@@ -903,6 +903,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// segSitesTreeMoments
+Rcpp::NumericVector segSitesTreeMoments(int n, Rcpp::NumericVector sizes, Rcpp::NumericVector times, double tolerance);
+RcppExport SEXP _AlphaSimR_segSitesTreeMoments(SEXP nSEXP, SEXP sizesSEXP, SEXP timesSEXP, SEXP toleranceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type sizes(sizesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
+    rcpp_result_gen = Rcpp::wrap(segSitesTreeMoments(n, sizes, times, tolerance));
+    return rcpp_result_gen;
+END_RCPP
+}
 // MaCS
 Rcpp::List MaCS(Rcpp::String args, arma::uvec maxSites, bool inbred, arma::uword ploidy, int nThreads, arma::uvec seed);
 RcppExport SEXP _AlphaSimR_MaCS(SEXP argsSEXP, SEXP maxSitesSEXP, SEXP inbredSEXP, SEXP ploidySEXP, SEXP nThreadsSEXP, SEXP seedSEXP) {
@@ -979,6 +992,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
     {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
     {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
+    {"_AlphaSimR_segSitesTreeMoments", (DL_FUNC) &_AlphaSimR_segSitesTreeMoments, 4},
     {"_AlphaSimR_MaCS", (DL_FUNC) &_AlphaSimR_MaCS, 6},
     {NULL, NULL, 0}
 };

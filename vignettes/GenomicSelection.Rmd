@@ -27,13 +27,13 @@ library(AlphaSimR)
 ## Introduction
 
 Genomic selection is selection on a prediction of an individual's genetic
-merit made from its marker genotypes. AlphaSimR provides a family of
+merit made from its marker genotypes. `AlphaSimR` provides a family of
 ridge regression BLUP (RR-BLUP) models for making these predictions.
 They are fitted in C++ and are meant to be
 re-fitted many times over the course of a simulation, so they are
 deliberately narrow in scope: they are fast, they take their data
 directly from a population object, and they return an object that
-AlphaSimR knows how to turn back into estimated values for any
+`AlphaSimR` knows how to turn back into estimated values for any
 population you like.
 
 This vignette is mostly about *using* those functions: which one to call,
@@ -87,16 +87,16 @@ show predictive ability in later generations as linkage disequilibrium is
 accumulated through the effects of selection and mating.
 
 
-In AlphaSimR, QTL and SNP chip sites are kept separate by default, in order to avoid inflating 
-accuracy. Once a site is designated for use as a QTL, it cannot be selected 
-for the SNP chip, and vice versa. This separation occurs automatically without 
-invoking the `restrSegSites` function. Overlapping of these sites is permitted 
+In `AlphaSimR`, QTL and SNP chip sites are kept separate by default, in order to avoid inflating
+accuracy. Once a site is designated for use as a QTL, it cannot be selected
+for the SNP chip, and vice versa. This separation occurs automatically without
+invoking the `restrSegSites` function. Overlapping of these sites is permitted
 only if specifically requested with `restrSegSites(overlap = TRUE)`.
 
 
 ## The three steps
 
-Every genomic selection analysis in AlphaSimR has the same shape.
+Every genomic selection analysis in `AlphaSimR` has the same shape.
 
 1. Assemble a **training population** carrying both phenotypes and
    genotypes.
@@ -193,7 +193,7 @@ on marker density, with the models differing more in genetic gain at low
 density and more in heterosis at high density - a useful warning against
 assuming one model is uniformly best. The help page for `RRBLUP_SCA`
 notes that no consistent benefit over `RRBLUP_GCA` has been observed in
-AlphaSimR's own testing, so it is worth checking both in your own
+`AlphaSimR`'s own testing, so it is worth checking both in your own
 simulation rather than assuming the more complex model wins.
 
 **`fastRRBLUP`** is the escape hatch for size. It solves the same
@@ -243,7 +243,7 @@ records.
 
 The three steps above are the whole API. What takes judgment is where
 they go in a breeding cycle and what feeds them. @bancic2025Plant work
-through complete plant breeding programs in AlphaSimR - line, clonal and
+through complete plant breeding programs in `AlphaSimR` - line, clonal and
 hybrid - each with a genomic selection variant, and the patterns below
 follow that paper. Its scripts are a good companion to this vignette.
 
@@ -320,7 +320,7 @@ Capping the size matters for more than run time. Records from many
 generations back describe a population that no longer exists, and the
 linkage disequilibrium they carry has been broken up by recombination
 since. A window of the last few years is both cheaper and may be more
-accurate than one using everything ever recorded. The value of including 
+accurate than one using everything ever recorded. The value of including
 older lines will vary greatly between simulations and is potentially an area
 worth exploring in a simulation.
 
@@ -513,7 +513,7 @@ fixed effects discussed in the next section. The shrinkage applied to
 the marker effects is set by the ratio $V_e / V_u$, so the variance
 components have to be estimated before the effects can be.
 
-Markers are coded on the same scale AlphaSimR uses for trait effects:
+Markers are coded on the same scale `AlphaSimR` uses for trait effects:
 for a diploid, the additive covariate takes the values -1, 0 and 1 for
 the three genotypes, and the dominance covariate takes the value 1 for
 the heterozygote and 0 otherwise. Estimated effects are therefore
@@ -608,7 +608,7 @@ the first column, so a population with a single `fixEff` level reduces
 to fitting an intercept alone.
 
 It is worth being explicit about what `fixEff` does *not* do. It does
-not add anything to the phenotype. AlphaSimR will not shift the mean of
+not add anything to the phenotype. `AlphaSimR` will not shift the mean of
 `batch2` simply because it was labeled `2`. The label lets a model
 absorb differences that *you* created. If you generate all records the
 same way, the fitted fixed effects estimate nothing.
@@ -641,7 +641,7 @@ alone.
 
 ## Using external software
 
-The AlphaSimR models cover ridge regression and its close relatives. For
+The `AlphaSimR` models cover ridge regression and its close relatives. For
 anything else - a Bayesian model, a GBLUP with a particular relationship
 matrix, a machine learning method - export the genotypes and do the
 prediction elsewhere.
@@ -670,7 +670,7 @@ than genotypes. For software that reads files rather than matrices,
 writes phenotype records.
 
 Bringing predictions back is a matter of writing them into the `ebv`
-slot directly. `setEBV` is a convenience for AlphaSimR's own solutions,
+slot directly. `setEBV` is a convenience for `AlphaSimR`'s own solutions,
 not a requirement:
 
 ```{r eval=FALSE}

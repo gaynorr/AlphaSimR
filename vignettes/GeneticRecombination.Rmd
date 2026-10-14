@@ -25,17 +25,17 @@ library(AlphaSimR)
 ```
 
 This vignette provides an overview of the biology of genetic
-recombination and how it is modeled within AlphaSimR. I will first
+recombination and how it is modeled within `AlphaSimR` I will first
 provide a brief review of meiosis with special emphasis on how the
 process differs between diploid and autopolyploid species. I will then
 discuss genetic maps before concluding with an overview of the specific
 models used to simulate genetic recombination and of the machinery
-AlphaSimR uses to track the results.
+`AlphaSimR` uses to track the results.
 
 Recombination is the single most important process in a breeding
 simulation. Selection acts on individuals, but progress is only possible
 because meiosis reassembles parental haplotypes into new combinations.
-Everything AlphaSimR does downstream of a cross - linkage disequilibrium,
+Everything `AlphaSimR` does downstream of a cross - linkage disequilibrium,
 the Bulmer effect, the decay of segregating variance, the accuracy of
 genomic prediction across generations - depends on getting this one
 process right.
@@ -68,7 +68,7 @@ individual chromatid. Each chiasma involves exactly two of the four
 chromatids, so any particular chromatid has a one half chance of taking
 part in any particular chiasma. Second, in the absence of *chromatid
 interference*, the pair of chromatids involved in each chiasma is chosen
-independently of the pairs involved in every other chiasma. AlphaSimR
+independently of the pairs involved in every other chiasma. `AlphaSimR`
 assumes no chromatid interference, which is well supported empirically
 [@zhao1995Statistical] and which makes the second step above a simple independent
 coin flip per chiasma.
@@ -99,7 +99,7 @@ coexist in the same nucleus but different enough that each chromosome has
 only one true homolog. Pairing is therefore *disomic*: chromosomes form
 ordinary bivalents and meiosis proceeds essentially as it does in a
 diploid. From a modeling standpoint an allopolyploid can be treated as a
-collection of independent diploid genomes, and AlphaSimR handles it that
+collection of independent diploid genomes, and `AlphaSimR` handles it that
 way.
 
 Autopolyploids, such as cultivated potato or alfalfa, carry multiple
@@ -121,7 +121,7 @@ This cannot happen under bivalent pairing. Under quadrivalent pairing it
 happens for loci that are separated from the centromere by a crossover,
 so its frequency increases with distance from the centromere
 [@mather1935Reductional]. Because the
-centromere position determines the pattern, AlphaSimR requires centromere
+centromere position determines the pattern, `AlphaSimR` requires centromere
 positions for autopolyploid simulations, which is why the `MapPop` class
 carries a `centromere` slot.
 
@@ -139,7 +139,7 @@ measured in base pairs and reflects the actual DNA sequence. Genetic
 distance reflects how often recombination separates loci, and the
 relationship between the two varies enormously along a chromosome,
 typically suppressed near centromeres and elevated near telomeres.
-AlphaSimR works exclusively in genetic distance, and every position it
+`AlphaSimR` works exclusively in genetic distance, and every position it
 stores is in Morgans.
 
 The quantity that is actually observed in a mapping experiment is the
@@ -162,10 +162,10 @@ $$r = \frac{1}{2}\tanh(2d)$$
 
 builds in a moderate amount of interference and generally fits observed
 data better. These functions matter here because they describe the
-behavior a recombination model should reproduce, and because AlphaSimR's
+behavior a recombination model should reproduce, and because `AlphaSimR`'s
 default parameterization is chosen to approximate Kosambi.
 
-In AlphaSimR a genetic map is a list with one element per chromosome.
+In `AlphaSimR` a genetic map is a list with one element per chromosome.
 Each element is a named numeric vector giving the position of every
 segregating site in Morgans. Positions are absolute: the chromosome
 starts at position zero, and the first site need not sit there. It ends
@@ -202,7 +202,7 @@ SP$maleGenLen
 ## Recombination models
 
 Everything in this section concerns a single chromosome of total genetic
-length $L$ Morgans. AlphaSimR simulates each chromosome independently,
+length $L$ Morgans. `AlphaSimR` simulates each chromosome independently,
 which is exactly the independent assortment described earlier, and it
 does so in parallel when OpenMP is available. Each chromosome is given
 its own random number substream so that results are reproducible
@@ -255,7 +255,7 @@ When $v = 1$ the gamma distribution is exponential, the renewal process
 is Poisson, and the model reduces to the count-location model with no
 interference. As $v$ increases the spacing distribution concentrates
 around its mean, short gaps become rare, and interference strengthens.
-The AlphaSimR default is $v = 2.6$, which is the value that makes the
+The `AlphaSimR` default is $v = 2.6$, which is the value that makes the
 resulting map function closely approximate Kosambi's.
 
 ```{r}
@@ -271,7 +271,7 @@ point on a long chromosome is length-biased and stochastically larger
 [@cox1962Renewal].
 The usual remedy is to burn in from several Morgans upstream and discard
 everything before position zero, which costs twenty or so wasted random
-deviates per chromosome. AlphaSimR instead samples the equilibrium
+deviates per chromosome. `AlphaSimR` instead samples the equilibrium
 directly. The interval covering position zero is drawn from a
 $\mathrm{Gamma}(v + 1, \text{scale})$ distribution, which is exactly the
 length-biased version of the spacing distribution, and position zero is
@@ -307,7 +307,7 @@ SP$p = 0.1 # 10% of crossovers from a non-interfering pathway
 
 ### From crossovers to haplotypes
 
-Once crossover positions are known, the gamete is assembled. AlphaSimR
+Once crossover positions are known, the gamete is assembled. `AlphaSimR`
 searches the genetic map to find which marker interval each crossover
 falls into, and records the resulting mosaic as a two-column matrix. The
 first column identifies the parental haplotype the segment is copied
@@ -322,7 +322,7 @@ crossovers falling within the same marker interval leave no trace in the
 data; neither does a pair of crossovers that returns the gamete to the
 chromosome it was already reading from. These *hidden* crossovers are
 removed from the recorded history, so
-what AlphaSimR reports is the set of crossovers that are actually
+what `AlphaSimR` reports is the set of crossovers that are actually
 observable given the density of the map. This keeps the recorded history
 consistent with the genotypes and keeps its size proportional to marker
 density rather than to map length.
@@ -345,7 +345,7 @@ Bivalents within a polyploid are simulated exactly as they are in a
 diploid, using whichever of the three models `v` and `p` specify. The
 quadrivalent needs its own treatment.
 
-AlphaSimR models the quadrivalent as a *cross-type* configuration
+`AlphaSimR` models the quadrivalent as a *cross-type* configuration
 [@sved1964Relationship], the configuration used by the PedigreeSim software
 [@voorrips2012Simulation]. An exchange point is sampled uniformly along the
 chromosome, and on either
@@ -363,7 +363,7 @@ non-interfering chiasmata are sprinkled onto each arm afterward.
 
 Each chiasma is assigned a pair of chromatids independently, as in the
 bivalent case. A quadrivalent yields two of the gamete's chromosomes, and
-these are determined by choosing two centromeres. AlphaSimR always takes
+these are determined by choosing two centromeres. `AlphaSimR` always takes
 the centromere of the first chromosome and its first chromatid, and
 samples the second centromere from the remaining three chromosomes and
 either of their chromatids. Each gamete is then resolved by working
@@ -380,7 +380,7 @@ reduction. Its frequency is zero at the centromere and increases with
 genetic distance from it, which is the pattern expected from theory and
 observed in practice.
 
-## Recombination tracking in AlphaSimR
+## Recombination tracking in `AlphaSimR`
 
 Everything described above is recorded if you ask for it. Recombination
 tracking is off by default because the records accumulate over
@@ -467,7 +467,7 @@ haplotype.
 
 ## Summary
 
-AlphaSimR simulates recombination by placing chiasmata along a genetic
+`AlphaSimR` simulates recombination by placing chiasmata along a genetic
 map at a rate of two per Morgan, thinning them by one half to obtain the
 crossovers seen by a single chromatid, and assembling gametes as mosaics
 of the parental haplotypes. Interference is controlled by a single shape
