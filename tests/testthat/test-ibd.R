@@ -327,8 +327,8 @@ test_that("recHist is returned as nested lists named by ID", {
 test_that("packed recombination records round trip", {
   x = list(1:2,
            list(list(matrix(c(1L,1L), 1, 2), matrix(c(2L,1L,1L,7L), 2, 2)),
-                list(matrix(c(2L,1L), 1, 2), matrix(c(1L,2L,1L,3L,1L,1L,
-                                                    4L,9L), 3, 2))))
+                list(matrix(c(2L,1L), 1, 2), matrix(c(1L,2L,1L,1L,4L,9L),
+                                                    3, 2))))
   packed = AlphaSimR:::packHist(x)
   expect_identical(packed[[1]], 1:2)
   expect_true(is.integer(packed[[2]]) && packed[[2]][1] == -2L)
