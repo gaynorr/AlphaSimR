@@ -32,7 +32,7 @@ Both depend on the parents and crossing design used to define them.
 
 This vignette uses a small, complete factorial crossing design between
 two sets of inbred diploid parents.
-It distinguishes the cross means returned by AlphaSimR from centered GCA
+It distinguishes the cross means returned by `AlphaSimR` from centered GCA
 effects and SCA deviations.
 The companion `vignette("traits")` introduces trait specification,
 `vignette("QuanGen")` explains genetic values and their variances, and

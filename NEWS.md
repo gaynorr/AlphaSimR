@@ -19,6 +19,12 @@
 
 * Changed MaCS to pass its messages to R after the chromosomes have been simulated, instead of writing them from worker threads, which is not safe. A warning about the command is now shown once rather than once per chromosome, and when MaCS fails the error includes what MaCS reported.
 
+* Added a vignette on simulation of founder genomes from demographic history with MaCS presets, custom MaCS calls, and msprime through reticulate. Clarified parameter values in demographic models and documented segregating-site counts from simulations and theory, and reported laptop timings. We also provide a function `predictSegSitesMoments()` for theoretical predictions.
+
+* Added `mutRate` to `runMacs()` to override a preset mutation rate. Expected segregating-site counts scale with the rate; reducing it reduces sequence diversity and memory usage, with runtime savings limited by ancestry simulation.
+
+* Clarified `runMacs()` and `runMacs2()` documentation for site retention, mutation rates, historical population sizes, and the interaction between ploidy and inbred founders. Only `runMacs2()` rescales effective population sizes by ploidy.
+
 * Standardized all vignettes and articles to use the shared `REFERENCES.bib` bibliography, with forward slashes on Windows to avoid Pandoc resource-path errors during package builds.
 
 * Changed `pedigreeCross` to use `NA` for an unknown parent. A value of `0` now names an individual, as any other value does.
