@@ -27,6 +27,10 @@ Rapidly simulates founder haplotypes by randomly
 sampling 0s and 1s. This is equivalent to having all loci with
 allele frequency 0.5 and being in linkage equilibrium.
 }
+\details{
+See \code{\link{runMacs}} and \code{\link{runMacs2}} for
+more realistic founder haplotype simulation.
+}
 \examples{
 # Creates a populations of 10 outbred individuals
 # Their genome consists of 1 chromosome and 100 segregating sites

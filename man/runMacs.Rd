@@ -14,59 +14,91 @@ runMacs(
   ploidy = 2L,
   manualCommand = NULL,
   manualGenLen = NULL,
-  nThreads = NULL
+  nThreads = NULL,
+  mutRate = NULL
 )
 }
 \arguments{
-\item{nInd}{number of individuals to simulate}
+\item{nInd}{number of individuals to simulate.}
 
-\item{nChr}{number of chromosomes to simulate}
+\item{nChr}{number of chromosomes to simulate (using independent simulations)}
 
 \item{segSites}{number of segregating sites to keep per chromosome. A
-value of NULL results in all sites being retained.}
+value of \code{NULL} results in retaining all simulated segregating sites.
+Requesting more sites than were generated raises an error.}
 
-\item{inbred}{should founder individuals be inbred}
+\item{inbred}{should founder individuals be inbred by replicating their
+whole-chromosome haplotypes (see also \code{ploidy}).
+This creates fully homozygous founders without simulating a history of selfing.}
 
-\item{species}{species history to simulate. See details.}
+\item{species}{demographic model to simulate (see details).}
 
 \item{split}{an optional historic population split in terms of generations ago.}
 
-\item{ploidy}{ploidy level of organism}
+\item{ploidy}{level of species to simulate \code{nInd * ploidy}
+whole-chromosome haplotypes per chromosome unless \code{inbred=TRUE},
+where \code{nInd} haplotypes are simulated and each is copied across
+all homologues of an individual. Unlike \code{\link{runMacs2}}, this
+does not rescale the demographic model's effective population sizes
+when ploidy changes.}
 
-\item{manualCommand}{user provided MaCS options. For advanced users only.}
+\item{manualCommand}{user provided `MaCS` options. For advanced users only.
+See the \code{vignette("DemographicModels", package = "AlphaSimR")} for details.}
 
 \item{manualGenLen}{user provided genetic length. This must be supplied if using
 manualCommand. If not using manualCommand, this value will replace the predefined
 genetic length for the species. However, this genetic length is only used by
-AlphaSimR and is not passed to MaCS, so MaCS still uses the predefined genetic length.
+AlphaSimR and is not passed to `MaCS`, so `MaCS` still uses the predefined genetic length.
 For advanced users only.}
 
 \item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel.
 If the value is NULL, the number of threads is automatically detected.}
+
+\item{mutRate}{optional mutation rate per base pair per generation
+to reduce or increase the number of segregating sites;
+NULL uses the preset mutation rate in species demographic models
+(GENERIC: 1e-8; CATTLE: 9.4e-9; WHEAT: 2e-9; MAIZE: 1.25e-8).
+Cannot be combined with manualCommand.}
 }
 \value{
 an object of \code{\link{MapPop-class}}
 }
 \description{
-Uses the MaCS software to produce founder haplotypes
+Uses the `MaCS` software to produce founder haplotypes
 \insertCite{chen2009Fast}{AlphaSimR}.
 }
 \details{
-There are currently four species histories available: GENERIC, CATTLE, WHEAT, and MAIZE.
+There are currently four demographic models available:
+GENERIC, CATTLE, WHEAT, and MAIZE.
 
-The GENERIC history is meant to be a reasonable all-purpose choice. It runs quickly and
-models a population with an effective population size that has gone through several historic
-bottlenecks. This species history is used as the default arguments in the \code{\link{runMacs2}}
-function, so the user should examine this function for the details of how the species is modeled.
+The GENERIC demographic model is meant to be a reasonable all-purpose choice
+for breeding simulations. It runs quickly and models a population
+with an effective population size that has gone through several historic bottlenecks.
+This demographic model has the same parameters as the default arguments
+in the \code{\link{runMacs2}} function, so examine that function for the details.
 
-The CATTLE history is based off of real genome sequence data \insertCite{macleod2013Inferring}{AlphaSimR}.
+The CATTLE demographic model is based on estimated demographic parameters
+from real genome sequence data \insertCite{macleod2013Inferring}{AlphaSimR}.
 
-The WHEAT \insertCite{gaynor2017Two}{AlphaSimR} and MAIZE \insertCite{hickey2014Evaluation}{AlphaSimR}
-histories have been included due to their use in previous simulations. However, it should
-be noted that neither faithfully simulates its respective species. This is apparent by
-the low number of segregating sites simulated by each history relative to their real-world
-analogs. Adjusting these histories to better represent their real-world analogs would result
-in a drastic increase to runtime.
+The WHEAT \insertCite{gaynor2017Two}{AlphaSimR} and
+MAIZE \insertCite{hickey2014Evaluation}{AlphaSimR} demographic models
+have been included due to their use in previous simulations.
+Note that neither faithfully represent demographic histories of these species.
+This is apparent by the lower number of segregating sites
+simulated by each demographic models relative to their real-world analogs.
+Adjusting these demographic models to better represent their real-world analogs
+would result in a drastic increase to runtime with `MaCS`.
+
+For a fixed sample size, chromosome length, and demographic history,
+expected site counts scale with \code{mutRate}. Reducing the rate reduces
+sequence diversity and memory usage and may save simulation time,
+but ancestry simulation limits the runtime saving.
+The number of sites remains random, so allow a margin above \code{segSites}
+when choosing a rate. Consider whether reduced diversity suits the
+simulation's goals and report the mutation rate used.
+
+See the \code{vignette("DemographicModels", package = "AlphaSimR")} for
+further information on \code{runMacs} and demographic models.
 
 Segregating sites are placed at absolute genetic map positions, scaled
 from their positions on the simulated chromosome by its genetic length.
@@ -75,8 +107,8 @@ site, and its centromere is placed at half of it, whichever sites are
 returned.
 }
 \examples{
-# Creates a populations of 10 outbred individuals
-# Their genome consists of 1 chromosome and 100 segregating sites
+# Creates a population of 10 outbred individuals
+# Their genome consists of 1 chromosome and retains 100 segregating sites
 \dontrun{
 founderPop = runMacs(nInd=10,nChr=1,segSites=100)
 }

@@ -11,7 +11,7 @@ runMacs2(
   Ne = 100,
   bp = 1e+08,
   genLen = 1,
-  mutRate = 2.5e-08,
+  mutRate = 1e-08,
   histNe = c(500, 1500, 6000, 12000, 1e+05),
   histGen = c(100, 1000, 10000, 1e+05, 1e+06),
   inbred = FALSE,
@@ -24,32 +24,44 @@ runMacs2(
 \arguments{
 \item{nInd}{number of individuals to simulate}
 
-\item{nChr}{number of chromosomes to simulate}
+\item{nChr}{number of chromosomes to simulate (using independent simulations)}
 
-\item{segSites}{number of segregating sites to keep per chromosome}
+\item{segSites}{number of segregating sites to keep per chromosome. A
+value of \code{NULL} results in retaining all simulated segregating sites.
+Requesting more sites than were generated raises an error.}
 
-\item{Ne}{effective population size}
+\item{Ne}{present effective population size}
 
 \item{bp}{base pair length of chromosome}
 
 \item{genLen}{genetic length of chromosome in Morgans}
 
-\item{mutRate}{per base pair mutation rate}
+\item{mutRate}{mutation rate per base pair per generation}
 
-\item{histNe}{effective population size in previous
-generations}
+\item{histNe}{historical effective population sizes
+Each size applies backward in time from the corresponding boundary in
+\code{histGen} until the next boundary, or indefinitely for the oldest size.}
 
-\item{histGen}{number of generations ago for effective
-population sizes given in histNe}
+\item{histGen}{generation boundaries measured in generations ago,
+in increasing order, corresponding to \code{histNe}. The present size
+\code{Ne} applies from the present to the first boundary.}
 
-\item{inbred}{should founder individuals be inbred}
+\item{inbred}{should founder individuals be inbred by replicating their
+whole-chromosome haplotypes (see also \code{ploidy}).
+This creates fully homozygous founders without simulating a history of selfing.}
 
 \item{split}{an optional historic population split in terms of generations ago}
 
-\item{ploidy}{ploidy level of organism}
+\item{ploidy}{level of species to simulate \code{nInd * ploidy}
+whole-chromosome haplotypes per chromosome unless \code{inbred=TRUE},
+where \code{nInd} haplotypes are simulated and each is copied across
+all homologues of an individual.
+Also multiplies \code{Ne} and \code{histNe} by \code{ploidy / 2},
+regardless of \code{inbred}, consistent with the autotetraploid
+coalescent scaling of \insertCite{arnold2012Extending}{AlphaSimR}.}
 
 \item{returnCommand}{should the command passed to manualCommand in
-\code{\link{runMacs}} be returned. If TRUE, MaCS will not be called and
+\code{\link{runMacs}} be returned. If TRUE, `MaCS` will not be called and
 the command is returned instead.}
 
 \item{nThreads}{if OpenMP is available, this will allow for simulating chromosomes in parallel.
@@ -63,27 +75,31 @@ the manualCommand argument of \code{\link{runMacs}}.
 \description{
 A wrapper function for \code{\link{runMacs}}. This wrapper is designed
 to provide a more intuitive interface for writing custom commands
-in MaCS \insertCite{chen2009Fast}{AlphaSimR}. It effectively automates the creation
+in `MaCS` \insertCite{chen2009Fast}{AlphaSimR}. It effectively automates the creation
 of an appropriate line for the manualCommand argument in \code{\link{runMacs}}
 using user supplied variables, but only allows for a subset of the functionality
-offered by this argument. The default arguments of this function were chosen to match
-species="GENERIC" in \code{\link{runMacs}}.
+offered by this argument. The default demographic model matches
+\code{species="GENERIC"} in \code{\link{runMacs}}.
+}
+\details{
+See \code{vignette("DemographicModels", package = "AlphaSimR")} for
+further information on \code{runMacs2} and demographic models.
 }
 \examples{
-# Creates a populations of 10 outbred individuals
-# Their genome consists of 1 chromosome and 100 segregating sites
-# The command is equivalent to using species="GENERIC" in runMacs
+# Creates a population of 10 outbred individuals
+# Their genome consists of 1 chromosome and retains 100 segregating sites
+# The command is equivalent to species="GENERIC" in runMacs
 \dontrun{
 founderPop = runMacs2(nInd=10,nChr=1,segSites=100)
 
-# runMacs() Implementation of the cattle demography following
+# runMacs() Implementation of the CATTLE demographic model following
 #  Macleod et al. (2013) https://doi.org/10.1093/molbev/mst125
-cattleChrSum = 2.8e9 # https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_002263795.3/
-(cattleChrBp = cattleChrSum / 30)
+cattleGenome = 2.8e9 # https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_002263795.3/
+(cattleChr = round(cattleGenome / 30))
 recRate = 9.26e-09
-(cattleGenLen = recRate * cattleChrBp)
+(cattleGenLen = recRate * cattleChr)
 cattleMutRate = 9.4e-9
-runMacs2(nInd = 10, nChr = 1, Ne = 90, bp = cattleChrBp,
+runMacs2(nInd = 10, nChr = 1, Ne = 90, bp = cattleChr,
          genLen = cattleGenLen, mutRate = cattleMutRate,
          histNe  = c(120, 250, 350, 1000, 1500, 2000, 2500, 3500, 7000, 10000, 17000, 62000),
          histGen = c(  3,   6,  12,   18,   24,  154,  454,  654, 1754,  2354,  3354, 33154),
