@@ -254,7 +254,12 @@ calcPopValue = function(
     # Check consistent column names across matrices before combining
     same_columns = all(vapply(
       popValueList,
-      function(x) identical(colnames(x), colnames(popValueList[[1]])),
+      function(x) {
+        reference = popValueList[[1]]
+        x_names = if (is.atomic(x) && is.null(dim(x))) names(x) else colnames(x)
+        reference_names = if (is.atomic(reference) && is.null(dim(reference))) names(reference) else colnames(reference)
+        identical(x_names, reference_names)
+      },
       logical(1)
     ))
     if (!same_columns) {

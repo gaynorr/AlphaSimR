@@ -344,7 +344,9 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #'
 #' @export
 meanGPop = function(x, level = 0, .req_level) {
-  if (!is.numeric(level) || length(level) != 1L || is.na(level)) {
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
     stop("`level` must be a single non-NA integer value.")
   }
   level = as.integer(level)
@@ -370,6 +372,13 @@ meanGPop = function(x, level = 0, .req_level) {
     level = level - 1,
     .req_level = .req_level
   )
+  value_names = lapply(
+    popValueList,
+    function(v) if (is.null(dim(v))) names(v) else colnames(v)
+  )
+  if (!all(vapply(value_names, identical, logical(1), value_names[[1]]))) {
+    stop("Population values do not have consistent trait names.")
+  }
   popValues = do.call('rbind', popValueList)
 
   if (level < 1) {
@@ -570,7 +579,7 @@ varG = function(pop) {
 #' 
 #' In contrast to \code{\link{varPPop}}, which computes variance between
 #' population means, \code{varP} computes variance within populations from
-#' individual genetic values.
+#' individual phenotype values.
 #'
 #' @param pop A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
 #'   \code{\link{MultiPop-class}} object.
@@ -736,10 +745,12 @@ varEBV = function(pop) {
 varGPop = function(x, level = 1L) {
   m = meanGPop(x, level = level)
   if (is.vector(m)) {
+    m = t(m)
+  }
+  if (nrow(m) == 1L) {
     warning(
       "Returning a variance-covariance matrix of zeros. You may want to increase the value of `level`."
     )
-    m = t(m)
   }
   G = popVar(m)
   rownames(G) = colnames(G) = colnames(m)
@@ -1380,7 +1391,7 @@ genicVarG = function(pop,simParam=NULL,nThreads=NULL){
 #'   )
 #' )
 #'
-#' # Extract estimated breeding values at different simplification levels
+#' # Extract genetic values at different simplification levels
 #' gv(mp1, simplify = FALSE)
 #' gv(mp1, simplify = TRUE, level = 2)
 #' gv(mp1, simplify = TRUE, level = 1)
@@ -1474,7 +1485,7 @@ gv = function(pop, simplify = FALSE, level = 1L){
 #'   )
 #' )
 #'
-#' # Extract estimated breeding values at different simplification levels
+#' # Extract phenotype values at different simplification levels
 #' pheno(mp1, simplify = FALSE)
 #' pheno(mp1, simplify = TRUE, level = 2)
 #' pheno(mp1, simplify = TRUE, level = 1)
