@@ -1139,13 +1139,19 @@ Rcpp::List cross(
                          hist2,
                          rng);
             if(trackRec){
+              // Both quadrivalent gametes are labeled 1-4 across all four
+              // chromosomes, so each history needs all four mapped back
               hist1.col(0) *= 100; //To avoid conflicts
               hist1.col(0).replace(100,int(xm(x))+1);
               hist1.col(0).replace(200,int(xm(x+1))+1);
+              hist1.col(0).replace(300,int(xm(x+2))+1);
+              hist1.col(0).replace(400,int(xm(x+3))+1);
               hist.addHist(hist1,ind,chr,progenyChr);
               hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(xm(x+2))+1);
-              hist2.col(0).replace(200,int(xm(x+3))+1);
+              hist2.col(0).replace(100,int(xm(x))+1);
+              hist2.col(0).replace(200,int(xm(x+1))+1);
+              hist2.col(0).replace(300,int(xm(x+2))+1);
+              hist2.col(0).replace(400,int(xm(x+3))+1);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;
@@ -1228,13 +1234,19 @@ Rcpp::List cross(
                          hist2,
                          rng);
             if(trackRec){
+              // Both quadrivalent gametes are labeled 1-4 across all four
+              // chromosomes, so each history needs all four mapped back
               hist1.col(0) *= 100; //To avoid conflicts
               hist1.col(0).replace(100,int(xf(x))+1);
               hist1.col(0).replace(200,int(xf(x+1))+1);
+              hist1.col(0).replace(300,int(xf(x+2))+1);
+              hist1.col(0).replace(400,int(xf(x+3))+1);
               hist.addHist(hist1,ind,chr,progenyChr);
               hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(xf(x+2))+1);
-              hist2.col(0).replace(200,int(xf(x+3))+1);
+              hist2.col(0).replace(100,int(xf(x))+1);
+              hist2.col(0).replace(200,int(xf(x+1))+1);
+              hist2.col(0).replace(300,int(xf(x+2))+1);
+              hist2.col(0).replace(400,int(xf(x+3))+1);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;
@@ -1475,13 +1487,19 @@ Rcpp::List createReducedGenome(
                          hist2,
                          rng);
             if(trackRec){
+              // Both quadrivalent gametes are labeled 1-4 across all four
+              // chromosomes, so each history needs all four mapped back
               hist1.col(0) *= 100; //To avoid conflicts
               hist1.col(0).replace(100,int(x(y))+1);
               hist1.col(0).replace(200,int(x(y+1))+1);
+              hist1.col(0).replace(300,int(x(y+2))+1);
+              hist1.col(0).replace(400,int(x(y+3))+1);
               hist.addHist(hist1,ind,chr,progenyChr);
               hist2.col(0) *= 100; //To avoid conflicts
-              hist2.col(0).replace(100,int(x(y+2))+1);
-              hist2.col(0).replace(200,int(x(y+3))+1);
+              hist2.col(0).replace(100,int(x(y))+1);
+              hist2.col(0).replace(200,int(x(y+1))+1);
+              hist2.col(0).replace(300,int(x(y+2))+1);
+              hist2.col(0).replace(400,int(x(y+3))+1);
               hist.addHist(hist2,ind,chr,progenyChr+1);
             }
             progenyChr += 2;
