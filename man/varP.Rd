@@ -23,7 +23,7 @@ Returns phenotypic variance for all traits within a \code{Pop}.
 
 In contrast to \code{\link{varPPop}}, which computes variance between
 population means, \code{varP} computes variance within populations from
-individual genetic values.
+individual phenotype values.
 }
 \details{
 A variance-covariance matrix of phenotype values is computed for each 

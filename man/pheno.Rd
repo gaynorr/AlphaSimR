@@ -80,7 +80,7 @@ mp1 = splitPop(
   )
 )
 
-# Extract estimated breeding values at different simplification levels
+# Extract phenotype values at different simplification levels
 pheno(mp1, simplify = FALSE)
 pheno(mp1, simplify = TRUE, level = 2)
 pheno(mp1, simplify = TRUE, level = 1)

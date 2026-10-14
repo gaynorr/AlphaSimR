@@ -80,7 +80,7 @@ mp1 = splitPop(
   )
 )
 
-# Extract estimated breeding values at different simplification levels
+# Extract genetic values at different simplification levels
 gv(mp1, simplify = FALSE)
 gv(mp1, simplify = TRUE, level = 2)
 gv(mp1, simplify = TRUE, level = 1)
