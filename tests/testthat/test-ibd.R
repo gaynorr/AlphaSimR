@@ -194,3 +194,35 @@ test_that("tracking recombination does not change the genotypes produced", {
   expect_equal(unname(pullSegSiteHaplo(popOff, simParam=SPoff)),
                unname(pullSegSiteHaplo(popOn, simParam=SPon)))
 })
+
+test_that("IBD agrees with genotypes in tetraploids with quadrivalents", {
+  # Founder haplotypes are numbered one per row in order, so the allele at
+  # each locus of a progeny haplotype must equal the allele of the founder
+  # haplotype its IBD names. Quadrivalent gametes are drawn from all four
+  # chromosomes, and a history that names the wrong chromosome shows up here
+  # as a mismatch or as an error from pullIbdHaplo.
+  for(quadProb in c(0, 1)){
+    set.seed(9911)
+    founderPop = quickHaplo(nInd=10, nChr=2, segSites=50, ploidy=4L)
+    SP = SimParam$new(founderPop)
+    SP$nThreads = 1L
+    SP$setTrackRec(TRUE)
+    SP$quadProb = quadProb
+    pop = newPop(founderPop, simParam=SP)
+    founderHaplo = pullSegSiteHaplo(pop, simParam=SP)
+
+    progeny = list(cross=randCross(pop, nCrosses=10, simParam=SP),
+                   reduced=reduceGenome(pop, nProgeny=2, simParam=SP))
+    progeny$cross2 = randCross(progeny$cross, nCrosses=10, simParam=SP)
+
+    for(type in names(progeny)){
+      ibd = pullIbdHaplo(progeny[[type]], simParam=SP)
+      haplo = pullSegSiteHaplo(progeny[[type]], simParam=SP)
+      expect_equal(dim(ibd), dim(haplo))
+      expected = founderHaplo[cbind(c(ibd), rep(seq_len(ncol(ibd)),
+                                                each=nrow(ibd)))]
+      expect_equal(unname(c(haplo)), unname(expected),
+                   info=paste(type, "with quadProb", quadProb))
+    }
+  }
+})
