@@ -77,22 +77,27 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
     if(useFemale){
       map = simParam$femaleMap
       centromere = simParam$femaleCentromere
+      genLen = .simGenLen(simParam, female=TRUE)
     }else{
       map = simParam$maleMap
       centromere = simParam$maleCentromere
+      genLen = .simGenLen(simParam, female=FALSE)
     }
   }else{
-    # Create dummy map with zero genetic distance
+    # Create dummy map with zero genetic distance and zero genetic length,
+    # so no crossovers are sampled
     map = vector("list",pop@nChr)
     for(i in seq_len(pop@nChr)){
       map[[i]] = rep(0,pop@nLoci[i])
     }
     map = as.matrix(map)
     centromere = rep(0,pop@nChr)
+    genLen = rep(0,pop@nChr)
   }
   
   tmp = createReducedGenome(pop@geno, nProgeny,
                             map,
+                            genLen,
                             simParam$v,
                             simParam$p,
                             simParam$isTrackRec,

@@ -168,11 +168,14 @@ default parameterization is chosen to approximate Kosambi.
 In AlphaSimR a genetic map is a list with one element per chromosome.
 Each element is a named numeric vector giving the position of every
 segregating site in Morgans. Positions are absolute: the chromosome
-starts at position zero, and the first site need not sit there.
-Crossovers are sampled from position zero, so some fall before the first
-site, where they only change which parental chromosome a gamete starts
-on. The map is held by the `SimParam` object and can be inspected with
-`getGenMap`.
+starts at position zero, and the first site need not sit there. It ends
+at its genetic length, `genLen`, which can lie past the last site, as it
+does for founders simulated with `runMacs`. Crossovers are sampled over
+the whole chromosome, so some fall before the first site, where they
+only change which parental chromosome a gamete starts on, and some fall
+after the last site, where they affect nothing. The map is held by the
+`SimParam` object and can be inspected with `getGenMap`, and the
+chromosome lengths with `SP$genLen`.
 
 ```{r}
 founderPop = quickHaplo(nInd = 10, nChr = 2, segSites = 5, genLen = 1)
@@ -186,14 +189,14 @@ male and female maps can be set separately with `SP$switchFemaleMap` and
 `SP$switchMaleMap`. Sex-specific recombination rates are common in
 animals, and where the recombination *landscape* is assumed to be the
 same in both sexes but its total length differs, `SP$setRecombRatio`
-provides a shortcut that rescales both maps and both centromere positions
-around the current map.
+provides a shortcut that rescales both maps, both centromere positions
+and both sets of chromosome lengths around the current map.
 
 ```{r}
 SP$setRecombRatio(2) # Twice as much recombination in females
 
-sapply(SP$femaleMap, max)
-sapply(SP$maleMap, max)
+SP$femaleGenLen
+SP$maleGenLen
 ```
 
 ## Recombination models

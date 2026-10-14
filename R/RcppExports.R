@@ -352,16 +352,16 @@ createIbdMat <- function(ibd, chr, nLoci, ploidy, nThreads) {
     .Call(`_AlphaSimR_createIbdMat`, ibd, chr, nLoci, ploidy, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
+cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
 }
 
-createDH2 <- function(geno, nDH, genMap, v, p, trackRec, nThreads) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, v, p, trackRec, nThreads)
+createDH2 <- function(geno, nDH, genMap, genLen, v, p, trackRec, nThreads) {
+    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, genLen, v, p, trackRec, nThreads)
 }
 
-createReducedGenome <- function(geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
+createReducedGenome <- function(geno, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
 }
 
 #' @title Population variance

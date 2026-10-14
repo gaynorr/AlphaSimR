@@ -106,6 +106,8 @@ SimParam = R6Class(
       private$.sepMap = FALSE
       private$.femaleCentromere = founderPop@centromere
       private$.maleCentromere = NULL
+      private$.femaleGenLen = .getGenLen(founderPop)
+      private$.maleGenLen = NULL
       private$.lastId = 0L
       private$.isTrackPed = FALSE
       private$.pedigree = matrix(NA_integer_,nrow=0,ncol=3)
@@ -2060,6 +2062,7 @@ SimParam = R6Class(
       # switch to averaging the sex-specific values once it is TRUE
       genMap = self$genMap
       centromere = self$centromere
+      genLen = self$genLen
       private$.sepMap = TRUE
       feSc = 2/(1/femaleRatio+1)
       maSc = 2/(femaleRatio+1)
@@ -2073,6 +2076,8 @@ SimParam = R6Class(
                                   maSc*x
                                 })
       private$.maleCentromere = maSc*centromere
+      private$.femaleGenLen = feSc*genLen
+      private$.maleGenLen = maSc*genLen
       invisible(self)
     },
 
@@ -2084,20 +2089,26 @@ SimParam = R6Class(
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric.
-    switchGenMap = function(genMap, centromere=NULL){
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchGenMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
         .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere>=0,
-                centromere<=sapply(genMap,max))
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2107,6 +2118,8 @@ SimParam = R6Class(
       private$.maleMap = NULL
       private$.femaleCentromere = centromere
       private$.maleCentromere = NULL
+      private$.femaleGenLen = genLen
+      private$.maleGenLen = NULL
       invisible(self)
     },
 
@@ -2118,20 +2131,26 @@ SimParam = R6Class(
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric.
-    switchFemaleMap = function(genMap, centromere=NULL){
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchFemaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
         .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere>=0,
-                centromere<=sapply(genMap,max))
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2139,12 +2158,15 @@ SimParam = R6Class(
       if(private$.sepMap){
         private$.femaleMap = genMap
         private$.femaleCentromere = centromere
+        private$.femaleGenLen = genLen
       }else{
         private$.sepMap = TRUE
         private$.maleMap = private$.femaleMap
         private$.femaleMap = genMap
         private$.maleCentromere = private$.femaleCentromere
         private$.femaleCentromere = centromere
+        private$.maleGenLen = private$.femaleGenLen
+        private$.femaleGenLen = genLen
       }
       invisible(self)
     },
@@ -2157,20 +2179,26 @@ SimParam = R6Class(
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
     #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric.
-    switchMaleMap = function(genMap, centromere=NULL){
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchMaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
         .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
                 centromere>=0,
-                centromere<=sapply(genMap,max))
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2178,6 +2206,7 @@ SimParam = R6Class(
       private$.sepMap = TRUE
       private$.maleMap = genMap
       private$.maleCentromere = centromere
+      private$.maleGenLen = genLen
       invisible(self)
     },
 
@@ -2339,6 +2368,8 @@ SimParam = R6Class(
     .sepMap="logical",
     .femaleCentromere="numeric",
     .maleCentromere="numeric",
+    .femaleGenLen="numeric",
+    .maleGenLen="numeric",
     .lastId="integer",
     .isTrackPed="logical",
     .pedigree="matrix",
@@ -2747,6 +2778,45 @@ SimParam = R6Class(
         }
       }else{
         stop("`$maleCentromere` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field genLen genetic length of each chromosome. A chromosome
+    #' runs from position 0 to its genetic length, which can lie past
+    #' its last locus.
+    genLen=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          (private$.femaleGenLen+private$.maleGenLen)/2
+        }else{
+          private$.femaleGenLen
+        }
+      }else{
+        stop("`$genLen` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field femaleGenLen genetic length of each chromosome on the
+    #' female genetic map
+    femaleGenLen=function(value){
+      if(missing(value)){
+        private$.femaleGenLen
+      }else{
+        stop("`$femaleGenLen` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field maleGenLen genetic length of each chromosome on the
+    #' male genetic map
+    maleGenLen=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleGenLen
+        }else{
+          private$.femaleGenLen
+        }
+      }else{
+        stop("`$maleGenLen` is read only",call.=FALSE)
       }
     },
 
@@ -3216,4 +3286,23 @@ findQtlIndex = function(activeQtl, traitQtl){
                     traitQtl@lociLoc, sep="_")
 
   return(match(traitLoci, activeLoci))
+}
+
+# The genetic length of each chromosome on the female or male map of a
+# SimParam. A SimParam saved before genLen existed has no such field, and
+# reading it gives NULL, so it falls back to the position of each
+# chromosome's last locus, which is where those chromosomes ended.
+.simGenLen = function(simParam, female=TRUE){
+  if(female){
+    genLen = simParam$femaleGenLen
+    if(is.null(genLen)){
+      genLen = .lastLocus(simParam$femaleMap)
+    }
+  }else{
+    genLen = simParam$maleGenLen
+    if(is.null(genLen)){
+      genLen = .lastLocus(simParam$maleMap)
+    }
+  }
+  return(genLen)
 }

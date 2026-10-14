@@ -355,16 +355,19 @@ arma::Mat<int> removeDoubleCO(const arma::Mat<int>& X){
 
 // Finds recombination map for a bivalent pair
 // genMap, chromosome genetic map
+// genLen, genetic length of the chromosome
 // v, the interference parameter
 // p, the proportion of non-interfering crossovers
 // rng, the explicit dqrng stream used for all random draws in this call
-arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
+//
+// Map positions are absolute, so the chromosome runs from position 0 to
+// genLen, which can lie past the last locus, and chiasmata are sampled over
+// all of it. Those falling before the first locus are resolved to site 1,
+// and those after the last locus affect no locus and are not recorded.
+arma::Mat<int> findBivalentCO(const arma::vec& genMap, double genLen,
+                              double v, double p,
                               alphasimrRng::rngEngine& rng){
   arma::uword nBefore=0, readChr=0, nCO;
-  // Map positions are absolute, so the chromosome runs from position 0 to
-  // the last locus and chiasmata are sampled over all of it. Those falling
-  // before the first locus are resolved to site 1 below.
-  double genLen = genMap(genMap.n_elem-1);
   
   // Find crossover positions
   arma::vec posCO = sampleChiasmata(genLen, v, p, rng);
@@ -385,16 +388,23 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
   }
   
   // Find crossover sites on map
+  // Crossovers are sorted, so once one falls after the last locus every
+  // later one does too
   output.row(0).ones();
+  arma::uword nRows = 1;
   for(arma::uword i=0; i<nCO; ++i){
     ++readChr;
     readChr = readChr%2;
     nBefore = countLociBefore(genMap,posCO(i),nBefore);
-    output(i+1,0) = readChr+1;
-    output(i+1,1) = nBefore+1;
+    if(nBefore==genMap.n_elem){
+      break;
+    }
+    output(nRows,0) = readChr+1;
+    output(nRows,1) = nBefore+1;
+    ++nRows;
   }
   
-  return removeDoubleCO(output);
+  return removeDoubleCO(output.head_rows(nRows));
 }
 
 /*
@@ -410,11 +420,11 @@ arma::Mat<int> findBivalentCO(const arma::vec& genMap, double v, double p,
  * rng is the explicit dqrng stream used for all random draws in this call
  */
 arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
+                                                double genLen,
                                                 double centromere, double v,
                                                 double p,
                                                 alphasimrRng::rngEngine& rng){
   arma::field<arma::Mat<int> > output(2);
-  double genLen = genMap(genMap.n_elem-1);
   
   // Sample the exchange point
   double exchange = alphasimrRng::runif(rng) * genLen;
@@ -650,6 +660,20 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
     output(i)(0,0) = currentChromosome;
     output(i)(0,1) = 1;
     
+    // Records a crossover onto the chromosome now being read. The arms are
+    // read from head to tail, so crossovers arrive in increasing order. One
+    // past the last locus affects no locus and is not recorded, and neither
+    // is any after it, which keeps every site in the history within the
+    // chromosome's loci.
+    auto recordCO = [&](double pos){
+      nBefore = countLociBefore(genMap,pos,nBefore);
+      if(nBefore<genMap.n_elem){
+        ++nCO;
+        output(i)(nCO,0) = currentChromosome;
+        output(i)(nCO,1) = nBefore+1;
+      }
+    };
+    
     if(currentChromosome<3){ // Start in arm 0
       
       // Fill crossovers in the head
@@ -661,20 +685,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           if(chromatidPairs(0)(j,0) == currentChromatid){
             currentChromosome = 2;
             currentChromatid = chromatidPairs(0)(j,1);
-            ++nCO;
-            nBefore = countLociBefore(genMap,posCO(0)(j),nBefore);
-            output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = nBefore+1;
+            recordCO(posCO(0)(j));
           }
           break;
         case 2:
           if(chromatidPairs(0)(j,1) == currentChromatid){
             currentChromosome = 1;
             currentChromatid = chromatidPairs(0)(j,0);
-            ++nCO;
-            nBefore = countLociBefore(genMap,posCO(0)(j),nBefore);
-            output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = nBefore+1;
+            recordCO(posCO(0)(j));
           }
         }
       }
@@ -687,20 +705,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             if(chromatidPairs(3)(j,0) == currentChromatid){
               currentChromosome = 4;
               currentChromatid = chromatidPairs(3)(j,1);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(3)(j));
             }
             break;
           case 4:
             if(chromatidPairs(3)(j,1) == currentChromatid){
               currentChromosome = 1;
               currentChromatid = chromatidPairs(3)(j,0);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(3)(j));
             }
           }
         }
@@ -711,20 +723,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             if(chromatidPairs(1)(j,0) == currentChromatid){
               currentChromosome = 3;
               currentChromatid = chromatidPairs(1)(j,1);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(1)(j));
             }
             break;
           case 3:
             if(chromatidPairs(1)(j,1) == currentChromatid){
               currentChromosome = 2;
               currentChromatid = chromatidPairs(1)(j,0);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(1)(j));
             }
           }
         }
@@ -738,20 +744,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
           if(chromatidPairs(2)(j,0) == currentChromatid){
             currentChromosome = 4;
             currentChromatid = chromatidPairs(2)(j,1);
-            ++nCO;
-            nBefore = countLociBefore(genMap,posCO(2)(j),nBefore);
-            output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = nBefore+1;
+            recordCO(posCO(2)(j));
           }
           break;
         case 4:
           if(chromatidPairs(2)(j,1) == currentChromatid){
             currentChromosome = 3;
             currentChromatid = chromatidPairs(2)(j,0);
-            ++nCO;
-            nBefore = countLociBefore(genMap,posCO(2)(j),nBefore);
-            output(i)(nCO,0) = currentChromosome;
-            output(i)(nCO,1) = nBefore+1;
+            recordCO(posCO(2)(j));
           }
         }
       }
@@ -764,20 +764,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             if(chromatidPairs(3)(j,0) == currentChromatid){
               currentChromosome = 4;
               currentChromatid = chromatidPairs(3)(j,1);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(3)(j));
             }
             break;
           case 4:
             if(chromatidPairs(3)(j,1) == currentChromatid){
               currentChromosome = 1;
               currentChromatid = chromatidPairs(3)(j,0);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(3)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(3)(j));
             }
           }
         }
@@ -788,20 +782,14 @@ arma::field<arma::Mat<int> > findQuadrivalentCO(const arma::vec& genMap,
             if(chromatidPairs(1)(j,0) == currentChromatid){
               currentChromosome = 3;
               currentChromatid = chromatidPairs(1)(j,1);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(1)(j));
             }
             break;
           case 3:
             if(chromatidPairs(1)(j,1) == currentChromatid){
               currentChromosome = 2;
               currentChromatid = chromatidPairs(1)(j,0);
-              ++nCO;
-              nBefore = countLociBefore(genMap,posCO(1)(j),nBefore);
-              output(i)(nCO,0) = currentChromosome;
-              output(i)(nCO,1) = nBefore+1;
+              recordCO(posCO(1)(j));
             }
           }
         }
@@ -887,12 +875,13 @@ void bivalent(const unsigned char* chr1,
               const unsigned char* chr2,
               arma::uword nBins,
               const arma::vec& genMap,
+              double genLen,
               double v,
               double p,
               unsigned char* output,
               arma::Mat<int>& hist,
               alphasimrRng::rngEngine& rng){
-  hist = findBivalentCO(genMap, v, p, rng);
+  hist = findBivalentCO(genMap, genLen, v, p, rng);
   if(hist.n_rows==1){
     // No crossovers between loci, so the gamete is a copy of one chromosome.
     // It is not always chromosome 1, because crossovers before the first
@@ -966,6 +955,7 @@ void quadrivalent(const unsigned char* chr1,
                   const unsigned char* chr4,
                   arma::uword nBins,
                   const arma::vec& genMap,
+                  double genLen,
                   double centromere,
                   double v,
                   double p,
@@ -977,7 +967,7 @@ void quadrivalent(const unsigned char* chr1,
   const unsigned char* const chr[4] = {chr1, chr2, chr3, chr4};
 
   arma::field<arma::Mat<int> > output;
-  output = findQuadrivalentCO(genMap, centromere, v, p, rng);
+  output = findQuadrivalentCO(genMap, genLen, centromere, v, p, rng);
 
   hist1 = output(0);
   hist2 = output(1);
@@ -993,6 +983,8 @@ void quadrivalent(const unsigned char* chr1,
 // father: male parents
 // femaleMap: chromosome genetic maps
 // maleMap: chromosome genetic maps
+// femaleGenLen: chromosome genetic lengths for the female map
+// maleGenLen: chromosome genetic lengths for the male map
 // trackRec: track recombination
 // motherPloidy: ploidy level of mother 
 // fatherPloidy: ploidy level of father
@@ -1008,6 +1000,8 @@ Rcpp::List cross(
     arma::uvec father,
     const arma::field<arma::vec>& femaleMap,
     const arma::field<arma::vec>& maleMap,
+    const arma::vec& femaleGenLen,
+    const arma::vec& maleGenLen,
     bool trackRec,
     arma::uword motherPloidy,
     arma::uword fatherPloidy,
@@ -1026,6 +1020,11 @@ Rcpp::List cross(
   }
   if((motherGeno.n_elem==0) || (fatherGeno.n_elem!=motherGeno.n_elem)){
     Rcpp::stop("mother and father genotypes must have the same chromosomes");
+  }
+  // Each chromosome's genetic length is read inside the parallel region
+  if((femaleGenLen.n_elem!=motherGeno.n_elem) ||
+     (maleGenLen.n_elem!=motherGeno.n_elem)){
+    Rcpp::stop("genLen must have one value per chromosome");
   }
   if(mother.n_elem>0){
     if((mother.min()<1) || (mother.max()>motherGeno(0).n_slices) ||
@@ -1092,6 +1091,7 @@ Rcpp::List cross(
                      motherGeno(chr).slice_colptr(mother(ind), xm(x+1)),
                      nBins,
                      femaleMap(chr),
+                     femaleGenLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1110,6 +1110,7 @@ Rcpp::List cross(
                      motherGeno(chr).slice_colptr(mother(ind), xm(x+3)),
                      nBins,
                      femaleMap(chr),
+                     femaleGenLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1130,6 +1131,7 @@ Rcpp::List cross(
                          motherGeno(chr).slice_colptr(mother(ind), xm(x+3)),
                          nBins,
                          femaleMap(chr),
+                         femaleGenLen(chr),
                          motherCentromere(chr),
                          v,
                          p,
@@ -1162,6 +1164,7 @@ Rcpp::List cross(
                    motherGeno(chr).slice_colptr(mother(ind), xm(x+1)),
                    nBins,
                    femaleMap(chr),
+                   femaleGenLen(chr),
                    v,
                    p,
                    tmpGeno.slice_colptr(ind, progenyChr),
@@ -1187,6 +1190,7 @@ Rcpp::List cross(
                      fatherGeno(chr).slice_colptr(father(ind), xf(x+1)),
                      nBins,
                      maleMap(chr),
+                     maleGenLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1205,6 +1209,7 @@ Rcpp::List cross(
                      fatherGeno(chr).slice_colptr(father(ind), xf(x+3)),
                      nBins,
                      maleMap(chr),
+                     maleGenLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1225,6 +1230,7 @@ Rcpp::List cross(
                          fatherGeno(chr).slice_colptr(father(ind), xf(x+3)),
                          nBins,
                          maleMap(chr),
+                         maleGenLen(chr),
                          fatherCentromere(chr),
                          v,
                          p,
@@ -1257,6 +1263,7 @@ Rcpp::List cross(
                    fatherGeno(chr).slice_colptr(father(ind), xf(x+1)),
                    nBins,
                    maleMap(chr),
+                   maleGenLen(chr),
                    v,
                    p,
                    tmpGeno.slice_colptr(ind, progenyChr),
@@ -1285,9 +1292,14 @@ Rcpp::List cross(
 Rcpp::List createDH2(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     const arma::uvec& nDH, const arma::field<arma::vec>& genMap, 
-    double v, double p, bool trackRec, int nThreads){
+    const arma::vec& genLen, double v, double p, bool trackRec,
+    int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
+  // Each chromosome's genetic length is read inside the parallel region
+  if(genLen.n_elem != nChr){
+    Rcpp::stop("genLen must have one value per chromosome");
+  }
   // nDH holds one value per individual, so an individual's output slices
   // no longer sit at a fixed stride. They start at the running total of
   // the individuals before it. The offsets are built once, before the
@@ -1339,6 +1351,7 @@ Rcpp::List createDH2(
                  geno(chr).slice_colptr(ind, x(1)),
                  nBins,
                  genMap(chr),
+                 genLen(chr),
                  v,
                  p,
                  tmp.slice_colptr(out, 0),
@@ -1370,10 +1383,15 @@ Rcpp::List createDH2(
 Rcpp::List createReducedGenome(
     const arma::field<arma::Cube<unsigned char> >& geno, 
     const arma::uvec& nProgeny, const arma::field<arma::vec>& genMap, 
-    double v, double p, bool trackRec, arma::uword ploidy,  
-    arma::vec& centromere, double quadProb, int nThreads){
+    const arma::vec& genLen, double v, double p, bool trackRec,
+    arma::uword ploidy, arma::vec& centromere, double quadProb,
+    int nThreads){
   arma::uword nChr = geno.n_elem;
   arma::uword nInd = geno(0).n_slices;
+  // Each chromosome's genetic length is read inside the parallel region
+  if(genLen.n_elem != nChr){
+    Rcpp::stop("genLen must have one value per chromosome");
+  }
   // nProgeny holds one value per individual. Unlike createDH2 the work
   // loop below is partitioned over progeny rather than over individuals,
   // so each output slice has to be able to name its own parent. With a
@@ -1440,6 +1458,7 @@ Rcpp::List createReducedGenome(
                      geno(chr).slice_colptr(par, x(y+1)),
                      nBins,
                      genMap(chr),
+                     genLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1458,6 +1477,7 @@ Rcpp::List createReducedGenome(
                      geno(chr).slice_colptr(par, x(y+3)),
                      nBins,
                      genMap(chr),
+                     genLen(chr),
                      v,
                      p,
                      tmpGeno.slice_colptr(ind, progenyChr),
@@ -1478,6 +1498,7 @@ Rcpp::List createReducedGenome(
                          geno(chr).slice_colptr(par, x(y+3)),
                          nBins,
                          genMap(chr),
+                         genLen(chr),
                          centromere(chr),
                          v,
                          p,
@@ -1510,6 +1531,7 @@ Rcpp::List createReducedGenome(
                    geno(chr).slice_colptr(par, x(y+1)),
                    nBins,
                    genMap(chr),
+                   genLen(chr),
                    v,
                    p,
                    tmpGeno.slice_colptr(ind, progenyChr),

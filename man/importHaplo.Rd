@@ -4,7 +4,7 @@
 \alias{importHaplo}
 \title{Import haplotypes}
 \usage{
-importHaplo(haplo, genMap, ploidy = 2L, ped = NULL)
+importHaplo(haplo, genMap, ploidy = 2L, ped = NULL, genLen = NULL)
 }
 \arguments{
 \item{haplo}{a matrix of haplotypes}
@@ -18,6 +18,12 @@ coerced using as.character. See \code{\link{importGenMap}}}
 
 \item{ped}{an optional pedigree for the supplied 
 genotypes. See details.}
+
+\item{genLen}{an optional vector of chromosome genetic lengths in
+Morgans, either one value or one per chromosome in the order the
+chromosomes first appear in genMap. Each must be at least the
+position of the chromosome's last marker. If NULL, each chromosome
+ends at its last marker. See \code{\link{newMapPop}}.}
 }
 \value{
 a \code{\link{MapPop-class}} if ped is NULL,

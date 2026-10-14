@@ -207,6 +207,18 @@ authors and may be modified further, but `LICENSE.note` carries a summary
 of the modifications and any change to one of them needs a matching change
 there.
 
+MaCS reports each site's position on a 0 to 1 scale, and that scale is
+physical: a position times the sequence length is a base pair. A variable
+recombination map, which MaCS reads with `-R` as lines of start, end and
+rate ratio on the same scale, changes how quickly recombination breakpoints
+arrive along that axis in `GraphBuilder::getNextPos` in `src/algorithm.cpp`.
+It does not rescale the axis, and mutations are still placed uniformly on
+it. `runMacs` in `R/founderPop.R` multiplies the MaCS position directly by
+`genLen` to get the genetic map, which is correct only because it never
+passes `-R` and recombination is therefore uniform. Exposing variable
+recombination would mean converting positions through the cumulative rate
+map first; otherwise the genetic map comes out wrong without any error.
+
 ## Tests
 
 - testthat, edition 2. This is the default by omission: there is no
