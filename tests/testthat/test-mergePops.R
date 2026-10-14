@@ -205,3 +205,48 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                    newMultiPop(pop[8:9], pop[10:11], pop[12]))
   expect_equal(flattenMultiPop(mp3, level = 3), mp3)
 })
+
+mergeBoundaryPop = function(nChr=1,ploidy=2,segSites=10,trait=FALSE){
+  f = quickHaplo(3,nChr,segSites,ploidy=ploidy)
+  sp = SimParam$new(f)
+  sp$nThreads = 1L
+  if(trait) sp$addTraitAG(5,varGxE=1,varEnv=1)
+  newPop(f,simParam=sp)
+}
+
+test_that("REFUSE structurally incompatible populations before merging", {
+  set.seed(6026)
+  base = mergeBoundaryPop()
+  expect_error(mergePops(list(base,mergeBoundaryPop(nChr=2))),"nChr does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(ploidy=4))),"ploidy does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(segSites=12))),"nLoci does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(trait=TRUE))),"nTraits does not match")
+  expect_error(flattenMultiPop(list(base)),"x must be a Pop or a MultiPop")
+})
+
+test_that("Merging empty populations preserves their structure", {
+  set.seed(6027)
+  pop = mergeBoundaryPop()
+  empty = pop[integer()]
+  out = mergePops(list(empty,empty))
+  expect_equal(out@nInd,0L)
+  expect_equal(out@nChr,pop@nChr)
+  expect_equal(out@ploidy,pop@ploidy)
+  expect_equal(out@nLoci,pop@nLoci)
+  expect_equal(dim(out@geno[[1]]),c(2L,2L,0L))
+  expect_true(validObject(out))
+})
+
+test_that("Merging preserves GxE values in population order", {
+  set.seed(6028)
+  pop = mergeBoundaryPop(trait=TRUE)
+  expect_true(length(pop@gxe[[1]])==pop@nInd)
+  out = mergePops(list(pop[3],pop[1:2]))
+  expect_equal(out@gxe[[1]],pop@gxe[[1]][c(3,1,2)])
+  expect_equal(out@gv,pop@gv[c(3,1,2),,drop=FALSE])
+  expect_equal(out@id,pop@id[c(3,1,2)])
+  # Empty groups contribute no GxE values, including when they come first.
+  withEmpty = mergePops(list(pop[integer()],pop))
+  expect_equal(as.vector(withEmpty@gxe[[1]]),as.vector(pop@gxe[[1]]))
+  expect_equal(withEmpty@nInd,pop@nInd)
+})

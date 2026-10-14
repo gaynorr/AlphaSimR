@@ -236,3 +236,25 @@ test_that("writeRecords can skip genotypes and can add haplotypes", {
     expect_true(all(h2 %in% c(0,1)))
   })
 })
+
+test_that("writePlink global parameters and explicit threads preserve output", {
+  d = filePop()
+  # Restore any user or test-session SP even if an assertion fails.
+  hadSP = exists("SP",envir=.GlobalEnv,inherits=FALSE)
+  if(hadSP) oldSP = get("SP",envir=.GlobalEnv)
+  on.exit({
+    if(hadSP) assign("SP",oldSP,envir=.GlobalEnv)
+    else rm("SP",envir=.GlobalEnv)
+  },add=TRUE)
+  assign("SP",d$SP,envir=.GlobalEnv)
+  withTempDir(function(dir){
+    explicit = file.path(dir,"explicit")
+    implicit = file.path(dir,"implicit")
+    writePlink(d$pop,baseName=explicit,simParam=d$SP)
+    writePlink(d$pop,baseName=implicit,nThreads=1)
+    for(ext in c(".ped",".map")){
+      expect_identical(readLines(paste0(implicit,ext)),
+                       readLines(paste0(explicit,ext)))
+    }
+  })
+})

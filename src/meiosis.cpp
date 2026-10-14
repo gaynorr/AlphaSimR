@@ -78,7 +78,9 @@ public:
                arma::uword chrGroup,
                arma::uword chrInd);
   
-  // Access history
+  // Internal accessor with no current callers or R interface;
+  // R code reads histories through pack(),
+  // so R-level tests cannot reach getHist().
   arma::Mat<int> getHist(arma::uword ind, 
                          arma::uword chr,
                          arma::uword par);
