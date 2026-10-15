@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9018
 
+* Fixed multivariate `RRBLUP` and `solveMVM` stopping with "inv_sympd(): matrix is singular or not positive definite" when the relationship matrix is rank deficient, as it is when there are fewer markers than individuals or, for `solveMVM`, more than one record per level. An eigenvalue of exactly zero made the genetic variance estimate `NaN`. The genetic variance update now leaves out eigenvalues at rounding level, so the estimates from a rank deficient fit converge in fewer iterations and differ slightly from earlier versions.
+
 * Added additive-by-additive epistasis to `SimParam$importTrait`. The new `epiPairs` and `epiEff` arguments give the interacting pairs of loci by marker name and their epistatic effects, and the trait is created as `TraitAE`, or `TraitADE` when `domEff` is also given. Every marker must be in exactly one pair, and the two markers in a pair may be on different chromosomes. Markers do not need to be in map order. Calls without the new arguments behave as before.
 
 * Changed `SimParam$importTrait` to give an error for duplicated `markerNames`. Previously only the first of the duplicates was used, and the effects given for the others were silently ignored.
