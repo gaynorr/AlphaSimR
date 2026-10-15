@@ -451,6 +451,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcGenParamMulti
+Rcpp::List calcGenParamMulti(const Rcpp::List& traitList, const Rcpp::S4& pop, int nThreads);
+RcppExport SEXP _AlphaSimR_calcGenParamMulti(SEXP traitListSEXP, SEXP popSEXP, SEXP nThreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type traitList(traitListSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
+    Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcGenParamMulti(traitList, pop, nThreads));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getGeno
 arma::Mat<unsigned char> getGeno(const arma::field<arma::Cube<unsigned char> >& geno, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, int nThreads);
 RcppExport SEXP _AlphaSimR_getGeno(SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP nThreadsSEXP) {
@@ -960,6 +973,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_objAltAD", (DL_FUNC) &_AlphaSimR_objAltAD, 2},
     {"_AlphaSimR_finAltAD", (DL_FUNC) &_AlphaSimR_finAltAD, 2},
     {"_AlphaSimR_calcGenParam", (DL_FUNC) &_AlphaSimR_calcGenParam, 3},
+    {"_AlphaSimR_calcGenParamMulti", (DL_FUNC) &_AlphaSimR_calcGenParamMulti, 3},
     {"_AlphaSimR_getGeno", (DL_FUNC) &_AlphaSimR_getGeno, 4},
     {"_AlphaSimR_getMaternalGeno", (DL_FUNC) &_AlphaSimR_getMaternalGeno, 4},
     {"_AlphaSimR_getPaternalGeno", (DL_FUNC) &_AlphaSimR_getPaternalGeno, 4},

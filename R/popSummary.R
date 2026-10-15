@@ -376,10 +376,14 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   names(alpha) = traitNames
   alpha_HW = alpha
 
+  # Traits sharing loci, such as correlated traits, are worked out together
+  # so their genotypes are only counted and read once
+  allTmp = calcGenParamMulti(simParam$traits,pop,nThreads)
+
   #Loop through trait calculations
   for(i in seq_len(nTraits)){
     trait = simParam$traits[[i]]
-    tmp = calcGenParam(trait,pop,nThreads)
+    tmp = allTmp[[i]]
     genicVarA[i] = tmp$genicVarA2
     genicVarN[i] = 0
     covA_HW[i] = tmp$genicVarA-tmp$genicVarA2

@@ -1,4 +1,5 @@
 #include "alphasimr.h"
+#include "packedGv.h"
 
 // Calculates genetic values for genomic predictions using parental origin
 arma::field<arma::vec> getGvA2(const Rcpp::S4& trait, 
@@ -84,51 +85,6 @@ const arma::uword kTabSize = arma::uword(1) << kTabBits;
 const arma::uword kTabPerByte = 8/kTabBits;
 const unsigned int kTabMask = (1u << kTabBits)-1u;
 
-// The genotypes of a population, read in place from the R list holding them.
-// Converting that list to an arma::field would copy every chromosome before
-// any work was done, and decoding it to a dosage matrix, as getGeno does,
-// would write out a byte for every individual and locus. Genetic values are
-// worked out from the packed bits instead.
-struct PackedGeno{
-  std::vector<const unsigned char*> chrPtr;
-  std::vector<arma::uword> nBins;
-  arma::uword ploidy;
-  arma::uword nInd;
-
-  explicit PackedGeno(const Rcpp::S4& pop){
-    Rcpp::List geno = pop.slot("geno");
-    ploidy = Rcpp::as<arma::uword>(pop.slot("ploidy"));
-    nInd = Rcpp::as<arma::uword>(pop.slot("nInd"));
-    for(R_xlen_t i=0; i<geno.size(); ++i){
-      // The pointers below are only valid while they point into the
-      // population's own vectors, so a vector that would need coercing,
-      // and would therefore be a temporary copy, is refused
-      SEXP chrGeno = geno[i];
-      if(TYPEOF(chrGeno)!=RAWSXP){
-        Rcpp::stop("genotypes are not stored as raw vectors");
-      }
-      Rcpp::IntegerVector dim = Rf_getAttrib(chrGeno, R_DimSymbol);
-      if(dim.size()!=3){
-        Rcpp::stop("genotypes for a chromosome are not a three dimensional array");
-      }
-      chrPtr.push_back(RAW(chrGeno));
-      nBins.push_back(arma::uword(dim[0]));
-    }
-  }
-};
-
-// Where each of a trait's loci sits in the packed genotypes: a pointer to its
-// byte on the first haplotype of the first individual, the distance between
-// haplotypes and between individuals, and the bit within the byte
-struct LociPos{
-  std::vector<const unsigned char*> base;
-  arma::uvec hapStride;
-  arma::uvec indStride;
-  arma::uvec chr;
-  arma::uvec byte;
-  arma::uvec bit;
-};
-
 // Builds LociPos from the lociPerChr and lociLoc of a LociMap. Indexing is
 // unchecked in the loops that use the result, so every locus is checked
 // against the size of its chromosome here.
@@ -189,27 +145,36 @@ LociPos subsetLoci(const LociPos& all, arma::Col<int> index){
   return pos;
 }
 
-// Allele dosage of one individual at one locus
-inline unsigned int dosageAt(const unsigned char* p, arma::uword hapStride,
-                             arma::uword ploidy, arma::uword bit){
-  unsigned int dose = 0;
-  for(arma::uword h=0; h<ploidy; ++h){
-    dose += (unsigned int) ((p[hapStride*h]>>bit) & 1u);
+// The effects of a trait without epistasis or parent of origin effects
+GvEffects traitEffects(const Rcpp::S4& trait){
+  GvEffects e;
+  e.add = Rcpp::as<arma::vec>(trait.slot("addEff"));
+  e.hasA = true;
+  e.hasD = trait.hasSlot("domEff");
+  e.hasGxe = trait.hasSlot("gxeEff");
+  if(e.hasD){
+    e.dom = Rcpp::as<arma::vec>(trait.slot("domEff"));
   }
-  return dose;
+  e.intercept = double(trait.slot("intercept"));
+  e.gxeInt = 0.0;
+  if(e.hasGxe){
+    e.gxe = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
+    e.gxeInt = double(trait.slot("gxeInt"));
+  }
+  return e;
 }
 
-// Sets up the output for a trait: genetic values, and GxE effects when the
-// trait has them, each starting from its intercept
-arma::field<arma::vec> startOutput(const Rcpp::S4& trait, arma::uword nInd,
-                                   bool hasGxe, double gvShift,
-                                   double gxeShift){
+// Sets up the output for a set of effects: genetic values, and GxE effects
+// when there are any, each starting from its intercept
+arma::field<arma::vec> startOutput(double intercept, double gxeInt,
+                                   arma::uword nInd, bool hasGxe,
+                                   double gvShift, double gxeShift){
   arma::field<arma::vec> output(hasGxe ? 2 : 1);
   output(0).set_size(nInd);
-  output(0).fill(double(trait.slot("intercept"))+gvShift);
+  output(0).fill(intercept+gvShift);
   if(hasGxe){
     output(1).set_size(nInd);
-    output(1).fill(double(trait.slot("gxeInt"))+gxeShift);
+    output(1).fill(gxeInt+gxeShift);
   }
   return output;
 }
@@ -235,11 +200,11 @@ arma::field<arma::vec> startOutput(const Rcpp::S4& trait, arma::uword nInd,
 // change their values. Tables are summed in a fixed order of chromosome and
 // position, so results do not depend on the thread count, but they do differ
 // from summing locus by locus in the last few bits.
-std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& traits,
+std::vector<arma::field<arma::vec> > gvByTable(const std::vector<GvEffects>& effs,
                                                const PackedGeno& g,
                                                const LociPos& pos,
                                                int nThreads){
-  arma::uword nTrait = traits.size();
+  arma::uword nTrait = effs.size();
   arma::uword nInd = g.nInd;
   arma::uword ploidy = g.ploidy;
   double alleleScale = 2.0/double(ploidy);
@@ -286,13 +251,14 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
   // column, so a sweep reads them together. The offsets say where each
   // trait's tables start within a column, and are -1 for a table a trait
   // does not have.
-  std::vector<bool> hasD(nTrait), hasGxe(nTrait);
+  std::vector<bool> hasA(nTrait), hasD(nTrait), hasGxe(nTrait);
   arma::ivec addOff(nTrait), domOff(nTrait), gxeOff(nTrait);
   arma::uword nTab = 0;
   for(arma::uword t=0; t<nTrait; ++t){
-    hasD[t] = traits[t].hasSlot("domEff");
-    hasGxe[t] = traits[t].hasSlot("gxeEff");
-    addOff(t) = arma::sword(nTab++);
+    hasA[t] = effs[t].hasA;
+    hasD[t] = effs[t].hasD;
+    hasGxe[t] = effs[t].hasGxe;
+    addOff(t) = hasA[t] ? arma::sword(nTab++) : -1;
     domOff(t) = hasD[t] ? arma::sword(nTab++) : -1;
     gxeOff(t) = hasGxe[t] ? arma::sword(nTab++) : -1;
   }
@@ -310,21 +276,25 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
     }
   };
   for(arma::uword t=0; t<nTrait; ++t){
-    const Rcpp::S4& trait = traits[t];
-    arma::vec a = Rcpp::as<arma::vec>(trait.slot("addEff"));
-    if(a.n_elem!=nLoci){
-      Rcpp::stop("number of loci does not match the number of effects");
-    }
     // Per bit values first, so that two loci sharing a bit still both count
     double gvShift = 0.0, gxeShift = 0.0;
-    bitVal.zeros();
-    for(arma::uword i=0; i<nLoci; ++i){
-      bitVal(pos.bit(i)%kTabBits,keyOf(i)) += a(i)*alleleScale;
-      gvShift -= a(i);
+    if(hasA[t]){
+      const arma::vec& a = effs[t].add;
+      if(a.n_elem!=nLoci){
+        Rcpp::stop("number of loci does not match the number of effects");
+      }
+      bitVal.zeros();
+      for(arma::uword i=0; i<nLoci; ++i){
+        bitVal(pos.bit(i)%kTabBits,keyOf(i)) += a(i)*alleleScale;
+        gvShift -= a(i);
+      }
+      buildTables(addOff(t));
     }
-    buildTables(addOff(t));
     if(hasD[t]){
-      arma::vec d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+      const arma::vec& d = effs[t].dom;
+      if(d.n_elem!=nLoci){
+        Rcpp::stop("number of loci does not match the number of effects");
+      }
       bitVal.zeros();
       for(arma::uword i=0; i<nLoci; ++i){
         bitVal(pos.bit(i)%kTabBits,keyOf(i)) += d(i);
@@ -332,7 +302,7 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
       buildTables(domOff(t));
     }
     if(hasGxe[t]){
-      arma::vec ge = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
+      const arma::vec& ge = effs[t].gxe;
       bitVal.zeros();
       for(arma::uword i=0; i<nLoci; ++i){
         bitVal(pos.bit(i)%kTabBits,keyOf(i)) += ge(i)*alleleScale;
@@ -340,7 +310,8 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
       }
       buildTables(gxeOff(t));
     }
-    output[t] = startOutput(trait, nInd, hasGxe[t], gvShift, gxeShift);
+    output[t] = startOutput(effs[t].intercept, effs[t].gxeInt, nInd,
+                            hasGxe[t], gvShift, gxeShift);
   }
   std::vector<double*> gvPtr(nTrait), gxePtr(nTrait, NULL);
   for(arma::uword t=0; t<nTrait; ++t){
@@ -362,8 +333,8 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
     // in it that varies by trait, it compiles to much faster code.
     double* gvOut = gvPtr[0];
     double* gxeOut = gxePtr[0];
-    bool d0 = hasD[0], g0 = hasGxe[0];
-    arma::uword aO = kTabSize*arma::uword(addOff(0));
+    bool a0 = hasA[0], d0 = hasD[0], g0 = hasGxe[0];
+    arma::uword aO = a0 ? kTabSize*arma::uword(addOff(0)) : 0;
     arma::uword dO = d0 ? kTabSize*arma::uword(domOff(0)) : 0;
     arma::uword gO = g0 ? kTabSize*arma::uword(gxeOff(0)) : 0;
 #ifdef _OPENMP
@@ -385,8 +356,10 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
           for(arma::uword j=t0; j<t1; ++j){
             const unsigned char* p = base+is*j;
             double s = 0.0;
-            for(arma::uword h=0; h<ploidy; ++h){
-              s += aTab[(p[hs*h]>>sh) & kTabMask];
+            if(a0){
+              for(arma::uword h=0; h<ploidy; ++h){
+                s += aTab[(p[hs*h]>>sh) & kTabMask];
+              }
             }
             if(d0){
               s += dTab[((p[0]^p[hs])>>sh) & kTabMask];
@@ -448,8 +421,8 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
         for(arma::uword t=0; t<nTrait; ++t){
           double* gvOut = gvPtr[t]+t0;
           double* gxeOut = hasGxe[t] ? gxePtr[t]+t0 : NULL;
-          bool dT = hasD[t], gT = hasGxe[t];
-          arma::uword aO = kTabSize*arma::uword(addOff(t));
+          bool aT = hasA[t], dT = hasD[t], gT = hasGxe[t];
+          arma::uword aO = aT ? kTabSize*arma::uword(addOff(t)) : 0;
           arma::uword dO = dT ? kTabSize*arma::uword(domOff(t)) : 0;
           arma::uword gO = gT ? kTabSize*arma::uword(gxeOff(t)) : 0;
           for(arma::uword k=k0; k<k1; ++k){
@@ -459,8 +432,10 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
             const unsigned char* b = &buf[(k-k0)*nRow*kGroupTile];
             for(arma::uword j=0; j<nj; ++j){
               double s = 0.0;
-              for(arma::uword h=0; h<ploidy; ++h){
-                s += aTab[b[h*kGroupTile+j]];
+              if(aT){
+                for(arma::uword h=0; h<ploidy; ++h){
+                  s += aTab[b[h*kGroupTile+j]];
+                }
               }
               if(dT){
                 s += dTab[b[2*kGroupTile+j]];
@@ -491,11 +466,11 @@ std::vector<arma::field<arma::vec> > gvByTable(const std::vector<Rcpp::S4>& trai
 // then sweeps that buffer contiguously with a table over dosages for each
 // locus. Each individual sums its loci in trait order, which is the order
 // the dosage matrix version this replaces used, so results match it exactly.
-std::vector<arma::field<arma::vec> > gvByDosage(const std::vector<Rcpp::S4>& traits,
+std::vector<arma::field<arma::vec> > gvByDosage(const std::vector<GvEffects>& effs,
                                                 const PackedGeno& g,
                                                 const LociPos& pos,
                                                 int nThreads){
-  arma::uword nTrait = traits.size();
+  arma::uword nTrait = effs.size();
   arma::uword nInd = g.nInd;
   arma::uword ploidy = g.ploidy;
   arma::uword nGeno = ploidy+1;
@@ -513,33 +488,35 @@ std::vector<arma::field<arma::vec> > gvByDosage(const std::vector<Rcpp::S4>& tra
   std::vector<bool> hasGxe(nTrait);
   std::vector<arma::field<arma::vec> > output(nTrait);
   for(arma::uword t=0; t<nTrait; ++t){
-    const Rcpp::S4& trait = traits[t];
-    bool hasD = trait.hasSlot("domEff");
-    hasGxe[t] = trait.hasSlot("gxeEff");
-    arma::vec a = Rcpp::as<arma::vec>(trait.slot("addEff"));
-    if(a.n_elem!=nLoci){
+    bool hasA = effs[t].hasA;
+    bool hasD = effs[t].hasD;
+    hasGxe[t] = effs[t].hasGxe;
+    const arma::vec& a = effs[t].add;
+    const arma::vec& d = effs[t].dom;
+    if((hasA && a.n_elem!=nLoci) || (hasD && d.n_elem!=nLoci)){
       Rcpp::stop("number of loci does not match the number of effects");
-    }
-    arma::vec d;
-    if(hasD){
-      d = Rcpp::as<arma::vec>(trait.slot("domEff"));
     }
     effTab[t].set_size(nGeno,nLoci);
     for(arma::uword i=0; i<nLoci; ++i){
-      if(hasD){
+      if(hasA && hasD){
         effTab[t].col(i) = xa*a(i)+xd*d(i);
-      }else{
+      }else if(hasA){
         effTab[t].col(i) = xa*a(i);
+      }else if(hasD){
+        effTab[t].col(i) = xd*d(i);
+      }else{
+        effTab[t].col(i).zeros();
       }
     }
     if(hasGxe[t]){
-      arma::vec ge = Rcpp::as<arma::vec>(trait.slot("gxeEff"));
+      const arma::vec& ge = effs[t].gxe;
       gxeTab[t].set_size(nGeno,nLoci);
       for(arma::uword i=0; i<nLoci; ++i){
         gxeTab[t].col(i) = xa*ge(i);
       }
     }
-    output[t] = startOutput(trait, nInd, hasGxe[t], 0.0, 0.0);
+    output[t] = startOutput(effs[t].intercept, effs[t].gxeInt, nInd,
+                            hasGxe[t], 0.0, 0.0);
   }
 
   // Neither size affects results, only speed
@@ -670,7 +647,9 @@ arma::field<arma::vec> gvEpistasis(const Rcpp::S4& trait, const PackedGeno& g,
     }
   }
 
-  arma::field<arma::vec> output = startOutput(trait, nInd, hasGxe, 0.0, 0.0);
+  arma::field<arma::vec> output = startOutput(double(trait.slot("intercept")),
+                                              hasGxe ? double(trait.slot("gxeInt")) : 0.0,
+                                              nInd, hasGxe, 0.0, 0.0);
   double* gvPtr = output(0).memptr();
   double* gxePtr = hasGxe ? output(1).memptr() : NULL;
 
@@ -724,20 +703,20 @@ arma::field<arma::vec> gvEpistasis(const Rcpp::S4& trait, const PackedGeno& g,
 // one trait alone, while for many traits sharing sparse loci the cheaper
 // dosage lookups win. Polyploid dominance can only use dosages. The choice
 // depends only on the traits and their loci, never on the thread count.
-std::vector<arma::field<arma::vec> > gvGroup(const std::vector<Rcpp::S4>& traits,
-                                             const PackedGeno& g,
-                                             const LociPos& pos,
-                                             int nThreads){
+std::vector<arma::field<arma::vec> > gvGroupEffects(const std::vector<GvEffects>& effs,
+                                                    const PackedGeno& g,
+                                                    const LociPos& pos,
+                                                    int nThreads){
   double P = double(g.ploidy);
   bool needDosage = false;
   double tableWork = 0.0, dosageWork = 1.25*P;
-  for(arma::uword t=0; t<traits.size(); ++t){
-    bool hasD = traits[t].hasSlot("domEff");
-    bool hasGxe = traits[t].hasSlot("gxeEff");
+  for(arma::uword t=0; t<effs.size(); ++t){
+    bool hasD = effs[t].hasD;
+    bool hasGxe = effs[t].hasGxe;
     if(hasD && g.ploidy!=2){
       needDosage = true;
     }
-    tableWork += P+(hasD ? 1.0 : 0.0)+(hasGxe ? P : 0.0);
+    tableWork += (effs[t].hasA ? P : 0.0)+(hasD ? 1.0 : 0.0)+(hasGxe ? P : 0.0);
     dosageWork += 0.5*(1.0+(hasGxe ? 1.0 : 0.0));
   }
   arma::uword nLoci = pos.base.size();
@@ -751,10 +730,22 @@ std::vector<arma::field<arma::vec> > gvGroup(const std::vector<Rcpp::S4>& traits
     arma::uword nKey = std::unique(keys.begin(), keys.end())-keys.begin();
     bool useTable = double(nKey)*tableWork < double(nLoci)*dosageWork;
     if(useTable){
-      return gvByTable(traits, g, pos, nThreads);
+      return gvByTable(effs, g, pos, nThreads);
     }
   }
-  return gvByDosage(traits, g, pos, nThreads);
+  return gvByDosage(effs, g, pos, nThreads);
+}
+
+// gvGroupEffects for traits
+std::vector<arma::field<arma::vec> > gvGroup(const std::vector<Rcpp::S4>& traits,
+                                             const PackedGeno& g,
+                                             const LociPos& pos,
+                                             int nThreads){
+  std::vector<GvEffects> effs;
+  for(arma::uword t=0; t<traits.size(); ++t){
+    effs.push_back(traitEffects(traits[t]));
+  }
+  return gvGroupEffects(effs, g, pos, nThreads);
 }
 
 // Chooses how to work out a trait's genetic values once its loci are found.
