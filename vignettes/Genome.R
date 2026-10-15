@@ -17,7 +17,6 @@ SP$setTrackRec(TRUE)
 # Inspect the founder genomes
 founderGenomes
 
-
 ## -----------------------------------------------------------------------------
 pullSegSiteGeno(founderGenomes)
 

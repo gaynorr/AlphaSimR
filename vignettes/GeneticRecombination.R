@@ -15,8 +15,8 @@ head(getGenMap(SP))
 ## -----------------------------------------------------------------------------
 SP$setRecombRatio(2) # Twice as much recombination in females
 
-sapply(SP$femaleMap, max)
-sapply(SP$maleMap, max)
+SP$femaleGenLen
+SP$maleGenLen
 
 ## -----------------------------------------------------------------------------
 SP$v # Interference parameter, 2.6 approximates Kosambi
