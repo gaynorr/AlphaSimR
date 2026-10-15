@@ -2,28 +2,59 @@
 % Please edit documentation in R/popSummary.R
 \name{varG}
 \alias{varG}
-\title{Total genetic variance}
+\title{Total genetic variance within a \code{Pop}}
 \usage{
 varG(pop)
 }
 \arguments{
-\item{pop}{an object of \code{\link{Pop-class}} or \code{\link{HybridPop-class}}}
+\item{pop}{A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+\code{\link{MultiPop-class}} object.}
+}
+\value{
+If \code{pop} is a \code{\link{Pop-class}} or \code{\link{HybridPop-class}},
+returns a variance-covariance matrix of genetic values across traits.
+
+If \code{pop} is a \code{\link{MultiPop-class}}, returns a nested list
+matching the \code{MultiPop} structure, with one variance-covariance matrix
+per \code{Pop} object.
 }
 \description{
-Returns total genetic variance for all traits
+Returns total genetic variance for all traits within a \code{Pop}.
+
+In contrast to \code{\link{varGPop}}, which computes variance between
+population means, \code{varG} computes variance within populations from
+individual genetic values.
+}
+\details{
+A variance-covariance matrix of genetic values is computed for each
+\code{Pop} across traits.
 }
 \examples{
-#Create founder haplotypes
+# Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
-#Set simulation parameters
+# Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
-#Create population
+# Create population
 pop = newPop(founderPop, simParam=SP)
+
+# Return a variance-covariance matrix for the population
 varG(pop)
 
+# Randomly split population into two sub-populations
+mp = splitPop(pop, sample(c('A','B'), size = 10, replace = TRUE))
+
+# Return a list of variance-covariance matrices for the MultiPop
+varG(mp)
+
+# Compare with between-population variance
+varGPop(mp, level = 1)
+
+}
+\seealso{
+\code{\link{varGPop}}
 }

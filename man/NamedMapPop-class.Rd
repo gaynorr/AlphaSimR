@@ -26,7 +26,7 @@ Extends \code{\link{MapPop-class}} with id, mother and father.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{[}: Extract NamedMapPop by index
+\item \code{NamedMapPop[]}: Extract NamedMapPop by index
 
 \item \code{c(NamedMapPop)}: Combine multiple NamedMapPops
 

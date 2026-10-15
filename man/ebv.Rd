@@ -2,29 +2,95 @@
 % Please edit documentation in R/popSummary.R
 \name{ebv}
 \alias{ebv}
-\title{Estimated breeding value}
+\title{Get estimated breeding values from a population}
 \usage{
-ebv(pop)
+ebv(pop, simplify = FALSE, level = 1L)
 }
 \arguments{
-\item{pop}{a \code{\link{Pop-class}} or similar object}
+\item{pop}{A \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, or
+\code{\link{MultiPop-class}} object.}
+
+\item{simplify}{Logical. Only used when \code{pop} is a
+\code{\link{MultiPop-class}}. If \code{TRUE}, flatten \code{pop} to the
+requested \code{level} with \code{\link{flattenMultiPop}}, combine results
+across populations with \code{\link{rbind}}, and attach a \code{"source"}
+attribute describing row origins.}
+
+\item{level}{Integer scalar \eqn{\ge 1}. Only used when \code{pop} is a
+\code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+\code{MultiPop} levels to preserve. Passed to
+\code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.}
+}
+\value{
+If \code{pop} is a \code{\link{Pop-class}} or
+\code{\link{HybridPop-class}}, returns a numeric matrix of estimated
+breeding values (rows = individuals, columns = traits).
+
+If \code{pop} is a \code{\link{MultiPop-class}}:    \cr
+- with \code{simplify=FALSE}, returns a nested list matching the
+  \code{MultiPop} structure, with one numeric matrix per terminal
+  \code{Pop};    \cr
+- with \code{simplify=TRUE}, returns a simplified object where terminal
+  \code{Pop} \code{@ebv} matrices are combined (within each retained branch)
+  using \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+  When \code{level=1}, output is a single numeric matrix.
 }
 \description{
-A wrapper for accessing the ebv slot
+Returns estimated breeding values for all traits in a population by
+extracting the \code{@ebv} slot.
+Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
+\code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
+optionally be simplified to a requested nesting level.
+}
+\details{
+When \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+follows the same nesting as \code{pop}.
+
+When \code{simplify=TRUE}, output is simplified to the requested
+\code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+structure is returned unchanged. If \code{level} \eqn{< 1}, the function
+sets \code{level=1} and issues a warning.
+
+Simplified output requires compatible \code{@ebv} columns across terminal
+populations so that results can be combined with \code{\link{rbind}}.
+
+Simplified output includes a \code{"source"} attribute. This is a data frame
+with columns \code{level1}, \code{level2}, etc., indicating the name (or
+index) of the source population for each row at each retained nesting level.
 }
 \examples{
-#Create founder haplotypes
+# Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
-#Set simulation parameters
+# Set simulation parameters
 SP = SimParam$new(founderPop)
-\dontshow{SP$nThreads = 1L}
-SP$addTraitAD(10, meanDD=0.5)
+SP$addTraitA(10)
+trtH2 = 0.5
 SP$setVarE(h2=0.5)
+\dontshow{SP$nThreads = 1L}
 
-#Create population
+# Create population
 pop = newPop(founderPop, simParam=SP)
-pop@ebv = matrix(rnorm(pop@nInd), nrow=pop@nInd, ncol=1)
+pop@ebv = trtH2 * (pheno(pop) - meanP(pop))
 ebv(pop)
 
+# Create a nested MultiPop
+pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+pop2@ebv = trtH2 * (pheno(pop2) - meanP(pop2))
+mp1 = splitPop(
+  pop2,
+  by = list(
+    function(x) rep(LETTERS[1:2], length.out = length(x)),
+    function(x) paste(x@mother, x@father, sep = "_")
+  )
+)
+
+# Extract estimated breeding values at different simplification levels
+ebv(mp1, simplify = FALSE)
+ebv(mp1, simplify = TRUE, level = 2)
+ebv(mp1, simplify = TRUE, level = 1)
+
+}
+\seealso{
+\code{\link{setEBV}}
 }
