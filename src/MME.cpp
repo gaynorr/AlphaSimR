@@ -654,6 +654,17 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
+  // Eigenvalues at rounding level belong to the null space of the
+  // relationship matrix, where the genetic values are zero by
+  // construction, so they carry no information about Vu. They are left
+  // out of its update, which is averaged over the rest instead of over n.
+  // Dividing by them would give Inf*0 = NaN when one is exactly zero, as
+  // happens when there are fewer markers or levels than records.
+  double minEig = double(n)*eigval.max()*arma::datum::eps;
+  arma::uword rank = arma::accu(eigval>minEig);
+  if(rank==0){
+    Rcpp::stop("The relationship matrix has no positive eigenvalues");
+  }
   arma::cube Hinv(m,m,n);
   arma::mat tolEye = tol*arma::eye(m,m);
   arma::mat Gt(m,n), sigma(m,m), BNew, 
@@ -676,9 +687,12 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
       arma::mat lVu = eigval(i)*Vu;
       sigma = lVu-lVu*Hinv.slice(i)*lVu;
       arma::mat resid = Yt.col(i)-BNew*Xt.col(i)-Gt.col(i);
-      VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
+      if(eigval(i)>minEig){
+        VuNew += 1.0/eigval(i)*(Gt.col(i)*Gt.col(i).t()+sigma);
+      }
       VeNew += 1.0/double(n)*(resid*resid.t()+sigma);
     }
+    VuNew /= double(rank);
     denom = fabs(sum(Ve.diag()));
     if(denom>0.0){
       numer = fabs(sum(VeNew.diag()-Ve.diag()));
@@ -2246,6 +2260,17 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
+  // Eigenvalues at rounding level belong to the null space of the
+  // relationship matrix, where the genetic values are zero by
+  // construction, so they carry no information about Vu. They are left
+  // out of its update, which is averaged over the rest instead of over n.
+  // Dividing by them would give Inf*0 = NaN when one is exactly zero, as
+  // happens when there are fewer markers or levels than records.
+  double minEig = double(n)*eigval.max()*arma::datum::eps;
+  arma::uword rank = arma::accu(eigval>minEig);
+  if(rank==0){
+    Rcpp::stop("The relationship matrix has no positive eigenvalues");
+  }
   arma::cube Hinv(m,m,n);
   arma::mat tolEye = tol*arma::eye(m,m);
   arma::mat Gt(m,n), sigma(m,m), BNew,
@@ -2268,9 +2293,12 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
       arma::mat lVu = eigval(i)*Vu;
       sigma = lVu-lVu*Hinv.slice(i)*lVu;
       arma::mat resid = Yt.col(i)-BNew*Xt.col(i)-Gt.col(i);
-      VuNew += 1.0/(double(n)*eigval(i))*(Gt.col(i)*Gt.col(i).t()+sigma);
+      if(eigval(i)>minEig){
+        VuNew += 1.0/eigval(i)*(Gt.col(i)*Gt.col(i).t()+sigma);
+      }
       VeNew += 1.0/double(n)*(resid*resid.t()+sigma);
     }
+    VuNew /= double(rank);
     denom = fabs(sum(Ve.diag()));
     if(denom>0.0){
       numer = fabs(sum(VeNew.diag()-Ve.diag()));
