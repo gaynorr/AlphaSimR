@@ -123,6 +123,65 @@ LociPos findLoci(const PackedGeno& g,
   return pos;
 }
 
+DosageTiles::DosageTiles(const PackedGeno& g, const LociPos& pos){
+  ploidy_ = g.ploidy;
+  nLoci_ = pos.base.size();
+  if(ploidy_>255){
+    Rcpp::stop("ploidy above 255 is not supported");
+  }
+  spread_.resize(256);
+  for(arma::uword b=0; b<256; ++b){
+    uint64_t w = 0;
+    for(arma::uword k=0; k<8; ++k){
+      w |= uint64_t((b>>k) & 1u) << (8*k);
+    }
+    spread_[b] = w;
+  }
+  // Loci in order of chromosome and byte, so that each byte is read once
+  std::vector<arma::uword> cumBins(g.chrPtr.size()+1, 0);
+  for(arma::uword c=0; c<g.chrPtr.size(); ++c){
+    cumBins[c+1] = cumBins[c]+g.nBins[c];
+  }
+  std::vector<std::pair<arma::uword,arma::uword> > order(nLoci_);
+  for(arma::uword i=0; i<nLoci_; ++i){
+    order[i] = std::make_pair(cumBins[pos.chr(i)]+pos.byte(i), i);
+  }
+  std::sort(order.begin(), order.end());
+  for(arma::uword m=0; m<nLoci_; ++m){
+    arma::uword i = order[m].second;
+    if(m==0 || order[m].first!=order[m-1].first){
+      keyStart_.push_back(m);
+      keyBase_.push_back(pos.base[i]);
+      keyHapStride_.push_back(pos.hapStride(i));
+      keyIndStride_.push_back(pos.indStride(i));
+    }
+    keyLocus_.push_back(i);
+    keyShift_.push_back(8*pos.bit(i));
+  }
+  keyStart_.push_back(nLoci_);
+}
+
+void DosageTiles::decode(arma::uword indStart, arma::uword nTileInd,
+                         arma::uword tile, unsigned char* buf) const{
+  arma::uword nKey = keyBase_.size();
+  for(arma::uword k=0; k<nKey; ++k){
+    const unsigned char* base = keyBase_[k];
+    arma::uword hs = keyHapStride_[k];
+    arma::uword is = keyIndStride_[k];
+    arma::uword mStart = keyStart_[k], mEnd = keyStart_[k+1];
+    for(arma::uword j=0; j<nTileInd; ++j){
+      const unsigned char* p = base+is*(indStart+j);
+      uint64_t dose = 0;
+      for(arma::uword h=0; h<ploidy_; ++h){
+        dose += spread_[p[hs*h]];
+      }
+      for(arma::uword m=mStart; m<mEnd; ++m){
+        buf[keyLocus_[m]*tile+j] = (unsigned char) ((dose>>keyShift_[m]) & 0xFFu);
+      }
+    }
+  }
+}
+
 // Picks out a trait's loci from the positions of all active QTL
 LociPos subsetLoci(const LociPos& all, arma::Col<int> index){
   index -= 1; // R to C++
@@ -577,7 +636,7 @@ std::vector<arma::field<arma::vec> > gvByDosage(const std::vector<GvEffects>& ef
 // locus belongs to exactly one pair, and a pair's additive, dominance and
 // epistatic terms depend only on its two dosages, so each pair has a table
 // over the two dosages. Each individual sums its pairs in order, as the
-// dosage matrix version this replaces did, so results match it exactly.
+// dosage matrix version this replaced did, so results match it exactly.
 arma::field<arma::vec> gvEpistasis(const Rcpp::S4& trait, const PackedGeno& g,
                                    const LociPos& pos, int nThreads){
   bool hasD = trait.hasSlot("domEff");
@@ -653,9 +712,51 @@ arma::field<arma::vec> gvEpistasis(const Rcpp::S4& trait, const PackedGeno& g,
   double* gvPtr = output(0).memptr();
   double* gxePtr = hasGxe ? output(1).memptr() : NULL;
 
+  // The two loci of a pair can be anywhere in the genome, so reading them
+  // straight from the packed genotypes lands on scattered bytes. When the
+  // loci are dense enough that most bytes hold several of them, the dosages
+  // of all the trait's loci are instead read for a tile of individuals at a
+  // time, a byte at once, and each pair then reads two contiguous rows of
+  // that buffer. When most bytes hold one locus the buffer saves no reads
+  // and only adds work, so the pairs read the genotypes directly. Both ways
+  // sum the same values in the same order for every individual, so which is
+  // used does not change the results.
+  DosageTiles tiles(g, pos);
+  arma::uword nLoci = pos.base.size();
   arma::uword nBlocks = countBlocks(nInd);
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
+  }
+  if(nLoci < 2*tiles.nBytes()){
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for(arma::uword block=0; block<nBlocks; ++block){
+      arma::uword indStart = blockStart(nInd, nBlocks, block);
+      arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+      for(arma::uword t0=indStart; t0<indEnd; t0+=kGvIndTile){
+        arma::uword t1 = std::min(t0+kGvIndTile, indEnd);
+        for(arma::uword i=0; i<nPair; ++i){
+          arma::uword l1 = loc1(i), l2 = loc2(i);
+          const unsigned char* base1 = pos.base[l1];
+          const unsigned char* base2 = pos.base[l2];
+          arma::uword hs1 = pos.hapStride(l1), hs2 = pos.hapStride(l2);
+          arma::uword is1 = pos.indStride(l1), is2 = pos.indStride(l2);
+          arma::uword bit1 = pos.bit(l1), bit2 = pos.bit(l2);
+          const double* eff = effTab.colptr(i);
+          const double* gEff = hasGxe ? gxeTab.colptr(i) : NULL;
+          for(arma::uword j=t0; j<t1; ++j){
+            unsigned int u = dosageAt(base1+is1*j, hs1, ploidy, bit1);
+            unsigned int v = dosageAt(base2+is2*j, hs2, ploidy, bit2);
+            gvPtr[j] += eff[u+v*nGeno];
+            if(hasGxe){
+              gxePtr[j] += gEff[u+v*nGeno];
+            }
+          }
+        }
+      }
+    }
+    return output;
   }
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -663,23 +764,22 @@ arma::field<arma::vec> gvEpistasis(const Rcpp::S4& trait, const PackedGeno& g,
   for(arma::uword block=0; block<nBlocks; ++block){
     arma::uword indStart = blockStart(nInd, nBlocks, block);
     arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+    std::vector<unsigned char> buf(nLoci*kGvIndTile);
     for(arma::uword t0=indStart; t0<indEnd; t0+=kGvIndTile){
-      arma::uword t1 = std::min(t0+kGvIndTile, indEnd);
+      arma::uword nj = std::min(t0+kGvIndTile, indEnd)-t0;
+      tiles.decode(t0, nj, kGvIndTile, buf.data());
+      double* gvOut = gvPtr+t0;
+      double* gxeOut = hasGxe ? gxePtr+t0 : NULL;
       for(arma::uword i=0; i<nPair; ++i){
-        arma::uword l1 = loc1(i), l2 = loc2(i);
-        const unsigned char* base1 = pos.base[l1];
-        const unsigned char* base2 = pos.base[l2];
-        arma::uword hs1 = pos.hapStride(l1), hs2 = pos.hapStride(l2);
-        arma::uword is1 = pos.indStride(l1), is2 = pos.indStride(l2);
-        arma::uword bit1 = pos.bit(l1), bit2 = pos.bit(l2);
+        const unsigned char* u = &buf[loc1(i)*kGvIndTile];
+        const unsigned char* v = &buf[loc2(i)*kGvIndTile];
         const double* eff = effTab.colptr(i);
         const double* gEff = hasGxe ? gxeTab.colptr(i) : NULL;
-        for(arma::uword j=t0; j<t1; ++j){
-          unsigned int u = dosageAt(base1+is1*j, hs1, ploidy, bit1);
-          unsigned int v = dosageAt(base2+is2*j, hs2, ploidy, bit2);
-          gvPtr[j] += eff[u+v*nGeno];
+        for(arma::uword j=0; j<nj; ++j){
+          arma::uword uv = u[j]+v[j]*nGeno;
+          gvOut[j] += eff[uv];
           if(hasGxe){
-            gxePtr[j] += gEff[u+v*nGeno];
+            gxeOut[j] += gEff[uv];
           }
         }
       }

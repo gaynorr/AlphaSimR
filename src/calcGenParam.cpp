@@ -2,14 +2,28 @@
 #include "packedGv.h"
 
 // Calculates genetic parameters for traits with epistasis
-Rcpp::List calcGenParamE(const Rcpp::S4& trait, 
+//
+// Genotypes are not decoded into a matrix. One pass over tiles of
+// individuals counts the joint genotypes of every pair of loci and adds up
+// each individual's epistatic genetic value, gv_aa. The statistics for each
+// pair follow from its counts. Every locus belongs to exactly one pair, and
+// once a pair's frequencies are known a locus's breeding value and
+// dominance deviation are functions of its own dosage with the same form as
+// a trait's additive and dominance effects plus a constant, so gv_a, gv_d,
+// bv and dd are sets of effects on the trait's loci and are worked out by
+// gvGroupEffects. The epistatic deviation is what is left of an
+// individual's genetic value: gv_a+gv_d+gv_aa-bv-dd less the sum of each
+// pair's mean genetic value.
+Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                          const Rcpp::S4& pop,
                          int nThreads){
   //Information from pop
   bool hasD = trait.hasSlot("domEff");
-  arma::uword nInd = pop.slot("nInd");
-  arma::uword ploidy = pop.slot("ploidy");
+  PackedGeno g(pop);
+  arma::uword nInd = g.nInd;
+  arma::uword ploidy = g.ploidy;
   double dP = double(ploidy);
+  arma::uword nGeno = ploidy+1;
   //Information from trait
   const arma::Col<int>& lociPerChr = trait.slot("lociPerChr");
   arma::uvec lociLoc = trait.slot("lociLoc");
@@ -19,19 +33,101 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   E.col(0) -= 1; //R to C++
   E.col(1) -= 1; //R to C++
   arma::vec d;
+  if(hasD){
+    d = Rcpp::as<arma::vec>(trait.slot("domEff"));
+  }
   double intercept = trait.slot("intercept");
-  // Accumulators are indexed by work block, not by thread, so that
-  // their number and the order they are summed in do not depend on
-  // how many threads are available
-  arma::uword nBlocks = countBlocks(E.n_rows);
+  arma::uword nLoci = a.n_elem;
+  arma::uword nPair = E.n_rows;
+  LociPos pos = findLoci(g, lociPerChr, lociLoc);
+  if(pos.base.size()!=nLoci){
+    Rcpp::stop("number of loci does not match the number of effects");
+  }
+  arma::uvec loc1(nPair), loc2(nPair);
+  for(arma::uword i=0; i<nPair; ++i){
+    if(E(i,0)<0 || E(i,1)<0 || E(i,0)>=nLoci || E(i,1)>=nLoci){
+      Rcpp::stop("epiEff refers to a locus the trait does not have");
+    }
+    loc1(i) = arma::uword(E(i,0));
+    loc2(i) = arma::uword(E(i,1));
+  }
+  arma::vec x(ploidy+1); // Genotype dosage
+  for(arma::uword i=0; i<x.n_elem; ++i)
+    x(i) = double(i);
+  arma::vec xa = (x-dP/2.0)*(2.0/dP);
+  arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
+
+  // Each pair's epistatic genetic value over its two dosages
+  arma::mat aaTab(nGeno*nGeno, nPair);
+  for(arma::uword i=0; i<nPair; ++i){
+    arma::mat aaEff = xa*xa.t()*E(i,2);
+    aaTab.col(i) = arma::vectorise(aaEff);
+  }
+
+  // Joint genotype counts and gv_aa. Individuals are split into blocks that
+  // own their part of gv_aa, and each individual sums its pairs in order,
+  // so gv_aa does not depend on the thread count. Counts are integers kept
+  // by each thread and added afterward, which is exact in any order.
+  arma::vec gvAA(nInd, arma::fill::zeros);
+  arma::uword nIndBlocks = countBlocks(nInd);
+  int nThreadsInd = nThreads;
+  if(nIndBlocks < static_cast<arma::uword>(nThreadsInd)){
+    nThreadsInd = static_cast<int>(nIndBlocks);
+  }
+  if(nThreadsInd<1){
+    nThreadsInd = 1;
+  }
+  arma::uword nCell = nGeno*nGeno;
+  std::vector<std::vector<uint32_t> > threadCounts(nThreadsInd,
+                                                   std::vector<uint32_t>(nCell*nPair, 0));
+  DosageTiles tiles(g, pos);
+  const arma::uword kTile = 32;
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreadsInd)
+#endif
+  for(arma::uword block=0; block<nIndBlocks; ++block){
+#ifdef _OPENMP
+    uint32_t* cnt = threadCounts[omp_get_thread_num()].data();
+#else
+    uint32_t* cnt = threadCounts[0].data();
+#endif
+    arma::uword indStart = blockStart(nInd, nIndBlocks, block);
+    arma::uword indEnd = blockStart(nInd, nIndBlocks, block+1);
+    std::vector<unsigned char> buf(nLoci*kTile);
+    for(arma::uword t0=indStart; t0<indEnd; t0+=kTile){
+      arma::uword nj = std::min(t0+kTile, indEnd)-t0;
+      tiles.decode(t0, nj, kTile, buf.data());
+      double* aaOut = gvAA.memptr()+t0;
+      for(arma::uword i=0; i<nPair; ++i){
+        const unsigned char* u = &buf[loc1(i)*kTile];
+        const unsigned char* v = &buf[loc2(i)*kTile];
+        const double* tab = aaTab.colptr(i);
+        uint32_t* c = cnt+i*nCell;
+        for(arma::uword j=0; j<nj; ++j){
+          arma::uword uv = u[j]+v[j]*nGeno;
+          aaOut[j] += tab[uv];
+          ++c[uv];
+        }
+      }
+    }
+  }
+  arma::Mat<arma::uword> pairCounts(nCell, nPair, arma::fill::zeros);
+  for(int t=0; t<nThreadsInd; ++t){
+    const uint32_t* c = threadCounts[t].data();
+    arma::uword* pc = pairCounts.memptr();
+    for(arma::uword k=0; k<nCell*nPair; ++k){
+      pc[k] += c[k];
+    }
+  }
+  threadCounts.clear();
+
+  // The statistics for each pair. Accumulators are indexed by work block,
+  // not by thread, so that their number and the order they are summed in
+  // do not depend on how many threads are available
+  arma::uword nBlocks = countBlocks(nPair);
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
-  arma::mat bvMat(nInd,nBlocks,arma::fill::zeros); // "Breeding value"
-  arma::mat aaMat(nInd,nBlocks,arma::fill::zeros); // Epistatic deviations
-  arma::mat gv_t; // Total genetic value
-  arma::mat gv_a(nInd,nBlocks,arma::fill::zeros); // Genetic value due to a
-  arma::mat gv_aa(nInd,nBlocks,arma::fill::zeros); // Genetic value due to aa
   arma::vec genicA(nBlocks,arma::fill::zeros); // No LD
   arma::vec genicA2(nBlocks,arma::fill::zeros); // No LD and HWE
   arma::vec genicD(nBlocks,arma::fill::zeros); // No LD
@@ -42,23 +138,13 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   arma::vec eMu(nBlocks,arma::fill::zeros); // Expected mean with HWE
   arma::vec alpha(a.n_elem);
   arma::vec alphaHW(a.n_elem);
-  
-  arma::mat ddMat, gv_d;
-  if(hasD){
-    d = Rcpp::as<arma::vec>(trait.slot("domEff"));
-    ddMat.set_size(nInd,nBlocks);
-    ddMat.zeros();
-    gv_d.set_size(nInd,nBlocks);
-    gv_d.zeros();
-  }
-  arma::vec x(ploidy+1); // Genotype dosage
-  for(arma::uword i=0; i<x.n_elem; ++i)
-    x(i) = double(i);
-  arma::vec xa = (x-dP/2.0)*(2.0/dP);
-  arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
-  arma::Mat<unsigned char> genoMat = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(pop.slot("geno")), 
-                                             lociPerChr, lociLoc, nThreads);
-  
+  // For each locus: its mean dosage, the mean of its marginal genetic value,
+  // and the mean additive coding and mean value of its partner's effects,
+  // which is what the partner adds to the locus's marginal genetic value.
+  // For each pair: its mean genetic value.
+  arma::vec locGenoMu(nLoci), locGvMu(nLoci), locPartnerXa(nLoci),
+    locPartnerVal(nLoci), locEpi(nLoci), pairGvMu(nPair);
+
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -72,9 +158,11 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
     
     
       //Observed frequencies
-      arma::mat freq(ploidy+1,ploidy+1,arma::fill::zeros);
-      for(arma::uword j=0; j<nInd; ++j){
-        freq(genoMat(j,E(i,0)),genoMat(j,E(i,1))) += 1;
+      arma::mat freq(ploidy+1,ploidy+1);
+      for(arma::uword v=0; v<(ploidy+1); ++v){
+        for(arma::uword u=0; u<(ploidy+1); ++u){
+          freq(u,v) = double(pairCounts(u+v*(ploidy+1),i));
+        }
       }
       freq = freq/accu(freq);
       arma::vec freq1 = sum(freq,1);
@@ -231,27 +319,80 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
       genicAA(tid) += accu(freqNoLD%AANoLD%AANoLD);
       genicAA2(tid) += accu(freqNoLDE%AAE%AAE);
     
-      //Fill in individual effects
-      for(arma::uword j=0; j<nInd; ++j){
-        bvMat(j,tid) += BV(genoMat(j,E(i,0)),genoMat(j,E(i,1)));
-        aaMat(j,tid) += AA(genoMat(j,E(i,0)),genoMat(j,E(i,1)));
-        gv_a(j,tid) += aEff1(genoMat(j,E(i,0)))+aEff2(genoMat(j,E(i,1)));
-        gv_aa(j,tid) += aaEff(genoMat(j,E(i,0)),genoMat(j,E(i,1)));
-        if(hasD){
-          ddMat(j,tid) += DD(genoMat(j,E(i,0)),genoMat(j,E(i,1)));
-          gv_d(j,tid) += dEff1(genoMat(j,E(i,0)))+dEff2(genoMat(j,E(i,1)));
-        }
+      // Values needed for individuals
+      arma::uword l1 = loc1(i), l2 = loc2(i);
+      locGenoMu(l1) = genoMu1;
+      locGenoMu(l2) = genoMu2;
+      locGvMu(l1) = gvMu1;
+      locGvMu(l2) = gvMu2;
+      locPartnerXa(l1) = accu(freq2%xa);
+      locPartnerXa(l2) = accu(freq1%xa);
+      if(hasD){
+        locPartnerVal(l1) = accu(freq2%(aEff2+dEff2));
+        locPartnerVal(l2) = accu(freq1%(aEff1+dEff1));
+      }else{
+        locPartnerVal(l1) = accu(freq2%aEff2);
+        locPartnerVal(l2) = accu(freq1%aEff1);
       }
-    
+      locEpi(l1) = E(i,2);
+      locEpi(l2) = E(i,2);
+      pairGvMu(i) = gvMu;
     }
   }
-  
+
+  // Values for individuals. A locus's marginal genetic value is
+  // xa*(a+e*m)+xd*d+c, where e is its pair's epistatic effect and m and c
+  // are its partner's mean additive coding and mean value. Its breeding
+  // value is alpha*(x-genoMu), an effect of alpha*P/2 on the additive coding
+  // plus the constant alpha*(P/2-genoMu), and its dominance deviation is the
+  // marginal genetic value less the breeding value and its mean.
+  std::vector<GvEffects> effs;
+  GvEffects eGvA, eBv, eGvD, eDd;
+  eGvA.add = a;
+  eGvA.hasA = true;
+  eGvA.hasD = false;
+  eGvA.hasGxe = false;
+  eGvA.intercept = 0.0;
+  eGvA.gxeInt = 0.0;
+  eBv = eGvA;
+  eBv.add = alpha*(dP/2.0);
+  double bvConst = 0.0, ddConst = 0.0, pairMuSum = 0.0;
+  for(arma::uword l=0; l<nLoci; ++l){
+    double c = alpha(l)*(dP/2.0-locGenoMu(l));
+    bvConst += c;
+    ddConst += locPartnerVal(l)-c-locGvMu(l);
+  }
+  for(arma::uword i=0; i<nPair; ++i){
+    pairMuSum += pairGvMu(i);
+  }
+  eBv.intercept = bvConst;
+  effs.push_back(eGvA);
+  effs.push_back(eBv);
   if(hasD){
-    gv_t = gv_a + gv_d + gv_aa;
-    return Rcpp::List::create(Rcpp::Named("gv")=sum(gv_t,1)+intercept,
-                              Rcpp::Named("bv")=sum(bvMat,1),
-                              Rcpp::Named("dd")=sum(ddMat,1),
-                              Rcpp::Named("aa")=sum(aaMat,1),
+    eGvD = eGvA;
+    eGvD.add.reset();
+    eGvD.hasA = false;
+    eGvD.dom = d;
+    eGvD.hasD = true;
+    eDd = eGvD;
+    eDd.hasA = true;
+    eDd.add = a+locEpi%locPartnerXa-alpha*(dP/2.0);
+    eDd.intercept = ddConst;
+    effs.push_back(eGvD);
+    effs.push_back(eDd);
+  }
+  std::vector<arma::field<arma::vec> > ind = gvGroupEffects(effs, g, pos,
+                                                            nThreads);
+  const arma::vec& gvA = ind[0](0);
+  const arma::vec& bvInd = ind[1](0);
+
+  if(hasD){
+    const arma::vec& gvD = ind[2](0);
+    const arma::vec& ddInd = ind[3](0);
+    return Rcpp::List::create(Rcpp::Named("gv")=gvA+gvD+gvAA+intercept,
+                              Rcpp::Named("bv")=bvInd,
+                              Rcpp::Named("dd")=ddInd,
+                              Rcpp::Named("aa")=gvA+gvD+gvAA-bvInd-ddInd-pairMuSum,
                               Rcpp::Named("genicVarA")=accu(genicA),
                               Rcpp::Named("genicVarD")=accu(genicD),
                               Rcpp::Named("genicVarAA")=accu(genicAA),
@@ -260,25 +401,24 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
-                              Rcpp::Named("gv_a")=sum(gv_a,1),
-                              Rcpp::Named("gv_d")=sum(gv_d,1),
-                              Rcpp::Named("gv_aa")=sum(gv_aa,1),
+                              Rcpp::Named("gv_a")=gvA,
+                              Rcpp::Named("gv_d")=gvD,
+                              Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
                               Rcpp::Named("alpha")=alpha,
                               Rcpp::Named("alpha_HW")=alphaHW);
   }else{
-    gv_t = gv_a + gv_aa;
-    return Rcpp::List::create(Rcpp::Named("gv")=sum(gv_t,1)+intercept,
-                              Rcpp::Named("bv")=sum(bvMat,1),
-                              Rcpp::Named("aa")=sum(aaMat,1),
+    return Rcpp::List::create(Rcpp::Named("gv")=gvA+gvAA+intercept,
+                              Rcpp::Named("bv")=bvInd,
+                              Rcpp::Named("aa")=gvA+gvAA-bvInd-pairMuSum,
                               Rcpp::Named("genicVarA")=accu(genicA),
                               Rcpp::Named("genicVarAA")=accu(genicAA),
                               Rcpp::Named("genicVarA2")=accu(genicA2),
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
-                              Rcpp::Named("gv_a")=sum(gv_a,1),
-                              Rcpp::Named("gv_aa")=sum(gv_aa,1),
+                              Rcpp::Named("gv_a")=gvA,
+                              Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
                               Rcpp::Named("alpha")=alpha,
                               Rcpp::Named("alpha_HW")=alphaHW);

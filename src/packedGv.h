@@ -77,6 +77,29 @@ struct GvEffects{
   double gxeInt;
 };
 
+// Reads the dosages of a set of loci for a tile of individuals at a time.
+// decode writes the dosage of locus i for the j-th individual of the tile
+// to buf[i*tile+j], so that the dosages of one locus across the tile are
+// contiguous. Loci sharing a byte are read together: spread[b] puts bit k of
+// b into byte k of a 64 bit word, so summing it over the haplotypes gives
+// the dosages of all eight loci of the byte at once.
+class DosageTiles{
+public:
+  DosageTiles(const PackedGeno& g, const LociPos& pos);
+  void decode(arma::uword indStart, arma::uword nTileInd, arma::uword tile,
+              unsigned char* buf) const;
+  arma::uword nLoci() const { return nLoci_; }
+  // Number of distinct bytes the loci are in
+  arma::uword nBytes() const { return keyBase_.size(); }
+private:
+  arma::uword ploidy_;
+  arma::uword nLoci_;
+  std::vector<uint64_t> spread_;
+  std::vector<const unsigned char*> keyBase_;
+  std::vector<arma::uword> keyHapStride_, keyIndStride_, keyStart_;
+  std::vector<arma::uword> keyLocus_, keyShift_;
+};
+
 LociPos findLoci(const PackedGeno& g,
                  const arma::Col<int>& lociPerChr,
                  const arma::uvec& lociLoc);

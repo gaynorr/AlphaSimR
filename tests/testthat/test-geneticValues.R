@@ -76,6 +76,18 @@ test_that("MATCH epistatic traits", {
   expectMatchesRef(pop, SP)
 })
 
+test_that("MATCH epistatic traits on sparse loci", {
+  # Few loci share a byte here, so pairs read the genotypes directly rather
+  # than through a buffer of dosages, which the test above uses
+  set.seed(106)
+  founderPop = quickHaplo(nInd = 20, nChr = 3, segSites = 400)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitADEG(20, meanDD = 0.2, relAA = 0.5, varGxE = 0.3)
+  pop = randCross(newPop(founderPop, simParam = SP), 50, simParam = SP)
+  expectMatchesRef(pop, SP)
+})
+
 test_that("MATCH polyploid traits", {
   # Additive traits use lookup tables at any ploidy, while dominance above
   # diploid can only use dosages
@@ -173,10 +185,62 @@ refBvDd = function(pop, simParam, trait) {
   list(bv = bv, dd = dd, alpha = alpha)
 }
 
+# The same for a trait with epistasis, following calcGenParamE: each pair's
+# joint genotype frequencies give each locus a marginal genetic value that
+# averages over its partner, the breeding value and dominance deviation come
+# from those marginal values, and the epistatic deviation is what is left of
+# the pair's genetic value
+refBvDdAa = function(pop, simParam, trait) {
+  tr = simParam$traits[[trait]]
+  X = unname(pullQtlGeno(pop, trait = trait, simParam = simParam))
+  P = pop@ploidy
+  x = 0:P
+  xa = (x - P / 2) * (2 / P)
+  xd = x * (P - x) * (2 / P)^2
+  d = if (.hasSlot(tr, "domEff")) tr@domEff else rep(0, ncol(X))
+  E = tr@epiEff
+  bv = dd = aa = numeric(nrow(X))
+  alpha = numeric(ncol(X))
+  for (i in seq_len(nrow(E))) {
+    l = E[i, 1:2]
+    joint = table(factor(X[, l[1]], levels = x), factor(X[, l[2]], levels = x)) / nrow(X)
+    freq = list(rowSums(joint), colSums(joint))
+    own = lapply(1:2, function(k) xa * tr@addEff[l[k]] + xd * d[l[k]])
+    b = dev = list()
+    for (k in 1:2) {
+      other = 3 - k
+      # Marginal genetic value: the locus's own effects plus its partner's
+      # and the epistatic term, averaged over the partner's genotypes
+      g = own[[k]] + sum(freq[[other]] * own[[other]]) +
+        E[i, 3] * xa * sum(freq[[other]] * xa)
+      genoMu = sum(freq[[k]] * x)
+      gvMu = sum(freq[[k]] * g)
+      al = sum(freq[[k]] * (g - gvMu) * (x - genoMu)) / sum(freq[[k]] * (x - genoMu)^2)
+      if (!is.finite(al)) al = 0
+      alpha[l[k]] = al
+      b[[k]] = (x - genoMu) * al
+      dev[[k]] = if (.hasSlot(tr, "domEff")) g - b[[k]] - gvMu else 0 * x
+    }
+    GV = outer(own[[1]], own[[2]], "+") + E[i, 3] * outer(xa, xa)
+    AA = GV - outer(b[[1]], b[[2]], "+") - outer(dev[[1]], dev[[2]], "+") - sum(joint * GV)
+    u = X[, l[1]] + 1
+    v = X[, l[2]] + 1
+    bv = bv + b[[1]][u] + b[[2]][v]
+    dd = dd + dev[[1]][u] + dev[[2]][v]
+    aa = aa + AA[cbind(u, v)]
+  }
+  list(bv = bv, dd = dd, aa = aa, alpha = alpha)
+}
+
 expectGenParamMatchesRef = function(pop, simParam) {
   gp = genParam(pop, simParam = simParam)
   for (i in seq_len(simParam$nTraits)) {
-    ref = refBvDd(pop, simParam, i)
+    if (.hasSlot(simParam$traits[[i]], "epiEff")) {
+      ref = refBvDdAa(pop, simParam, i)
+      expect_equal(unname(gp$aa[, i]), ref$aa)
+    } else {
+      ref = refBvDd(pop, simParam, i)
+    }
     expect_equal(unname(gp$bv[, i]), ref$bv)
     expect_equal(unname(gp$dd[, i]), ref$dd)
     expect_equal(as.vector(gp$alpha[[i]]), ref$alpha)
@@ -215,6 +279,35 @@ test_that("MATCH breeding values for polyploids and monomorphic loci", {
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$addTraitAD(100, meanDD = 0.3)
+  pop = randCross(newPop(founderPop, simParam = SP), 20, simParam = SP)
+  expectGenParamMatchesRef(pop, SP)
+})
+
+test_that("MATCH breeding values and deviations for epistatic traits", {
+  # Dense enough for the dosage buffer, sparse enough for direct reads, a
+  # tetraploid, and few founders so that some loci are fixed
+  set.seed(306)
+  founderPop = quickHaplo(nInd = 20, nChr = 2, segSites = 200)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitAE(200, relAA = 0.5)
+  SP$addTraitADE(20, meanDD = 0.3, varDD = 0.2, relAA = 0.5)
+  pop = randCross(newPop(founderPop, simParam = SP), 100, simParam = SP)
+  expectGenParamMatchesRef(pop, SP)
+
+  set.seed(307)
+  founderPop = quickHaplo(nInd = 20, nChr = 2, segSites = 40, ploidy = 4)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitADE(20, meanDD = 0.3, varDD = 0.2, relAA = 0.5)
+  pop = randCross(newPop(founderPop, simParam = SP), 60, simParam = SP)
+  expectGenParamMatchesRef(pop, SP)
+
+  set.seed(308)
+  founderPop = quickHaplo(nInd = 3, nChr = 2, segSites = 100)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitADE(100, meanDD = 0.3, relAA = 0.5)
   pop = randCross(newPop(founderPop, simParam = SP), 20, simParam = SP)
   expectGenParamMatchesRef(pop, SP)
 })
