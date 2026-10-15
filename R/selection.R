@@ -172,6 +172,12 @@ calcPopValue = function(
   dots[[".level_offset"]] = NULL
   dots[[".paths"]] = NULL
 
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+
   if (isPop(x)) {
     FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
@@ -960,8 +966,9 @@ selectPop = function(
   stopifnot(isMultiPop(x))
 
   if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
-        level < 1 || level != as.integer(level)) {
-      stop("`level` must be a positive integer")
+      !is.finite(level) || level < 1 || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+      stop("`level` must be a single non-NA integer value.")
     }
 
   is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))

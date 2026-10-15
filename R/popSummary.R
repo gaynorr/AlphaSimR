@@ -349,7 +349,6 @@ meanGPop = function(x, level = 0, .req_level) {
       abs(level) > .Machine$integer.max) {
     stop("`level` must be a single non-NA integer value.")
   }
-  level = as.integer(level)
 
   if (isPop(x)) {
     if (nrow(x@gv) == 0L) {
@@ -363,6 +362,11 @@ meanGPop = function(x, level = 0, .req_level) {
   }
 
   if (missing(.req_level)) {
+    if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+        !is.finite(level) || level != trunc(level) ||
+        abs(level) > .Machine$integer.max) {
+      stop("`level` must be a single non-NA integer value.")
+    }
     .req_level = level
   }
 
@@ -467,7 +471,6 @@ meanPPop = function(x, level = 0, .req_level) {
       abs(level) > .Machine$integer.max) {
     stop("`level` must be a single non-NA integer value.")
   }
-  level = as.integer(level)
 
   if (isPop(x)) {
     if (nrow(x@pheno) == 0L) {
@@ -481,6 +484,11 @@ meanPPop = function(x, level = 0, .req_level) {
   }
 
   if (missing(.req_level)) {
+    if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+        !is.finite(level) || level != trunc(level) ||
+        abs(level) > .Machine$integer.max) {
+      stop("`level` must be a single non-NA integer value.")
+    }
     .req_level = level
   }
 

@@ -151,6 +151,10 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                 newMultiPop(pop[6:7], pop[8:10]))
   )
   expect_identical(mergeMultiPops(mp1, mp2, level = 3), c(mp1, mp2))
+  expect_error(mergeMultiPops(mp1, mp2, level = 0.5),
+               "`level` must be a single non-NA integer value.", fixed = TRUE)
+  expect_error(mergeMultiPops(mp1, mp2, level = 1:2),
+               "`level` must be a single non-NA integer value.", fixed = TRUE)
 
   # Flattening multiPops
 
@@ -223,6 +227,10 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   expect_identical(flattenMultiPop(mp_named, level = 2, preserveNames = "none"),
                     newMultiPop(A = pop[1:2], B = pop[3:5], 
                                 C = newMultiPop(pop[6:7], pop[8:10])))
+  expect_error(flattenMultiPop(mp_named, level = 0.5),
+               "`level` must be a single non-NA integer value.", fixed = TRUE)
+  expect_error(flattenMultiPop(mp_named, level = 1:2),
+               "`level` must be a single non-NA integer value.", fixed = TRUE)
 })
 
 test_that("splitPop", {

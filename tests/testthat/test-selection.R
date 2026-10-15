@@ -72,10 +72,10 @@ test_that("selectPop",{
   
   # Invalid level
   expect_error(selectPop(mp1, nPop = 2, level = 0.5, simParam = SP),
-               "`level` must be a positive integer",
+               "`level` must be a single non-NA integer value.",
                fixed=TRUE)
                expect_error(selectPop(mp1, nPop = 2, level = 1:2, simParam = SP),
-               "`level` must be a positive integer",
+               "`level` must be a single non-NA integer value.",
                fixed=TRUE)
   
   # TODO: Update support for use='bv' with genParamPop()
