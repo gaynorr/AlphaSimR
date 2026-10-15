@@ -227,6 +227,34 @@ SP = SimParam$new(founderPop)
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
+## Method `SimParam$importTrait()`
+## ------------------------------------------------
+
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+
+#Import an AE trait, with one pair spanning both chromosomes
+SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+               addEff=c(1,-1,0.5,0.5),
+               epiPairs=rbind(c("1_1","1_5"),
+                              c("2_3","2_8")),
+               epiEff=c(0.2,-0.4),
+               name="AE")
+
+#Import an ADE trait
+SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+               addEff=c(1,-1,0.5,0.5),
+               domEff=c(0.3,0.1,0,0.2),
+               epiPairs=rbind(c("1_2","2_6"),
+                              c("1_4","2_1")),
+               epiEff=c(0.5,0.1),
+               name="ADE")
+
+## ------------------------------------------------
 ## Method `SimParam$setVarE()`
 ## ------------------------------------------------
 
@@ -1523,7 +1551,7 @@ manAddTrait function, this function does not require
 formatting the trait as a \code{\link{LociMap-class}}.
 The formatting is performed automatically for the user,
 with more user friendly data.frames or matrices taken as
-inputs. This function only works for A and AD trait types.
+inputs. This function works for A, AD, AE and ADE trait types.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$importTrait(
@@ -1534,18 +1562,21 @@ inputs. This function only works for A and AD trait types.
   name = NULL,
   varE = NULL,
   force = FALSE,
-  nThreads = NULL
+  nThreads = NULL,
+  epiPairs = NULL,
+  epiEff = NULL
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{markerNames}}{a vector of names for the QTL}
+      \item{\code{markerNames}}{a vector of unique names for the QTL}
       \item{\code{addEff}}{a matrix of additive genotypic effects (nLoci x nTraits).
 Alternatively, a vector of length nLoci can be supplied for
 a single trait.}
-      \item{\code{domEff}}{optional dominance genotypic effects for each locus}
+      \item{\code{domEff}}{optional dominance genotypic effects for each locus
+(nLoci x nTraits, or a vector of length nLoci for a single trait)}
       \item{\code{intercept}}{optional trait intercepts in the genotypic parameterization}
       \item{\code{name}}{optional name(s) for the trait(s)}
       \item{\code{varE}}{default error variance for phenotype, optional}
@@ -1553,12 +1584,57 @@ a single trait.}
 ignored. Only set to TRUE if you know what you are doing}
       \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
+      \item{\code{epiPairs}}{optional two-column matrix or data.frame of marker
+names, with one row for each pair of loci that interact through
+additive-by-additive epistasis. Must be supplied with \code{epiEff}.}
+      \item{\code{epiEff}}{optional additive-by-additive epistatic genotypic
+effects, a matrix with one row for each row of \code{epiPairs} and
+one column for each trait. Alternatively, a vector of length
+\code{nrow(epiPairs)} can be supplied for a single trait.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Details}{
     See \code{vignette("traits", package = "AlphaSimR")} for the
 implemented trait model and genotypic effects.
+
+Supplying \code{epiPairs} and \code{epiEff} creates an AE trait,
+or an ADE trait when \code{domEff} is also supplied. The epistatic
+model only allows interactions between pairs of loci, and every
+marker in \code{markerNames} must appear in exactly one pair, so
+\code{nrow(epiPairs)} is half of \code{length(markerNames)}. The two
+markers in a pair may be on different chromosomes. All traits
+imported in one call share the same pairs, with effects taken from
+the corresponding column of \code{epiEff}. Markers do not need to be
+given in map order; the pairs are matched to the loci by name after
+the loci are put in map order.
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Import an AE trait, with one pair spanning both chromosomes
+SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+               addEff=c(1,-1,0.5,0.5),
+               epiPairs=rbind(c("1_1","1_5"),
+                              c("2_3","2_8")),
+               epiEff=c(0.2,-0.4),
+               name="AE")
+
+#Import an ADE trait
+SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+               addEff=c(1,-1,0.5,0.5),
+               domEff=c(0.3,0.1,0,0.2),
+               epiPairs=rbind(c("1_2","2_6"),
+                              c("1_4","2_1")),
+               epiEff=c(0.5,0.1),
+               name="ADE")
+}
+    \if{html}{\out{</div>}}
   }
 }
 
