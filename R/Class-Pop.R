@@ -1027,12 +1027,20 @@ resetPop = function(pop,simParam=NULL,nThreads=NULL){
                   ncol=simParam$nTraits)
   pop@fixEff = rep(1L,pop@nInd)
 
-  # Calculate genetic values
-  for(i in seq_len(simParam$nTraits)){
-    tmp = getGv(simParam$traits[[i]],pop,nThreads)
-    pop@gv[,i] = tmp[[1]]
-    if(length(tmp)>1){
-      pop@gxe[[i]] = tmp[[2]]
+  # Calculate genetic values the same way .newPop does. Traits sharing loci
+  # are worked out together there, and the method chosen for them can differ
+  # in the last few bits from the one chosen for a trait on its own, so going
+  # trait by trait through getGv would not reproduce the values newPop gives.
+  if(simParam$nTraits>=1){
+    tmp = getGvIndex(pop, simParam$traits, simParam$activeQtl,
+                     simParam$qtlIndex, simParam$nTraits, nThreads)
+    pop@gv[] = tmp[[1]]
+    gxeTmp = tmp[[2]]
+    dim(gxeTmp) = NULL # Account for matrix bug in RcppArmadillo
+    for(i in seq_len(simParam$nTraits)){
+      if(.hasSlot(simParam$traits[[i]], "gxeEff")){
+        pop@gxe[[i]] = gxeTmp[[i]]
+      }
     }
   }
 
