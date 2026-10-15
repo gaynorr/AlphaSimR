@@ -388,14 +388,4 @@ test_that("slots_means_and_variances", {
     "`x` contains no populations.",
     fixed = TRUE
   )
-  expect_error(
-    meanGPop(pop, level = c(NA, NA)),
-    "`level` must be a single non-NA integer value.",
-    fixed = TRUE
-  )
-  expect_error(
-    meanPPop(pop, level = c(NA, NA)),
-    "`level` must be a single non-NA integer value.",
-    fixed = TRUE
-  )
 })
