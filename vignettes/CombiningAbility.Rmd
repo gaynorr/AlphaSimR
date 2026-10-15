@@ -272,11 +272,9 @@ Each offspring record has equal weight in that fit, while fitted
 parental means average equally over the opposite set of parents.
 Incomplete designs need to be connected to identify parental effects.
 
-The current `calcGCA()` implementation has a limitation when one side
-contains only one parent and the other contains multiple parents:
-repeated records per cross are not averaged for the latter parental set.
-Aggregate to one record per cross before using that special case.
-The complete six-by-six example above is unaffected.
+When one side contains only one parent, as for crosses to a single
+tester, the GCA of each parent on the other side is the mean of its
+records, so repeated records per cross are averaged.
 
 Estimating variance components from noisy trials requires an appropriate
 statistical model and an informative design.

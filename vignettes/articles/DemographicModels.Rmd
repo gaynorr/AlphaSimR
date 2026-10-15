@@ -24,7 +24,7 @@ library(AlphaSimR)
 # (see the msprime section)
 runPython = FALSE
 # Uncomment this next line to run the Python examples while rendering this article
-runPython = TRUE
+# runPython = TRUE
 ```
 
 # Introduction
@@ -554,7 +554,7 @@ We call this population genetics object as an ancestral recombination graph (ARG
 Run the following setup once before rendering the `Python` examples.
 It installs `reticulate` and declares the `Python` packages required below.
 
-```{r pythonInstall}
+```{r pythonInstall, eval=FALSE}
 install.packages("reticulate")
 reticulate::py_require(c("msprime", "demesdraw", "stdpopsim"))
 ```
@@ -705,7 +705,8 @@ For one chromosome with `nInd * ploidy` haplotypes and `nLoci` sites,
 the matrix has `nInd * ploidy * nLoci` entries. R integer matrices use
 four bytes per entry and double matrices use eight, plus object overhead.
 To estimate the size of the haplotype matrices in bytes,
-multiply the number of entries
+multiply the number of entries by four for an integer matrix or by eight
+for a double matrix.
 Divide the bytes by `2^20` for MiB or by `2^30` for GiB.
 Tree sequences do not need to store this dense matrix,
 allowing them to represent much larger sets of genomes.

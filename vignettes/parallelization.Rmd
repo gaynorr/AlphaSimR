@@ -62,8 +62,8 @@ but want to use just one globally,
 you can specify that in the `SP` object:
 
 ```{r}
-pop = newPop(founderPop, simParam = SP)
 SP$nThreads = 1L
+pop = newPop(founderPop, simParam = SP)
 pullSegSiteGeno(pop)
 # Note that pullSegSiteGeno() uses internally SP$nThreads,
 # when the nThreads argument is not specified.
@@ -75,6 +75,12 @@ we can specify the number of threads in some functions:
 ```{r}
 pullSegSiteGeno(pop, nThreads = 1L)
 ```
+
+The number of threads only changes how fast `AlphaSimR` runs, never its
+results. Work is split into pieces whose number depends on the size of the
+problem rather than on the number of threads, and each piece draws its own
+random numbers, so a simulation run from the same seed gives the same
+results whatever `nThreads` is.
 
 ## A demonstration
 

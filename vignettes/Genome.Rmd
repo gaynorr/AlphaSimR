@@ -34,7 +34,7 @@ Although similar, there are essential differences in the terminology used. This 
 
 Genes are segments of DNA that are translated to proteins. Typically they will contain a few hundred to more than two million base-pairs with a codon (triplet base-pair) coding for either an amino acid or to start/stop.
 
-An allele in a gene is a gene variant. More generally, an allele represents a possible sequence of bases at a particular site on a genome (known as a locus). When biallelic (two variants per gene) the allele is either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new alleles arise from mutation. It is common to not have information about the ancestral state, in which case the most (less) frequent allele is coded as 0 (1). AlphaSimR uses ancestral state information, unless `quickHaplo` is used, which generates alleles at random.
+An allele in a gene is a gene variant. More generally, an allele represents a possible sequence of bases at a particular site on a genome (known as a locus). When biallelic (two variants per gene) the allele is either ancestral (denoted 0) or a mutant (denoted 1). Per the name, new alleles arise from mutation. It is common to not have information about the ancestral state, in which case the most (less) frequent allele is coded as 0 (1). Founder haplotypes simulated with `runMacs` or `runMacs2` use ancestral state information, with 0 for the ancestral allele and 1 for the derived allele. `quickHaplo` generates alleles at random, and imported haplotypes or genotypes keep the coding supplied by the user.
 
 A genotype is the combination of alleles across chromosome copies that an organism has at a specified locus or across loci. For instance, there are three possible genotypes for a diploid at a biallelic locus with ancestral allele A and mutant allele a: ancestral homozygous (AA) with allele dosage 0, heterozygous (Aa or aA) with allele dosage 1, and mutant homozygous (aa) with allele dosage 2. Genotypes can differ between individuals due to random segregation in inheritance.
 
@@ -55,8 +55,11 @@ SP$setTrackRec(TRUE)
 # Inspect the founder genomes
 founderGenomes
 ```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
 
-Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined locus labeled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes. Where the ancestral allele is not known, the allele dosage will be randomly assigned.
+Then we can observe the genotypes with `pullSegSiteGeno`. Each row represents one of the ten individuals and each column represents a defined locus labeled as the Chromosome_Locus. All will have a value of zero to two equivalent to the allele dosage. Commonly, this would be homozygous ancestral (0), heterozygous (1), and homozygous mutant (2). Since this is a diploid, we are observing these genotypes across the pair of chromosomes.
 
 ```{r}
 pullSegSiteGeno(founderGenomes)
@@ -83,7 +86,7 @@ Within genetics, whether quantitative or population, we are interested in how on
 
 In **AlphaSimR**:
 
-1) Random mutations can be added to individuals in populations with `mutate`. For the purpose of demonstration, the mutation is at a much higher rate than would be expected.
+1) Random mutations can be added to individuals in populations with `mutate`. It does not add new sites: each mutation flips the allele at one of the existing segregating sites, and the rate is per site per haplotype. For the purpose of demonstration, the mutation is at a much higher rate than would be expected.
 
 ```{r}
 basePop = newPop(founderGenomes)
@@ -123,7 +126,7 @@ pullSegSiteHaplo(basePop[basePop@iid == father,])
 pullSegSiteHaplo(secondGenPop)
 ```
 
-In the above, independent assortment will always be observed. This is clear since despite being full siblings they inherit a different arrangement of haplotypes from the mother and the father. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the `vignette("GeneticRecombination")`.
+In the above, independent assortment will usually be observed. This is clear since despite being full siblings they usually inherit a different arrangement of haplotypes from the mother and the father, although by chance two siblings can inherit the same one. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the `vignette("GeneticRecombination")`.
 
 ```{r}
 pullIbdHaplo(basePop[basePop@iid == mother,])
@@ -147,6 +150,9 @@ founderGenomes = runMacs(nInd = 10,
 # Set simulation parameters
 SP = SimParam$new(founderGenomes)
 ```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
 
 Then, add an additive trait with three QTLs per chromosome using `SP$addTraitA` and one SNP per chromosome with `SP$addSnpChip`.
 
@@ -164,7 +170,7 @@ basePop = newPop(founderGenomes, simParam = SP)
 basePop
 ```
 
-The SNPs can be read with `pullSnpGeno` or, if the location in the genome is known, `pullMarkerGeno` can be used.
+The SNPs can be read with `pullSnpGeno` or, if the marker names are known, `pullMarkerGeno` can be used.
 
 ```{r}
 # From SNP
@@ -189,7 +195,7 @@ getQtlMap(trait = 1, simParam = SP)
 
 ## What is a genetic map?
 
-A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. Although **AlphaSimR** can import a physical map for all loci through the `lociMap-class`, it can only output genetic maps of defined segregating sites, including QTLs, SNPs, and all defined loci. For this, the observed recombination frequencies between loci are used to show how genetic information is shuffled in chromosomes. This highlights how markers are inherited. See `vignette("GeneticRecombination")` for more details.
+A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. **AlphaSimR** stores and reports genetic maps only, in Morgans, for segregating sites, QTLs, SNPs, and all defined loci. The map is the one supplied with the founder population, by `runMacs`, `quickHaplo` or an import, and meiosis uses it to place crossovers, so it determines how genetic information is shuffled in chromosomes and how markers are inherited. See `vignette("GeneticRecombination")` for more details.
 
 For a genetic map of all defined loci (or segregating sites), `getGenMap` is used. `getSnpMap` can be used for the genetic map of the SNP(s) on each chromosome. As hinted previously, `getQtlMap` can be used for the genetic map of the QTL(s).
 

@@ -206,9 +206,11 @@ SP$maleGenLen
 Everything in this section concerns a single chromosome of total genetic
 length $L$ Morgans. `AlphaSimR` simulates each chromosome independently,
 which is exactly the independent assortment described earlier, and it
-does so in parallel when OpenMP is available. Each chromosome is given
-its own random number substream so that results are reproducible
-regardless of how many threads are used.
+does so in parallel when OpenMP is available. The individuals being made
+are split into blocks whose number depends only on how many individuals
+there are, and each chromosome in each block is given its own random
+number substream, so results are reproducible regardless of how many
+threads are used.
 
 Simulating a gamete proceeds in three steps. Chiasmata are placed along
 the chromosome; each chiasma is thinned with probability one half to

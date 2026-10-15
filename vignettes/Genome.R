@@ -17,6 +17,9 @@ SP$setTrackRec(TRUE)
 # Inspect the founder genomes
 founderGenomes
 
+## ----include=FALSE------------------------------------------------------------
+SP$nThreads = 1L
+
 ## -----------------------------------------------------------------------------
 pullSegSiteGeno(founderGenomes)
 
@@ -62,6 +65,9 @@ founderGenomes = runMacs(nInd = 10,
                         species = "CATTLE")
 # Set simulation parameters
 SP = SimParam$new(founderGenomes)
+
+## ----include=FALSE------------------------------------------------------------
+SP$nThreads = 1L
 
 ## -----------------------------------------------------------------------------
 SP$addTraitA(nQtlPerChr = 3)

@@ -135,7 +135,7 @@ Additive-by-dominance or dominance-by-dominance epistasis are not supported.
 
 Note that genetic values in `AlphaSimR` include the trait intercept $\mu_0$,
 while standard literature often removes it (or the trait mean of a population)
-[@fisher1919Correlation, @falconer1996Introduction, @lynch1998Genetics].
+[@fisher1919Correlation; @falconer1996Introduction; @lynch1998Genetics].
 While this difference only shifts the "baseline" of genetic values,
 it is convenient for seamless comparisons across populations and time.
 Since there are several "baseline"-related quantities in `AlphaSimR`,
@@ -241,11 +241,11 @@ rather than the fixed trait intercept $\mu_0$ introduced
 
 The breeding value of an individual is the part of its genetic value that
 it can transmit to offspring under random mating in the population
-[@falconer1996Introduction, @falconer1985Note].
+[@falconer1996Introduction; @falconer1985Note].
 Formally,
 it is the least-squares projection of
 the genetic-value deviation from the population mean onto
-centred allele dosage in the population,
+centered allele dosage in the population,
 and the coefficient of that projection is
 the average effect of allele substitution in the population,
 usually denoted as $\alpha$.
@@ -470,7 +470,7 @@ Critically, these deviations/values $D(x)$ are not
 the dominance genotypic effects $d$ or their contributions to genetic values $x_D d$!
 The same holds for breeding values $A(x)$ - they are not
 additive genotypic effects $a$ or their contributions to genetic values $x_A a$!
-This is a constant source of confusion [@hill2008Data, @hivert2021Gene].
+This is a constant source of confusion [@hill2008Data; @hivert2021Gene].
 Breeding values $A(x)$ are a linear projection of genetic values $G(x)$ onto dosages $x$
 (capturing additive and partly also non-additive genotypic effects),
 while dominance deviations $D(x)$ are residuals of this projection
@@ -496,7 +496,7 @@ and symmetrically for the locus $j$.
 Because the epistatic contribution to genetic value is
 $x_{A_i} x_{A_j} e_{(i,j)}$,
 the average over the locus $j$ contributes
-$x_{A_i} \bar{x}_{A_j}$ e_{(i,j)},
+$x_{A_i} \bar{x}_{A_j} e_{(i,j)}$,
 which is linear in $x_{A_i}$.
 The epistatic effect therefore shifts
 the marginal genetic value at the first locus ($i$) in
@@ -584,8 +584,9 @@ This is one of the reasons why `AlphaSimR` also reports
 the sum of all non-additive deviations $G(x) = \bar{G} + A(x) + N(x)$ as shown below.
 
 Two things limit how much this consequence matters in practice.
-`AlphaSimR` assigns epistatic QTL pairs by a random permutation across the genome,
+The `addTrait` functions assign epistatic QTL pairs by a random permutation across the genome,
 so interacting pairs are not preferentially tightly linked.
+Pairs given to `importTrait` are chosen by the user and may be tightly linked.
 Recombination erodes LD between loosely linked loci,
 while drift, selection, and population structure can generate new LD.
 Also, in the theoretical genotype distribution of an unselected diploid F2
@@ -776,7 +777,7 @@ For a more comprehensive study see @lara2022Temporal.
 
 ### Departures from Hardy-Weinberg proportions {#hardy-weinberg-departures}
 
-`covX_HW` measures the difference in total variance between the
+`covX_HW` measures the difference in the variance of component X between the
 linkage-equilibrium and idealized populations,
 it compares the variance at observed genotype frequencies with
 that at Hardy-Weinberg genotype frequencies,
@@ -1073,7 +1074,7 @@ the partitioning of phenotypic and genetic variance within and between families.
 Readers can explore these relationships by combining
 the genetic values and variance calculations introduced here
 with `parentAverage`, `mendelianSampling`, and simulated crosses.
-The companion `vignette("GeneticRecombination")`` explains
+The companion `vignette("GeneticRecombination")` explains
 the recombination mechanisms underlying those crosses.
 As an exercise, simulate several families and compare variation in
 parental averages with variation among offspring within each family.

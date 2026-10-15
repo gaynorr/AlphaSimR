@@ -44,7 +44,7 @@ model each one fits is described later, in a section you can skip on a
 first reading.
 
 Two earlier vignettes are assumed.
-The vignette("articles/Genome") explains how
+The `vignette("Genome")` explains how
 QTL and SNP chips are defined and how genotypes are stored and pulled.
 The `vignette("QuanGen")` explains
 the distinction between a genetic value and a breeding value,
@@ -199,16 +199,19 @@ notes that no consistent benefit over `RRBLUP_GCA` has been observed in
 simulation rather than assuming the more complex model wins.
 
 **`fastRRBLUP`** is the escape hatch for size. It solves the same
-additive model as `RRBLUP` but never forms a square matrix, so its
-memory cost stays close to the cost of the genotypes themselves. Use it
+additive model as `RRBLUP` but never forms a square matrix to solve it,
+so its memory cost stays close to the cost of the genotypes themselves and
+of the subset of records it uses for the variance components. Use it
 when the training population has grown large enough that the others will
 not fit.
 
 ### Fitting the same model more cheaply
 
-Every model above has a numbered counterpart: `RRBLUP2`, `RRBLUP_D2`,
-`RRBLUP_GCA2`, `RRBLUP_SCA2`. These fit *exactly the same models* and
-differ only in how the equations are solved. The practical reason to
+`RRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` each have a numbered
+counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
+fit *exactly the same models* and differ only in how the equations are
+solved, except that the numbered versions fit one trait at a time, while
+`RRBLUP` can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
 care is that the numbered versions let you supply the variance
 components and skip estimating them:
 
@@ -237,9 +240,12 @@ value that is usually too small to converge, and a warning is issued
 when it does not. Left to estimate their own variance components to convergence,
 the numbered models are rarely the better choice. The benefit is obtained only
 when `useEM=FALSE` or `maxIter` is left at a small value to only allow small
-updates to the estimated variance components. These models also only add value
-when the number of markers is small relative to the number of phenotypic
-records.
+updates to the estimated variance components. When they estimate variance
+components, and for `RRBLUP_D2`, `RRBLUP_GCA2` and `RRBLUP_SCA2` in every
+case, they also only add value when the number of markers is small relative
+to the number of phenotypic records. `RRBLUP2` with `useEM=FALSE` is the
+exception, because it then solves whichever way is cheaper, as described
+below.
 
 ## Using the models in a breeding program
 
@@ -554,22 +560,32 @@ length(ans@female)
 
 The three implementations differ only in arithmetic, not in the model.
 
-The **unnumbered** functions use the approach of Kang and colleagues,
+For a single trait, `RRBLUP` uses the approach of Kang and colleagues,
 sometimes called EMMA: the problem is transformed by an
-eigendecomposition of a matrix whose dimension is the number of
-*records*, and the variance components are then found by maximizing the
-restricted likelihood along a single dimension. This is fast and
-reliable, but it forms an $n \times n$ matrix.
+eigendecomposition, and the variance components are then found by
+maximizing the restricted likelihood along a single dimension. The matrix
+decomposed has the dimension of the smaller of the number of records and
+the number of markers, because a matrix and its transpose share their
+nonzero eigenvalues. This is fast and reliable. The other unnumbered
+models have more than one variance component, so they cannot be reduced to
+a single dimension. `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` estimate
+theirs with an average information REML algorithm, and `RRBLUP` fitted to
+several traits uses an iterative algorithm of its own. Both work with
+matrices whose dimension is the number of records.
 
 The **numbered** functions set up Henderson's mixed model equations
 directly. The coefficient matrix there has dimension equal to the number
 of fixed effects plus the number of *markers*, and the variance
-components are found with an EM algorithm. So if the number of markers
-is appreciably smaller than the number of records, the numbered
-functions use less memory; if the number of markers is larger, which is
-the common case, the unnumbered functions use less.
+components are found with an EM algorithm. So when they estimate variance
+components, the numbered functions use less memory if the number of
+markers is appreciably smaller than the number of records, and more if
+the number of markers is larger, which is the common case. `RRBLUP2` with
+`useEM=FALSE` does not estimate variance components, so it is free to
+solve the model written on the records instead, and takes whichever of the
+two is cheaper. `RRBLUPMemUse` reports what each model and choice
+costs.
 
-**`fastRRBLUP`** forms no square matrix at all. It solves the mixed
+**`fastRRBLUP`** forms no square matrix to solve the model. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the
 genotypes rather than over a stored coefficient matrix
 [@stranden1999Solving]. Neither the coefficient matrix nor a numeric copy of

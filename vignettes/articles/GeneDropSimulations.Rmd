@@ -34,7 +34,7 @@ assumed; they are the outcome of the sampling.
 Gene drops are useful whenever the question is about how genetic material
 moves through a known set of relationships. Typical uses are estimating
 the probability that a descendant carries a founder allele, quantifying
-how variable realised relationships are around their pedigree
+how variable realized relationships are around their pedigree
 expectations, generating genotypes for individuals that were never
 genotyped, and producing a set of starting genomes for a forward
 simulation that begins from a real breeding population.
@@ -142,7 +142,7 @@ tail(getPed(f8))
 ```
 
 Because the founders were assigned at random from `pop`, repeating the
-call gives a different, equally valid, realisation. That is the point of a
+call gives a different, equally valid, realization. That is the point of a
 gene drop.
 
 # Working with an external pedigree
@@ -204,7 +204,7 @@ ped
 
 It is worth checking, before simulating, that every named parent is either
 a row of the pedigree or unknown. Anything else is a typo, and a typo is
-silent: a misspelt parent name used once is simply treated as unknown, and
+silent: a misspelled parent name used once is simply treated as unknown, and
 its child becomes a founder.
 
 ```{r}
@@ -389,13 +389,12 @@ haploids that descend from them. Nothing was dropped through `F1` to `F4`,
 because their genotypes were observed rather than inferred.
 
 The more common case is that only part of the pedigree is genotyped.
-Suppose only the two single crosses were:
-
-Subsetting a map population uses positions rather than names, so
-`match()` is the convenient way to pick individuals out of it by ID.
+Suppose only the two single crosses, `C1` and `C2`, were genotyped.
+Because `founderPop` was imported with `ped`, it is a `NamedMapPop` and
+can be subset by ID. A plain `MapPop` can only be subset by position.
 
 ```{r}
-genotyped = founderPop[match(c("C1", "C2"), founderPop@id)]
+genotyped = founderPop[c("C1", "C2")]
 
 partial = pedigreeCross(founderPop = genotyped,
                         id = ped$id, mother = ped$mother,
@@ -413,7 +412,7 @@ made at all. Rather than inventing a genome for it, `pedigreeCross()`
 stops and names the individuals it could not build:
 
 ```{r, error = TRUE}
-pedigreeCross(founderPop = founderPop[match(c("F1", "F2"), founderPop@id)],
+pedigreeCross(founderPop = founderPop[c("F1", "F2")],
               id = ped$id, mother = ped$mother, father = ped$father,
               matchID = TRUE)
 ```
@@ -533,13 +532,18 @@ pedigreeCross(founderPop = pop, id = ped$id, mother = ped$mother,
 
 # Repeating the drop
 
-A single gene drop is one realisation of a random process. Most questions
+A single gene drop is one realization of a random process. Most questions
 about a pedigree are answered by repeating it and looking at the
 distribution of the result.
 
-Here we drop the pedigree many times and record the genotype of `C3` at a
-single marker. `C1` and `C2` are matched to their observed genotypes every
-time, so all of the variation comes from which alleles they transmitted.
+Here we drop the pedigree many times and record the genotype of `D1`, one
+of the doubled haploid lines descended from `C3`, at a single marker. `C1`
+and `C2` are inbred and matched to their observed genotypes every time, so
+`C3` has the same genotype in every drop: heterozygous at this marker,
+because `C1` and `C2` differ there. All of the variation in `D1` comes from
+which of `C3`'s alleles it inherited. `DH = dh` is passed, as in the
+previous section, so `D1` is a doubled haploid and is homozygous for one
+allele or the other.
 
 ```{r}
 nRep = 200
@@ -549,17 +553,17 @@ for(i in seq_len(nRep)){
   drop = pedigreeCross(founderPop = founderPop,
                        id = ped$id, mother = ped$mother,
                        father = ped$father,
-                       matchID = TRUE)
-  dose[i] = pullSegSiteGeno(drop)["C3", "1_50"]
+                       matchID = TRUE, DH = dh)
+  dose[i] = pullSegSiteGeno(drop)["D1", "1_50"]
 }
 
 table(dose)
 ```
 
 The same approach answers questions about founder contributions, about how
-much realised relationships vary around their pedigree expectations, and
+much realized relationships vary around their pedigree expectations, and
 about the probability that a particular descendant carries a particular
-founder allele. Because the drops are independent, the loop parallelises
+founder allele. Because the drops are independent, the loop parallelizes
 trivially.
 
 The drops are also reproducible. Setting the seed before the loop fixes
@@ -568,7 +572,7 @@ be reported.
 
 # Things to watch for
 
-**Unknown parents must be `NA`.** A `0` in a parent column names an
+**`0` is not an unknown parent by default.** A `0` in a parent column names an
 individual called "0", and because every row with that parent then shares
 a single genome, unrelated individuals come out related. Pass
 `unknownParent = "0"`, or recode the file before dropping it.
@@ -576,7 +580,7 @@ a single genome, unrelated individuals come out related. Pass
 **A parent named once is not simulated.** Under `matchID = FALSE`, a
 parent that appears nowhere else in the pedigree is treated as unknown and
 its child becomes a founder. This is usually what you want, and it keeps
-the founder count down, but it means a misspelt parent name fails quietly.
+the founder count down, but it means a misspelled parent name fails quietly.
 The `setdiff()` check above catches it.
 
 **`matchID = FALSE` samples founders at random.** The IDs in the pedigree
