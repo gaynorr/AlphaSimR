@@ -314,6 +314,42 @@ test_that("RRBLUPMV warns when maxIter is reached", {
   expect_equal(ans$iter, 2L)
 })
 
+test_that("INPUT malformed arguments are refused with a message", {
+  n = 20
+  m = 8
+  M = markers(n, m, 9911)
+  X = matrix(1, n, 1)
+  Y = simTraits(tcrossprod(M)/m, X, 9912)
+  expect_error(solveRRBLUPMV(Y, X[-1, , drop=FALSE], M), "same number of rows")
+  expect_error(solveRRBLUPMV(Y[, 0, drop=FALSE], X, M), "at least one column")
+  expect_error(solveRRBLUPMV(Y, X[, 0, drop=FALSE], M), "at least one column")
+  expect_error(solveRRBLUPMV(Y, matrix(rnorm(n*n), n, n), M), "fewer columns")
+  Yna = Y
+  Yna[3, 1] = NA
+  expect_error(solveRRBLUPMV(Yna, X, M), "missing")
+  expect_error(solveRRBLUPMV(Y, X, M[-1, ]), "Y and M")
+  expect_error(solveMVM(Y, X, diag(n)[-1, ], diag(n)), "Y and Z")
+  expect_error(solveMVM(Y, X, diag(n), diag(n - 1)), "K must be square")
+})
+
+test_that("INPUT a kernel with no positive eigenvalue is refused", {
+  n = 20
+  X = matrix(1, n, 1)
+  Y = matrix(rnorm(2*n), n, 2)
+  # Both ways of rotating the records: fewer markers than records, and more
+  expect_error(solveRRBLUPMV(Y, X, matrix(0, n, 5)), "no positive eigenvalue")
+  expect_error(solveRRBLUPMV(Y, X, matrix(0, n, 30)), "no positive eigenvalue")
+})
+
+test_that("INPUT a fixed effects design without full column rank is refused", {
+  n = 20
+  m = 8
+  M = markers(n, m, 9921)
+  X = cbind(1, rep(1, n))
+  Y = simTraits(tcrossprod(M)/m, matrix(1, n, 1), 9922)
+  expect_error(solveRRBLUPMV(Y, X, M), "full column rank")
+})
+
 # ---------------------------------------------------------------------------
 # 5. End to end
 # ---------------------------------------------------------------------------
