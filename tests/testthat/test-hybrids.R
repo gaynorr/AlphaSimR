@@ -65,6 +65,75 @@ test_that("calcGCA",{
   expect_equal(nrow(GCA$SCA),1L)
 })
 
+# Phenotypes are supplied directly, so the expected means are known exactly
+# and the summary is tested apart from trait simulation.
+gcaPop = function(mother, father, pheno){
+  pheno = as.matrix(pheno)
+  nInd = length(mother)
+  new("HybridPop",
+      nInd=nInd, nTraits=ncol(pheno),
+      id=paste0("offspring", 1:nInd),
+      mother=mother, father=father,
+      gv=matrix(0, nrow=nInd, ncol=ncol(pheno)),
+      pheno=pheno,
+      gxe=rep(list(NULL), ncol(pheno)))
+}
+
+test_that("MEANS calcGCA averages replicated crosses with a single tester",{
+  pheno = c(10, 14, 20, 24, 30, 34)
+  # Three females crossed with one male, two records per cross
+  pop = gcaPop(mother=rep(c("F1","F2","F3"), each=2),
+               father=rep("M1", 6),
+               pheno=pheno)
+  GCA = calcGCA(pop)
+  expect_equal(GCA$GCAf$id, c("F1","F2","F3"))
+  expect_equal(GCA$GCAf$Trait1, c(12, 22, 32))
+  expect_equal(GCA$GCAm$id, "M1")
+  expect_equal(GCA$GCAm$Trait1, mean(pheno))
+  expect_equal(GCA$SCA$Trait1, c(12, 22, 32))
+
+  # Unequal numbers of records per cross
+  GCA = calcGCA(pop[1:5])
+  expect_equal(GCA$GCAf$id, c("F1","F2","F3"))
+  expect_equal(GCA$GCAf$Trait1, c(12, 22, 30))
+
+  # Reordered offspring keep each mean with its own female
+  GCA = calcGCA(pop[c(6, 1, 4, 3, 5, 2)])
+  expect_equal(GCA$GCAf$id, c("F3","F1","F2"))
+  expect_equal(GCA$GCAf$Trait1, c(32, 12, 22))
+
+  # One record per cross
+  GCA = calcGCA(pop[c(1, 3, 5)])
+  expect_equal(GCA$GCAf$id, c("F1","F2","F3"))
+  expect_equal(GCA$GCAf$Trait1, c(10, 20, 30))
+
+  # One female and one male
+  GCA = calcGCA(pop[1:2])
+  expect_equal(GCA$GCAf$Trait1, 12)
+  expect_equal(GCA$GCAm$Trait1, 12)
+  expect_equal(GCA$SCA$Trait1, 12)
+})
+
+test_that("MEANS calcGCA averages replicated crosses with a single female tester",{
+  # One female crossed with three males, two records per cross, two traits
+  pheno = cbind(c(10, 14, 20, 24, 30, 34), 1:6)
+  pop = gcaPop(mother=rep("F1", 6),
+               father=rep(c("M1","M2","M3"), each=2),
+               pheno=pheno)
+  GCA = calcGCA(pop)
+  expect_equal(dim(GCA$GCAm), c(3L, 3L))
+  expect_equal(GCA$GCAm$id, c("M1","M2","M3"))
+  expect_equal(GCA$GCAm$Trait1, c(12, 22, 32))
+  expect_equal(GCA$GCAm$Trait2, c(1.5, 3.5, 5.5))
+  expect_equal(GCA$GCAf$id, "F1")
+  expect_equal(unname(unlist(GCA$GCAf[1, -1])), colMeans(pheno))
+
+  # Unequal numbers of records per cross
+  GCA = calcGCA(pop[1:5])
+  expect_equal(GCA$GCAm$Trait1, c(12, 22, 30))
+  expect_equal(GCA$GCAm$Trait2, c(1.5, 3.5, 5))
+})
+
 # ---------------------------------------------------------------------------
 # 1. hybridCross with map populations
 # ---------------------------------------------------------------------------

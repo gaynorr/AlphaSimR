@@ -379,7 +379,8 @@ calcGCA = function(pop,use="pheno"){
   if(nlevels(female)==1){
     GCAf = matrix(colMeans(y),nrow=1)
   }else{
-    if(nlevels(male)==1){
+    if(nlevels(male)==1 & nlevels(female)==nrow(y)){
+      #One record per female, already in level order
       GCAf = y
     }else{
       if(balanced){
@@ -400,7 +401,8 @@ calcGCA = function(pop,use="pheno"){
   if(nlevels(male)==1){
     GCAm = matrix(colMeans(y),nrow=1)
   }else{
-    if(nlevels(female)==1){
+    if(nlevels(female)==1 & nlevels(male)==nrow(y)){
+      #One record per male, already in level order
       GCAm = y
     }else{
       if(balanced){
