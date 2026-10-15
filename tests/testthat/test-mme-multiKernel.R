@@ -262,12 +262,89 @@ test_that("MAXITER reaching the iteration limit gives a warning", {
                  "did not converge")
 })
 
+test_that("RANK a column of zeros in X is dropped", {
+  d = simTwoKernels(seed=9112)
+  a = solveRRBLUPMK(d$y, d$X, list(d$M1, d$M2))
+  b = solveRRBLUPMK(d$y, cbind(d$X, 0), list(d$M1, d$M2))
+  expect_equal(b$LL, a$LL, tolerance=1e-8)
+  expect_equal(c(b$beta), c(a$beta, 0), tolerance=1e-6)
+})
+
+test_that("IDENTICAL two copies of one kernel fit the same model as one", {
+  # The two components cannot be told apart, so only their sum is
+  # determined and the average information matrix is singular. Whatever
+  # split the solver settles on, the model it fits is the single kernel one.
+  d = simTwoKernels(seed=9113)
+  one = solveRRBLUPMK(d$y, d$X, list(d$M1))
+  two = suppressWarnings(solveRRBLUPMK(d$y, d$X, list(d$M1, d$M1)))
+  expect_true(all(two$Vu >= 0))
+  expect_equal(two$LL, one$LL, tolerance=1e-6)
+  expect_equal(sum(two$Vu), c(one$Vu), tolerance=1e-3)
+  expect_equal(c(two$u[[1]] + two$u[[2]]), c(one$u[[1]]), tolerance=1e-3)
+})
+
+test_that("RESIDUAL a response that X fits exactly still gives an answer", {
+  # A response of zeros leaves exactly no residual variance, so the
+  # starting values need a fallback, and the components head for the
+  # boundary
+  d = simTwoKernels(seed=9114)
+  y = matrix(0, d$n, 1)
+  ans = suppressWarnings(solveRRBLUPMK(y, d$X, list(d$M1, d$M2)))
+  expect_true(all(ans$Vu >= 0))
+  expect_true(c(ans$Ve) > 0)
+  expect_equal(c(ans$beta), 0, tolerance=1e-6)
+  expect_false(anyNA(unlist(ans$u)))
+
+  # A constant response leaves only rounding error behind, where the
+  # likelihood is so flat that eventually no step improves it
+  y = matrix(2, d$n, 1)
+  ans = suppressWarnings(solveRRBLUPMK(y, d$X, list(d$M1, d$M2)))
+  expect_true(all(ans$Vu >= 0))
+  expect_true(c(ans$Ve) > 0)
+  expect_equal(c(ans$beta), 2, tolerance=1e-6)
+  expect_false(anyNA(unlist(ans$u)))
+})
+
+test_that("INPUT an indefinite kernel is rejected at the starting values", {
+  # K has a positive diagonal but a large negative eigenvalue, so no
+  # positive variance makes V positive definite
+  d = simTwoKernels(seed=9115)
+  K = diag(d$n) - (matrix(1, d$n, d$n) - diag(d$n))
+  expect_error(solveMKM(d$y, d$X, list(diag(d$n)), list(K)),
+               "not positive definite")
+})
+
 test_that("INPUT mismatched dimensions are rejected", {
   d = simTwoKernels(seed=9111)
+  Z = diag(d$n)
   expect_error(solveRRBLUPMK(d$y, d$X, list(d$M1[-1, ])), "one row per record")
-  expect_error(solveMKM(d$y, d$X, list(diag(d$n)), list(diag(3))),
-               "square")
-  expect_error(solveMKM(d$y, d$X, list(diag(d$n)), list()), "same length")
+  expect_error(solveRRBLUPMK(cbind(d$y, d$y), d$X, list(d$M1)),
+               "exactly one column")
+  expect_error(solveRRBLUPMK(d$y, d$X[-1, , drop=FALSE], list(d$M1)),
+               "same number of rows")
+  expect_error(solveRRBLUPMK(d$y, d$X, list()), "at least one matrix")
+  expect_error(solveRRBLUPMK(d$y, matrix(0, d$n, 1), list(d$M1)),
+               "nonzero column")
+  expect_error(solveRRBLUPMK(d$y, diag(d$n), list(d$M1)),
+               "smaller than the number of records")
+  expect_error(solveMKM(d$y, d$X, list(Z), list(diag(3))), "square")
+  expect_error(solveMKM(d$y, d$X, list(Z), list()), "same length")
+  expect_error(solveMKM(d$y, d$X, list(), list()), "at least one matrix")
+  expect_error(solveMKM(d$y, d$X, list(Z[-1, ]), list(diag(d$n))),
+               "one row per record")
+})
+
+test_that("INPUT missing values are rejected", {
+  d = simTwoKernels(seed=9116)
+  yNA = d$y
+  yNA[3] = NA
+  M1NA = d$M1
+  M1NA[2, 2] = NA
+  K = diag(d$n)
+  K[1, 1] = NA
+  expect_error(solveRRBLUPMK(yNA, d$X, list(d$M1)), "missing")
+  expect_error(solveRRBLUPMK(d$y, d$X, list(M1NA)), "missing")
+  expect_error(solveMKM(d$y, d$X, list(diag(d$n)), list(K)), "missing")
 })
 
 # ---------------------------------------------------------------------------
