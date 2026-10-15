@@ -1599,13 +1599,14 @@ SimParam = R6Class(
     #' formatting the trait as a \code{\link{LociMap-class}}.
     #' The formatting is performed automatically for the user,
     #' with more user friendly data.frames or matrices taken as
-    #' inputs. This function only works for A and AD trait types.
+    #' inputs. This function works for A, AD, AE and ADE trait types.
     #'
-    #' @param markerNames a vector of names for the QTL
+    #' @param markerNames a vector of unique names for the QTL
     #' @param addEff a matrix of additive genotypic effects (nLoci x nTraits).
     #' Alternatively, a vector of length nLoci can be supplied for
     #' a single trait.
     #' @param domEff optional dominance genotypic effects for each locus
+    #' (nLoci x nTraits, or a vector of length nLoci for a single trait)
     #' @param intercept optional trait intercepts in the genotypic parameterization
     #' @param name optional name(s) for the trait(s)
     #' @param varE default error variance for phenotype, optional
@@ -1613,9 +1614,52 @@ SimParam = R6Class(
     #' ignored. Only set to TRUE if you know what you are doing
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
+    #' @param epiPairs optional two-column matrix or data.frame of marker
+    #' names, with one row for each pair of loci that interact through
+    #' additive-by-additive epistasis. Must be supplied with \code{epiEff}.
+    #' @param epiEff optional additive-by-additive epistatic genotypic
+    #' effects, a matrix with one row for each row of \code{epiPairs} and
+    #' one column for each trait. Alternatively, a vector of length
+    #' \code{nrow(epiPairs)} can be supplied for a single trait.
     #'
     #' @details See \code{vignette("traits", package = "AlphaSimR")} for the
     #' implemented trait model and genotypic effects.
+    #'
+    #' Supplying \code{epiPairs} and \code{epiEff} creates an AE trait,
+    #' or an ADE trait when \code{domEff} is also supplied. The epistatic
+    #' model only allows interactions between pairs of loci, and every
+    #' marker in \code{markerNames} must appear in exactly one pair, so
+    #' \code{nrow(epiPairs)} is half of \code{length(markerNames)}. The two
+    #' markers in a pair may be on different chromosomes. All traits
+    #' imported in one call share the same pairs, with effects taken from
+    #' the corresponding column of \code{epiEff}. Markers do not need to be
+    #' given in map order; the pairs are matched to the loci by name after
+    #' the loci are put in map order.
+    #'
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #'
+    #' #Import an AE trait, with one pair spanning both chromosomes
+    #' SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+    #'                addEff=c(1,-1,0.5,0.5),
+    #'                epiPairs=rbind(c("1_1","1_5"),
+    #'                               c("2_3","2_8")),
+    #'                epiEff=c(0.2,-0.4),
+    #'                name="AE")
+    #'
+    #' #Import an ADE trait
+    #' SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+    #'                addEff=c(1,-1,0.5,0.5),
+    #'                domEff=c(0.3,0.1,0,0.2),
+    #'                epiPairs=rbind(c("1_2","2_6"),
+    #'                               c("1_4","2_1")),
+    #'                epiEff=c(0.5,0.1),
+    #'                name="ADE")
     importTrait = function(markerNames,
                            addEff,
                            domEff=NULL,
@@ -1623,7 +1667,9 @@ SimParam = R6Class(
                            name=NULL,
                            varE=NULL,
                            force=FALSE,
-                           nThreads=NULL){
+                           nThreads=NULL,
+                           epiPairs=NULL,
+                           epiEff=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -1631,6 +1677,14 @@ SimParam = R6Class(
         nThreads = self$nThreads
       }else{
         nThreads = as.integer(nThreads)
+      }
+
+      # Duplicated names would be silently dropped by the match against
+      # the genetic map below, leaving their effects unused. Factors are
+      # converted so that names, not level codes, are matched to pairs.
+      markerNames = as.character(markerNames)
+      if(anyDuplicated(markerNames)){
+        stop("markerNames must be unique",call.=FALSE)
       }
 
       # Check addEff and domEff inputs
@@ -1644,6 +1698,39 @@ SimParam = R6Class(
         domEff = as.matrix(domEff)
         stopifnot(nrow(addEff)==nrow(domEff),
                   ncol(addEff)==ncol(domEff))
+      }
+
+      # Check epiPairs and epiEff inputs
+      if(is.null(epiPairs)!=is.null(epiEff)){
+        stop("epiPairs and epiEff must be supplied together",call.=FALSE)
+      }
+      useEpi = !is.null(epiPairs)
+      if(useEpi){
+        if(is.data.frame(epiPairs)){
+          epiPairs = as.matrix(epiPairs)
+        }
+        if(!is.matrix(epiPairs) || ncol(epiPairs)!=2L ||
+           !is.character(epiPairs)){
+          stop("epiPairs must be a two-column matrix or data.frame of marker names",
+               call.=FALSE)
+        }
+        pairedNames = as.vector(epiPairs)
+        if(anyNA(pairedNames) || !all(pairedNames%in%markerNames)){
+          stop("every marker in epiPairs must be in markerNames",call.=FALSE)
+        }
+        # The epistatic model requires each locus to be in exactly one
+        # pair. Since markerNames is unique and contains every paired name,
+        # equal lengths and no repeats make the pairing a partition.
+        if(anyDuplicated(pairedNames) ||
+           length(pairedNames)!=length(markerNames)){
+          stop("each marker in markerNames must appear in exactly one pair of epiPairs",
+               call.=FALSE)
+        }
+        epiEff = as.matrix(epiEff)
+        if(nrow(epiEff)!=nrow(epiPairs) || ncol(epiEff)!=nTraits){
+          stop("epiEff must have one row for each pair in epiPairs and one column for each trait",
+               call.=FALSE)
+        }
       }
 
       # Prepare the intercept
@@ -1675,7 +1762,7 @@ SimParam = R6Class(
 
       # Create trait variables
       lociPerChr = integer(self$nChr)
-      lociLoc = vector("list", self$nChr)
+      lociLoc = lociNames = vector("list", self$nChr)
       addEffList = domEffList = vector("list", nTraits)
       for(i in seq_len(nTraits)){
         addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
@@ -1687,6 +1774,7 @@ SimParam = R6Class(
         # Initialize variables
         addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
         lociLoc[[i]] = integer()
+        lociNames[[i]] = character()
 
         # Find matches if they exist
         take = match(names(private$.femaleMap[[i]]), markerNames)
@@ -1694,6 +1782,7 @@ SimParam = R6Class(
 
         if(lociPerChr[i]>0L){
           lociLoc[[i]] = which(!is.na(take))
+          lociNames[[i]] = markerNames[na.omit(take)]
           addEffList[[1]][[i]] = addEff[na.omit(take),1]
           if(useDom){
             domEffList[[1]][[i]] = domEff[na.omit(take),1]
@@ -1717,10 +1806,42 @@ SimParam = R6Class(
       lociLoc = unlist(lociLoc)
       nLoci = sum(lociPerChr)
 
+      # Pair members index the trait's loci, which are now in map order
+      # rather than the order of markerNames, so match them by name.
+      if(useEpi){
+        lociNames = unlist(lociNames)
+        epiLoci = cbind(match(epiPairs[,1], lociNames),
+                        match(epiPairs[,2], lociNames))
+      }
+
       # Create Trait(s)
       for(i in seq_len(nTraits)){
         addEff = unlist(addEffList[[i]])
-        if(useDom){
+        if(useEpi){
+          E = cbind(epiLoci, unname(epiEff[,i]))
+          dimnames(E) = NULL
+        }
+        if(useDom && useEpi){
+          domEff = unlist(domEffList[[i]])
+          trait = new("TraitADE",
+                      addEff=addEff,
+                      domEff=domEff,
+                      epiEff=E,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else if(useEpi){
+          trait = new("TraitAE",
+                      addEff=addEff,
+                      epiEff=E,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else if(useDom){
           domEff = unlist(domEffList[[i]])
           trait = new("TraitAD",
                       addEff=addEff,

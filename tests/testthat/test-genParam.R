@@ -301,19 +301,33 @@ local({
     name = "AD_perfect_LD"
   )
   # Traits 9-11 overlay AA epistasis on the same three pairs of loci.
-  # Using SP$manAddTrait(new("TraitADE", ...) because SP$importTrait() does not support epistatis
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("f", "g"), table = locusNames), addEff = a[c("f", "g")], domEff = d[c("f", "g")],
-                    epiEff = matrix(c(1, 2, aa[9]), nrow = 1),
-                    intercept = intercept, name = "ADE_LE"))
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("h", "i"), table = locusNames), addEff = a[c("h", "i")], domEff = d[c("h", "i")],
-                    epiEff = matrix(c(1, 2, aa[10]), nrow = 1),
-                    intercept = intercept, name = "ADE_partial_LD"))
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("j", "k"), table = locusNames), addEff = a[c("j", "k")], domEff = d[c("j", "k")],
-                    epiEff = matrix(c(1, 2, aa[11]), nrow = 1),
-                    intercept = intercept, name = "ADE_perfect_LD"))
+  SP$importTrait(
+    markerNames = c("f", "g"),
+    addEff = a[c("f", "g")],
+    domEff = d[c("f", "g")],
+    epiPairs = cbind("f", "g"),
+    epiEff = aa[9],
+    intercept = intercept,
+    name = "ADE_LE"
+  )
+  SP$importTrait(
+    markerNames = c("h", "i"),
+    addEff = a[c("h", "i")],
+    domEff = d[c("h", "i")],
+    epiPairs = cbind("h", "i"),
+    epiEff = aa[10],
+    intercept = intercept,
+    name = "ADE_partial_LD"
+  )
+  SP$importTrait(
+    markerNames = c("j", "k"),
+    addEff = a[c("j", "k")],
+    domEff = d[c("j", "k")],
+    epiPairs = cbind("j", "k"),
+    epiEff = aa[11],
+    intercept = intercept,
+    name = "ADE_perfect_LD"
+  )
   # Traits 12&13: asymmetric allele frequencies, using the existing a&b genotypes.
   SP$importTrait(
     markerNames = c("a", "b"),
@@ -322,10 +336,15 @@ local({
     intercept = intercept,
     name = "AD_asymmetric_LD"
   )
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("a", "b"), table = locusNames), addEff = a[c("a", "b")], domEff = d[c("a", "b")],
-                    epiEff = matrix(c(1, 2, aa[13]), nrow = 1),
-                    intercept = intercept, name = "ADE_asymmetric_LD"))
+  SP$importTrait(
+    markerNames = c("a", "b"),
+    addEff = a[c("a", "b")],
+    domEff = d[c("a", "b")],
+    epiPairs = cbind("a", "b"),
+    epiEff = aa[13],
+    intercept = intercept,
+    name = "ADE_asymmetric_LD"
+  )
   # Trait 14: combine b (HWE) and c (F = 0.75)
   SP$importTrait(
     markerNames = c("b", "c"),
@@ -335,10 +354,15 @@ local({
     name = "AD_mixed_HWE"
   )
   # Trait 15: the AA counterpart of trait 14, with the same mixed HWE marginals
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("b", "c"), table = locusNames), addEff = a[c("b", "c")], domEff = d[c("b", "c")],
-                    epiEff = matrix(c(1, 2, aa[15]), nrow = 1),
-                    intercept = intercept, name = "ADE_mixed_HWE"))
+  SP$importTrait(
+    markerNames = c("b", "c"),
+    addEff = a[c("b", "c")],
+    domEff = d[c("b", "c")],
+    epiPairs = cbind("b", "c"),
+    epiEff = aa[15],
+    intercept = intercept,
+    name = "ADE_mixed_HWE"
+  )
   # Trait 16: fixed locus l, with nonzero input a and d
   SP$importTrait(
     markerNames = "l",
@@ -348,29 +372,46 @@ local({
     name = "AD_fixed_p0"
   )
   # Trait 17: b plus fixed l, with l second in the AA pair
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("b", "l"), table = locusNames), addEff = a[c("b", "l")], domEff = d[c("b", "l")],
-                    epiEff = matrix(c(1, 2, aa[17]), nrow = 1),
-                    intercept = intercept, name = "ADE_fixed_partner"))
+  SP$importTrait(
+    markerNames = c("b", "l"),
+    addEff = a[c("b", "l")],
+    domEff = d[c("b", "l")],
+    epiPairs = cbind("b", "l"),
+    epiEff = aa[17],
+    intercept = intercept,
+    name = "ADE_fixed_partner"
+  )
   # Trait 18: two AA pairs, reusing the LE f&g and partial-LD h&i genotypes
-  SP$manAddTrait(new("TraitADE", nLoci = 4L, lociPerChr = 4L,
-                    lociLoc = match(c("f", "g", "h", "i"), table = locusNames),
-                    addEff = a[c("f", "g", "h", "i")], domEff = d[c("f", "g", "h", "i")],
-                    epiEff = rbind(c(1, 2, aa[18]), c(3, 4, aa[18])),
-                    intercept = intercept, name = "ADE_two_pairs"))
+  SP$importTrait(
+    markerNames = c("f", "g", "h", "i"),
+    addEff = a[c("f", "g", "h", "i")],
+    domEff = d[c("f", "g", "h", "i")],
+    epiPairs = rbind(c("f", "g"), c("h", "i")),
+    epiEff = c(aa[18], aa[18]),
+    intercept = intercept,
+    name = "ADE_two_pairs"
+  )
   # Trait 19: unequal locus effects, with one nonzero AA interaction
-  SP$manAddTrait(new("TraitADE", nLoci = 4L, lociPerChr = 4L,
-                    lociLoc = match(c("m", "n", "o", "p"), table = locusNames),
-                    addEff = a[c("m", "n", "o", "p")], domEff = d[c("m", "n", "o", "p")],
-                    epiEff = rbind(c(1, 2, aa[19]), c(3, 4, 0)),
-                    intercept = intercept, name = "ADE_unequal_effects"))
+  SP$importTrait(
+    markerNames = c("m", "n", "o", "p"),
+    addEff = a[c("m", "n", "o", "p")],
+    domEff = d[c("m", "n", "o", "p")],
+    epiPairs = rbind(c("m", "n"), c("o", "p")),
+    epiEff = c(aa[19], 0),
+    intercept = intercept,
+    name = "ADE_unequal_effects"
+  )
   # Trait 20: reverse the AA pair so fixed l is first and variable b is second
-  # Keep the genomic locus order b,l; pair indices specify the interaction order
-  SP$manAddTrait(new("TraitADE", nLoci = 2L, lociPerChr = 2L,
-                    lociLoc = match(c("b", "l"), table = locusNames),
-                    addEff = a[c("b", "l")], domEff = d[c("b", "l")],
-                    epiEff = matrix(c(2, 1, aa[20]), nrow = 1),
-                    intercept = intercept, name = "ADE_fixed_first"))
+  # Keep the genomic locus order b,l; the pair specifies the interaction order
+  SP$importTrait(
+    markerNames = c("b", "l"),
+    addEff = a[c("b", "l")],
+    domEff = d[c("b", "l")],
+    epiPairs = cbind("l", "b"),
+    epiEff = aa[20],
+    intercept = intercept,
+    name = "ADE_fixed_first"
+  )
   # TODO: Add Imprinting trait(s)
   # TODO: Add GxE trait(s)
   # SP$traits

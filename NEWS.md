@@ -1,5 +1,9 @@
 # AlphaSimR 2.1.0.9018
 
+* Added additive-by-additive epistasis to `SimParam$importTrait`. The new `epiPairs` and `epiEff` arguments give the interacting pairs of loci by marker name and their epistatic effects, and the trait is created as `TraitAE`, or `TraitADE` when `domEff` is also given. Every marker must be in exactly one pair, and the two markers in a pair may be on different chromosomes. Markers do not need to be in map order. Calls without the new arguments behave as before.
+
+* Changed `SimParam$importTrait` to give an error for duplicated `markerNames`. Previously only the first of the duplicates was used, and the effects given for the others were silently ignored.
+
 * Fixed `calcGCA` for crosses to a single tester with more than one record per cross. With one male, `GCAf` returned the individual records, with parent IDs recycled onto them so some values were labeled with the wrong female, or stopped with an error about differing numbers of rows when the crosses had unequal numbers of records. It now returns one mean per female. `GCAm` had the same problem with one female and is fixed in the same way.
 
 * Fixed building the vignettes and articles from a directory whose path contains Markdown punctuation, such as `--` or an apostrophe. Pandoc read the bibliography path as Markdown, so `--` became a dash and the bibliography could not be found.
