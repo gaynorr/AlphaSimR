@@ -343,7 +343,6 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::vec yt;  // U'*y
   arma::mat Xt;  // U'*X
   arma::mat MtU; // M'*U, low rank branch only
-  arma::mat Vd;  // eigenvectors of M'*M below the cutoff, low rank branch only
   arma::mat U;   // full rank branch only
   // Quantities outside the span of the kept eigenvectors
   double yy0 = 0.0;
@@ -364,7 +363,6 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     if(maxEig<0.0) maxEig = 0.0;
     double cutoff = double(m)*arma::datum::eps*maxEig;
     arma::uvec keep = find(eigval>cutoff);
-    Vd = eigvec.cols(find(eigval<=cutoff));
     s2 = eigval(keep);
     arma::mat Vk = eigvec.cols(keep);
     arma::vec sInv = 1.0/sqrt(s2);
@@ -424,18 +422,16 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::vec etd = et/(s2+delta);
   arma::mat u;
   if(m<n){
-    // Within the kept eigenvectors u is MtU*etd, the sqrt(s2) in MtU
-    // cancelling the 1/sqrt(s2) of the rotation. Outside them u is
-    // M'*e/delta, but only along eigenvectors below the cutoff: along the
-    // kept ones M'*(I-U*U')*e is exactly zero, and forming it as
-    // M'*e-MtU*et leaves rounding that 1/delta would amplify, which ruined
-    // the effects when delta was tiny, as for a response with almost no
-    // residual variation.
+    // u is MtU*etd, the sqrt(s2) in MtU cancelling the 1/sqrt(s2) of the
+    // rotation. Eigenvectors of M'*M below the cutoff are given no effect:
+    // the likelihood was fitted with their eigenvalues set to zero, so the
+    // BLUPs are those of that same model. Along the kept ones the null
+    // space term M'*(I-U*U')*e is exactly zero, and forming it as
+    // M'*e-MtU*et would only leave rounding that 1/delta amplifies, which
+    // ruined the effects when delta was tiny, as for a response with almost
+    // no residual variation. Along the discarded ones 1/delta would also
+    // stand in for 1/(s+delta), which is far too large when delta is tiny.
     u = MtU*etd;
-    if(Vd.n_cols>0){
-      arma::vec Mte = M.t()*(yv-Xr*fit.beta);
-      u += Vd*((Vd.t()*Mte)/delta);
-    }
   }else{
     u = M.t()*(U*etd);
   }

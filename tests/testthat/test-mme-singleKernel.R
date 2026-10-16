@@ -397,6 +397,25 @@ test_that("BRACKET a large eigenvalue absorbed by X does not limit the search", 
   expect_equal(c(sqrt(K) %*% ansRR$u)[2:4], c(1, 2, 3), tolerance=1e-6)
 })
 
+test_that("TRUNCATED directions below the rank cutoff get no effect", {
+  # Next to the 1e12 eigenvalue, 1e-4 is below the rank cutoff of W'*W, so
+  # the likelihood treats that direction as having no variance. Its BLUP
+  # was once rebuilt with a gain of 1/delta, giving an effect of 10 at
+  # delta = 1e-10 where the kernel as given implies about 1e-5.
+  K = diag(c(1e12, 1, 1e-4))
+  Z = rbind(diag(3), c(0, 0, 0))
+  X = matrix(c(1, 0, 0, 0), 4, 1)
+  y = matrix(c(0, 1, 1e-5, 0), 4, 1)
+  ans = solveUVM(y, X, Z, K)
+  expect_lt(abs(ans$u[3]), 1e-4)
+  expect_equal(ans$u[2], 1, tolerance=1e-6)
+  M = Z %*% sqrt(K)
+  ansRR = solveRRBLUP(y, X, M)
+  g = c(M %*% ansRR$u)
+  expect_lt(abs(g[3]), 1e-4)
+  expect_equal(g[2], 1, tolerance=1e-6)
+})
+
 # 3. solveRRBLUP ----------------------------------------------------------
 
 test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {
