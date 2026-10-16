@@ -34,9 +34,17 @@ Solves a univariate mixed model with multiple random effects,
 \eqn{y = X\beta + \sum_i Z_i u_i + e}, where \eqn{u_i} has covariance
 \eqn{K_i V_{u_i}} and \eqn{e} has covariance \eqn{I V_e}. The variance
 components are estimated by average information REML
-\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR} working
-on the variance matrix of the records,
-\eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}.
+\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}.
+}
+\details{
+The model is fitted in whichever of two equivalent ways is cheaper. When
+the random terms have more levels in total than there are records, it
+works with the variance matrix of the records,
+\eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}. Otherwise it works with
+Henderson's mixed model equations, writing each \eqn{K_i} as
+\eqn{F_i F_i'} over its positive eigenvalues, so a singular \eqn{K_i} is
+allowed. Both give the same estimates; only the time and memory they need
+differ. Each \eqn{K_i} must be positive semidefinite.
 
 Iteration starts with half of the residual variance from a least
 squares fit of X assigned to the error and half shared equally among

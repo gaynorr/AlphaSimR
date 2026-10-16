@@ -323,8 +323,9 @@ test_that("INPUT an indefinite kernel is rejected at the starting values", {
   # positive variance makes V positive definite
   d = simTwoKernels(seed=9115)
   K = diag(d$n) - (matrix(1, d$n, d$n) - diag(d$n))
+  # The message depends on the side the solver chooses
   expect_error(solveMKM(d$y, d$X, list(diag(d$n)), list(K)),
-               "not positive definite")
+               "not positive definite|must be positive semidefinite")
 })
 
 test_that("INPUT mismatched dimensions are rejected", {
@@ -361,7 +362,160 @@ test_that("INPUT missing values are rejected", {
 })
 
 # ---------------------------------------------------------------------------
-# 5. The genomic selection models that call solveRRBLUPMK
+# 5. Record and coefficient sides
+# ---------------------------------------------------------------------------
+
+# The solvers work either with the variance matrix of the records or with
+# Henderson's mixed model equations, whichever is cheaper. The two compute the
+# same likelihood, scores and information, so on the same data they must take
+# the same steps and reach the same estimates. The internal function
+# .solveMultiKernel fits on a chosen side (1 records, 2 coefficients, 0
+# automatic) and reports the side it used.
+fitSide = function(y, X, Zlist, Klist, rrForm, side){
+  AlphaSimR:::.solveMultiKernel(y, X, Zlist, Klist, rrForm, 200L, 1e-10,
+                                as.integer(side))
+}
+
+expectSameFit = function(a, b){
+  expect_equal(a$LL, b$LL, tolerance=1e-8)
+  expect_equal(c(a$Vu), c(b$Vu), tolerance=1e-6)
+  expect_equal(c(a$Ve), c(b$Ve), tolerance=1e-6)
+  expect_equal(c(a$beta), c(b$beta), tolerance=1e-6)
+  expect_equal(length(a$u), length(b$u))
+  for(i in seq_along(a$u)){
+    expect_equal(c(a$u[[i]]), c(b$u[[i]]), tolerance=1e-6)
+  }
+}
+
+# Incidence matrix of n records spread over m levels, every level used
+incidence = function(n, m){
+  lev = c(seq_len(m), sample(m, n-m, replace=TRUE))
+  Z = matrix(0, n, m)
+  Z[cbind(seq_len(n), lev)] = 1
+  Z
+}
+
+test_that("SIDES agree for the RR-BLUP form with fewer and more effects than records", {
+  # 65 marker effects for 150 records, then for 40 records
+  for(n in c(150, 40)){
+    d = simTwoKernels(n=n, seed=9131)
+    a = fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, 1)
+    b = fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, 2)
+    expect_equal(c(a$side, b$side), c(1, 2))
+    expectSameFit(a, b)
+  }
+})
+
+test_that("SIDES agree for a singular K and repeated records per level", {
+  set.seed(9132)
+  n = 90
+  m = 20
+  Z1 = incidence(n, m)
+  Z2 = incidence(n, 15)
+  B = matrix(rnorm(m*5), m, 5)
+  K1 = tcrossprod(B)/5 # rank 5
+  K2 = diag(15)
+  y = Z1 %*% (B %*% rnorm(5)) + Z2 %*% rnorm(15, sd=0.5) + rnorm(n)
+  X = cbind(1, rnorm(n))
+  a = fitSide(y, X, list(Z1, Z2), list(K1, K2), FALSE, 1)
+  b = fitSide(y, X, list(Z1, Z2), list(K1, K2), FALSE, 2)
+  expectSameFit(a, b)
+  # The BLUPs of a singular K lie in its column space, the span of B
+  expect_equal(length(b$u[[1]]), m)
+  expect_lt(max(abs(qr.resid(qr(B), c(b$u[[1]])))), 1e-8)
+})
+
+test_that("SIDES agree when a component is held at zero", {
+  # The second term has no effect on y, so its variance often ends at zero,
+  # and on the coefficient side it then leaves the equations
+  set.seed(9133)
+  n = 100
+  M1 = matrix(sample(-1:1, n*30, replace=TRUE), n)
+  M2 = matrix(sample(0:1, n*30, replace=TRUE), n)
+  X = matrix(1, n, 1)
+  nZero = 0
+  for(s in 1:6){
+    y = M1 %*% rnorm(30, sd=0.3) + rnorm(n)
+    a = fitSide(y, X, list(M1, M2), list(), TRUE, 1)
+    b = fitSide(y, X, list(M1, M2), list(), TRUE, 2)
+    expectSameFit(a, b)
+    if(b$Vu[2]==0){
+      nZero = nZero + 1
+      expect_equal(c(b$u[[2]]), rep(0, 30))
+    }
+  }
+  expect_gt(nZero, 0)
+})
+
+test_that("SIDES agree with dependent columns in X", {
+  d = simTwoKernels(n=150, seed=9134)
+  a0 = rep(c(1, 0), each=75)
+  X = cbind(a0, 1-a0, 1)
+  a = fitSide(d$y, X, list(d$M1, d$M2), list(), TRUE, 1)
+  b = fitSide(d$y, X, list(d$M1, d$M2), list(), TRUE, 2)
+  expectSameFit(a, b)
+  expect_equal(b$beta[2], 0)
+})
+
+test_that("OPTIMUM the coefficient side is at least as good as a brute force REML search", {
+  d = simTwoKernels(n=200, seed=9135)
+  ans = fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, 0)
+  expect_equal(ans$side, 2)
+  G = list(tcrossprod(d$M1), tcrossprod(d$M2))
+  ref = bruteForceREML(d$y, d$X, G)
+  expect_gte(ans$LL, ref$LL - 1e-4)
+  expect_equal(ans$LL, remlLL(ans$Vu, ans$Ve, d$y, d$X, G), tolerance=1e-8)
+})
+
+test_that("AUTO the cheaper side is chosen", {
+  # RR-BLUP form: 65 effects for 200 records, then for 40
+  d = simTwoKernels(n=200, seed=9136)
+  expect_equal(fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, 0)$side, 2)
+  d = simTwoKernels(n=40, seed=9136)
+  expect_equal(fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, 0)$side, 1)
+  # Kernel form: 120 levels for 40 records, then 20 levels for 200 records
+  set.seed(9137)
+  n = 40
+  m = 120
+  M = matrix(rnorm(m*200), m)
+  Z = cbind(diag(n), matrix(0, n, m-n))
+  y = matrix(rnorm(n))
+  expect_equal(fitSide(y, matrix(1, n, 1), list(Z),
+                       list(tcrossprod(M)/200), FALSE, 0)$side, 1)
+  n = 200
+  y = matrix(rnorm(n))
+  expect_equal(fitSide(y, matrix(1, n, 1), list(incidence(n, 20)),
+                       list(diag(20)), FALSE, 0)$side, 2)
+})
+
+test_that("INPUT an indefinite K is rejected on the coefficient side", {
+  set.seed(9138)
+  n = 100
+  m = 10
+  K = diag(m) - (matrix(1, m, m) - diag(m))
+  y = matrix(rnorm(n))
+  expect_error(solveMKM(y, matrix(1, n, 1), list(incidence(n, m)), list(K)),
+               "positive semidefinite")
+  # On the record side the same kernel leaves V indefinite from the start
+  expect_error(fitSide(y, matrix(1, n, 1), list(incidence(n, m)), list(K),
+                       FALSE, 1), "not positive definite")
+})
+
+test_that("SIDES agree on a kernel of zeros, which has no effects to estimate", {
+  set.seed(9139)
+  n = 120
+  Z = incidence(n, 15)
+  y = Z %*% rnorm(15) + rnorm(n)
+  Klist = list(diag(15), matrix(0, 15, 15))
+  a = fitSide(y, matrix(1, n, 1), list(Z, Z), Klist, FALSE, 1)
+  b = fitSide(y, matrix(1, n, 1), list(Z, Z), Klist, FALSE, 2)
+  expectSameFit(a, b)
+  expect_equal(b$Vu[2], 0)
+  expect_equal(c(b$u[[2]]), rep(0, 15))
+})
+
+# ---------------------------------------------------------------------------
+# 6. The genomic selection models that call solveRRBLUPMK
 # ---------------------------------------------------------------------------
 
 # A small diploid population with additive and dominance effects

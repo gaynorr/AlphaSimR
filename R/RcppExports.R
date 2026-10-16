@@ -351,6 +351,10 @@ getNumThreads <- function() {
     .Call(`_AlphaSimR_getNumThreads`)
 }
 
+.solveMultiKernel <- function(y, X, Zlist, Klist, rrForm, maxIter, tol, side) {
+    .Call(`_AlphaSimR_solveMultiKernel`, y, X, Zlist, Klist, rrForm, maxIter, tol, side)
+}
+
 #' @title Solve Multikernel RR-BLUP
 #'
 #' @description
@@ -358,10 +362,16 @@ getNumThreads <- function() {
 #' random term i contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the
 #' variance of the records and its effects are the marker effects of
 #' \code{Mlist[[i]]}. The variance components are estimated by average
-#' information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}
-#' working on the variance matrix of the records, so the matrices in
-#' \code{Mlist} may have different numbers of columns and there may be more
-#' markers than records.
+#' information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR},
+#' and the matrices in \code{Mlist} may have different numbers of columns.
+#'
+#' @details
+#' The model is fitted in whichever of two equivalent ways is cheaper. With
+#' fewer records than marker effects it works with the variance matrix of the
+#' records, which has one row per record. With fewer marker effects than
+#' records it works with Henderson's mixed model equations, which have one
+#' row per effect. Both give the same estimates; only the time and memory
+#' they need differ.
 #'
 #' Iteration starts with half of the residual variance from a least
 #' squares fit of X assigned to the error and half shared equally among
@@ -412,9 +422,17 @@ solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
 #' \eqn{y = X\beta + \sum_i Z_i u_i + e}, where \eqn{u_i} has covariance
 #' \eqn{K_i V_{u_i}} and \eqn{e} has covariance \eqn{I V_e}. The variance
 #' components are estimated by average information REML
-#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR} working
-#' on the variance matrix of the records,
-#' \eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}.
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}.
+#'
+#' @details
+#' The model is fitted in whichever of two equivalent ways is cheaper. When
+#' the random terms have more levels in total than there are records, it
+#' works with the variance matrix of the records,
+#' \eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}. Otherwise it works with
+#' Henderson's mixed model equations, writing each \eqn{K_i} as
+#' \eqn{F_i F_i'} over its positive eigenvalues, so a singular \eqn{K_i} is
+#' allowed. Both give the same estimates; only the time and memory they need
+#' differ. Each \eqn{K_i} must be positive semidefinite.
 #'
 #' Iteration starts with half of the residual variance from a least
 #' squares fit of X assigned to the error and half shared equally among

@@ -31,10 +31,16 @@ Solves a univariate mixed model with multiple random effects, where
 random term i contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the
 variance of the records and its effects are the marker effects of
 \code{Mlist[[i]]}. The variance components are estimated by average
-information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}
-working on the variance matrix of the records, so the matrices in
-\code{Mlist} may have different numbers of columns and there may be more
-markers than records.
+information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR},
+and the matrices in \code{Mlist} may have different numbers of columns.
+}
+\details{
+The model is fitted in whichever of two equivalent ways is cheaper. With
+fewer records than marker effects it works with the variance matrix of the
+records, which has one row per record. With fewer marker effects than
+records it works with Henderson's mixed model equations, which have one
+row per effect. Both give the same estimates; only the time and memory
+they need differ.
 
 Iteration starts with half of the residual variance from a least
 squares fit of X assigned to the error and half shared equally among

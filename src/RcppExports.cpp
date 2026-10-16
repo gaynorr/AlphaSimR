@@ -788,6 +788,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// solveMultiKernel
+Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X, arma::field<arma::mat>& Zlist, arma::field<arma::mat>& Klist, bool rrForm, int maxIter, double tol, int side);
+RcppExport SEXP _AlphaSimR_solveMultiKernel(SEXP ySEXP, SEXP XSEXP, SEXP ZlistSEXP, SEXP KlistSEXP, SEXP rrFormSEXP, SEXP maxIterSEXP, SEXP tolSEXP, SEXP sideSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type Zlist(ZlistSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type Klist(KlistSEXP);
+    Rcpp::traits::input_parameter< bool >::type rrForm(rrFormSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type side(sideSEXP);
+    rcpp_result_gen = Rcpp::wrap(solveMultiKernel(y, X, Zlist, Klist, rrForm, maxIter, tol, side));
+    return rcpp_result_gen;
+END_RCPP
+}
 // solveRRBLUPMK
 Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X, arma::field<arma::mat>& Mlist, int maxIter);
 RcppExport SEXP _AlphaSimR_solveRRBLUPMK(SEXP ySEXP, SEXP XSEXP, SEXP MlistSEXP, SEXP maxIterSEXP) {
@@ -984,6 +1002,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_calcCoef", (DL_FUNC) &_AlphaSimR_calcCoef, 2},
     {"_AlphaSimR_isOpenMPAvailable", (DL_FUNC) &_AlphaSimR_isOpenMPAvailable, 0},
     {"_AlphaSimR_getNumThreads", (DL_FUNC) &_AlphaSimR_getNumThreads, 0},
+    {"_AlphaSimR_solveMultiKernel", (DL_FUNC) &_AlphaSimR_solveMultiKernel, 8},
     {"_AlphaSimR_solveRRBLUPMK", (DL_FUNC) &_AlphaSimR_solveRRBLUPMK, 4},
     {"_AlphaSimR_solveMKM", (DL_FUNC) &_AlphaSimR_solveMKM, 6},
     {"_AlphaSimR_solveRRBLUPMV", (DL_FUNC) &_AlphaSimR_solveRRBLUPMV, 5},

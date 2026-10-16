@@ -42,6 +42,35 @@ inline bool useRecordSide(arma::uword n, arma::uword m){
   return recordSide < markerSide;
 }
 
+// Chooses between the two ways of fitting a single trait REML model with
+// several random terms by average information.
+//
+// The record side works with V, the n by n variance matrix of the records.
+// Every likelihood evaluation forms, factors and inverts it and forms P, at
+// about n^3, and the traces of the terms add about n^2*c.
+//
+// The coefficient side works with Henderson's mixed model equations, a c by
+// c system for c fixed and random effects. Forming T'*T for the design T of
+// all the effects costs n*c^2 once, after which every evaluation factors and
+// inverts the coefficient matrix, at about c^3, and forms the average
+// information from k+2 vectors of records, at about n*c*(k+2). extraCoef is
+// any further one-off cost of putting the model in that form, such as
+// decomposing the covariance matrices of the random terms.
+//
+// The one-off cost is set against a typical number of evaluations, counting
+// step halvings. The crossover sits close to c equal to n, and memory
+// crosses over at the same place, since the two sides hold n^2 and c^2
+// doubles. The costs are written out so that the reasoning is visible.
+inline bool useCoefficientSide(arma::uword n, arma::uword c, arma::uword k,
+                               double extraCoef = 0.0){
+  const double nEval = 10.0;
+  const double dn = double(n), dc = double(c), dk = double(k);
+  const double recordSide = nEval*(dn*dn*dn + dn*dn*dc);
+  const double coefficientSide = dn*dc*dc + extraCoef +
+    nEval*(dc*dc*dc + dn*dc*(dk+2.0));
+  return coefficientSide < recordSide;
+}
+
 // Inverts a symmetric positive definite matrix and returns its log
 // determinant. One Cholesky factorization supplies both, so the determinant
 // that a REML likelihood needs costs nothing beyond the inverse itself.
