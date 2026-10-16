@@ -337,6 +337,55 @@ test_that("DROP dependent columns of X in solveRRBLUP and keep the intercept", {
                "rank of X must be smaller")
 })
 
+test_that("NOISELESS effects are recovered when the residual variance is near zero", {
+  # With y almost entirely genetic, REML puts delta = Ve/Vu near zero and
+  # the fit nearly interpolates, so the effects must match the true ones.
+  # Rounding amplified by 1/delta once left them wrong by several percent.
+  set.seed(23)
+  n = 300
+  m = 60
+  X = matrix(1, n, 1)
+  M = matrix(sample(0:2, n*m, replace=TRUE), n, m)
+  a = rnorm(m, sd=0.1)
+  Z = makeZ(n, m)
+  B = matrix(rnorm(m*m), m)
+  K = tcrossprod(B)/m
+  g = c(t(chol(K)) %*% rnorm(m))
+  for(sdE in c(0, 1e-6)){
+    y = matrix(2 + M%*%a + rnorm(n, sd=sdE), ncol=1)
+    rr = solveRRBLUP(y, X, M)
+    expect_lt(rr$Ve/rr$Vu, 1e-6)
+    expect_lt(max(abs(rr$u - a))/max(abs(a)), 1e-4)
+    # Every row of Z sums to one, so a constant can move between the
+    # intercept and the levels and u need not equal g. It is compared
+    # instead with an exact solution at the solver's delta, from a least
+    # squares problem whose normal equations are Henderson's.
+    yZ = matrix(2 + Z%*%g + rnorm(n, sd=sdE), ncol=1)
+    uvm = solveUVM(yZ, X, Z, K)
+    d = uvm$Ve/uvm$Vu
+    expect_lt(d, 1e-6)
+    Kh = t(chol(K))
+    A = rbind(cbind(X, Z%*%Kh), cbind(matrix(0, m, 1), sqrt(d)*diag(m)))
+    s = qr.coef(qr(A), c(yZ, rep(0, m)))
+    uRef = c(Kh %*% s[-1])
+    expect_lt(max(abs(uvm$u - uRef))/max(abs(uRef)), 1e-6)
+  }
+})
+
+test_that("RRBLUP recovers the QTL effects from genetic values", {
+  # Fitted to genetic values with the QTL as markers, the model can explain
+  # the response exactly, so its estimates must reproduce the genetic values
+  set.seed(24)
+  founderPop = quickHaplo(nInd=500, nChr=2, segSites=100)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr=50)
+  pop = newPop(founderPop, simParam=SP)
+  ans = RRBLUP(pop, use="gv", useQtl=TRUE, simParam=SP)
+  pop = setEBV(pop, ans, simParam=SP)
+  expect_gt(cor(ebv(pop)[,1], gv(pop)[,1]), 1-1e-6)
+})
+
 test_that("RUN RRBLUP end to end", {
   set.seed(12)
   founderPop = quickHaplo(nInd=40, nChr=2, segSites=20)

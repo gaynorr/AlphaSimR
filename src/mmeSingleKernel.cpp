@@ -83,6 +83,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   arma::mat U;   // eigenvectors of Z*K*Z', full rank branch only
   arma::mat W;   // Z*K^(1/2), low rank branch only
   arma::mat WtU; // W'*U, low rank branch only
+  arma::mat Vd;  // eigenvectors of W'*W below the cutoff, low rank branch only
   arma::mat KhalfQ; // K^(1/2) as Q*diag(sqrt(lambda)), low rank branch only
   // Quantities outside the span of the kept eigenvectors
   double yy0 = 0.0;
@@ -125,10 +126,12 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     }
     double maxEig = eigval.max();
     if(maxEig<0.0) maxEig = 0.0;
-    arma::uvec keep = find(eigval>(double(k)*arma::datum::eps*maxEig));
+    double cutoff = double(k)*arma::datum::eps*maxEig;
+    arma::uvec keep = find(eigval>cutoff);
     if(keep.n_elem==0){
       Rcpp::stop("solveUVM: Z*K*Z' is zero");
     }
+    Vd = eigvec.cols(find(eigval<=cutoff));
     s2 = eigval(keep);
     arma::mat Vk = eigvec.cols(keep);
     arma::vec sInv = 1.0/sqrt(s2);
@@ -198,8 +201,16 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   arma::mat u;
   if(m<n){
     // K*Z' = KhalfQ*W', so u = KhalfQ*a for the RR-BLUP effects a = W'*H^-1*e
-    arma::vec Wte = W.t()*(yv-Xr*fit.beta);
-    arma::vec a = WtU*etd+(Wte-WtU*et)/delta;
+    // Within the kept eigenvectors a is WtU*etd. Outside them it is
+    // W'*e/delta, but only along eigenvectors of W'*W below the cutoff:
+    // along the kept ones W'*(I-U*U')*e is exactly zero, and forming it as
+    // W'*e-WtU*et leaves rounding that 1/delta would amplify when delta is
+    // tiny.
+    arma::vec a = WtU*etd;
+    if(Vd.n_cols>0){
+      arma::vec Wte = W.t()*(yv-Xr*fit.beta);
+      a += Vd*((Vd.t()*Wte)/delta);
+    }
     u = KhalfQ*a;
   }else{
     u = K*(Z.t()*(U*etd));

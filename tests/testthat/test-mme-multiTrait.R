@@ -258,6 +258,20 @@ test_that("MVM an indefinite K is rejected on both decompositions", {
                "positive semidefinite")
 })
 
+test_that("RRBLUPMV marker effects are recovered when the residual variance is near zero", {
+  # Nearly noiseless traits put Ve close to zero. The part of P*y outside the
+  # markers' span contributes nothing to the effects, and once added rounding
+  # amplified by Ve^-1 that left them wrong by several percent.
+  n = 300
+  m = 40
+  M = markers(n, m, 9946)
+  set.seed(9947)
+  A = matrix(rnorm(2*m, sd=0.2), m, 2)
+  Y = 1 + M %*% A + matrix(rnorm(2*n, sd=1e-6), n, 2)
+  ans = solveRRBLUPMV(Y, matrix(1, n, 1), M)
+  expect_lt(max(abs(ans$u - A))/max(abs(A)), 1e-3)
+})
+
 test_that("MVM a large mean does not change the covariance matrices", {
   n = 30
   m = 10

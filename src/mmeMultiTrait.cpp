@@ -589,16 +589,19 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
   return cur;
 }
 
-// P*y on the records, n by t, in the original trait coordinates, for the
-// residuals r = y - X*B at the final estimates.
+// The part of P*y on the records, n by t, in the original trait coordinates,
+// that lies in the span of the held rows, for the residuals r = y - X*B at
+// the final estimates. It is only used for the BLUPs, M'*P*y*Vu or
+// K*Z'*P*y*Vu, and the rest of P*y, the projection of the residuals on the
+// null space scaled by Ve^-1, contributes nothing to those: M' and K*Z' are
+// zero on that space. Forming it would add only rounding, amplified by
+// Ve^-1*Vu, which ruined the effects when Ve was close to zero.
 //
 // The fit works through T, which is ill conditioned when Ve is close to
 // singular. That happens when the REML estimate of a residual correlation is
 // at or near one, and the BLUPs would lose precision there. Each held row is
 // therefore solved against its own covariance s_i*Vu + Ve, which stays well
-// conditioned for a positive s_i whenever Vu is positive definite. A held
-// row with a zero eigenvalue, and every null row, has covariance Ve itself,
-// and the null rows are the projection of the residuals on the null space.
+// conditioned for a positive s_i whenever Vu is positive definite.
 arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
                    const MvData& d, const MvEval& ev, const arma::mat& Vu,
                    const arma::mat& Ve){
@@ -613,11 +616,7 @@ arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
     }
     At.row(i) = a.t();
   }
-  arma::mat Py = Ur*At;
-  if(d.nNull>0.0){
-    Py += (R - Ur*Rt)*arma::inv_sympd(Ve);
-  }
-  return Py;
+  return Ur*At;
 }
 
 void checkInput(const arma::mat& Y, const arma::mat& X){
