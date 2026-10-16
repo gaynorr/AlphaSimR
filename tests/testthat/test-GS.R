@@ -332,6 +332,22 @@ test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
             RRBLUPMemUse(nInd=5000, nMarker=5000, model="RRBLUP"))
 })
 
+test_that("RRBLUPMemUse follows the multikernel models to Henderson's equations", {
+  # With far more records than marker effects the dominance, GCA and SCA
+  # models hold no square matrix of the records, so doubling the records
+  # roughly doubles the estimate rather than quadrupling it
+  for(m in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+    small = RRBLUPMemUse(nInd=20000, nMarker=500, model=m)
+    large = RRBLUPMemUse(nInd=40000, nMarker=500, model=m)
+    expect_lt(large/small, 2.5, label=m)
+  }
+  # With more marker effects than records they hold square matrices of the
+  # records, which grow with the square of the records
+  small = RRBLUPMemUse(nInd=1000, nMarker=5000, model="RRBLUP_SCA")
+  large = RRBLUPMemUse(nInd=2000, nMarker=5000, model="RRBLUP_SCA")
+  expect_gt(large/small, 2.5)
+})
+
 test_that("models can be fitted on values other than phenotypes", {
   d = gsPop(nInd=40, nQtl=5, nSnp=5)
   for(use in c("pheno","gv","rand")){

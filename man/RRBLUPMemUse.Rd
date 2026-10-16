@@ -62,7 +62,9 @@ for the variance components.
 
 \code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
 smaller of the number of records and the number of markers, because a
-matrix and its transpose share their nonzero eigenvalues.
+matrix and its transpose share their nonzero eigenvalues. Fitted to several
+traits, it does the same with a thin singular value decomposition of the
+markers when they are fewer than the records.
 
 The numbered models set up Henderson's mixed model equations, whose
 coefficient matrix is square with dimensions equal to the number of fixed
@@ -79,9 +81,12 @@ methods holds the smaller square matrix. Its estimate therefore depends on
 useEM, and with useEM false it grows with the number of records once the
 markers outnumber them.
 
-The GCA, SCA and dominance models fit more than one random effect and hold
-a square matrix of the number of records for each, which makes them the
-most demanding of the set.
+The GCA, SCA and dominance models fit more than one random effect. They
+work with whichever of two forms is cheaper: a square matrix of the
+records, holding several of them when there are more marker effects than
+records, or Henderson's equations, whose coefficient matrix grows with the
+number of marker effects, when there are fewer. They are the most
+demanding of the set when the marker effects outnumber the records.
 }
 \examples{
 RRBLUPMemUse(nInd=1000, nMarker=5000)

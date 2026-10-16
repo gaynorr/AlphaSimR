@@ -240,12 +240,13 @@ value that is usually too small to converge, and a warning is issued
 when it does not. Left to estimate their own variance components to convergence,
 the numbered models are rarely the better choice. The benefit is obtained only
 when `useEM=FALSE` or `maxIter` is left at a small value to only allow small
-updates to the estimated variance components. When they estimate variance
-components, and for `RRBLUP_D2`, `RRBLUP_GCA2` and `RRBLUP_SCA2` in every
-case, they also only add value when the number of markers is small relative
-to the number of phenotypic records. `RRBLUP2` with `useEM=FALSE` is the
-exception, because it then solves whichever way is cheaper, as described
-below.
+updates to the estimated variance components. The unnumbered models already
+choose the cheaper way of solving for the size of the problem, as described
+below, so speed and memory are not a reason to estimate variance components
+with the numbered ones. With the variance components held fixed, `RRBLUP2`
+also solves whichever way is cheaper, while `RRBLUP_D2`, `RRBLUP_GCA2` and
+`RRBLUP_SCA2` always solve Henderson's equations, so they help most when the
+number of markers is small relative to the number of phenotypic records.
 
 ## Using the models in a breeding program
 
@@ -560,30 +561,40 @@ length(ans@female)
 
 The three implementations differ only in arithmetic, not in the model.
 
-For a single trait, `RRBLUP` uses the approach of Kang and colleagues,
-sometimes called EMMA: the problem is transformed by an
-eigendecomposition, and the variance components are then found by
-maximizing the restricted likelihood along a single dimension. The matrix
-decomposed has the dimension of the smaller of the number of records and
-the number of markers, because a matrix and its transpose share their
-nonzero eigenvalues. This is fast and reliable. The other unnumbered
-models have more than one variance component, so they cannot be reduced to
-a single dimension. `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` estimate
-theirs with an average information REML algorithm, and `RRBLUP` fitted to
-several traits uses an iterative algorithm of its own. Both work with
-matrices whose dimension is the number of records.
+For a single trait, `RRBLUP` uses the approach of FaST-LMM
+[@lippert2011FaST]: the problem is transformed by an eigendecomposition,
+and the variance components are then found by maximizing the restricted
+likelihood [@patterson1971Recovery] along a single dimension, with the
+fixed effects re-estimated at every step. The matrix decomposed has the
+dimension of the smaller of the number of records and the number of
+markers, because a matrix and its transpose share their nonzero
+eigenvalues. This is fast and reliable.
+
+The other unnumbered models have more than one variance component, so
+they cannot be reduced to a single dimension. `RRBLUP_D`, `RRBLUP_GCA`
+and `RRBLUP_SCA` estimate theirs with average information REML
+[@gilmour1995Average]. They can work either with the variance matrix of
+the records, whose dimension is the number of records, or with
+Henderson's mixed model equations, whose dimension is the number of fixed
+effects plus the number of marker effects, and they choose whichever is
+cheaper. Both give the same estimates. With many more records than
+markers the second is far faster: a dominance model fitted to 5000
+records and 500 markers takes well under a second. `RRBLUP` fitted to
+several traits estimates unstructured covariance matrices among the
+traits by REML, following @zhou2014Efficient. It rotates the records by an
+eigendecomposition of the smaller of the two cross products, after which
+the work in each iteration grows only linearly with the number of records.
 
 The **numbered** functions set up Henderson's mixed model equations
 directly. The coefficient matrix there has dimension equal to the number
 of fixed effects plus the number of *markers*, and the variance
-components are found with an EM algorithm. So when they estimate variance
-components, the numbered functions use less memory if the number of
-markers is appreciably smaller than the number of records, and more if
-the number of markers is larger, which is the common case. `RRBLUP2` with
-`useEM=FALSE` does not estimate variance components, so it is free to
-solve the model written on the records instead, and takes whichever of the
-two is cheaper. `RRBLUPMemUse` reports what each model and choice
-costs.
+components are found with an EM algorithm. Since the unnumbered models
+move to these equations by themselves when the markers are fewer than the
+records, what the numbered functions add is the option of holding the
+variance components fixed. `RRBLUP2` with `useEM=FALSE` does not estimate
+variance components, so it is free to solve the model written on the
+records instead, and takes whichever of the two is cheaper. `RRBLUPMemUse`
+reports what each model and choice costs.
 
 **`fastRRBLUP`** forms no square matrix to solve the model. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the
