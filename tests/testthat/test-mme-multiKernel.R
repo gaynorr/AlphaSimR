@@ -511,6 +511,12 @@ test_that("INPUT an indefinite K is rejected even when V stays positive definite
     expect_error(fitSide(y, matrix(1, n, 1), list(diag(n)), list(K), FALSE,
                          side), "positive semidefinite")
   }
+  # A negative eigenvalue on a level with no record, which Z*K*Z' cannot see
+  for(side in 1:2){
+    expect_error(fitSide(y[1:3, , drop=FALSE], matrix(1, 3, 1),
+                         list(cbind(diag(3), 0)), list(diag(c(1, 2, 3, -1))),
+                         FALSE, side), "positive semidefinite")
+  }
 })
 
 test_that("SHIFT a large mean does not change the variance components", {

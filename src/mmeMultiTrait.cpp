@@ -829,6 +829,10 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     F = Z*Uk.cols(keep);
     F.each_row() %= sqrt(sk(keep)).t();
   }else{
+    // Ks is checked itself, since Z*K*Z' cannot see levels without a record
+    if(!isPositiveSemidefinite(Ks)){
+      Rcpp::stop("K must be positive semidefinite");
+    }
     Kn = kernelOnRecords(Z, Ks);
   }
   MvData d = rotateData(Ys, Xr, F, Kn, useFactor, Ur);

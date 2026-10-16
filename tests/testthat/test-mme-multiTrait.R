@@ -252,6 +252,10 @@ test_that("MVM an indefinite K is rejected on both decompositions", {
   Z[cbind(1:n, rep(1:4, 3))] = 1
   expect_error(solveMVM(matrix(rnorm(2*n), n, 2), matrix(1, n, 1), Z, K),
                "positive semidefinite")
+  # A negative eigenvalue on a level with no record, which Z*K*Z' cannot see
+  expect_error(solveMVM(matrix(rnorm(6), 3, 2), matrix(1, 3, 1),
+                        cbind(diag(3), 0), diag(c(1, 2, 3, -1))),
+               "positive semidefinite")
 })
 
 test_that("MVM a large mean does not change the covariance matrices", {

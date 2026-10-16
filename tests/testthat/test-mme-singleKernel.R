@@ -205,6 +205,11 @@ test_that("REJECT models that cannot be estimated", {
   expect_error(solveUVM(y, X, matrix(0, n, 4), diag(4)), "is zero")
   # No fixed effect at all
   expect_error(solveUVM(y, matrix(0, n, 1), Z, diag(4)), "nonzero column")
+  # An indefinite K whose negative eigenvalue is on a level with no record,
+  # which Z*K*Z' cannot see
+  expect_error(solveUVM(matrix(rnorm(3), ncol=1), matrix(1, 3, 1),
+                        cbind(diag(3), 0), diag(c(1, 2, 3, -1))),
+               "not positive semidefinite")
 })
 
 test_that("DROP dependent columns of X and keep the intercept", {

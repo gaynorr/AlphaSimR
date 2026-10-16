@@ -739,15 +739,8 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       // K_i is checked on its own, as on the coefficient side. A check of V
       // alone would let an indefinite K_i through whenever the residual
       // variance happened to keep V positive definite.
-      if(K.n_rows>0){
-        arma::vec lambda;
-        if(!arma::eig_sym(lambda, K)){
-          Rcpp::stop("%s: eigendecomposition of K failed", name);
-        }
-        double maxLambda = arma::abs(lambda).max();
-        if(lambda.min() < -std::sqrt(arma::datum::eps)*maxLambda){
-          Rcpp::stop("%s: each K must be positive semidefinite", name);
-        }
+      if(!isPositiveSemidefinite(K)){
+        Rcpp::stop("%s: each K must be positive semidefinite", name);
       }
       // Z_i*K_i is formed once, and the BLUP K_i*Z_i'*P*y can be read off
       // as (Z_i*K_i)'*P*y

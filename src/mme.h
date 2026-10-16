@@ -267,6 +267,23 @@ inline arma::mat removeLeastSquares(const arma::mat& X, const arma::mat& Y,
   return Y - X*B0;
 }
 
+// Whether a symmetric matrix is positive semidefinite, allowing negative
+// eigenvalues only at rounding level relative to the largest. A covariance
+// matrix among levels must be checked on its own: Z*K*Z' only sees the
+// levels that have records, so a negative eigenvalue on levels without one
+// would pass unnoticed there. Only eigenvalues are computed.
+inline bool isPositiveSemidefinite(const arma::mat& K){
+  if(K.n_rows==0){
+    return true;
+  }
+  arma::vec lambda;
+  if(!arma::eig_sym(lambda, 0.5*(K+K.t()))){
+    Rcpp::stop("eigendecomposition of K failed");
+  }
+  double maxAbs = arma::abs(lambda).max();
+  return !(lambda.min() < -std::sqrt(arma::datum::eps)*maxAbs);
+}
+
 // Z*K*Z', the covariance on the records implied by a covariance K among m
 // levels and an n by m design Z.
 //

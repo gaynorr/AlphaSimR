@@ -150,6 +150,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     // Z*K*Z' is no larger than K, so it is decomposed directly. Its
     // eigenvectors span all of R^n, so there is no null space to account
     // for, and zero eigenvalues are harmless because delta is positive.
+    // K is checked itself, since Z*K*Z' cannot see levels without a record
+    if(!isPositiveSemidefinite(K)){
+      Rcpp::stop("solveUVM: K is not positive semidefinite");
+    }
     arma::mat G = kernelOnRecords(Z, K);
     G = 0.5*(G+G.t()); // rounding only
     arma::vec eigval(n);
