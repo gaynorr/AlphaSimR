@@ -253,6 +253,19 @@ test_that("RANK a dependent column of X changes nothing but its coefficient", {
   expect_equal(c(Xdup %*% b$beta), c(X %*% a$beta), tolerance=1e-6)
 })
 
+test_that("RANK the intercept is kept wherever it is in X", {
+  # The intercept is placed last, after two indicators that add up to it, so
+  # the greedy choice would keep both indicators if it did not consider the
+  # intercept first
+  d = simTwoKernels(seed=9110)
+  a = rep(c(1, 0), each=d$n/2)
+  ref = solveRRBLUPMK(d$y, cbind(1, a), list(d$M1, d$M2))
+  dep = solveRRBLUPMK(d$y, cbind(a, 1-a, 1), list(d$M1, d$M2))
+  expect_equal(dep$LL, ref$LL, tolerance=1e-8)
+  expect_equal(c(dep$Vu), c(ref$Vu), tolerance=1e-6)
+  expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-6)
+})
+
 test_that("MAXITER reaching the iteration limit gives a warning", {
   d = simTwoKernels(seed=9110)
   expect_warning(solveRRBLUPMK(d$y, d$X, list(d$M1, d$M2), maxIter=1L),

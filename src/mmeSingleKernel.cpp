@@ -27,7 +27,9 @@
 //' and records may repeat levels.
 //'
 //' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns, of full column rank
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param Z a matrix with n rows and m columns
 //' @param K a positive semidefinite matrix with m rows and m columns.
 //' Eigenvalues that are negative only at rounding level are treated as zero.
@@ -36,10 +38,10 @@
 //' variance \code{Ve}, the fixed effects \code{beta}, the BLUPs \code{u} of
 //' the m levels, and the restricted log-likelihood \code{LL}. \code{LL} is
 //' \deqn{-\frac{1}{2}\left[(n-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py\right]}
-//' for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the number of columns
-//' of \eqn{X} and
-//' \eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}. It excludes the
-//' \eqn{\log|X'X|} term that some definitions include.
+//' for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the rank of \eqn{X} and
+//' \eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}, with \eqn{X} reduced to
+//' the columns that are kept. It excludes the \eqn{\log|X'X|} term that some
+//' definitions include.
 //'
 //' @references
 //' \insertAllCited{}
@@ -49,19 +51,23 @@
 Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K){
   arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
   arma::uword m = Z.n_cols;
   if( (X.n_rows!=n) || (Z.n_rows!=n) || (K.n_rows!=m) || (K.n_cols!=m) ){
     Rcpp::stop("solveUVM: the dimensions of y, X, Z and K do not agree");
   }
+  // Duplicated or collinear columns leave X'*H^-1*X singular, or singular
+  // only up to rounding, in which case its Cholesky factorization can succeed
+  // and return meaningless fixed effects. Such columns are therefore dropped
+  // before fitting, and everything below works with Xr, which spans the same
+  // space with full column rank.
+  const arma::uvec xKeep = independentColumns(X);
+  if(xKeep.n_elem==0){
+    Rcpp::stop("solveUVM: X must have at least one nonzero column");
+  }
+  const arma::mat Xr = X.cols(xKeep);
+  arma::uword q = Xr.n_cols;
   if(q>=n){
     Rcpp::stop("solveUVM: there must be more records than fixed effects");
-  }
-  // Duplicated or collinear columns leave X'*H^-1*X singular only up to
-  // rounding, so its Cholesky factorization can succeed and return
-  // meaningless fixed effects. The rank is therefore checked directly.
-  if(arma::rank(X)<q){
-    Rcpp::stop("solveUVM: X must have full column rank");
   }
   double df = double(n)-double(q);
 
@@ -107,7 +113,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     arma::uword k = W.n_cols;
 
     arma::vec Wty = W.t()*yv;
-    arma::mat WtX = W.t()*X;
+    arma::mat WtX = W.t()*Xr;
     arma::vec eigval(k);
     arma::mat eigvec(k,k);
     if(eigen2(eigval, eigvec, W.t()*W)!=0){
@@ -133,8 +139,8 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     nNull = double(n)-double(s2.n_elem);
     yy0 = accu(yv%yv)-accu(yt%yt);
     if(yy0<0.0) yy0 = 0.0;
-    Xy0 = X.t()*yv-Xt.t()*yt;
-    XX0 = X.t()*X-Xt.t()*Xt;
+    Xy0 = Xr.t()*yv-Xt.t()*yt;
+    XX0 = Xr.t()*Xr-Xt.t()*Xt;
     XX0 = 0.5*(XX0+XX0.t()); // rounding only
   }else{
     // Z*K*Z' is no larger than K, so it is decomposed directly. Its
@@ -155,7 +161,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     eigval.elem(find(eigval<0.0)).zeros(); // rounding only
     s2 = eigval;
     yt = U.t()*yv;
-    Xt = U.t()*X;
+    Xt = U.t()*Xr;
   }
 
   Rcpp::List args = Rcpp::List::create(Rcpp::Named("df")=df,
@@ -173,10 +179,9 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 
   FastLMMFit fit = fastLMMFit(delta, yt, Xt, s2, yy0, Xy0, XX0, nNull);
   if(!fit.ok){
-    Rcpp::stop("solveUVM: mixed model equations could not be solved, "
-               "check that X has full column rank");
+    Rcpp::stop("solveUVM: mixed model equations could not be solved");
   }
-  arma::mat beta = fit.beta;
+  arma::mat beta = expandFixedEffects(fit.beta, xKeep, X.n_cols);
 
   // The BLUPs are u = K*Z'*H^-1*(y-X*beta), where V = Vu*H, which the
   // decomposition already in hand applies without a second factorization
@@ -185,7 +190,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   arma::mat u;
   if(m<n){
     // K*Z' = KhalfQ*W', so u = KhalfQ*a for the RR-BLUP effects a = W'*H^-1*e
-    arma::vec Wte = W.t()*(yv-X*fit.beta);
+    arma::vec Wte = W.t()*(yv-Xr*fit.beta);
     arma::vec a = WtU*etd+(Wte-WtU*et)/delta;
     u = KhalfQ*a;
   }else{

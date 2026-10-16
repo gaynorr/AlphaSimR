@@ -42,39 +42,6 @@ const double rrblupMKTol = 1e-6;
 // Most times the step length can be halved before falling back to an EM step
 const int maxHalving = 10;
 
-// Columns of X that are linearly independent of the columns before them.
-// Dropping the rest leaves the column space, and therefore P, the
-// likelihood and the fitted values, unchanged. The dropped columns get a
-// zero coefficient, which is one of the many solutions when X is not of
-// full rank, and the rank of X is what the REML likelihood counts.
-arma::uvec independentColumns(const arma::mat& X){
-  arma::mat XtX = X.t()*X;
-  std::vector<arma::uword> keep;
-  for(arma::uword j=0; j<X.n_cols; ++j){
-    double djj = XtX(j,j);
-    if(!(djj>0.0)){
-      continue;
-    }
-    double res = djj;
-    if(!keep.empty()){
-      // Squared length of column j after projecting out the kept columns
-      arma::uvec kk(keep);
-      arma::uvec jj(1);
-      jj(0) = j;
-      arma::vec c = XtX.submat(kk,jj);
-      arma::vec b;
-      if(!arma::solve(b, XtX.submat(kk,kk), c, arma::solve_opts::no_approx)){
-        continue;
-      }
-      res = djj - arma::dot(c,b);
-    }
-    if(res > 1e-10*djj){
-      keep.push_back(j);
-    }
-  }
-  return arma::uvec(keep);
-}
-
 // Everything the iterations need at one value of the variance components
 struct RemlPoint {
   arma::vec theta; // Vu_1..Vu_k, then Ve
@@ -430,7 +397,9 @@ Rcpp::List packResult(const MultiKernelREML& reml, const RemlPoint& pt,
 //' \code{maxIter} is reached first.
 //'
 //' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param Mlist a list of M matrices
 //' @param maxIter maximum number of iterations
 //'
@@ -506,7 +475,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 //' \code{maxIter} is reached first.
 //'
 //' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param Zlist a list of Z matrices
 //' @param Klist a list of K matrices
 //' @param maxIter maximum number of iterations

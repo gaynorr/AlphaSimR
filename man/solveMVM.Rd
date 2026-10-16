@@ -9,7 +9,9 @@ solveMVM(Y, X, Z, K, tol = 1e-06, maxIter = 1000L)
 \arguments{
 \item{Y}{a matrix with n rows and q columns}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{Z}{a matrix with n rows and m columns}
 
@@ -28,7 +30,7 @@ A list containing
   \item{u}{m by q matrix of random effects}
   \item{LL}{the restricted log-likelihood
     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
-    \eqn{y=vec(Y)}, where N is nq, p is xq and the
+    \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
     \eqn{\log|X'X|} term is excluded}
   \item{iter}{number of iterations taken}
 }

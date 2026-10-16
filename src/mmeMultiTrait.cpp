@@ -624,12 +624,24 @@ void checkInput(const arma::mat& Y, const arma::mat& X){
   if(X.n_cols<1){
     Rcpp::stop("X must have at least one column");
   }
-  if(X.n_cols>=X.n_rows){
-    Rcpp::stop("X must have fewer columns than rows");
-  }
   if(!Y.is_finite() || !X.is_finite()){
     Rcpp::stop("Y and X must not contain missing or infinite values");
   }
+}
+
+// The columns of X that are kept for fitting. The rest depend on them and
+// are dropped, as described for independentColumns in mme.h, so the fit
+// works with a design of full column rank and the dropped columns get a
+// fixed effect of zero.
+arma::uvec fixedEffectColumns(const arma::mat& X){
+  arma::uvec keep = independentColumns(X);
+  if(keep.n_elem==0){
+    Rcpp::stop("X must have at least one nonzero column");
+  }
+  if(keep.n_elem>=X.n_rows){
+    Rcpp::stop("the rank of X must be smaller than the number of records");
+  }
+  return keep;
 }
 
 } // namespace
@@ -666,7 +678,9 @@ void checkInput(const arma::mat& Y, const arma::mat& X){
 //' log-likelihood changes by less than \code{tol}.
 //'
 //' @param Y a matrix with n rows and q columns
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param M a matrix with n rows and m columns
 //' @param maxIter maximum number of iterations
 //' @param tol tolerance for convergence
@@ -679,7 +693,7 @@ void checkInput(const arma::mat& Y, const arma::mat& X){
 //'   \item{u}{m by q matrix of marker effects}
 //'   \item{LL}{the restricted log-likelihood
 //'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
-//'     \eqn{y=vec(Y)}, where N is nq, p is xq and the
+//'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
 //'     \eqn{\log|X'X|} term is excluded}
 //'   \item{iter}{number of iterations taken}
 //' }
@@ -697,22 +711,25 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   if(M.n_rows!=Y.n_rows){
     Rcpp::stop("Y and M must have the same number of rows");
   }
+  const arma::uvec xKeep = fixedEffectColumns(X);
+  const arma::mat Xr = X.cols(xKeep);
   arma::mat Ur;
   bool useFactor = M.n_cols<M.n_rows;
   arma::mat Kn;
   if(!useFactor){
     Kn = M*M.t();
   }
-  MvData d = rotateData(Y, X, M, Kn, useFactor, Ur);
+  MvData d = rotateData(Y, Xr, M, Kn, useFactor, Ur);
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
   // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu
-  arma::mat u = M.t()*recordPy(Y, X, Ur, d, ev, Vu, Ve)*Vu;
+  arma::mat u = M.t()*recordPy(Y, Xr, Ur, d, ev, Vu, Ve)*Vu;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=ev.B,
+                            Rcpp::Named("beta")=expandFixedEffects(ev.B, xKeep,
+                                                                   X.n_cols),
                             Rcpp::Named("u")=u,
                             Rcpp::Named("LL")=ev.LL,
                             Rcpp::Named("iter")=iter);
@@ -735,7 +752,9 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //' so no matrix with n rows and n columns is formed.
 //'
 //' @param Y a matrix with n rows and q columns
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param Z a matrix with n rows and m columns
 //' @param K a matrix with m rows and m columns
 //' @param tol tolerance for convergence
@@ -749,7 +768,7 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //'   \item{u}{m by q matrix of random effects}
 //'   \item{LL}{the restricted log-likelihood
 //'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
-//'     \eqn{y=vec(Y)}, where N is nq, p is xq and the
+//'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
 //'     \eqn{\log|X'X|} term is excluded}
 //'   \item{iter}{number of iterations taken}
 //' }
@@ -770,6 +789,8 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   if( (K.n_rows!=Z.n_cols) || (K.n_cols!=Z.n_cols) ){
     Rcpp::stop("K must be square with one row for each column of Z");
   }
+  const arma::uvec xKeep = fixedEffectColumns(X);
+  const arma::mat Xr = X.cols(xKeep);
   arma::mat Ks = 0.5*(K+K.t());
   arma::mat Ur, F, Kn;
   bool useFactor = Z.n_cols<Z.n_rows;
@@ -789,17 +810,18 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   }else{
     Kn = Z*Ks*Z.t();
   }
-  MvData d = rotateData(Y, X, F, Kn, useFactor, Ur);
+  MvData d = rotateData(Y, Xr, F, Kn, useFactor, Ur);
   F.reset();
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
   // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu
-  arma::mat u = Ks*(Z.t()*recordPy(Y, X, Ur, d, ev, Vu, Ve))*Vu;
+  arma::mat u = Ks*(Z.t()*recordPy(Y, Xr, Ur, d, ev, Vu, Ve))*Vu;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=ev.B,
+                            Rcpp::Named("beta")=expandFixedEffects(ev.B, xKeep,
+                                                                   X.n_cols),
                             Rcpp::Named("u")=u,
                             Rcpp::Named("LL")=ev.LL,
                             Rcpp::Named("iter")=iter);

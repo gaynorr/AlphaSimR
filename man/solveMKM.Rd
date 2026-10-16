@@ -9,7 +9,9 @@ solveMKM(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-04)
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{Zlist}{a list of Z matrices}
 

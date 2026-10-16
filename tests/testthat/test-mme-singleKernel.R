@@ -203,8 +203,32 @@ test_that("REJECT models that cannot be estimated", {
   # A random effect with no variance in any direction
   expect_error(solveUVM(y, X, Z, matrix(0, 4, 4)), "no positive eigenvalues")
   expect_error(solveUVM(y, X, matrix(0, n, 4), diag(4)), "is zero")
-  # Fixed effects that are not identifiable
-  expect_error(solveUVM(y, cbind(1, 1, rnorm(n)), Z, diag(4)), "full column rank")
+  # No fixed effect at all
+  expect_error(solveUVM(y, matrix(0, n, 1), Z, diag(4)), "nonzero column")
+})
+
+test_that("DROP dependent columns of X and keep the intercept", {
+  # The intercept is placed last, after two indicators that add up to it, so
+  # the greedy choice would keep both indicators if it did not consider the
+  # intercept first. Dropping a dependent column must leave the fit on the
+  # column space unchanged.
+  set.seed(18)
+  n = 30
+  a = rep(c(1, 0), each=n/2)
+  Z = makeZ(n, 6)
+  K = crossprod(matrix(rnorm(36), 6, 6))/6
+  y = matrix(2 + a + Z%*%rnorm(6) + rnorm(n), ncol=1)
+  ref = solveUVM(y, cbind(1, a), Z, K)
+  dep = solveUVM(y, cbind(a, 1-a, 1), Z, K)
+  expect_equal(dep$Vu, ref$Vu, tolerance=1e-8)
+  expect_equal(dep$Ve, ref$Ve, tolerance=1e-8)
+  expect_equal(dep$LL, ref$LL, tolerance=1e-8)
+  expect_equal(c(dep$u), c(ref$u), tolerance=1e-8)
+  expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-8)
+  # A duplicated column
+  dup = solveUVM(y, cbind(1, a, a), Z, K)
+  expect_equal(c(dup$beta), c(ref$beta, 0), tolerance=1e-8)
+  expect_equal(c(dup$u), c(ref$u), tolerance=1e-8)
 })
 
 # 3. solveRRBLUP ----------------------------------------------------------
@@ -224,6 +248,26 @@ test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {
   expect_equal(a$Ve, b$Ve, tolerance=1e-6)
   expect_equal(c(a$beta), c(b$beta), tolerance=1e-6)
   expect_equal(c(a$u), c(b$u), tolerance=1e-6)
+})
+
+test_that("DROP dependent columns of X in solveRRBLUP and keep the intercept", {
+  # Both decompositions, fewer markers than records and more
+  set.seed(19)
+  n = 30
+  a = rep(c(1, 0), each=n/2)
+  for(m in c(10, 50)){
+    M = matrix(sample(0:2, n*m, replace=TRUE), n, m)
+    y = matrix(1 + a + M%*%rnorm(m, sd=0.2) + rnorm(n), ncol=1)
+    ref = solveRRBLUP(y, cbind(1, a), M)
+    dep = solveRRBLUP(y, cbind(a, 1-a, 1), M)
+    expect_equal(dep$Vu, ref$Vu, tolerance=1e-8)
+    expect_equal(dep$Ve, ref$Ve, tolerance=1e-8)
+    expect_equal(c(dep$u), c(ref$u), tolerance=1e-8)
+    expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-8)
+  }
+  expect_error(solveRRBLUP(y, matrix(0, n, 2), M), "nonzero column")
+  expect_error(solveRRBLUP(y, matrix(rnorm(n*n), n, n), M),
+               "rank of X must be smaller")
 })
 
 test_that("RUN RRBLUP end to end", {

@@ -107,6 +107,77 @@ inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
   return out;
 }
 
+// Columns of a fixed effects design X that are linearly independent, in
+// increasing order.
+//
+// Every solver drops the rest rather than inverting a singular X'*V^-1*X.
+// The dropped columns lie in the span of the kept ones, so the column space
+// of X, and with it the REML likelihood, the variance components, the BLUPs
+// and the fitted values, is unchanged. The dropped columns get a fixed effect
+// of zero, which is one of the many solutions when X is not of full rank.
+//
+// Columns are taken greedily: a column is kept if its squared length after
+// projecting out the columns already kept is more than a small fraction of
+// its squared length. Which of a dependent set is dropped therefore depends
+// on the order of consideration. The intercept, the first column whose
+// entries are all the same nonzero value, is considered before every other
+// column, so it is always kept and its estimate keeps its usual meaning
+// whatever columns X also contains. The rest are considered in their order
+// in X.
+inline arma::uvec independentColumns(const arma::mat& X){
+  arma::uword nCol = X.n_cols;
+  std::vector<arma::uword> order;
+  order.reserve(nCol);
+  for(arma::uword j=0; j<nCol; ++j){
+    if( (X.n_rows>0) && (X(0,j)!=0.0) && arma::all(X.col(j)==X(0,j)) ){
+      order.push_back(j);
+      break;
+    }
+  }
+  for(arma::uword j=0; j<nCol; ++j){
+    if(order.empty() || (order[0]!=j)){
+      order.push_back(j);
+    }
+  }
+  arma::mat XtX = X.t()*X;
+  std::vector<arma::uword> keep;
+  for(arma::uword j : order){
+    double djj = XtX(j,j);
+    if(!(djj>0.0)){
+      continue;
+    }
+    double res = djj;
+    if(!keep.empty()){
+      arma::uvec kk(keep);
+      arma::uvec jj(1);
+      jj(0) = j;
+      arma::vec c = XtX.submat(kk,jj);
+      arma::vec b;
+      // The columns kept so far are independent, so this system is
+      // nonsingular and the solve only fails on rounding trouble, in which
+      // case the column is treated as dependent
+      if(!arma::solve(b, XtX.submat(kk,kk), c, arma::solve_opts::no_approx)){
+        continue;
+      }
+      res = djj - arma::dot(c,b);
+    }
+    if(res > 1e-10*djj){
+      keep.push_back(j);
+    }
+  }
+  return arma::sort(arma::uvec(keep));
+}
+
+// Places the rows of B, estimated on the columns keep of a fixed effects
+// design, into a matrix with one row per original column. Rows for dropped
+// columns are zero.
+inline arma::mat expandFixedEffects(const arma::mat& B, const arma::uvec& keep,
+                                    arma::uword nCol){
+  arma::mat out(nCol, B.n_cols, arma::fill::zeros);
+  out.rows(keep) = B;
+  return out;
+}
+
 // FaST-LMM REML objective and its minimizer, defined in MME.cpp
 Rcpp::List objREMLFastLMM(double param, Rcpp::List args);
 double fastLMMDelta(Rcpp::List args);

@@ -25,7 +25,9 @@
 #' no code with the FaST-LMM software distributed by Microsoft.
 #'
 #' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param M a matrix with n rows and m columns
 #'
 #' @return A list with the marker variance \code{Vu}, the residual variance
@@ -372,7 +374,9 @@ getNumThreads <- function() {
 #' \code{maxIter} is reached first.
 #'
 #' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param Mlist a list of M matrices
 #' @param maxIter maximum number of iterations
 #'
@@ -423,7 +427,9 @@ solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
 #' \code{maxIter} is reached first.
 #'
 #' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param Zlist a list of Z matrices
 #' @param Klist a list of K matrices
 #' @param maxIter maximum number of iterations
@@ -486,7 +492,9 @@ solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-4) {
 #' log-likelihood changes by less than \code{tol}.
 #'
 #' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param M a matrix with n rows and m columns
 #' @param maxIter maximum number of iterations
 #' @param tol tolerance for convergence
@@ -499,7 +507,7 @@ solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-4) {
 #'   \item{u}{m by q matrix of marker effects}
 #'   \item{LL}{the restricted log-likelihood
 #'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
-#'     \eqn{y=vec(Y)}, where N is nq, p is xq and the
+#'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
 #'     \eqn{\log|X'X|} term is excluded}
 #'   \item{iter}{number of iterations taken}
 #' }
@@ -530,7 +538,9 @@ solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
 #' so no matrix with n rows and n columns is formed.
 #'
 #' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param Z a matrix with n rows and m columns
 #' @param K a matrix with m rows and m columns
 #' @param tol tolerance for convergence
@@ -544,7 +554,7 @@ solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
 #'   \item{u}{m by q matrix of random effects}
 #'   \item{LL}{the restricted log-likelihood
 #'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
-#'     \eqn{y=vec(Y)}, where N is nq, p is xq and the
+#'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
 #'     \eqn{\log|X'X|} term is excluded}
 #'   \item{iter}{number of iterations taken}
 #' }
@@ -578,7 +588,9 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
 #' and records may repeat levels.
 #'
 #' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns, of full column rank
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param Z a matrix with n rows and m columns
 #' @param K a positive semidefinite matrix with m rows and m columns.
 #' Eigenvalues that are negative only at rounding level are treated as zero.
@@ -587,10 +599,10 @@ solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
 #' variance \code{Ve}, the fixed effects \code{beta}, the BLUPs \code{u} of
 #' the m levels, and the restricted log-likelihood \code{LL}. \code{LL} is
 #' \deqn{-\frac{1}{2}\left[(n-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py\right]}
-#' for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the number of columns
-#' of \eqn{X} and
-#' \eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}. It excludes the
-#' \eqn{\log|X'X|} term that some definitions include.
+#' for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the rank of \eqn{X} and
+#' \eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}, with \eqn{X} reduced to
+#' the columns that are kept. It excludes the \eqn{\log|X'X|} term that some
+#' definitions include.
 #'
 #' @references
 #' \insertAllCited{}

@@ -323,7 +323,9 @@ test_that("INPUT malformed arguments are refused with a message", {
   expect_error(solveRRBLUPMV(Y, X[-1, , drop=FALSE], M), "same number of rows")
   expect_error(solveRRBLUPMV(Y[, 0, drop=FALSE], X, M), "at least one column")
   expect_error(solveRRBLUPMV(Y, X[, 0, drop=FALSE], M), "at least one column")
-  expect_error(solveRRBLUPMV(Y, matrix(rnorm(n*n), n, n), M), "fewer columns")
+  expect_error(solveRRBLUPMV(Y, matrix(rnorm(n*n), n, n), M),
+               "rank of X must be smaller")
+  expect_error(solveRRBLUPMV(Y, matrix(0, n, 2), M), "nonzero column")
   Yna = Y
   Yna[3, 1] = NA
   expect_error(solveRRBLUPMV(Yna, X, M), "missing")
@@ -341,13 +343,29 @@ test_that("INPUT a kernel with no positive eigenvalue is refused", {
   expect_error(solveRRBLUPMV(Y, X, matrix(0, n, 30)), "no positive eigenvalue")
 })
 
-test_that("INPUT a fixed effects design without full column rank is refused", {
-  n = 20
-  m = 8
-  M = markers(n, m, 9921)
-  X = cbind(1, rep(1, n))
-  Y = simTraits(tcrossprod(M)/m, matrix(1, n, 1), 9922)
-  expect_error(solveRRBLUPMV(Y, X, M), "full column rank")
+test_that("DROP dependent columns of X and keep the intercept", {
+  # The intercept is placed last, after two indicators that add up to it, so
+  # the greedy choice would keep both indicators if it did not consider the
+  # intercept first. Dropping a dependent column must leave the fit on the
+  # column space unchanged. Both ways of rotating the records are used.
+  n = 30
+  a = rep(c(1, 0), each=n/2)
+  for(m in c(10, 50)){
+    M = markers(n, m, 9921+m)
+    Y = simTraits(tcrossprod(M)/m, cbind(1, a), 9922+m)
+    ref = solveRRBLUPMV(Y, cbind(1, a), M)
+    dep = solveRRBLUPMV(Y, cbind(a, 1-a, 1), M)
+    expect_equal(dep$Vu, ref$Vu, tolerance=1e-6)
+    expect_equal(dep$Ve, ref$Ve, tolerance=1e-6)
+    expect_equal(dep$LL, ref$LL, tolerance=1e-8)
+    expect_equal(dep$u, ref$u, tolerance=1e-6)
+    expect_equal(dep$beta, rbind(ref$beta[2, ], 0, ref$beta[1, ]),
+                 tolerance=1e-6)
+    mvm = solveMVM(Y, cbind(a, 1-a, 1), diag(n), tcrossprod(M)/m)
+    expect_equal(mvm$beta[2, ], c(0, 0))
+    expect_equal(mvm$LL, solveMVM(Y, cbind(1, a), diag(n),
+                                  tcrossprod(M)/m)$LL, tolerance=1e-8)
+  }
 })
 
 # ---------------------------------------------------------------------------

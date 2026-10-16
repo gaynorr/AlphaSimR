@@ -273,7 +273,9 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 //' no code with the FaST-LMM software distributed by Microsoft.
 //'
 //' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param M a matrix with n rows and m columns
 //'
 //' @return A list with the marker variance \code{Vu}, the residual variance
@@ -287,8 +289,19 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
   arma::uword m = M.n_cols;
+  // Columns of X that depend on the others are dropped, so the fit uses Xr,
+  // which spans the same space with full column rank
+  const arma::uvec xKeep = independentColumns(X);
+  if(xKeep.n_elem==0){
+    Rcpp::stop("solveRRBLUP: X must have at least one nonzero column");
+  }
+  const arma::mat Xr = X.cols(xKeep);
+  arma::uword q = Xr.n_cols;
+  if(q>=n){
+    Rcpp::stop("solveRRBLUP: the rank of X must be smaller than the number "
+               "of records");
+  }
   double df = double(n)-double(q);
 
   arma::vec yv = y.col(0);
@@ -309,7 +322,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     // the larger follow from those of the smaller as U = M*V*diag(1/s). The
     // rotations below use that identity, so U itself is never formed.
     arma::vec Mty = M.t()*yv;
-    arma::mat MtX = M.t()*X;
+    arma::mat MtX = M.t()*Xr;
     arma::vec eigval(m);
     arma::mat eigvec(m,m);
     eigen2(eigval, eigvec, M.t()*M);
@@ -330,8 +343,8 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     nNull = double(n)-double(s2.n_elem);
     yy0 = accu(yv%yv)-accu(yt%yt);
     if(yy0<0.0) yy0 = 0.0;
-    Xy0 = X.t()*yv-Xt.t()*yt;
-    XX0 = X.t()*X-Xt.t()*Xt;
+    Xy0 = Xr.t()*yv-Xt.t()*yt;
+    XX0 = Xr.t()*Xr-Xt.t()*Xt;
   }else{
     // M*M' is the smaller of the two, and its decomposition spans all of
     // R^n, so there is no null space to account for
@@ -343,7 +356,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     eigval.elem(find(eigval<0.0)).zeros(); // rounding only
     s2 = eigval;
     yt = U.t()*yv;
-    Xt = U.t()*X;
+    Xt = U.t()*Xr;
   }
 
   Rcpp::List args = Rcpp::List::create(Rcpp::Named("df")=df,
@@ -367,7 +380,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   if(!fit.ok){
     Rcpp::stop("solveRRBLUP: mixed model equations could not be solved");
   }
-  arma::mat beta = fit.beta;
+  arma::mat beta = expandFixedEffects(fit.beta, xKeep, X.n_cols);
 
   // The BLUPs are u = M'*H^-1*(y-X*beta), which the decomposition already
   // in hand applies without a second factorization
@@ -375,7 +388,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::vec etd = et/(s2+delta);
   arma::mat u;
   if(m<n){
-    arma::vec Mte = M.t()*(yv-X*fit.beta);
+    arma::vec Mte = M.t()*(yv-Xr*fit.beta);
     u = MtU*etd+(Mte-MtU*et)/delta;
   }else{
     u = M.t()*(U*etd);
