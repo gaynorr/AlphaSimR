@@ -296,6 +296,25 @@ test_that("MVM rescaling the kernel only rescales Vu", {
   }
 })
 
+test_that("MVM a tiny eigenvalue of K that Z scales back up is kept", {
+  # K = diag(1, 1e-20) with the second level's records weighted by 1e10
+  # gives Z*K*Z' the same as an unweighted design with K = I
+  set.seed(9951)
+  n = 30
+  Z1 = matrix(0, n, 2)
+  Z1[1:10, 1] = 1
+  Z1[11:20, 2] = 1
+  Zw = Z1
+  Zw[11:20, 2] = 1e10
+  Y = matrix(rnorm(2*n), n, 2) + Z1 %*% matrix(c(1, -1, 0.5, -0.5), 2, 2)
+  X = matrix(1, n, 1)
+  ref = solveMVM(Y, X, Z1, diag(2))
+  ans = solveMVM(Y, X, Zw, diag(c(1, 1e-20)))
+  expect_equal(ans$Vu, ref$Vu, tolerance=1e-6)
+  expect_equal(ans$Ve, ref$Ve, tolerance=1e-6)
+  expect_equal(ans$LL, ref$LL, tolerance=1e-6)
+})
+
 test_that("MVM a level whose eigenvalue is dropped gets no effect", {
   # With as many levels as records the kernel on the records is decomposed
   # itself, and its eigenvalue of 1e-16 is set to zero. The BLUPs must give

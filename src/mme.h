@@ -273,21 +273,14 @@ inline arma::mat removeLeastSquares(const arma::mat& X, const arma::mat& Y,
   return Y - X*B0;
 }
 
-// Whether a symmetric matrix is positive semidefinite, allowing negative
-// eigenvalues only at rounding level relative to the largest. A covariance
-// matrix among levels must be checked on its own: Z*K*Z' only sees the
-// levels that have records, so a negative eigenvalue on levels without one
-// would pass unnoticed there. Only eigenvalues are computed.
-inline bool isPositiveSemidefinite(const arma::mat& K){
-  if(K.n_rows==0){
-    return true;
-  }
-  arma::vec lambda;
-  if(!arma::eig_sym(lambda, 0.5*(K+K.t()))){
-    Rcpp::stop("eigendecomposition of K failed");
-  }
-  double maxAbs = arma::abs(lambda).max();
-  return !(lambda.min() < -std::sqrt(arma::datum::eps)*maxAbs);
+// Whether a symmetric matrix is positive definite, by attempting its Cholesky
+// factorization. That costs about a sixth of an eigendecomposition, and the
+// covariance matrices passed to the solvers, such as relationship matrices
+// with a small ridge, are usually positive definite, so psdKernel tries
+// it first and only decompose a matrix it fails on.
+inline bool choleskySucceeds(const arma::mat& Ks){
+  arma::mat L;
+  return arma::chol(L, Ks, "lower");
 }
 
 // K as the positive semidefinite covariance matrix that is both fitted and
@@ -296,11 +289,17 @@ inline bool isPositiveSemidefinite(const arma::mat& K){
 // rounding level, which the likelihood treats as zero, are set to zero in
 // it too. Without that the BLUPs, which are computed with K itself, would
 // describe a slightly different model from the one fitted, and a small
-// residual variance would amplify the difference. The full decomposition is
-// only computed when such an eigenvalue is present.
+// residual variance would amplify the difference. A positive definite K,
+// recognized by its Cholesky factorization, has no such eigenvalue and is
+// returned without any decomposition. Otherwise the eigenvalues are
+// computed, and the full decomposition only when such an eigenvalue is
+// present.
 inline arma::mat psdKernel(const arma::mat& K, const std::string& msg){
   arma::mat Ks = 0.5*(K+K.t());
   if(Ks.n_rows==0){
+    return Ks;
+  }
+  if(choleskySucceeds(Ks)){
     return Ks;
   }
   arma::vec lambda;

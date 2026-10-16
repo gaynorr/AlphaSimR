@@ -738,10 +738,11 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
     if(side==Side::record){
       // K_i is checked on its own, as on the coefficient side. A check of V
       // alone would let an indefinite K_i through whenever the residual
-      // variance happened to keep V positive definite.
-      if(!isPositiveSemidefinite(K)){
-        Rcpp::stop("%s: each K must be positive semidefinite", name);
-      }
+      // variance happened to keep V positive definite. Negative eigenvalues
+      // at rounding level are set to zero, as the coefficient side does by
+      // factoring over the positive ones, so both sides fit the same model.
+      K = psdKernel(K, std::string(name) +
+                    ": each K must be positive semidefinite");
       // Z_i*K_i is formed once, and the BLUP K_i*Z_i'*P*y can be read off
       // as (Z_i*K_i)'*P*y
       D(i) = Z*K;
@@ -749,7 +750,11 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       R[i] = &Zlist(i);
     }else{
       // K_i = F_i*F_i' with F_i = Q*diag(sqrt(lambda)) over the positive
-      // eigenvalues, so a singular K_i is handled by having fewer columns
+      // eigenvalues, so a singular K_i is handled by having fewer columns.
+      // Every positive eigenvalue is kept, however small next to the
+      // largest: Z_i can scale a direction back up, so whether it matters is
+      // only known after Z_i is applied, and dropping it here would fit a
+      // different model from the record side.
       arma::uword m = K.n_rows;
       arma::vec lambda(m);
       arma::mat Q(m, m);
@@ -761,7 +766,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
         if(lambda.min() < -std::sqrt(arma::datum::eps)*maxLambda){
           Rcpp::stop("%s: each K must be positive semidefinite", name);
         }
-        arma::uvec keep = find(lambda>(double(m)*arma::datum::eps*maxLambda));
+        arma::uvec keep = find(lambda>0.0);
         Fs(i) = Q.cols(keep);
         Fs(i).each_row() %= sqrt(lambda(keep)).t();
       }else{

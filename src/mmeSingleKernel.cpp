@@ -112,7 +112,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     if(lambda.min() < -sqrt(arma::datum::eps)*maxLambda){
       Rcpp::stop("solveUVM: K is not positive semidefinite");
     }
-    arma::uvec keepK = find(lambda>(double(m)*arma::datum::eps*maxLambda));
+    // Every positive eigenvalue is kept, however small next to the largest:
+    // Z can scale a direction back up, so the effective rank is only decided
+    // by the decomposition of W'*W below, after Z has been applied
+    arma::uvec keepK = find(lambda>0.0);
     if(keepK.n_elem==0){
       Rcpp::stop("solveUVM: K has no positive eigenvalues");
     }

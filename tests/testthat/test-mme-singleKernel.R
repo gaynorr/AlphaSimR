@@ -322,6 +322,26 @@ test_that("CONSISTENT the BLUPs use the kernel that was fitted", {
   expect_lt(abs(ans$u[3]), 1e-12)
 })
 
+test_that("RESCALED a tiny eigenvalue of K that Z scales back up is kept", {
+  # K = diag(1, 1e-20) with the second level's records weighted by 1e10
+  # gives Z*K*Z' the same as an unweighted design with K = I. Dropping the
+  # tiny eigenvalue before Z is applied would fit a different model.
+  set.seed(27)
+  n = 30
+  Z1 = matrix(0, n, 2)
+  Z1[1:10, 1] = 1
+  Z1[11:20, 2] = 1
+  Zw = Z1
+  Zw[11:20, 2] = 1e10
+  y = matrix(c(rnorm(10, 1), rnorm(10, -1), rnorm(10)), ncol=1)
+  X = matrix(1, n, 1)
+  ref = solveUVM(y, X, Z1, diag(2))
+  ans = solveUVM(y, X, Zw, diag(c(1, 1e-20)))
+  expect_equal(ans$Vu, ref$Vu, tolerance=1e-6)
+  expect_equal(ans$Ve, ref$Ve, tolerance=1e-6)
+  expect_equal(ans$u[2]*1e10, ref$u[2], tolerance=1e-6)
+})
+
 test_that("SHIFT a large mean or covariate offset leaves the fit unchanged", {
   # A response with a mean of 1e8 would lose its variation to rounding if
   # the residual sum of squares were found by subtracting sums of squares,

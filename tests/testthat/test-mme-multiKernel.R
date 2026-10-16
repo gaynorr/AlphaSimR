@@ -519,6 +519,44 @@ test_that("INPUT an indefinite K is rejected even when V stays positive definite
   }
 })
 
+test_that("SIDES agree on a K with a negative eigenvalue at rounding level", {
+  # The eigenvalue -1e-9 is accepted as rounding. Left in K on the record
+  # side it made the term's mean diagonal on the records negative, so the
+  # term was held at zero there but fitted on the coefficient side.
+  set.seed(9143)
+  K = diag(c(1, -1e-9, 0, 0, 0))
+  Z = rbind(c(1, 0, 0, 0, 0), c(-1, 0, 0, 0, 0), c(0, 1e6, 0, 0, 0),
+            c(0, -1e6, 0, 0, 0))
+  Z = Z[rep(1:4, 10), ]
+  y = matrix(rnorm(40) + Z[, 1]*2)
+  X = matrix(1, 40, 1)
+  a = fitSide(y, X, list(Z), list(K), FALSE, 1)
+  b = fitSide(y, X, list(Z), list(K), FALSE, 2)
+  expectSameFit(a, b)
+  expect_gt(a$Vu[1], 0)
+})
+
+test_that("SIDES agree on a tiny eigenvalue of K that Z scales back up", {
+  # K = diag(1, 1e-20) with the second level's records weighted by 1e10
+  # gives Z*K*Z' the same as an unweighted design with K = I, on both sides
+  set.seed(9144)
+  n = 30
+  Z1 = matrix(0, n, 2)
+  Z1[1:10, 1] = 1
+  Z1[11:20, 2] = 1
+  Zw = Z1
+  Zw[11:20, 2] = 1e10
+  y = matrix(c(rnorm(10, 1), rnorm(10, -1), rnorm(10)))
+  X = matrix(1, n, 1)
+  ref = fitSide(y, X, list(Z1), list(diag(2)), FALSE, 1)
+  for(side in 1:2){
+    ans = fitSide(y, X, list(Zw), list(diag(c(1, 1e-20))), FALSE, side)
+    expect_equal(c(ans$Vu), c(ref$Vu), tolerance=1e-6)
+    expect_equal(c(ans$Ve), c(ref$Ve), tolerance=1e-6)
+    expect_equal(ans$LL, ref$LL, tolerance=1e-6)
+  }
+})
+
 test_that("SHIFT a large mean does not change the variance components", {
   # A fit on y+1e8 subtracts sums of squares of order 1e16 unless the mean is
   # taken off first. The variances must be unchanged and the intercept must

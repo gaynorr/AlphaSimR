@@ -841,8 +841,10 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     if(sk.min() < -std::sqrt(arma::datum::eps)*skAbs){
       Rcpp::stop("K must be positive semidefinite");
     }
-    double skMax = std::max(sk.max(), 0.0);
-    arma::uvec keep = find(sk>(double(m)*arma::datum::eps*skMax));
+    // Every positive eigenvalue is kept, however small next to the largest:
+    // Z can scale a direction back up, so the effective rank is only decided
+    // by the decomposition of F in rotateData, after Z has been applied
+    arma::uvec keep = find(sk>0.0);
     F = Z*Uk.cols(keep);
     F.each_row() %= sqrt(sk(keep)).t();
     // The model fitted has the covariance F*F' among the levels' effects,
