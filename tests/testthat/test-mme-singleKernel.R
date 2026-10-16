@@ -231,6 +231,33 @@ test_that("DROP dependent columns of X and keep the intercept", {
   expect_equal(c(dup$u), c(ref$u), tolerance=1e-8)
 })
 
+test_that("SAME fit for an incidence Z as for an equivalent general Z", {
+  # 30 records on 60 levels, half of them without a record, so Z*K*Z' is
+  # formed on the records. For an incidence Z it is read out of K; for Z*Q
+  # with K' = Q'*K*Q, the same model, it comes from the dense products. The
+  # BLUPs of the second are Q' times those of the first.
+  set.seed(20)
+  n = 30
+  m = 60
+  lev = c(1:20, sample(20, n-20, replace=TRUE))
+  Z = matrix(0, n, m)
+  Z[cbind(1:n, lev)] = 1
+  B = matrix(rnorm(m*80), m)
+  K = tcrossprod(B)/80
+  y = matrix(1 + Z%*%(t(chol(K))%*%rnorm(m)) + rnorm(n), ncol=1)
+  X = matrix(1, n, 1)
+  Q = qr.Q(qr(matrix(rnorm(m*m), m)))
+  a = solveUVM(y, X, Z, K)
+  b = solveUVM(y, X, Z%*%Q, t(Q)%*%K%*%Q)
+  expect_equal(a$Vu, b$Vu, tolerance=1e-6)
+  expect_equal(a$Ve, b$Ve, tolerance=1e-6)
+  expect_equal(a$LL, b$LL, tolerance=1e-8)
+  expect_equal(c(a$beta), c(b$beta), tolerance=1e-6)
+  expect_equal(c(a$u), c(Q%*%b$u), tolerance=1e-6)
+  # Levels without a record still get BLUPs through K
+  expect_true(all(a$u[41:60]!=0))
+})
+
 # 3. solveRRBLUP ----------------------------------------------------------
 
 test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {

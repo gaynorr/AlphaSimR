@@ -146,7 +146,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     // Z*K*Z' is no larger than K, so it is decomposed directly. Its
     // eigenvectors span all of R^n, so there is no null space to account
     // for, and zero eigenvalues are harmless because delta is positive.
-    arma::mat G = Z*K*Z.t();
+    arma::mat G = kernelOnRecords(Z, K);
     G = 0.5*(G+G.t()); // rounding only
     arma::vec eigval(n);
     U.set_size(n,n);

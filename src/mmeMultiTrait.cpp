@@ -808,7 +808,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     F = Z*Uk.cols(keep);
     F.each_row() %= sqrt(sk(keep)).t();
   }else{
-    Kn = Z*Ks*Z.t();
+    Kn = kernelOnRecords(Z, Ks);
   }
   MvData d = rotateData(Y, Xr, F, Kn, useFactor, Ur);
   F.reset();

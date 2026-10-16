@@ -197,6 +197,50 @@ inline arma::uvec independentColumns(const arma::mat& X){
   return arma::sort(arma::uvec(keep));
 }
 
+// Z*K*Z', the covariance on the records implied by a covariance K among m
+// levels and an n by m design Z.
+//
+// When Z is an incidence matrix, with a single one in every row and zeros
+// elsewhere, as it is whenever each record belongs to exactly one level,
+// Z*K*Z' is K with its rows and columns picked out by the level of each
+// record. That costs n^2 against about n*m^2 for the dense products, which
+// matters most when K covers many more levels than there are records, such
+// as individuals with no record that are to be predicted. Checking Z costs
+// n*m, no more than reading it. Any other Z falls back to the products.
+inline arma::mat kernelOnRecords(const arma::mat& Z, const arma::mat& K){
+  const arma::uword n = Z.n_rows;
+  const arma::uword m = Z.n_cols;
+  arma::uvec lev(n, arma::fill::zeros);
+  std::vector<bool> seen(n, false);
+  bool incidence = true;
+  for(arma::uword j=0; (j<m) && incidence; ++j){
+    const double* col = Z.colptr(j);
+    for(arma::uword i=0; i<n; ++i){
+      if(col[i]==0.0){
+        continue;
+      }
+      if( (col[i]!=1.0) || seen[i] ){
+        incidence = false;
+        break;
+      }
+      seen[i] = true;
+      lev(i) = j;
+    }
+  }
+  if(incidence){
+    for(arma::uword i=0; i<n; ++i){
+      if(!seen[i]){
+        incidence = false;
+        break;
+      }
+    }
+  }
+  if(incidence){
+    return K.submat(lev, lev);
+  }
+  return Z*K*Z.t();
+}
+
 // Places the rows of B, estimated on the columns keep of a fixed effects
 // design, into a matrix with one row per original column. Rows for dropped
 // columns are zero.

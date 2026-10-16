@@ -213,6 +213,30 @@ test_that("MVM estimates inside the parameter space solve Henderson's equations"
   expectGLS(ans, Y, X, Z, K)
 })
 
+test_that("MVM an incidence Z gives the same fit as an equivalent general Z", {
+  # 30 records on 60 levels, so Z*K*Z' is formed on the records. For an
+  # incidence Z it is read out of K; for Z*Q with K' = Q'*K*Q, the same
+  # model, it comes from the dense products.
+  set.seed(9941)
+  n = 30
+  m = 60
+  lev = c(1:20, sample(20, n-20, replace=TRUE))
+  Z = matrix(0, n, m)
+  Z[cbind(1:n, lev)] = 1
+  B = matrix(rnorm(m*80), m)
+  K = tcrossprod(B)/80
+  Y = simTraits(Z%*%K%*%t(Z), matrix(1, n, 1), 9942)
+  X = matrix(1, n, 1)
+  Q = qr.Q(qr(matrix(rnorm(m*m), m)))
+  a = solveMVM(Y, X, Z, K)
+  b = solveMVM(Y, X, Z%*%Q, t(Q)%*%K%*%Q)
+  expect_equal(a$Vu, b$Vu, tolerance=1e-6)
+  expect_equal(a$Ve, b$Ve, tolerance=1e-6)
+  expect_equal(a$LL, b$LL, tolerance=1e-8)
+  expect_equal(a$beta, b$beta, tolerance=1e-6)
+  expect_equal(a$u, Q%*%b$u, tolerance=1e-6)
+})
+
 # ---------------------------------------------------------------------------
 # 4. solveRRBLUPMV
 # ---------------------------------------------------------------------------
