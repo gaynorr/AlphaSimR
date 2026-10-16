@@ -58,20 +58,24 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   // Duplicated or collinear columns leave X'*H^-1*X singular, or singular
   // only up to rounding, in which case its Cholesky factorization can succeed
   // and return meaningless fixed effects. Such columns are therefore dropped
-  // before fitting, and everything below works with Xr, which spans the same
-  // space with full column rank.
-  const arma::uvec xKeep = independentColumns(X);
-  if(xKeep.n_elem==0){
+  // before fitting, and everything below works with Xr, an orthonormal basis
+  // for the span of the rest, so a badly scaled X costs no precision; see
+  // fixedDesign.
+  const FixedDesign fd = fixedDesign(X);
+  if(fd.keep.n_elem==0){
     Rcpp::stop("solveUVM: X must have at least one nonzero column");
   }
-  const arma::mat Xr = X.cols(xKeep);
+  const arma::mat& Xr = fd.Q;
   arma::uword q = Xr.n_cols;
   if(q>=n){
     Rcpp::stop("solveUVM: there must be more records than fixed effects");
   }
   double df = double(n)-double(q);
 
-  arma::vec yv = y.col(0);
+  // A least squares fit is taken off y and added back to the fixed effects
+  // at the end, which keeps a large mean from swamping the sums of squares
+  arma::mat b0;
+  arma::vec yv = removeLeastSquares(Xr, y, b0).col(0);
 
   arma::vec s2;  // eigenvalues of Z*K*Z' that are kept
   arma::vec yt;  // U'*y
@@ -181,7 +185,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   if(!fit.ok){
     Rcpp::stop("solveUVM: mixed model equations could not be solved");
   }
-  arma::mat beta = expandFixedEffects(fit.beta, xKeep, X.n_cols);
+  arma::mat beta = fixedEffectsFromBasis(fd, fit.beta+b0, X.n_cols);
 
   // The BLUPs are u = K*Z'*H^-1*(y-X*beta), where V = Vu*H, which the
   // decomposition already in hand applies without a second factorization
@@ -201,8 +205,9 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   // the restricted log-likelihood in closed form
   double Vu = fit.r/df;
   double Ve = delta*Vu;
+  // The fit used Xr = Q, so log|X'*V^-1*X| is log|Q'*V^-1*Q| + 2*logDetR
   double LL = -0.5*(df*(log(2.0*arma::datum::pi)+log(Vu)+1.0) +
-                    fit.logDetH + fit.logDetA);
+                    fit.logDetH + fit.logDetA) - fd.logDetR;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,

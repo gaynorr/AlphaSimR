@@ -106,15 +106,23 @@ public:
     : side(side_), y(y_), L(L_), R(R_), F(F_){
     n = y.n_elem;
     k = L.size();
-    xKeep = independentColumns(X);
-    if(xKeep.n_elem==0){
+    // Columns of X that depend on the others are dropped, and the fit uses
+    // Xr, an orthonormal basis for the span of the rest, so a badly scaled X
+    // costs no precision; see fixedDesign
+    fd = fixedDesign(X);
+    if(fd.keep.n_elem==0){
       Rcpp::stop("X must have at least one nonzero column");
     }
-    Xr = X.cols(xKeep);
+    Xr = fd.Q;
     p = Xr.n_cols;
     if(p>=n){
       Rcpp::stop("the rank of X must be smaller than the number of records");
     }
+    // A least squares fit is taken off y and added back to the fixed effects
+    // by beta(), which keeps a large mean from swamping the sums of squares
+    arma::mat B0;
+    y = removeLeastSquares(Xr, y, B0).col(0);
+    b0 = B0.col(0);
     meanDiag.set_size(k);
     rankBound.set_size(k);
     for(arma::uword i=0; i<k; ++i){
@@ -160,7 +168,7 @@ public:
 
   // Number of records, terms and the rank of X
   arma::uword n, k, p;
-  arma::uvec xKeep;
+  FixedDesign fd;
   Side side;
 
   // Starting values. The residual variance after fitting the fixed effects
@@ -253,6 +261,55 @@ public:
     return theta;
   }
 
+  // A variance for term i on the scale of the data: the one at which the term
+  // alone would account for the residual variance of a record
+  double typicalVu(arma::uword i) const{
+    return vy/meanDiag(i);
+  }
+
+  // First-order optimality on the boundary. A component held at zero is
+  // optimal only if moving it up would not raise the likelihood, which to
+  // first order is a gain of score*Vu for a move to Vu. The gain from a move
+  // to a typical variance must be below a small multiple of the tolerance.
+  bool boundaryOptimal(const RemlPoint& pt, const arma::vec& score,
+                       double tol) const{
+    for(arma::uword i=0; i<k; ++i){
+      if(estimable(i) && (pt.theta(i)==0.0) &&
+         (score(i)*typicalVu(i) > 10.0*tol)){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Projected gradient ascent, the fallback that can move a component off
+  // zero. Each component moves by its score times the square of its scale,
+  // which is its current value or a typical variance at zero, and the step is
+  // halved until the likelihood strictly increases. A small enough step always
+  // increases it when a score is nonzero, so this only fails at a stationary
+  // point or when rounding prevents any gain.
+  bool releaseStep(const RemlPoint& pt, const arma::vec& score,
+                   RemlPoint& out) const{
+    arma::vec d(k+1, arma::fill::zeros);
+    for(arma::uword i=0; i<k; ++i){
+      if(estimable(i) && (pt.theta(i)>0.0 || score(i)>0.0)){
+        double s = (pt.theta(i)>0.0) ? pt.theta(i) : typicalVu(i);
+        d(i) = score(i)*s*s;
+      }
+    }
+    d(k) = score(k)*pt.theta(k)*pt.theta(k);
+    double step = 1.0;
+    for(int h=0; h<60; ++h){
+      out.theta = pt.theta + step*d;
+      project(out.theta);
+      if(evaluate(out) && (out.LL>pt.LL)){
+        return true;
+      }
+      step *= 0.5;
+    }
+    return false;
+  }
+
   // Size of a change in the components relative to the variance of a
   // record. Each component is weighted by the mean diagonal of its G, so a
   // change is judged by how much variance it moves rather than by the
@@ -328,19 +385,35 @@ public:
         trial.theta = emStep(pt, score);
         accepted = evaluate(trial) && trial.LL>=pt.LL-slack;
       }
-      if(!accepted){
-        // No step improves the likelihood, so this is a stationary point to
-        // within the precision of the arithmetic
+      if(accepted){
+        double dLL = trial.LL - pt.LL;
+        double dTheta = relativeChange(trial.theta, pt.theta);
+        pt = trial;
+        if(!(std::abs(dLL)<tol && dTheta<tol)){
+          continue;
+        }
+        // A small change is only convergence if no component held at zero
+        // could raise the likelihood by moving off it
+        derivatives(pt, score, AI);
+        if(boundaryOptimal(pt, score, tol)){
+          converged = true;
+          break;
+        }
+      }else if(boundaryOptimal(pt, score, tol)){
+        // No step improves the likelihood and none would from the boundary,
+        // so this is a stationary point to within the precision of the
+        // arithmetic
         converged = true;
         break;
       }
-      double dLL = trial.LL - pt.LL;
-      double dTheta = relativeChange(trial.theta, pt.theta);
-      pt = trial;
-      if(std::abs(dLL)<tol && dTheta<tol){
-        converged = true;
+      // A component at zero has a positive score but neither step has moved
+      // it, and the EM step cannot, because it scales the change by the
+      // square of the component. A projected gradient step can.
+      RemlPoint released;
+      if(!releaseStep(pt, score, released)){
         break;
       }
+      pt = released;
     }
     if(!converged){
       Rf_warning("%s: did not converge in %d iterations", name, maxIter);
@@ -357,7 +430,7 @@ public:
     }else{
       br = pt.sol.head(p);
     }
-    return expandFixedEffects(br, xKeep, nColX);
+    return fixedEffectsFromBasis(fd, br+b0, nColX);
   }
 
   // BLUP of the term's effects. On the record side this is
@@ -382,7 +455,8 @@ public:
   }
 
 private:
-  const arma::vec& y;
+  arma::vec y;  // the response with its least squares fit taken off
+  arma::vec b0; // that least squares fit
   arma::mat Xr;
   std::vector<const arma::mat*> L, R, F;
   arma::vec meanDiag, rankBound;
@@ -662,6 +736,19 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
     // K_i is symmetrized first so that Z_i*K_i*Z_i' is symmetric
     arma::mat K = 0.5*(Klist(i)+Klist(i).t());
     if(side==Side::record){
+      // K_i is checked on its own, as on the coefficient side. A check of V
+      // alone would let an indefinite K_i through whenever the residual
+      // variance happened to keep V positive definite.
+      if(K.n_rows>0){
+        arma::vec lambda;
+        if(!arma::eig_sym(lambda, K)){
+          Rcpp::stop("%s: eigendecomposition of K failed", name);
+        }
+        double maxLambda = arma::abs(lambda).max();
+        if(lambda.min() < -std::sqrt(arma::datum::eps)*maxLambda){
+          Rcpp::stop("%s: each K must be positive semidefinite", name);
+        }
+      }
       // Z_i*K_i is formed once, and the BLUP K_i*Z_i'*P*y can be read off
       // as (Z_i*K_i)'*P*y
       D(i) = Z*K;
@@ -710,7 +797,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
                                       Rcpp::Named("Ve")=Ve,
                                       Rcpp::Named("beta")=reml.beta(pt, X.n_cols),
                                       Rcpp::Named("u")=u,
-                                      Rcpp::Named("LL")=pt.LL,
+                                      Rcpp::Named("LL")=pt.LL-reml.fd.logDetR,
                                       Rcpp::Named("iter")=iter);
   if(reportSide){
     out.push_back((side==Side::record) ? 1 : 2, "side");

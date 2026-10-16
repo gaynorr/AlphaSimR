@@ -397,6 +397,12 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
     if(eigen2(eigval, Ur, 0.5*(Kn+Kn.t()))!=0){
       Rcpp::stop("Decomposition of the kernel failed");
     }
+    // Only rounding error is clipped; a clearly negative eigenvalue means the
+    // kernel is not a covariance matrix
+    double eigAbs = arma::abs(eigval).max();
+    if(eigval.min() < -std::sqrt(arma::datum::eps)*eigAbs){
+      Rcpp::stop("K must be positive semidefinite");
+    }
     double eigMax = std::max(eigval.max(), 0.0);
     eigval.elem(find(eigval<=(double(n)*arma::datum::eps*eigMax))).zeros();
     d.s = eigval;
@@ -629,19 +635,19 @@ void checkInput(const arma::mat& Y, const arma::mat& X){
   }
 }
 
-// The columns of X that are kept for fitting. The rest depend on them and
-// are dropped, as described for independentColumns in mme.h, so the fit
-// works with a design of full column rank and the dropped columns get a
-// fixed effect of zero.
-arma::uvec fixedEffectColumns(const arma::mat& X){
-  arma::uvec keep = independentColumns(X);
-  if(keep.n_elem==0){
+// The fixed effects design the fit uses. Columns of X that depend on the
+// others are dropped, as described for independentColumns in mme.h, and get
+// a fixed effect of zero, and the rest are replaced by an orthonormal basis
+// for their span, so a badly scaled X costs no precision; see fixedDesign.
+FixedDesign fixedEffectDesign(const arma::mat& X){
+  FixedDesign fd = fixedDesign(X);
+  if(fd.keep.n_elem==0){
     Rcpp::stop("X must have at least one nonzero column");
   }
-  if(keep.n_elem>=X.n_rows){
+  if(fd.keep.n_elem>=X.n_rows){
     Rcpp::stop("the rank of X must be smaller than the number of records");
   }
-  return keep;
+  return fd;
 }
 
 } // namespace
@@ -711,27 +717,31 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   if(M.n_rows!=Y.n_rows){
     Rcpp::stop("Y and M must have the same number of rows");
   }
-  const arma::uvec xKeep = fixedEffectColumns(X);
-  const arma::mat Xr = X.cols(xKeep);
+  const FixedDesign fd = fixedEffectDesign(X);
+  const arma::mat& Xr = fd.Q;
+  // A least squares fit is taken off Y and added back to the fixed effects
+  // at the end, which keeps a large mean from swamping the sums of squares
+  arma::mat B0;
+  const arma::mat Ys = removeLeastSquares(Xr, Y, B0);
   arma::mat Ur;
   bool useFactor = M.n_cols<M.n_rows;
   arma::mat Kn;
   if(!useFactor){
     Kn = M*M.t();
   }
-  MvData d = rotateData(Y, Xr, M, Kn, useFactor, Ur);
+  MvData d = rotateData(Ys, Xr, M, Kn, useFactor, Ur);
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
   // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu
-  arma::mat u = M.t()*recordPy(Y, Xr, Ur, d, ev, Vu, Ve)*Vu;
+  arma::mat u = M.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve)*Vu;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=expandFixedEffects(ev.B, xKeep,
+                            Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
                                                                    X.n_cols),
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ev.LL,
+                            Rcpp::Named("LL")=ev.LL-double(Y.n_cols)*fd.logDetR,
                             Rcpp::Named("iter")=iter);
 }
 
@@ -789,8 +799,12 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   if( (K.n_rows!=Z.n_cols) || (K.n_cols!=Z.n_cols) ){
     Rcpp::stop("K must be square with one row for each column of Z");
   }
-  const arma::uvec xKeep = fixedEffectColumns(X);
-  const arma::mat Xr = X.cols(xKeep);
+  const FixedDesign fd = fixedEffectDesign(X);
+  const arma::mat& Xr = fd.Q;
+  // A least squares fit is taken off Y and added back to the fixed effects
+  // at the end, which keeps a large mean from swamping the sums of squares
+  arma::mat B0;
+  const arma::mat Ys = removeLeastSquares(Xr, Y, B0);
   arma::mat Ks = 0.5*(K+K.t());
   arma::mat Ur, F, Kn;
   bool useFactor = Z.n_cols<Z.n_rows;
@@ -803,6 +817,13 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     if(eigen2(sk, Uk, Ks)!=0){
       Rcpp::stop("Decomposition of K failed");
     }
+    // Only rounding error is clipped. A clearly negative eigenvalue means K
+    // is not a covariance matrix, and clipping it would fit one model while
+    // the BLUPs, which use K itself, described another.
+    double skAbs = arma::abs(sk).max();
+    if(sk.min() < -std::sqrt(arma::datum::eps)*skAbs){
+      Rcpp::stop("K must be positive semidefinite");
+    }
     double skMax = std::max(sk.max(), 0.0);
     arma::uvec keep = find(sk>(double(m)*arma::datum::eps*skMax));
     F = Z*Uk.cols(keep);
@@ -810,19 +831,19 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   }else{
     Kn = kernelOnRecords(Z, Ks);
   }
-  MvData d = rotateData(Y, Xr, F, Kn, useFactor, Ur);
+  MvData d = rotateData(Ys, Xr, F, Kn, useFactor, Ur);
   F.reset();
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
   // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu
-  arma::mat u = Ks*(Z.t()*recordPy(Y, Xr, Ur, d, ev, Vu, Ve))*Vu;
+  arma::mat u = Ks*(Z.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve))*Vu;
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=expandFixedEffects(ev.B, xKeep,
+                            Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
                                                                    X.n_cols),
                             Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ev.LL,
+                            Rcpp::Named("LL")=ev.LL-double(Y.n_cols)*fd.logDetR,
                             Rcpp::Named("iter")=iter);
 }

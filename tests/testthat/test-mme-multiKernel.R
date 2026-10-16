@@ -496,9 +496,54 @@ test_that("INPUT an indefinite K is rejected on the coefficient side", {
   y = matrix(rnorm(n))
   expect_error(solveMKM(y, matrix(1, n, 1), list(incidence(n, m)), list(K)),
                "positive semidefinite")
-  # On the record side the same kernel leaves V indefinite from the start
+  # The record side checks each K too, rather than only V
   expect_error(fitSide(y, matrix(1, n, 1), list(incidence(n, m)), list(K),
-                       FALSE, 1), "not positive definite")
+                       FALSE, 1), "positive semidefinite")
+})
+
+test_that("INPUT an indefinite K is rejected even when V stays positive definite", {
+  # A small negative eigenvalue that the residual variance would hide in V
+  set.seed(9140)
+  n = 4
+  y = matrix(rnorm(n))
+  K = diag(c(1, 2, 3, -0.1))
+  for(side in 1:2){
+    expect_error(fitSide(y, matrix(1, n, 1), list(diag(n)), list(K), FALSE,
+                         side), "positive semidefinite")
+  }
+})
+
+test_that("SHIFT a large mean does not change the variance components", {
+  # A fit on y+1e8 subtracts sums of squares of order 1e16 unless the mean is
+  # taken off first. The variances must be unchanged and the intercept must
+  # move by exactly the shift, on either side.
+  d = simTwoKernels(n=120, seed=9141)
+  for(side in 1:2){
+    a = fitSide(d$y, d$X, list(d$M1, d$M2), list(), TRUE, side)
+    b = fitSide(d$y+1e8, d$X, list(d$M1, d$M2), list(), TRUE, side)
+    expect_equal(c(b$Vu), c(a$Vu), tolerance=1e-6)
+    expect_equal(c(b$Ve), c(a$Ve), tolerance=1e-6)
+    expect_equal(b$LL, a$LL, tolerance=1e-6)
+    expect_equal(c(b$beta)-1e8, c(a$beta), tolerance=1e-6, scale=1)
+  }
+})
+
+test_that("BOUNDARY no fit ends with a zero component that could raise the likelihood", {
+  # Weak second terms often end at zero. Wherever they do, the likelihood
+  # must be at least the best a search over positive values finds.
+  skip_on_cran()
+  set.seed(9142)
+  n = 60
+  M1 = matrix(sample(-1:1, n*20, replace=TRUE), n)
+  M2 = matrix(sample(0:1, n*20, replace=TRUE), n)
+  X = matrix(1, n, 1)
+  G = list(tcrossprod(M1), tcrossprod(M2))
+  y = M1 %*% rnorm(20, sd=0.3) + M2 %*% rnorm(20, sd=0.05) + rnorm(n)
+  ref = bruteForceREML(y, X, G)
+  for(side in 1:2){
+    ans = fitSide(y, X, list(M1, M2), list(), TRUE, side)
+    expect_gte(ans$LL, ref$LL - 1e-4)
+  }
 })
 
 test_that("SIDES agree on a kernel of zeros, which has no effects to estimate", {

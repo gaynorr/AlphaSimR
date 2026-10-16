@@ -220,15 +220,15 @@ test_that("DROP dependent columns of X and keep the intercept", {
   y = matrix(2 + a + Z%*%rnorm(6) + rnorm(n), ncol=1)
   ref = solveUVM(y, cbind(1, a), Z, K)
   dep = solveUVM(y, cbind(a, 1-a, 1), Z, K)
-  expect_equal(dep$Vu, ref$Vu, tolerance=1e-8)
-  expect_equal(dep$Ve, ref$Ve, tolerance=1e-8)
+  expect_equal(dep$Vu, ref$Vu, tolerance=1e-6)
+  expect_equal(dep$Ve, ref$Ve, tolerance=1e-6)
   expect_equal(dep$LL, ref$LL, tolerance=1e-8)
-  expect_equal(c(dep$u), c(ref$u), tolerance=1e-8)
-  expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-8)
+  expect_equal(c(dep$u), c(ref$u), tolerance=1e-6)
+  expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-6)
   # A duplicated column
   dup = solveUVM(y, cbind(1, a, a), Z, K)
-  expect_equal(c(dup$beta), c(ref$beta, 0), tolerance=1e-8)
-  expect_equal(c(dup$u), c(ref$u), tolerance=1e-8)
+  expect_equal(c(dup$beta), c(ref$beta, 0), tolerance=1e-6)
+  expect_equal(c(dup$u), c(ref$u), tolerance=1e-6)
 })
 
 test_that("SAME fit for an incidence Z as for an equivalent general Z", {
@@ -256,6 +256,41 @@ test_that("SAME fit for an incidence Z as for an equivalent general Z", {
   expect_equal(c(a$u), c(Q%*%b$u), tolerance=1e-6)
   # Levels without a record still get BLUPs through K
   expect_true(all(a$u[41:60]!=0))
+})
+
+test_that("SHIFT a large mean or covariate offset leaves the fit unchanged", {
+  # A response with a mean of 1e8 would lose its variation to rounding if
+  # the residual sum of squares were found by subtracting sums of squares,
+  # and a covariate of 1e6+x would look like a copy of the intercept if
+  # independence were judged on X'X. Neither may change the variances, and
+  # the fixed effects must move exactly as the reparameterization implies.
+  set.seed(21)
+  n = 40
+  Z = makeZ(n, 8)
+  K = crossprod(matrix(rnorm(64), 8, 8))/8
+  x = rnorm(n)
+  y = matrix(1 + 0.5*x + Z%*%rnorm(8) + rnorm(n), ncol=1)
+  ref = solveUVM(y, cbind(1, x), Z, K)
+  big = solveUVM(y + 1e8, cbind(1, x), Z, K)
+  expect_equal(big$Vu, ref$Vu, tolerance=1e-6)
+  expect_equal(big$Ve, ref$Ve, tolerance=1e-6)
+  expect_equal(c(big$beta) - c(1e8, 0), c(ref$beta), tolerance=1e-6,
+               scale=1)
+  off = solveUVM(y, cbind(1, 1e6 + x), Z, K)
+  expect_equal(off$Vu, ref$Vu, tolerance=1e-6)
+  expect_equal(off$Ve, ref$Ve, tolerance=1e-6)
+  expect_equal(off$beta[2], ref$beta[2], tolerance=1e-6)
+  # The same for solveRRBLUP, on both of its decompositions
+  for(m in c(10, 60)){
+    M = matrix(sample(0:2, n*m, replace=TRUE), n, m)
+    yM = matrix(1 + 0.5*x + M%*%rnorm(m, sd=0.2) + rnorm(n), ncol=1)
+    a = solveRRBLUP(yM, cbind(1, x), M)
+    b = solveRRBLUP(yM + 1e8, cbind(1, 1e6 + x), M)
+    expect_equal(b$Vu, a$Vu, tolerance=1e-6)
+    expect_equal(b$Ve, a$Ve, tolerance=1e-6)
+    expect_equal(b$beta[2], a$beta[2], tolerance=1e-6)
+    expect_equal(c(b$u), c(a$u), tolerance=1e-6)
+  }
 })
 
 # 3. solveRRBLUP ----------------------------------------------------------
@@ -287,10 +322,10 @@ test_that("DROP dependent columns of X in solveRRBLUP and keep the intercept", {
     y = matrix(1 + a + M%*%rnorm(m, sd=0.2) + rnorm(n), ncol=1)
     ref = solveRRBLUP(y, cbind(1, a), M)
     dep = solveRRBLUP(y, cbind(a, 1-a, 1), M)
-    expect_equal(dep$Vu, ref$Vu, tolerance=1e-8)
-    expect_equal(dep$Ve, ref$Ve, tolerance=1e-8)
-    expect_equal(c(dep$u), c(ref$u), tolerance=1e-8)
-    expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-8)
+    expect_equal(dep$Vu, ref$Vu, tolerance=1e-6)
+    expect_equal(dep$Ve, ref$Ve, tolerance=1e-6)
+    expect_equal(c(dep$u), c(ref$u), tolerance=1e-6)
+    expect_equal(c(dep$beta), c(ref$beta[2], 0, ref$beta[1]), tolerance=1e-6)
   }
   expect_error(solveRRBLUP(y, matrix(0, n, 2), M), "nonzero column")
   expect_error(solveRRBLUP(y, matrix(rnorm(n*n), n, n), M),

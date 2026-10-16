@@ -290,13 +290,14 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   arma::uword n = y.n_rows;
   arma::uword m = M.n_cols;
-  // Columns of X that depend on the others are dropped, so the fit uses Xr,
-  // which spans the same space with full column rank
-  const arma::uvec xKeep = independentColumns(X);
-  if(xKeep.n_elem==0){
+  // Columns of X that depend on the others are dropped, and the fit uses Xr,
+  // an orthonormal basis for the span of the rest, so a badly scaled X costs
+  // no precision; see fixedDesign
+  const FixedDesign fd = fixedDesign(X);
+  if(fd.keep.n_elem==0){
     Rcpp::stop("solveRRBLUP: X must have at least one nonzero column");
   }
-  const arma::mat Xr = X.cols(xKeep);
+  const arma::mat& Xr = fd.Q;
   arma::uword q = Xr.n_cols;
   if(q>=n){
     Rcpp::stop("solveRRBLUP: the rank of X must be smaller than the number "
@@ -304,7 +305,10 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   }
   double df = double(n)-double(q);
 
-  arma::vec yv = y.col(0);
+  // A least squares fit is taken off y and added back to the fixed effects
+  // at the end, which keeps a large mean from swamping the sums of squares
+  arma::mat b0;
+  arma::vec yv = removeLeastSquares(Xr, y, b0).col(0);
 
   arma::vec s2;  // eigenvalues of M*M' that are kept
   arma::vec yt;  // U'*y
@@ -380,7 +384,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   if(!fit.ok){
     Rcpp::stop("solveRRBLUP: mixed model equations could not be solved");
   }
-  arma::mat beta = expandFixedEffects(fit.beta, xKeep, X.n_cols);
+  arma::mat beta = fixedEffectsFromBasis(fd, fit.beta+b0, X.n_cols);
 
   // The BLUPs are u = M'*H^-1*(y-X*beta), which the decomposition already
   // in hand applies without a second factorization
@@ -935,7 +939,10 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   eigen2(eigval, U, K);
   K.reset();
   eigval.elem(find(eigval<0.0)).zeros(); // rounding only
-  arma::vec yt = U.t()*yv;
+  // A least squares fit is taken off y, which leaves REML unchanged and
+  // keeps a large mean from swamping the sums of squares
+  arma::mat b0;
+  arma::vec yt = U.t()*removeLeastSquares(X, yv, b0).col(0);
   arma::mat Xt = U.t()*X;
   U.reset();
   // K spans all of R^n, so there is no null space to summarize

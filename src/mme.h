@@ -121,7 +121,6 @@ inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
   arma::mat A = Xt.t()*XtD + XX0/delta;
   A = 0.5*(A+A.t()); // rounding only
   arma::vec b = XtD.t()*yt + Xy0/delta;
-  double c = accu(yt%yt%dInv) + yy0/delta;
   arma::mat L;
   if(!arma::chol(L, A, "lower")){
     return out;
@@ -129,7 +128,17 @@ inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
   out.logDetA = 2.0*accu(log(L.diag()));
   out.beta = arma::solve(arma::trimatu(L.t()),
                          arma::solve(arma::trimatl(L), b));
-  out.r = c - accu(b%out.beta);
+  // The residual quadratic form is summed from the residuals themselves
+  // rather than found as y'*H^-1*y minus the part explained by beta, which
+  // would subtract two large numbers and lose the residual variation when y
+  // has a large mean. The part outside the span of U can only be reached
+  // through the summaries, so callers keep it small by taking a least squares
+  // fit off y first; see removeLeastSquares.
+  arma::vec et = yt - Xt*out.beta;
+  double r0 = (yy0 - 2.0*accu(Xy0%out.beta) +
+               as_scalar(out.beta.t()*XX0*out.beta))/delta;
+  if(r0<0.0) r0 = 0.0; // rounding only
+  out.r = accu(et%et%dInv) + r0;
   if(out.r<=0.0) out.r = arma::datum::eps;
   out.logDetH = accu(log(s2+delta)) + nNull*log(delta);
   out.ok = true;
@@ -145,20 +154,29 @@ inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
 // and the fitted values, is unchanged. The dropped columns get a fixed effect
 // of zero, which is one of the many solutions when X is not of full rank.
 //
-// Columns are taken greedily: a column is kept if its squared length after
+// Columns are taken greedily: a column is kept if its length after
 // projecting out the columns already kept is more than a small fraction of
-// its squared length. Which of a dependent set is dropped therefore depends
-// on the order of consideration. The intercept, the first column whose
-// entries are all the same nonzero value, is considered before every other
-// column, so it is always kept and its estimate keeps its usual meaning
-// whatever columns X also contains. The rest are considered in their order
-// in X.
+// its length. Which of a dependent set is dropped therefore depends on the
+// order of consideration. The intercept, the first column whose entries are
+// all the same nonzero value, is considered before every other column, so it
+// is always kept and its estimate keeps its usual meaning whatever columns X
+// also contains. The rest are considered in their order in X.
+//
+// The projection is done on the columns themselves, by Gram-Schmidt with a
+// second pass to restore orthogonality, rather than through X'*X. Squaring
+// the columns would lose a covariate whose variation is small next to its
+// mean, such as 1e6+c(-1,0,1) beside an intercept, to rounding, although it
+// is plainly independent; with the intercept projected out first, such a
+// column is in effect centered before its length is judged. The cutoff
+// allows for the rounding error of the projection, which grows with the
+// number of records.
 inline arma::uvec independentColumns(const arma::mat& X){
-  arma::uword nCol = X.n_cols;
+  const arma::uword n = X.n_rows;
+  const arma::uword nCol = X.n_cols;
   std::vector<arma::uword> order;
   order.reserve(nCol);
   for(arma::uword j=0; j<nCol; ++j){
-    if( (X.n_rows>0) && (X(0,j)!=0.0) && arma::all(X.col(j)==X(0,j)) ){
+    if( (n>0) && (X(0,j)!=0.0) && arma::all(X.col(j)==X(0,j)) ){
       order.push_back(j);
       break;
     }
@@ -168,33 +186,85 @@ inline arma::uvec independentColumns(const arma::mat& X){
       order.push_back(j);
     }
   }
-  arma::mat XtX = X.t()*X;
+  const double tol = 100.0*double(std::max<arma::uword>(n, 1))*
+    arma::datum::eps;
+  std::vector<arma::vec> basis;
   std::vector<arma::uword> keep;
   for(arma::uword j : order){
-    double djj = XtX(j,j);
-    if(!(djj>0.0)){
+    arma::vec v = X.col(j);
+    double len = arma::norm(v);
+    if(!(len>0.0) || !std::isfinite(len)){
       continue;
     }
-    double res = djj;
-    if(!keep.empty()){
-      arma::uvec kk(keep);
-      arma::uvec jj(1);
-      jj(0) = j;
-      arma::vec c = XtX.submat(kk,jj);
-      arma::vec b;
-      // The columns kept so far are independent, so this system is
-      // nonsingular and the solve only fails on rounding trouble, in which
-      // case the column is treated as dependent
-      if(!arma::solve(b, XtX.submat(kk,kk), c, arma::solve_opts::no_approx)){
-        continue;
+    for(int pass=0; pass<2; ++pass){
+      for(const arma::vec& q : basis){
+        v -= arma::dot(q, v)*q;
       }
-      res = djj - arma::dot(c,b);
     }
-    if(res > 1e-10*djj){
+    double res = arma::norm(v);
+    if(res > tol*len){
+      basis.push_back(v/res);
       keep.push_back(j);
     }
   }
   return arma::sort(arma::uvec(keep));
+}
+
+// The fixed effects design in the form the solvers fit.
+//
+// The independent columns of X are replaced by an orthonormal basis Q for
+// their span, with X.cols(keep) = Q*R. REML depends on X only through its
+// column space, so the variance components and random effects are the same
+// with Q as with X, while Q is perfectly conditioned however X is scaled.
+// Fitting with X directly would lose precision to a covariate with a large
+// offset or scale, whose cross products dwarf the others. The fixed effects
+// for X are R^-1 times those for Q, and log|X'*V^-1*X| is
+// log|Q'*V^-1*Q| + 2*logDetR, so a likelihood found with Q is converted by
+// subtracting logDetR for each trait.
+struct FixedDesign {
+  arma::uvec keep; // columns of X that are used
+  arma::mat Q;     // orthonormal basis for their span
+  arma::mat R;     // X.cols(keep) = Q*R
+  double logDetR = 0.0;
+};
+
+inline FixedDesign fixedDesign(const arma::mat& X){
+  FixedDesign f;
+  f.keep = independentColumns(X);
+  if(f.keep.n_elem>0){
+    if(!arma::qr_econ(f.Q, f.R, X.cols(f.keep))){
+      Rcpp::stop("QR decomposition of X failed");
+    }
+    f.logDetR = arma::accu(arma::log(arma::abs(f.R.diag())));
+  }
+  return f;
+}
+
+// Fixed effects for the columns of X from those estimated for Q, one column
+// per trait, with zeros for the columns that were dropped
+inline arma::mat fixedEffectsFromBasis(const FixedDesign& f,
+                                       const arma::mat& Bq,
+                                       arma::uword nCol){
+  arma::mat out(nCol, Bq.n_cols, arma::fill::zeros);
+  out.rows(f.keep) = arma::solve(arma::trimatu(f.R), Bq);
+  return out;
+}
+
+// Takes a least squares fit on the fixed effects off the responses.
+//
+// REML, and the solution for everything but the fixed effects, are unchanged
+// when Y is replaced by Y-X*B0 for any B0, while the fixed effects move by
+// exactly -B0. With B0 the least squares fit, the responses are left on the
+// scale of their own variation, so a large mean cannot swamp the sums of
+// squares the likelihood is built from. Callers add B0 back to the fixed
+// effects they estimate. X must have full column rank.
+inline arma::mat removeLeastSquares(const arma::mat& X, const arma::mat& Y,
+                                    arma::mat& B0){
+  if(!arma::solve(B0, X, Y)){
+    B0.zeros(X.n_cols, Y.n_cols);
+    return Y;
+  }
+  return Y - X*B0;
 }
 
 // Z*K*Z', the covariance on the records implied by a covariance K among m

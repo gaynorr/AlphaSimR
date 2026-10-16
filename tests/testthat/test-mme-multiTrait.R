@@ -237,6 +237,36 @@ test_that("MVM an incidence Z gives the same fit as an equivalent general Z", {
   expect_equal(a$u, Q%*%b$u, tolerance=1e-6)
 })
 
+test_that("MVM an indefinite K is rejected on both decompositions", {
+  # Clipping its negative eigenvalue would fit one kernel while the BLUPs
+  # used another
+  set.seed(9943)
+  K = diag(c(1, 2, 3, -0.1))
+  X = matrix(1, 4, 1)
+  Y = matrix(rnorm(8), 4, 2)
+  # As many levels as records: the kernel on the records is decomposed
+  expect_error(solveMVM(Y, X, diag(4), K), "positive semidefinite")
+  # Fewer levels than records: K itself is factored
+  n = 12
+  Z = matrix(0, n, 4)
+  Z[cbind(1:n, rep(1:4, 3))] = 1
+  expect_error(solveMVM(matrix(rnorm(2*n), n, 2), matrix(1, n, 1), Z, K),
+               "positive semidefinite")
+})
+
+test_that("MVM a large mean does not change the covariance matrices", {
+  n = 30
+  m = 10
+  M = markers(n, m, 9944)
+  X = matrix(1, n, 1)
+  Y = simTraits(tcrossprod(M)/m, X, 9945)
+  a = solveRRBLUPMV(Y, X, M)
+  b = solveRRBLUPMV(Y + 1e8, X, M)
+  expect_equal(b$Vu, a$Vu, tolerance=1e-6)
+  expect_equal(b$Ve, a$Ve, tolerance=1e-6)
+  expect_equal(c(b$beta) - 1e8, c(a$beta), tolerance=1e-6, scale=1)
+})
+
 # ---------------------------------------------------------------------------
 # 4. solveRRBLUPMV
 # ---------------------------------------------------------------------------
