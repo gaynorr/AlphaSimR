@@ -9,7 +9,9 @@ solveRRBLUPMV(Y, X, M, maxIter = 1000L, tol = 1e-06)
 \arguments{
 \item{Y}{a matrix with n rows and q columns}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{M}{a matrix with n rows and m columns}
 
@@ -17,6 +19,50 @@ solveRRBLUPMV(Y, X, M, maxIter = 1000L, tol = 1e-06)
 
 \item{tol}{tolerance for convergence}
 }
+\value{
+A list containing
+\describe{
+  \item{Vu}{q by q covariance matrix of the marker effects}
+  \item{Ve}{q by q covariance matrix of the errors}
+  \item{beta}{x by q matrix of fixed effects}
+  \item{u}{m by q matrix of marker effects}
+  \item{LL}{the restricted log-likelihood
+    \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
+    \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
+    \eqn{\log|X'X|} term is excluded}
+  \item{iter}{number of iterations taken}
+}
+A warning is given if \code{maxIter} is reached without convergence.
+}
 \description{
-Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
+Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}, where the
+marker effects of the t traits have covariance \eqn{V_u} among traits and
+are independent across markers, and the errors have covariance \eqn{V_e}
+among traits and are independent across records. \eqn{V_u} and \eqn{V_e}
+are unstructured and estimated by REML.
+}
+\details{
+The records are rotated by the eigendecomposition of \eqn{MM'}, and the
+traits by a second transformation that diagonalizes \eqn{V_u} and
+\eqn{V_e} together, following \insertCite{zhou2014Efficient;textual}{AlphaSimR}.
+The likelihood and its derivatives are then linear in the number of
+records. When there are fewer markers than records, the eigenvectors come
+from a thin singular value decomposition of M and the records in the null
+space of \eqn{MM'} are summarized, so no matrix with n rows and n columns
+is formed.
+
+Starting values come from univariate REML fits of each trait, by the method
+of \insertCite{lippert2011FaST;textual}{AlphaSimR}, with the correlation
+among least squares residuals for both covariance matrices. Five EM
+iterations follow, and then Newton steps in the Cholesky factors of
+\eqn{V_u} and \eqn{V_e}, whose Hessian is built from the average
+information matrix \insertCite{gilmour1995Average}{AlphaSimR}. Working
+with the factors keeps both matrices positive semidefinite, so an
+estimate on the boundary of the parameter space, such as a correlation of
+one, is reached without leaving it. An EM step is taken whenever a Newton
+step fails to increase the likelihood. Iteration stops when the restricted
+log-likelihood changes by less than \code{tol}.
+}
+\references{
+\insertAllCited{}
 }

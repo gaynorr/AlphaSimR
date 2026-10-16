@@ -4,12 +4,34 @@
 #' @title Solve RR-BLUP
 #'
 #' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
-#' EMMA algorithm \insertCite{kang2008Efficient}{AlphaSimR}.
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}, where
+#' \eqn{u \sim N(0,I\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+#' variance components are estimated by REML
+#' \insertCite{patterson1971Recovery}{AlphaSimR} using the factored spectral
+#' approach of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}.
+#'
+#' @details
+#' REML is reduced to a one dimensional search over delta, the ratio of the
+#' residual variance to the marker variance. FaST-LMM works with M*M' itself
+#' and re-estimates the fixed effects at every delta. One decomposition
+#' therefore supplies the likelihood, the generalized least squares solution
+#' for the fixed effects, and the BLUPs, and that decomposition is taken in
+#' whichever of the two spaces is smaller. When there are fewer markers than
+#' records the eigenvectors of M'*M serve in place of those of M*M', the rank
+#' deficient directions are summarized analytically, and no matrix larger
+#' than M is ever formed.
+#'
+#' This is an independent implementation of the published method. It shares
+#' no code with the FaST-LMM software distributed by Microsoft.
 #'
 #' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
 #' @param M a matrix with n rows and m columns
+#'
+#' @return A list with the marker variance \code{Vu}, the residual variance
+#' \code{Ve}, the fixed effects \code{beta} and the marker effects \code{u}.
 #'
 #' @references
 #' \insertAllCited{}
@@ -17,79 +39,6 @@
 #' @export
 solveRRBLUP <- function(y, X, M) {
     .Call(`_AlphaSimR_solveRRBLUP`, y, X, M)
-}
-
-#' @title Solve RR-BLUP with FaST-LMM
-#'
-#' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
-#' same arguments and returns the same values as \code{\link{solveRRBLUP}},
-#' but solves the mixed model equations using the factored spectral approach
-#' of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR} rather than the EMMA
-#' algorithm \insertCite{kang2008Efficient}{AlphaSimR}. It is intended as an
-#' eventual replacement for \code{\link{solveRRBLUP}}.
-#'
-#' @details
-#' Both algorithms reduce the mixed model to a one dimensional search over
-#' delta, the ratio of the residual variance to the marker variance. They
-#' differ in the decomposition they search over.
-#'
-#' EMMA works with the fixed effects projected out. It needs the nonzero
-#' eigenvalues of S*M*M'*S for the projector S, and then has to factorize
-#' M*M'+delta*I a second time to reach the solutions.
-#'
-#' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
-#' every delta. One decomposition therefore supplies the likelihood, the
-#' generalized least squares solution for the fixed effects, and the BLUPs,
-#' and that decomposition is taken in whichever of the two spaces is
-#' smaller. When there are fewer markers than records the eigenvectors of
-#' M'*M serve in place of those of M*M', the rank deficient directions are
-#' summarized analytically, and no matrix larger than M is ever formed.
-#'
-#' This is an independent implementation of the published method. It shares
-#' no code with the FaST-LMM software distributed by Microsoft.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param M a matrix with n rows and m columns
-#'
-#' @references
-#' \insertAllCited{}
-#'
-#' @export
-solveRRBLUP2 <- function(y, X, M) {
-    .Call(`_AlphaSimR_solveRRBLUP2`, y, X, M)
-}
-
-#' @title Solve Multivariate RR-BLUP
-#'
-#' @description
-#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param M a matrix with n rows and m columns
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iterations
-#'
-#' @export
-solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
-    .Call(`_AlphaSimR_solveRRBLUPMV`, Y, X, M, maxIter, tol)
-}
-
-#' @title Solve Multikernel RR-BLUP
-#'
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Mlist a list of M matrices
-#' @param maxIter maximum number of iteration
-#'
-#' @export
-solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
-    .Call(`_AlphaSimR_solveRRBLUPMK`, y, X, Mlist, maxIter)
 }
 
 #' @title Solve RR-BLUP with EM
@@ -213,55 +162,6 @@ callRRBLUP_SCA <- function(y, x, geno, lociPerChr, lociLoc, maxIter, nThreads) {
 
 callRRBLUP_SCA2 <- function(y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP_SCA2`, y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads)
-}
-
-#' @title Solve Univariate Model
-#'
-#' @description
-#' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#'
-#' @export
-solveUVM <- function(y, X, Z, K) {
-    .Call(`_AlphaSimR_solveUVM`, y, X, Z, K)
-}
-
-#' @title Solve Multivariate Model
-#'
-#' @description
-#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
-#'
-#' @param Y a matrix with n rows and q columns
-#' @param X a matrix with n rows and x columns
-#' @param Z a matrix with n rows and m columns
-#' @param K a matrix with m rows and m columns
-#' @param tol tolerance for convergence
-#' @param maxIter maximum number of iterations
-#'
-#' @export
-solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
-    .Call(`_AlphaSimR_solveMVM`, Y, X, Z, K, tol, maxIter)
-}
-
-#' @title Solve Multikernel Model
-#'
-#' @description
-#' Solves a univariate mixed model with multiple random effects.
-#'
-#' @param y a matrix with n rows and 1 column
-#' @param X a matrix with n rows and x columns
-#' @param Zlist a list of Z matrices
-#' @param Klist a list of K matrices
-#' @param maxIter maximum number of iterations
-#' @param tol tolerance for convergence
-#'
-#' @export
-solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-4) {
-    .Call(`_AlphaSimR_solveMKM`, y, X, Zlist, Klist, maxIter, tol)
 }
 
 writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
@@ -449,6 +349,285 @@ isOpenMPAvailable <- function() {
 #' @export
 getNumThreads <- function() {
     .Call(`_AlphaSimR_getNumThreads`)
+}
+
+.solveMultiKernel <- function(y, X, Zlist, Klist, rrForm, maxIter, tol, side) {
+    .Call(`_AlphaSimR_solveMultiKernel`, y, X, Zlist, Klist, rrForm, maxIter, tol, side)
+}
+
+#' @title Solve Multikernel RR-BLUP
+#'
+#' @description
+#' Solves a univariate mixed model with multiple random effects, where
+#' random term i contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the
+#' variance of the records and its effects are the marker effects of
+#' \code{Mlist[[i]]}. The variance components are estimated by average
+#' information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR},
+#' and the matrices in \code{Mlist} may have different numbers of columns.
+#'
+#' @details
+#' The model is fitted in whichever of two equivalent ways is cheaper. With
+#' fewer records than marker effects it works with the variance matrix of the
+#' records, which has one row per record. With fewer marker effects than
+#' records it works with Henderson's mixed model equations, which have one
+#' row per effect. Both give the same estimates; only the time and memory
+#' they need differ.
+#'
+#' Iteration starts with half of the residual variance from a least
+#' squares fit of X assigned to the error and half shared equally among
+#' the random terms. A step that would lower the likelihood is halved, and
+#' an EM-REML step is used if halving does not help. Variance components
+#' are kept non-negative: a component that reaches zero stays there for as
+#' long as the likelihood would fall by increasing it. Iteration stops when
+#' the change in log-likelihood and the relative change in the variance
+#' components are both below 1e-6, and a warning is given if
+#' \code{maxIter} is reached first.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
+#' @param Mlist a list of M matrices
+#' @param maxIter maximum number of iterations
+#'
+#' @return A list with the variance components \code{Vu} (one per matrix in
+#' \code{Mlist}) and \code{Ve}, the fixed effects \code{beta}, a list
+#' \code{u} of marker effects for each matrix in \code{Mlist}, the
+#' restricted log-likelihood \code{LL} at the estimates, and the number of
+#' iterations \code{iter}. \code{LL} is
+#' \eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
+#' where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @examples
+#' set.seed(1)
+#' n = 50
+#' M1 = matrix(rnorm(n*20), n)
+#' M2 = matrix(rnorm(n*10), n)
+#' y = M1%*%rnorm(20, sd=0.3) + rnorm(n)
+#' ans = solveRRBLUPMK(y, matrix(1, n, 1), list(M1, M2))
+#' ans$Vu
+#'
+#' @export
+solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
+    .Call(`_AlphaSimR_solveRRBLUPMK`, y, X, Mlist, maxIter)
+}
+
+#' @title Solve Multikernel Model
+#'
+#' @description
+#' Solves a univariate mixed model with multiple random effects,
+#' \eqn{y = X\beta + \sum_i Z_i u_i + e}, where \eqn{u_i} has covariance
+#' \eqn{K_i V_{u_i}} and \eqn{e} has covariance \eqn{I V_e}. The variance
+#' components are estimated by average information REML
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}.
+#'
+#' @details
+#' The model is fitted in whichever of two equivalent ways is cheaper. When
+#' the random terms have more levels in total than there are records, it
+#' works with the variance matrix of the records,
+#' \eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}. Otherwise it works with
+#' Henderson's mixed model equations, writing each \eqn{K_i} as
+#' \eqn{F_i F_i'} over its positive eigenvalues, so a singular \eqn{K_i} is
+#' allowed. Both give the same estimates; only the time and memory they need
+#' differ. Each \eqn{K_i} must be positive semidefinite.
+#'
+#' Iteration starts with half of the residual variance from a least
+#' squares fit of X assigned to the error and half shared equally among
+#' the random terms. A step that would lower the likelihood is halved, and
+#' an EM-REML step is used if halving does not help. Variance components
+#' are kept non-negative: a component that reaches zero stays there for as
+#' long as the likelihood would fall by increasing it. Iteration stops when
+#' the change in log-likelihood and the relative change in the variance
+#' components are both below \code{tol}, and a warning is given if
+#' \code{maxIter} is reached first.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
+#' @param Zlist a list of Z matrices
+#' @param Klist a list of K matrices
+#' @param maxIter maximum number of iterations
+#' @param tol tolerance for convergence
+#'
+#' @return A list with the variance components \code{Vu} (one per random
+#' term) and \code{Ve}, the fixed effects \code{beta}, a list \code{u} of
+#' BLUPs for each random term, the restricted log-likelihood \code{LL} at
+#' the estimates, and the number of iterations \code{iter}. \code{LL} is
+#' \eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
+#' where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @examples
+#' set.seed(1)
+#' n = 50
+#' M = matrix(rnorm(n*20), n)
+#' K = tcrossprod(M)/20
+#' y = M%*%rnorm(20, sd=0.3) + rnorm(n)
+#' Z = diag(n)
+#' ans = solveMKM(y, matrix(1, n, 1), list(Z, Z), list(K, diag(n)))
+#' ans$Vu
+#'
+#' @export
+solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-4) {
+    .Call(`_AlphaSimR_solveMKM`, y, X, Zlist, Klist, maxIter, tol)
+}
+
+#' @title Solve Multivariate RR-BLUP
+#'
+#' @description
+#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}, where the
+#' marker effects of the t traits have covariance \eqn{V_u} among traits and
+#' are independent across markers, and the errors have covariance \eqn{V_e}
+#' among traits and are independent across records. \eqn{V_u} and \eqn{V_e}
+#' are unstructured and estimated by REML.
+#'
+#' @details
+#' The records are rotated by the eigendecomposition of \eqn{MM'}, and the
+#' traits by a second transformation that diagonalizes \eqn{V_u} and
+#' \eqn{V_e} together, following \insertCite{zhou2014Efficient;textual}{AlphaSimR}.
+#' The likelihood and its derivatives are then linear in the number of
+#' records. When there are fewer markers than records, the eigenvectors come
+#' from a thin singular value decomposition of M and the records in the null
+#' space of \eqn{MM'} are summarized, so no matrix with n rows and n columns
+#' is formed.
+#'
+#' Starting values come from univariate REML fits of each trait, by the method
+#' of \insertCite{lippert2011FaST;textual}{AlphaSimR}, with the correlation
+#' among least squares residuals for both covariance matrices. Five EM
+#' iterations follow, and then Newton steps in the Cholesky factors of
+#' \eqn{V_u} and \eqn{V_e}, whose Hessian is built from the average
+#' information matrix \insertCite{gilmour1995Average}{AlphaSimR}. Working
+#' with the factors keeps both matrices positive semidefinite, so an
+#' estimate on the boundary of the parameter space, such as a correlation of
+#' one, is reached without leaving it. An EM step is taken whenever a Newton
+#' step fails to increase the likelihood. Iteration stops when the restricted
+#' log-likelihood changes by less than \code{tol}.
+#'
+#' @param Y a matrix with n rows and q columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
+#' @param M a matrix with n rows and m columns
+#' @param maxIter maximum number of iterations
+#' @param tol tolerance for convergence
+#'
+#' @return A list containing
+#' \describe{
+#'   \item{Vu}{q by q covariance matrix of the marker effects}
+#'   \item{Ve}{q by q covariance matrix of the errors}
+#'   \item{beta}{x by q matrix of fixed effects}
+#'   \item{u}{m by q matrix of marker effects}
+#'   \item{LL}{the restricted log-likelihood
+#'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
+#'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
+#'     \eqn{\log|X'X|} term is excluded}
+#'   \item{iter}{number of iterations taken}
+#' }
+#' A warning is given if \code{maxIter} is reached without convergence.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @export
+solveRRBLUPMV <- function(Y, X, M, maxIter = 1000L, tol = 1e-6) {
+    .Call(`_AlphaSimR_solveRRBLUPMV`, Y, X, M, maxIter, tol)
+}
+
+#' @title Solve Multivariate Model
+#'
+#' @description
+#' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}, where the
+#' random effects have covariance \eqn{V_u \otimes K} and the errors
+#' \eqn{V_e \otimes I}, with \eqn{V_u} and \eqn{V_e} the unstructured
+#' covariance matrices among the q traits. They are estimated by REML.
+#'
+#' @details
+#' The method is the one described for \code{\link{solveRRBLUPMV}}, with the
+#' kernel \eqn{ZKZ'} on the records in place of \eqn{MM'}
+#' \insertCite{zhou2014Efficient}{AlphaSimR}. K may be singular, and Z may
+#' map several records to one level. When there are fewer levels than
+#' records, K is factored as \eqn{K=FF'} and the method works with \eqn{ZF},
+#' so no matrix with n rows and n columns is formed.
+#'
+#' @param Y a matrix with n rows and q columns
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
+#' @param Z a matrix with n rows and m columns
+#' @param K a matrix with m rows and m columns
+#' @param tol tolerance for convergence
+#' @param maxIter maximum number of iterations
+#'
+#' @return A list containing
+#' \describe{
+#'   \item{Vu}{q by q covariance matrix of the random effects}
+#'   \item{Ve}{q by q covariance matrix of the errors}
+#'   \item{beta}{x by q matrix of fixed effects}
+#'   \item{u}{m by q matrix of random effects}
+#'   \item{LL}{the restricted log-likelihood
+#'     \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
+#'     \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
+#'     \eqn{\log|X'X|} term is excluded}
+#'   \item{iter}{number of iterations taken}
+#' }
+#' A warning is given if \code{maxIter} is reached without convergence.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @export
+solveMVM <- function(Y, X, Z, K, tol = 1e-6, maxIter = 1000L) {
+    .Call(`_AlphaSimR_solveMVM`, Y, X, Z, K, tol, maxIter)
+}
+
+#' @title Solve Univariate Model
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}, where
+#' \eqn{u \sim N(0,K\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+#' variance components are estimated by REML
+#' \insertCite{patterson1971Recovery}{AlphaSimR} using the spectral approach
+#' of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}, applied to
+#' \eqn{ZKZ'}. The fixed effects are the generalized least squares estimates
+#' and the random effects are the BLUPs \insertCite{henderson1975Best}{AlphaSimR},
+#' both at the estimated variance components.
+#'
+#' @details
+#' The decomposition is taken in whichever space is smaller. When there are
+#' fewer levels than records, \eqn{ZKZ'} is never formed: its nonzero
+#' eigenvalues are found from \eqn{K} and \eqn{Z'Z}, and the directions in
+#' which it is zero are summarized analytically. \eqn{K} may be singular,
+#' and records may repeat levels.
+#'
+#' @param y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns. Columns that are linearly
+#' dependent on the others are dropped and get a fixed effect of zero. An
+#' intercept, a column whose values are all the same, is always kept.
+#' @param Z a matrix with n rows and m columns
+#' @param K a positive semidefinite matrix with m rows and m columns.
+#' Eigenvalues that are negative only at rounding level are treated as zero.
+#'
+#' @return A list with the random effect variance \code{Vu}, the residual
+#' variance \code{Ve}, the fixed effects \code{beta}, the BLUPs \code{u} of
+#' the m levels, and the restricted log-likelihood \code{LL}. \code{LL} is
+#' \deqn{-\frac{1}{2}\left[(n-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py\right]}
+#' for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the rank of \eqn{X} and
+#' \eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}, with \eqn{X} reduced to
+#' the columns that are kept. It excludes the \eqn{\log|X'X|} term that some
+#' definitions include.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @export
+solveUVM <- function(y, X, Z, K) {
+    .Call(`_AlphaSimR_solveUVM`, y, X, Z, K)
 }
 
 packHaplo <- function(haplo, ploidy, inbred) {

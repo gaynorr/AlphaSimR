@@ -12,7 +12,18 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
                   long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
                   long long int* LIWORK, long long int* INFO);
 
-const double pi = 3.14159265358979323846;
+#include "mme.h"
+
+// Solvers defined in mmeMultiTrait.cpp and mmeMultiKernel.cpp. The defaults
+// repeat those of the definitions, which Rcpp reads to build the R
+// interface, so they are declared here rather than in mme.h, where the
+// defining files would see them twice.
+Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
+                         const arma::mat& M, int maxIter=1000,
+                         double tol=1e-6);
+Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
+                         arma::field<arma::mat>& Mlist,
+                         int maxIter=40);
 
 // Factorization of a mixed model coefficient matrix.
 //
@@ -91,61 +102,12 @@ private:
   bool hasTrace = true;
 };
 
-// Chooses between the two ways of solving a single trait RR-BLUP model when
-// the variance components are already known.
-//
-// Henderson's mixed model equations work with a square matrix of the fixed
-// effects plus the markers. Forming M'M costs about n*m^2 and factoring the
-// result about m^3/6, so the marker side costs roughly
-//
-//   n*m^2 + m^3/6
-//
-// The same model written on the records works with a square matrix of the
-// records, because M*M' and M'M share their nonzero eigenvalues. Forming
-// M*M' costs about n^2*m and factoring it about n^3/6, so the record side
-// costs roughly
-//
-//   n^2*m + n^3/6
-//
-// One expression is the other with n and m exchanged, so the smaller of the
-// two dimensions names the cheaper method and the crossover sits at n equal
-// to m whatever the shared constant on the factorization turns out to be.
-// Memory crosses over at the same place, since the two methods hold an n by n
-// and an m by m matrix respectively on top of the genotypes they share. The
-// costs are written out rather than reduced to a comparison of n against m so
-// that the reasoning is visible, and so that there is somewhere to put a
-// correction if the two sides ever stop being symmetric.
-inline bool useRecordSide(arma::uword n, arma::uword m){
-  const double dn = double(n), dm = double(m);
-  const double recordSide = dn*dn*dm + dn*dn*dn/6.0;
-  const double markerSide = dn*dm*dm + dm*dm*dm/6.0;
-  return recordSide < markerSide;
-}
-
-// Inverts a symmetric positive definite matrix and returns its log
-// determinant. One Cholesky factorization supplies both, so the determinant
-// that a REML likelihood needs costs nothing beyond the inverse itself.
-// Returns false if the matrix is not positive definite.
-inline bool invAndLogDet(arma::mat& out, double& logDet, const arma::mat& in){
-  arma::mat L;
-  if(!arma::chol(L, in, "lower")){
-    return false;
-  }
-  arma::mat Linv;
-  if(!arma::inv(Linv, arma::trimatl(L))){
-    return false;
-  }
-  logDet = 2.0*accu(log(L.diag()));
-  out = Linv.t()*Linv;
-  return true;
-}
-
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decomposition of large matrices
 // If calcVec = false, eigvec is not used
 // It would be better to template this function in the future
 int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
-           bool calcVec = true){
+           bool calcVec){
   char JOBZ;
   if(calcVec){
     JOBZ = 'V';
@@ -186,81 +148,6 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
   return INFO; // Return error code
-}
-
-// Objective function for REML using the EMMA algorithm
-Rcpp::List objREML(double param, Rcpp::List args){
-  double df = args["df"];
-  arma::vec eta = args["eta"];
-  arma::vec lambda = args["lambda"];
-  double value = df * log(sum(eta%eta/(lambda+param)));
-  value += sum(log(lambda+param));
-  return Rcpp::List::create(Rcpp::Named("objective") = value,
-                            Rcpp::Named("output") = 0);
-}
-
-// Objective function for REML using the EMMA algorithm, for a system whose
-// random effect is rank deficient. The eigenvalues that are zero are handled
-// analytically rather than being stored: nNull of them contribute
-// nNull*log(param) to the log determinant and Rnull/param to the quadratic
-// form. Setting Rnull and nNull to zero recovers objREML.
-Rcpp::List objREML2(double param, Rcpp::List args){
-  double df = args["df"];
-  arma::vec eta = args["eta"];
-  arma::vec lambda = args["lambda"];
-  double Rnull = args["Rnull"];
-  double nNull = args["nNull"];
-  double value = df * log(sum(eta%eta/(lambda+param)) + Rnull/param);
-  value += sum(log(lambda+param)) + nNull*log(param);
-  return Rcpp::List::create(Rcpp::Named("objective") = value,
-                            Rcpp::Named("output") = 0);
-}
-
-// Fit of the fixed effects at a given delta, shared by the FaST-LMM
-// objective below and by the final solve.
-struct FastLMMFit {
-  arma::vec beta;      // generalized least squares solution
-  double r = 0.0;      // (y-X*beta)'*H^-1*(y-X*beta)
-  double logDetH = 0.0; // log|H|
-  double logDetA = 0.0; // log|X'*H^-1*X|
-  bool ok = false;
-};
-
-// The mixed model variance is V = Vu*(M*M'+delta*I) = Vu*H. Writing the
-// spectral decomposition of M*M' as U*diag(s2)*U' together with a null space
-// of dimension nNull, any quadratic form splits into a part inside the span
-// of U and a part outside it,
-//
-//   a'*H^-1*b = sum_i at_i*bt_i/(s2_i+delta) + (a'*b-at'*bt)/delta
-//
-// for at = U'a and bt = U'b. The pieces outside the span do not depend on
-// delta and are supplied as yy0, Xy0 and XX0, so one decomposition serves
-// every value of delta and each evaluation is linear in the rank of M*M'.
-inline FastLMMFit fastLMMFit(double delta, const arma::vec& yt,
-                             const arma::mat& Xt, const arma::vec& s2,
-                             double yy0, const arma::vec& Xy0,
-                             const arma::mat& XX0, double nNull){
-  FastLMMFit out;
-  out.ok = false;
-  arma::vec dInv = 1.0/(s2+delta);
-  arma::mat XtD = Xt;
-  XtD.each_col() %= dInv;
-  arma::mat A = Xt.t()*XtD + XX0/delta;
-  A = 0.5*(A+A.t()); // rounding only
-  arma::vec b = XtD.t()*yt + Xy0/delta;
-  double c = accu(yt%yt%dInv) + yy0/delta;
-  arma::mat L;
-  if(!arma::chol(L, A, "lower")){
-    return out;
-  }
-  out.logDetA = 2.0*accu(log(L.diag()));
-  out.beta = arma::solve(arma::trimatu(L.t()),
-                         arma::solve(arma::trimatl(L), b));
-  out.r = c - accu(b%out.beta);
-  if(out.r<=0.0) out.r = arma::datum::eps;
-  out.logDetH = accu(log(s2+delta)) + nNull*log(delta);
-  out.ok = true;
-  return out;
 }
 
 // Objective function for REML using the FaST-LMM algorithm of Lippert et al.
@@ -304,9 +191,31 @@ Rcpp::List objREMLFastLMM(double param, Rcpp::List args){
 // of M*M', so the grid costs far less than the decomposition that precedes
 // it, and it guards against the search settling on a local optimum.
 double fastLMMDelta(Rcpp::List args){
-  const int nGrid = 100;
-  double logLower = log(1.0e-10);
-  double logUpper = log(1.0e10);
+  // delta = Ve/Vu carries the scale of the kernel, which is arbitrary:
+  // multiplying the kernel by c multiplies the optimal delta by c and leaves
+  // the fit unchanged. The search therefore runs from ten decades below the
+  // smallest positive eigenvalue to ten above the largest, rather than around
+  // one. A single average is not enough: a large eigenvalue whose direction
+  // is absorbed by the fixed effects would set the scale while the variance
+  // is estimated from the small ones, and the optimum could fall outside the
+  // range. Eigenvalues within rounding of zero are not positive for this
+  // purpose, since they would only widen the range.
+  arma::vec s2 = args["s2"];
+  double sMax = (s2.n_elem>0) ? s2.max() : 0.0;
+  double sMin = sMax;
+  double sTol = double(s2.n_elem)*arma::datum::eps*sMax;
+  for(arma::uword i=0; i<s2.n_elem; ++i){
+    if((s2(i)>sTol) && (s2(i)<sMin)) sMin = s2(i);
+  }
+  if(!(sMax>0.0) || !std::isfinite(sMax) || !(sMin>0.0)){
+    sMin = 1.0;
+    sMax = 1.0;
+  }
+  double logLower = log(1.0e-10)+log(sMin);
+  double logUpper = log(1.0e10)+log(sMax);
+  // Five grid points per decade, which is the density of the original
+  // twenty-decade grid of 100 points
+  int nGrid = std::max(100, int(std::ceil(5.0*(logUpper-logLower)/log(10.0)))+1);
   double step = (logUpper-logLower)/double(nGrid-1);
   int best = 0;
   double bestVal = 0.0;
@@ -365,12 +274,34 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 //' @title Solve RR-BLUP
 //'
 //' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using the
-//' EMMA algorithm \insertCite{kang2008Efficient}{AlphaSimR}.
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}, where
+//' \eqn{u \sim N(0,I\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+//' variance components are estimated by REML
+//' \insertCite{patterson1971Recovery}{AlphaSimR} using the factored spectral
+//' approach of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}.
+//'
+//' @details
+//' REML is reduced to a one dimensional search over delta, the ratio of the
+//' residual variance to the marker variance. FaST-LMM works with M*M' itself
+//' and re-estimates the fixed effects at every delta. One decomposition
+//' therefore supplies the likelihood, the generalized least squares solution
+//' for the fixed effects, and the BLUPs, and that decomposition is taken in
+//' whichever of the two spaces is smaller. When there are fewer markers than
+//' records the eigenvectors of M'*M serve in place of those of M*M', the rank
+//' deficient directions are summarized analytically, and no matrix larger
+//' than M is ever formed.
+//'
+//' This is an independent implementation of the published method. It shares
+//' no code with the FaST-LMM software distributed by Microsoft.
 //'
 //' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
+//' @param X a matrix with n rows and x columns. Columns that are linearly
+//' dependent on the others are dropped and get a fixed effect of zero. An
+//' intercept, a column whose values are all the same, is always kept.
 //' @param M a matrix with n rows and m columns
+//'
+//' @return A list with the marker variance \code{Vu}, the residual variance
+//' \code{Ve}, the fixed effects \code{beta} and the marker effects \code{u}.
 //'
 //' @references
 //' \insertAllCited{}
@@ -380,156 +311,33 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
   arma::uword m = M.n_cols;
+  if( (X.n_rows!=n) || (M.n_rows!=n) ){
+    Rcpp::stop("solveRRBLUP: y, X and M must have the same number of rows");
+  }
+  if(!y.is_finite() || !M.is_finite()){
+    Rcpp::stop("solveRRBLUP: y and M must not contain missing or infinite "
+               "values");
+  }
+  // Columns of X that depend on the others are dropped, and the fit uses Xr,
+  // an orthonormal basis for the span of the rest, so a badly scaled X costs
+  // no precision; see fixedDesign
+  const FixedDesign fd = fixedDesign(X);
+  if(fd.keep.n_elem==0){
+    Rcpp::stop("solveRRBLUP: X must have at least one nonzero column");
+  }
+  const arma::mat& Xr = fd.Q;
+  arma::uword q = Xr.n_cols;
+  if(q>=n){
+    Rcpp::stop("solveRRBLUP: the rank of X must be smaller than the number "
+               "of records");
+  }
   double df = double(n)-double(q);
 
-  arma::mat XtXi = inv_sympd(X.t()*X);
-  arma::vec yv = y.col(0);
-
-  // Response with the fixed effects absorbed, S*y for the projector
-  // S = I-X*(X'X)^-1*X'. S is never formed.
-  arma::vec Sy = yv - X*(XtXi*(X.t()*yv));
-  double ySy = accu(Sy%Sy);
-
-  // REML needs the nonzero eigenvalues of S*M*M'*S and the projections of
-  // S*y onto their eigenvectors. Note that S*M*M'*S = A*A' for A = S*M, and
-  // that A costs only O(n*q*m) because S is a projector, so neither M*M' nor
-  // a multiplication by S is needed to reach them.
-  arma::vec lambda; // nonzero eigenvalues
-  arma::vec eta;    // matching projections of S*y
-  arma::mat H;      // M*M', only formed when that branch needs it
-
-  if(m<n){
-    // A'*A and A*A' share their nonzero eigenvalues, so decompose the
-    // smaller of the two
-    arma::mat A = M - X*(XtXi*(X.t()*M));
-    arma::vec eigval(m);
-    arma::mat eigvec(m,m);
-    eigen2(eigval, eigvec, A.t()*A);
-    double maxEig = eigval.max();
-    if(maxEig<0.0) maxEig = 0.0;
-    arma::uvec keep = find(eigval>(double(m)*arma::datum::eps*maxEig));
-    if(keep.n_elem>arma::uword(df)) keep = keep.tail(arma::uword(df));
-    lambda = eigval(keep);
-    // The eigenvectors of A*A' are A*w/sqrt(lambda), so the projections
-    // follow from A'*S*y without ever forming them
-    eta = (eigvec.cols(keep).t()*(A.t()*Sy))/sqrt(lambda);
-  }else{
-    H = M*M.t();
-    // S*H*S expanded with P = X*(X'X)^-1*X'. Every term is O(q*n^2),
-    // against O(n^3) for two dense multiplications by S.
-    arma::mat G;
-    {
-      arma::mat PH = X*(XtXi*(X.t()*H));
-      G = H - PH - PH.t() + ((PH*X)*XtXi)*X.t();
-    }
-    arma::vec eigval(n);
-    arma::mat eigvec(n,n);
-    eigen2(eigval, eigvec, G);
-    G.reset();
-    double maxEig = eigval.max();
-    if(maxEig<0.0) maxEig = 0.0;
-    arma::uvec keep = find(eigval>(double(n)*arma::datum::eps*maxEig));
-    if(keep.n_elem>arma::uword(df)) keep = keep.tail(arma::uword(df));
-    lambda = eigval(keep);
-    eta = eigvec.cols(keep).t()*Sy;
-  }
-
-  // The remaining directions in the range of S have a zero eigenvalue. They
-  // are summarized by their count and their total sum of squares.
-  double Rnull = ySy-accu(eta%eta);
-  if(Rnull<0.0) Rnull = 0.0;
-  double nNull = df-double(lambda.n_elem);
-
-  // Estimate variances
-  Rcpp::List optRes = optimize(*objREML2,
-                               Rcpp::List::create(
-                                 Rcpp::Named("df")=df,
-                                 Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=lambda,
-                                 Rcpp::Named("Rnull")=Rnull,
-                                 Rcpp::Named("nNull")=nNull),
-                                 1.0e-10, 1.0e10);
-  double delta = optRes["parameter"];
-
-  // Solve the mixed model equations. V = M*M'+delta*I is applied to X and y
-  // without ever being inverted.
-  arma::mat VX, Vy;
-  if(m<n){
-    // Woodbury identity, so the largest matrix factorized is m by m
-    arma::mat C = M.t()*M;
-    C.diag() += delta;
-    arma::mat Ci = inv_sympd(C);
-    VX = (X - M*(Ci*(M.t()*X)))/delta;
-    Vy = (y - M*(Ci*(M.t()*y)))/delta;
-  }else{
-    H.diag() += delta;
-    arma::mat sol;
-    if(!solve(sol, H, join_rows(X,y))){
-      Rcpp::stop("solveRRBLUP: mixed model equations could not be solved");
-    }
-    VX = sol.cols(0,q-1);
-    Vy = sol.col(q);
-  }
-  arma::mat beta = solve(X.t()*VX, X.t()*Vy);
-  arma::mat u = M.t()*(Vy-VX*beta);
-
-  double Vu = (sum(eta%eta/(lambda+delta))+Rnull/delta)/df;
-  double Ve = delta*Vu;
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u);
-}
-
-//' @title Solve RR-BLUP with FaST-LMM
-//'
-//' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
-//' same arguments and returns the same values as \code{\link{solveRRBLUP}},
-//' but solves the mixed model equations using the factored spectral approach
-//' of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR} rather than the EMMA
-//' algorithm \insertCite{kang2008Efficient}{AlphaSimR}. It is intended as an
-//' eventual replacement for \code{\link{solveRRBLUP}}.
-//'
-//' @details
-//' Both algorithms reduce the mixed model to a one dimensional search over
-//' delta, the ratio of the residual variance to the marker variance. They
-//' differ in the decomposition they search over.
-//'
-//' EMMA works with the fixed effects projected out. It needs the nonzero
-//' eigenvalues of S*M*M'*S for the projector S, and then has to factorize
-//' M*M'+delta*I a second time to reach the solutions.
-//'
-//' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
-//' every delta. One decomposition therefore supplies the likelihood, the
-//' generalized least squares solution for the fixed effects, and the BLUPs,
-//' and that decomposition is taken in whichever of the two spaces is
-//' smaller. When there are fewer markers than records the eigenvectors of
-//' M'*M serve in place of those of M*M', the rank deficient directions are
-//' summarized analytically, and no matrix larger than M is ever formed.
-//'
-//' This is an independent implementation of the published method. It shares
-//' no code with the FaST-LMM software distributed by Microsoft.
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param M a matrix with n rows and m columns
-//'
-//' @references
-//' \insertAllCited{}
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
-                        const arma::mat& M){
-  arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
-  arma::uword m = M.n_cols;
-  double df = double(n)-double(q);
-
-  arma::vec yv = y.col(0);
+  // A least squares fit is taken off y and added back to the fixed effects
+  // at the end, which keeps a large mean from swamping the sums of squares
+  arma::mat b0;
+  arma::vec yv = removeLeastSquares(Xr, y, b0).col(0);
 
   arma::vec s2;  // eigenvalues of M*M' that are kept
   arma::vec yt;  // U'*y
@@ -547,13 +355,12 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
     // the larger follow from those of the smaller as U = M*V*diag(1/s). The
     // rotations below use that identity, so U itself is never formed.
     arma::vec Mty = M.t()*yv;
-    arma::mat MtX = M.t()*X;
+    arma::mat MtX = M.t()*Xr;
     arma::vec eigval(m);
     arma::mat eigvec(m,m);
     eigen2(eigval, eigvec, M.t()*M);
-    double maxEig = eigval.max();
-    if(maxEig<0.0) maxEig = 0.0;
-    arma::uvec keep = find(eigval>(double(m)*arma::datum::eps*maxEig));
+    double cutoff = rankCutoff(eigval.max(), n);
+    arma::uvec keep = find(eigval>cutoff);
     s2 = eigval(keep);
     arma::mat Vk = eigvec.cols(keep);
     arma::vec sInv = 1.0/sqrt(s2);
@@ -566,10 +373,18 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
     // contribution is the same for every delta apart from a factor of
     // 1/delta, so it is summarized here rather than being stored.
     nNull = double(n)-double(s2.n_elem);
-    yy0 = accu(yv%yv)-accu(yt%yt);
-    if(yy0<0.0) yy0 = 0.0;
-    Xy0 = X.t()*yv-Xt.t()*yt;
-    XX0 = X.t()*X-Xt.t()*Xt;
+    // The parts of y and X in the null space are formed before their cross
+    // products. Subtracting cross products instead, as in X'*X-Xt'*Xt, can
+    // leave XX0 slightly negative when X lies in the span of the kernel,
+    // and a tiny delta then turns that into a negative precision for the
+    // fixed effects. The projection on the span is applied through the
+    // rotated values already in hand, U*U'*v = M*Vk*diag(1/sqrt(s2))*(U'*v),
+    // where U'*v is yt or Xt.
+    arma::vec y0 = yv-M*(Vk*(sInv%yt));
+    arma::mat X0 = Xr-M*(Vk*(Xt.each_col()%sInv));
+    yy0 = arma::dot(y0, y0);
+    Xy0 = X0.t()*y0;
+    XX0 = X0.t()*X0;
   }else{
     // M*M' is the smaller of the two, and its decomposition spans all of
     // R^n, so there is no null space to account for
@@ -578,10 +393,10 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
     U.set_size(n,n);
     eigen2(eigval, U, K);
     K.reset();
-    eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+    eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
     s2 = eigval;
     yt = U.t()*yv;
-    Xt = U.t()*X;
+    Xt = U.t()*Xr;
   }
 
   Rcpp::List args = Rcpp::List::create(Rcpp::Named("df")=df,
@@ -603,9 +418,9 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
   // Solve the mixed model equations at the estimated delta
   FastLMMFit fit = fastLMMFit(delta, yt, Xt, s2, yy0, Xy0, XX0, nNull);
   if(!fit.ok){
-    Rcpp::stop("solveRRBLUP2: mixed model equations could not be solved");
+    Rcpp::stop("solveRRBLUP: mixed model equations could not be solved");
   }
-  arma::mat beta = fit.beta;
+  arma::mat beta = fixedEffectsFromBasis(fd, fit.beta+b0, X.n_cols);
 
   // The BLUPs are u = M'*H^-1*(y-X*beta), which the decomposition already
   // in hand applies without a second factorization
@@ -613,9 +428,21 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
   arma::vec etd = et/(s2+delta);
   arma::mat u;
   if(m<n){
-    arma::vec Mte = M.t()*(yv-X*fit.beta);
-    u = MtU*etd+(Mte-MtU*et)/delta;
+    // u is MtU*etd, the sqrt(s2) in MtU cancelling the 1/sqrt(s2) of the
+    // rotation. Eigenvectors of M'*M below the cutoff are given no effect:
+    // the likelihood was fitted with their eigenvalues set to zero, so the
+    // BLUPs are those of that same model. Along the kept ones the null
+    // space term M'*(I-U*U')*e is exactly zero, and forming it as
+    // M'*e-MtU*et would only leave rounding that 1/delta amplifies, which
+    // ruined the effects when delta was tiny, as for a response with almost
+    // no residual variation. Along the discarded ones 1/delta would also
+    // stand in for 1/(s+delta), which is far too large when delta is tiny.
+    u = MtU*etd;
   }else{
+    // An eigenvalue set to zero by the rank rule was fitted as having no
+    // genetic variance, so its direction gets no effect. Left in, it would
+    // carry a gain of 1/delta where the kernel itself implies 1/(s+delta).
+    etd.elem(find(s2==0.0)).zeros();
     u = M.t()*(U*etd);
   }
 
@@ -625,270 +452,6 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=beta,
                             Rcpp::Named("u")=u);
-}
-
-//' @title Solve Multivariate RR-BLUP
-//'
-//' @description
-//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Mu+e}
-//'
-//' @param Y a matrix with n rows and q columns
-//' @param X a matrix with n rows and x columns
-//' @param M a matrix with n rows and m columns
-//' @param tol tolerance for convergence
-//' @param maxIter maximum number of iterations
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
-                         const arma::mat& M, int maxIter=1000, 
-                         double tol=1e-6){
-  arma::uword n = Y.n_rows;
-  arma::uword m = Y.n_cols;
-  arma::vec eigval(n);
-  arma::mat eigvec(n,n);
-  eigen2(eigval, eigvec, M*M.t());
-  arma::mat Yt = Y.t()*eigvec;
-  arma::mat Xt = X.t()*eigvec;
-  arma::mat Vu = cov(Y)/2;
-  arma::mat Ve = Vu;
-  arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
-  arma::mat B = Yt*W; //BLUEs
-  // Eigenvalues at rounding level belong to the null space of the
-  // relationship matrix, where the genetic values are zero by
-  // construction, so they carry no information about Vu. They are left
-  // out of its update, which is averaged over the rest instead of over n.
-  // Dividing by them would give Inf*0 = NaN when one is exactly zero, as
-  // happens when there are fewer markers or levels than records.
-  double minEig = double(n)*eigval.max()*arma::datum::eps;
-  arma::uword rank = arma::accu(eigval>minEig);
-  if(rank==0){
-    Rcpp::stop("The relationship matrix has no positive eigenvalues");
-  }
-  arma::cube Hinv(m,m,n);
-  arma::mat tolEye = tol*arma::eye(m,m);
-  arma::mat Gt(m,n), sigma(m,m), BNew, 
-  VeNew(m,m), VuNew(m,m);
-  double denom, numer;
-  bool converging=true;
-  int iter=0;
-  while(converging){
-    ++iter;
-    VeNew.fill(0.0);
-    VuNew.fill(0.0);
-    // The same m by m inverse is needed again in the second loop and
-    // for the BLUPs, so it is formed once per iteration and kept
-    for(arma::uword i=0; i<n; ++i){
-      Hinv.slice(i) = inv_sympd(eigval(i)*Vu+Ve+tolEye);
-      Gt.col(i) = (eigval(i)*Vu)*Hinv.slice(i)*(Yt.col(i)-B*Xt.col(i));
-    }
-    BNew = (Yt - Gt)*W;
-    for(arma::uword i=0; i<n; ++i){
-      arma::mat lVu = eigval(i)*Vu;
-      sigma = lVu-lVu*Hinv.slice(i)*lVu;
-      arma::mat resid = Yt.col(i)-BNew*Xt.col(i)-Gt.col(i);
-      if(eigval(i)>minEig){
-        VuNew += 1.0/eigval(i)*(Gt.col(i)*Gt.col(i).t()+sigma);
-      }
-      VeNew += 1.0/double(n)*(resid*resid.t()+sigma);
-    }
-    VuNew /= double(rank);
-    denom = fabs(sum(Ve.diag()));
-    if(denom>0.0){
-      numer = fabs(sum(VeNew.diag()-Ve.diag()));
-      if((numer/denom)<tol) converging=false;
-    }
-    Ve = VeNew;
-    Vu = VuNew;
-    B = BNew;
-    if(iter>=maxIter){
-      Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
-      break;
-    }
-  }
-  // The BLUPs follow from the eigendecomposition already computed. The
-  // variance of vec(E) is (eigvec (x) I)*blockdiag(eigval_i*Vu+Ve)*
-  // (eigvec' (x) I), so its inverse is applied by rotating, solving each
-  // m by m block, and rotating back. The n*m by n*m matrix that the
-  // Kronecker form would build is never needed.
-  for(arma::uword i=0; i<n; ++i){
-    Hinv.slice(i) = inv_sympd(eigval(i)*Vu+Ve+tolEye);
-  }
-  arma::mat E = Y.t() - B*X.t();
-  arma::mat Et = E*eigvec;
-  arma::mat Wt(m,n);
-  for(arma::uword i=0; i<n; ++i){
-    Wt.col(i) = Hinv.slice(i)*Et.col(i);
-  }
-  arma::mat U = Vu*(Wt*eigvec.t())*M; //BLUPs
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=B.t(),
-                            Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("iter")=iter);
-}
-
-//' @title Solve Multikernel RR-BLUP
-//'
-//' @description
-//' Solves a univariate mixed model with multiple random effects.
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param Mlist a list of M matrices
-//' @param maxIter maximum number of iteration
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
-                         arma::field<arma::mat>& Mlist,
-                         int maxIter=40){
-  double tol = 1e-4;
-  double minVC = sqrt(2.2204460492503131e-016);
-  arma::uword k = Mlist.n_elem;
-  arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
-  double df = double(n)-double(q);
-  arma::field<arma::mat> V(k);
-  for(arma::uword i=0; i<k; ++i){
-    V(i) = Mlist(i)*Mlist(i).t();
-  }
-  // Choose once between forming the n by n products WQX*V(i) and working
-  // from the thin matrices in Mlist. Both give the same average information
-  // matrix, but the second is cheaper only when the number of columns is
-  // small relative to n, roughly below n/2, so the flop counts decide.
-  double denseCost=0.0, thinCost=0.0;
-  for(arma::uword i=0; i<k; ++i){
-    double mi = double(Mlist(i).n_cols);
-    denseCost += double(n)*double(n)*double(n);
-    thinCost += double(n)*double(n)*mi;
-    for(arma::uword j=i; j<k; ++j){
-      denseCost += double(n)*double(n);
-      thinCost += double(n)*mi*double(Mlist(j).n_cols);
-    }
-  }
-  bool useThin = thinCost<denseCost;
-  arma::field<arma::mat> C(k);
-  arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
-  arma::vec qvec(k+1), sigma(k+1);
-  arma::mat g(n,1);
-  double logdetV=0;
-  double rss, ldet, llik, llik0=0, deltaLlik, taper, 
-  value, sign;
-  bool invPass;
-  arma::field<arma::mat> T(k);
-  sigma.fill(var(y.col(0)));
-  int iter = 0;
-  while(true){
-    ++iter;
-    W0 = V(0)*sigma(0);
-    for(arma::uword i=1; i<k; ++i){
-      W0 += V(i)*sigma(i);
-    }
-    W0.diag() += sigma(k);
-    invPass = invAndLogDet(W,logdetV,W0);
-    if(!invPass){
-      W = pinv(W0);
-      log_det(value, sign, W0);
-      logdetV = value*sign;
-    }
-    WX = W*X;
-    WQX = W - WX*solve(X.t()*WX, WX.t());
-    g = WQX*y;
-    rss = as_scalar(y.t()*g);
-    sigma = sigma*(rss/df);
-    WQX = WQX*(df/rss);
-    g = g*(df/rss);
-    // WQX has rank n-q, so its ordinary determinant is zero and
-    // log_det cannot be used on it. What the likelihood needs is the
-    // product of its nonzero eigenvalues, which follows from
-    // |WQX|+ = |X'X|/(|V|*|X'V^-1*X|). The constant |X'X| is dropped
-    // because only changes in llik are used.
-    log_det(value, sign, X.t()*WX);
-    ldet = -logdetV - value*sign + df*log(df/rss);
-    llik = ldet/2 - df/2;
-    if(iter == 1) llik0 = llik;
-    deltaLlik = llik - llik0;
-    llik0 = llik;
-    // y'*T_i*WQX*y equals (WQX*y)'*V_i*(WQX*y), which is quadratic
-    // rather than cubic in n. A is symmetric, so only its upper
-    // triangle is computed, and WQX is symmetric, so the transposes
-    // that would each need a temporary n by n matrix are dropped.
-    if(useThin){
-      // V(i) = Mlist(i)*Mlist(i)', so every trace the average information
-      // matrix needs is reachable through C(i) = WQX*Mlist(i), without ever
-      // forming the n by n product WQX*V(i):
-      //   tr(WQX*V_i)         = accu(Mlist(i) % C(i))
-      //   tr(WQX*V_i*WQX*V_j) = accu(B % B) for B = Mlist(i).t()*C(j)
-      //   tr(WQX*V_i*WQX)     = accu(C(i) % C(i))
-      for(arma::uword i=0; i<k; ++i){
-        C(i) = WQX*Mlist(i);
-      }
-      for(arma::uword i=0; i<k; ++i){
-        qvec(i) = accu(square(Mlist(i).t()*g)) - accu(Mlist(i)%C(i));
-        for(arma::uword j=i; j<k; ++j){
-          arma::mat B = Mlist(i).t()*C(j);
-          A(i,j) = accu(B%B);
-          A(j,i) = A(i,j);
-        }
-        A(i,k) = accu(C(i)%C(i));
-        A(k,i) = A(i,k);
-      }
-    }else{
-      for(arma::uword i=0; i<k; ++i){
-        T(i) = WQX*V(i);
-      }
-      for(arma::uword i=0; i<k; ++i){
-        qvec(i) = as_scalar(g.t()*V(i)*g) - sum(T(i).diag());
-        for(arma::uword j=i; j<k; ++j){
-          A(i,j) = accu(T(i)%T(j).t());
-          A(j,i) = A(i,j);
-        }
-        A(i,k) = accu(T(i)%WQX);
-        A(k,i) = A(i,k);
-      }
-    }
-    A(k,k) = accu(WQX%WQX);
-    qvec(k) = as_scalar(g.t()*g) - sum(WQX.diag());
-    A = pinv(A);
-    qvec = A*qvec;
-    if(iter == 1){
-      taper = 0.5;
-    }else if(iter == 2){
-      taper = 0.7;
-    }else{
-      taper = 0.9;
-    }
-    sigma += taper*qvec;
-    while(sigma.min() < minVC){
-      sigma(sigma.index_min()) = minVC;
-    }
-    if((iter>1)&(fabs(deltaLlik)<tol*10)){
-      break;
-    }
-    if(max(abs(qvec)) < tol){
-      break;
-    }
-    if(iter >= maxIter){
-      Rf_warning("Reached maxIter without converging");
-      break;
-    }
-  }
-  arma::mat beta(q,1), ee(n,1);
-  arma::field<arma::mat> u(k);
-  beta = solve(X.t()*W*X,X.t()*W*y);
-  ee = y - X*beta;
-  for(arma::uword i=0; i<k; ++i){
-    u(i) = sigma(i)*Mlist(i).t()*W*ee;
-  }
-  arma::vec Vu(k), Ve(1);
-  Vu = sigma(arma::span(0,k-1));
-  Ve = sigma(k);
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("iter")=iter);
 }
 
 //' @title Solve RR-BLUP with EM
@@ -1406,7 +969,7 @@ arma::mat gramFromGeno(const arma::Mat<unsigned char>& M,
 }
 
 // Estimates the variance components by REML from a genotype cross product,
-// using the same FaST-LMM machinery as solveRRBLUP2. Only the variance
+// using the same FaST-LMM machinery as solveRRBLUP. Only the variance
 // components are worked out here; the marker effects are solved for
 // afterward, on the full data set.
 //
@@ -1423,8 +986,11 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   arma::mat U(n,n);
   eigen2(eigval, U, K);
   K.reset();
-  eigval.elem(find(eigval<0.0)).zeros(); // rounding only
-  arma::vec yt = U.t()*yv;
+  eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
+  // A least squares fit is taken off y, which leaves REML unchanged and
+  // keeps a large mean from swamping the sums of squares
+  arma::mat b0;
+  arma::vec yt = U.t()*removeLeastSquares(X, yv, b0).col(0);
   arma::mat Xt = U.t()*X;
   U.reset();
   // K spans all of R^n, so there is no null space to summarize
@@ -1497,7 +1063,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   // effects are always solved for on every record.
   //
   // Whichever of the two cross products is smaller is the one decomposed. If
-  // there are fewer markers than sampled records, solveRRBLUP2 is given the
+  // there are fewer markers than sampled records, solveRRBLUP is given the
   // sampled genotypes and takes the marker by marker route itself. Otherwise
   // the record by record cross product is built a panel at a time.
   if(estVarComp){
@@ -1514,7 +1080,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
           MSubCol[i] = xaPtr[Mcol[subset(i)]];
         }
       }
-      Rcpp::List varComp = solveRRBLUP2(ySub, XSub, MSub);
+      Rcpp::List varComp = solveRRBLUP(ySub, XSub, MSub);
       Vu = varComp["Vu"];
       Ve = varComp["Ve"];
     }else{
@@ -2153,366 +1719,4 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x,
     Rcpp::Named("Vu")=ans["Vu"],
     Rcpp::Named("Ve")=ans["Ve"]
   );
-}
-
-//' @title Solve Univariate Model
-//'
-//' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param Z a matrix with n rows and m columns
-//' @param K a matrix with m rows and m columns
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
-                    const arma::mat& Z, const arma::mat& K){
-  arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
-  double df = double(n)-double(q);
-  double offset = log(double(n));
-  
-  // Construct system of equations for eigendecomposition
-  arma::mat XtXi = inv_sympd(X.t()*X);
-  arma::mat ZK = Z*K;
-  arma::mat H = ZK*Z.t(); // Used later
-  H.diag() += offset;
-  // S*H*S for the projector S = I-X*(X'X)^-1*X', expanded in terms of
-  // P = X*(X'X)^-1*X'. Every term is O(q*n^2), against O(n^3) for two dense
-  // multiplications by S, and S itself never has to be formed.
-  arma::mat S;
-  {
-    arma::mat PH = X*(XtXi*(X.t()*H));
-    S = H - PH - PH.t() + ((PH*X)*XtXi)*X.t();
-  }
-  
-  // Compute eigendecomposition
-  arma::vec eigval(n);
-  arma::mat eigvec(n,n);
-  eigen2(eigval, eigvec, S);
-  S.reset();
-  
-  // Drop eigenvalues
-  eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
-  eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
-                  arma::span(q,eigvec.n_cols-1));
-  
-  // Estimate variances and solve equations
-  arma::vec eta = eigvec.t()*y;
-  Rcpp::List optRes = optimize(*objREML,
-                               Rcpp::List::create(
-                                 Rcpp::Named("df")=df,
-                                 Rcpp::Named("eta")=eta,
-                                 Rcpp::Named("lambda")=eigval),
-                                 1.0e-10, 1.0e10);
-  double delta = optRes["parameter"];
-  H.diag() += (delta-offset);
-  // V = Z*K*Z'+delta*I is applied to X and y rather than inverted. One
-  // factorization serves both, and V^-1*(y-X*beta) = Vy-VX*beta follows by
-  // linearity, so no second solve is needed.
-  arma::mat sol;
-  if(!solve(sol, H, join_rows(X,y))){
-    Rcpp::stop("solveUVM: mixed model equations could not be solved");
-  }
-  arma::mat VX = sol.cols(0,q-1);
-  arma::mat Vy = sol.col(q);
-  arma::mat beta = solve(X.t()*VX,X.t()*Vy);
-  arma::mat u = ZK.t()*(Vy-VX*beta);
-  double Vu = sum(eta%eta/(eigval+delta))/df;
-  double Ve = delta*Vu;
-  double ll = -0.5*(double(optRes["objective"])+df+df*log(2*pi/df));
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ll);
-}
-
-//' @title Solve Multivariate Model
-//'
-//' @description
-//' Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
-//'
-//' @param Y a matrix with n rows and q columns
-//' @param X a matrix with n rows and x columns
-//' @param Z a matrix with n rows and m columns
-//' @param K a matrix with m rows and m columns
-//' @param tol tolerance for convergence
-//' @param maxIter maximum number of iterations
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
-                    const arma::mat& Z, const arma::mat& K,
-                    double tol=1e-6, int maxIter=1000){
-  arma::uword n = Y.n_rows;
-  arma::uword m = Y.n_cols;
-  arma::mat ZK = Z*K;
-  arma::mat ZKZ = ZK*Z.t();
-  arma::vec eigval(n);
-  arma::mat eigvec(n,n);
-  eigen2(eigval, eigvec, ZKZ);
-  arma::mat Yt = Y.t()*eigvec;
-  arma::mat Xt = X.t()*eigvec;
-  arma::mat Vu = cov(Y)/2;
-  arma::mat Ve = Vu;
-  arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
-  arma::mat B = Yt*W; //BLUEs
-  // Eigenvalues at rounding level belong to the null space of the
-  // relationship matrix, where the genetic values are zero by
-  // construction, so they carry no information about Vu. They are left
-  // out of its update, which is averaged over the rest instead of over n.
-  // Dividing by them would give Inf*0 = NaN when one is exactly zero, as
-  // happens when there are fewer markers or levels than records.
-  double minEig = double(n)*eigval.max()*arma::datum::eps;
-  arma::uword rank = arma::accu(eigval>minEig);
-  if(rank==0){
-    Rcpp::stop("The relationship matrix has no positive eigenvalues");
-  }
-  arma::cube Hinv(m,m,n);
-  arma::mat tolEye = tol*arma::eye(m,m);
-  arma::mat Gt(m,n), sigma(m,m), BNew,
-  VeNew(m,m), VuNew(m,m);
-  double denom, numer;
-  bool converging=true;
-  int iter=0;
-  while(converging){
-    ++iter;
-    VeNew.fill(0.0);
-    VuNew.fill(0.0);
-    // The same m by m inverse is needed again in the second loop and
-    // for the BLUPs, so it is formed once per iteration and kept
-    for(arma::uword i=0; i<n; ++i){
-      Hinv.slice(i) = inv_sympd(eigval(i)*Vu+Ve+tolEye);
-      Gt.col(i) = (eigval(i)*Vu)*Hinv.slice(i)*(Yt.col(i)-B*Xt.col(i));
-    }
-    BNew = (Yt - Gt)*W;
-    for(arma::uword i=0; i<n; ++i){
-      arma::mat lVu = eigval(i)*Vu;
-      sigma = lVu-lVu*Hinv.slice(i)*lVu;
-      arma::mat resid = Yt.col(i)-BNew*Xt.col(i)-Gt.col(i);
-      if(eigval(i)>minEig){
-        VuNew += 1.0/eigval(i)*(Gt.col(i)*Gt.col(i).t()+sigma);
-      }
-      VeNew += 1.0/double(n)*(resid*resid.t()+sigma);
-    }
-    VuNew /= double(rank);
-    denom = fabs(sum(Ve.diag()));
-    if(denom>0.0){
-      numer = fabs(sum(VeNew.diag()-Ve.diag()));
-      if((numer/denom)<tol) converging=false;
-    }
-    Ve = VeNew;
-    Vu = VuNew;
-    B = BNew;
-    if(iter>=maxIter){
-      Rf_warning("Reached maxIter without converging");
-      break;
-    }
-  }
-  // The BLUPs follow from the eigendecomposition already computed. The
-  // variance of vec(E) is (eigvec (x) I)*blockdiag(eigval_i*Vu+Ve)*
-  // (eigvec' (x) I), so its inverse is applied by rotating, solving each
-  // m by m block, and rotating back. The n*m by n*m matrix that the
-  // Kronecker form would build is never needed.
-  for(arma::uword i=0; i<n; ++i){
-    Hinv.slice(i) = inv_sympd(eigval(i)*Vu+Ve+tolEye);
-  }
-  arma::mat E = Y.t() - B*X.t();
-  arma::mat Et = E*eigvec;
-  arma::mat Wt(m,n);
-  for(arma::uword i=0; i<n; ++i){
-    Wt.col(i) = Hinv.slice(i)*Et.col(i);
-  }
-  arma::mat U = Vu*(Wt*eigvec.t())*ZK; //BLUPs
-  //Log Likelihood calculation. The quadratic form is a sum over the
-  //rotated blocks, and the determinant of the Kronecker sum is the
-  //product of the determinants of those blocks.
-  double ll = -0.5*accu(Et%Wt) - double(n*m)/2.0*log(2*pi);
-  double value;
-  double sign;
-  for(arma::uword i=0; i<n; ++i){
-    log_det(value, sign, eigval(i)*Vu+Ve);
-    ll -= 0.5*value*sign;
-  }
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=B.t(),
-                            Rcpp::Named("u")=U.t(),
-                            Rcpp::Named("LL")=ll,
-                            Rcpp::Named("iter")=iter);
-}
-
-//' @title Solve Multikernel Model
-//'
-//' @description
-//' Solves a univariate mixed model with multiple random effects.
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param Zlist a list of Z matrices
-//' @param Klist a list of K matrices
-//' @param maxIter maximum number of iterations
-//' @param tol tolerance for convergence
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
-                    arma::field<arma::mat>& Zlist,
-                    arma::field<arma::mat>& Klist,
-                    int maxIter=40, double tol=1e-4){
-  arma::uword k = Klist.n_elem;
-  arma::uword n = y.n_rows;
-  arma::uword q = X.n_cols;
-  double df = double(n)-double(q);
-  arma::field<arma::mat> V(k);
-  for(arma::uword i=0; i<k; ++i){
-    V(i) = Zlist(i)*Klist(i)*Zlist(i).t();
-  }
-  // Choose once between forming the n by n products WQX*V(i) and working
-  // from Zlist and Klist. Both give the same average information matrix.
-  // The second carries extra products by Klist, so it only pays off when
-  // the number of columns is well below n, roughly below 0.4*n.
-  double denseCost=0.0, thinCost=0.0;
-  for(arma::uword i=0; i<k; ++i){
-    double mi = double(Klist(i).n_cols);
-    denseCost += double(n)*double(n)*double(n);
-    thinCost += double(n)*double(n)*mi + double(n)*mi*mi;
-    for(arma::uword j=i; j<k; ++j){
-      double mj = double(Klist(j).n_cols);
-      denseCost += double(n)*double(n);
-      thinCost += double(n)*mi*mj + mi*mi*mj + mi*mj*mj;
-    }
-  }
-  bool useThin = thinCost<denseCost;
-  arma::field<arma::mat> C(k);
-  arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
-  arma::vec qvec(k+1), sigma(k+1);
-  arma::mat g(n,1);
-  double logdetV=0;
-  double rss, ldet, llik, llik0=0, deltaLlik, taper,
-  value, sign;
-  bool invPass;
-  arma::field<arma::mat> T(k);
-  sigma.fill(var(y.col(0)));
-  int iter = 0;
-  while(true){
-    ++iter;
-    W0 = V(0)*sigma(0);
-    W0.diag() += sigma(k);
-    for(arma::uword i=1; i<k; ++i){
-      W0 += V(i)*sigma(i);
-    }
-    invPass = invAndLogDet(W,logdetV,W0);
-    if(!invPass){
-      W = pinv(W0);
-      log_det(value, sign, W0);
-      logdetV = value*sign;
-    }
-    WX = W*X;
-    WQX = W - WX*solve(X.t()*WX, WX.t());
-    g = WQX*y;
-    rss = as_scalar(y.t()*g);
-    sigma = sigma*(rss/df);
-    WQX = WQX*(df/rss);
-    g = g*(df/rss);
-    // WQX has rank n-q, so its ordinary determinant is zero and
-    // log_det cannot be used on it. What the likelihood needs is the
-    // product of its nonzero eigenvalues, which follows from
-    // |WQX|+ = |X'X|/(|V|*|X'V^-1*X|). The constant |X'X| is dropped
-    // because only changes in llik are used.
-    log_det(value, sign, X.t()*WX);
-    ldet = -logdetV - value*sign + df*log(df/rss);
-    llik = ldet/2 - df/2;
-    if(iter == 1) llik0 = llik;
-    deltaLlik = llik - llik0;
-    llik0 = llik;
-    // y'*T_i*WQX*y equals (WQX*y)'*V_i*(WQX*y), which is quadratic
-    // rather than cubic in n. A is symmetric, so only its upper
-    // triangle is computed, and WQX is symmetric, so the transposes
-    // that would each need a temporary n by n matrix are dropped.
-    if(useThin){
-      // V(i) = Zlist(i)*Klist(i)*Zlist(i)', so every trace the average
-      // information matrix needs is reachable through C(i) = WQX*Zlist(i)
-      // and D = Zlist(i).t()*C(j), without forming WQX*V(i):
-      //   tr(WQX*V_i)         = accu(Klist(i) % D_ii)
-      //   tr(WQX*V_i*WQX*V_j) = accu((D'*Klist(i)*D) % Klist(j))
-      //   tr(WQX*V_i*WQX)     = accu(Klist(i) % (C(i).t()*C(i)))
-      for(arma::uword i=0; i<k; ++i){
-        C(i) = WQX*Zlist(i);
-      }
-      for(arma::uword i=0; i<k; ++i){
-        arma::mat zg = Zlist(i).t()*g;
-        arma::mat Dii = Zlist(i).t()*C(i);
-        qvec(i) = as_scalar(zg.t()*Klist(i)*zg) - accu(Klist(i)%Dii);
-        A(i,i) = accu((Dii.t()*(Klist(i)*Dii))%Klist(i));
-        for(arma::uword j=i+1; j<k; ++j){
-          arma::mat Dij = Zlist(i).t()*C(j);
-          A(i,j) = accu((Dij.t()*(Klist(i)*Dij))%Klist(j));
-          A(j,i) = A(i,j);
-        }
-        A(i,k) = accu(Klist(i)%(C(i).t()*C(i)));
-        A(k,i) = A(i,k);
-      }
-    }else{
-      for(arma::uword i=0; i<k; ++i){
-        T(i) = WQX*V(i);
-      }
-      for(arma::uword i=0; i<k; ++i){
-        qvec(i) = as_scalar(g.t()*V(i)*g) - sum(T(i).diag());
-        for(arma::uword j=i; j<k; ++j){
-          A(i,j) = accu(T(i)%T(j).t());
-          A(j,i) = A(i,j);
-        }
-        A(i,k) = accu(T(i)%WQX);
-        A(k,i) = A(i,k);
-      }
-    }
-    A(k,k) = accu(WQX%WQX);
-    qvec(k) = as_scalar(g.t()*g) - sum(WQX.diag());
-    A = pinv(A);
-    qvec = A*qvec;
-    if(iter == 1){
-      taper = 0.5;
-    }else if(iter == 2){
-      taper = 0.7;
-    }else{
-      taper = 0.9;
-    }
-    sigma += taper*qvec;
-    while(sigma.min() < -(1e-6)){
-      sigma(sigma.index_min()) = -(1e-6);
-    }
-    if((iter > 1) & (fabs(deltaLlik) < tol*10)){
-      break;
-    }
-    if(max(abs(qvec)) < tol){
-      break;
-    }
-    if(iter >= maxIter){
-      Rf_warning("Reached maxIter without converging");
-      break;
-    }
-  }
-  while(sigma.min() < 0.0){
-    sigma(sigma.index_min()) = 0.0;
-  }
-  arma::mat beta(q,1), ee(n,1);
-  arma::field<arma::mat> u(k);
-  beta = solve(X.t()*W*X,X.t()*W*y);
-  ee = y - X*beta;
-  for(arma::uword i=0; i<k; ++i){
-    u(i) = (Klist(i)*sigma(i))*Zlist(i).t()*W*ee;
-  }
-  arma::vec Vu(k), Ve(1);
-  Vu = sigma(arma::span(0,k-1));
-  Ve = sigma(k);
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=beta,
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=llik,
-                            Rcpp::Named("iter")=iter);
 }

@@ -1142,7 +1142,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=20)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)
@@ -1726,7 +1726,9 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #'
 #' \code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
 #' smaller of the number of records and the number of markers, because a
-#' matrix and its transpose share their nonzero eigenvalues.
+#' matrix and its transpose share their nonzero eigenvalues. Fitted to several
+#' traits, it does the same with a thin singular value decomposition of the
+#' markers when they are fewer than the records.
 #'
 #' The numbered models set up Henderson's mixed model equations, whose
 #' coefficient matrix is square with dimensions equal to the number of fixed
@@ -1743,9 +1745,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' useEM, and with useEM false it grows with the number of records once the
 #' markers outnumber them.
 #'
-#' The GCA, SCA and dominance models fit more than one random effect and hold
-#' a square matrix of the number of records for each, which makes them the
-#' most demanding of the set.
+#' The GCA, SCA and dominance models fit more than one random effect. They
+#' work with whichever of two forms is cheaper: a square matrix of the
+#' records, holding several of them when there are more marker effects than
+#' records, or Henderson's equations, whose coefficient matrix grows with the
+#' number of marker effects, when there are fewer. They are the most
+#' demanding of the set when the marker effects outnumber the records.
 #'
 #' @return Returns an estimate for the required gigabytes of RAM
 #'
@@ -1798,16 +1803,36 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     }
   }else if(model=="RRBLUP"){
     if(nT>1){
-      # Rotation by the eigenvectors of the record cross product, plus one
-      # small inverse per record
-      doubles = n*m+3*n^2+nT^2*n
+      # The Newton steps of the REML fit work with square matrices over the
+      # t*(t+1) parameters of Vu and Ve, which grow with the fourth power of
+      # the number of traits: the average information, the Jacobian and
+      # curvature of the Cholesky parameterization, the Hessian and a
+      # product formed on the way to it, the Hessian's eigenvectors and the
+      # eigensolver's workspace
+      optimDoubles = 8*(nT*(nT+1))^2
+      # The fixed effects: each likelihood evaluation holds a q by q inverse
+      # per trait, and the current and trial points coexist, with a few
+      # q by q temporaries and copies of the fixed design on the records,
+      # its orthonormal basis, its rotation and its part in the null space
+      fixDoubles = 2*nT*q^2+4*q^2+5*n*q
+      if(m<n){
+        # Rotation by a thin singular value decomposition of the dosages,
+        # which holds the left singular vectors twice while the ones that
+        # are kept are copied out, plus one small inverse per record
+        doubles = 4*n*m+nT^2*n+optimDoubles+fixDoubles
+      }else{
+        # Rotation by the eigenvectors of the record cross product, which
+        # is held, symmetrized and decomposed
+        doubles = n*m+4*n^2+nT^2*n+optimDoubles+fixDoubles
+      }
     }else if(m<n){
-      # Decomposition over markers, with the fixed effects projected out of
-      # a second copy of the dosages
-      doubles = 2*n*m+3*m^2
+      # Decomposition of the marker cross product, which is copied into the
+      # eigensolver, with its eigenvectors and two matrices derived from them
+      doubles = n*m+5*m^2
     }else{
-      # Decomposition over records
-      doubles = n*m+4*n^2
+      # Decomposition of the record cross product, which is copied into the
+      # eigensolver, with its eigenvectors
+      doubles = n*m+3*n^2
     }
   }else if(model=="RRBLUP2"){
     if(useEM | (m<=n)){
@@ -1827,7 +1852,20 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     }
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
     nKernel = if(model=="RRBLUP_SCA") 3 else 2
-    if(m<n){
+    # The solver works with whichever of the variance matrix of the records
+    # and Henderson's equations is cheaper, and chooses by the same costs as
+    # useCoefficientSide in src/mme.h
+    nCoef = q+nKernel*m
+    nEval = 10
+    recordCost = nEval*(n^3+n^2*nCoef)
+    coefCost = n*nCoef^2+nEval*(nCoef^3+n*nCoef*(nKernel+2))
+    if(coefCost<recordCost){
+      # Henderson's equations: a copy of the dosages as the design of all
+      # the effects, its cross product, and the coefficient matrix with the
+      # Cholesky factors of the current and trial points and the inverse of
+      # a factor
+      doubles = 2*nKernel*n*m+5*nCoef^2
+    }else if(m<n){
       # The average information matrix is reached through the dosages
       doubles = 2*nKernel*n*m+(nKernel+3)*n^2
     }else{

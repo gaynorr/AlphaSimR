@@ -9,7 +9,9 @@ solveMKM(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-04)
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{Zlist}{a list of Z matrices}
 
@@ -19,6 +21,52 @@ solveMKM(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-04)
 
 \item{tol}{tolerance for convergence}
 }
+\value{
+A list with the variance components \code{Vu} (one per random
+term) and \code{Ve}, the fixed effects \code{beta}, a list \code{u} of
+BLUPs for each random term, the restricted log-likelihood \code{LL} at
+the estimates, and the number of iterations \code{iter}. \code{LL} is
+\eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
+where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+}
 \description{
-Solves a univariate mixed model with multiple random effects.
+Solves a univariate mixed model with multiple random effects,
+\eqn{y = X\beta + \sum_i Z_i u_i + e}, where \eqn{u_i} has covariance
+\eqn{K_i V_{u_i}} and \eqn{e} has covariance \eqn{I V_e}. The variance
+components are estimated by average information REML
+\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}.
+}
+\details{
+The model is fitted in whichever of two equivalent ways is cheaper. When
+the random terms have more levels in total than there are records, it
+works with the variance matrix of the records,
+\eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}. Otherwise it works with
+Henderson's mixed model equations, writing each \eqn{K_i} as
+\eqn{F_i F_i'} over its positive eigenvalues, so a singular \eqn{K_i} is
+allowed. Both give the same estimates; only the time and memory they need
+differ. Each \eqn{K_i} must be positive semidefinite.
+
+Iteration starts with half of the residual variance from a least
+squares fit of X assigned to the error and half shared equally among
+the random terms. A step that would lower the likelihood is halved, and
+an EM-REML step is used if halving does not help. Variance components
+are kept non-negative: a component that reaches zero stays there for as
+long as the likelihood would fall by increasing it. Iteration stops when
+the change in log-likelihood and the relative change in the variance
+components are both below \code{tol}, and a warning is given if
+\code{maxIter} is reached first.
+}
+\examples{
+set.seed(1)
+n = 50
+M = matrix(rnorm(n*20), n)
+K = tcrossprod(M)/20
+y = M\%*\%rnorm(20, sd=0.3) + rnorm(n)
+Z = diag(n)
+ans = solveMKM(y, matrix(1, n, 1), list(Z, Z), list(K, diag(n)))
+ans$Vu
+
+}
+\references{
+\insertAllCited{}
 }

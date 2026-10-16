@@ -9,7 +9,9 @@ solveMVM(Y, X, Z, K, tol = 1e-06, maxIter = 1000L)
 \arguments{
 \item{Y}{a matrix with n rows and q columns}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{Z}{a matrix with n rows and m columns}
 
@@ -19,6 +21,35 @@ solveMVM(Y, X, Z, K, tol = 1e-06, maxIter = 1000L)
 
 \item{maxIter}{maximum number of iterations}
 }
+\value{
+A list containing
+\describe{
+  \item{Vu}{q by q covariance matrix of the random effects}
+  \item{Ve}{q by q covariance matrix of the errors}
+  \item{beta}{x by q matrix of fixed effects}
+  \item{u}{m by q matrix of random effects}
+  \item{LL}{the restricted log-likelihood
+    \eqn{-\frac{1}{2}[(N-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py]} of
+    \eqn{y=vec(Y)}, where N is nq, p is q times the rank of X and the
+    \eqn{\log|X'X|} term is excluded}
+  \item{iter}{number of iterations taken}
+}
+A warning is given if \code{maxIter} is reached without convergence.
+}
 \description{
-Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}
+Solves a multivariate mixed model of form \eqn{Y=X\beta+Zu+e}, where the
+random effects have covariance \eqn{V_u \otimes K} and the errors
+\eqn{V_e \otimes I}, with \eqn{V_u} and \eqn{V_e} the unstructured
+covariance matrices among the q traits. They are estimated by REML.
+}
+\details{
+The method is the one described for \code{\link{solveRRBLUPMV}}, with the
+kernel \eqn{ZKZ'} on the records in place of \eqn{MM'}
+\insertCite{zhou2014Efficient}{AlphaSimR}. K may be singular, and Z may
+map several records to one level. When there are fewer levels than
+records, K is factored as \eqn{K=FF'} and the method works with \eqn{ZF},
+so no matrix with n rows and n columns is formed.
+}
+\references{
+\insertAllCited{}
 }

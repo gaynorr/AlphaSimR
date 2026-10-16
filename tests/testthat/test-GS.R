@@ -311,6 +311,29 @@ test_that("RRBLUPMemUse answers for every model it accepts", {
   }
 })
 
+test_that("RRBLUPMemUse counts the multiple trait optimizer", {
+  # The Newton steps hold several square matrices over the t*(t+1)
+  # parameters of Vu and Ve, so with many traits they outweigh a small data
+  # set. Four of them at 50 traits are already 0.21 GB.
+  nPar = 50*51
+  floorGB = 4*8*nPar^2/10^9
+  for(m in c(50, 500)){
+    expect_gt(RRBLUPMemUse(nInd=200, nMarker=m, nTraits=50), floorGB)
+  }
+})
+
+test_that("RRBLUPMemUse counts the multiple trait fixed effects", {
+  # Each likelihood evaluation holds a q by q inverse per trait, and the
+  # current and trial points coexist, so 500 fixed effects on two traits
+  # need at least 8 MB on either decomposition
+  floorGB = 2*2*8*500^2/10^9
+  for(m in c(10, 2000)){
+    few = RRBLUPMemUse(nInd=1000, nMarker=m, nTraits=2, nFixEff=1)
+    many = RRBLUPMemUse(nInd=1000, nMarker=m, nTraits=2, nFixEff=500)
+    expect_gt(many - few, floorGB)
+  }
+})
+
 test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # Estimating variance components holds one more square matrix
   withEM = RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP2", useEM=TRUE)
@@ -330,6 +353,22 @@ test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # near the smaller of the two dimensions
   expect_lt(RRBLUPMemUse(nInd=500, nMarker=5000, model="RRBLUP"),
             RRBLUPMemUse(nInd=5000, nMarker=5000, model="RRBLUP"))
+})
+
+test_that("RRBLUPMemUse follows the multikernel models to Henderson's equations", {
+  # With far more records than marker effects the dominance, GCA and SCA
+  # models hold no square matrix of the records, so doubling the records
+  # roughly doubles the estimate rather than quadrupling it
+  for(m in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+    small = RRBLUPMemUse(nInd=20000, nMarker=500, model=m)
+    large = RRBLUPMemUse(nInd=40000, nMarker=500, model=m)
+    expect_lt(large/small, 2.5, label=m)
+  }
+  # With more marker effects than records they hold square matrices of the
+  # records, which grow with the square of the records
+  small = RRBLUPMemUse(nInd=1000, nMarker=5000, model="RRBLUP_SCA")
+  large = RRBLUPMemUse(nInd=2000, nMarker=5000, model="RRBLUP_SCA")
+  expect_gt(large/small, 2.5)
 })
 
 test_that("models can be fitted on values other than phenotypes", {
