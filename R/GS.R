@@ -1719,8 +1719,9 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' The models differ in what they have to hold in memory, and the differences
 #' are large enough to decide which one is usable.
 #'
-#' \code{\link{fastRRBLUP}} keeps the genotypes as one byte per locus and
-#' iterates over them, so it holds no square matrix at all. Its estimate is
+#' \code{\link{fastRRBLUP}} reads the genotypes as one byte per locus, then
+#' frees them and iterates over a copy packed to one bit per allele, so it
+#' holds no square matrix at all. Its estimate is
 #' dominated by the genotypes themselves and by the subset of records used
 #' for the variance components.
 #'

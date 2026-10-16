@@ -857,27 +857,109 @@ Rcpp::List solveRRBLUP_EM3(const arma::mat& Y, const arma::mat& X,
                             Rcpp::Named("iter")=iter);
 }
 
-// Applies the centered genotype matrix to a vector, t = Mc*p.
+// The conjugate gradient iteration reads the marker genotypes twice per
+// iteration, and at one byte per marker those reads are limited by memory
+// bandwidth. The iteration therefore works from a copy packed to one bit per
+// allele: marker j of the chip is bit j%8 of column j/8, and row i*P+h holds
+// haplotype h of individual i, so an individual's haplotypes sit next to each
+// other. For a diploid this is a quarter of the size of the dosage matrix.
+// Bits past the last marker are zero.
 //
-// The dosages are never held anywhere. A column of M is one byte per record
-// and is turned into a dosage by a lookup as it is read, which is what keeps
-// the memory used by the solver close to the size of the genotypes.
+// The copy is built a tile of individuals at a time. Markers that are close
+// together in the genome then share the cache lines read for the tile, and
+// each block writes only its own rows, so the result does not depend on the
+// number of threads.
+arma::Mat<unsigned char> packChipPlanes(const PackedGeno& g, const LociPos& pos,
+                                        int nThreads){
+  arma::uword ploidy = g.ploidy;
+  arma::uword nInd = g.nInd;
+  arma::uword nLoci = pos.base.size();
+  arma::uword nCol = (nLoci+7)/8;
+  arma::uword nRow = nInd*ploidy;
+  arma::Mat<unsigned char> planes(nRow,nCol);
+  const arma::uword kPackTile = 64;
+  arma::uword nBlocks = countBlocks(nInd);
+  if(nBlocks < static_cast<arma::uword>(nThreads)){
+    nThreads = static_cast<int>(nBlocks);
+  }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword indStart = blockStart(nInd, nBlocks, block);
+    arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+    for(arma::uword t0=indStart; t0<indEnd; t0+=kPackTile){
+      arma::uword t1 = std::min(t0+kPackTile, indEnd);
+      for(arma::uword c=0; c<nCol; ++c){
+        arma::uword jEnd = std::min(8*c+8, nLoci);
+        unsigned char* col = planes.colptr(c);
+        for(arma::uword i=t0; i<t1; ++i){
+          for(arma::uword h=0; h<ploidy; ++h){
+            unsigned int b = 0;
+            for(arma::uword j=8*c; j<jEnd; ++j){
+              const unsigned char* p = pos.base[j]+pos.indStride(j)*i+
+                pos.hapStride(j)*h;
+              b |= ((unsigned int) ((*p>>pos.bit(j)) & 1u))<<(j-8*c);
+            }
+            col[i*ploidy+h] = (unsigned char) b;
+          }
+        }
+      }
+    }
+  }
+  return planes;
+}
+
+// Applies the centered genotype matrix to a vector, t = Mc*p, from the
+// packed copy of the genotypes.
 //
-// Centering is a rank one correction, Mc*p = M*p - 1*(mean'p), so no centered
-// copy of the genotypes is needed either.
+// The additive coding of a dosage x at ploidy P is (2/P)*x-1, which is a sum
+// over haplotypes of 2/P per allele carried, less one. Centering takes Mmean
+// off as well, so Mc*p is the sum of (2/P)*p_j over the alleles an individual
+// carries, less the constant sum of (1+Mmean_j)*p_j, which is passed in as
+// offset. Each half of a column covers four markers, and a table over the
+// sixteen bit patterns of those four markers turns one haplotype's half byte
+// into its contribution with one lookup, as gvByTable does for genetic
+// values. The tables cost one addition per entry and are rebuilt for every
+// product.
 //
-// The work is split over blocks of records. A block owns its own part of t,
-// so nothing is accumulated across threads and the result does not depend on
-// how many threads are used.
-void multMc(arma::vec& t, const arma::Mat<unsigned char>& M,
-            const double* xaPtr, const arma::rowvec& Mmean,
-            const arma::vec& p, int nThreads){
-  arma::uword nInd = M.n_rows;
-  arma::uword nLoci = M.n_cols;
+// The work is split over blocks of records. A block owns its own part of t
+// and every record sums the columns in order, so nothing is accumulated
+// across threads and the result does not depend on how many threads are
+// used.
+void multMc(arma::vec& t, const arma::Mat<unsigned char>& planes,
+            arma::uword ploidy, const arma::vec& offset,
+            const arma::vec& p, arma::mat& tabs, int nThreads){
+  arma::uword nRow = planes.n_rows;
+  arma::uword nInd = nRow/ploidy;
+  arma::uword nCol = planes.n_cols;
+  arma::uword nLoci = p.n_elem;
+  double alleleScale = 2.0/double(ploidy);
   const double* pPtr = p.memptr();
   double shift = 0.0;
   for(arma::uword j=0; j<nLoci; ++j){
-    shift += Mmean(j)*pPtr[j];
+    shift += offset(j)*pPtr[j];
+  }
+  // Each table entry is the entry with its lowest set bit cleared plus that
+  // bit's value. The low half byte's table is rows 0 to 15 of a column and
+  // the high half byte's is rows 16 to 31.
+  for(arma::uword c=0; c<nCol; ++c){
+    double v[8];
+    for(arma::uword b=0; b<8; ++b){
+      arma::uword j = 8*c+b;
+      v[b] = (j<nLoci) ? alleleScale*pPtr[j] : 0.0;
+    }
+    double* tab = tabs.colptr(c);
+    for(arma::uword half=0; half<2; ++half){
+      double* tb = tab+16*half;
+      const double* vb = v+4*half;
+      tb[0] = 0.0;
+      for(unsigned int q=1; q<16; ++q){
+        unsigned int low = q & (0u-q);
+        unsigned int bit = (low==1u) ? 0 : ((low==2u) ? 1 : ((low==4u) ? 2 : 3));
+        tb[q] = tb[q & (q-1u)]+vb[bit];
+      }
+    }
   }
   double* tPtr = t.memptr();
   arma::uword nBlocks = countBlocks(nInd);
@@ -893,32 +975,57 @@ void multMc(arma::vec& t, const arma::Mat<unsigned char>& M,
     for(arma::uword i=indStart; i<indEnd; ++i){
       tPtr[i] = -shift;
     }
-    for(arma::uword j=0; j<nLoci; ++j){
-      const unsigned char* Mcol = M.colptr(j);
-      double pj = pPtr[j];
-      for(arma::uword i=indStart; i<indEnd; ++i){
-        tPtr[i] += xaPtr[Mcol[i]]*pj;
+    for(arma::uword c=0; c<nCol; ++c){
+      const unsigned char* col = planes.colptr(c);
+      const double* tab = tabs.colptr(c);
+      if(ploidy==2){
+        // The common case is written out so that it has no haplotype loop
+        for(arma::uword i=indStart; i<indEnd; ++i){
+          unsigned int b0 = col[2*i], b1 = col[2*i+1];
+          tPtr[i] += (tab[b0 & 15u]+tab[16+(b0>>4)])+
+            (tab[b1 & 15u]+tab[16+(b1>>4)]);
+        }
+      }else{
+        for(arma::uword i=indStart; i<indEnd; ++i){
+          double s = 0.0;
+          for(arma::uword h=0; h<ploidy; ++h){
+            unsigned int b = col[i*ploidy+h];
+            s += tab[b & 15u]+tab[16+(b>>4)];
+          }
+          tPtr[i] += s;
+        }
       }
     }
   }
 }
 
-// Applies the transpose of the centered genotype matrix, w = Mc'*t.
+// Applies the transpose of the centered genotype matrix, w = Mc'*t, from the
+// packed copy of the genotypes.
 //
-// Split over blocks of loci. A block works out its own entries of w from its
-// own columns of M, so again nothing is accumulated across threads.
-void multMcT(arma::vec& w, const arma::Mat<unsigned char>& M,
-             const double* xaPtr, const arma::rowvec& Mmean,
+// For each half of a column, the values of t are added into sixteen bins
+// chosen by each haplotype's bit pattern, and a marker's sum is then the sum
+// of the eight bins whose pattern has its bit set. Records alternate between
+// two sets of bins, and in a diploid so do the two haplotypes, so that
+// consecutive additions rarely wait on the same bin. The sets are merged in a
+// fixed order. The coding and centering are applied as in multMc.
+//
+// Split over blocks of columns. A block works out its own entries of w from
+// its own columns, so again nothing is accumulated across threads.
+void multMcT(arma::vec& w, const arma::Mat<unsigned char>& planes,
+             arma::uword ploidy, const arma::vec& offset,
              const arma::vec& t, int nThreads){
-  arma::uword nInd = M.n_rows;
-  arma::uword nLoci = M.n_cols;
+  arma::uword nRow = planes.n_rows;
+  arma::uword nInd = nRow/ploidy;
+  arma::uword nCol = planes.n_cols;
+  arma::uword nLoci = w.n_elem;
+  double alleleScale = 2.0/double(ploidy);
   const double* tPtr = t.memptr();
   double tSum = 0.0;
   for(arma::uword i=0; i<nInd; ++i){
     tSum += tPtr[i];
   }
   double* wPtr = w.memptr();
-  arma::uword nBlocks = countBlocks(nLoci);
+  arma::uword nBlocks = countBlocks(nCol);
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
@@ -926,15 +1033,70 @@ void multMcT(arma::vec& w, const arma::Mat<unsigned char>& M,
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword block=0; block<nBlocks; ++block){
-    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-    for(arma::uword j=lociStart; j<lociEnd; ++j){
-      const unsigned char* Mcol = M.colptr(j);
-      double dot = 0.0;
-      for(arma::uword i=0; i<nInd; ++i){
-        dot += xaPtr[Mcol[i]]*tPtr[i];
+    arma::uword colStart = blockStart(nCol, nBlocks, block);
+    arma::uword colEnd = blockStart(nCol, nBlocks, block+1);
+    // Four sets of 32 bins: the low half byte's bins, then the high's
+    double bins[4][32];
+    for(arma::uword c=colStart; c<colEnd; ++c){
+      const unsigned char* col = planes.colptr(c);
+      for(arma::uword s=0; s<4; ++s){
+        for(arma::uword q=0; q<32; ++q){
+          bins[s][q] = 0.0;
+        }
       }
-      wPtr[j] = dot-Mmean(j)*tSum;
+      if(ploidy==2){
+        arma::uword i = 0;
+        for(; i+1<nInd; i+=2){
+          double t0 = tPtr[i], t1 = tPtr[i+1];
+          unsigned int a0 = col[2*i], a1 = col[2*i+1];
+          unsigned int b0 = col[2*i+2], b1 = col[2*i+3];
+          bins[0][a0 & 15u] += t0;
+          bins[0][16+(a0>>4)] += t0;
+          bins[1][a1 & 15u] += t0;
+          bins[1][16+(a1>>4)] += t0;
+          bins[2][b0 & 15u] += t1;
+          bins[2][16+(b0>>4)] += t1;
+          bins[3][b1 & 15u] += t1;
+          bins[3][16+(b1>>4)] += t1;
+        }
+        if(i<nInd){
+          double t0 = tPtr[i];
+          unsigned int a0 = col[2*i], a1 = col[2*i+1];
+          bins[0][a0 & 15u] += t0;
+          bins[0][16+(a0>>4)] += t0;
+          bins[1][a1 & 15u] += t0;
+          bins[1][16+(a1>>4)] += t0;
+        }
+      }else{
+        for(arma::uword i=0; i<nInd; ++i){
+          double ti = tPtr[i];
+          double* bi = bins[2*(i & 1u)];
+          for(arma::uword h=0; h<ploidy; ++h){
+            unsigned int b = col[i*ploidy+h];
+            bi[b & 15u] += ti;
+            bi[16+(b>>4)] += ti;
+          }
+        }
+      }
+      double merged[32];
+      for(arma::uword q=0; q<32; ++q){
+        merged[q] = (bins[0][q]+bins[1][q])+(bins[2][q]+bins[3][q]);
+      }
+      for(arma::uword b=0; b<8; ++b){
+        arma::uword j = 8*c+b;
+        if(j>=nLoci){
+          break;
+        }
+        const double* mb = merged+16*(b/4);
+        unsigned int bit = 1u<<(b%4);
+        double sum = 0.0;
+        for(unsigned int q=1; q<16; ++q){
+          if(q & bit){
+            sum += mb[q];
+          }
+        }
+        wPtr[j] = alleleScale*sum-offset(j)*tSum;
+      }
     }
   }
 }
@@ -1171,6 +1333,14 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
     }
   }
   
+  // The dosages have done their job. The iteration works from a copy of the
+  // markers packed to one bit per allele, built only once M has been freed,
+  // so the most memory held at once is still M's.
+  M.reset();
+  arma::Mat<unsigned char> planes = packChipPlanes(g, pos, nThreads);
+  arma::vec offset = 1.0+Mmean.t();
+  arma::mat tabs(32,planes.n_cols);
+
   // Preconditioned conjugate gradient. Every iteration is one product with
   // the coefficient matrix, taken as Mc'*(S*(Mc*p))+lambda*p, so the matrix
   // itself is never formed. The vectors below are the only working memory
@@ -1184,9 +1354,9 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   double rz = dot(r,z);
   bool converged = (rNorm0<=0.0);
   for(arma::uword iter=0; (iter<maxIter)&&(!converged); ++iter){
-    multMc(t, M, xaPtr, Mmean, pDir, nThreads);
+    multMc(t, planes, ploidy, offset, pDir, tabs, nThreads);
     t -= Xfix*(XtXi*(Xfix.t()*t)); // S*t
-    multMcT(Ap, M, xaPtr, Mmean, t, nThreads);
+    multMcT(Ap, planes, ploidy, offset, t, nThreads);
     Ap += lambda*pDir;
     double pAp = dot(pDir,Ap);
     if(pAp<=0.0){
@@ -1212,7 +1382,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   }
   
   // Fixed effects, recovered from the solution
-  multMc(t, M, xaPtr, Mmean, u, nThreads);
+  multMc(t, planes, ploidy, offset, u, tabs, nThreads);
   arma::vec beta = XtXi*(Xfix.t()*(y-t));
   
   return Rcpp::List::create(Rcpp::Named("alpha")=u,
