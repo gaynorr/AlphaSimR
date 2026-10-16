@@ -263,6 +263,65 @@ test_that("SAME fit for an incidence Z as for an equivalent general Z", {
   expect_true(all(a$u[41:60]!=0))
 })
 
+test_that("REJECT missing or infinite values instead of dropping a covariate", {
+  set.seed(25)
+  n = 20
+  y = matrix(rnorm(n), ncol=1)
+  x = rnorm(n)
+  x[3] = NA
+  Z = makeZ(n, 4)
+  M = matrix(sample(0:2, n*5, replace=TRUE), n, 5)
+  expect_error(solveUVM(y, cbind(1, x), Z, diag(4)), "missing or infinite")
+  expect_error(solveRRBLUP(y, cbind(1, x), M), "missing or infinite")
+  x[3] = Inf
+  expect_error(solveRRBLUP(y, cbind(1, x), M), "missing or infinite")
+  yNA = y
+  yNA[2] = NA
+  expect_error(solveUVM(yNA, matrix(1, n, 1), Z, diag(4)),
+               "missing or infinite")
+  expect_error(solveRRBLUP(yNA, matrix(1, n, 1), M), "missing or infinite")
+})
+
+test_that("SCALE rescaling the kernel only rescales Vu", {
+  # V = Vu*K + Ve*I is unchanged when K is multiplied by c and Vu divided
+  # by it, so the fit must be too, however small or large c is. A search
+  # over Ve/Vu in a fixed range would miss the optimum for an extreme c.
+  set.seed(26)
+  n = 40
+  Z = makeZ(n, 10)
+  K = crossprod(matrix(rnorm(100), 10, 10))/10
+  y = matrix(1 + Z%*%(t(chol(K))%*%rnorm(10)) + rnorm(n), ncol=1)
+  X = matrix(1, n, 1)
+  ref = solveUVM(y, X, Z, K)
+  for(c in c(1e-12, 1e12)){
+    ans = solveUVM(y, X, Z, K*c)
+    expect_equal(ans$Vu*c, ref$Vu, tolerance=1e-6)
+    expect_equal(ans$Ve, ref$Ve, tolerance=1e-6)
+    expect_equal(c(ans$u), c(ref$u), tolerance=1e-6)
+  }
+  # The same through the markers in solveRRBLUP, where K = M*M'
+  M = matrix(sample(0:2, n*15, replace=TRUE), n, 15)
+  yM = matrix(1 + M%*%rnorm(15, sd=0.3) + rnorm(n), ncol=1)
+  ref = solveRRBLUP(yM, X, M)
+  for(c in c(1e-6, 1e6)){
+    ans = solveRRBLUP(yM, X, M*c)
+    expect_equal(ans$Vu*c^2, ref$Vu, tolerance=1e-6)
+    expect_equal(ans$Ve, ref$Ve, tolerance=1e-6)
+    expect_equal(c(ans$u)*c, c(ref$u), tolerance=1e-6)
+  }
+})
+
+test_that("CONSISTENT the BLUPs use the kernel that was fitted", {
+  # K has an eigenvalue of -1e-9, small enough to be taken as rounding and
+  # treated as zero by the likelihood. The BLUPs must treat it the same way,
+  # so the third level, which has no positive variance, gets no effect.
+  # With K itself, the tiny residual variance turned it into -5e-5.
+  K = diag(c(1, 2, -1e-9))
+  ans = solveUVM(matrix(c(0, 1, 1e-5), ncol=1), matrix(c(1, 0, 0), 3, 1),
+                 diag(3), K)
+  expect_lt(abs(ans$u[3]), 1e-12)
+})
+
 test_that("SHIFT a large mean or covariate offset leaves the fit unchanged", {
   # A response with a mean of 1e8 would lose its variation to rounding if
   # the residual sum of squares were found by subtracting sums of squares,

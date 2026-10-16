@@ -272,6 +272,19 @@ test_that("RRBLUPMV marker effects are recovered when the residual variance is n
   expect_lt(max(abs(ans$u - A))/max(abs(A)), 1e-3)
 })
 
+test_that("MVM the BLUPs use the kernel that was fitted", {
+  # The third level's eigenvalue, -1e-9, is taken as rounding and dropped
+  # from the fitted kernel, so the BLUPs must give that level no effect
+  set.seed(9948)
+  n = 30
+  Z = matrix(0, n, 3)
+  Z[cbind(1:n, rep(1:3, 10))] = 1
+  K = diag(c(1, 2, -1e-9))
+  Y = matrix(rnorm(2*n), n, 2) + Z %*% matrix(rnorm(6), 3, 2)
+  ans = solveMVM(Y, matrix(1, n, 1), Z, K)
+  expect_lt(max(abs(ans$u[3, ])), 1e-12)
+})
+
 test_that("MVM a large mean does not change the covariance matrices", {
   n = 30
   m = 10

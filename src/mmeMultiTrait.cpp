@@ -817,8 +817,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
       Rcpp::stop("Decomposition of K failed");
     }
     // Only rounding error is clipped. A clearly negative eigenvalue means K
-    // is not a covariance matrix, and clipping it would fit one model while
-    // the BLUPs, which use K itself, described another.
+    // is not a covariance matrix.
     double skAbs = arma::abs(sk).max();
     if(sk.min() < -std::sqrt(arma::datum::eps)*skAbs){
       Rcpp::stop("K must be positive semidefinite");
@@ -827,11 +826,19 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     arma::uvec keep = find(sk>(double(m)*arma::datum::eps*skMax));
     F = Z*Uk.cols(keep);
     F.each_row() %= sqrt(sk(keep)).t();
-  }else{
-    // Ks is checked itself, since Z*K*Z' cannot see levels without a record
-    if(!isPositiveSemidefinite(Ks)){
-      Rcpp::stop("K must be positive semidefinite");
+    // The model fitted has the covariance F*F' among the levels' effects,
+    // without the eigenvalues that were dropped. The BLUPs use the same
+    // matrix, so that they describe the model that was fitted.
+    if(keep.n_elem<m){
+      arma::mat Uh = Uk.cols(keep);
+      Uh.each_row() %= sqrt(sk(keep)).t();
+      Ks = Uh*Uh.t();
     }
+  }else{
+    // Ks is checked itself, since Z*K*Z' cannot see levels without a
+    // record, and the same positive semidefinite matrix is used for the
+    // BLUPs; see psdKernel
+    Ks = psdKernel(Ks, "K must be positive semidefinite");
     Kn = kernelOnRecords(Z, Ks);
   }
   MvData d = rotateData(Ys, Xr, F, Kn, useFactor, Ur);

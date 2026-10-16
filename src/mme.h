@@ -229,6 +229,12 @@ struct FixedDesign {
 };
 
 inline FixedDesign fixedDesign(const arma::mat& X){
+  // A column with a missing or infinite value has no finite length, and
+  // would otherwise be dropped as if it depended on the others, leaving a
+  // fit that looks successful without the covariate
+  if(!X.is_finite()){
+    Rcpp::stop("X must not contain missing or infinite values");
+  }
   FixedDesign f;
   f.keep = independentColumns(X);
   if(f.keep.n_elem>0){
@@ -282,6 +288,39 @@ inline bool isPositiveSemidefinite(const arma::mat& K){
   }
   double maxAbs = arma::abs(lambda).max();
   return !(lambda.min() < -std::sqrt(arma::datum::eps)*maxAbs);
+}
+
+// K as the positive semidefinite covariance matrix that is both fitted and
+// used for the BLUPs. Stops with msg if K has a clearly negative eigenvalue.
+// Otherwise K is returned symmetrized, except that negative eigenvalues at
+// rounding level, which the likelihood treats as zero, are set to zero in
+// it too. Without that the BLUPs, which are computed with K itself, would
+// describe a slightly different model from the one fitted, and a small
+// residual variance would amplify the difference. The full decomposition is
+// only computed when such an eigenvalue is present.
+inline arma::mat psdKernel(const arma::mat& K, const std::string& msg){
+  arma::mat Ks = 0.5*(K+K.t());
+  if(Ks.n_rows==0){
+    return Ks;
+  }
+  arma::vec lambda;
+  if(!arma::eig_sym(lambda, Ks)){
+    Rcpp::stop("eigendecomposition of K failed");
+  }
+  double maxAbs = arma::abs(lambda).max();
+  if(lambda.min() < -std::sqrt(arma::datum::eps)*maxAbs){
+    Rcpp::stop(msg);
+  }
+  if(lambda.min()<0.0){
+    arma::mat Q;
+    if(!arma::eig_sym(lambda, Q, Ks)){
+      Rcpp::stop("eigendecomposition of K failed");
+    }
+    lambda.elem(find(lambda<0.0)).zeros();
+    Ks = Q*arma::diagmat(lambda)*Q.t();
+    Ks = 0.5*(Ks+Ks.t()); // rounding only
+  }
+  return Ks;
 }
 
 // Z*K*Z', the covariance on the records implied by a covariance K among m

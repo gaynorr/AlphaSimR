@@ -192,8 +192,17 @@ Rcpp::List objREMLFastLMM(double param, Rcpp::List args){
 // it, and it guards against the search settling on a local optimum.
 double fastLMMDelta(Rcpp::List args){
   const int nGrid = 100;
-  double logLower = log(1.0e-10);
-  double logUpper = log(1.0e10);
+  // delta = Ve/Vu carries the scale of the kernel, which is arbitrary:
+  // multiplying the kernel by c multiplies the optimal delta by c and leaves
+  // the fit unchanged. The search spans ten decades either side of the
+  // kernel's mean positive eigenvalue rather than of one, so that rescaling
+  // the kernel only rescales Vu and cannot push the optimum out of range.
+  arma::vec s2 = args["s2"];
+  arma::vec pos = s2.elem(find(s2>0.0));
+  double scale = (pos.n_elem>0) ? arma::mean(pos) : 1.0;
+  if(!(scale>0.0) || !std::isfinite(scale)) scale = 1.0;
+  double logLower = log(1.0e-10)+log(scale);
+  double logUpper = log(1.0e10)+log(scale);
   double step = (logUpper-logLower)/double(nGrid-1);
   int best = 0;
   double bestVal = 0.0;
@@ -290,6 +299,13 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M){
   arma::uword n = y.n_rows;
   arma::uword m = M.n_cols;
+  if( (X.n_rows!=n) || (M.n_rows!=n) ){
+    Rcpp::stop("solveRRBLUP: y, X and M must have the same number of rows");
+  }
+  if(!y.is_finite() || !M.is_finite()){
+    Rcpp::stop("solveRRBLUP: y and M must not contain missing or infinite "
+               "values");
+  }
   // Columns of X that depend on the others are dropped, and the fit uses Xr,
   // an orthonormal basis for the span of the rest, so a badly scaled X costs
   // no precision; see fixedDesign

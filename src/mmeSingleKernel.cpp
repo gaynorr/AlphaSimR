@@ -55,6 +55,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   if( (X.n_rows!=n) || (Z.n_rows!=n) || (K.n_rows!=m) || (K.n_cols!=m) ){
     Rcpp::stop("solveUVM: the dimensions of y, X, Z and K do not agree");
   }
+  if(!y.is_finite() || !Z.is_finite() || !K.is_finite()){
+    Rcpp::stop("solveUVM: y, Z and K must not contain missing or infinite "
+               "values");
+  }
   // Duplicated or collinear columns leave X'*H^-1*X singular, or singular
   // only up to rounding, in which case its Cholesky factorization can succeed
   // and return meaningless fixed effects. Such columns are therefore dropped
@@ -85,6 +89,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
   arma::mat WtU; // W'*U, low rank branch only
   arma::mat Vd;  // eigenvectors of W'*W below the cutoff, low rank branch only
   arma::mat KhalfQ; // K^(1/2) as Q*diag(sqrt(lambda)), low rank branch only
+  arma::mat Kc;  // K as fitted, full rank branch only; see psdKernel
   // Quantities outside the span of the kept eigenvectors
   double yy0 = 0.0;
   arma::vec Xy0(q, arma::fill::zeros);
@@ -153,11 +158,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     // Z*K*Z' is no larger than K, so it is decomposed directly. Its
     // eigenvectors span all of R^n, so there is no null space to account
     // for, and zero eigenvalues are harmless because delta is positive.
-    // K is checked itself, since Z*K*Z' cannot see levels without a record
-    if(!isPositiveSemidefinite(K)){
-      Rcpp::stop("solveUVM: K is not positive semidefinite");
-    }
-    arma::mat G = kernelOnRecords(Z, K);
+    // K is checked itself, since Z*K*Z' cannot see levels without a
+    // record, and the same positive semidefinite K is used for the BLUPs
+    Kc = psdKernel(K, "solveUVM: K is not positive semidefinite");
+    arma::mat G = kernelOnRecords(Z, Kc);
     G = 0.5*(G+G.t()); // rounding only
     arma::vec eigval(n);
     U.set_size(n,n);
@@ -213,7 +217,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     }
     u = KhalfQ*a;
   }else{
-    u = K*(Z.t()*(U*etd));
+    u = Kc*(Z.t()*(U*etd));
   }
 
   // At the optimum Vu = r/(n-p), which makes y'Py equal to n-p and leaves
