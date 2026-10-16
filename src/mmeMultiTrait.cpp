@@ -636,6 +636,55 @@ arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
   return Ur*At;
 }
 
+// The responses standardized trait by trait. The Newton steps floor the
+// eigenvalues of their Hessian with one threshold across every trait's
+// coordinates, and a trait's curvature there scales with the inverse square
+// of its units: a trait recorded in units 1e8 times larger would have its
+// curvature floored and its updates damped, and the fit could stop before
+// that trait had converged. Dividing each trait by the standard deviation of
+// its residuals after the least squares fit puts every trait on the same
+// scale, and mvResult maps the results back exactly.
+struct TraitScale {
+  arma::mat Y;     // the standardized responses
+  arma::rowvec sd; // the divisor of each trait
+};
+
+TraitScale traitScale(const arma::mat& Ys){
+  TraitScale ts;
+  ts.sd = arma::stddev(Ys, 0, 0);
+  for(arma::uword j=0; j<ts.sd.n_elem; ++j){
+    if(!(ts.sd(j)>0.0) || !std::isfinite(ts.sd(j))){
+      ts.sd(j) = 1.0;
+    }
+  }
+  ts.Y = Ys;
+  ts.Y.each_row() /= ts.sd;
+  return ts;
+}
+
+// The results in the original units of the kernel and of each trait, from a
+// fit on the normalized kernel scale of d and the standardized traits of ts.
+// With D = diag(ts.sd), the covariance matrices are D*V*D, the fixed effects
+// and effects are scaled by D column by column, and the likelihood gains the
+// Jacobian of the scaling, -(n-p)*sum(log(sd)), as well as the -logDetR per
+// trait of fitting through the orthonormal basis of the fixed effects.
+Rcpp::List mvResult(const FixedDesign& fd, const MvData& d, const MvEval& ev,
+                    const TraitScale& ts, const arma::mat& Vu,
+                    const arma::mat& Ve, const arma::mat& B0,
+                    const arma::mat& uFit, arma::uword nColX, int iter){
+  const arma::mat D = arma::diagmat(ts.sd);
+  const double nt = double(ts.sd.n_elem);
+  const double p = double(fd.Q.n_cols);
+  double LL = ev.LL - (d.n-p)*arma::accu(arma::log(ts.sd)) - nt*fd.logDetR;
+  return Rcpp::List::create(Rcpp::Named("Vu")=D*(Vu/d.scale)*D,
+                            Rcpp::Named("Ve")=D*Ve*D,
+                            Rcpp::Named("beta")=fixedEffectsFromBasis(fd,
+                                                  ev.B*D+B0, nColX),
+                            Rcpp::Named("u")=uFit*D,
+                            Rcpp::Named("LL")=LL,
+                            Rcpp::Named("iter")=iter);
+}
+
 void checkInput(const arma::mat& Y, const arma::mat& X){
   if(Y.n_rows!=X.n_rows){
     Rcpp::stop("Y and X must have the same number of rows");
@@ -739,28 +788,23 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   // at the end, which keeps a large mean from swamping the sums of squares
   arma::mat B0;
   const arma::mat Ys = removeLeastSquares(Xr, Y, B0);
+  const TraitScale ts = traitScale(Ys);
   arma::mat Ur;
   bool useFactor = M.n_cols<M.n_rows;
   arma::mat Kn;
   if(!useFactor){
     Kn = M*M.t();
   }
-  MvData d = rotateData(Ys, Xr, M, Kn, useFactor, Ur);
+  MvData d = rotateData(ts.Y, Xr, M, Kn, useFactor, Ur);
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
-  // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu, with Vu back on the scale of M;
-  // recordPy works on the normalized scale of d, where Vu is as fitted
-  const arma::mat VuOut = Vu/d.scale;
-  arma::mat u = M.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve)*VuOut;
-  return Rcpp::List::create(Rcpp::Named("Vu")=VuOut,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
-                                                                   X.n_cols),
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ev.LL-double(Y.n_cols)*fd.logDetR,
-                            Rcpp::Named("iter")=iter);
+  // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu, in the fitted units: Vu on the
+  // scale of M and the traits standardized. recordPy works on the
+  // normalized scale of d, where Vu is as fitted.
+  arma::mat uFit = M.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve)*(Vu/d.scale);
+  return mvResult(fd, d, ev, ts, Vu, Ve, B0, uFit, X.n_cols, iter);
 }
 
 //' @title Solve Multivariate Model
@@ -862,21 +906,17 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     Ks = psdKernel(Ks, "K must be positive semidefinite");
     Kn = kernelOnRecords(Z, Ks);
   }
-  MvData d = rotateData(Ys, Xr, F, Kn, useFactor, Ur);
+  const TraitScale ts = traitScale(Ys);
+  MvData d = rotateData(ts.Y, Xr, F, Kn, useFactor, Ur);
   F.reset();
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
-  // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu, with Vu back on the scale of
-  // K; recordPy works on the normalized scale of d, where Vu is as fitted
-  const arma::mat VuOut = Vu/d.scale;
-  arma::mat u = Ks*(Z.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve))*VuOut;
-  return Rcpp::List::create(Rcpp::Named("Vu")=VuOut,
-                            Rcpp::Named("Ve")=Ve,
-                            Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
-                                                                   X.n_cols),
-                            Rcpp::Named("u")=u,
-                            Rcpp::Named("LL")=ev.LL-double(Y.n_cols)*fd.logDetR,
-                            Rcpp::Named("iter")=iter);
+  // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu, in the fitted units: Vu on the
+  // scale of K and the traits standardized. recordPy works on the
+  // normalized scale of d, where Vu is as fitted.
+  arma::mat uFit = Ks*(Z.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve))*
+    (Vu/d.scale);
+  return mvResult(fd, d, ev, ts, Vu, Ve, B0, uFit, X.n_cols, iter);
 }

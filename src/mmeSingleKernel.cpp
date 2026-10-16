@@ -177,6 +177,11 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
       Rcpp::stop("solveUVM: K is not positive semidefinite");
     }
     eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+    // With no positive eigenvalue the random effect explains nothing, the
+    // likelihood does not depend on delta, and Vu could not be estimated
+    if(!(eigval.max()>0.0)){
+      Rcpp::stop("solveUVM: Z*K*Z' is zero");
+    }
     s2 = eigval;
     yt = U.t()*yv;
     Xt = U.t()*Xr;

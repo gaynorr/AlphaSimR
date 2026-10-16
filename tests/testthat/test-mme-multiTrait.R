@@ -296,6 +296,33 @@ test_that("MVM rescaling the kernel only rescales Vu", {
   }
 })
 
+test_that("MV rescaling one trait only rescales its results", {
+  # Multiplying the second trait by 1e8 changes its units and nothing else.
+  # Its covariances must scale accordingly, the other trait's results and
+  # the number of iterations must not change, and the likelihood moves by
+  # exactly the Jacobian of the scaling, -(n-p)*log(1e8).
+  n = 300
+  m = 40
+  M = markers(n, m, 9952)
+  X = matrix(1, n, 1)
+  Y = simTraits(tcrossprod(M)/m, X, 9953)
+  D = diag(c(1, 1e8))
+  for(form in c("RRBLUPMV", "MVM")){
+    fit = function(Y){
+      if(form=="RRBLUPMV") solveRRBLUPMV(Y, X, M)
+      else solveMVM(Y, X, diag(n), tcrossprod(M)/m)
+    }
+    ref = fit(Y)
+    ans = fit(Y %*% D)
+    expect_equal(ans$Vu, D %*% ref$Vu %*% D, tolerance=1e-6)
+    expect_equal(ans$Ve, D %*% ref$Ve %*% D, tolerance=1e-6)
+    expect_equal(ans$u, ref$u %*% D, tolerance=1e-6)
+    expect_equal(ans$beta, ref$beta %*% D, tolerance=1e-6)
+    expect_equal(ans$LL, ref$LL - (n-1)*log(1e8), tolerance=1e-8)
+    expect_equal(ans$iter, ref$iter)
+  }
+})
+
 test_that("MVM a tiny eigenvalue of K that Z scales back up is kept", {
   # K = diag(1, 1e-20) with the second level's records weighted by 1e10
   # gives Z*K*Z' the same as an unweighted design with K = I
