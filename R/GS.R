@@ -1810,15 +1810,20 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # product formed on the way to it, the Hessian's eigenvectors and the
       # eigensolver's workspace
       optimDoubles = 8*(nT*(nT+1))^2
+      # The fixed effects: each likelihood evaluation holds a q by q inverse
+      # per trait, and the current and trial points coexist, with a few
+      # q by q temporaries and copies of the fixed design on the records,
+      # its orthonormal basis, its rotation and its part in the null space
+      fixDoubles = 2*nT*q^2+4*q^2+5*n*q
       if(m<n){
         # Rotation by a thin singular value decomposition of the dosages,
         # which holds the left singular vectors twice while the ones that
         # are kept are copied out, plus one small inverse per record
-        doubles = 4*n*m+nT^2*n+optimDoubles
+        doubles = 4*n*m+nT^2*n+optimDoubles+fixDoubles
       }else{
         # Rotation by the eigenvectors of the record cross product, which
         # is held, symmetrized and decomposed
-        doubles = n*m+4*n^2+nT^2*n+optimDoubles
+        doubles = n*m+4*n^2+nT^2*n+optimDoubles+fixDoubles
       }
     }else if(m<n){
       # Decomposition of the marker cross product, which is copied into the

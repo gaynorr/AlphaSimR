@@ -322,6 +322,18 @@ test_that("RRBLUPMemUse counts the multiple trait optimizer", {
   }
 })
 
+test_that("RRBLUPMemUse counts the multiple trait fixed effects", {
+  # Each likelihood evaluation holds a q by q inverse per trait, and the
+  # current and trial points coexist, so 500 fixed effects on two traits
+  # need at least 8 MB on either decomposition
+  floorGB = 2*2*8*500^2/10^9
+  for(m in c(10, 2000)){
+    few = RRBLUPMemUse(nInd=1000, nMarker=m, nTraits=2, nFixEff=1)
+    many = RRBLUPMemUse(nInd=1000, nMarker=m, nTraits=2, nFixEff=500)
+    expect_gt(many - few, floorGB)
+  }
+})
+
 test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # Estimating variance components holds one more square matrix
   withEM = RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP2", useEM=TRUE)
