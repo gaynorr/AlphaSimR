@@ -603,6 +603,31 @@ test_that("SIDES agree on a kernel of zeros, which has no effects to estimate", 
   expect_equal(c(b$u[[2]]), rep(0, 15))
 })
 
+test_that("CONFOUNDED a term absorbed by the fixed effects does not stall the fit", {
+  # K2 lies entirely in the span of X, so the likelihood does not depend on
+  # its variance and the average information is singular. The fit used to
+  # crawl by EM steps and stop near Vu1 = 4e-11, Ve = 50 with LL = -6.76,
+  # well short of Vu1 = 99, Ve = 1 with LL = -5.14. The 1e12 eigenvalue,
+  # also absorbed by X, limits the precision of any fit to this case, so
+  # the sides are compared on a milder version of it.
+  y = matrix(c(0, 10, 1))
+  X = matrix(c(1, 0, 0))
+  Zlist = list(diag(3), diag(3))
+  Klist = list(diag(c(1e12, 1, 0)), diag(c(1, 0, 0)))
+  best = remlLL(c(99, 0), 1, y, X, Klist)
+  ans = expect_warning(solveMKM(y, X, Zlist, Klist), NA)
+  expect_gte(ans$LL, best - 1e-6)
+  expect_equal(c(ans$Vu), c(99, 0), tolerance=1e-3)
+  Klist[[1]][1, 1] = 100
+  best = remlLL(c(99, 0), 1, y, X, Klist)
+  for(side in 1:2){
+    ans = expect_warning(fitSide(y, X, Zlist, Klist, FALSE, side), NA)
+    expect_gte(ans$LL, best - 1e-8)
+    expect_equal(c(ans$Vu), c(99, 0), tolerance=1e-6)
+    expect_equal(c(ans$Ve), 1, tolerance=1e-6)
+  }
+})
+
 # ---------------------------------------------------------------------------
 # 6. The genomic selection models that call solveRRBLUPMK
 # ---------------------------------------------------------------------------

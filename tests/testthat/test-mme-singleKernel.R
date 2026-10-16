@@ -381,6 +381,22 @@ test_that("SHIFT a large mean or covariate offset leaves the fit unchanged", {
   }
 })
 
+test_that("BRACKET a large eigenvalue absorbed by X does not limit the search", {
+  # The direction of the 1e12 eigenvalue belongs to the fixed effect, and the
+  # variance is estimated from the others. A search scaled by the mean
+  # eigenvalue started at delta = 25 and returned LL = -6.54 with effects
+  # near zero; the data are noiseless, so delta goes to its lower limit and
+  # the effects are recovered.
+  y = matrix(c(0, 1, 2, 3), 4, 1)
+  X = matrix(c(1, 0, 0, 0), 4, 1)
+  K = diag(c(1e12, 1, 2, 3))
+  ans = solveUVM(y, X, diag(4), K)
+  expect_gt(ans$LL, -6.3)
+  expect_equal(c(ans$u)[2:4], c(1, 2, 3), tolerance=1e-6)
+  ansRR = solveRRBLUP(y, X, sqrt(K))
+  expect_equal(c(sqrt(K) %*% ansRR$u)[2:4], c(1, 2, 3), tolerance=1e-6)
+})
+
 # 3. solveRRBLUP ----------------------------------------------------------
 
 test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {
@@ -440,18 +456,16 @@ test_that("NOISELESS effects are recovered when the residual variance is near ze
     expect_lt(rr$Ve/rr$Vu, 1e-6)
     expect_lt(max(abs(rr$u - a))/max(abs(a)), 1e-4)
     # Every row of Z sums to one, so a constant can move between the
-    # intercept and the levels and u need not equal g. It is compared
-    # instead with an exact solution at the solver's delta, from a least
-    # squares problem whose normal equations are Henderson's.
+    # intercept and the levels and u need not equal g. They are compared
+    # after centering, which removes that constant. A least squares
+    # reference at the solver's delta is no help here: at the delta REML
+    # chooses for noiseless data it is less accurate than the solver.
     yZ = matrix(2 + Z%*%g + rnorm(n, sd=sdE), ncol=1)
     uvm = solveUVM(yZ, X, Z, K)
-    d = uvm$Ve/uvm$Vu
-    expect_lt(d, 1e-6)
-    Kh = t(chol(K))
-    A = rbind(cbind(X, Z%*%Kh), cbind(matrix(0, m, 1), sqrt(d)*diag(m)))
-    s = qr.coef(qr(A), c(yZ, rep(0, m)))
-    uRef = c(Kh %*% s[-1])
-    expect_lt(max(abs(uvm$u - uRef))/max(abs(uRef)), 1e-6)
+    expect_lt(uvm$Ve/uvm$Vu, 1e-6)
+    uc = c(uvm$u) - mean(uvm$u)
+    gc = g - mean(g)
+    expect_lt(max(abs(uc - gc))/max(abs(gc)), 1e-4)
   }
 })
 

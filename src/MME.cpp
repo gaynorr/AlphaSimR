@@ -191,18 +191,31 @@ Rcpp::List objREMLFastLMM(double param, Rcpp::List args){
 // of M*M', so the grid costs far less than the decomposition that precedes
 // it, and it guards against the search settling on a local optimum.
 double fastLMMDelta(Rcpp::List args){
-  const int nGrid = 100;
   // delta = Ve/Vu carries the scale of the kernel, which is arbitrary:
   // multiplying the kernel by c multiplies the optimal delta by c and leaves
-  // the fit unchanged. The search spans ten decades either side of the
-  // kernel's mean positive eigenvalue rather than of one, so that rescaling
-  // the kernel only rescales Vu and cannot push the optimum out of range.
+  // the fit unchanged. The search therefore runs from ten decades below the
+  // smallest positive eigenvalue to ten above the largest, rather than around
+  // one. A single average is not enough: a large eigenvalue whose direction
+  // is absorbed by the fixed effects would set the scale while the variance
+  // is estimated from the small ones, and the optimum could fall outside the
+  // range. Eigenvalues within rounding of zero are not positive for this
+  // purpose, since they would only widen the range.
   arma::vec s2 = args["s2"];
-  arma::vec pos = s2.elem(find(s2>0.0));
-  double scale = (pos.n_elem>0) ? arma::mean(pos) : 1.0;
-  if(!(scale>0.0) || !std::isfinite(scale)) scale = 1.0;
-  double logLower = log(1.0e-10)+log(scale);
-  double logUpper = log(1.0e10)+log(scale);
+  double sMax = (s2.n_elem>0) ? s2.max() : 0.0;
+  double sMin = sMax;
+  double sTol = double(s2.n_elem)*arma::datum::eps*sMax;
+  for(arma::uword i=0; i<s2.n_elem; ++i){
+    if((s2(i)>sTol) && (s2(i)<sMin)) sMin = s2(i);
+  }
+  if(!(sMax>0.0) || !std::isfinite(sMax) || !(sMin>0.0)){
+    sMin = 1.0;
+    sMax = 1.0;
+  }
+  double logLower = log(1.0e-10)+log(sMin);
+  double logUpper = log(1.0e10)+log(sMax);
+  // Five grid points per decade, which is the density of the original
+  // twenty-decade grid of 100 points
+  int nGrid = std::max(100, int(std::ceil(5.0*(logUpper-logLower)/log(10.0)))+1);
   double step = (logUpper-logLower)/double(nGrid-1);
   int best = 0;
   double bestVal = 0.0;

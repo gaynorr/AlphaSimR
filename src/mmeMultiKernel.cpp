@@ -125,11 +125,21 @@ public:
     b0 = B0.col(0);
     meanDiag.set_size(k);
     rankBound.set_size(k);
+    confounded.zeros(k);
     for(arma::uword i=0; i<k; ++i){
       const arma::mat& Li = *L[i];
       const arma::mat& Ri = *R[i];
       meanDiag(i) = arma::accu(Li%Ri)/double(n);
       rankBound(i) = double(std::min(n, Li.n_cols));
+      // A term whose G_i lies entirely in the span of X is absorbed by the
+      // fixed effects: the likelihood does not depend on its variance, which
+      // leaves the average information singular. The test is the trace of
+      // G_i after projecting out X, against the rounding in forming it.
+      arma::mat Lp = Li - Xr*(Xr.t()*Li);
+      arma::mat Rp = Ri - Xr*(Xr.t()*Ri);
+      double freeTrace = arma::accu(Lp%Rp);
+      double roundTrace = arma::accu(arma::abs(Li)%arma::abs(Ri));
+      confounded(i) = !(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace);
     }
     if(side==Side::record){
       G.set_size(k);
@@ -178,7 +188,8 @@ public:
   // of G_i to the variance of a record. This is a neutral guess that keeps
   // every component strictly positive, which an iteration needs to be able
   // to move a component in either direction. A term whose G_i has a zero
-  // diagonal explains nothing and is held at zero throughout.
+  // diagonal explains nothing and is held at zero throughout, and so is a
+  // term absorbed by the fixed effects, whose variance cannot be estimated.
   arma::vec startValues(){
     arma::vec b = arma::solve(Xr, y);
     arma::vec e = y - Xr*b;
@@ -190,7 +201,8 @@ public:
     estimable.set_size(k);
     double nEst = 0.0;
     for(arma::uword i=0; i<k; ++i){
-      estimable(i) = (meanDiag(i)>0.0) && std::isfinite(meanDiag(i));
+      estimable(i) = (meanDiag(i)>0.0) && std::isfinite(meanDiag(i)) &&
+        (confounded(i)==0);
       if(estimable(i)) nEst += 1.0;
     }
     arma::vec theta(k+1, arma::fill::zeros);
@@ -267,17 +279,30 @@ public:
     return vy/meanDiag(i);
   }
 
-  // First-order optimality on the boundary. A component held at zero is
-  // optimal only if moving it up would not raise the likelihood, which to
-  // first order is a gain of score*Vu for a move to Vu. The gain from a move
-  // to a typical variance must be below a small multiple of the tolerance.
-  bool boundaryOptimal(const RemlPoint& pt, const arma::vec& score,
-                       double tol) const{
+  // First-order optimality, on the boundary and off it. The gain from moving
+  // a component to Vu is, to first order, score*(Vu - current). A component
+  // held at zero is optimal only if moving it up to a typical variance would
+  // not raise the likelihood, and one away from zero only if neither doubling
+  // it, nor moving it to a typical variance, nor taking it to zero would.
+  // Each gain must be below a small multiple of the tolerance. Checking the
+  // free components matters as much as the boundary: a run of short steps
+  // can satisfy the small-change test well away from the optimum.
+  bool stationary(const RemlPoint& pt, const arma::vec& score,
+                  double tol) const{
     for(arma::uword i=0; i<k; ++i){
-      if(estimable(i) && (pt.theta(i)==0.0) &&
-         (score(i)*typicalVu(i) > 10.0*tol)){
-        return false;
+      if(!estimable(i)) continue;
+      if(pt.theta(i)==0.0){
+        if(score(i)*typicalVu(i) > 10.0*tol) return false;
+      }else{
+        double s = std::max(pt.theta(i), typicalVu(i));
+        if(std::abs(score(i))*s > 10.0*tol) return false;
       }
+    }
+    if(pt.theta(k)>veFloor){
+      double s = std::max(pt.theta(k), vy);
+      if(std::abs(score(k))*s > 10.0*tol) return false;
+    }else if(score(k)*vy > 10.0*tol){
+      return false;
     }
     return true;
   }
@@ -392,22 +417,23 @@ public:
         if(!(std::abs(dLL)<tol && dTheta<tol)){
           continue;
         }
-        // A small change is only convergence if no component held at zero
-        // could raise the likelihood by moving off it
+        // A small change is only convergence at a stationary point, where no
+        // component, at zero or not, could raise the likelihood by moving
         derivatives(pt, score, AI);
-        if(boundaryOptimal(pt, score, tol)){
+        if(stationary(pt, score, tol)){
           converged = true;
           break;
         }
-      }else if(boundaryOptimal(pt, score, tol)){
-        // No step improves the likelihood and none would from the boundary,
-        // so this is a stationary point to within the precision of the
+      }else if(stationary(pt, score, tol)){
+        // No step improves the likelihood and the scores say none would, so
+        // this is a stationary point to within the precision of the
         // arithmetic
         converged = true;
         break;
       }
-      // A component at zero has a positive score but neither step has moved
-      // it, and the EM step cannot, because it scales the change by the
+      // The scores show the likelihood can still rise but the last step made
+      // no real progress. Typically a component at zero has a positive score,
+      // which the EM step cannot act on because it scales the change by the
       // square of the component. A projected gradient step can.
       RemlPoint released;
       if(!releaseStep(pt, score, released)){
@@ -460,7 +486,7 @@ private:
   arma::mat Xr;
   std::vector<const arma::mat*> L, R, F;
   arma::vec meanDiag, rankBound;
-  arma::uvec estimable;
+  arma::uvec estimable, confounded;
   double vy = 1.0, veFloor = 0.0;
   // Record side
   arma::field<arma::mat> G;
