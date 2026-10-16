@@ -85,14 +85,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // callFastRRBLUP
-Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x, arma::field<arma::Cube<unsigned char> >& geno, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, arma::uword maxIter, bool estVarComp, arma::uvec subset, int nThreads);
-RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP genoSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP, SEXP estVarCompSEXP, SEXP subsetSEXP, SEXP nThreadsSEXP) {
+Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x, const Rcpp::S4& pop, arma::Col<int>& lociPerChr, arma::uvec lociLoc, double Vu, double Ve, arma::uword maxIter, bool estVarComp, arma::uvec subset, int nThreads);
+RcppExport SEXP _AlphaSimR_callFastRRBLUP(SEXP ySEXP, SEXP xSEXP, SEXP popSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP maxIterSEXP, SEXP estVarCompSEXP, SEXP subsetSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::field<arma::Cube<unsigned char> >& >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type pop(popSEXP);
     Rcpp::traits::input_parameter< arma::Col<int>& >::type lociPerChr(lociPerChrSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
     Rcpp::traits::input_parameter< double >::type Vu(VuSEXP);
@@ -101,7 +101,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type estVarComp(estVarCompSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type subset(subsetSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads));
+    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }

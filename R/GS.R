@@ -185,7 +185,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  ans = callFastRRBLUP(y,fixEff,pop@geno,lociPerChr,
+  ans = callFastRRBLUP(y,fixEff,pop,lociPerChr,
                        lociLoc,Vu,Ve,maxIter,
                        estVarComp,as.integer(subset),
                        nThreads)

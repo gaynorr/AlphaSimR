@@ -124,8 +124,8 @@ solveRRBLUP_EM3 <- function(Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, u
     .Call(`_AlphaSimR_solveRRBLUP_EM3`, Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, useEM)
 }
 
-callFastRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, geno, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
 callRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, nThreads) {

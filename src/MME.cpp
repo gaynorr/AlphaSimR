@@ -13,6 +13,7 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
                   long long int* LIWORK, long long int* INFO);
 
 #include "mme.h"
+#include "packedGv.h"
 
 // Solvers defined in mmeMultiTrait.cpp and mmeMultiKernel.cpp. The defaults
 // repeat those of the definitions, which Rcpp reads to build the R
@@ -1023,14 +1024,37 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
 // x is an indicator vector for the fixed effect levels, as in callRRBLUP
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
-                          arma::field<arma::Cube<unsigned char> >& geno, 
+                          const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                           double Vu, double Ve, arma::uword maxIter,
                           bool estVarComp, arma::uvec subset, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
-  arma::uword nInd = M.n_rows;
-  arma::uword nLoci = M.n_cols;
+  // The marker dosages are decoded straight from the population's packed
+  // genotypes. Taking the genotypes as an arma::field would first copy every
+  // chromosome, including all the loci that are not markers.
+  PackedGeno g(pop);
+  LociPos pos = findLoci(g, lociPerChr, lociLoc);
+  DosageTiles tiles(g, pos);
+  arma::uword ploidy = g.ploidy;
+  arma::uword nInd = g.nInd;
+  arma::uword nLoci = pos.base.size();
+  arma::Mat<unsigned char> M(nInd,nLoci);
+  {
+    // A block of individuals is written as a tile whose stride is the
+    // column length of M, so decode fills its rows of M in place
+    arma::uword nBlocks = countBlocks(nInd);
+    int decodeThreads = nThreads;
+    if(nBlocks < static_cast<arma::uword>(decodeThreads)){
+      decodeThreads = static_cast<int>(nBlocks);
+    }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(decodeThreads)
+#endif
+    for(arma::uword block=0; block<nBlocks; ++block){
+      arma::uword indStart = blockStart(nInd, nBlocks, block);
+      arma::uword indEnd = blockStart(nInd, nBlocks, block+1);
+      tiles.decode(indStart, indEnd-indStart, nInd, M.memptr()+indStart);
+    }
+  }
   double dP = double(ploidy);
   // Sum to zero design matrix with an intercept, matching callRRBLUP.
   // A single fixed effect level gives a single column of ones.
