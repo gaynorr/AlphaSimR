@@ -436,8 +436,10 @@ test_that("SIDES agree when a component is held at zero", {
   nZero = 0
   for(s in 1:6){
     y = M1 %*% rnorm(30, sd=0.3) + rnorm(n)
-    a = fitSide(y, X, list(M1, M2), list(), TRUE, 1)
-    b = fitSide(y, X, list(M1, M2), list(), TRUE, 2)
+    # A likelihood flat to rounding near the boundary must still be reported
+    # as converged
+    a = expect_warning(fitSide(y, X, list(M1, M2), list(), TRUE, 1), NA)
+    b = expect_warning(fitSide(y, X, list(M1, M2), list(), TRUE, 2), NA)
     expectSameFit(a, b)
     if(b$Vu[2]==0){
       nZero = nZero + 1

@@ -80,7 +80,7 @@ struct RemlPoint {
   double LL = 0.0;
   bool ok = false;
   // Record side
-  arma::mat P;
+  arma::mat Lv;    // lower Cholesky factor of V
   arma::vec Py;
   arma::mat VinvX;
   arma::mat Ainv;  // (X'*V^-1*X)^-1
@@ -89,7 +89,7 @@ struct RemlPoint {
   std::vector<Segment> segs; // the fixed effects, then each term in the equations
   std::vector<long> termSeg; // segment of each term, or -1 if left out
   arma::uvec idx;            // columns of T in the equations
-  arma::mat Cinv;
+  arma::mat Lc;    // lower Cholesky factor of C
   arma::vec sol;
   arma::vec e;               // y - T*s
 };
@@ -219,8 +219,12 @@ public:
   //
   //   l = -0.5*[(n-p)*log(2*pi) + log|V| + log|X'*V^-1*X| + y'*P*y]
   //
-  // together with what the derivatives need. Returns false if V, or the
-  // matrix that stands in for it, is not positive definite.
+  // together with the Cholesky factor the derivatives start from. Returns
+  // false if V, or the matrix that stands in for it, is not positive
+  // definite. The likelihood needs only the factor, and an inverse costs
+  // twice as much again, so the inverse is left to derivatives(). Most
+  // evaluations are trial points in a line search, and only an accepted
+  // point has its derivatives taken.
   bool evaluate(RemlPoint& pt) const{
     if(side==Side::record){
       return evaluateRecord(pt);
@@ -437,6 +441,10 @@ public:
       // square of the component. A projected gradient step can.
       RemlPoint released;
       if(!releaseStep(pt, score, released)){
+        // Not even a step of 2^-60 along the scores raises the likelihood,
+        // so what the scores show is rounding: the point is stationary to
+        // the precision of the arithmetic
+        converged = true;
         break;
       }
       pt = released;
@@ -509,22 +517,26 @@ private:
       }
     }
     V = 0.5*(V+V.t()); // rounding only
-    arma::mat Vinv;
-    double logDetV, logDetA;
-    if(!invAndLogDet(Vinv, logDetV, V)){
+    if(!arma::chol(pt.Lv, V, "lower")){
       return false;
     }
     V.reset();
-    pt.VinvX = Vinv*Xr;
-    arma::mat A = Xr.t()*pt.VinvX;
+    double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
+    // With V = Lv*Lv', Q = Lv^-1*X and z = Lv^-1*y give X'*V^-1*X = Q'*Q,
+    // and r = z - Q*(Q'*Q)^-1*Q'*z gives P*y = Lv'^-1*r and y'*P*y = r'*r
+    const arma::solve_opts::opts fast = arma::solve_opts::fast;
+    arma::mat Q = arma::solve(arma::trimatl(pt.Lv), Xr, fast);
+    arma::vec z = arma::solve(arma::trimatl(pt.Lv), y, fast);
+    arma::mat A = Q.t()*Q;
     A = 0.5*(A+A.t()); // rounding only
+    double logDetA;
     if(!invAndLogDet(pt.Ainv, logDetA, A)){
       return false;
     }
-    pt.P = Vinv - pt.VinvX*pt.Ainv*pt.VinvX.t();
-    pt.P = 0.5*(pt.P+pt.P.t()); // rounding only
-    pt.Py = pt.P*y;
-    double yPy = arma::dot(y, pt.Py);
+    arma::vec r = z - Q*(pt.Ainv*(Q.t()*z));
+    pt.Py = arma::solve(arma::trimatu(pt.Lv.t()), r, fast);
+    pt.VinvX = arma::solve(arma::trimatu(pt.Lv.t()), Q, fast);
+    double yPy = arma::dot(r, r);
     pt.LL = -0.5*(double(n-p)*std::log(2.0*arma::datum::pi) + logDetV +
       logDetA + yPy);
     pt.ok = std::isfinite(pt.LL);
@@ -534,21 +546,32 @@ private:
   void derivativesRecord(const RemlPoint& pt, arma::vec& score,
                          arma::mat& AI) const{
     score.set_size(k+1);
+    // P = V^-1 - V^-1*X*(X'*V^-1*X)^-1*X'*V^-1, with V^-1 = Lv'^-1*Lv^-1
+    arma::mat P;
+    {
+      arma::mat Linv;
+      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
+        Rcpp::stop("could not invert the Cholesky factor of V");
+      }
+      P = Linv.t()*Linv;
+    }
+    P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
+    P = 0.5*(P+P.t()); // rounding only
     arma::mat W(n, k+1);
     for(arma::uword i=0; i<k; ++i){
       double trPG;
       if(dense[i]){
         W.col(i) = G(i)*pt.Py;
-        trPG = arma::accu(pt.P%G(i));
+        trPG = arma::accu(P%G(i));
       }else{
         W.col(i) = (*L[i])*(R[i]->t()*pt.Py);
-        trPG = arma::accu((pt.P*(*L[i]))%(*R[i]));
+        trPG = arma::accu((P*(*L[i]))%(*R[i]));
       }
       score(i) = 0.5*(arma::dot(pt.Py, W.col(i)) - trPG);
     }
     W.col(k) = pt.Py;
-    score(k) = 0.5*(arma::dot(pt.Py, pt.Py) - arma::trace(pt.P));
-    AI = 0.5*(W.t()*(pt.P*W));
+    score(k) = 0.5*(arma::dot(pt.Py, pt.Py) - arma::trace(P));
+    AI = 0.5*(W.t()*(P*W));
     AI = 0.5*(AI+AI.t()); // rounding only
   }
 
@@ -602,13 +625,15 @@ private:
         }
       }
     }
-    double logDetC;
-    if(!invAndLogDet(pt.Cinv, logDetC, C)){
+    if(!arma::chol(pt.Lc, C, "lower")){
       return false;
     }
     C.reset();
+    double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
     arma::vec rhs = Tty.elem(pt.idx)/ve;
-    pt.sol = pt.Cinv*rhs;
+    const arma::solve_opts::opts fast = arma::solve_opts::fast;
+    pt.sol = arma::solve(arma::trimatu(pt.Lc.t()),
+                         arma::solve(arma::trimatl(pt.Lc), rhs, fast), fast);
     pt.e = y - multT(pt, pt.sol);
     double yPy = arma::dot(y, pt.e)/ve;
     pt.LL = -0.5*(double(n-p)*std::log(2.0*arma::datum::pi) +
@@ -621,6 +646,16 @@ private:
                               arma::mat& AI) const{
     const double ve = pt.theta(k);
     score.set_size(k+1);
+    // C^-1 = Lc'^-1*Lc^-1 is never formed. The traces need only its diagonal
+    // blocks, and the trace of a block is the sum of squares of the matching
+    // columns of Lc^-1, which saves the third of the cost of an inverse that
+    // goes on multiplying Lc^-1 by its transpose.
+    arma::mat Linv;
+    if(!arma::inv(Linv, arma::trimatl(pt.Lc))){
+      Rcpp::stop("could not invert the Cholesky factor of C");
+    }
+    // Sum over the terms in the equations of tr(C^ii)/Vu_i
+    double trCD = 0.0;
     // Working variates G_i*P*y, then P*y
     arma::mat W(n, k+1, arma::fill::zeros);
     for(arma::uword i=0; i<k; ++i){
@@ -636,9 +671,9 @@ private:
       if(pt.termSeg[i]>=0){
         const Segment& s = pt.segs[pt.termSeg[i]];
         double th = pt.theta(i);
-        double trCii = arma::trace(pt.Cinv.submat(s.pos, s.pos,
-                                                  s.pos+s.len-1,
-                                                  s.pos+s.len-1));
+        double trCii = arma::accu(arma::square(Linv.cols(s.pos,
+                                                         s.pos+s.len-1)));
+        trCD += trCii/th;
         trPG = double(s.len)/th - trCii/(th*th);
       }else{
         // A term left out of the equations: tr(P*G_i) is
@@ -646,16 +681,18 @@ private:
         arma::uvec rows = arma::regspace<arma::uvec>(a, b);
         arma::mat B = TtT.submat(rows, pt.idx);
         trPG = arma::trace(TtT.submat(a, a, b, b))/ve -
-          arma::accu((B*pt.Cinv)%B)/(ve*ve);
+          arma::accu(arma::square(Linv*B.t()))/(ve*ve);
       }
       score(i) = 0.5*(quad - trPG);
     }
     W.col(k) = pt.e/ve;
-    double trP = double(n)/ve -
-      arma::accu(TtT.submat(pt.idx, pt.idx)%pt.Cinv)/(ve*ve);
+    // T_a'*T_a = Ve*(C - D), where D holds 1/Vu_i on the diagonal of each
+    // term in the equations, so tr(T_a'*T_a*C^-1) = Ve*(c - tr(D*C^-1)) and
+    // tr(P) = (n - c + tr(D*C^-1))/Ve
+    double trP = (double(n) - double(pt.idx.n_elem) + trCD)/ve;
     score(k) = 0.5*(arma::dot(pt.e, pt.e)/(ve*ve) - trP);
     // P*W = (W - T_a*C^-1*T_a'*W/Ve)/Ve
-    arma::mat PW = (W - multT(pt, pt.Cinv*crossT(pt, W))/ve)/ve;
+    arma::mat PW = (W - multT(pt, Linv.t()*(Linv*crossT(pt, W)))/ve)/ve;
     AI = 0.5*(W.t()*PW);
     AI = 0.5*(AI+AI.t()); // rounding only
   }
