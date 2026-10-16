@@ -112,7 +112,7 @@ Rcpp::List objREMLFastLMM(double param, Rcpp::List args);
 double fastLMMDelta(Rcpp::List args);
 
 // Single trait RR-BLUP by FaST-LMM, defined in MME.cpp
-Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
-                        const arma::mat& M);
+Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
+                       const arma::mat& M);
 
 #endif

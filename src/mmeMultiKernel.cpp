@@ -450,7 +450,7 @@ Rcpp::List packResult(const MultiKernelREML& reml, const RemlPoint& pt,
 //' n = 50
 //' M1 = matrix(rnorm(n*20), n)
 //' M2 = matrix(rnorm(n*10), n)
-//' y = M1\%*\%rnorm(20, sd=0.3) + rnorm(n)
+//' y = M1%*%rnorm(20, sd=0.3) + rnorm(n)
 //' ans = solveRRBLUPMK(y, matrix(1, n, 1), list(M1, M2))
 //' ans$Vu
 //'
@@ -527,7 +527,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 //' n = 50
 //' M = matrix(rnorm(n*20), n)
 //' K = tcrossprod(M)/20
-//' y = M\%*\%rnorm(20, sd=0.3) + rnorm(n)
+//' y = M%*%rnorm(20, sd=0.3) + rnorm(n)
 //' Z = diag(n)
 //' ans = solveMKM(y, matrix(1, n, 1), list(Z, Z), list(K, diag(n)))
 //' ans$Vu

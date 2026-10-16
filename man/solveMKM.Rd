@@ -19,6 +19,44 @@ solveMKM(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-04)
 
 \item{tol}{tolerance for convergence}
 }
+\value{
+A list with the variance components \code{Vu} (one per random
+term) and \code{Ve}, the fixed effects \code{beta}, a list \code{u} of
+BLUPs for each random term, the restricted log-likelihood \code{LL} at
+the estimates, and the number of iterations \code{iter}. \code{LL} is
+\eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
+where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+}
 \description{
-Solves a univariate mixed model with multiple random effects.
+Solves a univariate mixed model with multiple random effects,
+\eqn{y = X\beta + \sum_i Z_i u_i + e}, where \eqn{u_i} has covariance
+\eqn{K_i V_{u_i}} and \eqn{e} has covariance \eqn{I V_e}. The variance
+components are estimated by average information REML
+\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR} working
+on the variance matrix of the records,
+\eqn{V = \sum_i V_{u_i} Z_i K_i Z_i' + I V_e}.
+
+Iteration starts with half of the residual variance from a least
+squares fit of X assigned to the error and half shared equally among
+the random terms. A step that would lower the likelihood is halved, and
+an EM-REML step is used if halving does not help. Variance components
+are kept non-negative: a component that reaches zero stays there for as
+long as the likelihood would fall by increasing it. Iteration stops when
+the change in log-likelihood and the relative change in the variance
+components are both below \code{tol}, and a warning is given if
+\code{maxIter} is reached first.
+}
+\examples{
+set.seed(1)
+n = 50
+M = matrix(rnorm(n*20), n)
+K = tcrossprod(M)/20
+y = M\%*\%rnorm(20, sd=0.3) + rnorm(n)
+Z = diag(n)
+ans = solveMKM(y, matrix(1, n, 1), list(Z, Z), list(K, diag(n)))
+ans$Vu
+
+}
+\references{
+\insertAllCited{}
 }

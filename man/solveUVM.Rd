@@ -9,12 +9,40 @@ solveUVM(y, X, Z, K)
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns, of full column rank}
 
 \item{Z}{a matrix with n rows and m columns}
 
-\item{K}{a matrix with m rows and m columns}
+\item{K}{a positive semidefinite matrix with m rows and m columns.
+Eigenvalues that are negative only at rounding level are treated as zero.}
+}
+\value{
+A list with the random effect variance \code{Vu}, the residual
+variance \code{Ve}, the fixed effects \code{beta}, the BLUPs \code{u} of
+the m levels, and the restricted log-likelihood \code{LL}. \code{LL} is
+\deqn{-\frac{1}{2}\left[(n-p)\log(2\pi)+\log|V|+\log|X'V^{-1}X|+y'Py\right]}
+for \eqn{V=ZKZ'\sigma^2_u+I\sigma^2_e}, \eqn{p} the number of columns
+of \eqn{X} and
+\eqn{P=V^{-1}-V^{-1}X(X'V^{-1}X)^{-1}X'V^{-1}}. It excludes the
+\eqn{\log|X'X|} term that some definitions include.
 }
 \description{
-Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}
+Solves a univariate mixed model of form \eqn{y=X\beta+Zu+e}, where
+\eqn{u \sim N(0,K\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+variance components are estimated by REML
+\insertCite{patterson1971Recovery}{AlphaSimR} using the spectral approach
+of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}, applied to
+\eqn{ZKZ'}. The fixed effects are the generalized least squares estimates
+and the random effects are the BLUPs \insertCite{henderson1975Best}{AlphaSimR},
+both at the estimated variance components.
+}
+\details{
+The decomposition is taken in whichever space is smaller. When there are
+fewer levels than records, \eqn{ZKZ'} is never formed: its nonzero
+eigenvalues are found from \eqn{K} and \eqn{Z'Z}, and the directions in
+which it is zero are summarized analytically. \eqn{K} may be singular,
+and records may repeat levels.
+}
+\references{
+\insertAllCited{}
 }

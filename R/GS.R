@@ -1142,7 +1142,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @examples
 #' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=2, nChr=1, segSites=20)
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 #'
 #' #Set simulation parameters
 #' SP = SimParam$new(founderPop)

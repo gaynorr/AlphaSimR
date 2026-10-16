@@ -209,17 +209,6 @@ test_that("REJECT models that cannot be estimated", {
 
 # 3. solveRRBLUP ----------------------------------------------------------
 
-test_that("AGREE solveRRBLUP with solveRRBLUP2 on either side", {
-  set.seed(10)
-  for(m in c(8, 40)){
-    n = 25
-    X = cbind(1, rnorm(n))
-    M = matrix(sample(0:2, n*m, replace=TRUE), n, m)
-    y = matrix(M%*%rnorm(m, sd=0.3) + rnorm(n), ncol=1)
-    expect_identical(solveRRBLUP(y, X, M), solveRRBLUP2(y, X, M))
-  }
-})
-
 test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {
   # RR-BLUP is the model Z = M, K = I, so the variances must match and the
   # marker effects are the BLUPs

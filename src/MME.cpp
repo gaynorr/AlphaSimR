@@ -14,12 +14,10 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
 
 #include "mme.h"
 
-// Solvers defined in mmeSingleKernel.cpp, mmeMultiTrait.cpp and
-// mmeMultiKernel.cpp. The defaults repeat those of the definitions, which
-// Rcpp reads to build the R interface, so they are declared here rather than
-// in mme.h, where the defining files would see them twice.
-Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
-                       const arma::mat& M);
+// Solvers defined in mmeMultiTrait.cpp and mmeMultiKernel.cpp. The defaults
+// repeat those of the definitions, which Rcpp reads to build the R
+// interface, so they are declared here rather than in mme.h, where the
+// defining files would see them twice.
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000,
                          double tol=1e-6);
@@ -251,32 +249,25 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 }
 
 
-//' @title Solve RR-BLUP with FaST-LMM
+//' @title Solve RR-BLUP
 //'
 //' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}. Takes the
-//' same arguments and returns the same values as \code{\link{solveRRBLUP}},
-//' but solves the mixed model equations using the factored spectral approach
-//' of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR} rather than the EMMA
-//' algorithm \insertCite{kang2008Efficient}{AlphaSimR}. It is intended as an
-//' eventual replacement for \code{\link{solveRRBLUP}}.
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}, where
+//' \eqn{u \sim N(0,I\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+//' variance components are estimated by REML
+//' \insertCite{patterson1971Recovery}{AlphaSimR} using the factored spectral
+//' approach of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}.
 //'
 //' @details
-//' Both algorithms reduce the mixed model to a one dimensional search over
-//' delta, the ratio of the residual variance to the marker variance. They
-//' differ in the decomposition they search over.
-//'
-//' EMMA works with the fixed effects projected out. It needs the nonzero
-//' eigenvalues of S*M*M'*S for the projector S, and then has to factorize
-//' M*M'+delta*I a second time to reach the solutions.
-//'
-//' FaST-LMM works with M*M' itself and re-estimates the fixed effects at
-//' every delta. One decomposition therefore supplies the likelihood, the
-//' generalized least squares solution for the fixed effects, and the BLUPs,
-//' and that decomposition is taken in whichever of the two spaces is
-//' smaller. When there are fewer markers than records the eigenvectors of
-//' M'*M serve in place of those of M*M', the rank deficient directions are
-//' summarized analytically, and no matrix larger than M is ever formed.
+//' REML is reduced to a one dimensional search over delta, the ratio of the
+//' residual variance to the marker variance. FaST-LMM works with M*M' itself
+//' and re-estimates the fixed effects at every delta. One decomposition
+//' therefore supplies the likelihood, the generalized least squares solution
+//' for the fixed effects, and the BLUPs, and that decomposition is taken in
+//' whichever of the two spaces is smaller. When there are fewer markers than
+//' records the eigenvectors of M'*M serve in place of those of M*M', the rank
+//' deficient directions are summarized analytically, and no matrix larger
+//' than M is ever formed.
 //'
 //' This is an independent implementation of the published method. It shares
 //' no code with the FaST-LMM software distributed by Microsoft.
@@ -285,13 +276,16 @@ arma::mat makeZ(arma::uvec& z, arma::uword nGeno){
 //' @param X a matrix with n rows and x columns
 //' @param M a matrix with n rows and m columns
 //'
+//' @return A list with the marker variance \code{Vu}, the residual variance
+//' \code{Ve}, the fixed effects \code{beta} and the marker effects \code{u}.
+//'
 //' @references
 //' \insertAllCited{}
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
-                        const arma::mat& M){
+Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
+                       const arma::mat& M){
   arma::uword n = y.n_rows;
   arma::uword q = X.n_cols;
   arma::uword m = M.n_cols;
@@ -371,7 +365,7 @@ Rcpp::List solveRRBLUP2(const arma::mat& y, const arma::mat& X,
   // Solve the mixed model equations at the estimated delta
   FastLMMFit fit = fastLMMFit(delta, yt, Xt, s2, yy0, Xy0, XX0, nNull);
   if(!fit.ok){
-    Rcpp::stop("solveRRBLUP2: mixed model equations could not be solved");
+    Rcpp::stop("solveRRBLUP: mixed model equations could not be solved");
   }
   arma::mat beta = fit.beta;
 
@@ -910,7 +904,7 @@ arma::mat gramFromGeno(const arma::Mat<unsigned char>& M,
 }
 
 // Estimates the variance components by REML from a genotype cross product,
-// using the same FaST-LMM machinery as solveRRBLUP2. Only the variance
+// using the same FaST-LMM machinery as solveRRBLUP. Only the variance
 // components are worked out here; the marker effects are solved for
 // afterward, on the full data set.
 //
@@ -1001,7 +995,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   // effects are always solved for on every record.
   //
   // Whichever of the two cross products is smaller is the one decomposed. If
-  // there are fewer markers than sampled records, solveRRBLUP2 is given the
+  // there are fewer markers than sampled records, solveRRBLUP is given the
   // sampled genotypes and takes the marker by marker route itself. Otherwise
   // the record by record cross product is built a panel at a time.
   if(estVarComp){
@@ -1018,7 +1012,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
           MSubCol[i] = xaPtr[Mcol[subset(i)]];
         }
       }
-      Rcpp::List varComp = solveRRBLUP2(ySub, XSub, MSub);
+      Rcpp::List varComp = solveRRBLUP(ySub, XSub, MSub);
       Vu = varComp["Vu"];
       Ve = varComp["Ve"];
     }else{

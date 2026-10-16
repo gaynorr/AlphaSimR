@@ -1,39 +1,11 @@
 #include "mme.h"
 
-// Single trait, single kernel mixed model solvers. Both are written from the
-// published descriptions of FaST-LMM (Lippert et al. 2011,
-// doi:10.1038/nmeth.1681) and of restricted maximum likelihood (Patterson
-// and Thompson 1971, doi:10.1093/biomet/58.3.545), and share their
-// likelihood machinery with solveRRBLUP2 through mme.h.
-
-//' @title Solve RR-BLUP
-//'
-//' @description
-//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}, where
-//' \eqn{u \sim N(0,I\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
-//' variance components are estimated by REML
-//' \insertCite{patterson1971Recovery}{AlphaSimR} using the spectral approach
-//' of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}. This function now
-//' calls \code{\link{solveRRBLUP2}} and returns exactly what it returns.
-//'
-//' @param y a matrix with n rows and 1 column
-//' @param X a matrix with n rows and x columns
-//' @param M a matrix with n rows and m columns
-//'
-//' @return A list with the marker variance \code{Vu}, the residual variance
-//' \code{Ve}, the fixed effects \code{beta} and the marker effects \code{u}.
-//'
-//' @references
-//' \insertAllCited{}
-//'
-//' @export
-// [[Rcpp::export]]
-Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
-                       const arma::mat& M){
-  // The two functions fit the same model, so keeping a second
-  // implementation would only give the two a way to drift apart.
-  return solveRRBLUP2(y, X, M);
-}
+// Single trait, single kernel mixed model with a known covariance among
+// levels. It is written from the published descriptions of FaST-LMM
+// (Lippert et al. 2011, doi:10.1038/nmeth.1681) and of restricted maximum
+// likelihood (Patterson and Thompson 1971, doi:10.1093/biomet/58.3.545), and
+// shares its likelihood machinery with solveRRBLUP, in MME.cpp, through
+// mme.h.
 
 //' @title Solve Univariate Model
 //'
