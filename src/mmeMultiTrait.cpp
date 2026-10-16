@@ -38,6 +38,7 @@ struct MvData {
   double nNull = 0.0; // number of rows that are not held
   double n = 0.0;     // number of records
   double r = 0.0;     // number of positive eigenvalues
+  double scale = 1.0; // divisor of the kernel's eigenvalues; see rotateData
 };
 
 // Everything known at one value of (Vu, Ve). The quantities in transformed
@@ -416,6 +417,15 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
   if(d.r==0.0){
     Rcpp::stop("The kernel has no positive eigenvalue");
   }
+  // The kernel is fitted on the scale of its mean positive eigenvalue. Its
+  // units are arbitrary: multiplying it by c and dividing Vu by c leaves the
+  // model unchanged, but changes the curvature of the genetic coordinates
+  // relative to the residual ones, and with it how the Newton steps, the
+  // eigenvalue floor on their Hessian and the starting values behave. With
+  // the eigenvalues normalized the fit is the same whatever the units, and
+  // the callers divide the fitted Vu by d.scale to return to them.
+  d.scale = arma::mean(d.s.elem(find(d.s>0.0)));
+  d.s /= d.scale;
   return d;
 }
 
@@ -607,8 +617,15 @@ arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
                    const arma::mat& Ve){
   arma::mat R = Y - X*ev.B;
   arma::mat Rt = Ur.t()*R;
-  arma::mat At(Rt.n_rows, Rt.n_cols);
+  arma::mat At(Rt.n_rows, Rt.n_cols, arma::fill::zeros);
   for(arma::uword i=0; i<Rt.n_rows; ++i){
+    // A row whose eigenvalue was set to zero has no genetic variance in the
+    // fitted kernel, so it contributes nothing to the BLUPs, as the rows
+    // outside the span do. Dividing its residual by Ve would only let the
+    // eigenvalue that was discarded back in, amplified by Ve^-1.
+    if(d.s(i)==0.0){
+      continue;
+    }
     arma::mat Omega = d.s(i)*Vu + Ve;
     arma::vec a;
     if(!arma::solve(a, Omega, Rt.row(i).t(), arma::solve_opts::likely_sympd)){
@@ -733,9 +750,11 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
-  // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu
-  arma::mat u = M.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve)*Vu;
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+  // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu, with Vu back on the scale of M;
+  // recordPy works on the normalized scale of d, where Vu is as fitted
+  const arma::mat VuOut = Vu/d.scale;
+  arma::mat u = M.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve)*VuOut;
+  return Rcpp::List::create(Rcpp::Named("Vu")=VuOut,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
                                                                    X.n_cols),
@@ -847,9 +866,11 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   arma::mat Vu, Ve;
   int iter = 0;
   MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
-  // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu
-  arma::mat u = Ks*(Z.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve))*Vu;
-  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+  // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu, with Vu back on the scale of
+  // K; recordPy works on the normalized scale of d, where Vu is as fitted
+  const arma::mat VuOut = Vu/d.scale;
+  arma::mat u = Ks*(Z.t()*recordPy(Ys, Xr, Ur, d, ev, Vu, Ve))*VuOut;
+  return Rcpp::List::create(Rcpp::Named("Vu")=VuOut,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=fixedEffectsFromBasis(fd, ev.B+B0,
                                                                    X.n_cols),

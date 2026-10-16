@@ -272,6 +272,43 @@ test_that("RRBLUPMV marker effects are recovered when the residual variance is n
   expect_lt(max(abs(ans$u - A))/max(abs(A)), 1e-3)
 })
 
+test_that("MVM rescaling the kernel only rescales Vu", {
+  # V = Vu (x) K + Ve (x) I is unchanged when K is multiplied by c and Vu
+  # divided by it, so the estimates, the BLUPs, the likelihood and the
+  # number of iterations must not change either
+  set.seed(9950)
+  n = 40
+  Z = matrix(0, n, 10)
+  Z[cbind(1:n, rep(1:10, 4))] = 1
+  B = matrix(rnorm(100), 10)
+  K = tcrossprod(B)/10
+  Y = Z %*% (t(chol(K)) %*% matrix(rnorm(20), 10, 2)) +
+    matrix(rnorm(2*n), n, 2)
+  X = matrix(1, n, 1)
+  ref = solveMVM(Y, X, Z, K)
+  for(c in c(1e-12, 1e12)){
+    ans = solveMVM(Y, X, Z, K*c)
+    expect_equal(ans$Vu*c, ref$Vu, tolerance=1e-6)
+    expect_equal(ans$Ve, ref$Ve, tolerance=1e-6)
+    expect_equal(ans$u, ref$u, tolerance=1e-6)
+    expect_equal(ans$LL, ref$LL, tolerance=1e-8)
+    expect_equal(ans$iter, ref$iter)
+  }
+})
+
+test_that("MVM a level whose eigenvalue is dropped gets no effect", {
+  # With as many levels as records the kernel on the records is decomposed
+  # itself, and its eigenvalue of 1e-16 is set to zero. The BLUPs must give
+  # that direction no effect, even with the residual variance near zero.
+  set.seed(9949)
+  n = 20
+  K = diag(c(1 + runif(n-1), 1e-16))
+  G = diag(sqrt(c(diag(K)[1:(n-1)], 0))) %*% matrix(rnorm(2*n), n, 2)
+  Y = 1 + G + matrix(rnorm(2*n, sd=1e-7), n, 2)
+  ans = suppressWarnings(solveMVM(Y, matrix(1, n, 1), diag(n), K))
+  expect_lt(max(abs(ans$u[n, ])), 1e-15*max(abs(ans$u)))
+})
+
 test_that("MVM the BLUPs use the kernel that was fitted", {
   # The third level's eigenvalue, -1e-9, is taken as rounding and dropped
   # from the fitted kernel, so the BLUPs must give that level no effect
