@@ -377,9 +377,11 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
     if(!arma::svd_econ(Ufull, sv, V, F, "left")){
       Rcpp::stop("Decomposition of the kernel failed");
     }
-    double svMax = sv.n_elem>0 ? sv.max() : 0.0;
-    double thr = svMax*double(std::max(F.n_rows, F.n_cols))*arma::datum::eps;
-    arma::uvec keep = find(sv>thr);
+    // The rule is applied to the eigenvalues of F*F', the squares of the
+    // singular values, exactly as on the other path
+    arma::vec sv2 = square(sv);
+    double svMax2 = sv2.n_elem>0 ? sv2.max() : 0.0;
+    arma::uvec keep = find(sv2>rankCutoff(svMax2, n));
     Ur = Ufull.cols(keep);
     Ufull.reset();
     d.s = square(sv(keep));
@@ -404,8 +406,7 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
     if(eigval.min() < -std::sqrt(arma::datum::eps)*eigAbs){
       Rcpp::stop("K must be positive semidefinite");
     }
-    double eigMax = std::max(eigval.max(), 0.0);
-    eigval.elem(find(eigval<=(double(n)*arma::datum::eps*eigMax))).zeros();
+    eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
     d.s = eigval;
     d.Yt = Ur.t()*Y;
     d.Xt = Ur.t()*X;

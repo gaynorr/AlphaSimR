@@ -416,6 +416,43 @@ test_that("TRUNCATED directions below the rank cutoff get no effect", {
   expect_equal(g[2], 1, tolerance=1e-6)
 })
 
+test_that("NULLSPACE X in the span of the kernel with a tiny residual variance", {
+  # X lies in the span of Z*K*Z', so its part in the null space is zero.
+  # Formed as X'*X minus a rotated cross product it came out at about
+  # -2e-16, which a delta near 1e-10 made a negative precision for the
+  # fixed effects. The search then avoided the small deltas and settled on
+  # LL = 14.3 with an effect of 0.9996 instead of LL = 20.1 and 1.
+  Z = rbind(c(1, 0), c(1, 0), c(0, 1), c(0, 0))
+  K = diag(c(1e12, 1))
+  X = matrix(c(1, 1, 0, 0), 4)
+  y = matrix(c(0, 0, 1, 1e-6))
+  ans = solveUVM(y, X, Z, K)
+  expect_gt(ans$LL, 20)
+  expect_equal(ans$u[2], 1, tolerance=1e-6)
+  M = Z %*% sqrt(K)
+  ansRR = solveRRBLUP(y, X, M)
+  expect_equal(c(M %*% ansRR$u)[3], 1, tolerance=1e-6)
+})
+
+test_that("PADDED columns of zeros in M leave solveRRBLUP unchanged", {
+  # The zero columns move the fit from the decomposition of M'*M to that of
+  # M*M'. A direction below the rank cutoff was once dropped on the first
+  # and kept, with a gain of 1/delta in the BLUPs, on the second.
+  set.seed(1)
+  n = 20
+  Mb = matrix(rnorm(n*5), n)
+  tiny = 1e-8*rnorm(n)
+  M = cbind(Mb, tiny)
+  y = Mb %*% rnorm(5) + 0.1*tiny/1e-8 + rnorm(n, sd=1e-6)
+  X = matrix(1, n, 1)
+  a = solveRRBLUP(y, X, M)
+  b = solveRRBLUP(y, X, cbind(M, matrix(0, n, 20)))
+  expect_equal(b$Vu, a$Vu, tolerance=1e-6)
+  expect_equal(b$Ve, a$Ve, tolerance=1e-6)
+  expect_lt(max(abs(b$u[1:6] - a$u)), 1e-8)
+  expect_equal(c(b$u[7:26]), rep(0, 20))
+})
+
 # 3. solveRRBLUP ----------------------------------------------------------
 
 test_that("AGREE solveRRBLUP with solveUVM on a linear kernel", {

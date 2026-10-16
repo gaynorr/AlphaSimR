@@ -131,9 +131,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     if(eigen2(eigval, eigvec, W.t()*W)!=0){
       Rcpp::stop("solveUVM: eigendecomposition of Z*K*Z' failed");
     }
-    double maxEig = eigval.max();
-    if(maxEig<0.0) maxEig = 0.0;
-    double cutoff = double(k)*arma::datum::eps*maxEig;
+    double cutoff = rankCutoff(eigval.max(), n);
     arma::uvec keep = find(eigval>cutoff);
     if(keep.n_elem==0){
       Rcpp::stop("solveUVM: Z*K*Z' is zero");
@@ -150,11 +148,18 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     // contribution is the same for every delta apart from a factor of
     // 1/delta, so it is summarized here rather than being stored.
     nNull = double(n)-double(s2.n_elem);
-    yy0 = accu(yv%yv)-accu(yt%yt);
-    if(yy0<0.0) yy0 = 0.0;
-    Xy0 = Xr.t()*yv-Xt.t()*yt;
-    XX0 = Xr.t()*Xr-Xt.t()*Xt;
-    XX0 = 0.5*(XX0+XX0.t()); // rounding only
+    // The parts of y and X in the null space are formed before their cross
+    // products. Subtracting cross products instead, as in X'*X-Xt'*Xt, can
+    // leave XX0 slightly negative when X lies in the span of the kernel,
+    // and a tiny delta then turns that into a negative precision for the
+    // fixed effects. The projection on the span is applied through the
+    // rotated values already in hand, U*U'*v = W*Vk*diag(1/sqrt(s2))*(U'*v),
+    // where U'*v is yt or Xt.
+    arma::vec y0 = yv-W*(Vk*(sInv%yt));
+    arma::mat X0 = Xr-W*(Vk*(Xt.each_col()%sInv));
+    yy0 = arma::dot(y0, y0);
+    Xy0 = X0.t()*y0;
+    XX0 = X0.t()*X0;
   }else{
     // Z*K*Z' is no larger than K, so it is decomposed directly. Its
     // eigenvectors span all of R^n, so there is no null space to account
@@ -174,7 +179,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     if(eigval.min() < -sqrt(arma::datum::eps)*maxEig){
       Rcpp::stop("solveUVM: K is not positive semidefinite");
     }
-    eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+    eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
     // With no positive eigenvalue the random effect explains nothing, the
     // likelihood does not depend on delta, and Vu could not be estimated
     if(!(eigval.max()>0.0)){
@@ -217,6 +222,10 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
     arma::vec a = WtU*etd;
     u = KhalfQ*a;
   }else{
+    // An eigenvalue set to zero by the rank rule was fitted as having no
+    // genetic variance, so its direction gets no effect. Left in, it would
+    // carry a gain of 1/delta where the kernel itself implies 1/(s+delta).
+    etd.elem(find(s2==0.0)).zeros();
     u = Kc*(Z.t()*(U*etd));
   }
 

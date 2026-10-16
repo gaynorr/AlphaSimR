@@ -1803,15 +1803,22 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     }
   }else if(model=="RRBLUP"){
     if(nT>1){
+      # The Newton steps of the REML fit work with square matrices over the
+      # t*(t+1) parameters of Vu and Ve, which grow with the fourth power of
+      # the number of traits: the average information, the Jacobian and
+      # curvature of the Cholesky parameterization, the Hessian and a
+      # product formed on the way to it, the Hessian's eigenvectors and the
+      # eigensolver's workspace
+      optimDoubles = 8*(nT*(nT+1))^2
       if(m<n){
         # Rotation by a thin singular value decomposition of the dosages,
         # which holds the left singular vectors twice while the ones that
         # are kept are copied out, plus one small inverse per record
-        doubles = 4*n*m+nT^2*n
+        doubles = 4*n*m+nT^2*n+optimDoubles
       }else{
         # Rotation by the eigenvectors of the record cross product, which
         # is held, symmetrized and decomposed
-        doubles = n*m+4*n^2+nT^2*n
+        doubles = n*m+4*n^2+nT^2*n+optimDoubles
       }
     }else if(m<n){
       # Decomposition of the marker cross product, which is copied into the
@@ -1849,8 +1856,9 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     coefCost = n*nCoef^2+nEval*(nCoef^3+n*nCoef*(nKernel+2))
     if(coefCost<recordCost){
       # Henderson's equations: a copy of the dosages as the design of all
-      # the effects, its cross product, and the coefficient matrix with its
-      # Cholesky factor, the factor's inverse and the inverse itself
+      # the effects, its cross product, and the coefficient matrix with the
+      # Cholesky factors of the current and trial points and the inverse of
+      # a factor
       doubles = 2*nKernel*n*m+5*nCoef^2
     }else if(m<n){
       # The average information matrix is reached through the dosages

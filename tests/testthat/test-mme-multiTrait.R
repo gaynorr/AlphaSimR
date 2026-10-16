@@ -482,6 +482,28 @@ test_that("RRBLUPMV warns when maxIter is reached", {
   expect_equal(ans$iter, 2L)
 })
 
+test_that("RRBLUPMV padding M with columns of zeros leaves the fit unchanged", {
+  # M*M' is the same with the zero columns, but they move the fit from the
+  # thin decomposition of M to that of M*M'. The two once used different
+  # rank rules, so a direction with a squared singular value of 1e-16 was
+  # held on one path and dropped on the other.
+  set.seed(1)
+  n = 20
+  Mb = matrix(rnorm(n*5), n)
+  tiny = 1e-8*rnorm(n)
+  M = cbind(Mb, tiny)
+  Y = cbind(Mb %*% rnorm(5) + 1e7*tiny + rnorm(n, sd=1e-6),
+            Mb %*% rnorm(5) + rnorm(n, sd=0.5))
+  X = matrix(1, n, 1)
+  a = solveRRBLUPMV(Y, X, M)
+  b = solveRRBLUPMV(Y, X, cbind(M, matrix(0, n, 20)))
+  expect_equal(b$Vu, a$Vu, tolerance=1e-8)
+  expect_equal(b$Ve, a$Ve, tolerance=1e-8)
+  # The two fits are the same model, so they agree to rounding; holding the
+  # direction on one path only once moved its effect by 1e-6
+  expect_lt(max(abs(b$u[1:6, ] - a$u)), 1e-10)
+})
+
 test_that("INPUT malformed arguments are refused with a message", {
   n = 20
   m = 8

@@ -75,6 +75,16 @@ inline bool useCoefficientSide(arma::uword n, arma::uword c, arma::uword k,
 // determinant. One Cholesky factorization supplies both, so the determinant
 // that a REML likelihood needs costs nothing beyond the inverse itself.
 // Returns false if the matrix is not positive definite.
+// Eigenvalues of a cross product such as M'*M, M*M' or Z*K*Z' that are no
+// larger than this are zero up to rounding. Every solver applies the same
+// rule, to the eigenvalues of the cross product and relative to the number of
+// records, whose sums carry the rounding. Whichever of M'*M and M*M' is
+// decomposed, and whether or not M is padded with columns of zeros, the same
+// directions are therefore held.
+inline double rankCutoff(double maxEig, arma::uword nRecords){
+  return double(nRecords)*arma::datum::eps*std::max(maxEig, 0.0);
+}
+
 inline bool invAndLogDet(arma::mat& out, double& logDet, const arma::mat& in){
   arma::mat L;
   if(!arma::chol(L, in, "lower")){

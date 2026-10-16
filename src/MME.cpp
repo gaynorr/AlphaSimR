@@ -359,9 +359,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     arma::vec eigval(m);
     arma::mat eigvec(m,m);
     eigen2(eigval, eigvec, M.t()*M);
-    double maxEig = eigval.max();
-    if(maxEig<0.0) maxEig = 0.0;
-    double cutoff = double(m)*arma::datum::eps*maxEig;
+    double cutoff = rankCutoff(eigval.max(), n);
     arma::uvec keep = find(eigval>cutoff);
     s2 = eigval(keep);
     arma::mat Vk = eigvec.cols(keep);
@@ -375,10 +373,18 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     // contribution is the same for every delta apart from a factor of
     // 1/delta, so it is summarized here rather than being stored.
     nNull = double(n)-double(s2.n_elem);
-    yy0 = accu(yv%yv)-accu(yt%yt);
-    if(yy0<0.0) yy0 = 0.0;
-    Xy0 = Xr.t()*yv-Xt.t()*yt;
-    XX0 = Xr.t()*Xr-Xt.t()*Xt;
+    // The parts of y and X in the null space are formed before their cross
+    // products. Subtracting cross products instead, as in X'*X-Xt'*Xt, can
+    // leave XX0 slightly negative when X lies in the span of the kernel,
+    // and a tiny delta then turns that into a negative precision for the
+    // fixed effects. The projection on the span is applied through the
+    // rotated values already in hand, U*U'*v = M*Vk*diag(1/sqrt(s2))*(U'*v),
+    // where U'*v is yt or Xt.
+    arma::vec y0 = yv-M*(Vk*(sInv%yt));
+    arma::mat X0 = Xr-M*(Vk*(Xt.each_col()%sInv));
+    yy0 = arma::dot(y0, y0);
+    Xy0 = X0.t()*y0;
+    XX0 = X0.t()*X0;
   }else{
     // M*M' is the smaller of the two, and its decomposition spans all of
     // R^n, so there is no null space to account for
@@ -387,7 +393,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     U.set_size(n,n);
     eigen2(eigval, U, K);
     K.reset();
-    eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+    eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
     s2 = eigval;
     yt = U.t()*yv;
     Xt = U.t()*Xr;
@@ -433,6 +439,10 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
     // stand in for 1/(s+delta), which is far too large when delta is tiny.
     u = MtU*etd;
   }else{
+    // An eigenvalue set to zero by the rank rule was fitted as having no
+    // genetic variance, so its direction gets no effect. Left in, it would
+    // carry a gain of 1/delta where the kernel itself implies 1/(s+delta).
+    etd.elem(find(s2==0.0)).zeros();
     u = M.t()*(U*etd);
   }
 
@@ -976,7 +986,7 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   arma::mat U(n,n);
   eigen2(eigval, U, K);
   K.reset();
-  eigval.elem(find(eigval<0.0)).zeros(); // rounding only
+  eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
   // A least squares fit is taken off y, which leaves REML unchanged and
   // keeps a large mean from swamping the sums of squares
   arma::mat b0;

@@ -311,6 +311,17 @@ test_that("RRBLUPMemUse answers for every model it accepts", {
   }
 })
 
+test_that("RRBLUPMemUse counts the multiple trait optimizer", {
+  # The Newton steps hold several square matrices over the t*(t+1)
+  # parameters of Vu and Ve, so with many traits they outweigh a small data
+  # set. Four of them at 50 traits are already 0.21 GB.
+  nPar = 50*51
+  floorGB = 4*8*nPar^2/10^9
+  for(m in c(50, 500)){
+    expect_gt(RRBLUPMemUse(nInd=200, nMarker=m, nTraits=50), floorGB)
+  }
+})
+
 test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # Estimating variance components holds one more square matrix
   withEM = RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP2", useEM=TRUE)
