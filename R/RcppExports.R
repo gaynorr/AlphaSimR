@@ -128,40 +128,40 @@ callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estV
     .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
-callRRBLUP <- function(y, x, geno, lociPerChr, lociLoc, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP`, y, x, geno, lociPerChr, lociLoc, nThreads)
+callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads)
 }
 
-callRRBLUP2 <- function(y, x, geno, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP2`, y, x, geno, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads)
+callRRBLUP2 <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP2`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads)
 }
 
-callRRBLUP_D <- function(y, x, geno, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, geno, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_D <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_D2 <- function(y, x, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_D2`, y, x, geno, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads)
+callRRBLUP_D2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_D2`, y, x, pop, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads)
 }
 
-callRRBLUP_MV <- function(Y, x, geno, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, geno, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_GCA <- function(y, x, geno, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, geno, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_GCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_GCA2 <- function(y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_GCA2`, y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads)
+callRRBLUP_GCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_GCA2`, y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads)
 }
 
-callRRBLUP_SCA <- function(y, x, geno, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, geno, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_SCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_SCA2 <- function(y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_SCA2`, y, x, geno, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads)
+callRRBLUP_SCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA2`, y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads)
 }
 
 writeASGenotypes <- function(g, locations, allLocations, snpchips, names, missing, fname) {
@@ -260,16 +260,16 @@ createIbdMat <- function(ibd, chr, nLoci, ploidy, nThreads) {
     .Call(`_AlphaSimR_createIbdMat`, ibd, chr, nLoci, ploidy, nThreads)
 }
 
-cross <- function(motherGeno, mother, fatherGeno, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_cross`, motherGeno, mother, fatherGeno, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
+cross <- function(motherGenoList, mother, fatherGenoList, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_cross`, motherGenoList, mother, fatherGenoList, father, femaleMap, maleMap, femaleGenLen, maleGenLen, trackRec, motherPloidy, fatherPloidy, v, p, motherCentromere, fatherCentromere, quadProb, nThreads)
 }
 
-createDH2 <- function(geno, nDH, genMap, genLen, v, p, trackRec, nThreads) {
-    .Call(`_AlphaSimR_createDH2`, geno, nDH, genMap, genLen, v, p, trackRec, nThreads)
+createDH2 <- function(genoList, nDH, genMap, genLen, v, p, trackRec, nThreads) {
+    .Call(`_AlphaSimR_createDH2`, genoList, nDH, genMap, genLen, v, p, trackRec, nThreads)
 }
 
-createReducedGenome <- function(geno, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
-    .Call(`_AlphaSimR_createReducedGenome`, geno, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
+createReducedGenome <- function(genoList, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads) {
+    .Call(`_AlphaSimR_createReducedGenome`, genoList, nProgeny, genMap, genLen, v, p, trackRec, ploidy, centromere, quadProb, nThreads)
 }
 
 #' @title Population variance

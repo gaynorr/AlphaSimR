@@ -55,10 +55,13 @@ arma::field<arma::vec> getHybridGvE(const Rcpp::S4& trait,
   arma::vec xa = (x-dP/2.0)*(2.0/dP);
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
   
-  arma::Mat<unsigned char> femaleGeno = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(females.slot("geno")), 
-                                                lociPerChr, lociLoc, nThreads);
-  arma::Mat<unsigned char> maleGeno = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(males.slot("geno")), 
-                                              lociPerChr, lociLoc, nThreads);
+  // Read in place from the packed genotypes, see PackedGeno
+  PackedGeno femaleG(females);
+  PackedGeno maleG(males);
+  arma::Mat<unsigned char> femaleGeno = genoDosage(femaleG, lociPerChr, lociLoc,
+                                                  0, femaleG.ploidy, nThreads);
+  arma::Mat<unsigned char> maleGeno = genoDosage(maleG, lociPerChr, lociLoc,
+                                                0, maleG.ploidy, nThreads);
   
   //Loop through loci pairs
 #ifdef _OPENMP
@@ -175,10 +178,13 @@ arma::field<arma::vec> getHybridGv(const Rcpp::S4& trait,
   arma::vec xa = (x-dP/2.0)*(2.0/dP);
   arma::vec xd = x%(dP-x)*(2.0/dP)*(2.0/dP);
   
-  arma::Mat<unsigned char> femaleGeno = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(females.slot("geno")), 
-                                                lociPerChr, lociLoc, nThreads);
-  arma::Mat<unsigned char> maleGeno = getGeno(Rcpp::as<arma::field<arma::Cube<unsigned char> > >(males.slot("geno")), 
-                                              lociPerChr, lociLoc, nThreads);
+  // Read in place from the packed genotypes, see PackedGeno
+  PackedGeno femaleG(females);
+  PackedGeno maleG(males);
+  arma::Mat<unsigned char> femaleGeno = genoDosage(femaleG, lociPerChr, lociLoc,
+                                                  0, femaleG.ploidy, nThreads);
+  arma::Mat<unsigned char> maleGeno = genoDosage(maleG, lociPerChr, lociLoc,
+                                                0, maleG.ploidy, nThreads);
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)

@@ -1,4 +1,5 @@
 #include "alphasimr.h"
+#include "genoView.h"
 #include "ibd.h"
 #include <algorithm>
 #include <cstring>
@@ -1010,9 +1011,9 @@ void quadrivalent(const unsigned char* chr1,
 // nThreads: number of threads for parallel computing
 // [[Rcpp::export]]
 Rcpp::List cross(
-    const arma::field<arma::Cube<unsigned char> >& motherGeno, 
+    const Rcpp::List& motherGenoList, 
     arma::uvec mother,
-    const arma::field<arma::Cube<unsigned char> >& fatherGeno, 
+    const Rcpp::List& fatherGenoList, 
     arma::uvec father,
     const arma::field<arma::vec>& femaleMap,
     const arma::field<arma::vec>& maleMap,
@@ -1027,6 +1028,9 @@ Rcpp::List cross(
     const arma::vec& fatherCentromere,
     double quadProb,
     int nThreads){
+  // The parents' genotypes are read in place. See genoView.h.
+  ConstGenoView motherGeno(motherGenoList);
+  ConstGenoView fatherGeno(fatherGenoList);
   // The parents pick the genotype slices that meiosis reads through raw
   // pointers, so they are checked here, before the parallel region. The
   // indexes are still one based, and a zero or negative index from R has
@@ -1054,11 +1058,9 @@ Rcpp::List cross(
   arma::uword nChr = motherGeno.n_elem;
   arma::uword nInd = mother.n_elem;
   //Output data
-  // Sized up front so that gametes are written straight into the output
-  arma::field<arma::Cube<unsigned char> > geno(nChr);
-  for(arma::uword chr=0; chr<nChr; ++chr){
-    geno(chr).set_size(motherGeno(chr).n_rows,ploidy,nInd);
-  }
+  // Sized up front so that gametes are written straight into the output,
+  // which is allocated in R so that it can be returned without a copy
+  NewGeno geno(viewBins(motherGeno),ploidy,nInd);
   RecHist hist;
   if(trackRec){
     hist.setSize(nInd,nChr,ploidy);
@@ -1297,20 +1299,26 @@ Rcpp::List cross(
     } //End individual loop
   } //End work loop
   if(trackRec){
-    return Rcpp::List::create(Rcpp::Named("geno")=geno,
+    return Rcpp::List::create(Rcpp::Named("geno")=geno.list(),
                               Rcpp::Named("recHist")=hist.pack());
   }
-  return Rcpp::List::create(Rcpp::Named("geno")=geno);
+  return Rcpp::List::create(Rcpp::Named("geno")=geno.list());
 }
 
 // Creates DH lines from diploid individuals
 // [[Rcpp::export]]
 Rcpp::List createDH2(
-    const arma::field<arma::Cube<unsigned char> >& geno, 
+    const Rcpp::List& genoList, 
     const arma::uvec& nDH, const arma::field<arma::vec>& genMap, 
     const arma::vec& genLen, double v, double p, bool trackRec,
     int nThreads){
+  // The parents' genotypes are read in place. See genoView.h.
+  ConstGenoView geno(genoList);
   arma::uword nChr = geno.n_elem;
+  // The view, unlike arma::field, does not check its indexes
+  if(nChr == 0){
+    Rcpp::stop("geno must have at least one chromosome");
+  }
   arma::uword nInd = geno(0).n_slices;
   // Each chromosome's genetic length is read inside the parallel region
   if(genLen.n_elem != nChr){
@@ -1328,11 +1336,9 @@ Rcpp::List createDH2(
   arma::uword nOut = arma::accu(nDH);
   arma::uvec offset = arma::cumsum(nDH) - nDH;
   //Output data
-  // Sized up front so that gametes are written straight into the output
-  arma::field<arma::Cube<unsigned char> > output(nChr);
-  for(arma::uword chr=0; chr<nChr; ++chr){
-    output(chr).set_size(geno(chr).n_rows,2,nOut);
-  }
+  // Sized up front so that gametes are written straight into the output,
+  // which is allocated in R so that it can be returned without a copy
+  NewGeno output(viewBins(geno),2,nOut);
   RecHist hist;
   if(trackRec){
     hist.setSize(nOut,nChr,2);
@@ -1388,21 +1394,27 @@ Rcpp::List createDH2(
     } //End individual loop
   } //End work loop
   if(trackRec){
-    return Rcpp::List::create(Rcpp::Named("geno")=output,
+    return Rcpp::List::create(Rcpp::Named("geno")=output.list(),
                               Rcpp::Named("recHist")=hist.pack());
   }
-  return Rcpp::List::create(Rcpp::Named("geno")=output);
+  return Rcpp::List::create(Rcpp::Named("geno")=output.list());
 }
 
 // Samples gametes from individuals
 // [[Rcpp::export]]
 Rcpp::List createReducedGenome(
-    const arma::field<arma::Cube<unsigned char> >& geno, 
+    const Rcpp::List& genoList, 
     const arma::uvec& nProgeny, const arma::field<arma::vec>& genMap, 
     const arma::vec& genLen, double v, double p, bool trackRec,
     arma::uword ploidy, arma::vec& centromere, double quadProb,
     int nThreads){
+  // The parents' genotypes are read in place. See genoView.h.
+  ConstGenoView geno(genoList);
   arma::uword nChr = geno.n_elem;
+  // The view, unlike arma::field, does not check its indexes
+  if(nChr == 0){
+    Rcpp::stop("geno must have at least one chromosome");
+  }
   arma::uword nInd = geno(0).n_slices;
   // Each chromosome's genetic length is read inside the parallel region
   if(genLen.n_elem != nChr){
@@ -1429,11 +1441,9 @@ Rcpp::List createReducedGenome(
     }
   }
   //Output data
-  // Sized up front so that gametes are written straight into the output
-  arma::field<arma::Cube<unsigned char> > output(nChr);
-  for(arma::uword chr=0; chr<nChr; ++chr){
-    output(chr).set_size(geno(chr).n_rows,ploidy/2,nOut);
-  }
+  // Sized up front so that gametes are written straight into the output,
+  // which is allocated in R so that it can be returned without a copy
+  NewGeno output(viewBins(geno),ploidy/2,nOut);
   RecHist hist;
   if(trackRec){
     hist.setSize(nOut,nChr,ploidy/2);
@@ -1565,8 +1575,8 @@ Rcpp::List createReducedGenome(
     } // End individual loop
   } //End work loop
   if(trackRec){
-    return Rcpp::List::create(Rcpp::Named("geno")=output,
+    return Rcpp::List::create(Rcpp::Named("geno")=output.list(),
                               Rcpp::Named("recHist")=hist.pack());
   }
-  return Rcpp::List::create(Rcpp::Named("geno")=output);
+  return Rcpp::List::create(Rcpp::Named("geno")=output.list());
 }

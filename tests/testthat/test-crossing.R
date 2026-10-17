@@ -453,3 +453,76 @@ test_that("Meiosis kernels validate dimensions and normalize thread requests", {
     }
   }
 })
+
+# Meiosis reads the parents' genotypes in place, from the same memory as the
+# population passed in, and writes the progeny into arrays that are returned
+# to R as they are. The blocks below check both ends of that.
+
+test_that("KEEP the parents' genotypes unchanged by crossing",{
+  set.seed(7101)
+  # A deep copy, since an ordinary copy in R shares the parents' memory
+  deepCopy = function(x) unserialize(serialize(x, NULL))
+  founder2 = quickHaplo(nInd=20, nChr=2, segSites=37)
+  SP = SimParam$new(founder2)
+  SP$nThreads = 2L
+  SP$setTrackRec(TRUE)
+  pop = newPop(founder2, simParam=SP)
+  before = deepCopy(pop@geno)
+  invisible(makeCross(pop, cbind(1:10, 11:20), simParam=SP))
+  invisible(randCross(pop, 30, simParam=SP))
+  invisible(self(pop, nProgeny=2, simParam=SP))
+  invisible(makeDH(pop, nDH=2, simParam=SP))
+  invisible(makeCross2(pop[1:10], pop[11:20], cbind(1:10, 10:1),
+                       simParam=SP))
+  expect_identical(pop@geno, before)
+
+  founder4 = quickHaplo(nInd=10, nChr=2, segSites=37, ploidy=4L)
+  SP4 = SimParam$new(founder4)
+  SP4$nThreads = 2L
+  pop4 = newPop(founder4, simParam=SP4)
+  before4 = deepCopy(pop4@geno)
+  invisible(reduceGenome(pop4, nProgeny=3, simParam=SP4))
+  invisible(randCross(pop4, 10, simParam=SP4))
+  expect_identical(pop4@geno, before4)
+})
+
+test_that("PASS inbred parents' haplotypes to their progeny unchanged",{
+  set.seed(7102)
+  # An inbred parent's gametes are its haplotype whatever the crossovers,
+  # so every haplotype of the progeny is known in advance. This checks that
+  # each progeny's genotypes are written where they belong.
+  founderIn = quickHaplo(nInd=70, nChr=3, segSites=29, inbred=TRUE)
+  SP = SimParam$new(founderIn)
+  SP$nThreads = 2L
+  pop = newPop(founderIn, simParam=SP)
+  H = pullSegSiteHaplo(pop, haplo=1, simParam=SP)
+  plan = cbind(sample(70, 90, replace=TRUE), sample(70, 90, replace=TRUE))
+  kids = makeCross(pop, plan, simParam=SP)
+  expect_true(all(pullSegSiteHaplo(kids, haplo=1, simParam=SP) == H[plan[,1],]))
+  expect_true(all(pullSegSiteHaplo(kids, haplo=2, simParam=SP) == H[plan[,2],]))
+  dh = makeDH(pop, nDH=2, simParam=SP)
+  expect_true(all(pullSegSiteHaplo(dh, haplo=1, simParam=SP) ==
+                    H[rep(1:70, each=2),]))
+  expect_true(all(pullSegSiteHaplo(dh, haplo=2, simParam=SP) ==
+                    H[rep(1:70, each=2),]))
+  selfed = self(pop[c(3, 9)], nProgeny=4, simParam=SP)
+  expect_true(all(pullSegSiteGeno(selfed, simParam=SP) ==
+                    2L*H[rep(c(3, 9), each=4),]))
+})
+
+test_that("REFUSE parent genotypes that are not packed raw arrays",{
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop,simParam=SP)
+  doCross = function(geno){
+    AlphaSimR:::cross(geno, 1L, pop@geno, 2L,
+                      SP$femaleMap, SP$maleMap,
+                      SP$femaleGenLen, SP$maleGenLen, FALSE, 2L, 2L,
+                      SP$v, SP$p, SP$femaleCentromere, SP$maleCentromere,
+                      SP$quadProb, 1L)
+  }
+  notRaw = lapply(pop@geno, function(x) array(as.integer(x), dim=dim(x)))
+  expect_error(doCross(notRaw), regexp = "raw vectors")
+  flat = lapply(pop@geno, as.vector)
+  expect_error(doCross(flat), regexp = "three dimensional")
+})

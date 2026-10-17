@@ -413,3 +413,139 @@ test_that("fitting is not affected by the number of threads", {
                   nThreads=nThreads, simParam=d$SP)
   expect_equal(addEff(oneB), addEff(manyB), tolerance=1e-8)
 })
+
+# The models read their markers straight from the population's packed
+# genotypes. Building the same marker matrices in R from the pull functions
+# and handing them to the exported solvers is an independent route to the
+# same fit, and with a single fixed effect level the design matrix is a
+# column of ones on both routes. The codings below are exact in double
+# precision, so the two routes have to agree to the last bit.
+
+# Dominance coding of a dosage x at ploidy P, as the models code it
+domCode = function(x, P) x*(P - x)*(2/P)^2
+
+test_that("RRBLUP reads the same markers that pullSnpGeno returns", {
+  d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
+  y = d$pop@pheno[, 1L, drop=FALSE]
+  M = pullSnpGeno(d$pop, simParam=d$SP) - 1
+  ref = solveRRBLUP(y, matrix(1, nrow(y), 1L), M)
+  ans = RRBLUP(d$pop, simParam=d$SP)
+  expect_identical(addEff(ans), c(ref$u))
+
+  ref2 = solveRRBLUP_EM(y, matrix(1, nrow(y), 1L), M, Vu=0.1, Ve=1,
+                        tol=1e-6, maxIter=10L, useEM=FALSE)
+  ans2 = RRBLUP2(d$pop, Vu=0.1, Ve=1, useEM=FALSE, simParam=d$SP)
+  expect_identical(addEff(ans2), c(ref2$u))
+})
+
+test_that("RRBLUP_D2 reads the same markers that pullSnpGeno returns", {
+  d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
+  y = d$pop@pheno[, 1L, drop=FALSE]
+  G = pullSnpGeno(d$pop, simParam=d$SP)
+  Ma = G - 1
+  Md = domCode(G, 2)
+  X = cbind(1, rowSums(Md))
+  ref = solveRRBLUP_EM2(y, X, Ma, Md, Vu1=0.1, Vu2=0.05, Ve=1, tol=1e-6,
+                        maxIter=10L, useEM=FALSE)
+  ans = RRBLUP_D2(d$pop, Va=0.1, Vd=0.05, Ve=1, useEM=FALSE, simParam=d$SP)
+  expect_identical(addEff(ans), c(ref$u[, 1L]))
+})
+
+test_that("RRBLUP_GCA2 and RRBLUP_SCA2 read the parental haplotypes", {
+  d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
+  y = d$pop@pheno[, 1L, drop=FALSE]
+  X1 = matrix(1, nrow(y), 1L)
+  M1 = 2*pullSnpHaplo(d$pop, haplo=1, simParam=d$SP) - 1
+  M2 = 2*pullSnpHaplo(d$pop, haplo=2, simParam=d$SP) - 1
+  ref = solveRRBLUP_EM2(y, X1, M1, M2, Vu1=0.1, Vu2=0.2, Ve=1, tol=1e-6,
+                        maxIter=10L, useEM=FALSE)
+  gca = RRBLUP_GCA2(d$pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE,
+                    simParam=d$SP)
+  expect_identical(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]))
+  expect_identical(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]))
+
+  M3 = domCode(pullSnpGeno(d$pop, simParam=d$SP), 2)
+  ref3 = solveRRBLUP_EM3(y, cbind(1, rowSums(M3)), M1, M2, M3, Vu1=0.1,
+                         Vu2=0.2, Vu3=0.05, Ve=1, tol=1e-6, maxIter=10L,
+                         useEM=FALSE)
+  sca = RRBLUP_SCA2(d$pop, VuF=0.1, VuM=0.2, VuD=0.05, Ve=1, useEM=FALSE,
+                    simParam=d$SP)
+  expect_identical(c(sca@gv[[1L]]@addEff), c(ref3$u[, 1L]))
+  expect_identical(c(sca@gv[[1L]]@addEffMale), c(ref3$u[, 2L]))
+})
+
+test_that("RRBLUP_GCA2 splits a tetraploid's haplotypes in two", {
+  set.seed(8401)
+  founderPop = quickHaplo(nInd=60, nChr=2, segSites=20, ploidy=4L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=10, overlap=FALSE)
+  SP$addTraitA(nQtlPerChr=10)
+  SP$addSnpChip(nSnpPerChr=10)
+  SP$setVarE(h2=0.5)
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  y = pop@pheno[, 1L, drop=FALSE]
+  H = function(h) pullSnpHaplo(pop, haplo=h, simParam=SP)
+  # Each half of the haplotypes is coded at half the ploidy level
+  M1 = H(1) + H(2) - 1
+  M2 = H(3) + H(4) - 1
+  ref = solveRRBLUP_EM2(y, matrix(1, nrow(y), 1L), M1, M2, Vu1=0.1,
+                        Vu2=0.2, Ve=1, tol=1e-6, maxIter=10L, useEM=FALSE)
+  gca = RRBLUP_GCA2(pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE, simParam=SP)
+  expect_identical(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]))
+  expect_identical(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]))
+})
+
+test_that("setEBV reads the parental haplotypes of GCA and SCA solutions", {
+  skip_on_cran()
+  d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
+  H1 = pullSnpHaplo(d$pop, haplo=1, simParam=d$SP)
+  H2 = pullSnpHaplo(d$pop, haplo=2, simParam=d$SP)
+  het = domCode(H1 + H2, 2)
+  gcaSol = RRBLUP_GCA2(d$pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE,
+                       simParam=d$SP)
+  gca = gcaSol@gv[[1L]]
+  expected = gca@intercept + (2*H1 - 1)%*%gca@addEff +
+    (2*H2 - 1)%*%gca@addEffMale
+  expect_equal(c(ebv(setEBV(d$pop, gcaSol, simParam=d$SP))), c(expected),
+               tolerance=1e-10)
+  scaSol = RRBLUP_SCA2(d$pop, VuF=0.1, VuM=0.2, VuD=0.05, Ve=1,
+                       useEM=FALSE, simParam=d$SP)
+  sca = scaSol@gv[[1L]]
+  expected = sca@intercept + (2*H1 - 1)%*%sca@addEff +
+    (2*H2 - 1)%*%sca@addEffMale + het%*%sca@domEff
+  expect_equal(c(ebv(setEBV(d$pop, scaSol, simParam=d$SP))), c(expected),
+               tolerance=1e-10)
+})
+
+test_that("setEBV with a targetPop uses the target's allele frequencies", {
+  d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
+  target = d$pop[1:25]
+  ans = RRBLUP(d$pop, simParam=d$SP)
+  p = colMeans(pullSnpGeno(target, simParam=d$SP))/2
+  a = addEff(ans)
+  # With no dominance the breeding value is the additive effect centered
+  # on the target population
+  expected = (pullSnpGeno(d$pop, simParam=d$SP) - 1)%*%a - sum((2*p - 1)*a)
+  out = setEBV(d$pop, ans, value="bv", targetPop=target, simParam=d$SP)
+  expect_equal(c(ebv(out)), c(expected), tolerance=1e-10)
+})
+
+test_that("the dominance and hybrid models are not affected by the number of threads", {
+  skip_on_cran()
+  skip_if(getNumThreads() < 2L)
+  set.seed(8501)
+  founderPop = quickHaplo(nInd=60, nChr=2, segSites=20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=10, overlap=FALSE)
+  SP$addTraitAD(nQtlPerChr=10, meanDD=0.5)
+  SP$addSnpChip(nSnpPerChr=10)
+  SP$setVarE(h2=0.5)
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  for(fit in list(RRBLUP_D, RRBLUP_GCA, RRBLUP_SCA)){
+    one = fit(pop, nThreads=1L, simParam=SP)
+    two = fit(pop, nThreads=2L, simParam=SP)
+    expect_equal(addEff(one), addEff(two), tolerance=1e-8)
+  }
+})

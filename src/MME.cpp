@@ -1393,14 +1393,17 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
 }
 
 // Called by RRBLUP function
+// The markers of this function and of the other callRRBLUP functions below
+// are read straight from the population's packed genotypes, see PackedGeno
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x,
-                      arma::field<arma::Cube<unsigned char> >& geno, 
+                      const Rcpp::S4& pop,
                       arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                       int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
   arma::mat X = makeX(x);
-  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+  arma::mat M = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
   Rcpp::List ans = solveRRBLUP(y, X, M);
@@ -1415,14 +1418,15 @@ Rcpp::List callRRBLUP(arma::mat y, arma::uvec x,
 
 // Called by RRBLUP function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x, 
-                       arma::field<arma::Cube<unsigned char> >& geno, 
+Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x,
+                       const Rcpp::S4& pop,
                        arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                       double Vu, double Ve, double tol, int maxIter, 
+                       double Vu, double Ve, double tol, int maxIter,
                        bool useEM, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
   arma::mat X = makeX(x);
-  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+  arma::mat M = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
   Rcpp::List ans = solveRRBLUP_EM(y, X, M, Vu, Ve, 
@@ -1439,25 +1443,20 @@ Rcpp::List callRRBLUP2(arma::mat y, arma::uvec x,
 // Called by RRBLUP_D function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
-                        arma::field<arma::Cube<unsigned char> >& geno, 
+                        const Rcpp::S4& pop,
                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                         int maxIter, int nThreads){
   // Fit GS model
-  arma::uword ploidy = geno(0).n_cols;
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
+  arma::Mat<unsigned char> M = genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads);
   arma::field<arma::mat> Mlist(2);
   Mlist(0) = genoToGenoA(M,ploidy,nThreads);
   arma::rowvec Mmean = mean(Mlist(0));
   Mlist(1) = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(1),1));
-  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
-  
-  // Clear memory
-  y.reset();
-  X.reset();
-  Mlist.reset();
-  
+
   //Scaled genotypes
   double dP = double(ploidy);
   arma::vec xx(ploidy+1);
@@ -1486,16 +1485,27 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
       }
     }
   }
-  
+
+  // The genotypes are only needed for the frequencies above, so they are
+  // freed before the model is fitted rather than held through it
+  arma::uword m = M.n_cols;
+  M.reset();
+  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+
+  // Clear memory
+  y.reset();
+  X.reset();
+  Mlist.reset();
+
   // Solve for average effect
-  arma::vec alpha(M.n_cols), d(M.n_cols);
+  arma::vec alpha(m), d(m);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
   arma::field<arma::mat> u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword j=0; j<M.n_cols; ++j){
+  for(arma::uword j=0; j<m; ++j){
     double genoMu, gvMu;
     arma::vec gv(ploidy+1);
     if(fixed(j) == 1){
@@ -1524,26 +1534,20 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
 
 // Called by RRBLUP_D2 function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x, 
-                         arma::field<arma::Cube<unsigned char> >& geno, 
+Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x,
+                         const Rcpp::S4& pop,
                          arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                         int maxIter, double Va, double Vd, double Ve, 
+                         int maxIter, double Va, double Vd, double Ve,
                          double tol, bool useEM, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,lociLoc,nThreads);
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
+  arma::Mat<unsigned char> M = genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads);
   arma::mat Ma = genoToGenoA(M,ploidy,nThreads);
   arma::rowvec Mmean = mean(Ma);
   arma::mat Md = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),sum(Md,1));
-  Rcpp::List ans = solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM);
-  
-  // Clear memory
-  y.reset();
-  X.reset();
-  Ma.reset();
-  Md.reset();
-  
+
   //Scaled genotypes
   double dP = double(ploidy);
   arma::vec xx(ploidy+1);
@@ -1572,16 +1576,28 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x,
       }
     }
   }
-  
+
+  // The genotypes are only needed for the frequencies above, so they are
+  // freed before the model is fitted rather than held through it
+  arma::uword m = M.n_cols;
+  M.reset();
+  Rcpp::List ans = solveRRBLUP_EM2(y,X,Ma,Md,Va,Vd,Ve,tol,maxIter,useEM);
+
+  // Clear memory
+  y.reset();
+  X.reset();
+  Ma.reset();
+  Md.reset();
+
   // Solve for average effect
-  arma::vec alpha(M.n_cols), d(M.n_cols);
+  arma::vec alpha(m), d(m);
   arma::mat beta = ans["beta"];
   double meanD = beta(beta.n_elem-1);
   arma::mat u = ans["u"];
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
-  for(arma::uword j=0; j<M.n_cols; ++j){
+  for(arma::uword j=0; j<m; ++j){
     double genoMu, gvMu;
     arma::vec gv(ploidy+1);
     if(fixed(j) == 1){
@@ -1611,12 +1627,13 @@ Rcpp::List callRRBLUP_D2(arma::mat y, arma::uvec x,
 // Called by RRBLUP function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x,
-                         arma::field<arma::Cube<unsigned char> >& geno, 
-                         arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                         const Rcpp::S4& pop,
+                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                          int maxIter, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
   arma::mat X = makeX(x);
-  arma::mat M = genoToGenoA(getGeno(geno,lociPerChr,lociLoc,nThreads),
+  arma::mat M = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
   Rcpp::List ans = solveRRBLUPMV(Y, X, M, maxIter);
@@ -1632,14 +1649,15 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x,
 // Called by RRBLUP_GCA function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
-                          arma::field<arma::Cube<unsigned char> >& geno, 
-                          arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+                          const Rcpp::S4& pop,
+                          arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                           int maxIter, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(2);
-  Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
+  Mlist(0) = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy/2,
                          nThreads),ploidy/2,nThreads);
-  Mlist(1) = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
+  Mlist(1) = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,ploidy/2,ploidy,
                          nThreads),ploidy/2,nThreads);
   arma::rowvec Mmean1 = mean(Mlist(0));
   arma::rowvec Mmean2 = mean(Mlist(1));
@@ -1658,16 +1676,17 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
 
 // Called by RRBLUP_GCA2 function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x, 
-                           arma::field<arma::Cube<unsigned char> >& geno, 
-                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
-                           int maxIter, double Vu1, double Vu2, double Ve, 
+Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x,
+                           const Rcpp::S4& pop,
+                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
+                           int maxIter, double Vu1, double Vu2, double Ve,
                            double tol, bool useEM, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
-  arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
-                                             nThreads),ploidy/2,nThreads);
-  arma::mat M2 = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
-                                             nThreads),ploidy/2,nThreads);
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
+  arma::mat M1 = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy/2,
+                                        nThreads),ploidy/2,nThreads);
+  arma::mat M2 = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,ploidy/2,ploidy,
+                                        nThreads),ploidy/2,nThreads);
   arma::rowvec Mmean1 = mean(M1);
   arma::rowvec Mmean2 = mean(M2);
   arma::mat X = makeX(x);
@@ -1686,19 +1705,24 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x,
 // Called by RRBLUP_SCA function
 // Only works with diploids
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x, 
-                          arma::field<arma::Cube<unsigned char> >& geno, 
-                          arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
+Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
+                          const Rcpp::S4& pop,
+                          arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                           int maxIter, int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(3);
-  Mlist(0) = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
-                         nThreads),ploidy/2,nThreads);
-  Mlist(1) = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
-                         nThreads),ploidy/2,nThreads);
+  // The maternal and paternal dosages are each read once. Their sum is the
+  // genotype dosage, the same byte for byte as reading it a third time.
+  arma::Mat<unsigned char> M = genoDosage(g,lociPerChr,lociLoc,0,ploidy/2,
+                                          nThreads);
+  arma::Mat<unsigned char> Mpat = genoDosage(g,lociPerChr,lociLoc,ploidy/2,
+                                             ploidy,nThreads);
+  Mlist(0) = genoToGenoA(M,ploidy/2,nThreads);
+  Mlist(1) = genoToGenoA(Mpat,ploidy/2,nThreads);
+  M += Mpat;
+  Mpat.reset();
   // Identify fixed markers
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,
-                                       lociLoc, nThreads);
   arma::uword m = M.n_cols;
   double n = double(y.n_rows);
   arma::uvec fixed(m,arma::fill::ones);
@@ -1724,7 +1748,6 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
   
   arma::rowvec Mmean1 = mean(Mlist(0));
   arma::rowvec Mmean2 = mean(Mlist(1));
-  arma::rowvec Mmean12 = mean(Mlist(0)%Mlist(1));
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(2),1));
   
@@ -1800,20 +1823,25 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
 
 // Called by RRBLUP_SCA2 function
 // [[Rcpp::export]]
-Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x, 
-                           arma::field<arma::Cube<unsigned char> >& geno, 
-                           arma::Col<int>& lociPerChr, arma::uvec lociLoc, 
-                           int maxIter, double Vu1, double Vu2, double Vu3, 
-                           double Ve, double tol, bool useEM,  
+Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x,
+                           const Rcpp::S4& pop,
+                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
+                           int maxIter, double Vu1, double Vu2, double Vu3,
+                           double Ve, double tol, bool useEM,
                            int nThreads){
-  arma::uword ploidy = geno(0).n_cols;
-  arma::mat M1 = genoToGenoA(getMaternalGeno(geno,lociPerChr,lociLoc,
-                                             nThreads),ploidy/2,nThreads);
-  arma::mat M2 = genoToGenoA(getPaternalGeno(geno,lociPerChr,lociLoc,
-                                             nThreads),ploidy/2,nThreads);
+  PackedGeno g(pop);
+  arma::uword ploidy = g.ploidy;
+  // The maternal and paternal dosages are each read once. Their sum is the
+  // genotype dosage, the same byte for byte as reading it a third time.
+  arma::Mat<unsigned char> M = genoDosage(g,lociPerChr,lociLoc,0,ploidy/2,
+                                          nThreads);
+  arma::Mat<unsigned char> Mpat = genoDosage(g,lociPerChr,lociLoc,ploidy/2,
+                                             ploidy,nThreads);
+  arma::mat M1 = genoToGenoA(M,ploidy/2,nThreads);
+  arma::mat M2 = genoToGenoA(Mpat,ploidy/2,nThreads);
+  M += Mpat;
+  Mpat.reset();
   // Identify fixed markers
-  arma::Mat<unsigned char> M = getGeno(geno,lociPerChr,
-                                       lociLoc, nThreads);
   arma::uword m = M.n_cols;
   double n = double(y.n_rows);
   arma::uvec fixed(m,arma::fill::ones);
@@ -1839,7 +1867,6 @@ Rcpp::List callRRBLUP_SCA2(arma::mat y, arma::uvec x,
   
   arma::rowvec Mmean1 = mean(M1);
   arma::rowvec Mmean2 = mean(M2);
-  arma::rowvec Mmean12 = mean(M1%M2);
   arma::mat X;
   X = join_rows(makeX(x),sum(M3,1));
   

@@ -19,6 +19,14 @@ arma::uword countBlocks(arma::uword nItem);
 arma::uword blockStart(arma::uword nItem, arma::uword nBlock,
                        arma::uword block);
 
+// Allocates an R raw array for one chromosome of packed genotypes, nBins by
+// ploidy by nInd, with its contents left unset. Genotypes written straight
+// into it can be returned to R without the copy that wrapping an
+// arma::Cube makes. Defined in misc.cpp; it calls R and so must not be
+// called inside a parallel region.
+Rcpp::RawVector newChrGeno(arma::uword nBins, arma::uword ploidy,
+                           arma::uword nInd);
+
 arma::uword mapRow(const arma::uword& k, const arma::uword& n);
 arma::uword mapCol(const arma::uword& row, const arma::uword& k, const arma::uword& n);
 double choose(double n, double k);

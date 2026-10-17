@@ -19,6 +19,52 @@ struct PackedGeno{
     Rcpp::List geno = pop.slot("geno");
     ploidy = Rcpp::as<arma::uword>(pop.slot("ploidy"));
     nInd = Rcpp::as<arma::uword>(pop.slot("nInd"));
+    readChromosomes(geno);
+  }
+
+  // Genotypes given as the list itself, as the accessors in getGeno.cpp
+  // receive them. The ploidy level and number of individuals are taken from
+  // the dimensions of the first chromosome, and every other chromosome has
+  // to agree with them.
+  //
+  // Functions that take genotypes from R take this list rather than an
+  // arma::field. What converting the list to a field does depends on the
+  // version of RcppArmadillo. Older versions copy every chromosome. Recent
+  // ones build each cube on R's own memory and then move it into the field,
+  // which avoids the copy but leaves cubes that can be written to, so a
+  // function that changed its field would change the population passed in
+  // and every R object sharing its genotypes. Reading through PackedGeno
+  // never copies and cannot write.
+  explicit PackedGeno(const Rcpp::List& geno){
+    ploidy = 0;
+    nInd = 0;
+    if(geno.size()>0){
+      Rcpp::IntegerVector dim = chrDim(geno[0]);
+      ploidy = arma::uword(dim[1]);
+      nInd = arma::uword(dim[2]);
+    }
+    readChromosomes(geno);
+    for(R_xlen_t i=0; i<geno.size(); ++i){
+      Rcpp::IntegerVector dim = chrDim(geno[i]);
+      if(arma::uword(dim[1])!=ploidy || arma::uword(dim[2])!=nInd){
+        Rcpp::stop("chromosomes do not have the same ploidy and individuals");
+      }
+    }
+  }
+
+private:
+  // The dimensions of one chromosome's array. Checked before they are
+  // converted, because a vector without them has a NULL dim attribute,
+  // which Rcpp would refuse with a message that says nothing about why.
+  static Rcpp::IntegerVector chrDim(SEXP chrGeno){
+    SEXP dim = Rf_getAttrib(chrGeno, R_DimSymbol);
+    if(Rf_length(dim)!=3){
+      Rcpp::stop("genotypes for a chromosome are not a three dimensional array");
+    }
+    return Rcpp::IntegerVector(dim);
+  }
+
+  void readChromosomes(const Rcpp::List& geno){
     for(R_xlen_t i=0; i<geno.size(); ++i){
       // The pointers below are only valid while they point into the
       // population's own vectors, so a vector that would need coercing,
@@ -27,10 +73,7 @@ struct PackedGeno{
       if(TYPEOF(chrGeno)!=RAWSXP){
         Rcpp::stop("genotypes are not stored as raw vectors");
       }
-      Rcpp::IntegerVector dim = Rf_getAttrib(chrGeno, R_DimSymbol);
-      if(dim.size()!=3){
-        Rcpp::stop("genotypes for a chromosome are not a three dimensional array");
-      }
+      Rcpp::IntegerVector dim = chrDim(chrGeno);
       chrPtr.push_back(RAW(chrGeno));
       nBins.push_back(arma::uword(dim[0]));
     }

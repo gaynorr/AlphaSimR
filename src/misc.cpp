@@ -1,5 +1,6 @@
 // These functions may be called by R, but are not listed in the package namespace
 #include "alphasimr.h"
+#include <cstring>
 
 // Calculates population variance
 //' @title Population variance
@@ -24,44 +25,93 @@ arma::mat popVarCpp(const arma::mat& X) {
   }
 }
 
-// Merges geno objects, i.e. fields containing cubes of unsigned char
+// Allocates the raw array that holds one chromosome of packed genotypes,
+// with the dimensions nBins by ploidy by nInd that the rest of the package
+// expects. The contents are left for the caller to write.
+Rcpp::RawVector newChrGeno(arma::uword nBins, arma::uword ploidy,
+                           arma::uword nInd){
+  Rcpp::RawVector out(Rcpp::no_init(nBins*ploidy*nInd));
+  out.attr("dim") = Rcpp::IntegerVector::create(int(nBins), int(ploidy),
+                                                int(nInd));
+  return out;
+}
+
+// Merges geno objects, i.e. lists of raw arrays holding packed genotypes.
+// The genotypes are read in place and copied once, straight into the arrays
+// that are returned. Returning an arma::field would copy the merged
+// genotypes a second time on the way out.
 // [[Rcpp::export]]
-arma::field<arma::Cube<unsigned char> > mergeGeno(
-    const arma::field<arma::Cube<unsigned char> >& x, 
-    const arma::field<arma::Cube<unsigned char> >& y){
-  arma::uword nChr = x.n_elem;
-  arma::field<arma::Cube<unsigned char> > z(nChr);
+Rcpp::List mergeGeno(const Rcpp::List& x, const Rcpp::List& y){
+  PackedGeno gx(x);
+  PackedGeno gy(y);
+  arma::uword nChr = gx.chrPtr.size();
+  if(gy.chrPtr.size()!=nChr){
+    Rcpp::stop("mergeGeno: the genotypes do not have the same chromosomes");
+  }
+  // An individual's genotypes are a contiguous run of nBins*ploidy bytes
+  // and individuals follow each other, so merging is two copies per
+  // chromosome
+  Rcpp::List z(nChr);
   for(arma::uword i=0; i<nChr; ++i){
-    z(i) = arma::join_slices(x(i),y(i));
+    if((gx.nBins[i]!=gy.nBins[i]) || (gx.ploidy!=gy.ploidy)){
+      Rcpp::stop("mergeGeno: the genotypes do not have the same chromosomes");
+    }
+    arma::uword xBytes = gx.nBins[i]*gx.ploidy*gx.nInd;
+    arma::uword yBytes = gy.nBins[i]*gy.ploidy*gy.nInd;
+    Rcpp::RawVector chrGeno = newChrGeno(gx.nBins[i], gx.ploidy,
+                                         gx.nInd+gy.nInd);
+    unsigned char* out = RAW(chrGeno);
+    if(xBytes>0){
+      std::memcpy(out, gx.chrPtr[i], xBytes);
+    }
+    if(yBytes>0){
+      std::memcpy(out+xBytes, gy.chrPtr[i], yBytes);
+    }
+    z[i] = chrGeno;
   }
   return z;
 }
 
-// Merges multiple geno objects contained a list of Class-Pop
+// Merges multiple geno objects contained a list of Class-Pop.
+// As in mergeGeno, each population's genotypes are read in place and
+// copied once into the arrays that are returned.
 // [[Rcpp::export]]
-arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
-                                                      arma::uvec nInd,
-                                                      arma::uvec nBin,
-                                                      arma::uword ploidy){
-  arma::field<arma::Cube<unsigned char> > output(nBin.n_elem);
+Rcpp::List mergeMultGeno(Rcpp::List& popList,
+                         arma::uvec nInd,
+                         arma::uvec nBin,
+                         arma::uword ploidy){
+  arma::uword nChr = nBin.n_elem;
   arma::uword nTot = sum(nInd);
   arma::uword nPop = nInd.n_elem;
+  if(arma::uword(popList.size())!=nPop){
+    Rcpp::stop("mergeMultGeno: nInd must have one value per population");
+  }
   // Allocate output
-  for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
-    output(chr).set_size(nBin(chr),ploidy,nTot);
+  Rcpp::List output(nChr);
+  std::vector<unsigned char*> outPtr(nChr);
+  for(arma::uword chr=0; chr<nChr; ++chr){
+    Rcpp::RawVector chrGeno = newChrGeno(nBin(chr), ploidy, nTot);
+    outPtr[chr] = RAW(chrGeno);
+    output[chr] = chrGeno;
   }
   // Add individual genotypes
-  arma::uword startInd=0, endInd=0;
+  arma::uword startInd=0;
   for(arma::uword i=0; i<nPop; ++i){
     if(nInd(i)>0){
-      endInd += nInd(i)-1;
       Rcpp::S4 pop = popList[i];
-      arma::field<arma::Cube<unsigned char> >geno = pop.slot("geno");
-      for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
-        output(chr).slices(startInd,endInd) = geno(chr);
+      PackedGeno g(pop);
+      if(g.chrPtr.size()!=nChr || g.ploidy!=ploidy || g.nInd!=nInd(i)){
+        Rcpp::stop("mergeMultGeno: a population does not match the others");
+      }
+      for(arma::uword chr=0; chr<nChr; ++chr){
+        if(g.nBins[chr]!=nBin(chr)){
+          Rcpp::stop("mergeMultGeno: a population does not match the others");
+        }
+        arma::uword indBytes = nBin(chr)*ploidy;
+        std::memcpy(outPtr[chr]+indBytes*startInd, g.chrPtr[chr],
+                    indBytes*nInd(i));
       }
       startInd += nInd(i);
-      endInd = startInd;
     }
   }
   return output;

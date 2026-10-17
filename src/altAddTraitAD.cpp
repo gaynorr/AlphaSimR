@@ -24,10 +24,14 @@ Rcpp::List argAltAD(Rcpp::S4 LociMap,
   const arma::Col<int>& lociPerChr = LociMap.slot("lociPerChr");
   arma::uword nLoci = accu(lociPerChr);
   arma::uvec lociLoc = LociMap.slot("lociLoc");
-  arma::Mat<unsigned char> genoMat = getGeno(
-    Rcpp::as<arma::field<arma::Cube<unsigned char> > >(Pop.slot("geno")), 
+  // Read in place from the packed genotypes, see PackedGeno
+  PackedGeno g(Pop);
+  arma::Mat<unsigned char> genoMat = genoDosage(
+    g, 
     lociPerChr, 
     lociLoc, 
+    0, 
+    g.ploidy, 
     nThreads
   );
   

@@ -49,7 +49,9 @@ selection models to a training population of a given size. The estimate
 covers the matrices the solvers hold at their peak, which is what decides
 whether a model can be fitted at all. It does not cover the population
 object itself or anything else in the R session, so it is a lower bound
-on what the whole simulation needs.
+on what the whole simulation needs. Every model reads its markers
+straight from the population's genotypes, so fitting one does not copy
+the genotypes of the loci that are not markers.
 }
 \details{
 The models differ in what they have to hold in memory, and the differences

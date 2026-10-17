@@ -245,3 +245,90 @@ test_that("REFUSE a manual trait with loci outside their chromosome", {
   }
   expect_equal(x$SP$nTraits, 1L)
 })
+
+# The accessors read the genotypes in place rather than through a copy, so
+# nothing they do may write to the population. A deep copy taken first is
+# the only reference that would show such a write: an ordinary assignment in
+# R shares memory with the original until one of them is modified.
+deepCopy = function(x) unserialize(serialize(x, NULL))
+
+test_that("KEEP the genotypes unchanged by every accessor", {
+  set.seed(5011)
+  x = knownPop(nInd = 70L, nPerChr = c(170L, 130L), ploidy = 4L)
+  before = deepCopy(x$pop@geno)
+  lociPerChr = x$pop@nLoci
+  lociLoc = c(seq_len(170L), seq_len(130L))
+  invisible(pullSegSiteGeno(x$pop, simParam = x$SP))
+  invisible(pullSegSiteHaplo(x$pop, simParam = x$SP))
+  invisible(pullSegSiteHaplo(x$pop, haplo = 3, simParam = x$SP))
+  invisible(AlphaSimR:::getMaternalGeno(x$pop@geno, lociPerChr, lociLoc, 2L))
+  invisible(AlphaSimR:::getPaternalGeno(x$pop@geno, lociPerChr, lociLoc, 2L))
+  invisible(AlphaSimR:::calcGenoFreq(x$pop@geno, lociPerChr, lociLoc, 2L))
+  invisible(AlphaSimR:::calcChrFreq(x$pop@geno[[2L]]))
+  expect_identical(x$pop@geno, before)
+})
+
+test_that("SPLIT the haplotypes between the maternal and paternal dosages", {
+  set.seed(5012)
+  x = knownPop(nInd = 70L, nPerChr = c(170L, 130L), ploidy = 4L)
+  lociPerChr = x$pop@nLoci
+  lociLoc = c(seq_len(170L), seq_len(130L))
+  # Rows of the known haplotypes for haplotype h of every individual
+  hapRows = function(h) seq(h, nrow(x$haplo), by = x$ploidy)
+  mat = AlphaSimR:::getMaternalGeno(x$pop@geno, lociPerChr, lociLoc, 1L)
+  pat = AlphaSimR:::getPaternalGeno(x$pop@geno, lociPerChr, lociLoc, 1L)
+  expect_true(all(mat == x$haplo[hapRows(1), ] + x$haplo[hapRows(2), ]))
+  expect_true(all(pat == x$haplo[hapRows(3), ] + x$haplo[hapRows(4), ]))
+  # Together they are the genotype dosage
+  expect_identical(
+    as.integer(mat) + as.integer(pat),
+    as.integer(AlphaSimR:::getGeno(x$pop@geno, lociPerChr, lociLoc, 1L)))
+})
+
+test_that("COUNT allele frequencies exactly from the packed genotypes", {
+  set.seed(5013)
+  for (ploidy in c(2L, 4L)) {
+    x = knownPop(nInd = 70L, nPerChr = c(170L, 130L), ploidy = ploidy)
+    G = pullSegSiteGeno(x$pop, simParam = x$SP)
+    lociPerChr = x$pop@nLoci
+    lociLoc = c(seq_len(170L), seq_len(130L))
+    # The column sums are whole numbers, so dividing them in this order
+    # gives the frequencies to the last bit
+    expected = unname(colSums(G))/x$nInd/ploidy
+    for (nThreads in c(1L, 2L)) {
+      p = AlphaSimR:::calcGenoFreq(x$pop@geno, lociPerChr, lociLoc, nThreads)
+      expect_identical(c(p), expected)
+    }
+    # calcChrFreq covers every bit of a chromosome's bytes, and the bits
+    # past the last locus hold no allele
+    q = c(AlphaSimR:::calcChrFreq(x$pop@geno[[2L]]))
+    expect_equal(length(q), 8L*dim(x$pop@geno[[2L]])[1L])
+    expect_identical(q[seq_len(130L)], expected[170L + seq_len(130L)])
+    expect_true(all(q[-seq_len(130L)] == 0))
+  }
+  # A population without individuals has no frequencies. It gave an error
+  # when the frequencies were the means of a dosage matrix, and still does.
+  empty = x$pop@geno
+  empty = lapply(empty, function(chr) chr[, , integer(), drop = FALSE])
+  expect_error(AlphaSimR:::calcGenoFreq(empty, lociPerChr, lociLoc, 1L))
+  expect_error(AlphaSimR:::calcChrFreq(empty[[1L]]))
+})
+
+test_that("REFUSE chromosomes that disagree on ploidy or individuals", {
+  set.seed(5014)
+  x = knownPop(nInd = 5L, nPerChr = c(20L, 12L))
+  lociPerChr = x$pop@nLoci
+  lociLoc = c(seq_len(20L), seq_len(12L))
+  short = x$pop@geno
+  short[[2L]] = short[[2L]][, , 1:3, drop = FALSE]
+  expect_error(AlphaSimR:::getGeno(short, lociPerChr, lociLoc, 1L),
+               "same ploidy and individuals")
+  haploid = x$pop@geno
+  haploid[[2L]] = haploid[[2L]][, 1L, , drop = FALSE]
+  expect_error(AlphaSimR:::getHaplo(haploid, lociPerChr, lociLoc, 1L),
+               "same ploidy and individuals")
+  notRaw = x$pop@geno
+  notRaw[[1L]] = array(as.integer(notRaw[[1L]]), dim = dim(notRaw[[1L]]))
+  expect_error(AlphaSimR:::getGeno(notRaw, lociPerChr, lociLoc, 1L),
+               "raw vectors")
+})

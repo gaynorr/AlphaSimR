@@ -369,3 +369,31 @@ test_that("REFUSE a hybrid crossPlan outside the populations",{
                                        pop,c(1L,1L),1L),
                "Invalid parent index")
 })
+
+# ---------------------------------------------------------------------------
+# 4. Genetic values of hybrids
+# ---------------------------------------------------------------------------
+
+test_that("AGREE hybrid genetic values with their parents' merged genomes",{
+  set.seed(7201)
+  # A hybrid's genetic value is worked out from its parents' genotypes
+  # without making the hybrid. mergeGenome makes it, as one individual
+  # carrying both parents' haplotypes at the summed ploidy level, which is
+  # the scale hybrid genetic values are worked out on, so the two have to
+  # agree up to the order the effects are added in.
+  founder = quickHaplo(nInd=40, nChr=2, segSites=50, inbred=TRUE)
+  SP = SimParam$new(founder)
+  SP$nThreads = 1L
+  SP$addTraitAD(nQtlPerChr=20, meanDD=0.4)
+  SP$addTraitAE(nQtlPerChr=20, relAA=0.5)
+  SP$addTraitAG(nQtlPerChr=20, varGxE=0.5)
+  pop = newPop(founder, simParam=SP)
+  females = pop[1:20]
+  males = pop[21:40]
+  plan = cbind(c(1:20, 4L, 4L), c(20:1, 7L, 13L))
+  hyb = hybridCross(females, males, crossPlan=plan, returnHybridPop=TRUE,
+                    simParam=SP)
+  merged = mergeGenome(females, males, plan, simParam=SP)
+  expect_equal(unname(hyb@gv), unname(merged@gv), tolerance=1e-10)
+  expect_equal(c(hyb@gxe[[3L]]), c(merged@gxe[[3L]]), tolerance=1e-10)
+})

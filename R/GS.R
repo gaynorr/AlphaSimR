@@ -297,10 +297,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   if(ncol(y)>1){
-    ans = callRRBLUP_MV(y, fixEff, pop@geno, lociPerChr,
+    ans = callRRBLUP_MV(y, fixEff, pop, lociPerChr,
                         lociLoc, maxIter, nThreads)
   }else{
-    ans = callRRBLUP(y, fixEff, pop@geno, lociPerChr, lociLoc,
+    ans = callRRBLUP(y, fixEff, pop, lociPerChr, lociLoc,
                      nThreads)
   }
 
@@ -494,7 +494,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  ans = callRRBLUP2(y, fixEff, pop@geno, lociPerChr,
+  ans = callRRBLUP2(y, fixEff, pop, lociPerChr,
                     lociLoc, Vu, Ve, tol, maxIter, useEM,
                     nThreads)
 
@@ -604,7 +604,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_D(y, fixEff, pop@geno, lociPerChr,
+  ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
                      lociLoc, maxIter, nThreads)
 
   bv = new("TraitA",
@@ -764,7 +764,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_D2(y, fixEff, pop@geno, lociPerChr,
+  ans = callRRBLUP_D2(y, fixEff, pop, lociPerChr,
                       lociLoc, maxIter, Va, Vd, Ve, tol, useEM,
                       nThreads)
 
@@ -885,7 +885,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_GCA(y, fixEff, pop@geno,
+  ans = callRRBLUP_GCA(y, fixEff, pop,
                        lociPerChr, lociLoc, maxIter,
                        nThreads)
 
@@ -1062,7 +1062,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   #Fit model
   stopifnot(ncol(y)==1)
 
-  ans = callRRBLUP_GCA2(y, fixEff, pop@geno,
+  ans = callRRBLUP_GCA2(y, fixEff, pop,
                         lociPerChr, lociLoc, maxIter,
                         VuF, VuM, Ve, tol, useEM,
                         nThreads)
@@ -1193,7 +1193,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_SCA(y, fixEff, pop@geno,
+  ans = callRRBLUP_SCA(y, fixEff, pop,
                        lociPerChr, lociLoc, maxIter,
                        nThreads)
 
@@ -1383,7 +1383,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   stopifnot(ncol(y)==1)
-  ans = callRRBLUP_SCA2(y, fixEff, pop@geno,
+  ans = callRRBLUP_SCA2(y, fixEff, pop,
                         lociPerChr, lociLoc, maxIter,
                         VuF, VuM, VuD, Ve, tol, useEM,
                         nThreads)
@@ -1694,7 +1694,9 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' covers the matrices the solvers hold at their peak, which is what decides
 #' whether a model can be fitted at all. It does not cover the population
 #' object itself or anything else in the R session, so it is a lower bound
-#' on what the whole simulation needs.
+#' on what the whole simulation needs. Every model reads its markers
+#' straight from the population's genotypes, so fitting one does not copy
+#' the genotypes of the loci that are not markers.
 #'
 #' @param nInd the number of individuals in the training population
 #' @param nMarker the number of markers per individual

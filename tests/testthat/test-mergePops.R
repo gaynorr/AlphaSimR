@@ -250,3 +250,29 @@ test_that("Merging preserves GxE values in population order", {
   expect_equal(as.vector(withEmpty@gxe[[1]]),as.vector(pop@gxe[[1]]))
   expect_equal(withEmpty@nInd,pop@nInd)
 })
+
+test_that("AGREE merged genotypes with arrays bound together in R", {
+  set.seed(6029)
+  # 13 sites leave the last byte of each haplotype part full, and a
+  # tetraploid has more than two haplotypes per individual to keep in order
+  founderPop = quickHaplo(nInd=7, nChr=2, segSites=13, ploidy=4L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  before = unserialize(serialize(pop@geno, NULL))
+  bindGeno = function(...){
+    pops = list(...)
+    lapply(seq_len(pop@nChr), function(chr){
+      parts = lapply(pops, function(x) x@geno[[chr]])
+      array(unlist(lapply(parts, as.vector)),
+            dim=c(dim(parts[[1]])[1:2], sum(sapply(pops, nInd))))
+    })
+  }
+  expect_identical(c(pop[1:3], pop[4:7])@geno, bindGeno(pop[1:3], pop[4:7]))
+  expect_identical(c(pop[5:7], pop[1:2])@geno, bindGeno(pop[5:7], pop[1:2]))
+  expect_identical(mergePops(list(pop[2], pop[integer()], pop[6:7], pop))@geno,
+                   bindGeno(pop[2], pop[6:7], pop))
+  expect_identical(c(pop[integer()], pop[3])@geno, bindGeno(pop[3]))
+  # Merging reads the populations in place and must not write to them
+  expect_identical(pop@geno, before)
+})
