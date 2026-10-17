@@ -60,6 +60,86 @@ convertTraitsToIndex = function(traits, simParam=NULL){
   return(as.integer(traits))
 }
 
+#' @title Check that every trait is recorded
+#'
+#' @description The multiple trait models need every trait recorded on every
+#' individual. Their solvers would stop on a missing value too, but not with
+#' a message that says why, so the wrappers call this first. Every multiple
+#' trait wrapper goes through it, so supporting missing records later starts
+#' here.
+#'
+#' @param y the matrix of responses
+#'
+#' @keywords internal
+checkCompleteRecords = function(y){
+  if(anyNA(y)){
+    stop("multiple trait models need every trait recorded on every individual, ",
+         "but the responses contain missing values")
+  }
+  invisible(NULL)
+}
+
+#' @title Marker variances of a multiple trait multikernel fit
+#'
+#' @description Stores the covariance matrices among traits of each random
+#' term of a multiple trait fit as one block diagonal matrix, so they fit the
+#' Vu slot of \code{\link{RRsol-class}}. The blocks are in the order of the
+#' terms, and the rows and columns are named "term:trait".
+#'
+#' @param Vu a list of covariance matrices, one per term
+#' @param terms the names of the terms
+#' @param traits the names of the traits
+#'
+#' @keywords internal
+blockVu = function(Vu, terms, traits){
+  nT = length(traits)
+  out = matrix(0, length(Vu)*nT, length(Vu)*nT)
+  for(i in seq_along(Vu)){
+    take = (i-1)*nT + seq_len(nT)
+    out[take, take] = as.matrix(Vu[[i]])
+  }
+  labels = paste0(rep(terms, each=nT), ":", rep(traits, length(Vu)))
+  dimnames(out) = list(labels, labels)
+  return(out)
+}
+
+#' @title Error variance of a model fit
+#'
+#' @description Ve as a matrix, with the traits' names on its rows and
+#' columns when there is more than one trait
+#'
+#' @param Ve the error variance or covariance matrix
+#' @param traits the names of the traits
+#'
+#' @keywords internal
+traitMatrix = function(Ve, traits){
+  Ve = as.matrix(Ve)
+  if( (length(traits)>1) & (nrow(Ve)==length(traits)) ){
+    dimnames(Ve) = list(traits, traits)
+  }
+  return(Ve)
+}
+
+#' @title Names of the responses
+#'
+#' @description The names given to a fit's traits. They are the names of the
+#' traits asked for when there is one per column of the responses. A
+#' response that is not one column per trait, such as random values or a
+#' function of the traits returning several columns, is named "Response1",
+#' "Response2" and so on, unless it is a single column, which keeps the name
+#' it has always had.
+#'
+#' @param traits the names of the traits asked for
+#' @param nResponse the number of columns of the responses
+#'
+#' @keywords internal
+responseNames = function(traits, nResponse){
+  if( (nResponse==1) | (length(traits)==nResponse) ){
+    return(traits)
+  }
+  return(paste0("Response", seq_len(nResponse)))
+}
+
 #' @title Fast RR-BLUP
 #'
 #' @description
@@ -75,6 +155,17 @@ convertTraitsToIndex = function(traits, simParam=NULL){
 #' memory use stays close to the size of the genotypes, and the iteration
 #' is shared across nThreads.
 #'
+#' Several traits are fitted together as a multiple trait model, in which
+#' the traits' marker effects are correlated through Vu and their errors
+#' through Ve. Every trait must then be recorded on every individual. The
+#' traits are separated by a canonical transformation, which is exact when
+#' every trait is recorded and they share their fixed effects, and the
+#' transformed traits are solved together by conjugate gradient, each with
+#' its own recurrence and test of convergence. Each iteration costs about as
+#' much as one iteration for each trait on its own, so a fit to several traits
+#' takes about as long as fitting them one at a time, while the memory used
+#' stays close to the size of the genotypes.
+#'
 #' Variance components are estimated by REML when they are not supplied.
 #' REML needs a matrix decomposition whose cost is the square of the number
 #' of records in memory and their cube in time, which is what this function
@@ -86,9 +177,8 @@ convertTraitsToIndex = function(traits, simParam=NULL){
 #' every record.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, a trait name,
-#' or a function of the traits returning a single value. Only univariate models
-#' are supported.
+#' @param traits an integer indicating the trait or traits to model, a vector
+#' of trait names, or a function of the traits returning a single value.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype
@@ -97,10 +187,12 @@ convertTraitsToIndex = function(traits, simParam=NULL){
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
 #' @param maxIter maximum number of iterations.
-#' @param Vu marker effect variance. If value is NULL, this variance
-#' and Ve are estimated by REML. See details.
-#' @param Ve error variance. If value is NULL, this variance and Vu
+#' @param Vu marker effect variance, or for several traits the covariance
+#' matrix of the marker effects among traits. If value is NULL, this and Ve
 #' are estimated by REML. See details.
+#' @param Ve error variance, or for several traits the covariance matrix of
+#' the errors among traits, which must be positive definite. If value is
+#' NULL, this and Vu are estimated by REML. See details.
 #' @param nSubsample the number of records used to estimate the variance
 #' components. Ignored when Vu and Ve are supplied. A value of zero uses
 #' every record, which is only advisable for small training populations,
@@ -152,8 +244,16 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
+  nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
+  if(nTraits>1){
+    checkCompleteRecords(y)
+  }
 
   fixEff = as.integer(factor(pop@fixEff))
 
@@ -171,8 +271,13 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   estVarComp = is.null(Vu) | is.null(Ve)
   if(estVarComp){
     # Values are not used, but something has to be passed
-    Vu = 1
-    Ve = 1
+    if(nTraits>1){
+      Vu = diag(nTraits)
+      Ve = diag(nTraits)
+    }else{
+      Vu = 1
+      Ve = 1
+    }
     nSubsample = as.integer(nSubsample)
     if((nSubsample>0L) & (nSubsample<nrow(y))){
       # Sampling here rather than in C++ keeps it under set.seed()
@@ -185,34 +290,57 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  ans = callFastRRBLUP(y,fixEff,pop,lociPerChr,
-                       lociLoc,Vu,Ve,maxIter,
-                       estVarComp,as.integer(subset),
-                       nThreads)
+  if(nTraits>1){
+    Vu = as.matrix(Vu)
+    Ve = as.matrix(Ve)
+    if(!all(dim(Vu)==nTraits) | !all(dim(Ve)==nTraits)){
+      stop("Vu and Ve must be square matrices with one row per trait")
+    }
+    ans = callFastRRBLUP_MV(y,fixEff,pop,lociPerChr,
+                            lociLoc,Vu,Ve,maxIter,
+                            estVarComp,as.integer(subset),
+                            nThreads)
+  }else{
+    ans = callFastRRBLUP(y,fixEff,pop,lociPerChr,
+                         lociLoc,Vu,Ve,maxIter,
+                         estVarComp,as.integer(subset),
+                         nThreads)
+  }
+  alpha = as.matrix(ans$alpha)
 
-  bv = new("TraitA",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$alpha),
-           intercept=c(ans$beta),
-           name=paste0("est_BV_",traits))
+  bv = gv = vector("list",nTraits)
 
-  gv = new("TraitA",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$alpha),
-           intercept=c(ans$mu),
-           name=paste0("est_GV_",traits))
+  for(i in seq_len(nTraits)){
+    bv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=alpha[,i],
+                  intercept=c(ans$beta)[i],
+                  name=paste0("est_BV_",traits[i]))
+
+    gv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=alpha[,i],
+                  intercept=c(ans$mu)[i],
+                  name=paste0("est_GV_",traits[i]))
+  }
+
+  Vu = as.matrix(ans$Vu)
+  Ve = as.matrix(ans$Ve)
+  if(nTraits>1){
+    dimnames(Vu) = dimnames(Ve) = list(traits, traits)
+  }
 
   output = new("RRsol",
-               bv = list(bv),
-               gv = list(gv),
+               bv = bv,
+               gv = gv,
                female = as.list(NULL),
                male = as.list(NULL),
-               Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Vu = Vu,
+               Ve = Ve)
 
   return(output)
 }
@@ -532,8 +660,10 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' dominance effects.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, a trait name, or a
-#' function of the traits returning a single value.
+#' @param traits an integer indicating the trait or traits to model, a vector
+#' of trait names, or a function of the traits returning a single value.
+#' Several traits are fitted together as a multiple trait model, which needs
+#' every trait recorded on every individual. See details.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype
@@ -541,8 +671,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations. Only used
-#' when number of traits is greater than 1.
+#' @param maxIter maximum number of iterations for convergence.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -550,6 +679,13 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
+#'
+#' @details
+#' A multiple trait model gives each of the additive and dominance effects,
+#' and the errors, an unstructured covariance matrix among the traits. The
+#' Vu slot of the result then holds the two covariance matrices of the
+#' marker effects as a block diagonal matrix, additive first, with rows and
+#' columns named "a:trait" and "d:trait".
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -574,7 +710,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
-                    useQtl=FALSE, maxIter=40L,
+                    useQtl=FALSE, maxIter=100L,
                     simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -587,6 +723,9 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -603,34 +742,51 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
+  if(nTraits>1){
+    checkCompleteRecords(y)
+  }
   ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
                      lociLoc, maxIter, nThreads)
 
-  bv = new("TraitA",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$alpha),
-           intercept=c(ans$beta),
-           name=paste0("est_BV_",traits))
+  alpha = as.matrix(ans$alpha)
+  a = as.matrix(ans$a)
+  d = as.matrix(ans$d)
+  bv = gv = vector("list",nTraits)
 
-  gv = new("TraitAD",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$a),
-           domEff=c(ans$d),
-           intercept=c(ans$mu),
-           name=paste0("est_GV_",traits))
+  for(i in seq_len(nTraits)){
+    bv[[i]] = new("TraitA",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=alpha[,i],
+                  intercept=c(ans$beta)[i],
+                  name=paste0("est_BV_",traits[i]))
+
+    gv[[i]] = new("TraitAD",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=a[,i],
+                  domEff=d[,i],
+                  intercept=c(ans$mu)[i],
+                  name=paste0("est_GV_",traits[i]))
+  }
+
+  if(nTraits>1){
+    Vu = blockVu(ans$Vu, c("a","d"), traits)
+  }else{
+    Vu = as.matrix(ans$Vu)
+  }
 
   output = new("RRsol",
-               bv = list(bv),
-               gv = list(gv),
+               bv = bv,
+               gv = gv,
                female = as.list(NULL),
                male = as.list(NULL),
-               Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Vu = Vu,
+               Ve = traitMatrix(ans$Ve, traits))
 
   return(output)
 }
@@ -805,8 +961,10 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' single cross hybrids.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, a trait name, or a
-#' function of the traits returning a single value.
+#' @param traits an integer indicating the trait or traits to model, a vector
+#' of trait names, or a function of the traits returning a single value.
+#' Several traits are fitted together as a multiple trait model, which needs
+#' every trait recorded on every individual. See details.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype
@@ -826,6 +984,10 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @details
 #' The model uses separate maternal and paternal marker dosages from
 #' the training population.
+#' A multiple trait model gives each of the female and male effects, and the
+#' errors, an unstructured covariance matrix among the traits. The Vu slot of
+#' the result then holds those covariance matrices of the marker effects as
+#' a block diagonal matrix, with rows and columns named "female:trait" and "male:trait".
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
@@ -855,7 +1017,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=40L,
+                      useQtl=FALSE, maxIter=100L,
                       simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -868,6 +1030,9 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -884,43 +1049,59 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
+  if(nTraits>1){
+    checkCompleteRecords(y)
+  }
   ans = callRRBLUP_GCA(y, fixEff, pop,
                        lociPerChr, lociLoc, maxIter,
                        nThreads)
 
-  gv = new("TraitA2",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$alpha1),
-           addEffMale=c(ans$alpha2),
-           intercept=c(ans$mu),
-           name=paste0("est_GV_",traits))
+  alpha1 = as.matrix(ans$alpha1)
+  alpha2 = as.matrix(ans$alpha2)
+  gv = female = male = vector("list",nTraits)
 
-  female = new("TraitA",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               addEff=c(ans$alpha1),
-               intercept=c(ans$beta1),
-               name=paste0("est_female_",traits))
+  for(i in seq_len(nTraits)){
+    gv[[i]] = new("TraitA2",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=alpha1[,i],
+                  addEffMale=alpha2[,i],
+                  intercept=c(ans$mu)[i],
+                  name=paste0("est_GV_",traits[i]))
 
-  male = new("TraitA",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               addEff=c(ans$alpha2),
-               intercept=c(ans$beta2),
-             name=paste0("est_male_",traits))
+    female[[i]] = new("TraitA",
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      addEff=alpha1[,i],
+                      intercept=c(ans$beta1)[i],
+                      name=paste0("est_female_",traits[i]))
+
+    male[[i]] = new("TraitA",
+                    nLoci=nLoci,
+                    lociPerChr=lociPerChr,
+                    lociLoc=lociLoc,
+                    addEff=alpha2[,i],
+                    intercept=c(ans$beta2)[i],
+                    name=paste0("est_male_",traits[i]))
+  }
+
+  if(nTraits>1){
+    Vu = blockVu(ans$Vu, c("female","male"), traits)
+  }else{
+    Vu = as.matrix(ans$Vu)
+  }
 
   output = new("RRsol",
-               gv = list(gv),
+               gv = gv,
                bv = as.list(NULL),
-               female = list(female),
-               male = list(male),
-               Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               female = female,
+               male = male,
+               Vu = Vu,
+               Ve = traitMatrix(ans$Ve, traits))
 
   return(output)
 }
@@ -1111,8 +1292,10 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_GCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
-#' @param traits an integer indicating the trait to model, a trait name, or a
-#' function of the traits returning a single value.
+#' @param traits an integer indicating the trait or traits to model, a vector
+#' of trait names, or a function of the traits returning a single value.
+#' Several traits are fitted together as a multiple trait model, which needs
+#' every trait recorded on every individual. See details.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype
@@ -1132,6 +1315,10 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @details
 #' The model uses separate maternal and paternal marker dosages from
 #' the training population.
+#' A multiple trait model gives each of the female, male and dominance effects, and the
+#' errors, an unstructured covariance matrix among the traits. The Vu slot of
+#' the result then holds those covariance matrices of the marker effects as
+#' a block diagonal matrix, with rows and columns named "female:trait", "male:trait" and "d:trait".
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
@@ -1163,7 +1350,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=40L,
+                      useQtl=FALSE, maxIter=100L,
                       simParam=NULL, nThreads=NULL, ...){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
@@ -1176,6 +1363,9 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -1192,44 +1382,63 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
+  if(nTraits>1){
+    checkCompleteRecords(y)
+  }
   ans = callRRBLUP_SCA(y, fixEff, pop,
                        lociPerChr, lociLoc, maxIter,
                        nThreads)
 
-  gv = new("TraitA2D",
-           nLoci=nLoci,
-           lociPerChr=lociPerChr,
-           lociLoc=lociLoc,
-           addEff=c(ans$a1),
-           addEffMale=c(ans$a2),
-           domEff=c(ans$d),
-           intercept=c(ans$mu),
-           name=paste0("est_GV_",traits))
+  a1 = as.matrix(ans$a1)
+  a2 = as.matrix(ans$a2)
+  d = as.matrix(ans$d)
+  alpha1 = as.matrix(ans$alpha1)
+  alpha2 = as.matrix(ans$alpha2)
+  gv = female = male = vector("list",nTraits)
 
-  female = new("TraitA",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               addEff=c(ans$alpha1),
-               intercept=c(ans$beta1),
-               name=paste0("est_female_",traits))
+  for(i in seq_len(nTraits)){
+    gv[[i]] = new("TraitA2D",
+                  nLoci=nLoci,
+                  lociPerChr=lociPerChr,
+                  lociLoc=lociLoc,
+                  addEff=a1[,i],
+                  addEffMale=a2[,i],
+                  domEff=d[,i],
+                  intercept=c(ans$mu)[i],
+                  name=paste0("est_GV_",traits[i]))
 
-  male = new("TraitA",
-               nLoci=nLoci,
-               lociPerChr=lociPerChr,
-               lociLoc=lociLoc,
-               addEff=c(ans$alpha2),
-               intercept=c(ans$beta2),
-             name=paste0("est_male_",traits))
+    female[[i]] = new("TraitA",
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      addEff=alpha1[,i],
+                      intercept=c(ans$beta1)[i],
+                      name=paste0("est_female_",traits[i]))
+
+    male[[i]] = new("TraitA",
+                    nLoci=nLoci,
+                    lociPerChr=lociPerChr,
+                    lociLoc=lociLoc,
+                    addEff=alpha2[,i],
+                    intercept=c(ans$beta2)[i],
+                    name=paste0("est_male_",traits[i]))
+  }
+
+  if(nTraits>1){
+    Vu = blockVu(ans$Vu, c("female","male","d"), traits)
+  }else{
+    Vu = as.matrix(ans$Vu)
+  }
 
   output = new("RRsol",
-               gv = list(gv),
+               gv = gv,
                bv = as.list(NULL),
-               female = list(female),
-               male = list(male),
-               Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               female = female,
+               male = male,
+               Vu = Vu,
+               Ve = traitMatrix(ans$Ve, traits))
 
   return(output)
 }
@@ -1705,8 +1914,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' "RRBLUP_D2", "RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
 #' The older values "REG", "GCA" and "SCA" are still accepted and are read as
 #' "RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".
-#' @param nTraits the number of traits fitted at once. Only
-#' \code{\link{RRBLUP}} fits more than one.
+#' @param nTraits the number of traits fitted at once.
+#' \code{\link{fastRRBLUP}}, \code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
+#' \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} fit more than one;
+#' the numbered models fit one.
 #' @param nFixEff the number of fixed effect levels, which is the number of
 #' distinct values in the population's fixEff slot.
 #' @param nSubsample the number of records \code{\link{fastRRBLUP}} uses to
@@ -1725,7 +1936,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' frees them and iterates over a copy packed to one bit per allele, so it
 #' holds no square matrix at all. Its estimate is
 #' dominated by the genotypes themselves and by the subset of records used
-#' for the variance components.
+#' for the variance components. Fitted to several traits, it holds a few
+#' vectors of markers and of records per trait, and the variance components
+#' are estimated as for several traits in \code{\link{RRBLUP}}, on the
+#' subset of records.
 #'
 #' \code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
 #' smaller of the number of records and the number of markers, because a
@@ -1754,6 +1968,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' records, or Henderson's equations, whose coefficient matrix grows with the
 #' number of marker effects, when there are fewer. They are the most
 #' demanding of the set when the marker effects outnumber the records.
+#' Fitted to several traits, both forms grow with the number of traits: the
+#' square matrix of the records has one row per record and trait, and
+#' Henderson's equations one per marker effect and trait, so the memory
+#' needed grows with the square of the number of traits.
 #'
 #' @return Returns an estimate for the required gigabytes of RAM
 #'
@@ -1790,19 +2008,36 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
   genoBytes = n*m
 
   if(model=="fastRRBLUP"){
-    # No dosages are stored and no square matrix is formed. The solver holds
-    # six vectors of markers plus the column means, and a few of records.
-    doubles = 7*m+3*n+q*n
-    # Variance components come from a subset of the records. Whichever cross
-    # product is smaller is the one decomposed.
     nSub = as.double(nSubsample)
     if((nSub<=0) | (nSub>n)){
       nSub = n
     }
-    if(m<nSub){
-      doubles = doubles+nSub*m+5*m^2
+    if(nT>1){
+      # Every trait has its own vectors of markers in the iteration, seven of
+      # them, its share of the tables the products are taken with, and a few
+      # vectors of records
+      doubles = (11*m+4*n)*nT+q*n
+      # Variance components by the multiple trait REML of RRBLUP on the
+      # subset of records, with its optimizer and fixed effects
+      optimDoubles = 8*(nT*(nT+1))^2
+      fixDoubles = 2*nT*q^2+4*q^2+5*nSub*q
+      if(m<nSub){
+        doubles = doubles+4*nSub*m+nT^2*nSub+optimDoubles+fixDoubles
+      }else{
+        doubles = doubles+4*nSub^2+nT^2*nSub+optimDoubles+fixDoubles
+      }
     }else{
-      doubles = doubles+3*nSub^2
+      # No dosages are stored and no square matrix is formed. The solver
+      # holds six vectors of markers plus the column means, and a few of
+      # records.
+      doubles = 7*m+3*n+q*n
+      # Variance components come from a subset of the records. Whichever
+      # cross product is smaller is the one decomposed.
+      if(m<nSub){
+        doubles = doubles+nSub*m+5*m^2
+      }else{
+        doubles = doubles+3*nSub^2
+      }
     }
   }else if(model=="RRBLUP"){
     if(nT>1){
@@ -1852,6 +2087,33 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # records instead. Reached only when the variance components are fixed
       # and there are fewer records than markers
       doubles = n*m+2*n^2
+    }
+  }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & (nT>1)){
+    nKernel = if(model=="RRBLUP_SCA") 3 else 2
+    # The multiple trait form chooses between the same two sides, on the
+    # costs of useCoefficientSide with a record and a coefficient per trait
+    nRec = n*nT
+    nCoef = nT*(q+nKernel*m)
+    nPar = (nKernel+1)*nT*(nT+1)/2
+    nEval = 10
+    recordCost = nEval*(nRec^3+nRec^2*nCoef)
+    coefCost = nRec*nCoef^2+nEval*(nCoef^3+nRec*nCoef*(nPar+2))
+    # The optimizer's square matrices over the parameters, and the working
+    # variates of the derivatives with their products with P, one vector of
+    # records per parameter each
+    optimDoubles = 8*nPar^2+2*nRec*nPar
+    if(coefCost<recordCost){
+      # The dosages and a scaled copy of them, the design of all the effects,
+      # its cross product and that of each term, and the coefficient matrix
+      # with the Cholesky factors of the current and trial points, its
+      # inverse and the inverse of a factor
+      c = q+nKernel*m
+      doubles = 3*nKernel*n*m+(nKernel+1)*c^2+5*nCoef^2+optimDoubles
+    }else{
+      # The dosages and a scaled copy of them, the kernel of each term, and
+      # the variance matrix of the records with the factors of the current
+      # and trial points, the inverse of a factor and P
+      doubles = 2*nKernel*n*m+nKernel*n^2+5*nRec^2+optimDoubles
     }
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
     nKernel = if(model=="RRBLUP_SCA") 3 else 2

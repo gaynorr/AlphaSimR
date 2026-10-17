@@ -128,6 +128,10 @@ callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estV
     .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
+callFastRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads)
+}
+
 callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads)
 }
@@ -358,12 +362,15 @@ getNumThreads <- function() {
 #' @title Solve Multikernel RR-BLUP
 #'
 #' @description
-#' Solves a univariate mixed model with multiple random effects, where
-#' random term i contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the
-#' variance of the records and its effects are the marker effects of
-#' \code{Mlist[[i]]}. The variance components are estimated by average
-#' information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR},
-#' and the matrices in \code{Mlist} may have different numbers of columns.
+#' Solves a mixed model with multiple random effects, where random term i
+#' contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the variance of
+#' the records and its effects are the marker effects of \code{Mlist[[i]]}.
+#' The variance components are estimated by average information REML
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, and the
+#' matrices in \code{Mlist} may have different numbers of columns. When
+#' \code{y} has more than one column, a multiple trait model is fitted, in
+#' which each term's effects and the errors have unstructured covariance
+#' matrices among the traits.
 #'
 #' @details
 #' The model is fitted in whichever of two equivalent ways is cheaper. With
@@ -383,7 +390,18 @@ getNumThreads <- function() {
 #' components are both below 1e-6, and a warning is given if
 #' \code{maxIter} is reached first.
 #'
-#' @param y a matrix with n rows and 1 column
+#' The multiple trait model needs every trait recorded on every record. Its
+#' covariance matrices start with half of each trait's residual variance from
+#' the least squares fit assigned to the error and half shared equally among
+#' the random terms, with the correlation among the least squares residuals
+#' for every matrix. Five EM iterations follow, and then Newton steps in the
+#' Cholesky factors of the covariance matrices, as described for
+#' \code{\link{solveRRBLUPMV}}, which keeps every matrix positive
+#' semidefinite. Iteration stops when the restricted log-likelihood changes
+#' by less than 1e-6.
+#'
+#' @param y a matrix with n rows and 1 column, or one column per trait for a
+#' multiple trait model
 #' @param X a matrix with n rows and x columns. Columns that are linearly
 #' dependent on the others are dropped and get a fixed effect of zero. An
 #' intercept, a column whose values are all the same, is always kept.
@@ -397,6 +415,12 @@ getNumThreads <- function() {
 #' iterations \code{iter}. \code{LL} is
 #' \eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
 #' where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+#'
+#' For a multiple trait model with q traits, \code{Vu} is instead a list of
+#' q by q covariance matrices, one per matrix in \code{Mlist}, \code{Ve} is a
+#' q by q matrix, \code{beta} has one column per trait, and each element of
+#' \code{u} has one column per trait. \code{LL} is then that of
+#' \eqn{y=vec(Y)}, with nq records and p equal to q times the rank of X.
 #'
 #' @references
 #' \insertAllCited{}

@@ -160,17 +160,15 @@ matter of memory and speed.
 | You want to predict | Use | Ask `setEBV` for |
 |---|---|---|
 | Merit of a parent, additive trait | `RRBLUP` | `"bv"` or `"gv"` |
-| Several correlated traits at once | `RRBLUP` with `traits=1:n` | `"bv"` or `"gv"` |
+| Several correlated traits at once | Any of the above with `traits=1:n` | as for one trait |
 | Performance of an individual with dominance | `RRBLUP_D` | `"gv"` |
 | GCA of inbreds in a two-pool hybrid program | `RRBLUP_GCA` | `"female"`, `"male"` |
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
 | Additive trait and training population too large to fit | `fastRRBLUP` | `"bv"` or `"gv"` |
 
-**`RRBLUP`** is the default choice. It fits additive marker effects and
-is the only model in the family that fits several traits at once;
-supplying more than one trait fits a multivariate model, which borrows
-information across correlated traits at the cost of estimating a full
-covariance matrix. If you are unsure, start here.
+**`RRBLUP`** is the default choice. It fits additive marker effects. If
+you are unsure, start here. Every model in this table can also fit
+several traits at once, which is described below.
 
 **`RRBLUP_D`** adds a dominance covariate for each marker. Reach for it
 when the trait was defined with dominance *and* you care about the
@@ -205,13 +203,75 @@ of the subset of records it uses for the variance components. Use it
 when the training population has grown large enough that the others will
 not fit.
 
+### Fitting several traits
+
+Giving `traits` more than one trait fits a multiple trait model. The
+marker effects of the traits are correlated, as are their errors, and
+both covariance matrices are estimated by REML, so a trait with a low
+heritability can borrow information from a correlated trait with a high
+one. `RRBLUP`, `fastRRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`
+all do this; the numbered models fit one trait at a time. Every trait
+must be recorded on every individual in the training population, and a
+missing value stops the fit.
+
+The example below uses two correlated traits with dominance, the second
+with a lower heritability:
+
+```{r}
+SP2 = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP2$nThreads = 1L
+```
+```{r}
+SP2$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 50, overlap = FALSE)
+SP2$addTraitAD(nQtlPerChr = 20, mean = c(0, 0), var = c(1, 1),
+               meanDD = c(0.4, 0.4), varDD = c(0.04, 0.04),
+               corA = matrix(c(1, 0.7, 0.7, 1), nrow = 2))
+SP2$addSnpChip(nSnpPerChr = 50)
+SP2$setVarE(h2 = c(0.4, 0.1))
+
+pop2 = newPop(founderPop, simParam = SP2)
+trainPop2 = setPheno(pop2[1:400], simParam = SP2)
+candidates2 = pop2[401:500]
+
+mvModel = RRBLUP_D(trainPop2, traits = 1:2, simParam = SP2)
+candidates2 = setEBV(candidates2, mvModel, simParam = SP2)
+
+# One column of estimates per trait
+diag(cor(ebv(candidates2), gv(candidates2)))
+```
+
+The solution holds one trait object per trait in each of its slots, so
+`setEBV` fills one column of the `ebv` slot per trait. `Ve` becomes the
+covariance matrix of the errors among the traits. For `RRBLUP` and
+`fastRRBLUP`, `Vu` is the covariance matrix of the marker effects. The
+dominance and hybrid models have one covariance matrix per random term,
+and they are stored together as a block diagonal matrix, with rows and
+columns named after the term and the trait:
+
+```{r}
+round(mvModel@Vu, 5)
+```
+
+How the cost grows with the number of traits depends on the model.
+`RRBLUP` and `fastRRBLUP` estimate the covariance matrices after a single
+rotation of the records, and a fit to several traits takes about as long
+as fitting the traits one at a time. The dominance and hybrid models
+cannot use that rotation. Every record and every marker effect is counted
+once per trait, so a fit to three traits can take several times as long
+as three single trait fits; `RRBLUPMemUse` takes the number of traits into
+account. `fastRRBLUP` keeps its memory close to the size of the genotypes
+however many traits are fitted, so it stays the choice for a large
+training population.
+
 ### Fitting the same model more cheaply
 
 `RRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` each have a numbered
 counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
 fit *exactly the same models* and differ only in how the equations are
 solved, except that the numbered versions fit one trait at a time, while
-`RRBLUP` can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
+the unnumbered ones can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
 care is that the numbered versions let you supply the variance
 components and skip estimating them:
 
@@ -548,7 +608,8 @@ same markers.
 
 Which slots are filled depends on the model. `RRBLUP` and `RRBLUP_D`
 fill `gv` and `bv`; the GCA and SCA models fill `gv`, `female` and
-`male` and leave `bv` empty. Asking `setEBV` for a value the model did
+`male` and leave `bv` empty. A model fitted to several traits holds one
+trait object per trait in each slot it fills. Asking `setEBV` for a value the model did
 not produce raises an error rather than returning something misleading.
 
 ```{r}
@@ -584,6 +645,12 @@ several traits estimates unstructured covariance matrices among the
 traits by REML, following @zhou2014Efficient. It rotates the records by an
 eigendecomposition of the smaller of the two cross products, after which
 the work in each iteration grows only linearly with the number of records.
+No such rotation exists for more than one random term, so `RRBLUP_D`,
+`RRBLUP_GCA` and `RRBLUP_SCA` fitted to several traits use average
+information REML on whichever of the two forms is cheaper, now with one
+row per record and trait or per marker effect and trait. Their cost
+therefore grows quickly with the number of traits, and `RRBLUPMemUse`
+takes the number of traits into account.
 
 The **numbered** functions set up Henderson's mixed model equations
 directly. The coefficient matrix there has dimension equal to the number
@@ -613,7 +680,11 @@ to 5000. Variance components are nuisance parameters here, estimated far
 more precisely than a breeding program needs, so a few thousand records
 give values good enough to shrink with - and the marker effects
 themselves are always solved for using every record. Supplying `Vu` and
-`Ve` skips the estimation entirely.
+`Ve` skips the estimation entirely. Fitted to several traits, it estimates
+covariance matrices by the multiple trait REML of `RRBLUP` on the same
+subset, separates the traits with a canonical transformation, and solves
+them together by conjugate gradient, which takes about as long as solving
+each trait on its own.
 
 ## Fixed effects
 

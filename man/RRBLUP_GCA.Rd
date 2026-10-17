@@ -10,7 +10,7 @@ RRBLUP_GCA(
   use = "pheno",
   snpChip = 1,
   useQtl = FALSE,
-  maxIter = 40L,
+  maxIter = 100L,
   simParam = NULL,
   nThreads = NULL,
   ...
@@ -19,8 +19,10 @@ RRBLUP_GCA(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model, a trait name, or a
-function of the traits returning a single value.}
+\item{traits}{an integer indicating the trait or traits to model, a vector
+of trait names, or a function of the traits returning a single value.
+Several traits are fitted together as a multiple trait model, which needs
+every trait recorded on every individual. See details.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
@@ -53,6 +55,10 @@ single cross hybrids.
 \details{
 The model uses separate maternal and paternal marker dosages from
 the training population.
+A multiple trait model gives each of the female and male effects, and the
+errors, an unstructured covariance matrix among the traits. The Vu slot of
+the result then holds those covariance matrices of the marker effects as
+a block diagonal matrix, with rows and columns named "female:trait" and "male:trait".
 The solution can be applied with \code{\link{setEBV}}:
 \code{value="female"} or \code{value="male"} gives parental
 predictions, while \code{value="gv"} predicts total hybrid genetic value.

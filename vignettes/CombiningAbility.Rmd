@@ -305,6 +305,8 @@ origin, so use `returnHybridPop=FALSE` when generating those offspring.
 With `setEBV(..., value="gv")`, both models predict total hybrid
 genetic values; the SCA model does not return a centered SCA deviation
 through this option.
+Both can fit several traits at once, with every trait recorded on every
+training offspring, by giving `traits` more than one trait.
 See `vignette("GenomicSelection")` for model choice and prediction.
 
 As an extension, replace the inbred parents with outbred parents and

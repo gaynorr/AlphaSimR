@@ -22,9 +22,8 @@ fastRRBLUP(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model, a trait name,
-or a function of the traits returning a single value. Only univariate models
-are supported.}
+\item{traits}{an integer indicating the trait or traits to model, a vector
+of trait names, or a function of the traits returning a single value.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
@@ -38,11 +37,13 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 
 \item{maxIter}{maximum number of iterations.}
 
-\item{Vu}{marker effect variance. If value is NULL, this variance
-and Ve are estimated by REML. See details.}
-
-\item{Ve}{error variance. If value is NULL, this variance and Vu
+\item{Vu}{marker effect variance, or for several traits the covariance
+matrix of the marker effects among traits. If value is NULL, this and Ve
 are estimated by REML. See details.}
+
+\item{Ve}{error variance, or for several traits the covariance matrix of
+the errors among traits, which must be positive definite. If value is
+NULL, this and Vu are estimated by REML. See details.}
 
 \item{nSubsample}{the number of records used to estimate the variance
 components. Ignored when Vu and Ve are supplied. A value of zero uses
@@ -71,6 +72,17 @@ coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}. Neither the
 coefficient matrix nor a numeric copy of the genotypes is formed, so
 memory use stays close to the size of the genotypes, and the iteration
 is shared across nThreads.
+
+Several traits are fitted together as a multiple trait model, in which
+the traits' marker effects are correlated through Vu and their errors
+through Ve. Every trait must then be recorded on every individual. The
+traits are separated by a canonical transformation, which is exact when
+every trait is recorded and they share their fixed effects, and the
+transformed traits are solved together by conjugate gradient, each with
+its own recurrence and test of convergence. Each iteration costs about as
+much as one iteration for each trait on its own, so a fit to several traits
+takes about as long as fitting them one at a time, while the memory used
+stays close to the size of the genotypes.
 
 Variance components are estimated by REML when they are not supplied.
 REML needs a matrix decomposition whose cost is the square of the number
