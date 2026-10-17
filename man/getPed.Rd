@@ -4,15 +4,46 @@
 \alias{getPed}
 \title{Get pedigree}
 \usage{
-getPed(pop)
+getPed(pop, nGen = 1, simParam = NULL)
 }
 \arguments{
 \item{pop}{a population}
+
+\item{nGen}{number of generations of pedigree to return. The
+default of 1 returns the parents recorded in the population's
+slots. A larger value, or \code{Inf} for all ancestors, follows
+the pedigree recorded in \code{simParam}, which requires pedigree
+tracking to be turned on with \code{SimParam$setTrackPed(TRUE)}
+before the individuals were created.}
+
+\item{simParam}{an object of \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment. Only used when \code{nGen} is greater than 1.}
+}
+\value{
+a data.frame with columns id, mother and father, or NULL
 }
 \description{
 Returns the population's pedigree as stored in the
 id, mother and father slots. NULL is returned if the
 input population lacks the required information.
+With \code{nGen} greater than 1, ancestors are added
+from the pedigree recorded in \code{\link{SimParam}}.
+}
+\details{
+The two sources can differ. The slots of a population made by
+\code{\link{self}} or \code{\link{makeDH}} with
+\code{keepParents=TRUE} name the parents of the individuals that
+were selfed, while the pedigree in \code{simParam} always records
+the immediate parents. With \code{nGen} greater than 1, every
+meiosis, including each generation of selfing and each doubled
+haploid, therefore counts as one generation.
+
+The returned pedigree then contains the individuals in
+\code{pop} and their ancestors up to \code{nGen} generations
+back, each once, ordered so that parents come before their
+progeny. Ancestors whose own parents are not included have their
+parents given as "0", as do founders.
 }
 \examples{
 # Create a founder population
@@ -30,5 +61,15 @@ getPed(pop)
 
 # Returns NULL when a population lacks a pedigree
 getPed(founderPop)
+
+# Pedigree for more than one generation, which needs pedigree
+# tracking from the start of the simulation
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+SP$setTrackPed(TRUE)
+pop = newPop(founderPop, simParam=SP)
+pop2 = randCross(pop, nCrosses=2, simParam=SP)
+pop3 = randCross(pop2, nCrosses=2, simParam=SP)
+getPed(pop3, nGen=2, simParam=SP)
 
 }
