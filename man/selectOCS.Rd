@@ -19,6 +19,7 @@ selectOCS(
   returnPop = TRUE,
   simParam = NULL,
   nThreads = NULL,
+  onShortfall = "warning",
   ...
 )
 }
@@ -75,6 +76,12 @@ global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{onShortfall}{what to do when fewer suitable candidates are
+available than requested. "warning" (the default) warns and selects
+from all of them, "error" stops, and "none" does so silently. When
+no candidates of a required sex are available, selection is not
+possible and an error is raised whatever the value.}
 
 \item{...}{additional arguments if using a function for
 \code{trait} or \code{use}}

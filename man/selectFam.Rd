@@ -16,6 +16,7 @@ selectFam(
   candidates = NULL,
   simParam = NULL,
   nThreads = NULL,
+  onShortfall = "warning",
   ...
 )
 }
@@ -62,6 +63,10 @@ global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{onShortfall}{what to do when fewer suitable candidates are
+available than requested. "warning" (the default) warns and returns
+all of them, "error" stops, and "none" returns them silently.}
 
 \item{...}{additional arguments if using a function for
 \code{trait} and \code{use}}

@@ -18,6 +18,8 @@
   useQtl,
   simParam,
   nThreads,
+  onShortfall = "warning",
+  call = sys.call(-1),
   ...
 )
 }
@@ -47,6 +49,10 @@
 \item{simParam}{an object of class \code{\link{SimParam}}}
 
 \item{nThreads}{number of threads to use if OpenMP is available}
+
+\item{onShortfall}{"warning", "error" or "none"}
+
+\item{call}{the call of selectOCS, for messages}
 
 \item{...}{additional arguments if using a function for trait}
 }

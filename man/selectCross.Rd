@@ -22,7 +22,8 @@ selectCross(
   inbrTarget = 0.01,
   inbrType = "relative",
   snpChip = 1,
-  useQtl = FALSE
+  useQtl = FALSE,
+  onShortfall = "warning"
 )
 }
 \arguments{
@@ -97,6 +98,11 @@ exactly.}
 to measure expected fixation. If TRUE, snpChip specifies which
 trait's QTL to use. This argument occurs after ..., so the argument
 name must be matched exactly.}
+
+\item{onShortfall}{what to do when fewer suitable candidates are
+available than requested. "warning" (the default) warns and uses all
+of them, "error" stops, and "none" uses them silently. This argument
+occurs after ..., so the argument name must be matched exactly.}
 }
 \value{
 Returns an object of \code{\link{Pop-class}}

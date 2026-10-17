@@ -21,7 +21,8 @@ editGenomeTopQtl(
 
 \item{nQtl}{number of QTL to edit}
 
-\item{trait}{which trait effects should guide selection of the top QTL}
+\item{trait}{which trait effects should guide selection of the top QTL,
+given as an integer or a trait name}
 
 \item{increase}{should the trait value be increased or decreased}
 

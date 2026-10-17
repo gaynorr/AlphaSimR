@@ -16,6 +16,7 @@ selectWithinFam(
   candidates = NULL,
   simParam = NULL,
   nThreads = NULL,
+  onShortfall = "warning",
   ...
 )
 }
@@ -62,6 +63,12 @@ global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{onShortfall}{what to do when a family has fewer suitable
+candidates than \code{nInd}. "warning" (the default) warns and
+returns all of that family's candidates, "error" stops, and "none"
+returns them silently. Use "none" when \code{nInd} is meant as a cap
+on family size, so that small families are expected.}
 
 \item{...}{additional arguments if using a function for
 \code{trait} and \code{use}}

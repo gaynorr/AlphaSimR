@@ -1657,7 +1657,8 @@ SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{traitPos}}{an integer indicating which trait to switch}
+      \item{\code{traitPos}}{an integer or a trait name indicating which trait
+to switch}
       \item{\code{lociMap}}{a new object descended from
 \code{\link{LociMap-class}}}
       \item{\code{varE}}{default error variance for phenotype, optional}
@@ -1683,7 +1684,8 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{traits}}{an integer vector indicating which traits to remove}
+      \item{\code{traits}}{an integer vector or a character vector of trait
+names indicating which traits to remove}
       \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
     }

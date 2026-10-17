@@ -17,7 +17,7 @@ pullQtlHaplo(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{trait}{an integer. Indicates which trait's
+\item{trait}{an integer or a trait name. Indicates which trait's
 QTL haplotypes to retrieve.}
 
 \item{haplo}{either "all" for all haplotypes or an integer
