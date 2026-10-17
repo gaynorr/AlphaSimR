@@ -166,11 +166,12 @@ matter of memory and speed.
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
 | Additive trait and training population too large to fit | `fastRRBLUP` | `"bv"` or `"gv"` |
 
-**`RRBLUP`** is the default choice. It fits additive marker effects and
-is the only model in the family that fits several traits at once;
+**`RRBLUP`** is the default choice. It fits additive marker effects, and
 supplying more than one trait fits a multivariate model, which borrows
 information across correlated traits at the cost of estimating a full
-covariance matrix. If you are unsure, start here.
+covariance matrix. `fastRRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and
+`RRBLUP_SCA` fit several traits the same way. Every trait must then be
+recorded on every individual. If you are unsure, start here.
 
 **`RRBLUP_D`** adds a dominance covariate for each marker. Reach for it
 when the trait was defined with dominance *and* you care about the
@@ -211,7 +212,7 @@ not fit.
 counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
 fit *exactly the same models* and differ only in how the equations are
 solved, except that the numbered versions fit one trait at a time, while
-`RRBLUP` can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
+the unnumbered ones can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
 care is that the numbered versions let you supply the variance
 components and skip estimating them:
 
@@ -584,6 +585,12 @@ several traits estimates unstructured covariance matrices among the
 traits by REML, following @zhou2014Efficient. It rotates the records by an
 eigendecomposition of the smaller of the two cross products, after which
 the work in each iteration grows only linearly with the number of records.
+No such rotation exists for more than one random term, so `RRBLUP_D`,
+`RRBLUP_GCA` and `RRBLUP_SCA` fitted to several traits use average
+information REML on whichever of the two forms is cheaper, now with one
+row per record and trait or per marker effect and trait. Their cost
+therefore grows quickly with the number of traits, and `RRBLUPMemUse`
+takes the number of traits into account.
 
 The **numbered** functions set up Henderson's mixed model equations
 directly. The coefficient matrix there has dimension equal to the number
@@ -613,7 +620,11 @@ to 5000. Variance components are nuisance parameters here, estimated far
 more precisely than a breeding program needs, so a few thousand records
 give values good enough to shrink with - and the marker effects
 themselves are always solved for using every record. Supplying `Vu` and
-`Ve` skips the estimation entirely.
+`Ve` skips the estimation entirely. Fitted to several traits, it estimates
+covariance matrices by the multiple trait REML of `RRBLUP` on the same
+subset, separates the traits with a canonical transformation, and solves
+them together, so the genotypes are read once per iteration for all of
+the traits.
 
 ## Fixed effects
 

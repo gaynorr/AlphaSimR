@@ -334,6 +334,23 @@ test_that("RRBLUPMemUse counts the multiple trait fixed effects", {
   }
 })
 
+test_that("RRBLUPMemUse counts the multiple trait multikernel models", {
+  # With 1000 records and 200 markers per term, three traits put the SCA
+  # model on Henderson's equations with 3*(1+3*200) coefficients, whose
+  # coefficient matrix and its factors are held five times over
+  nCoef = 3*(1+3*200)
+  floorGB = 5*8*nCoef^2/10^9
+  three = RRBLUPMemUse(nInd=1000, nMarker=200, model="RRBLUP_SCA", nTraits=3)
+  one = RRBLUPMemUse(nInd=1000, nMarker=200, model="RRBLUP_SCA", nTraits=1)
+  expect_gt(three, floorGB)
+  expect_gt(three, one)
+  for(m in c("RRBLUP_D","RRBLUP_GCA","fastRRBLUP")){
+    expect_gt(RRBLUPMemUse(nInd=1000, nMarker=200, model=m, nTraits=3),
+              RRBLUPMemUse(nInd=1000, nMarker=200, model=m, nTraits=1),
+              label=m)
+  }
+})
+
 test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # Estimating variance components holds one more square matrix
   withEM = RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP2", useEM=TRUE)
@@ -548,4 +565,128 @@ test_that("the dominance and hybrid models are not affected by the number of thr
     two = fit(pop, nThreads=2L, simParam=SP)
     expect_equal(addEff(one), addEff(two), tolerance=1e-8)
   }
+})
+
+# Multiple trait fastRRBLUP. With the variance components supplied it is the
+# BLUP of the multiple trait model, which Henderson's equations give directly
+# for a population small enough to write them out in R. With every record
+# used for the variance components it is the same REML fit as multiple trait
+# RRBLUP, so the two have to agree.
+
+# A population with three correlated traits
+mvPop = function(nInd, nSnp, ploidy=2L, seed=8601){
+  set.seed(seed)
+  founderPop = quickHaplo(nInd=nInd, nChr=2, segSites=10+nSnp,
+                          ploidy=ploidy)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=nSnp, overlap=FALSE)
+  SP$addTraitA(nQtlPerChr=10, mean=c(0,0,0), var=c(1,1,1),
+               corA=matrix(c(1,0.6,-0.3,0.6,1,0.2,-0.3,0.2,1), nrow=3))
+  SP$addSnpChip(nSnpPerChr=nSnp)
+  SP$setVarE(h2=c(0.5,0.3,0.6))
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  pop@fixEff = rep_len(1:3, pop@nInd)
+  return(list(pop=pop, SP=SP))
+}
+
+# Marker effects of every trait, one column per trait
+addEffAll = function(ans){
+  return(sapply(ans@gv, function(x) c(x@addEff)))
+}
+
+# Henderson's equations for the multiple trait model with known Vu and Ve,
+# with the markers centered as fastRRBLUP centers them
+denseMvBlup = function(pop, SP, Vu, Ve){
+  P = pop@ploidy
+  M = (pullSnpGeno(pop, simParam=SP) - P/2)*(2/P)
+  Mc = scale(M, scale=FALSE)
+  X = model.matrix(~factor(pop@fixEff))
+  Y = pop@pheno
+  nT = ncol(Y)
+  W = cbind(kronecker(diag(nT), X), kronecker(diag(nT), Mc))
+  Rinv = kronecker(solve(Ve), diag(nrow(Y)))
+  C = crossprod(W, Rinv %*% W)
+  fix = seq_len(ncol(X)*nT)
+  C[-fix, -fix] = C[-fix, -fix] + kronecker(solve(Vu), diag(ncol(M)))
+  sol = solve(C, crossprod(W, Rinv %*% c(Y)))
+  return(matrix(sol[-fix], ncol(M), nT))
+}
+
+mvVu = matrix(c(0.02,0.01,-0.004,0.01,0.03,0.002,-0.004,0.002,0.025), 3)
+mvVe = matrix(c(1,0.3,0.1,0.3,1.5,-0.2,0.1,-0.2,0.8), 3)
+
+test_that("multiple trait fastRRBLUP is the BLUP of the multiple trait model", {
+  d = mvPop(nInd=80, nSnp=15)
+  ans = fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, simParam=d$SP)
+  ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
+  # It iterates rather than solving, so it is held to a looser tolerance
+  expect_equal(unname(addEffAll(ans)), ref, tolerance=1e-6)
+  expect_equal(length(ans@bv), 3L)
+  expect_equal(dimnames(ans@Vu), list(d$SP$traitNames, d$SP$traitNames))
+})
+
+test_that("multiple trait fastRRBLUP reads a tetraploid's markers", {
+  # A ploidy other than two goes through the general loop of the products
+  d = mvPop(nInd=60, nSnp=12, ploidy=4L)
+  ans = fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, simParam=d$SP)
+  ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
+  expect_equal(unname(addEffAll(ans)), ref, tolerance=1e-6)
+})
+
+test_that("multiple trait fastRRBLUP agrees with RRBLUP on every record", {
+  skip_on_cran()
+  # More records than markers decomposes the markers, and fewer decomposes
+  # the record cross product built from the genotypes
+  for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
+    d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
+    ans = fastRRBLUP(d$pop, traits=1:3, nSubsample=0L, simParam=d$SP)
+    ref = RRBLUP(d$pop, traits=1:3, simParam=d$SP)
+    info = paste("nInd", size[["nInd"]])
+    expect_equal(unname(ans@Vu), unname(ref@Vu), tolerance=1e-8, info=info)
+    expect_equal(unname(ans@Ve), unname(ref@Ve), tolerance=1e-8, info=info)
+    expect_equal(addEffAll(ans), addEffAll(ref), tolerance=1e-6, info=info)
+    # The genetic values are predicted from the uncentered markers, so the
+    # intercepts have to agree as well as the effects
+    expect_equal(c(ebv(setEBV(d$pop, ans, simParam=d$SP))),
+                 c(ebv(setEBV(d$pop, ref, simParam=d$SP))),
+                 tolerance=1e-6, info=info)
+  }
+})
+
+test_that("multiple trait fastRRBLUP leaves its inputs unchanged", {
+  d = mvPop(nInd=40, nSnp=10)
+  Vu = mvVu + 0
+  Ve = mvVe + 0
+  pheno0 = d$pop@pheno + 0
+  fastRRBLUP(d$pop, traits=1:3, Vu=Vu, Ve=Ve, simParam=d$SP)
+  expect_identical(Vu, mvVu)
+  expect_identical(Ve, mvVe)
+  expect_identical(d$pop@pheno, pheno0)
+})
+
+test_that("multiple trait fastRRBLUP rejects unusable variance components", {
+  d = mvPop(nInd=40, nSnp=10)
+  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=diag(2), Ve=diag(3),
+                          simParam=d$SP), "one row per trait")
+  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=diag(c(1,1,0)),
+                          simParam=d$SP), "positive definite")
+  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=-mvVu, Ve=mvVe,
+                          simParam=d$SP), "not positive")
+})
+
+test_that("multiple trait fastRRBLUP needs every trait recorded", {
+  expect_error(AlphaSimR:::checkCompleteRecords(matrix(c(1,NA,3,4), 2)),
+               "every trait recorded")
+  expect_null(AlphaSimR:::checkCompleteRecords(matrix(1:4, 2)))
+})
+
+test_that("multiple trait fastRRBLUP is not affected by the number of threads", {
+  skip_on_cran()
+  skip_if(getNumThreads() < 2L)
+  d = mvPop(nInd=80, nSnp=15)
+  one = fastRRBLUP(d$pop, traits=1:3, nThreads=1L, simParam=d$SP)
+  two = fastRRBLUP(d$pop, traits=1:3, nThreads=2L, simParam=d$SP)
+  expect_identical(addEffAll(one), addEffAll(two))
+  expect_identical(one@Vu, two@Vu)
 })

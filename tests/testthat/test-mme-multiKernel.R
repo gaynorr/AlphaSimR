@@ -332,7 +332,9 @@ test_that("INPUT mismatched dimensions are rejected", {
   d = simTwoKernels(seed=9111)
   Z = diag(d$n)
   expect_error(solveRRBLUPMK(d$y, d$X, list(d$M1[-1, ])), "one row per record")
-  expect_error(solveRRBLUPMK(cbind(d$y, d$y), d$X, list(d$M1)),
+  # solveRRBLUPMK fits several columns as a multiple trait model, but
+  # solveMKM fits one trait only
+  expect_error(solveMKM(cbind(d$y, d$y), d$X, list(Z), list(diag(d$n))),
                "exactly one column")
   expect_error(solveRRBLUPMK(d$y, d$X[-1, , drop=FALSE], list(d$M1)),
                "same number of rows")
@@ -715,4 +717,243 @@ test_that("RRBLUP_SCA matches solveRRBLUPMK fitted to the same matrices", {
 
   pred = setEBV(d$pop, ans, simParam=d$SP)
   expect_true(all(is.finite(c(ebv(pred)))))
+})
+
+# ---------------------------------------------------------------------------
+# 7. Multiple traits
+# ---------------------------------------------------------------------------
+
+# With more than one column of y, solveRRBLUPMK fits a multiple trait model in
+# which each term's effects and the errors have unstructured covariance
+# matrices among the traits. The same checks apply: the likelihood it reports
+# is the REML likelihood of vec(Y), it cannot be improved on near the
+# estimates, the two sides agree, and a single kernel gives the model that
+# solveRRBLUPMV fits by a different method altogether.
+
+# Dense restricted log-likelihood of vec(Y), the convention of the solvers
+remlLLmv = function(Vu, Ve, Y, X, Mlist){
+  n = nrow(Y)
+  V = kronecker(Ve, diag(n))
+  for(i in seq_along(Mlist)){
+    V = V + kronecker(Vu[[i]], tcrossprod(Mlist[[i]]))
+  }
+  Xf = kronecker(diag(ncol(Y)), X)
+  R = chol(V)
+  Vi = chol2inv(R)
+  ViX = Vi %*% Xf
+  XViX = crossprod(Xf, ViX)
+  Rx = chol(XViX)
+  P = Vi - ViX %*% chol2inv(Rx) %*% t(ViX)
+  p = qr(Xf)$rank
+  y = c(Y)
+  -0.5*((length(y)-p)*log(2*pi) + 2*sum(log(diag(R))) +
+          2*sum(log(diag(Rx))) + drop(crossprod(y, P %*% y)))
+}
+
+# Three correlated traits with a signal in two kernels
+simTwoKernelsMV = function(n=60, m1=25, m2=15, seed=9301){
+  set.seed(seed)
+  M1 = matrix(sample(-1:1, n*m1, replace=TRUE), n, m1)
+  M2 = matrix(rnorm(n*m2), n, m2)
+  X = cbind(1, rep(0:1, length.out=n))
+  Cu = chol(matrix(c(1,0.6,0.2,0.6,1,0.3,0.2,0.3,1), 3))
+  Ce = chol(matrix(c(1,0.3,0,0.3,1,0.2,0,0.2,1), 3))
+  Y = X %*% matrix(c(1,2,3,0.5,-0.5,0), 2, byrow=TRUE) +
+    M1 %*% (matrix(rnorm(m1*3, sd=0.3), m1) %*% Cu) +
+    M2 %*% matrix(rnorm(m2*3, sd=0.2), m2) +
+    matrix(rnorm(n*3), n) %*% Ce
+  list(Y=Y, X=X, M1=M1, M2=M2)
+}
+
+test_that("MULTITRAIT a single kernel gives the model solveRRBLUPMV fits", {
+  d = simTwoKernelsMV()
+  ref = solveRRBLUPMV(d$Y, d$X, d$M1, tol=1e-10)
+  for(side in 1:2){
+    ans = fitSide(d$Y, d$X, list(d$M1), list(), TRUE, side)
+    expect_equal(ans$LL, ref$LL, tolerance=1e-7, info=paste("side", side))
+    expect_equal(ans$Vu[[1]], ref$Vu, tolerance=1e-4)
+    expect_equal(ans$Ve, ref$Ve, tolerance=1e-4)
+    expect_equal(ans$u[[1]], ref$u, tolerance=1e-4)
+    expect_equal(ans$beta, ref$beta, tolerance=1e-4)
+  }
+})
+
+test_that("MULTITRAIT SIDES agree with two kernels", {
+  d = simTwoKernelsMV()
+  rec = fitSide(d$Y, d$X, list(d$M1, d$M2), list(), TRUE, 1)
+  coef = fitSide(d$Y, d$X, list(d$M1, d$M2), list(), TRUE, 2)
+  expect_equal(rec$side, 1)
+  expect_equal(coef$side, 2)
+  expect_equal(rec$LL, coef$LL, tolerance=1e-8)
+  for(i in 1:2){
+    expect_equal(rec$Vu[[i]], coef$Vu[[i]], tolerance=1e-6)
+    expect_equal(rec$u[[i]], coef$u[[i]], tolerance=1e-6)
+  }
+  expect_equal(rec$Ve, coef$Ve, tolerance=1e-6)
+  expect_equal(rec$beta, coef$beta, tolerance=1e-6)
+})
+
+test_that("MULTITRAIT OPTIMUM the reported likelihood is a local maximum", {
+  d = simTwoKernelsMV()
+  Mlist = list(d$M1, d$M2)
+  ans = solveRRBLUPMK(d$Y, d$X, Mlist, maxIter=200L)
+  best = remlLLmv(ans$Vu, ans$Ve, d$Y, d$X, Mlist)
+  expect_equal(ans$LL, best, tolerance=1e-8)
+  set.seed(9302)
+  for(r in 1:20){
+    Vu = ans$Vu
+    Ve = ans$Ve
+    E = matrix(rnorm(9, sd=0.02), 3)
+    E = E + t(E)
+    j = sample(3, 1)
+    if(j==3){
+      Ve = Ve + E*mean(diag(Ve))
+    }else{
+      Vu[[j]] = Vu[[j]] + E*mean(diag(Vu[[j]]))
+    }
+    if(any(eigen(Ve)$values<=0)) next
+    expect_lte(remlLLmv(Vu, Ve, d$Y, d$X, Mlist), best + 1e-8)
+  }
+})
+
+test_that("MULTITRAIT the estimates follow the traits and the markers", {
+  d = simTwoKernelsMV()
+  Mlist = list(d$M1, d$M2)
+  ref = solveRRBLUPMK(d$Y, d$X, Mlist, maxIter=200L)
+  # Permuting the traits permutes every covariance matrix
+  perm = c(3, 1, 2)
+  ans = solveRRBLUPMK(d$Y[, perm], d$X, Mlist, maxIter=200L)
+  expect_equal(ans$Vu[[1]], ref$Vu[[1]][perm, perm], tolerance=1e-4)
+  expect_equal(ans$Ve, ref$Ve[perm, perm], tolerance=1e-4)
+  # Rescaling a trait rescales its rows and columns
+  D = diag(c(1, 1000, 1))
+  ans = solveRRBLUPMK(d$Y %*% D, d$X, Mlist, maxIter=200L)
+  expect_equal(ans$Vu[[1]], D %*% ref$Vu[[1]] %*% D, tolerance=1e-4)
+  expect_equal(ans$Ve, D %*% ref$Ve %*% D, tolerance=1e-4)
+  # Rescaling a kernel's markers by c divides its covariance matrix by c^2
+  ans = solveRRBLUPMK(d$Y, d$X, list(d$M1, 10*d$M2), maxIter=200L)
+  expect_equal(ans$Vu[[2]]*100, ref$Vu[[2]], tolerance=1e-3)
+})
+
+test_that("MULTITRAIT BOUNDARY a kernel of zeros is held at zero", {
+  d = simTwoKernelsMV()
+  Z0 = matrix(0, nrow(d$M1), 5)
+  for(side in 1:2){
+    ans = fitSide(d$Y, d$X, list(d$M1, Z0), list(), TRUE, side)
+    expect_equal(ans$Vu[[2]], matrix(0, 3, 3))
+    expect_equal(ans$u[[2]], matrix(0, 5, 3))
+  }
+})
+
+test_that("MULTITRAIT SHAPES one column keeps the single trait results", {
+  d = simTwoKernelsMV()
+  one = solveRRBLUPMK(d$Y[, 1, drop=FALSE], d$X, list(d$M1, d$M2))
+  expect_true(is.matrix(one$Vu))
+  expect_equal(dim(one$Vu), c(2L, 1L))
+  many = solveRRBLUPMK(d$Y, d$X, list(d$M1, d$M2), maxIter=200L)
+  expect_true(is.list(many$Vu))
+  expect_equal(length(many$Vu), 2L)
+  expect_equal(dim(many$Ve), c(3L, 3L))
+  expect_equal(dim(many$beta), c(2L, 3L))
+  expect_equal(dim(many$u[[2]]), c(15L, 3L))
+})
+
+test_that("MULTITRAIT INPUT missing values are rejected and inputs left alone", {
+  d = simTwoKernelsMV()
+  Y = d$Y
+  Y[2, 3] = NA
+  expect_error(solveRRBLUPMK(Y, d$X, list(d$M1)), "missing or infinite")
+  Y0 = d$Y + 0
+  M0 = d$M1 + 0L
+  solveRRBLUPMK(d$Y, d$X, list(d$M1, d$M2), maxIter=200L)
+  expect_identical(d$Y, Y0)
+  expect_identical(d$M1, M0)
+})
+
+# The genomic selection models with two traits, against solveRRBLUPMK on the
+# same matrices built in R
+mkPopMV = function(seed){
+  set.seed(seed)
+  founderPop = quickHaplo(nInd=60, nChr=2, segSites=20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=10, overlap=FALSE)
+  SP$addTraitAD(nQtlPerChr=10, mean=c(0,0), var=c(1,1),
+                meanDD=c(0.5,0.5), varDD=c(0.2,0.2),
+                corA=matrix(c(1,0.5,0.5,1), 2))
+  SP$addSnpChip(nSnpPerChr=10)
+  SP$setVarE(h2=c(0.5,0.5))
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  list(pop=pop, SP=SP)
+}
+
+test_that("MULTITRAIT RRBLUP_D matches solveRRBLUPMK fitted to the same matrices", {
+  d = mkPopMV(9401)
+  ans = RRBLUP_D(d$pop, traits=1:2, simParam=d$SP)
+  geno = pullSnpGeno(d$pop, simParam=d$SP)
+  Md = geno*(2 - geno)
+  ref = solveRRBLUPMK(pheno(d$pop), cbind(1, rowSums(Md)),
+                      list(geno - 1, Md), maxIter=100L)
+  labels = c("a:Trait1", "a:Trait2", "d:Trait1", "d:Trait2")
+  expect_equal(dimnames(ans@Vu), list(labels, labels))
+  expect_equal(unname(ans@Vu[1:2, 1:2]), ref$Vu[[1]], tolerance=1e-8)
+  expect_equal(unname(ans@Vu[3:4, 3:4]), ref$Vu[[2]], tolerance=1e-8)
+  expect_equal(unname(ans@Vu[1:2, 3:4]), matrix(0, 2, 2))
+  expect_equal(unname(ans@Ve), ref$Ve, tolerance=1e-8)
+  for(i in 1:2){
+    expect_equal(c(ans@gv[[i]]@addEff), ref$u[[1]][, i], tolerance=1e-8)
+  }
+  pred = setEBV(d$pop, ans, simParam=d$SP)
+  expect_equal(ncol(ebv(pred)), 2L)
+  pred = setEBV(d$pop, ans, value="bv", simParam=d$SP)
+  expect_equal(ncol(ebv(pred)), 2L)
+  expect_true(all(is.finite(c(ebv(pred)))))
+})
+
+test_that("MULTITRAIT RRBLUP_GCA matches solveRRBLUPMK fitted to the same matrices", {
+  d = mkPopMV(9402)
+  ans = RRBLUP_GCA(d$pop, traits=1:2, simParam=d$SP)
+  h1 = pullSnpHaplo(d$pop, haplo=1, simParam=d$SP)
+  h2 = pullSnpHaplo(d$pop, haplo=2, simParam=d$SP)
+  ref = solveRRBLUPMK(pheno(d$pop), matrix(1, nInd(d$pop), 1),
+                      list(2*h1 - 1, 2*h2 - 1), maxIter=100L)
+  expect_equal(rownames(ans@Vu),
+               c("female:Trait1", "female:Trait2", "male:Trait1", "male:Trait2"))
+  expect_equal(unname(ans@Vu[3:4, 3:4]), ref$Vu[[2]], tolerance=1e-8)
+  for(i in 1:2){
+    expect_equal(c(ans@female[[i]]@addEff), ref$u[[1]][, i], tolerance=1e-8)
+    expect_equal(c(ans@male[[i]]@addEff), ref$u[[2]][, i], tolerance=1e-8)
+  }
+  pred = setEBV(d$pop, ans, value="female", simParam=d$SP)
+  expect_equal(ncol(ebv(pred)), 2L)
+})
+
+test_that("MULTITRAIT RRBLUP_SCA matches solveRRBLUPMK fitted to the same matrices", {
+  d = mkPopMV(9403)
+  ans = RRBLUP_SCA(d$pop, traits=1:2, simParam=d$SP)
+  h1 = pullSnpHaplo(d$pop, haplo=1, simParam=d$SP)
+  h2 = pullSnpHaplo(d$pop, haplo=2, simParam=d$SP)
+  geno = h1 + h2
+  Md = geno*(2 - geno)
+  ref = solveRRBLUPMK(pheno(d$pop), cbind(1, rowSums(Md)),
+                      list(2*h1 - 1, 2*h2 - 1, Md), maxIter=100L)
+  expect_equal(dim(ans@Vu), c(6L, 6L))
+  expect_equal(unname(ans@Vu[5:6, 5:6]), ref$Vu[[3]], tolerance=1e-8)
+  for(i in 1:2){
+    expect_equal(c(ans@gv[[i]]@addEff), ref$u[[1]][, i], tolerance=1e-8)
+    expect_equal(c(ans@gv[[i]]@addEffMale), ref$u[[2]][, i], tolerance=1e-8)
+  }
+  expect_equal(ncol(ebv(setEBV(d$pop, ans, simParam=d$SP))), 2L)
+})
+
+test_that("MULTITRAIT the hybrid models are not affected by the number of threads", {
+  skip_on_cran()
+  skip_if(getNumThreads() < 2L)
+  d = mkPopMV(9404)
+  for(fit in list(RRBLUP_D, RRBLUP_GCA, RRBLUP_SCA)){
+    one = fit(d$pop, traits=1:2, nThreads=1L, simParam=d$SP)
+    two = fit(d$pop, traits=1:2, nThreads=2L, simParam=d$SP)
+    expect_identical(one@Vu, two@Vu)
+    expect_identical(one@gv[[2]]@addEff, two@gv[[2]]@addEff)
+  }
 })

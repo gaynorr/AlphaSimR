@@ -390,6 +390,12 @@ inline arma::mat expandFixedEffects(const arma::mat& B, const arma::uvec& keep,
 Rcpp::List objREMLFastLMM(double param, Rcpp::List args);
 double fastLMMDelta(Rcpp::List args);
 
+// Multiple trait REML on a kernel among the records, defined in
+// mmeMultiTrait.cpp
+void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
+                    const arma::mat& F, const arma::mat& Kn, bool useFactor,
+                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve);
+
 // Single trait RR-BLUP by FaST-LMM, defined in MME.cpp
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M);

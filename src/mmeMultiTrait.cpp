@@ -1,4 +1,5 @@
 #include "mme.h"
+#include "mmeChol.h"
 
 // Multiple trait, single kernel mixed models,
 //
@@ -153,24 +154,6 @@ MvEval evalMv(const MvData& d, const arma::mat& Vu, const arma::mat& Ve){
   return out;
 }
 
-// The parameters are the elements on and below the diagonal of Vu followed by
-// those of Ve. The derivative of the covariance of a rotated row with respect
-// to one of them is s_i*E (for Vu) or E (for Ve), where E has ones at (j,k)
-// and (k,j).
-void paramIndex(arma::uword t, arma::uvec& rowIdx, arma::uvec& colIdx){
-  arma::uword nPar = t*(t+1)/2;
-  rowIdx.set_size(nPar);
-  colIdx.set_size(nPar);
-  arma::uword p = 0;
-  for(arma::uword k=0; k<t; ++k){
-    for(arma::uword j=k; j<t; ++j){
-      rowIdx(p) = j;
-      colIdx(p) = k;
-      ++p;
-    }
-  }
-}
-
 // The refinement steps work with the lower Cholesky factors of Vu and Ve
 // rather than with the matrices themselves. Any value of the factors gives a
 // valid pair of covariance matrices, so a step cannot leave the parameter
@@ -200,62 +183,6 @@ void unpackChol(const arma::vec& phi, arma::mat& Vu, arma::mat& Ve,
   Ve = Le*Le.t();
 }
 
-// Lower Cholesky factor of a covariance matrix that may be singular after an
-// EM step on the boundary. A small ridge is added only when the plain
-// factorization fails.
-arma::mat lowerChol(const arma::mat& V){
-  arma::mat L;
-  if(arma::chol(L, V, "lower")){
-    return L;
-  }
-  double ridge = 1.0e-10*std::max(arma::trace(V), 1.0e-300);
-  arma::mat I = arma::eye(V.n_rows, V.n_cols);
-  while(!arma::chol(L, V+ridge*I, "lower")){
-    ridge *= 10.0;
-  }
-  return L;
-}
-
-// Jacobian of the elements of V = L*L' with respect to those of L, both
-// listed by rowIdx and colIdx. With E_ab the unit matrix at (a,b),
-// dV/dL_ab = E_ab*L' + L*E_ba, whose (j,k) element is
-// [j==a]*L_kb + [k==a]*L_jb.
-arma::mat cholJacobian(const arma::mat& L, const arma::uvec& rowIdx,
-                       const arma::uvec& colIdx){
-  arma::uword nPar = rowIdx.n_elem;
-  arma::mat J(nPar, nPar, arma::fill::zeros);
-  for(arma::uword q=0; q<nPar; ++q){
-    arma::uword a = rowIdx(q), b = colIdx(q);
-    for(arma::uword p=0; p<nPar; ++p){
-      arma::uword j = rowIdx(p), k = colIdx(p);
-      double val = 0.0;
-      if(j==a) val += L(k,b);
-      if(k==a) val += L(j,b);
-      J(p,q) = val;
-    }
-  }
-  return J;
-}
-
-// Second order term of the Hessian with respect to L. The second derivative
-// of V = L*L' with respect to L_ab and L_cd is zero unless b equals d, when
-// it is E_ac + E_ca. The term therefore pairs elements of L in the same
-// column and takes the gradient with respect to the element (a,c) of V, twice
-// over when a equals c. gradV holds that gradient on and below its diagonal.
-arma::mat cholCurvature(const arma::mat& gradV, const arma::uvec& rowIdx,
-                        const arma::uvec& colIdx){
-  arma::uword nPar = rowIdx.n_elem;
-  arma::mat K(nPar, nPar, arma::fill::zeros);
-  for(arma::uword q=0; q<nPar; ++q){
-    for(arma::uword r=0; r<nPar; ++r){
-      if(colIdx(q)!=colIdx(r)) continue;
-      arma::uword a = rowIdx(q), c = rowIdx(r);
-      K(q,r) = (a==c) ? 2.0*gradV(a,a) : gradV(std::max(a,c), std::min(a,c));
-    }
-  }
-  return K;
-}
-
 // Gradient of the restricted log-likelihood, 0.5*trace(S*E) for each
 // parameter.
 arma::vec gradParam(const MvEval& ev, const arma::uvec& rowIdx,
@@ -268,16 +195,6 @@ arma::vec gradParam(const MvEval& ev, const arma::uvec& rowIdx,
     g(nPar+p) = w*ev.Se(rowIdx(p), colIdx(p));
   }
   return g;
-}
-
-// The same gradient laid out on and below the diagonal of a matrix
-arma::mat gradMatrix(const arma::vec& g, arma::uword offset, arma::uword t,
-                     const arma::uvec& rowIdx, const arma::uvec& colIdx){
-  arma::mat G(t, t, arma::fill::zeros);
-  for(arma::uword p=0; p<rowIdx.n_elem; ++p){
-    G(rowIdx(p), colIdx(p)) = g(offset+p);
-  }
-  return G;
 }
 
 // Average information matrix of Gilmour et al. (1995), with elements
@@ -637,32 +554,6 @@ arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
   return Ur*At;
 }
 
-// The responses standardized trait by trait. The Newton steps floor the
-// eigenvalues of their Hessian with one threshold across every trait's
-// coordinates, and a trait's curvature there scales with the inverse square
-// of its units: a trait recorded in units 1e8 times larger would have its
-// curvature floored and its updates damped, and the fit could stop before
-// that trait had converged. Dividing each trait by the standard deviation of
-// its residuals after the least squares fit puts every trait on the same
-// scale, and mvResult maps the results back exactly.
-struct TraitScale {
-  arma::mat Y;     // the standardized responses
-  arma::rowvec sd; // the divisor of each trait
-};
-
-TraitScale traitScale(const arma::mat& Ys){
-  TraitScale ts;
-  ts.sd = arma::stddev(Ys, 0, 0);
-  for(arma::uword j=0; j<ts.sd.n_elem; ++j){
-    if(!(ts.sd(j)>0.0) || !std::isfinite(ts.sd(j))){
-      ts.sd(j) = 1.0;
-    }
-  }
-  ts.Y = Ys;
-  ts.Y.each_row() /= ts.sd;
-  return ts;
-}
-
 // The results in the original units of the kernel and of each trait, from a
 // fit on the normalized kernel scale of d and the standardized traits of ts.
 // With D = diag(ts.sd), the covariance matrices are D*V*D, the fixed effects
@@ -717,6 +608,31 @@ FixedDesign fixedEffectDesign(const arma::mat& X){
 }
 
 } // namespace
+
+// Variance components of the multiple trait model on a kernel among the
+// records, for callers that need only those and not the effects, such as
+// fastRRBLUP, which estimates them on a subset of its records and solves for
+// the marker effects on all of them afterward. The kernel is F*F' when
+// useFactor is true and Kn otherwise, as in rotateData. Vu is returned on the
+// scale of the kernel and Ve and Vu in the units of the traits.
+void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
+                    const arma::mat& F, const arma::mat& Kn, bool useFactor,
+                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve){
+  checkInput(Y, X);
+  const FixedDesign fd = fixedEffectDesign(X);
+  arma::mat B0;
+  const arma::mat Ys = removeLeastSquares(fd.Q, Y, B0);
+  const TraitScale ts = traitScale(Ys);
+  arma::mat Ur;
+  MvData d = rotateData(ts.Y, fd.Q, F, Kn, useFactor, Ur);
+  Ur.reset();
+  arma::mat VuFit, VeFit;
+  int iter = 0;
+  fitMv(d, VuFit, VeFit, maxIter, tol, iter);
+  const arma::mat D = arma::diagmat(ts.sd);
+  Vu = D*(VuFit/d.scale)*D;
+  Ve = D*VeFit*D;
+}
 
 //' @title Solve Multivariate RR-BLUP
 //'

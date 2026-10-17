@@ -1,4 +1,5 @@
 #include "mme.h"
+#include "mmeChol.h"
 
 // Single trait mixed models with several random terms,
 //
@@ -866,17 +867,751 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
   return out;
 }
 
+// Multiple trait RR-BLUP models with several random terms,
+//
+//   Y = X*B + sum_i M_i*U_i + E,
+//   vec(U_i) ~ N(0, Vu_i (x) I),  vec(E) ~ N(0, Ve (x) I),
+//
+// for t traits recorded on every one of n records, with Vu_i and Ve
+// unstructured t by t covariance matrices. The variance components are
+// estimated by REML, by the same scheme as the single kernel multiple trait
+// solver in mmeMultiTrait.cpp: a few EM steps, then Newton steps in the lower
+// Cholesky factors of the covariance matrices, whose Hessian is the average
+// information matrix of Gilmour et al. (1995) carried through the Jacobian
+// of V = L*L' together with the exact second order term of that map.
+// Working with the factors keeps every matrix positive semidefinite, so an
+// estimate on the boundary of the parameter space, such as a genetic
+// correlation of one or a term with no variance, is reached without leaving
+// it.
+//
+// The rotation that separates the traits of a single kernel model has no
+// counterpart here, because no transformation diagonalizes two kernels and
+// the identity at once. The likelihood is therefore reached through one of
+// the two routes of the single trait solver above, whichever is cheaper.
+//
+// On the record side the variance of vec(Y),
+//
+//   V = sum_i Vu_i (x) G_i + Ve (x) I,  G_i = M_i*M_i',
+//
+// is formed and factored, with nt rows.
+//
+// On the coefficient side the effects of each term are whitened, U_i =
+// A_i*L_i' for Vu_i = L_i*L_i', so that vec(A_i) ~ N(0, I). The design of
+// all the effects is W = [I (x) X, L_1 (x) M_1, ..., L_k (x) M_k], and with
+// R = Ve (x) I Henderson's equations have the coefficient matrix
+//
+//   C = W'*R^-1*W + blockdiag(0, I, ..., I),
+//
+// whose blocks are (L_r'*Ve^-1*L_s) (x) T_r'*T_s for the parts T_r of
+// T = [X M_1 ... M_k], with L_r = I for the fixed effects. T'*T is formed
+// once. With s the solution of C*s = W'*R^-1*y and E = Y - W*s,
+//
+//   log|V| + log|X'*V^-1*X| = n*log|Ve| + log|C|
+//   P*y = vec(E*Ve^-1)
+//
+// The identity prior of the whitened effects stays valid when a factor is
+// singular, which is why the whitened form is used: a direction with no
+// genetic variance simply has no effects. The derivatives of the likelihood
+// with respect to an element of Vu_i or Ve need the traces
+// tr(P*(E_ab (x) G)) for the unit matrices E_ab, and with
+// R^-1*(E_ab (x) G)*R^-1 = (Ve^-1*E_ab*Ve^-1) (x) G those are
+//
+//   tr(P*(E_ab (x) G)) = tr(Ve^-1*E_ab)*tr(G) - tr(C^-1*W'*(F (x) G)*W)
+//
+// for F = Ve^-1*E_ab*Ve^-1. The second trace has blocks
+// (L_r'*F*L_s) (x) T_r'*G*T_s, so it is a sum over pairs of terms of small
+// t by t products against traces of C^-1 that do not depend on a or b, and
+// those are worked out once per kernel.
+//
+// The data are held as matrices with one column per trait, so the layout
+// assumes every trait is recorded on every record. Supporting missing
+// records would mean selecting the observed entries of vec(Y) on the record
+// side and summing the residual terms of the coefficient side over the
+// patterns of missing traits.
+
+// Everything the iterations need at one value of the variance components
+struct MvMkPoint {
+  std::vector<arma::mat> Lf; // lower Cholesky factors, the terms then Ve
+  std::vector<arma::mat> V;  // Lf*Lf'
+  double LL = 0.0;
+  bool ok = false;
+  arma::mat A;     // P*y as an n by t matrix
+  // Record side
+  arma::mat Lv;    // lower Cholesky factor of V
+  arma::mat VinvX;
+  arma::mat Ainv;  // (X'*V^-1*X)^-1
+  // Coefficient side
+  arma::mat Lc;    // lower Cholesky factor of C
+  arma::mat VeInv;
+  arma::vec sol;
+};
+
+class MvMultiKernelREML {
+public:
+  MvMultiKernelREML(const arma::mat& Yin, const arma::mat& X, Side side_,
+                    const arma::field<arma::mat>& Mlist)
+    : side(side_){
+    n = Yin.n_rows;
+    nT = Yin.n_cols;
+    k = Mlist.n_elem;
+    N = n*nT;
+    fd = fixedDesign(X);
+    if(fd.keep.n_elem==0){
+      Rcpp::stop("X must have at least one nonzero column");
+    }
+    Xr = fd.Q;
+    p = Xr.n_cols;
+    if(p>=n){
+      Rcpp::stop("the rank of X must be smaller than the number of records");
+    }
+    // A least squares fit is taken off Y and added back to the fixed effects,
+    // and the traits are standardized, for the reasons given for the single
+    // kernel solver; see traitScale
+    arma::mat Ys = removeLeastSquares(Xr, Yin, B0);
+    ts = traitScale(Ys);
+    Y = ts.Y;
+    // Each term is fitted on the scale of the mean diagonal of its G_i, so the
+    // Newton steps and the eigenvalue floor on their Hessian behave the same
+    // whatever the units of the markers. Vu_i is returned to those units at
+    // the end, and tr(G_i) is then n for every term.
+    md.zeros(k);
+    rankBound.set_size(k);
+    held.zeros(k);
+    Ms.set_size(k);
+    for(arma::uword i=0; i<k; ++i){
+      const arma::mat& M = Mlist(i);
+      md(i) = arma::accu(arma::square(M))/double(n);
+      rankBound(i) = double(std::min(n, M.n_cols));
+      if( !(md(i)>0.0) || !std::isfinite(md(i)) ){
+        held(i) = 1;
+        Ms(i) = M;
+        continue;
+      }
+      Ms(i) = M/std::sqrt(md(i));
+      // A term that lies entirely in the span of X is absorbed by the fixed
+      // effects and its variance cannot be estimated, so it is held at zero,
+      // as in the single trait solver
+      arma::mat Mp = Ms(i) - Xr*(Xr.t()*Ms(i));
+      double freeTrace = arma::accu(arma::square(Mp));
+      double roundTrace = arma::accu(arma::square(Ms(i)));
+      if(!(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace)){
+        held(i) = 1;
+      }
+    }
+    paramIndex(nT, rowIdx, colIdx);
+    nPar = rowIdx.n_elem;
+    if(side==Side::record){
+      G.set_size(k);
+      for(arma::uword i=0; i<k; ++i){
+        G(i) = Ms(i)*Ms(i).t();
+        G(i) = 0.5*(G(i)+G(i).t()); // rounding only
+      }
+      Xf = arma::kron(arma::eye(nT, nT), Xr);
+      yv = arma::vectorise(Y);
+    }else{
+      // T = [Xr M_1 ... M_k], with T'*T, T'*Y and each T'*G_i*T formed once
+      nSeg = k+1;
+      segStart.set_size(nSeg);
+      segLen.set_size(nSeg);
+      segStart(0) = 0;
+      segLen(0) = p;
+      arma::uword c = p;
+      for(arma::uword i=0; i<k; ++i){
+        segStart(i+1) = c;
+        segLen(i+1) = Ms(i).n_cols;
+        c += Ms(i).n_cols;
+      }
+      nCoef = c;
+      T.set_size(n, c);
+      T.cols(0, p-1) = Xr;
+      for(arma::uword i=0; i<k; ++i){
+        if(segLen(i+1)>0){
+          T.cols(segStart(i+1), segStart(i+1)+segLen(i+1)-1) = Ms(i);
+        }
+      }
+      TtT = T.t()*T;
+      TtT = 0.5*(TtT+TtT.t()); // rounding only
+      TtY = T.t()*Y;
+      GG.set_size(k);
+      for(arma::uword i=0; i<k; ++i){
+        if(segLen(i+1)==0){
+          GG(i).zeros(c, c);
+          continue;
+        }
+        arma::mat TtM = TtT.cols(segStart(i+1), segStart(i+1)+segLen(i+1)-1);
+        GG(i) = TtM*TtM.t();
+        GG(i) = 0.5*(GG(i)+GG(i).t()); // rounding only
+      }
+    }
+  }
+
+  arma::uword n, nT, k, N, p;
+  FixedDesign fd;
+  TraitScale ts;
+  arma::mat B0;
+
+  // Starting values. Half of each trait's residual variance after the least
+  // squares fit goes to the error and half is shared equally among the terms
+  // that can be estimated, as in the single trait solver, and every matrix
+  // takes the correlation among the least squares residuals, which is the
+  // phenotypic correlation net of the fixed effects. If that leaves a matrix
+  // singular the matrices start diagonal instead.
+  void startValues(MvMkPoint& pt) const{
+    arma::rowvec vy = arma::sum(arma::square(Y), 0)/double(n-p);
+    for(arma::uword j=0; j<nT; ++j){
+      if(!(vy(j)>0.0) || !std::isfinite(vy(j))){
+        vy(j) = 1.0;
+      }
+    }
+    double nEst = double(k) - double(arma::accu(held));
+    arma::mat Rr = Y.t()*Y;
+    arma::vec sd = sqrt(arma::clamp(Rr.diag(), arma::datum::eps,
+                                    arma::datum::inf));
+    arma::mat rho = Rr/(sd*sd.t());
+    rho.diag().ones();
+    arma::vec ve = vy.t()*((nEst>0.0) ? 0.5 : 1.0);
+    arma::vec vu = vy.t()*((nEst>0.0) ? 0.5/nEst : 0.0);
+    arma::mat Ve = arma::diagmat(sqrt(ve))*rho*arma::diagmat(sqrt(ve));
+    arma::mat Vu = arma::diagmat(sqrt(vu))*rho*arma::diagmat(sqrt(vu));
+    arma::mat L;
+    if(!arma::chol(L, Ve, "lower") || ((nEst>0.0) && !arma::chol(L, Vu, "lower"))){
+      Ve = arma::diagmat(ve);
+      Vu = arma::diagmat(vu);
+    }
+    pt.V.assign(k+1, arma::mat());
+    pt.Lf.assign(k+1, arma::mat());
+    for(arma::uword i=0; i<k; ++i){
+      pt.V[i] = held(i) ? arma::mat(nT, nT, arma::fill::zeros) : Vu;
+      pt.Lf[i] = held(i) ? arma::mat(nT, nT, arma::fill::zeros) :
+        lowerChol(pt.V[i]);
+    }
+    pt.V[k] = Ve;
+    pt.Lf[k] = lowerChol(Ve);
+  }
+
+  // Fills in the REML log-likelihood at pt.V, with the factors the derivatives
+  // start from. Returns false if V, or C, is not positive definite.
+  bool evaluate(MvMkPoint& pt) const{
+    if(side==Side::record){
+      return evaluateRecord(pt);
+    }
+    return evaluateCoefficient(pt);
+  }
+
+  // Scores and average information matrix with respect to the elements on and
+  // below the diagonal of each Vu_i and of Ve, listed term by term with Ve
+  // last and in the order of paramIndex within each matrix
+  void derivatives(const MvMkPoint& pt, arma::vec& score, arma::mat& AI) const{
+    if(side==Side::record){
+      derivativesRecord(pt, score, AI);
+    }else{
+      derivativesCoefficient(pt, score, AI);
+    }
+  }
+
+  // Runs the iterations and leaves the final point in pt. Returns the number
+  // of iterations used.
+  int fit(MvMkPoint& pt, int maxIter, double tol, const char* name){
+    const int nEM = 5;
+    const arma::uword nMat = k+1;
+    const arma::uword nTot = nMat*nPar;
+    // The parameters that move: those of every term that can be estimated,
+    // and of Ve
+    std::vector<arma::uword> freeMat, freeIdx;
+    for(arma::uword g=0; g<nMat; ++g){
+      if( (g<k) && held(g) ) continue;
+      freeMat.push_back(g);
+      for(arma::uword q=0; q<nPar; ++q){
+        freeIdx.push_back(g*nPar+q);
+      }
+    }
+    arma::uvec f(freeIdx);
+
+    startValues(pt);
+    if(!evaluate(pt)){
+      Rcpp::stop("%s: the variance matrix is not positive definite at the "
+                   "starting values", name);
+    }
+    int iter = 0;
+    bool converged = false;
+    arma::vec gV;
+    arma::mat AI;
+    for(iter=1; iter<=maxIter; ++iter){
+      derivatives(pt, gV, AI);
+      MvMkPoint next;
+      bool accepted = false;
+      if(iter>nEM){
+        arma::mat J(nTot, nTot, arma::fill::zeros);
+        arma::mat Kc(nTot, nTot, arma::fill::zeros);
+        for(arma::uword g : freeMat){
+          arma::uword a = g*nPar, b = g*nPar+nPar-1;
+          J.submat(a, a, b, b) = cholJacobian(pt.Lf[g], rowIdx, colIdx);
+          Kc.submat(a, a, b, b) =
+            cholCurvature(gradMatrix(gV, a, nT, rowIdx, colIdx), rowIdx, colIdx);
+        }
+        arma::mat Jf = J.submat(f, f);
+        arma::vec gL = Jf.t()*gV.elem(f);
+        // Negative Hessian of the likelihood with respect to the factors
+        arma::mat negH = Jf.t()*AI.submat(f, f)*Jf - Kc.submat(f, f);
+        negH = 0.5*(negH+negH.t());
+        arma::vec hVal;
+        arma::mat hVec;
+        if(arma::eig_sym(hVal, hVec, negH)){
+          // A direction of negative curvature has the sign of its eigenvalue
+          // reversed, so the step is always one of ascent
+          hVal = arma::abs(hVal);
+          double floorVal = 1.0e-10*std::max(hVal.max(), 1.0e-300);
+          hVal.elem(find(hVal<floorVal)).fill(floorVal);
+          arma::vec step = hVec*((hVec.t()*gL)/hVal);
+          double alpha = 1.0;
+          for(int h=0; h<10; ++h){
+            next.Lf = pt.Lf;
+            arma::uword pos = 0;
+            for(arma::uword g : freeMat){
+              for(arma::uword q=0; q<nPar; ++q){
+                next.Lf[g](rowIdx(q), colIdx(q)) += alpha*step(pos);
+                ++pos;
+              }
+            }
+            next.V.assign(nMat, arma::mat());
+            for(arma::uword g=0; g<nMat; ++g){
+              next.V[g] = next.Lf[g]*next.Lf[g].t();
+            }
+            if(evaluate(next) && (next.LL>=pt.LL)){
+              accepted = true;
+              break;
+            }
+            alpha *= 0.5;
+          }
+        }
+      }
+      if(!accepted){
+        // The EM update V + V*S*V/r, with S the score matrix of V and r the
+        // rank of its term, or an upper bound for it, which only shortens the
+        // step and keeps V positive semidefinite
+        next.V = pt.V;
+        next.Lf = pt.Lf;
+        for(arma::uword g : freeMat){
+          arma::mat S = gradMatrix(gV, g*nPar, nT, rowIdx, colIdx);
+          S = S + S.t(); // the diagonal doubles, as gradParam halves it
+          double r = (g<k) ? rankBound(g) : double(n);
+          arma::mat Vn = pt.V[g] + pt.V[g]*S*pt.V[g]/r;
+          next.V[g] = 0.5*(Vn+Vn.t());
+          next.Lf[g] = lowerChol(next.V[g]);
+          next.V[g] = next.Lf[g]*next.Lf[g].t();
+        }
+        if(!evaluate(next)){
+          Rcpp::stop("%s: REML iteration left the parameter space", name);
+        }
+      }
+      double change = next.LL - pt.LL;
+      pt = next;
+      if( (iter>nEM) && (std::abs(change)<tol) ){
+        converged = true;
+        break;
+      }
+    }
+    if(!converged){
+      iter = maxIter;
+      Rf_warning("%s: did not converge in %d iterations", name, maxIter);
+    }
+    return iter;
+  }
+
+  // Generalized least squares estimates for the standardized traits, on the
+  // orthonormal basis of the fixed effects
+  arma::mat betaBasis(const MvMkPoint& pt) const{
+    if(side==Side::record){
+      arma::vec br = pt.Ainv*(pt.VinvX.t()*yv);
+      return arma::reshape(br, p, nT);
+    }
+    return arma::reshape(pt.sol.head(p*nT), p, nT);
+  }
+
+  // BLUP of term i's effects for the standardized traits and the scaled
+  // markers, U_i = M_i'*(P*y)*Vu_i on the record side and A_i*L_i' on the
+  // coefficient side
+  arma::mat blupScaled(const MvMkPoint& pt, arma::uword i) const{
+    if(held(i)){
+      return arma::mat(Ms(i).n_cols, nT, arma::fill::zeros);
+    }
+    if(side==Side::record){
+      return Ms(i).t()*pt.A*pt.V[i];
+    }
+    arma::uword len = segLen(i+1);
+    if(len==0){
+      return arma::mat(0, nT);
+    }
+    arma::uword off = nT*segStart(i+1);
+    arma::mat S = arma::reshape(pt.sol.subvec(off, off+nT*len-1), len, nT);
+    return S*pt.Lf[i].t();
+  }
+
+  // The mean diagonal each term was scaled by
+  double termScale(arma::uword i) const{
+    return held(i) ? 1.0 : md(i);
+  }
+
+private:
+  Side side;
+  arma::mat Y;   // the standardized responses with the least squares fit off
+  arma::mat Xr;
+  arma::field<arma::mat> Ms; // the scaled marker matrices
+  arma::vec md, rankBound;
+  arma::uvec held;
+  arma::uvec rowIdx, colIdx;
+  arma::uword nPar = 0;
+  // Record side
+  arma::field<arma::mat> G;
+  arma::mat Xf;  // I (x) Xr
+  arma::vec yv;  // vec(Y)
+  // Coefficient side
+  arma::uword nSeg = 0, nCoef = 0;
+  arma::uvec segStart, segLen;
+  arma::mat T, TtT, TtY;
+  arma::field<arma::mat> GG; // T'*G_i*T
+
+  // The factor of a block of the design in the trait dimension: the identity
+  // for the fixed effects and L_i for term i
+  arma::mat segFactor(const MvMkPoint& pt, arma::uword r) const{
+    if(r==0){
+      return arma::eye(nT, nT);
+    }
+    return pt.Lf[r-1];
+  }
+
+  // Unit matrix E_ab, symmetric
+  arma::mat unitMatrix(arma::uword a, arma::uword b) const{
+    arma::mat E(nT, nT, arma::fill::zeros);
+    E(a,b) = 1.0;
+    E(b,a) = 1.0;
+    return E;
+  }
+
+  bool evaluateRecord(MvMkPoint& pt) const{
+    pt.ok = false;
+    arma::mat V(N, N, arma::fill::zeros);
+    for(arma::uword a=0; a<nT; ++a){
+      for(arma::uword b=0; b<nT; ++b){
+        arma::mat blk(n, n, arma::fill::zeros);
+        blk.diag().fill(pt.V[k](a,b));
+        for(arma::uword i=0; i<k; ++i){
+          if(held(i)) continue;
+          blk += pt.V[i](a,b)*G(i);
+        }
+        V.submat(a*n, b*n, a*n+n-1, b*n+n-1) = blk;
+      }
+    }
+    V = 0.5*(V+V.t()); // rounding only
+    if(!arma::chol(pt.Lv, V, "lower")){
+      return false;
+    }
+    V.reset();
+    double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
+    const arma::solve_opts::opts fast = arma::solve_opts::fast;
+    arma::mat Q = arma::solve(arma::trimatl(pt.Lv), Xf, fast);
+    arma::vec z = arma::solve(arma::trimatl(pt.Lv), yv, fast);
+    arma::mat AA = Q.t()*Q;
+    AA = 0.5*(AA+AA.t()); // rounding only
+    double logDetA;
+    if(!invAndLogDet(pt.Ainv, logDetA, AA)){
+      return false;
+    }
+    arma::vec r = z - Q*(pt.Ainv*(Q.t()*z));
+    arma::vec Py = arma::solve(arma::trimatu(pt.Lv.t()), r, fast);
+    pt.VinvX = arma::solve(arma::trimatu(pt.Lv.t()), Q, fast);
+    pt.A = arma::reshape(Py, n, nT);
+    double yPy = arma::dot(r, r);
+    pt.LL = -0.5*(double(N-p*nT)*std::log(2.0*arma::datum::pi) + logDetV +
+      logDetA + yPy);
+    pt.ok = std::isfinite(pt.LL);
+    return pt.ok;
+  }
+
+  void derivativesRecord(const MvMkPoint& pt, arma::vec& score,
+                         arma::mat& AI) const{
+    const arma::uword nTot = (k+1)*nPar;
+    score.zeros(nTot);
+    arma::mat P;
+    {
+      arma::mat Linv;
+      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
+        Rcpp::stop("could not invert the Cholesky factor of V");
+      }
+      P = Linv.t()*Linv;
+    }
+    P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
+    P = 0.5*(P+P.t()); // rounding only
+    arma::mat Wv(N, nTot, arma::fill::zeros);
+    for(arma::uword g=0; g<=k; ++g){
+      if( (g<k) && held(g) ) continue;
+      arma::mat GA = (g<k) ? arma::mat(G(g)*pt.A) : pt.A;
+      arma::mat AGA = pt.A.t()*GA;
+      for(arma::uword q=0; q<nPar; ++q){
+        arma::uword a = rowIdx(q), b = colIdx(q);
+        double quad = (a==b) ? AGA(a,a) : AGA(a,b)+AGA(b,a);
+        double tr;
+        if(g<k){
+          tr = arma::accu(P.submat(a*n, b*n, a*n+n-1, b*n+n-1)%G(g));
+        }else{
+          tr = arma::trace(P.submat(a*n, b*n, a*n+n-1, b*n+n-1));
+        }
+        if(a!=b){
+          tr *= 2.0;
+        }
+        score(g*nPar+q) = 0.5*(quad - tr);
+        Wv.col(g*nPar+q) = arma::vectorise(GA*unitMatrix(a, b));
+      }
+    }
+    AI = 0.5*(Wv.t()*(P*Wv));
+    AI = 0.5*(AI+AI.t()); // rounding only
+  }
+
+  bool evaluateCoefficient(MvMkPoint& pt) const{
+    pt.ok = false;
+    arma::mat Le;
+    if(!arma::chol(Le, pt.V[k], "lower")){
+      return false;
+    }
+    arma::mat LeInv;
+    if(!arma::inv(LeInv, arma::trimatl(Le))){
+      return false;
+    }
+    pt.VeInv = LeInv.t()*LeInv;
+    double logDetVe = 2.0*arma::accu(arma::log(Le.diag()));
+    const arma::uword nC = nT*nCoef;
+    arma::mat C(nC, nC);
+    for(arma::uword r=0; r<nSeg; ++r){
+      arma::mat Lr = segFactor(pt, r);
+      for(arma::uword s=0; s<nSeg; ++s){
+        if( (segLen(r)==0) || (segLen(s)==0) ) continue;
+        arma::mat Ls = segFactor(pt, s);
+        arma::mat blk = arma::kron(Lr.t()*pt.VeInv*Ls,
+                                   TtT.submat(segStart(r), segStart(s),
+                                              segStart(r)+segLen(r)-1,
+                                              segStart(s)+segLen(s)-1));
+        C.submat(nT*segStart(r), nT*segStart(s),
+                 nT*segStart(r)+nT*segLen(r)-1,
+                 nT*segStart(s)+nT*segLen(s)-1) = blk;
+      }
+    }
+    for(arma::uword j=nT*p; j<nC; ++j){
+      C(j,j) += 1.0;
+    }
+    C = 0.5*(C+C.t()); // rounding only
+    if(!arma::chol(pt.Lc, C, "lower")){
+      return false;
+    }
+    C.reset();
+    double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
+    arma::vec rhs(nC);
+    for(arma::uword r=0; r<nSeg; ++r){
+      if(segLen(r)==0) continue;
+      arma::mat blk = TtY.rows(segStart(r), segStart(r)+segLen(r)-1)*
+        pt.VeInv*segFactor(pt, r);
+      rhs.subvec(nT*segStart(r), nT*segStart(r)+nT*segLen(r)-1) =
+        arma::vectorise(blk);
+    }
+    const arma::solve_opts::opts fast = arma::solve_opts::fast;
+    pt.sol = arma::solve(arma::trimatu(pt.Lc.t()),
+                         arma::solve(arma::trimatl(pt.Lc), rhs, fast), fast);
+    arma::mat E = Y - multW(pt, pt.sol);
+    pt.A = E*pt.VeInv;
+    double yPy = arma::accu(Y%pt.A);
+    pt.LL = -0.5*(double(N-p*nT)*std::log(2.0*arma::datum::pi) +
+      double(n)*logDetVe + logDetC + yPy);
+    pt.ok = std::isfinite(pt.LL);
+    return pt.ok;
+  }
+
+  // W*s as an n by t matrix, sum_r T_r*S_r*L_r'
+  arma::mat multW(const MvMkPoint& pt, const arma::vec& s) const{
+    arma::mat out(n, nT, arma::fill::zeros);
+    for(arma::uword r=0; r<nSeg; ++r){
+      arma::uword len = segLen(r);
+      if(len==0) continue;
+      arma::uword off = nT*segStart(r);
+      arma::mat S = arma::reshape(s.subvec(off, off+nT*len-1), len, nT);
+      out += T.cols(segStart(r), segStart(r)+len-1)*S*segFactor(pt, r).t();
+    }
+    return out;
+  }
+
+  // W'*vec(Z) for an n by t matrix Z, segment by segment vec(T_r'*Z*L_r)
+  arma::vec crossW(const MvMkPoint& pt, const arma::mat& Z) const{
+    arma::vec out(nT*nCoef);
+    for(arma::uword r=0; r<nSeg; ++r){
+      arma::uword len = segLen(r);
+      if(len==0) continue;
+      arma::mat blk = T.cols(segStart(r), segStart(r)+len-1).t()*Z*
+        segFactor(pt, r);
+      out.subvec(nT*segStart(r), nT*segStart(r)+nT*len-1) =
+        arma::vectorise(blk);
+    }
+    return out;
+  }
+
+  void derivativesCoefficient(const MvMkPoint& pt, arma::vec& score,
+                              arma::mat& AI) const{
+    const arma::uword nTot = (k+1)*nPar;
+    score.zeros(nTot);
+    arma::mat Cinv;
+    {
+      arma::mat Linv;
+      if(!arma::inv(Linv, arma::trimatl(pt.Lc))){
+        Rcpp::stop("could not invert the Cholesky factor of C");
+      }
+      Cinv = Linv.t()*Linv;
+    }
+    arma::mat Wv(N, nTot, arma::fill::zeros);
+    for(arma::uword g=0; g<=k; ++g){
+      if( (g<k) && held(g) ) continue;
+      const arma::mat& GGg = (g<k) ? GG(g) : TtT;
+      // Gam(r,s)(t,u) is the trace of the (t,u) block of the (r,s) block of
+      // C^-1 against T_r'*G*T_s, which every element of the matrix needs
+      arma::field<arma::mat> Gam(nSeg, nSeg);
+      for(arma::uword r=0; r<nSeg; ++r){
+        for(arma::uword s=0; s<nSeg; ++s){
+          Gam(r,s).zeros(nT, nT);
+          if( (segLen(r)==0) || (segLen(s)==0) ) continue;
+          arma::mat GGrs = GGg.submat(segStart(r), segStart(s),
+                                      segStart(r)+segLen(r)-1,
+                                      segStart(s)+segLen(s)-1);
+          for(arma::uword t=0; t<nT; ++t){
+            arma::uword r0 = nT*segStart(r)+t*segLen(r);
+            for(arma::uword u=0; u<nT; ++u){
+              arma::uword s0 = nT*segStart(s)+u*segLen(s);
+              Gam(r,s)(t,u) = arma::accu(Cinv.submat(r0, s0,
+                                                     r0+segLen(r)-1,
+                                                     s0+segLen(s)-1)%GGrs);
+            }
+          }
+        }
+      }
+      arma::mat GA, AGA;
+      if(g<k){
+        arma::mat TA = Ms(g).t()*pt.A;
+        AGA = TA.t()*TA;
+        GA = Ms(g)*TA;
+      }else{
+        AGA = pt.A.t()*pt.A;
+        GA = pt.A;
+      }
+      for(arma::uword q=0; q<nPar; ++q){
+        arma::uword a = rowIdx(q), b = colIdx(q);
+        arma::mat E = unitMatrix(a, b);
+        double quad = (a==b) ? AGA(a,a) : AGA(a,b)+AGA(b,a);
+        arma::mat F = pt.VeInv*E*pt.VeInv;
+        double trWCW = 0.0;
+        for(arma::uword r=0; r<nSeg; ++r){
+          arma::mat Lr = segFactor(pt, r);
+          for(arma::uword s=0; s<nSeg; ++s){
+            trWCW += arma::accu((Lr.t()*F*segFactor(pt, s))%Gam(r,s));
+          }
+        }
+        // tr(G) is n for every scaled term and for the identity
+        double tr = arma::trace(pt.VeInv*E)*double(n) - trWCW;
+        score(g*nPar+q) = 0.5*(quad - tr);
+        Wv.col(g*nPar+q) = arma::vectorise(GA*E);
+      }
+    }
+    // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), column by column
+    arma::mat PW(N, nTot, arma::fill::zeros);
+    for(arma::uword j=0; j<nTot; ++j){
+      if(!arma::any(Wv.col(j))) continue;
+      arma::mat Wm = arma::reshape(Wv.col(j), n, nT);
+      arma::mat RW = Wm*pt.VeInv;
+      arma::vec x = Cinv*crossW(pt, RW);
+      PW.col(j) = arma::vectorise((Wm - multW(pt, x))*pt.VeInv);
+    }
+    AI = 0.5*(Wv.t()*PW);
+    AI = 0.5*(AI+AI.t()); // rounding only
+  }
+};
+
+// Fits the multiple trait RR-BLUP form of the multikernel model, on the side
+// requested as in fitMultiKernel. The inputs must already have been checked.
+Rcpp::List fitMultiKernelMV(const arma::mat& Y, const arma::mat& X,
+                            const arma::field<arma::mat>& Mlist,
+                            int maxIter, double tol, int sideRequest,
+                            const char* name, bool reportSide){
+  const arma::uword n = Y.n_rows;
+  const arma::uword nT = Y.n_cols;
+  const arma::uword k = Mlist.n_elem;
+  Side side;
+  if(sideRequest==1){
+    side = Side::record;
+  }else if(sideRequest==2){
+    side = Side::coefficient;
+  }else{
+    // The costs of useCoefficientSide with the records, the coefficients and
+    // the parameters of the multiple trait model
+    arma::uword c = X.n_cols;
+    for(arma::uword i=0; i<k; ++i){
+      c += Mlist(i).n_cols;
+    }
+    side = useCoefficientSide(n*nT, c*nT, (k+1)*nT*(nT+1)/2) ?
+      Side::coefficient : Side::record;
+  }
+  MvMultiKernelREML reml(Y, X, side, Mlist);
+  MvMkPoint pt;
+  int iter = reml.fit(pt, maxIter, tol, name);
+
+  // Back to the units of the traits and of the markers. With D = diag(sd),
+  // the covariance matrices are D*V*D, divided for a term by the mean
+  // diagonal it was scaled by, and the effects are scaled the same way.
+  const arma::mat D = arma::diagmat(reml.ts.sd);
+  Rcpp::List Vu(k), u(k);
+  for(arma::uword i=0; i<k; ++i){
+    double s = reml.termScale(i);
+    Vu[i] = Rcpp::wrap(arma::mat(D*pt.V[i]*D/s));
+    u[i] = Rcpp::wrap(arma::mat(reml.blupScaled(pt, i)*D/std::sqrt(s)));
+  }
+  arma::mat Ve = D*pt.V[k]*D;
+  arma::mat beta = fixedEffectsFromBasis(reml.fd, reml.betaBasis(pt)*D+reml.B0,
+                                         X.n_cols);
+  double p = double(reml.fd.Q.n_cols);
+  double LL = pt.LL - (double(n)-p)*arma::accu(arma::log(reml.ts.sd)) -
+    double(nT)*reml.fd.logDetR;
+  Rcpp::List out = Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                                      Rcpp::Named("Ve")=Ve,
+                                      Rcpp::Named("beta")=beta,
+                                      Rcpp::Named("u")=u,
+                                      Rcpp::Named("LL")=LL,
+                                      Rcpp::Named("iter")=iter);
+  if(reportSide){
+    out.push_back((side==Side::record) ? 1 : 2, "side");
+  }
+  return out;
+}
+
+// The checks of checkResponse for a response with any number of columns
+void checkResponseMV(const arma::mat& Y, const arma::mat& X, const char* name){
+  if(X.n_rows!=Y.n_rows){
+    Rcpp::stop("%s: X and y must have the same number of rows", name);
+  }
+  if(!Y.is_finite() || !X.is_finite()){
+    Rcpp::stop("%s: y and X must not contain missing or infinite values",
+               name);
+  }
+}
+
 } // namespace
 
 // Fits either form of the multikernel model on a chosen side, for testing.
 // side is 0 to choose automatically, 1 for the record side and 2 for the
 // coefficient side, and the side used is returned as an extra element.
 // [[Rcpp::export(.solveMultiKernel)]]
-Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X,
-                            arma::field<arma::mat>& Zlist,
-                            arma::field<arma::mat>& Klist, bool rrForm,
+Rcpp::List solveMultiKernel(const arma::mat& y, const arma::mat& X,
+                            const arma::field<arma::mat>& Zlist,
+                            const arma::field<arma::mat>& Klist, bool rrForm,
                             int maxIter, double tol, int side){
   const char* name = rrForm ? "solveRRBLUPMK" : "solveMKM";
+  if(rrForm && (y.n_cols>1)){
+    checkResponseMV(y, X, name);
+    checkMlist(y, Zlist, name);
+    return fitMultiKernelMV(y, X, Zlist, maxIter, tol, side, name, true);
+  }
   checkResponse(y, X, name);
   if(rrForm){
     checkMlist(y, Zlist, name);
@@ -890,12 +1625,15 @@ Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X,
 //' @title Solve Multikernel RR-BLUP
 //'
 //' @description
-//' Solves a univariate mixed model with multiple random effects, where
-//' random term i contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the
-//' variance of the records and its effects are the marker effects of
-//' \code{Mlist[[i]]}. The variance components are estimated by average
-//' information REML \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR},
-//' and the matrices in \code{Mlist} may have different numbers of columns.
+//' Solves a mixed model with multiple random effects, where random term i
+//' contributes \code{Vu[i]*Mlist[[i]]\%*\%t(Mlist[[i]])} to the variance of
+//' the records and its effects are the marker effects of \code{Mlist[[i]]}.
+//' The variance components are estimated by average information REML
+//' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, and the
+//' matrices in \code{Mlist} may have different numbers of columns. When
+//' \code{y} has more than one column, a multiple trait model is fitted, in
+//' which each term's effects and the errors have unstructured covariance
+//' matrices among the traits.
 //'
 //' @details
 //' The model is fitted in whichever of two equivalent ways is cheaper. With
@@ -915,7 +1653,18 @@ Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X,
 //' components are both below 1e-6, and a warning is given if
 //' \code{maxIter} is reached first.
 //'
-//' @param y a matrix with n rows and 1 column
+//' The multiple trait model needs every trait recorded on every record. Its
+//' covariance matrices start with half of each trait's residual variance from
+//' the least squares fit assigned to the error and half shared equally among
+//' the random terms, with the correlation among the least squares residuals
+//' for every matrix. Five EM iterations follow, and then Newton steps in the
+//' Cholesky factors of the covariance matrices, as described for
+//' \code{\link{solveRRBLUPMV}}, which keeps every matrix positive
+//' semidefinite. Iteration stops when the restricted log-likelihood changes
+//' by less than 1e-6.
+//'
+//' @param y a matrix with n rows and 1 column, or one column per trait for a
+//' multiple trait model
 //' @param X a matrix with n rows and x columns. Columns that are linearly
 //' dependent on the others are dropped and get a fixed effect of zero. An
 //' intercept, a column whose values are all the same, is always kept.
@@ -929,6 +1678,12 @@ Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X,
 //' iterations \code{iter}. \code{LL} is
 //' \eqn{-\frac{1}{2}[(n-p)\log(2\pi) + \log|V| + \log|X'V^{-1}X| + y'Py]},
 //' where p is the rank of X; it excludes the \eqn{\log|X'X|} term.
+//'
+//' For a multiple trait model with q traits, \code{Vu} is instead a list of
+//' q by q covariance matrices, one per matrix in \code{Mlist}, \code{Ve} is a
+//' q by q matrix, \code{beta} has one column per trait, and each element of
+//' \code{u} has one column per trait. \code{LL} is then that of
+//' \eqn{y=vec(Y)}, with nq records and p equal to q times the rank of X.
 //'
 //' @references
 //' \insertAllCited{}
@@ -944,10 +1699,16 @@ Rcpp::List solveMultiKernel(arma::mat& y, arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
-                         arma::field<arma::mat>& Mlist,
+Rcpp::List solveRRBLUPMK(const arma::mat& y, const arma::mat& X,
+                         const arma::field<arma::mat>& Mlist,
                          int maxIter=40){
   const char* name = "solveRRBLUPMK";
+  if(y.n_cols>1){
+    checkResponseMV(y, X, name);
+    checkMlist(y, Mlist, name);
+    return fitMultiKernelMV(y, X, Mlist, maxIter, rrblupMKTol, 0, name,
+                            false);
+  }
   checkResponse(y, X, name);
   checkMlist(y, Mlist, name);
   arma::field<arma::mat> none;
@@ -1015,9 +1776,9 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
-                    arma::field<arma::mat>& Zlist,
-                    arma::field<arma::mat>& Klist,
+Rcpp::List solveMKM(const arma::mat& y, const arma::mat& X,
+                    const arma::field<arma::mat>& Zlist,
+                    const arma::field<arma::mat>& Klist,
                     int maxIter=40, double tol=1e-4){
   const char* name = "solveMKM";
   checkResponse(y, X, name);

@@ -25,8 +25,10 @@ that fits it. One of "fastRRBLUP", "RRBLUP", "RRBLUP2", "RRBLUP_D",
 The older values "REG", "GCA" and "SCA" are still accepted and are read as
 "RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".}
 
-\item{nTraits}{the number of traits fitted at once. Only
-\code{\link{RRBLUP}} fits more than one.}
+\item{nTraits}{the number of traits fitted at once.
+\code{\link{fastRRBLUP}}, \code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
+\code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} fit more than one;
+the numbered models fit one.}
 
 \item{nFixEff}{the number of fixed effect levels, which is the number of
 distinct values in the population's fixEff slot.}
@@ -61,7 +63,10 @@ are large enough to decide which one is usable.
 frees them and iterates over a copy packed to one bit per allele, so it
 holds no square matrix at all. Its estimate is
 dominated by the genotypes themselves and by the subset of records used
-for the variance components.
+for the variance components. Fitted to several traits, it holds a few
+vectors of markers and of records per trait, and the variance components
+are estimated as for several traits in \code{\link{RRBLUP}}, on the
+subset of records.
 
 \code{\link{RRBLUP}} decomposes a square matrix whose dimensions are the
 smaller of the number of records and the number of markers, because a
@@ -90,6 +95,10 @@ records, holding several of them when there are more marker effects than
 records, or Henderson's equations, whose coefficient matrix grows with the
 number of marker effects, when there are fewer. They are the most
 demanding of the set when the marker effects outnumber the records.
+Fitted to several traits, both forms grow with the number of traits: the
+square matrix of the records has one row per record and trait, and
+Henderson's equations one per marker effect and trait, so the memory
+needed grows with the square of the number of traits.
 }
 \examples{
 RRBLUPMemUse(nInd=1000, nMarker=5000)
