@@ -20,7 +20,7 @@ selectWithinFam(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}},
+\item{pop}{an object of \code{\link{Pop-class}},
 \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of individuals to select within a family}
@@ -95,3 +95,12 @@ pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
 pop3 = selectWithinFam(pop2, 1, simParam=SP)
 
 }
+\seealso{
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectFam]{selectFam()}},
+\code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
+\code{\link[=selectOP]{selectOP()}}
+}
+\concept{selection functions}

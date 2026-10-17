@@ -9,7 +9,7 @@ as SP will allow it to be accessed by function defaults.
 }
 \note{
 By default the founder population is the population used to
-initalize the SimParam object. This population can be changed by
+initialize the SimParam object. This population can be changed by
 replacing the population in the founderPop slot. You must run
 \code{\link{resetPop}} on any existing populations to obtain the
 new trait values.
@@ -227,6 +227,34 @@ SP = SimParam$new(founderPop)
 SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 
 ## ------------------------------------------------
+## Method `SimParam$importTrait()`
+## ------------------------------------------------
+
+#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+
+#Import an AE trait, with one pair spanning both chromosomes
+SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+               addEff=c(1,-1,0.5,0.5),
+               epiPairs=rbind(c("1_1","1_5"),
+                              c("2_3","2_8")),
+               epiEff=c(0.2,-0.4),
+               name="AE")
+
+#Import an ADE trait
+SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+               addEff=c(1,-1,0.5,0.5),
+               domEff=c(0.3,0.1,0,0.2),
+               epiPairs=rbind(c("1_2","2_6"),
+                              c("1_4","2_1")),
+               epiEff=c(0.5,0.1),
+               name="ADE")
+
+## ------------------------------------------------
 ## Method `SimParam$setVarE()`
 ## ------------------------------------------------
 
@@ -374,7 +402,7 @@ for setup details.}
 
     \item{\code{sexes}}{sexes used for mating}
 
-    \item{\code{sepMap}}{are there seperate genetic maps for
+    \item{\code{sepMap}}{are there separate genetic maps for
 males and females}
 
     \item{\code{genMap}}{list of chromosome genetic maps}
@@ -385,13 +413,23 @@ females}
     \item{\code{maleMap}}{list of chromosome genetic maps for
 males}
 
-    \item{\code{centromere}}{position of centromeres genetic map}
+    \item{\code{centromere}}{position of centromeres on genetic map}
 
     \item{\code{femaleCentromere}}{position of centromeres on female
 genetic map}
 
     \item{\code{maleCentromere}}{position of centromeres on male
 genetic map}
+
+    \item{\code{genLen}}{genetic length of each chromosome. A chromosome
+runs from position 0 to its genetic length, which can lie past
+its last locus.}
+
+    \item{\code{femaleGenLen}}{genetic length of each chromosome on the
+female genetic map}
+
+    \item{\code{maleGenLen}}{genetic length of each chromosome on the
+male genetic map}
 
     \item{\code{lastId}}{last ID number assigned}
 
@@ -403,7 +441,8 @@ genetic map}
 
     \item{\code{recHist}}{list of historic recombination events}
 
-    \item{\code{haplotypes}}{list of computed IBD haplotypes}
+    \item{\code{haplotypes}}{list of computed IBD haplotypes, named by
+internal ID}
 
     \item{\code{varA}}{additive genetic variance in founderPop}
 
@@ -652,9 +691,9 @@ available when running addTrait and or addSnpChip functions.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{minQtlPerChr}}{the minimum number of segregating sites for
-QTLs. Can be a single value or a vector values for each chromosome.}
+QTLs. Can be a single value or a vector of values for each chromosome.}
       \item{\code{minSnpPerChr}}{the minimum number of segregating sites for SNPs.
-Can be a single value or a vector values for each chromosome.}
+Can be a single value or a vector of values for each chromosome.}
       \item{\code{excludeQtl}}{an optional vector of segregating site names to
 exclude from consideration as a viable QTL.}
       \item{\code{excludeSnp}}{an optional vector of segregating site names to
@@ -683,7 +722,7 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 \if{latex}{\out{\hypertarget{method-SimParam-setSexes}{}}}
 \subsection{\code{SimParam$setSexes()}}{
   Changes how sexes are determined in the simulation.
-The default sexes is "no", indicating all individuals are hermaphrodites.
+The default value is "no", indicating all individuals are hermaphrodites.
 To add sexes to the simulation, run this function with "yes_sys" or
 "yes_rand". The value "yes_sys" will systematically assign
 sexes to newly created individuals as first male and then female.
@@ -698,7 +737,7 @@ individual.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{sexes}}{acceptable value are "no", "yes_sys", or
+      \item{\code{sexes}}{acceptable values are "no", "yes_sys", or
 "yes_rand"}
       \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing.}
@@ -732,7 +771,8 @@ is not fully documented, because it is still experimental.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{hapMap}}{a list of founder haplotypes}
+      \item{\code{hapMap}}{a list of founder haplotypes, one per individual in
+the order of their internal IDs, or named by internal ID}
     }
     \if{html}{\out{</div>}}
   }
@@ -840,7 +880,7 @@ ignored. Only set to TRUE if you know what you are doing.}
 \subsection{\code{SimParam$addTraitA()}}{
   Randomly assigns eligible QTLs for one or more additive traits.
 If simulating more than one trait, all traits will be pleiotropic
-with correlated additive effects.
+with correlated additive genotypic effects.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$addTraitA(
@@ -860,9 +900,10 @@ with correlated additive effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -918,14 +959,16 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -955,7 +998,7 @@ SP$addTraitAD(10, meanDD=0.5)
 \if{html}{\out{<a id="method-SimParam-altAddTraitAD"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-altAddTraitAD}{}}}
 \subsection{\code{SimParam$altAddTraitAD()}}{
-  An alternative method for adding a trait with additive  and dominance effects
+  An alternative method for adding a trait with additive and dominance genotypic effects
 to an AlphaSimR simulation. The function attempts to create a trait matching
 user defined values for number of QTL, inbreeding depression, additive genetic
 variance and dominance genetic variance.
@@ -981,7 +1024,7 @@ variance and dominance genetic variance.
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome.
 Can be a single value or nChr values.}
-      \item{\code{mean}}{desired mean of the trait}
+      \item{\code{mean}}{requested founder mean (mean genetic value) of the trait}
       \item{\code{varA}}{desired additive variance}
       \item{\code{varD}}{desired dominance variance}
       \item{\code{inbrDepr}}{desired inbreeding depression, see details}
@@ -998,7 +1041,7 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   }
   \subsection{Details}{
     This function will always add a trait to 'SimParam', unless an error occurs
-with picking QTLs. The resulting trait will always have the desired mean and
+with picking QTLs. The resulting trait will always have the requested founder mean and
 additive genetic variance. However, it may not have the desired values for
 inbreeding depression and dominance variance. Thus, it is strongly recommended
 to check the output printed to the console to determine how close the trait's
@@ -1008,11 +1051,11 @@ The mean and additive genetic variance will always be achieved exactly. The
 function attempts to achieve the desired dominance variance and inbreeding
 depression while staying within the user supplied constraints for the
 acceptable range of dominance degree mean and variance. If the desired values
-are not being achieved, the acceptable range need to be increased and/or the
-number of QTL may need to be increased. There are not limits to setting the
-range for dominance degree mean and variance, but care should be taken to
-with regards to the biological feasibility of the limits that are supplied.
-The default limits were somewhat arbitrarily set, so I make not claim to
+are not being achieved, the acceptable range needs to be increased and/or the
+number of QTL may need to be increased. There are no limits to setting the
+range for dominance degree mean and variance, but care should be taken
+with regard to the biological feasibility of the limits that are supplied.
+The default limits were somewhat arbitrarily set, so I make no claim as to
 how reasonable these limits are for routine use.
 
 Inbreeding depression in this function is defined as the difference in mean
@@ -1073,12 +1116,13 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1136,16 +1180,20 @@ SP$addTraitAG(10, varGxE=2)
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1177,7 +1225,7 @@ SP$addTraitADG(10, meanDD=0.5, varGxE=2)
 \subsection{\code{SimParam$addTraitAE()}}{
   Randomly assigns eligible QTLs for one or more additive and epistasis
 traits. If simulating more than one trait, all traits will be pleiotropic
-with correlated additive effects.
+with correlated additive genotypic effects.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$addTraitAE(
@@ -1200,14 +1248,20 @@ with correlated additive effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1265,17 +1319,23 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1333,17 +1393,23 @@ with correlated effects.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true. If
-FALSE, tuning is performed according to total genetic variance.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1404,19 +1470,26 @@ epistasis and GxE.
     \describe{
       \item{\code{nQtlPerChr}}{number of QTLs per chromosome. Can be a single
 value or nChr values.}
-      \item{\code{mean}}{a vector of desired mean genetic values for one or more traits}
-      \item{\code{var}}{a vector of desired genetic variances for one or more traits}
+      \item{\code{mean}}{a vector of requested founder means (mean genetic values) for one or more traits}
+      \item{\code{var}}{a vector of desired genetic variances in the founder
+population for one or more traits}
       \item{\code{varEnv}}{a vector of environmental variances for one or more traits}
       \item{\code{varGxE}}{a vector of total genotype-by-environment variances for the traits}
       \item{\code{meanDD}}{mean dominance degree}
       \item{\code{varDD}}{variance of dominance degree}
-      \item{\code{relAA}}{the relative value of additive-by-additive variance compared
-to additive variance in a diploid organism with allele frequency 0.5}
-      \item{\code{corA}}{a matrix of correlations between additive effects}
+      \item{\code{relAA}}{ratio of additive-by-additive epistatic genetic variance
+to additive genetic variance used to sample epistatic genotypic effects,
+assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+with allele frequencies of 0.5.
+The realized variance ratio in the founder population can differ.}
+      \item{\code{corA}}{a matrix of correlations between additive genotypic effects}
       \item{\code{corDD}}{a matrix of correlations between dominance degrees}
-      \item{\code{corAA}}{a matrix of correlations between additive-by-additive effects}
-      \item{\code{corGxE}}{a matrix of correlations between GxE effects}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{corAA}}{a matrix of correlations between additive-by-additive epistatic genotypic effects}
+      \item{\code{corGxE}}{a matrix of correlations between genotype-by-environment genotypic effects}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{gamma}}{should a gamma distribution be used instead of normal}
       \item{\code{shape}}{the shape parameter for the gamma distribution
 (the rate/scale parameter of the gamma distribution is accounted
@@ -1478,7 +1551,7 @@ manAddTrait function, this function does not require
 formatting the trait as a \code{\link{LociMap-class}}.
 The formatting is performed automatically for the user,
 with more user friendly data.frames or matrices taken as
-inputs. This function only works for A and AD trait types.
+inputs. This function works for A, AD, AE and ADE trait types.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SimParam$importTrait(
@@ -1489,26 +1562,78 @@ inputs. This function only works for A and AD trait types.
   name = NULL,
   varE = NULL,
   force = FALSE,
-  nThreads = NULL
+  nThreads = NULL,
+  epiPairs = NULL,
+  epiEff = NULL
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{markerNames}}{a vector of names for the QTL}
-      \item{\code{addEff}}{a matrix of additive effects (nLoci x nTraits).
+      \item{\code{markerNames}}{a vector of unique names for the QTL}
+      \item{\code{addEff}}{a matrix of additive genotypic effects (nLoci x nTraits).
 Alternatively, a vector of length nLoci can be supplied for
 a single trait.}
-      \item{\code{domEff}}{optional dominance effects for each locus}
-      \item{\code{intercept}}{optional intercepts for each trait}
+      \item{\code{domEff}}{optional dominance genotypic effects for each locus
+(nLoci x nTraits, or a vector of length nLoci for a single trait)}
+      \item{\code{intercept}}{optional trait intercepts in the genotypic parameterization}
       \item{\code{name}}{optional name(s) for the trait(s)}
       \item{\code{varE}}{default error variance for phenotype, optional}
       \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
       \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
+      \item{\code{epiPairs}}{optional two-column matrix or data.frame of marker
+names, with one row for each pair of loci that interact through
+additive-by-additive epistasis. Must be supplied with \code{epiEff}.}
+      \item{\code{epiEff}}{optional additive-by-additive epistatic genotypic
+effects, a matrix with one row for each row of \code{epiPairs} and
+one column for each trait. Alternatively, a vector of length
+\code{nrow(epiPairs)} can be supplied for a single trait.}
     }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    See \code{vignette("traits", package = "AlphaSimR")} for the
+implemented trait model and genotypic effects.
+
+Supplying \code{epiPairs} and \code{epiEff} creates an AE trait,
+or an ADE trait when \code{domEff} is also supplied. The epistatic
+model only allows interactions between pairs of loci, and every
+marker in \code{markerNames} must appear in exactly one pair, so
+\code{nrow(epiPairs)} is half of \code{length(markerNames)}. The two
+markers in a pair may be on different chromosomes. All traits
+imported in one call share the same pairs, with effects taken from
+the corresponding column of \code{epiEff}. Markers do not need to be
+given in map order; the pairs are matched to the loci by name after
+the loci are put in map order.
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{#Create founder haplotypes
+founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+
+#Set simulation parameters
+SP = SimParam$new(founderPop)
+
+#Import an AE trait, with one pair spanning both chromosomes
+SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+               addEff=c(1,-1,0.5,0.5),
+               epiPairs=rbind(c("1_1","1_5"),
+                              c("2_3","2_8")),
+               epiEff=c(0.2,-0.4),
+               name="AE")
+
+#Import an ADE trait
+SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+               addEff=c(1,-1,0.5,0.5),
+               domEff=c(0.3,0.1,0,0.2),
+               epiPairs=rbind(c("1_2","2_6"),
+                              c("1_4","2_1")),
+               epiEff=c(0.5,0.1),
+               name="ADE")
+}
     \if{html}{\out{</div>}}
   }
 }
@@ -1532,7 +1657,8 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{traitPos}}{an integer indicate which trait to switch}
+      \item{\code{traitPos}}{an integer or a trait name indicating which trait
+to switch}
       \item{\code{lociMap}}{a new object descended from
 \code{\link{LociMap-class}}}
       \item{\code{varE}}{default error variance for phenotype, optional}
@@ -1558,7 +1684,8 @@ If \code{NULL}, the number is obtained from \code{self$nThreads}.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{traits}}{an integer vector indicating which traits to remove}
+      \item{\code{traits}}{an integer vector or a character vector of trait
+names indicating which traits to remove}
       \item{\code{force}}{should the check for a running simulation be
 ignored. Only set to TRUE if you know what you are doing}
     }
@@ -1570,11 +1697,11 @@ ignored. Only set to TRUE if you know what you are doing}
 \if{html}{\out{<a id="method-SimParam-setVarE"></a>}}
 \if{latex}{\out{\hypertarget{method-SimParam-setVarE}{}}}
 \subsection{\code{SimParam$setVarE()}}{
-  Defines a default values for error
+  Defines default values for error
 variances used in \code{\link{setPheno}}. These defaults
 will be used to automatically generate phenotypes when new
 populations are created. See the details section of \code{\link{setPheno}}
-for more information about each arguments and how they
+for more information about each argument and how they
 should be used.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
@@ -1661,11 +1788,14 @@ values of means and variances in the founder population.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{mean}}{a vector of new trait means}
-      \item{\code{var}}{a vector of new trait variances}
+      \item{\code{mean}}{a vector of requested mean genetic values in the founder population}
+      \item{\code{var}}{a vector of requested genetic variances in the founder population}
       \item{\code{varEnv}}{a vector of new environmental variances}
       \item{\code{varGxE}}{a vector of new GxE variances}
-      \item{\code{useVarA}}{tune according to additive genetic variance if true}
+      \item{\code{useVarA}}{if \code{TRUE}, scale genotypic effects to achieve
+the requested additive genetic variance (variance of breeding values)
+in the founder population.
+If \code{FALSE}, use total genetic variance (variance of genetic values).}
       \item{\code{nThreads}}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{self$nThreads}.}
     }
@@ -1710,7 +1840,7 @@ under the assumption of equivalent recombination landscapes.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{femaleRatio}}{relative ratio of recombination in females compared to
-males. A value of 2 indicate twice as much recombination in females. The
+males. A value of 2 indicates twice as much recombination in females. The
 value must be greater than 0. (default is 1)}
     }
     \if{html}{\out{</div>}}
@@ -1735,18 +1865,23 @@ SP$setRecombRatio(2) #Twice as much recombination in females
   Replaces existing genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchGenMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchGenMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
-be metacentric.}
+positions. If NULL, the centromeres are assumed to
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }
@@ -1759,18 +1894,23 @@ be metacentric.}
   Replaces existing female genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchFemaleMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
-be metacentric.}
+positions. If NULL, the centromeres are assumed to
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }
@@ -1783,18 +1923,23 @@ be metacentric.}
   Replaces existing male genetic map.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SimParam$switchMaleMap(genMap, centromere = NULL)}
+    \preformatted{SimParam$switchMaleMap(genMap, centromere = NULL, genLen = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{genMap}}{a list of length nChr containing
-numeric vectors for the position of each segregating
+numeric vectors for the absolute position of each segregating
 site on a chromosome.}
       \item{\code{centromere}}{a numeric vector of centromere
-positions. If NULL, the centromere are assumed to
-be metacentric.}
+positions. If NULL, the centromeres are assumed to
+be metacentric, sitting at half of each chromosome's
+genetic length.}
+      \item{\code{genLen}}{an optional vector of chromosome genetic
+lengths in Morgans, either one value or one per chromosome.
+Each must be at least the position of the chromosome's
+last locus. If NULL, each chromosome ends at its last locus.}
     }
     \if{html}{\out{</div>}}
   }

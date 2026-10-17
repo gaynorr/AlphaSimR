@@ -19,7 +19,7 @@ selectInd(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}},
+\item{pop}{an object of \code{\link{Pop-class}},
 \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of individuals to select}
@@ -93,7 +93,7 @@ pop3 = selectInd(pop, 5, trait=squaredDeviation, selectTop=TRUE, simParam=SP)
 hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 abline(v=pop3@pheno, col="red", lwd=2)
 
-#Select 5 least deviating from an optima (stabilising selection)
+#Select 5 least deviating from an optima (stabilizing selection)
 pop4 = selectInd(pop, 5, trait=squaredDeviation, selectTop=FALSE, simParam=SP)
 hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 abline(v=pop4@pheno, col="red", lwd=2)
@@ -111,3 +111,12 @@ pop6 = selectInd(pop, 5, trait=trtFunc, use=useFunc2, simParam=SP)
 pop6@id
 
 }
+\seealso{
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectFam]{selectFam()}},
+\code{\link[=selectOCS]{selectOCS()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=selectWithinFam]{selectWithinFam()}}
+}
+\concept{selection functions}

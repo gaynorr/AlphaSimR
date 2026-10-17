@@ -1,15 +1,19 @@
 ---
-title: "Genotype-by-environment interactions in AlphaSimR"
+title: "Genotype-by-Environment Interactions in AlphaSimR"
 author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-bibliography: AlphaSimR.bib
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
-  %\VignetteIndexEntry{Quantitative Genetics}
+  %\VignetteIndexEntry{Genotype-by-Environment Interactions in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -18,6 +22,16 @@ editor_options:
 This document describes how to use AlphaSimR to model
 genotype-by-environment interaction.
 
+**This article is a draft of a planned interface, which AlphaSimR does
+not provide yet.** The `legacyGxE`, `varGxL` and `varGxL_Y` arguments of
+`addTraitAG`, the `useGxE` argument of `setVarE`, and the `year`, `locs`
+and `returnPheno` arguments of `setPheno` do not exist, so the code below
+is not run and would not work as written. Of the calls shown, only the
+first `setPheno` call, which sets the environment with `p`, works now. GxE
+traits are currently added with the `varGxE` and `varEnv` arguments of
+`addTraitAG`, `addTraitADG`, `addTraitAEG` and `addTraitADEG`, as described
+in `vignette("traits")`.
+
 ```{r, eval=FALSE}
 
 # Legacy GxE trait
@@ -25,7 +39,7 @@ SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxE=1, legacyGxE=TRUE)
 
 # New GxE trait
 SP$addTraitAG(nQtlPerChr=100, mean=0, var=1, varGxL=1, varGxL_Y=1)
-  
+
 SP$setVarE(H2=0.5, useGxE=TRUE)
 
 # Legacy GxE
@@ -40,6 +54,4 @@ pop = setPheno(pop, year=year, reps=1, locs=2)
 PYT = setPheno(PYT, year=year, fixEff=paste0("PYT_", year))
 
 pheno_df = setPheno(PYT, year=year, fixEff=paste0("PYT_", year), returnPheno=TRUE)
-
-
 ```

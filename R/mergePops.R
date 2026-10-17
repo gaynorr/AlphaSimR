@@ -37,25 +37,25 @@ mergePops = function(popList){
     popList = popList@pops
   }
 
-  classes = do.call("c",lapply(popList,
-                               function(x) class(x)))
-  if(any(classes=="NULL")){
-    remove = which(classes=="NULL")
-    popList = popList[-remove]
-    classes = classes[-remove]
+  popList = Filter(Negate(is.null), popList)
+  if(!all(sapply(popList, isPop))){
+    stop("All populations must be a Pop")
   }
-  stopifnot(all(classes=="Pop"))
 
   #nChr
   nChr = do.call("c",lapply(popList,
                             function(x) x@nChr))
-  stopifnot(all(nChr==nChr[1]))
+  if(!all(nChr==nChr[1])){
+    stop("nChr does not match between populations")
+  }
   nChr = nChr[1]
 
   #ploidy
   ploidy = do.call("c",lapply(popList,
                               function(x) x@ploidy))
-  stopifnot(all(ploidy==ploidy[1]))
+  if(!all(ploidy==ploidy[1])){
+    stop("ploidy does not match between populations")
+  }
   ploidy = ploidy[1]
 
   #nLoci
@@ -63,7 +63,9 @@ mergePops = function(popList){
                              function(x){
                                all(x@nLoci==popList[[1]]@nLoci)
                              }))
-  stopifnot(all(nLoci))
+  if(!all(nLoci)){
+    stop("nLoci does not match between populations")
+  }
   nLoci = popList[[1]]@nLoci
 
   #id
@@ -92,12 +94,16 @@ mergePops = function(popList){
                          function(x) x@fixEff))
 
   #misc
-  tmp = sapply(popList, function(x) length(x@misc))
-  if(!all(tmp == tmp[1])) {
+  # vapply rather than sapply, which returns a list for an empty popList,
+  # and the count is held separately because tmp is reused for the names
+  # below. Unnamed misc entries have NULL names, so taking the count from
+  # the names dropped every unnamed misc element.
+  nMisc = vapply(popList, function(x) length(x@misc), integer(1))
+  if(!all(nMisc == nMisc[1])) {
     warning("number of misc elements differs - setting misc to an empty list!")
     misc = list()
   } else {
-    if(tmp[1]>0) {
+    if(nMisc[1]>0) {
       tmp = lapply(popList, function(x) names(x@misc))
       allMatch = TRUE
       if(length(tmp)>1){
@@ -109,8 +115,8 @@ mergePops = function(popList){
         }
       }
       if(allMatch){
-        misc = vector("list", length=length(tmp[[1]]))
-        for(i in seq_len(length(tmp[[1]]))){
+        misc = vector("list", length=nMisc[1])
+        for(i in seq_len(nMisc[1])){
           miscTmp = lapply(popList, function(x) x@misc[[i]])
           if (is.matrix(miscTmp[[1]])) {
             misc[[i]] = do.call("rbind", miscTmp)
@@ -136,12 +142,23 @@ mergePops = function(popList){
   #nTraits
   nTraits = do.call("c",lapply(popList,
                                function(x) x@nTraits))
-  stopifnot(all(nTraits==nTraits[1]))
+  if(!all(nTraits==nTraits[1])){
+    stop("nTraits does not match between populations")
+  }
   nTraits = nTraits[1]
 
   #nInd
   nInd = do.call("c",lapply(popList,
                             function(x) x@nInd))
+
+  # Populations with no individuals contribute no rows, so any check that
+  # looks at content rather than structure has to read the populations that
+  # actually contribute. Reading popList[[1]] unconditionally got the wrong
+  # answer whenever the first population was empty.
+  contrib = which(nInd>0)
+  if(length(contrib)==0L){
+    contrib = seq_len(length(popList))
+  }
 
   #gv
   gv = do.call("rbind",lapply(popList,
@@ -167,7 +184,10 @@ mergePops = function(popList){
   if(nTraits>=1){
     gxe = vector("list",length=nTraits)
     for(trait in seq_len(nTraits)){
-      if(!is.null(popList[[1]]@gxe[[trait]])){
+      hasGxe = any(vapply(popList[contrib],
+                          function(x) !is.null(x@gxe[[trait]]),
+                          logical(1)))
+      if(hasGxe){
         tmp = lapply(popList,function(x) x@gxe[[trait]])
         tmp = do.call("c",tmp)
         gxe[[trait]] = tmp
@@ -235,7 +255,7 @@ mergePops = function(popList){
 #'
 #' If \code{level} is greater than or equal to the nesting depth, the original
 #' object is returned unchanged.
-#' 
+#'
 #' The \code{preserveNames} argument allows control over name preservation during
 #' flattening. This is useful when you want to track the source of flattened
 #' populations through their hierarchical names. The default \code{"auto"} mode
@@ -294,7 +314,9 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
   if (isPop(x)) {
     return(x)
   }
-  stopifnot(isMultiPop(x))
+  if (!isMultiPop(x)) {
+    stop("x must be a Pop or a MultiPop")
+  }
 
   if (level > 1L) {
     for (i in seq_along(x@pops)) {
@@ -391,8 +413,8 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
   }
 
   # auto or concatenate: keep only if no NA and no duplicates
-  if (length(nameVec) > 0L && 
-       !any(is.na(nameVec)) && 
+  if (length(nameVec) > 0L &&
+       !any(is.na(nameVec)) &&
        !any(duplicated(nameVec))
   ) {
     names(popList) = nameVec
@@ -411,14 +433,14 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #'
 #' @param ... \code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
 #'   \code{NULL} values are ignored.
-#' @param level Integer scalar >= 0 to merge at a sepecific level of nesting;
+#' @param level Integer scalar >= 0 to merge at a specific level of nesting;
 #'   see Details.
 #'
 #' @details
 #' The function accepts multiple inputs and merges them according to the
 #' \code{level} argument.
-#' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the 
-#'   inputs into a single \code{Pop} object (the inputs are first completely 
+#' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the
+#'   inputs into a single \code{Pop} object (the inputs are first completely
 #'   flattened then merged).  \cr
 #' - \code{level = 1}: merge inputs into a \code{MultiPop} so that each item is a
 #'   \code{Pop} (level 1). Each input is first flattened to level 1 and its
@@ -627,7 +649,7 @@ splitPop = function(x, by, level = Inf) {
   if (!isPop(x) && !isMultiPop(x)) {
     stop("`x` must be a Pop or MultiPop object")
   }
-  
+
   # Validate by argument
   if (!is.list(by)) {
     by = list(by)
@@ -649,7 +671,7 @@ splitPop = function(x, by, level = Inf) {
     res = .splitPop(x, by)
     return(res)
   }
-  
+
   # Get max depth of nesting in MultiPop
   md = ifelse(isMultiPop(x), .depthMultiPop(x), 1L)
 
@@ -731,7 +753,7 @@ splitPop = function(x, by, level = Inf) {
 #' - a function returning an atomic vector.  \cr
 #' - a list of vectors/functions for recursive nested splitting.  \cr
 #' - a data frame whose columns define nested grouping levels.
-#' 
+#'
 #' For data frames, rows are aligned to \code{pop@id} when possible, otherwise
 #' they are assumed to already be in population order. During recursion, the
 #' data frame is subset to each child population so that row alignment is

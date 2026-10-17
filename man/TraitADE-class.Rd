@@ -8,9 +8,15 @@
 Extends \code{\link{TraitAD-class}}
 to add epistasis
 }
+\details{
+Trait effects and intercept are parameters of the trait model described in
+\code{vignette("traits", package = "AlphaSimR")}.
+Multiplying effects by the corresponding scaled genotype dosages from a population
+gives corresponding contributions to genetic values.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{epiEff}}{epistatic effects}
+\item{\code{epiEff}}{additive-by-additive epistatic genotypic effects}
 }}
 

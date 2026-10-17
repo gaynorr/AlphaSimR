@@ -12,6 +12,14 @@ meanG(pop)
 \description{
 Returns the mean genetic values for all traits
 }
+\details{
+The mean is calculated from the genetic values in \code{pop}.
+It includes the trait intercept and can differ from both the intercept
+and the requested founder mean.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -19,7 +27,6 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 #Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
-SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

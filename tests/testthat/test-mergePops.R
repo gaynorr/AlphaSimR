@@ -2,6 +2,20 @@
 
 context("mergePops")
 
+test_that("RawPop and MapPop concatenation rejects subclasses to preserve slots", {
+  map = quickHaplo(nInd=3, nChr=1, segSites=10)
+  raw = as(map, "RawPop")
+  named = new("NamedMapPop", map, id=as.character(1:3),
+              mother=rep("0", 3), father=rep("0", 3))
+
+  expect_identical(c(raw[1:2], raw[3], NULL), raw)
+  expect_error(c(raw[1:2], map[3]), "All arguments must be a RawPop", fixed=TRUE)
+  expect_identical(c(map[1:2], map[3], NULL), map)
+  expect_error(c(map[1:2], named[3]), "All arguments must be a MapPop", fixed=TRUE)
+  expect_error(c(raw, 1), "All arguments must be a RawPop", fixed=TRUE)
+  expect_error(c(map, raw), "All arguments must be a MapPop", fixed=TRUE)
+})
+
 test_that("cPop_and_mergePops", {
   founderPop = quickHaplo(nInd=3, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
@@ -18,7 +32,7 @@ test_that("cPop_and_mergePops", {
   expect_identical(c(pop[1:2], pop[3]), pop[1:3])
   expect_identical(mergePops(list(pop[1:2], pop[3], NULL)), pop[1:3])
   expect_identical(mergePops(newMultiPop(pop[1:2], newMultiPop(pop[3]))), pop[1:3])
-  
+
   pop@ebv = pop@pheno
   expect_identical(c(pop[1:2], pop[3]), pop[1:3])
   expect_identical(mergePops(list(pop[1:2], pop[3])), pop[1:3])
@@ -113,13 +127,13 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
                "Use mergePops() to merge multiple Pop objects", fixed = TRUE)
   # Merging invalid objects throws an error
   expect_error(mergeMultiPops(pop, SP),
-               'all(classes == "Pop") is not TRUE', fixed = TRUE)
+               "All populations must be a Pop", fixed = TRUE)
   expect_error(mergeMultiPops(mp1, SP),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
   expect_error(mergeMultiPops(pop, SP, mp1),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
   expect_error(mergeMultiPops(mp1, SP, pop),
-               'is(y, "MultiPop") is not TRUE', fixed = TRUE)
+               "All arguments must be a Pop or a MultiPop", fixed = TRUE)
 
   # Combining a Pop and a MultiPop gives a MultiPop
   expect_identical(c(mp1, pop[6:10]),
@@ -159,12 +173,12 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
 
   # Nothing to flatten, so the same input should be returned
   expect_identical(flattenMultiPop(mp1, level = 0), mp1)
-  tmp = flattenMultiPop(mp1, level = 1)
-  expect_identical(tmp, mp1)
+  expect_identical(flattenMultiPop(mp1, level = 1), mp1)
+  expect_identical(flattenMultiPop(mp1, level = 2), mp1)
+  tmp = flattenMultiPop(mp1)
   expect_identical(tmp[[1]], pop[1:2])
   expect_identical(tmp[[2]], pop[3:5])
   tmp = flattenMultiPop(mp1, level = 2)
-  expect_identical(tmp, mp1)
   expect_identical(tmp[[1]], pop[1:2])
   expect_identical(tmp[[2]], pop[3:5])
 
@@ -190,39 +204,77 @@ test_that("cMultiPop_mergeMultiPops_and_flattenMultiPop", {
   expect_identical(tmp[[3]],
                    newMultiPop(pop[8:9], pop[10:11], pop[12]))
   expect_equal(flattenMultiPop(mp3, level = 3), mp3)
+})
 
-  # Flattening with preserveNames
-  mp_named = newMultiPop(A = pop[1:2], B = pop[3:5],
-                         C = newMultiPop(D = pop[6:7], E = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "auto"),
-                   newMultiPop(A = pop[1:2], B = pop[3:5], D = pop[6:7], E = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "concatenate"),
-                   newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_E = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "force"),
-                   newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_E = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "none"),
-                   newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 2, preserveNames = "none"),
-                   newMultiPop(A = pop[1:2], B = pop[3:5], 
-                               C = newMultiPop(pop[6:7], pop[8:10])))
-                               
-  mp_named = newMultiPop(A = pop[1:2], B = pop[3:5],
-                         C = newMultiPop(D = pop[6:7], D = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "auto"),
-                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "concatenate"),
-                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
+mergeBoundaryPop = function(nChr=1,ploidy=2,segSites=10,trait=FALSE){
+  f = quickHaplo(3,nChr,segSites,ploidy=ploidy)
+  sp = SimParam$new(f)
+  sp$nThreads = 1L
+  if(trait) sp$addTraitAG(5,varGxE=1,varEnv=1)
+  newPop(f,simParam=sp)
+}
 
-  expect_identical(
-    expect_warning(flattenMultiPop(mp_named, level = 1, preserveNames = "force"),
-                   "Duplicate names found in 'force' mode. Making names unique by appending suffixes.",
-                   fixed = TRUE),
-    newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_D.1 = pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 1, preserveNames = "none"),
-                    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10]))
-  expect_identical(flattenMultiPop(mp_named, level = 2, preserveNames = "none"),
-                    newMultiPop(A = pop[1:2], B = pop[3:5], 
-                                C = newMultiPop(pop[6:7], pop[8:10])))
+test_that("REFUSE structurally incompatible populations before merging", {
+  set.seed(6026)
+  base = mergeBoundaryPop()
+  expect_error(mergePops(list(base,mergeBoundaryPop(nChr=2))),"nChr does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(ploidy=4))),"ploidy does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(segSites=12))),"nLoci does not match")
+  expect_error(mergePops(list(base,mergeBoundaryPop(trait=TRUE))),"nTraits does not match")
+  expect_error(flattenMultiPop(list(base)),"x must be a Pop or a MultiPop")
+})
+
+test_that("Merging empty populations preserves their structure", {
+  set.seed(6027)
+  pop = mergeBoundaryPop()
+  empty = pop[integer()]
+  out = mergePops(list(empty,empty))
+  expect_equal(out@nInd,0L)
+  expect_equal(out@nChr,pop@nChr)
+  expect_equal(out@ploidy,pop@ploidy)
+  expect_equal(out@nLoci,pop@nLoci)
+  expect_equal(dim(out@geno[[1]]),c(2L,2L,0L))
+  expect_true(validObject(out))
+})
+
+test_that("Merging preserves GxE values in population order", {
+  set.seed(6028)
+  pop = mergeBoundaryPop(trait=TRUE)
+  expect_true(length(pop@gxe[[1]])==pop@nInd)
+  out = mergePops(list(pop[3],pop[1:2]))
+  expect_equal(out@gxe[[1]],pop@gxe[[1]][c(3,1,2)])
+  expect_equal(out@gv,pop@gv[c(3,1,2),,drop=FALSE])
+  expect_equal(out@id,pop@id[c(3,1,2)])
+  # Empty groups contribute no GxE values, including when they come first.
+  withEmpty = mergePops(list(pop[integer()],pop))
+  expect_equal(as.vector(withEmpty@gxe[[1]]),as.vector(pop@gxe[[1]]))
+  expect_equal(withEmpty@nInd,pop@nInd)
+})
+
+test_that("AGREE merged genotypes with arrays bound together in R", {
+  set.seed(6029)
+  # 13 sites leave the last byte of each haplotype part full, and a
+  # tetraploid has more than two haplotypes per individual to keep in order
+  founderPop = quickHaplo(nInd=7, nChr=2, segSites=13, ploidy=4L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  before = unserialize(serialize(pop@geno, NULL))
+  bindGeno = function(...){
+    pops = list(...)
+    lapply(seq_len(pop@nChr), function(chr){
+      parts = lapply(pops, function(x) x@geno[[chr]])
+      array(unlist(lapply(parts, as.vector)),
+            dim=c(dim(parts[[1]])[1:2], sum(sapply(pops, nInd))))
+    })
+  }
+  expect_identical(c(pop[1:3], pop[4:7])@geno, bindGeno(pop[1:3], pop[4:7]))
+  expect_identical(c(pop[5:7], pop[1:2])@geno, bindGeno(pop[5:7], pop[1:2]))
+  expect_identical(mergePops(list(pop[2], pop[integer()], pop[6:7], pop))@geno,
+                   bindGeno(pop[2], pop[6:7], pop))
+  expect_identical(c(pop[integer()], pop[3])@geno, bindGeno(pop[3]))
+  # Merging reads the populations in place and must not write to them
+  expect_identical(pop@geno, before)
 })
 
 test_that("splitPop", {
@@ -240,7 +292,7 @@ test_that("splitPop", {
 
   expect_true(isMultiPop(mp1))
   expect_length(mp1@pops, length(unique(by1)))
-  expect_identical(.depthMultiPop(mp1), 1L)
+  expect_identical(AlphaSimR:::.depthMultiPop(mp1), 1L)
 
   expect_identical(
     splitPop(pop, by = "A"),
@@ -252,13 +304,13 @@ test_that("splitPop", {
     pop,
     by = list(
       sample(LETTERS[1:2], nInd(pop), replace = TRUE),
-      function(x) getFam(x, famType = "B")
+      function(x) AlphaSimR:::getFam(x, famType = "B")
     )
   )
 
   expect_true(isMultiPop(mp2))
   expect_true(all(vapply(mp2@pops, isMultiPop, logical(1))))
-  expect_identical(.depthMultiPop(mp2), 2L)
+  expect_identical(AlphaSimR:::.depthMultiPop(mp2), 2L)
 
   # Error handling
   expect_error(
@@ -296,13 +348,13 @@ test_that("splitPop", {
     "Grouping spec must be an atomic vector or a function returning one.",
     fixed = TRUE
   )
-  
+
   # splitPop works for MultiPop objects
   mp3 = splitPop(mp2, by = function(x) sample(LETTERS[1:2], length(x), replace = TRUE))
 
   expect_true(is(mp1, "MultiPop"))
   expect_true(all(vapply(mp3@pops, isMultiPop, logical(1))))
-  expect_identical(.depthMultiPop(mp3), 3L)
+  expect_identical(AlphaSimR:::.depthMultiPop(mp3), 3L)
 
     # Level control tests (deterministic splitter)
   mp_nested = newMultiPop(pop[1:3], newMultiPop(pop[4:6], pop[7:9]))
@@ -372,7 +424,7 @@ test_that("splitPop", {
     "Mapping rows of data frame (`by`) to individuals' identifiers (`x@id`) by order.\nConsider setting row names of `by` to match `x@id` for clarity.",
     fixed = TRUE
   )
-  
+
   rownames(by1) = letters[pop@iid]
   expect_warning(
     splitPop(pop, by = data.frame(level1 = by1)),
@@ -383,7 +435,7 @@ test_that("splitPop", {
   # Specify row names of the data frame to match `x@id`
   by_df = data.frame(level1 = by1, row.names = pop@id)
   expect_identical(mp1, splitPop(pop, by = by_df))
-  
+
   # splitPop can create nested MultiPop objects using a data frame with multiple columns
   nms = sapply(mp2@pops, lengths)
   by_df = data.frame(level1 = rep(names(nms), nms),
@@ -396,13 +448,56 @@ test_that("splitPop", {
                      level2 = c(rep(NA_character_, 4), rep(LETTERS[3:4], each = 4)),
                      level3 = c(rep(NA_character_, 8), rep("E", 4)),
                      row.names = pop@id)
-                     
+
   mp4 = newMultiPop(A = pop[1:4],
                     B = newMultiPop(
                       C = pop[5:8],
                       D = newMultiPop(E = pop[9:12])))
-  
-  expect_identical(mp4, splitPop(pop, by = by_df))
-  
 
+  expect_identical(mp4, splitPop(pop, by = by_df))
+
+
+})
+
+test_that("flattenMultiPop preserveNames", {
+  founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+  mp = newMultiPop(
+    A = pop[1:2],
+    B = pop[3:5],
+    C = newMultiPop(D = pop[6:7], E = pop[8:10])
+  )
+
+  expect_identical(
+    flattenMultiPop(mp, preserveNames = "auto"),
+    newMultiPop(A = pop[1:2], B = pop[3:5], D = pop[6:7], E = pop[8:10])
+  )
+  expect_identical(
+    flattenMultiPop(mp, preserveNames = "concatenate"),
+    newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_E = pop[8:10])
+  )
+  expect_identical(
+    flattenMultiPop(mp, preserveNames = "none"),
+    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10])
+  )
+
+  duplicateNames = newMultiPop(
+    A = pop[1:2],
+    B = pop[3:5],
+    C = newMultiPop(D = pop[6:7], D = pop[8:10])
+  )
+  expect_identical(
+    flattenMultiPop(duplicateNames, preserveNames = "concatenate"),
+    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10])
+  )
+  expect_identical(
+    expect_warning(
+      flattenMultiPop(duplicateNames, preserveNames = "force"),
+      "Duplicate names found in 'force' mode. Making names unique by appending suffixes.",
+      fixed = TRUE
+    ),
+    newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_D.1 = pop[8:10])
+  )
 })

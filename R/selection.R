@@ -1,6 +1,6 @@
 #' Returns a vector response from a population
 #'
-#' @param pop an object of class Pop or HybirdPop
+#' @param pop an object of class Pop or HybridPop
 #' @param trait a vector or custom function
 #' @param use a character ("rand", "gv", "ebv", "pheno", or "bv"; 
 #' note that "bv" doesn't work on class HybridPop)
@@ -25,7 +25,9 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
     if(is.character(use)){
       use = tolower(use)
       if(use=="rand"){
-        return(rnorm(pop@nInd))
+        # A one column matrix, to match what every other option
+        # returns. Callers that read ncol() need the dimension.
+        return(matrix(rnorm(pop@nInd), ncol=1L))
       }else if(use=="gv"){
         response = trait(pop@gv,...)
       }else if(use=="ebv"){
@@ -57,7 +59,9 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
     if(is.character(use)){
       use = tolower(use)
       if(use=="rand"){
-        return(rnorm(pop@nInd))
+        # A one column matrix, to match what every other option
+        # returns. Callers that read ncol() need the dimension.
+        return(matrix(rnorm(pop@nInd), ncol=1L))
       }else if(use == "gv"){
         response = pop@gv[,trait,drop=FALSE]
       }else if(use=="ebv"){
@@ -97,7 +101,7 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #'   as its first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
-#'   \code{\link{flattenMultiPop}}. The corresponding output matrices from 
+#'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
 #'   each \code{Pop} are combined with \code{\link{rbind}}, and a
 #'   \code{"source"} attribute is added to indicate the origin of each row
 #'   (see Details).
@@ -112,7 +116,7 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' The \code{level} argument controls the depth of nesting retained when
 #' \code{simplify=TRUE}. If \code{level} exceeds the depth of \code{x}, the
 #' output structure is returned unchanged.
-#' 
+#'
 #' When the output is simplified (\code{simplify=TRUE}), a
 #' \code{"source"} attribute is attached to the resulting matrix. This
 #' attribute is a data frame with columns \code{level1}, \code{level2}, etc.,
@@ -339,7 +343,7 @@ getFam = function(pop,famType){
 #' @description Selects a subset of nInd individuals from a
 #' population.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select
 #' @param trait the trait for selection. Either a number indicating
@@ -374,6 +378,8 @@ getFam = function(pop,famType){
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -398,7 +404,7 @@ getFam = function(pop,famType){
 #' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 #' abline(v=pop3@pheno, col="red", lwd=2)
 #'
-#' #Select 5 least deviating from an optima (stabilising selection)
+#' #Select 5 least deviating from an optima (stabilizing selection)
 #' pop4 = selectInd(pop, 5, trait=squaredDeviation, selectTop=FALSE, simParam=SP)
 #' hist(pop@pheno); abline(v=pop@pheno, lwd=2)
 #' abline(v=pop4@pheno, col="red", lwd=2)
@@ -419,7 +425,7 @@ getFam = function(pop,famType){
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -429,7 +435,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
@@ -448,7 +455,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
@@ -464,7 +471,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @description Selects a subset of full-sib families from a
 #' population.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nFam the number of families to select
 #' @param trait the trait for selection. Either a number indicating
@@ -502,6 +509,8 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -525,7 +534,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
                      candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nFam>=0)
+  if(nFam<0) stop("nFam must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -535,7 +544,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
                       use=use, sex=sex, famType=famType,
                       selectTop=selectTop, returnPop=TRUE,
@@ -557,7 +567,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   response = response[eligible]
   #Calculate family means
@@ -581,7 +591,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' full-sib family within a population. Will return all individuals
 #' from a full-sib family if it has less than or equal to nInd individuals.
 #'
-#' @param pop and object of \code{\link{Pop-class}},
+#' @param pop an object of \code{\link{Pop-class}},
 #'   \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #' @param nInd the number of individuals to select within a family
 #' @param trait the trait for selection. Either a number indicating
@@ -619,6 +629,8 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @return Returns an object of \code{\link{Pop-class}},
 #' \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}
 #'
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -642,7 +654,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
                            candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -652,7 +664,8 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(returnPop, is.null(candidates))
+    if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
                       use=use, sex=sex, selectTop=selectTop,
                       returnPop=TRUE, candidates=NULL,
@@ -668,7 +681,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
   if(is.matrix(response)){
-    stopifnot(ncol(response)==1)
+    if(ncol(response)!=1) stop("response must have a single column")
   }
   warn = FALSE
   selInFam = function(selFam){
@@ -700,9 +713,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' This function models selection in an open pollinating
 #' plant population. It allows for varying the percentage of
 #' selfing. The function also provides an option for modeling
-#' selection as occuring before or after pollination.
+#' selection as occurring before or after pollination.
 #'
-#' @param pop and object of \code{\link{Pop-class}}
+#' @param pop an object of \code{\link{Pop-class}}
 #'   or \code{\link{MultiPop-class}}
 #' @param nInd the number of plants to select
 #' @param nSeeds number of seeds per plant
@@ -735,6 +748,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @return Returns an object of \code{\link{Pop-class}}
 #' or \code{\link{MultiPop-class}}
 #'
+#' @family mating functions
+#' @family selection functions
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
@@ -757,7 +773,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
-  stopifnot(nInd>=0)
+  if(nInd<0) stop("nInd must be >= 0")
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -767,8 +783,9 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(is.null(candidates))
+    if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
     pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
+                      probSelf=probSelf,
                       pollenControl=pollenControl, trait=trait, use=use,
                       selectTop=selectTop, candidates=NULL,
                       simParam=simParam, nThreads=nThreads, ...)
@@ -778,13 +795,17 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                      use=use,sex="B",selectTop=selectTop,
                      returnPop=FALSE,candidates=candidates,
                      simParam=simParam,nThreads=nThreads,...)
+  # selectInd returns at most as many individuals as there are eligible
+  # candidates, which can be fewer than nInd. Everything below indexes
+  # female, so the count has to come from female itself.
+  nInd = length(female)
   nSelf = rbinom(n=nInd,prob=probSelf,size=nSeeds)
   if(pollenControl){
     male = female
   }else{
-    male = 1:pop@nInd
+    male = seq_len(pop@nInd)
   }
-  crossPlan = lapply(1:nInd,function(x){
+  crossPlan = lapply(seq_len(nInd),function(x){
     male = male[!male==female[x]]
     if(length(male)==1){
       #Account for "convenience" feature of sample when length = 1

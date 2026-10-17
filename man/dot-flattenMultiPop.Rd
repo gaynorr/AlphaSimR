@@ -4,7 +4,7 @@
 \alias{.flattenMultiPop}
 \title{Helper function to recursively extract Pop objects from a MultiPop}
 \usage{
-.flattenMultiPop(mp, preserveNames = "auto")
+.flattenMultiPop(mp)
 }
 \arguments{
 \item{mp}{\code{\link{MultiPop-class}} object}

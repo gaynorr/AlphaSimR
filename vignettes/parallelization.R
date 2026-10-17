@@ -8,8 +8,8 @@ SP = SimParam$new(founderPop)
 SP$nThreads
 
 ## -----------------------------------------------------------------------------
-pop = newPop(founderPop, simParam = SP)
 SP$nThreads = 1L
+pop = newPop(founderPop, simParam = SP)
 pullSegSiteGeno(pop)
 # Note that pullSegSiteGeno() uses internally SP$nThreads,
 # when the nThreads argument is not specified.

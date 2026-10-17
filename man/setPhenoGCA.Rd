@@ -72,8 +72,8 @@ Returns an object of \code{\link{Pop-class}} or
 a matrix if onlyPheno=TRUE
 }
 \description{
-Calculates general combining ability from a set of testers and
-returns these values as phenotypes for a population.
+Calculates mean testcross performance against a set of testers and
+returns these values as phenotypes for the population.
 }
 \examples{
 #Create founder haplotypes
@@ -87,7 +87,22 @@ SP$addTraitA(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Set phenotype to average per
+#Set phenotype to mean testcross performance
 pop2 = setPhenoGCA(pop, pop, use="gv", inbred=TRUE, simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}

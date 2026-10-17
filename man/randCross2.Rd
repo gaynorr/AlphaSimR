@@ -51,7 +51,7 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross2}} that randomly
-selects parental combinations for all possible combinantions between
+selects parental combinations for all possible combinations between
 two populations.
 }
 \examples{
@@ -69,3 +69,18 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = randCross2(pop, pop, 10, simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}

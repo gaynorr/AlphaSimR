@@ -2,8 +2,10 @@
 #' 
 #' @description
 #' Formats a genetic map stored in a data.frame to
-#' AlphaSimR's internal format. Map positions must be 
-#' in Morgans. 
+#' AlphaSimR's internal format. Map positions must be
+#' in Morgans. Positions are absolute, measured from the
+#' start of the chromosome, and are kept as supplied, so
+#' they must be non-negative.
 #' 
 #' @param genMap genetic map as a data.frame. The first  
 #' three columns must be: marker name, chromosome, and 
@@ -45,8 +47,9 @@ importGenMap = function(genMap){
     tmpPos = tmpPos[take]
     names(tmpPos) = tmpName[take]
 
-    genMap[[uniqueChr[i] ]] = tmpPos - tmpPos[1]
+    genMap[[uniqueChr[i] ]] = tmpPos
   }
+  .checkGenMap(genMap)
 
   return(genMap)
 }
@@ -71,6 +74,11 @@ importGenMap = function(genMap){
 #' coerced using as.character. See \link{importGenMap}
 #' @param ped an optional pedigree for the supplied 
 #' genotypes. See details. 
+#' @param genLen an optional vector of chromosome genetic lengths in
+#' Morgans, either one value or one per chromosome in the order the
+#' chromosomes first appear in genMap. Each must be at least the
+#' position of the chromosome's last marker. If NULL, each chromosome
+#' ends at its last marker. See \code{\link{newMapPop}}.
 #'
 #' @details 
 #' The optional pedigree can be a data.frame, matrix or a vector. 
@@ -102,7 +110,7 @@ importGenMap = function(genMap){
 #'                               ped=ped)
 #' 
 #' @export
-importInbredGeno = function(geno, genMap, ped=NULL){
+importInbredGeno = function(geno, genMap, ped=NULL, genLen=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
@@ -159,17 +167,20 @@ importInbredGeno = function(geno, genMap, ped=NULL){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
-      genMap[[i]] = genMap[[i]][is.na(take)]
+      # take is NA for map markers with no genotype, so the markers that
+      # are kept are the ones where take is NOT missing. Dropping the
+      # complement kept exactly the wrong loci.
+      genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
       take = na.omit(take)
     }
-    haplotypes[[i]] = geno[,take]
+    haplotypes[[i]] = geno[,take,drop=FALSE]
   }
 
   founderPop = newMapPop(genMap=genMap,
                          haplotypes=haplotypes,
-                         inbred=TRUE)
+                         inbred=TRUE,
+                         genLen=genLen)
 
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",
@@ -186,10 +197,10 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' @title Import haplotypes
 #' 
 #' @description
-#' Formats haplotype in a matrix format to an 
+#' Formats haplotypes in a matrix format to an 
 #' AlphaSimR population that can be used to 
 #' initialize a simulation. This function serves 
-#' as wrapper for \code{\link{newMapPop}} that 
+#' as a wrapper for \code{\link{newMapPop}} that 
 #' utilizes a more user friendly input format.
 #' 
 #' @param haplo a matrix of haplotypes
@@ -200,6 +211,11 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #' @param ploidy ploidy level of the organism
 #' @param ped an optional pedigree for the supplied 
 #' genotypes. See details. 
+#' @param genLen an optional vector of chromosome genetic lengths in
+#' Morgans, either one value or one per chromosome in the order the
+#' chromosomes first appear in genMap. Each must be at least the
+#' position of the chromosome's last marker. If NULL, each chromosome
+#' ends at its last marker. See \code{\link{newMapPop}}.
 #' 
 #' @details 
 #' The optional pedigree can be a data.frame, matrix or a vector. 
@@ -234,7 +250,8 @@ importInbredGeno = function(geno, genMap, ped=NULL){
 #'                          ped=ped)
 #' 
 #' @export
-importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
+importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
+                       genLen=NULL){
   # Extract pedigree, if supplied
   if(!is.null(ped)){
     if(is.vector(ped)){
@@ -271,9 +288,11 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
     mapMarkers = names(genMap[[i]])
     take = match(mapMarkers, markerName)
     if(any(is.na(take))){
-      genMap[[i]] = genMap[[i]][is.na(take)]
+      # take is NA for map markers with no genotype, so the markers that
+      # are kept are the ones where take is NOT missing. Dropping the
+      # complement kept exactly the wrong loci.
+      genMap[[i]] = genMap[[i]][!is.na(take)]
       stopifnot(length(genMap[[i]]) >= 1L)
-      genMap[[i]] = genMap[[i]] - genMap[[i]]-genMap[[i]][1]
       take = na.omit(take)
     }
     haplotypes[[i]] = haplo[,take,drop=FALSE]
@@ -281,7 +300,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL){
   
   founderPop = newMapPop(genMap=genMap,
                          haplotypes=haplotypes,
-                         ploidy=ploidy)
+                         ploidy=ploidy,
+                         genLen=genLen)
   
   if(!is.null(ped)){
     founderPop = new("NamedMapPop",

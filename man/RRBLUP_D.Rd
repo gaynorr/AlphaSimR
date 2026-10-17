@@ -10,7 +10,7 @@ RRBLUP_D(
   use = "pheno",
   snpChip = 1,
   useQtl = FALSE,
-  maxIter = 40L,
+  maxIter = 100L,
   simParam = NULL,
   nThreads = NULL,
   ...
@@ -19,8 +19,10 @@ RRBLUP_D(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model, a trait name, or a
-function of the traits returning a single value.}
+\item{traits}{an integer indicating the trait or traits to model, a vector
+of trait names, or a function of the traits returning a single value.
+Several traits are fitted together as a multiple trait model, which needs
+every trait recorded on every individual. See details.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
@@ -32,8 +34,7 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations. Only used
-when number of traits is greater than 1.}
+\item{maxIter}{maximum number of iterations for convergence.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -48,6 +49,13 @@ traits}
 \description{
 Fits an RR-BLUP model for genomic predictions that includes
 dominance effects.
+}
+\details{
+A multiple trait model gives each of the additive and dominance effects,
+and the errors, an unstructured covariance matrix among the traits. The
+Vu slot of the result then holds the two covariance matrices of the
+marker effects as a block diagonal matrix, additive first, with rows and
+columns named "a:trait" and "d:trait".
 }
 \examples{
 #Create founder haplotypes

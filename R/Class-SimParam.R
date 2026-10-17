@@ -1,4 +1,3 @@
-
 #' @title Simulation parameters
 #'
 #' @description
@@ -101,11 +100,14 @@ SimParam = R6Class(
       private$.traits = list()
       private$.segSites = founderPop@nLoci
       private$.sexes = "no"
-      private$.femaleMap = lapply(founderPop@genMap, function(x) x-x[1]) # Set position 1 to 0
+      .checkGenMap(founderPop@genMap)
+      private$.femaleMap = founderPop@genMap
       private$.maleMap = NULL
       private$.sepMap = FALSE
       private$.femaleCentromere = founderPop@centromere
       private$.maleCentromere = NULL
+      private$.femaleGenLen = .getGenLen(founderPop)
+      private$.maleGenLen = NULL
       private$.lastId = 0L
       private$.isTrackPed = FALSE
       private$.pedigree = matrix(NA_integer_,nrow=0,ncol=3)
@@ -217,6 +219,17 @@ SimParam = R6Class(
       if(private$.isTrackRec){
         private$.recHist = private$.recHist[0:lastId]
       }
+      # .hasHap, .isFounder and .hap are indexed by iid, so they have to be
+      # cut back with the pedigree. Left in place, the next individual to
+      # take a reused iid inherits the old individual's haplotype record.
+      private$.hasHap = private$.hasHap[seq_len(lastId)]
+      private$.isFounder = private$.isFounder[seq_len(lastId)]
+      if(length(private$.hap)>lastId){
+        private$.hap = private$.hap[seq_len(lastId)]
+      }
+      if(lastId==0L){
+        private$.lastHaplo = 0L
+      }
       invisible(self)
     },
 
@@ -242,9 +255,9 @@ SimParam = R6Class(
     #' available when running addTrait and or addSnpChip functions.
     #'
     #' @param minQtlPerChr the minimum number of segregating sites for
-    #' QTLs. Can be a single value or a vector values for each chromosome.
+    #' QTLs. Can be a single value or a vector of values for each chromosome.
     #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
-    #' Can be a single value or a vector values for each chromosome.
+    #' Can be a single value or a vector of values for each chromosome.
     #' @param excludeQtl an optional vector of segregating site names to
     #' exclude from consideration as a viable QTL.
     #' @param excludeSnp an optional vector of segregating site names to
@@ -334,7 +347,7 @@ SimParam = R6Class(
     },
 
     #' @description Changes how sexes are determined in the simulation.
-    #' The default sexes is "no", indicating all individuals are hermaphrodites.
+    #' The default value is "no", indicating all individuals are hermaphrodites.
     #' To add sexes to the simulation, run this function with "yes_sys" or
     #' "yes_rand". The value "yes_sys" will systematically assign
     #' sexes to newly created individuals as first male and then female.
@@ -342,7 +355,7 @@ SimParam = R6Class(
     #' female. The value "yes_rand" will randomly assign a sex to each
     #' individual.
     #'
-    #' @param sexes acceptable value are "no", "yes_sys", or
+    #' @param sexes acceptable values are "no", "yes_sys", or
     #' "yes_rand"
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
@@ -376,11 +389,24 @@ SimParam = R6Class(
     #' Allows for the manual setting of founder haplotypes. This functionality
     #' is not fully documented, because it is still experimental.
     #'
-    #' @param hapMap a list of founder haplotypes
+    #' @param hapMap a list of founder haplotypes, one per individual in
+    #' the order of their internal IDs, or named by internal ID
     setFounderHap = function(hapMap){
-      private$.hap = hapMap
-      private$.hasHap = rep(TRUE, length(hapMap))
-      private$.isFounder = rep(FALSE, length(hapMap))
+      n = length(hapMap)
+      if(is.null(names(hapMap))){
+        iid = seq_len(n)
+      }else{
+        iid = suppressWarnings(as.integer(names(hapMap)))
+        if(anyNA(iid) || anyDuplicated(iid) || any(iid<1L | iid>n)){
+          stop("names of hapMap must be the internal IDs 1 to ", n)
+        }
+      }
+      # The cache is indexed by iid and held packed
+      hap = vector("list", n)
+      hap[iid] = packHist(hapMap)
+      private$.hap = hap
+      private$.hasHap = rep(TRUE, n)
+      private$.isFounder = rep(FALSE, n)
       invisible(self)
     },
 
@@ -494,10 +520,16 @@ SimParam = R6Class(
         nSnpPerChr = rep(nSnpPerChr,self$nChr)
       }
       stopifnot(length(nSnpPerChr)==self$nChr)
-      stopifnot(sapply(self$potSnp,length)>=nSnpPerChr)
+      # There is no potSnp field, so the eligible sites are worked out
+      # here the same way restrSegSites does it: every segregating site on
+      # the chromosome that has not been marked an invalid SNP.
+      potSnp = lapply(seq_len(self$nChr), function(i){
+        setdiff(1:private$.segSites[i], self$invalidSnp[[i]])
+      })
+      stopifnot(vapply(potSnp,length,integer(1))>=nSnpPerChr)
       stopifnot(dim(structure)[2]==sum(nSnpPerChr))
       lociLoc = lapply(1:self$nChr,function(x){
-        sort(sample(self$potSnp[[x]],nSnpPerChr[x]))
+        sort(sample(potSnp[[x]],nSnpPerChr[x]))
       })
       lociLoc = do.call("c",lociLoc)
 
@@ -524,12 +556,13 @@ SimParam = R6Class(
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive traits.
     #' If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive effects.
+    #' with correlated additive genotypic effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -570,9 +603,8 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                length(mean)==nrow(corA),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -597,14 +629,17 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive effects
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #    If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -649,10 +684,9 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                length(mean)==nrow(corA),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -684,14 +718,14 @@ SimParam = R6Class(
     },
 
     #' @description
-    #' An alternative method for adding a trait with additive  and dominance effects
+    #' An alternative method for adding a trait with additive and dominance genotypic effects
     #' to an AlphaSimR simulation. The function attempts to create a trait matching
     #' user defined values for number of QTL, inbreeding depression, additive genetic
     #' variance and dominance genetic variance.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome.
     #' Can be a single value or nChr values.
-    #' @param mean desired mean of the trait
+    #' @param mean requested founder mean (mean genetic value) of the trait
     #' @param varA desired additive variance
     #' @param varD desired dominance variance
     #' @param inbrDepr desired inbreeding depression, see details
@@ -706,7 +740,7 @@ SimParam = R6Class(
     #'
     #' @details
     #' This function will always add a trait to 'SimParam', unless an error occurs
-    #' with picking QTLs. The resulting trait will always have the desired mean and
+    #' with picking QTLs. The resulting trait will always have the requested founder mean and
     #' additive genetic variance. However, it may not have the desired values for
     #' inbreeding depression and dominance variance. Thus, it is strongly recommended
     #' to check the output printed to the console to determine how close the trait's
@@ -716,11 +750,11 @@ SimParam = R6Class(
     #' function attempts to achieve the desired dominance variance and inbreeding
     #' depression while staying within the user supplied constraints for the
     #' acceptable range of dominance degree mean and variance. If the desired values
-    #' are not being achieved, the acceptable range need to be increased and/or the
-    #' number of QTL may need to be increased. There are not limits to setting the
-    #' range for dominance degree mean and variance, but care should be taken to
-    #' with regards to the biological feasibility of the limits that are supplied.
-    #' The default limits were somewhat arbitrarily set, so I make not claim to
+    #' are not being achieved, the acceptable range needs to be increased and/or the
+    #' number of QTL may need to be increased. There are no limits to setting the
+    #' range for dominance degree mean and variance, but care should be taken
+    #' with regard to the biological feasibility of the limits that are supplied.
+    #' The default limits were somewhat arbitrarily set, so I make no claim as to
     #' how reasonable these limits are for routine use.
     #'
     #' Inbreeding depression in this function is defined as the difference in mean
@@ -816,12 +850,13 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -864,13 +899,11 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corGxE),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -919,16 +952,20 @@ SimParam = R6Class(
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive effects
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -975,15 +1012,12 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                isSymmetric(corGxE),
-                nrow(corA)==nTraits,
-                nrow(corGxE)==nTraits,
-                nrow(corDD)==nTraits,
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
@@ -1042,17 +1076,23 @@ SimParam = R6Class(
     #' @description
     #' Randomly assigns eligible QTLs for one or more additive and epistasis
     #' traits. If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive effects.
+    #' with correlated additive genotypic effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1096,17 +1136,16 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corAA),
                 length(relAA)==length(mean),
-                length(mean)==nrow(corA),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corAA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
       epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                          corr=corA,gamma=gamma,shape=shape,
+                          corr=corAA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       for(i in seq_len(nTraits)){
@@ -1140,17 +1179,23 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1198,21 +1243,19 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corAA),
-                length(mean)==nrow(corDD),
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corAA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
       domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
                           corDD=corDD,meanDD=meanDD,varDD=varDD)
       epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                          corr=corA,gamma=gamma,shape=shape,
+                          corr=corAA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       for(i in seq_len(nTraits)){
@@ -1248,17 +1291,23 @@ SimParam = R6Class(
     #' with correlated effects.
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive effects
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true. If
-    #' FALSE, tuning is performed according to total genetic variance.
+    #' @param corA a matrix of correlations between additive genotypic effects
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1305,21 +1354,18 @@ SimParam = R6Class(
       }
       stopifnot(length(mean)==length(var),
                 length(relAA)==length(mean),
-                isSymmetric(corA),
-                isSymmetric(corGxE),
-                isSymmetric(corAA),
-                length(mean)==nrow(corA),
-                length(mean)==nrow(corAA),
-                length(mean)==nrow(corGxE),
                 length(mean)==length(varGxE),
                 length(mean)==length(varEnv),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corAA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
       epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                          corr=corA,gamma=gamma,shape=shape,
+                          corr=corAA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
@@ -1378,19 +1424,26 @@ SimParam = R6Class(
     #'
     #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
     #' value or nChr values.
-    #' @param mean a vector of desired mean genetic values for one or more traits
-    #' @param var a vector of desired genetic variances for one or more traits
+    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
+    #' @param var a vector of desired genetic variances in the founder
+    #'   population for one or more traits
     #' @param varGxE a vector of total genotype-by-environment variances for the traits
     #' @param varEnv a vector of environmental variances for one or more traits
     #' @param meanDD mean dominance degree
     #' @param varDD variance of dominance degree
-    #' @param relAA the relative value of additive-by-additive variance compared
-    #' to additive variance in a diploid organism with allele frequency 0.5
-    #' @param corA a matrix of correlations between additive effects
+    #' @param relAA ratio of additive-by-additive epistatic genetic variance
+    #'   to additive genetic variance used to sample epistatic genotypic effects,
+    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
+    #'   with allele frequencies of 0.5.
+    #'   The realized variance ratio in the founder population can differ.
+    #' @param corA a matrix of correlations between additive genotypic effects
     #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive effects
-    #' @param corGxE a matrix of correlations between GxE effects
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
+    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param gamma should a gamma distribution be used instead of normal
     #' @param shape the shape parameter for the gamma distribution
     #'   (the rate/scale parameter of the gamma distribution is accounted
@@ -1441,26 +1494,22 @@ SimParam = R6Class(
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
       stopifnot(length(mean)==length(var),
-                isSymmetric(corA),
-                isSymmetric(corDD),
-                isSymmetric(corGxE),
-                isSymmetric(corAA),
-                nrow(corA)==nTraits,
-                nrow(corGxE)==nTraits,
-                nrow(corDD)==nTraits,
-                nrow(corAA)==nTraits,
                 length(varGxE)==nTraits,
                 length(varEnv)==nTraits,
                 length(relAA)==length(mean),
                 (sum(nQtlPerChr)%%2L)==0L,
                 length(mean)==length(name))
+      checkCorMat(corA, nTraits)
+      checkCorMat(corDD, nTraits)
+      checkCorMat(corAA, nTraits)
+      checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
                           corr=corA,gamma=gamma,shape=shape)
       domEff = sampDomEff(qtlLoci=qtlLoci,nTraits=nTraits,addEff=addEff,
                           corDD=corDD,meanDD=meanDD,varDD=varDD)
       epiEff = sampEpiEff(qtlLoci=qtlLoci,nTraits=nTraits,
-                          corr=corA,gamma=gamma,shape=shape,
+                          corr=corAA,gamma=gamma,shape=shape,
                           relVar=relAA)
       E = matrix(sample.int(sum(nQtlPerChr),sum(nQtlPerChr)),ncol=2)
       gxeEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
@@ -1550,20 +1599,67 @@ SimParam = R6Class(
     #' formatting the trait as a \code{\link{LociMap-class}}.
     #' The formatting is performed automatically for the user,
     #' with more user friendly data.frames or matrices taken as
-    #' inputs. This function only works for A and AD trait types.
+    #' inputs. This function works for A, AD, AE and ADE trait types.
     #'
-    #' @param markerNames a vector of names for the QTL
-    #' @param addEff a matrix of additive effects (nLoci x nTraits).
+    #' @param markerNames a vector of unique names for the QTL
+    #' @param addEff a matrix of additive genotypic effects (nLoci x nTraits).
     #' Alternatively, a vector of length nLoci can be supplied for
     #' a single trait.
-    #' @param domEff optional dominance effects for each locus
-    #' @param intercept optional intercepts for each trait
+    #' @param domEff optional dominance genotypic effects for each locus
+    #' (nLoci x nTraits, or a vector of length nLoci for a single trait)
+    #' @param intercept optional trait intercepts in the genotypic parameterization
     #' @param name optional name(s) for the trait(s)
     #' @param varE default error variance for phenotype, optional
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
+    #' @param epiPairs optional two-column matrix or data.frame of marker
+    #' names, with one row for each pair of loci that interact through
+    #' additive-by-additive epistasis. Must be supplied with \code{epiEff}.
+    #' @param epiEff optional additive-by-additive epistatic genotypic
+    #' effects, a matrix with one row for each row of \code{epiPairs} and
+    #' one column for each trait. Alternatively, a vector of length
+    #' \code{nrow(epiPairs)} can be supplied for a single trait.
+    #'
+    #' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+    #' implemented trait model and genotypic effects.
+    #'
+    #' Supplying \code{epiPairs} and \code{epiEff} creates an AE trait,
+    #' or an ADE trait when \code{domEff} is also supplied. The epistatic
+    #' model only allows interactions between pairs of loci, and every
+    #' marker in \code{markerNames} must appear in exactly one pair, so
+    #' \code{nrow(epiPairs)} is half of \code{length(markerNames)}. The two
+    #' markers in a pair may be on different chromosomes. All traits
+    #' imported in one call share the same pairs, with effects taken from
+    #' the corresponding column of \code{epiEff}. Markers do not need to be
+    #' given in map order; the pairs are matched to the loci by name after
+    #' the loci are put in map order.
+    #'
+    #' @examples
+    #' #Create founder haplotypes
+    #' founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
+    #'
+    #' #Set simulation parameters
+    #' SP = SimParam$new(founderPop)
+    #' \dontshow{SP$nThreads = 1L}
+    #'
+    #' #Import an AE trait, with one pair spanning both chromosomes
+    #' SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
+    #'                addEff=c(1,-1,0.5,0.5),
+    #'                epiPairs=rbind(c("1_1","1_5"),
+    #'                               c("2_3","2_8")),
+    #'                epiEff=c(0.2,-0.4),
+    #'                name="AE")
+    #'
+    #' #Import an ADE trait
+    #' SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
+    #'                addEff=c(1,-1,0.5,0.5),
+    #'                domEff=c(0.3,0.1,0,0.2),
+    #'                epiPairs=rbind(c("1_2","2_6"),
+    #'                               c("1_4","2_1")),
+    #'                epiEff=c(0.5,0.1),
+    #'                name="ADE")
     importTrait = function(markerNames,
                            addEff,
                            domEff=NULL,
@@ -1571,7 +1667,9 @@ SimParam = R6Class(
                            name=NULL,
                            varE=NULL,
                            force=FALSE,
-                           nThreads=NULL){
+                           nThreads=NULL,
+                           epiPairs=NULL,
+                           epiEff=NULL){
       if(!force){
         private$.isRunning()
       }
@@ -1579,6 +1677,14 @@ SimParam = R6Class(
         nThreads = self$nThreads
       }else{
         nThreads = as.integer(nThreads)
+      }
+
+      # Duplicated names would be silently dropped by the match against
+      # the genetic map below, leaving their effects unused. Factors are
+      # converted so that names, not level codes, are matched to pairs.
+      markerNames = as.character(markerNames)
+      if(anyDuplicated(markerNames)){
+        stop("markerNames must be unique",call.=FALSE)
       }
 
       # Check addEff and domEff inputs
@@ -1592,6 +1698,39 @@ SimParam = R6Class(
         domEff = as.matrix(domEff)
         stopifnot(nrow(addEff)==nrow(domEff),
                   ncol(addEff)==ncol(domEff))
+      }
+
+      # Check epiPairs and epiEff inputs
+      if(is.null(epiPairs)!=is.null(epiEff)){
+        stop("epiPairs and epiEff must be supplied together",call.=FALSE)
+      }
+      useEpi = !is.null(epiPairs)
+      if(useEpi){
+        if(is.data.frame(epiPairs)){
+          epiPairs = as.matrix(epiPairs)
+        }
+        if(!is.matrix(epiPairs) || ncol(epiPairs)!=2L ||
+           !is.character(epiPairs)){
+          stop("epiPairs must be a two-column matrix or data.frame of marker names",
+               call.=FALSE)
+        }
+        pairedNames = as.vector(epiPairs)
+        if(anyNA(pairedNames) || !all(pairedNames%in%markerNames)){
+          stop("every marker in epiPairs must be in markerNames",call.=FALSE)
+        }
+        # The epistatic model requires each locus to be in exactly one
+        # pair. Since markerNames is unique and contains every paired name,
+        # equal lengths and no repeats make the pairing a partition.
+        if(anyDuplicated(pairedNames) ||
+           length(pairedNames)!=length(markerNames)){
+          stop("each marker in markerNames must appear in exactly one pair of epiPairs",
+               call.=FALSE)
+        }
+        epiEff = as.matrix(epiEff)
+        if(nrow(epiEff)!=nrow(epiPairs) || ncol(epiEff)!=nTraits){
+          stop("epiEff must have one row for each pair in epiPairs and one column for each trait",
+               call.=FALSE)
+        }
       }
 
       # Prepare the intercept
@@ -1623,7 +1762,7 @@ SimParam = R6Class(
 
       # Create trait variables
       lociPerChr = integer(self$nChr)
-      lociLoc = vector("list", self$nChr)
+      lociLoc = lociNames = vector("list", self$nChr)
       addEffList = domEffList = vector("list", nTraits)
       for(i in seq_len(nTraits)){
         addEffList[[i]] = domEffList[[i]] = vector("list", self$nChr)
@@ -1635,6 +1774,7 @@ SimParam = R6Class(
         # Initialize variables
         addEffList[[1]][[i]] = domEffList[[1]][[i]] = numeric()
         lociLoc[[i]] = integer()
+        lociNames[[i]] = character()
 
         # Find matches if they exist
         take = match(names(private$.femaleMap[[i]]), markerNames)
@@ -1642,6 +1782,7 @@ SimParam = R6Class(
 
         if(lociPerChr[i]>0L){
           lociLoc[[i]] = which(!is.na(take))
+          lociNames[[i]] = markerNames[na.omit(take)]
           addEffList[[1]][[i]] = addEff[na.omit(take),1]
           if(useDom){
             domEffList[[1]][[i]] = domEff[na.omit(take),1]
@@ -1665,10 +1806,42 @@ SimParam = R6Class(
       lociLoc = unlist(lociLoc)
       nLoci = sum(lociPerChr)
 
+      # Pair members index the trait's loci, which are now in map order
+      # rather than the order of markerNames, so match them by name.
+      if(useEpi){
+        lociNames = unlist(lociNames)
+        epiLoci = cbind(match(epiPairs[,1], lociNames),
+                        match(epiPairs[,2], lociNames))
+      }
+
       # Create Trait(s)
       for(i in seq_len(nTraits)){
         addEff = unlist(addEffList[[i]])
-        if(useDom){
+        if(useEpi){
+          E = cbind(epiLoci, unname(epiEff[,i]))
+          dimnames(E) = NULL
+        }
+        if(useDom && useEpi){
+          domEff = unlist(domEffList[[i]])
+          trait = new("TraitADE",
+                      addEff=addEff,
+                      domEff=domEff,
+                      epiEff=E,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else if(useEpi){
+          trait = new("TraitAE",
+                      addEff=addEff,
+                      epiEff=E,
+                      intercept=intercept[i],
+                      nLoci=nLoci,
+                      lociPerChr=lociPerChr,
+                      lociLoc=lociLoc,
+                      name=name[i])
+        }else if(useDom){
           domEff = unlist(domEffList[[i]])
           trait = new("TraitAD",
                       addEff=addEff,
@@ -1699,7 +1872,8 @@ SimParam = R6Class(
     #' @description
     #' Switch a trait in the simulation.
     #'
-    #' @param traitPos an integer indicate which trait to switch
+    #' @param traitPos an integer or a trait name indicating which trait
+    #' to switch
     #' @param lociMap a new object descended from
     #' \code{\link{LociMap-class}}
     #' @param varE default error variance for phenotype, optional
@@ -1717,7 +1891,9 @@ SimParam = R6Class(
       }else{
         nThreads = as.integer(nThreads)
       }
+      traitPos = convertTraitsToIndex(traitPos, self)
       stopifnot(is(lociMap,"LociMap"),
+                length(traitPos)==1L,
                 traitPos<=self$nTraits,
                 traitPos>0)
       tmp = calcGenParam(lociMap, self$founderPop, nThreads)
@@ -1739,14 +1915,16 @@ SimParam = R6Class(
     #' @description
     #' Remove a trait from the simulation
     #'
-    #' @param traits an integer vector indicating which traits to remove
+    #' @param traits an integer vector or a character vector of trait
+    #' names indicating which traits to remove
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     removeTrait = function(traits,force=FALSE){
       if(!force){
         private$.isRunning()
       }
-      stopifnot(max(traits)<=self$nTraits, min(traits)>0)
+      traits = convertTraitsToIndex(traits, self)
+      stopifnot(length(traits)>0L, max(traits)<=self$nTraits, min(traits)>0)
       private$.traits = private$.traits[-traits]
       private$.varA = private$.varA[-traits]
       private$.varG = private$.varG[-traits]
@@ -1762,11 +1940,11 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Defines a default values for error
+    #' @description Defines default values for error
     #' variances used in \code{\link{setPheno}}. These defaults
     #' will be used to automatically generate phenotypes when new
     #' populations are created. See the details section of \code{\link{setPheno}}
-    #' for more information about each arguments and how they
+    #' for more information about each argument and how they
     #' should be used.
     #'
     #' @param h2 a vector of desired narrow-sense heritabilities
@@ -1786,8 +1964,7 @@ SimParam = R6Class(
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
       # Check validity of corE, if supplied
       if(!is.null(corE)){
-        stopifnot(isSymmetric(corE),
-                  nrow(corE)==self$nTraits)
+        checkCorMat(corE, self$nTraits)
       }
 
       # Set error variances (.varE)
@@ -1860,9 +2037,8 @@ SimParam = R6Class(
     #' SP$setCorE(E)
     setCorE = function(corE){
       warning("This function has been deprecated. Use simParam$setVarE instead.")
-      stopifnot(isSymmetric(corE),
-                nrow(corE)==self$nTraits,
-                length(private$.varE)==self$nTraits,
+      checkCorMat(corE, self$nTraits)
+      stopifnot(length(private$.varE)==self$nTraits,
                 !any(is.na(private$.varE)))
       if(is.matrix(private$.varE)){
         varE = diag(private$.varE)
@@ -1881,17 +2057,20 @@ SimParam = R6Class(
     #' Linearly scales all traits to achieve desired
     #' values of means and variances in the founder population.
     #'
-    #' @param mean a vector of new trait means
-    #' @param var a vector of new trait variances
+    #' @param mean a vector of requested mean genetic values in the founder population
+    #' @param var a vector of requested genetic variances in the founder population
     #' @param varEnv a vector of new environmental variances
     #' @param varGxE a vector of new GxE variances
-    #' @param useVarA tune according to additive genetic variance if true
+    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
+    #'   the requested additive genetic variance (variance of breeding values)
+    #'   in the founder population.
+    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     #'
     #' @note
     #' By default the founder population is the population used to
-    #' initalize the SimParam object. This population can be changed by
+    #' initialize the SimParam object. This population can be changed by
     #' replacing the population in the founderPop slot. You must run
     #' \code{\link{resetPop}} on any existing populations to obtain the
     #' new trait values.
@@ -1937,6 +2116,12 @@ SimParam = R6Class(
           scale = sqrt(var[i])/sqrt(popVar(tmp$gv)[1])
         }
         trait@addEff = trait@addEff*scale
+        if(.hasSlot(trait,"addEffMale")){
+          # Parent of origin traits carry a second set of additive
+          # effects. Leaving them unscaled puts the two sets on
+          # different scales and breaks the requested variance.
+          trait@addEffMale = trait@addEffMale*scale
+        }
         if(.hasSlot(trait,"domEff")){
           trait@domEff = trait@domEff*scale
         }
@@ -1997,7 +2182,7 @@ SimParam = R6Class(
     #' under the assumption of equivalent recombination landscapes.
     #'
     #' @param femaleRatio relative ratio of recombination in females compared to
-    #' males. A value of 2 indicate twice as much recombination in females. The
+    #' males. A value of 2 indicates twice as much recombination in females. The
     #' value must be greater than 0. (default is 1)
     #'
     #' @examples
@@ -2010,7 +2195,11 @@ SimParam = R6Class(
     #' SP$setRecombRatio(2) #Twice as much recombination in females
     setRecombRatio = function(femaleRatio){
       stopifnot(femaleRatio>0)
+      # Both must be read before .sepMap is set, because the accessors
+      # switch to averaging the sex-specific values once it is TRUE
       genMap = self$genMap
+      centromere = self$centromere
+      genLen = self$genLen
       private$.sepMap = TRUE
       feSc = 2/(1/femaleRatio+1)
       maSc = 2/(femaleRatio+1)
@@ -2018,12 +2207,14 @@ SimParam = R6Class(
                                   function(x){
                                     feSc*x
                                   })
-      private$.femaleCentromere = feSc*private$.femaleCentromere
+      private$.femaleCentromere = feSc*centromere
       private$.maleMap = lapply(genMap,
                                 function(x){
                                   maSc*x
                                 })
-      private$.maleCentromere = maSc*private$.maleCentromere
+      private$.maleCentromere = maSc*centromere
+      private$.femaleGenLen = feSc*genLen
+      private$.maleGenLen = maSc*genLen
       invisible(self)
     },
 
@@ -2031,23 +2222,30 @@ SimParam = R6Class(
     #' Replaces existing genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromere are assumed to
-    #' be metacentric.
-    switchGenMap = function(genMap, centromere=NULL){
+    #' positions. If NULL, the centromeres are assumed to
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchGenMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
-                centromere<=sapply(genMap,max))
+                centromere>=0,
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2057,6 +2255,8 @@ SimParam = R6Class(
       private$.maleMap = NULL
       private$.femaleCentromere = centromere
       private$.maleCentromere = NULL
+      private$.femaleGenLen = genLen
+      private$.maleGenLen = NULL
       invisible(self)
     },
 
@@ -2064,23 +2264,30 @@ SimParam = R6Class(
     #' Replaces existing female genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromere are assumed to
-    #' be metacentric.
-    switchFemaleMap = function(genMap, centromere=NULL){
+    #' positions. If NULL, the centromeres are assumed to
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchFemaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
-                centromere<=sapply(genMap,max))
+                centromere>=0,
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2088,12 +2295,15 @@ SimParam = R6Class(
       if(private$.sepMap){
         private$.femaleMap = genMap
         private$.femaleCentromere = centromere
+        private$.femaleGenLen = genLen
       }else{
         private$.sepMap = TRUE
         private$.maleMap = private$.femaleMap
         private$.femaleMap = genMap
         private$.maleCentromere = private$.femaleCentromere
         private$.femaleCentromere = centromere
+        private$.maleGenLen = private$.femaleGenLen
+        private$.femaleGenLen = genLen
       }
       invisible(self)
     },
@@ -2102,23 +2312,30 @@ SimParam = R6Class(
     #' Replaces existing male genetic map.
     #'
     #' @param genMap a list of length nChr containing
-    #' numeric vectors for the position of each segregating
+    #' numeric vectors for the absolute position of each segregating
     #' site on a chromosome.
     #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromere are assumed to
-    #' be metacentric.
-    switchMaleMap = function(genMap, centromere=NULL){
+    #' positions. If NULL, the centromeres are assumed to
+    #' be metacentric, sitting at half of each chromosome's
+    #' genetic length.
+    #' @param genLen an optional vector of chromosome genetic
+    #' lengths in Morgans, either one value or one per chromosome.
+    #' Each must be at least the position of the chromosome's
+    #' last locus. If NULL, each chromosome ends at its last locus.
+    switchMaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
       }else{
-        genMap = lapply(genMap, function(x) x-x[1]) # Set position 1 to 0
+        .checkGenMap(genMap)
       }
 
+      genLen = .checkGenLen(genLen, genMap)
       if(is.null(centromere)){
-        centromere=sapply(genMap,max)/2
+        centromere=genLen/2
       }
       stopifnot(length(genMap)==self$nChr,
-                centromere<=sapply(genMap,max))
+                centromere>=0,
+                centromere<=genLen)
 
       tmp = do.call("c",lapply(genMap,length))
       stopifnot(all(tmp==private$.segSites))
@@ -2126,6 +2343,7 @@ SimParam = R6Class(
       private$.sepMap = TRUE
       private$.maleMap = genMap
       private$.maleCentromere = centromere
+      private$.maleGenLen = genLen
       invisible(self)
     },
 
@@ -2169,15 +2387,21 @@ SimParam = R6Class(
         }
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(TRUE, nNewInd))
-        names(newRecHist) = id
         private$.recHist = c(private$.recHist, newRecHist)
         private$.lastHaplo = tmpLastHaplo
       }else{
-        # Add hist to recombination history
+        # Histories are stored packed, one integer vector per individual,
+        # which is what meiosis returns. A history built in R as nested
+        # lists, as doubleGenome and mergeGenome do, is packed here. The
+        # IDs are not stored with it, because the pedigree's row names
+        # already hold them.
+        stopifnot(length(hist)==nNewInd)
+        if(is.list(hist[[1]])){
+          hist = packHist(hist)
+        }
         private$.hasHap = c(private$.hasHap, rep(FALSE, nNewInd))
         private$.isFounder = c(private$.isFounder, rep(FALSE, nNewInd))
-        names(hist) = id
-        private$.recHist = c(private$.recHist, hist)
+        private$.recHist = c(private$.recHist, unname(hist))
       }
       private$.pedigree = rbind(private$.pedigree, tmp)
       private$.lastId = lastId
@@ -2189,54 +2413,41 @@ SimParam = R6Class(
     #'
     #' @param iid internal ID
     ibdHaplo = function(iid){
-      if(all(private$.hasHap[iid])){
-        # Return relevant haplotypes
-        return(private$.hap[as.character(iid)])
+      # The cache is a list indexed by iid. It was once keyed by name, and
+      # every lookup and insertion then searched or copied the whole list,
+      # which made filling it quadratic in the size of the pedigree.
+      if(length(private$.hap)<private$.lastId){
+        length(private$.hap) = private$.lastId
       }
 
-      ## Fill in missing haplotypes
-
-      # Determine unique iid for needed individuals without hap data
-      uid = list()
-      i = 1L
-      uid[[i]] = unique(iid)
-      while(any(uid[[i]]!=0L)){
-        i = i+1L
-        uid[[i]] = unique(c(private$.pedigree[uid[[i-1]],1:2]))
-      }
-      uid = unique(unlist(uid))
-      uid = sort(uid)[-1] # First one is always zero
-      uid = uid[!private$.hasHap[uid]]
-
-      # Split uid by founder and non-founder
-      fuid = uid[private$.isFounder[uid]]
-      nfuid = uid[!private$.isFounder[uid]]
-
-      # Set hap for founders
-      if(length(fuid)>0){
-        nChr = length(private$.femaleMap)
-        newHap = getFounderIbd(founder=private$.recHist[fuid],
-                               nChr=nChr)
-        names(newHap) = as.character(fuid)
-        private$.hap = c(private$.hap, newHap)
-        private$.hasHap[fuid] = TRUE
-      }
-
-      # Set hap for non-founders
-      if(length(nfuid)>0){
-        for(id in nfuid){
-          mother = as.character(private$.pedigree[id,1])
-          father = as.character(private$.pedigree[id,2])
-          private$.hap[[as.character(id)]] =
-            getNonFounderIbd(recHist=private$.recHist[[id ]],
-                             mother=private$.hap[[mother]],
-                             father=private$.hap[[father]])
-          private$.hasHap[id] = TRUE
+      if(!all(private$.hasHap[iid])){
+        # Find the individuals lacking IBD haplotypes that are needed:
+        # those requested and, recursively, their parents. The ancestors of
+        # an individual that already has them are not needed.
+        need = logical(private$.lastId)
+        cur = unique(iid)
+        while(length(cur)>0L){
+          cur = cur[cur>0L]
+          cur = cur[!need[cur] & !(private$.hasHap[cur] %in% TRUE)]
+          need[cur] = TRUE
+          cur = unique(c(private$.pedigree[cur,1:2]))
         }
+        uid = which(need)
+
+        # Parents always have smaller iids than their progeny, so a single
+        # pass in iid order computes every parent before it is used
+        private$.hap[uid] = computeIbd(uid=uid,
+                                       mother=private$.pedigree[uid,1],
+                                       father=private$.pedigree[uid,2],
+                                       isFounder=private$.isFounder[uid],
+                                       recHist=private$.recHist[uid],
+                                       hap=private$.hap,
+                                       nChr=length(private$.femaleMap))
+        private$.hasHap[uid] = TRUE
       }
 
-      # Return relevant haplotypes
-      return(private$.hap[as.character(iid)])
+      # Return relevant haplotypes, packed as by packHist
+      return(private$.hap[iid])
     },
 
     #' @description For internal use only.
@@ -2287,6 +2498,8 @@ SimParam = R6Class(
     .sepMap="logical",
     .femaleCentromere="numeric",
     .maleCentromere="numeric",
+    .femaleGenLen="numeric",
+    .maleGenLen="numeric",
     .lastId="integer",
     .isTrackPed="logical",
     .pedigree="matrix",
@@ -2347,6 +2560,12 @@ SimParam = R6Class(
       private$.traits[[self$nTraits + 1L]] = lociMap
       private$.varA = c(private$.varA,varA)
       private$.varG = c(private$.varG,varG)
+      # .varE holds a covariance matrix when setVarE was given one, and
+      # c() on a matrix flattens it into a long vector. Reduce it to the
+      # per trait variances before appending the new trait.
+      if(is.matrix(private$.varE)){
+        private$.varE = diag(private$.varE)
+      }
       private$.varE = c(private$.varE,varE)
       invisible(self)
     },
@@ -2601,7 +2820,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field sepMap are there seperate genetic maps for
+    #' @field sepMap are there separate genetic maps for
     #' males and females
     sepMap=function(value){
       if(missing(value)){
@@ -2620,6 +2839,8 @@ SimParam = R6Class(
             genMap[[i]] = (private$.femaleMap[[i]]+
                              private$.maleMap[[i]])/2
           }
+          # Chromosome names are needed by getGenMap
+          names(genMap) = names(private$.femaleMap)
           genMap
         }else{
           private$.femaleMap
@@ -2653,7 +2874,7 @@ SimParam = R6Class(
       }
     },
 
-    #' @field centromere position of centromeres genetic map
+    #' @field centromere position of centromeres on genetic map
     centromere=function(value){
       if(missing(value)){
         if(private$.sepMap){
@@ -2687,6 +2908,45 @@ SimParam = R6Class(
         }
       }else{
         stop("`$maleCentromere` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field genLen genetic length of each chromosome. A chromosome
+    #' runs from position 0 to its genetic length, which can lie past
+    #' its last locus.
+    genLen=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          (private$.femaleGenLen+private$.maleGenLen)/2
+        }else{
+          private$.femaleGenLen
+        }
+      }else{
+        stop("`$genLen` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field femaleGenLen genetic length of each chromosome on the
+    #' female genetic map
+    femaleGenLen=function(value){
+      if(missing(value)){
+        private$.femaleGenLen
+      }else{
+        stop("`$femaleGenLen` is read only",call.=FALSE)
+      }
+    },
+
+    #' @field maleGenLen genetic length of each chromosome on the
+    #' male genetic map
+    maleGenLen=function(value){
+      if(missing(value)){
+        if(private$.sepMap){
+          private$.maleGenLen
+        }else{
+          private$.femaleGenLen
+        }
+      }else{
+        stop("`$maleGenLen` is read only",call.=FALSE)
       }
     },
 
@@ -2729,16 +2989,30 @@ SimParam = R6Class(
     #' @field recHist list of historic recombination events
     recHist=function(value){
       if(missing(value)){
-        private$.recHist
+        # Histories are stored packed and are expanded here into the
+        # nested lists, named by ID, that this field has always returned
+        output = unpackHist(private$.recHist)
+        if(length(output)>0L){
+          names(output) = rownames(private$.pedigree)[seq_along(output)]
+        }
+        output
       }else{
         stop("`$recHist` is read only",call.=FALSE)
       }
     },
 
-    #' @field haplotypes list of computed IBD haplotypes
+    #' @field haplotypes list of computed IBD haplotypes, named by
+    #' internal ID
     haplotypes=function(value){
       if(missing(value)){
-        private$.hap
+        # Stored packed and indexed by iid, so expanded and named here
+        take = which(private$.hasHap)
+        take = take[take<=length(private$.hap)]
+        output = unpackHist(private$.hap[take])
+        if(length(output)>0L){
+          names(output) = as.character(take)
+        }
+        output
       }else{
         stop("`$haplotypes` is read only",call.=FALSE)
       }
@@ -2803,7 +3077,181 @@ SimParam = R6Class(
 
 #### External helpers ----
 
-#' @title Sample additive effects
+#' @title Check a correlation matrix
+#'
+#' @description Stops with an informative error if a trait correlation
+#' argument is not a valid correlation matrix of the right size
+#'
+#' @param R the matrix supplied by the user
+#' @param nTraits number of traits
+#'
+#' @details
+#' The matrix must be numeric, nTraits by nTraits, free of missing values,
+#' symmetric, with ones on the diagonal and every entry in [-1, 1].
+#' Positive semi-definiteness is not required here: \code{\link{transMat}}
+#' smooths a matrix that fails it and warns.
+#'
+#' @returns invisibly TRUE
+#'
+#' @keywords internal
+checkCorMat = function(R, nTraits){
+  nameR = deparse(substitute(R))
+  if(!is.matrix(R) || !is.numeric(R)){
+    stop(nameR, " must be a numeric matrix")
+  }
+  if(nrow(R)!=nTraits || ncol(R)!=nTraits){
+    stop(nameR, " must be a ", nTraits, " by ", nTraits,
+         " matrix, with one row and column per trait")
+  }
+  if(anyNA(R)){
+    stop(nameR, " contains missing values")
+  }
+  if(!isSymmetric(R)){
+    stop(nameR, " is not a symmetric matrix")
+  }
+  # A covariance matrix passes every check above, so the diagonal is what
+  # tells the two apart. The tolerance allows for a matrix that was itself
+  # computed, for example by cov2cor.
+  if(!isTRUE(all.equal(unname(diag(R)), rep(1, nTraits)))){
+    stop(nameR, " must have ones on its diagonal to be a correlation matrix")
+  }
+  if(any(abs(R) > 1+sqrt(.Machine$double.eps))){
+    stop(nameR, " has entries outside [-1, 1]")
+  }
+  invisible(TRUE)
+}
+
+#' @title Symmetric gamma transform
+#'
+#' @description Maps standard normal deviates to gamma deviates with a
+#' random sign, preserving their order
+#'
+#' @param z standard normal deviates
+#' @param shape gamma distribution shape parameter
+#'
+#' @returns a vector the same length as z
+#'
+#' @keywords internal
+gammaTransform = function(z, shape){
+  # |z| maps to the uniform deviate 2*pnorm(|z|)-1 and that to a gamma
+  # quantile, while the sign of z is kept. Working with the upper tail on the
+  # log scale keeps precision for large |z|, where 2*pnorm(|z|)-1 rounds to
+  # one and qgamma would return Inf.
+  sign(z)*qgamma(log(2)+pnorm(-abs(z),log.p=TRUE),shape=shape,
+                 lower.tail=FALSE,log.p=TRUE)
+}
+
+#' @title Hermite coefficients of the symmetric gamma transform
+#'
+#' @description Computes the coefficients of \code{\link{gammaTransform}}
+#' in the basis of orthonormal Hermite polynomials
+#'
+#' @param shape gamma distribution shape parameter
+#' @param nCoef number of coefficients, starting from order one
+#'
+#' @returns a vector of length nCoef whose k-th element is the coefficient
+#' of order k
+#'
+#' @keywords internal
+gammaHermCoef = function(shape, nCoef=51L){
+  # The transform is odd, so the coefficients of even order are zero and
+  # only odd orders are integrated. The product of the transform and an odd
+  # Hermite polynomial is even, so each integral is twice its value over
+  # the positive half line. The normal density underflows well before 40.
+  coef = numeric(nCoef)
+  for(k in seq(1L, nCoef, by=2L)){
+    integrand = function(z){
+      # Orthonormal Hermite polynomials from the three-term recurrence,
+      # which stays stable at high order where the explicit form does not
+      h0 = rep(1, length(z))
+      h1 = z
+      m = 1L
+      while(m<k){
+        h2 = (z*h1-sqrt(m)*h0)/sqrt(m+1)
+        h0 = h1
+        h1 = h2
+        m = m+1L
+      }
+      2*gammaTransform(z,shape)*h1*dnorm(z)
+    }
+    coef[k] = integrate(integrand, 0, 40, subdivisions=2000L,
+                        rel.tol=1e-10)$value
+  }
+  return(coef)
+}
+
+#' @title Latent correlation for gamma distributed effects
+#'
+#' @description Finds the correlation matrix for the normal deviates that
+#' gives the requested correlation after gamma distributed traits pass
+#' through \code{\link{gammaTransform}}
+#'
+#' @param R the requested correlation matrix
+#' @param gamma indicator of whether trait should use a gamma distribution
+#' @param shape gamma distribution shape parameter
+#' @param nCoef number of Hermite coefficients used for each trait
+#'
+#' @details
+#' By Mehler's formula, when two standard normal deviates have correlation
+#' rho, transformed deviates have correlation
+#' sum_k b_ik b_jk rho^k / (sd_i sd_j), where b_ik are the Hermite
+#' coefficients of trait i's transform. That series is inverted for each
+#' pair of traits with \code{uniroot}. Pairs of normal traits and pairs with
+#' a requested correlation of zero are left unchanged.
+#'
+#' Traits whose effects have different distributions cannot reach every
+#' correlation. When a requested correlation is beyond the attainable
+#' maximum, the maximum is used and a warning is given. The returned matrix
+#' may not be positive semi-definite, which \code{\link{transMat}} handles.
+#'
+#' @returns a correlation matrix with the same dimensions as R
+#'
+#' @keywords internal
+gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
+  nTraits = ncol(R)
+  # A normal trait's transform is the identity, which is the Hermite
+  # polynomial of order one alone. Traits sharing a shape share their
+  # coefficients, so each shape is integrated once.
+  coef = matrix(0, nrow=nCoef, ncol=nTraits)
+  coef[1,] = 1
+  for(s in unique(shape[gamma])){
+    take = gamma & shape==s
+    coef[,take] = gammaHermCoef(s, nCoef)
+  }
+  # Normalising by the variance the truncated series captures, rather than
+  # the exact variance, makes two traits with the same shape reach exactly
+  # one at rho=1. A requested correlation of one then stays attainable.
+  coef = sweep(coef, 2, sqrt(colSums(coef^2)), "/")
+  Rz = R
+  for(i in seq_len(nTraits-1L)){
+    for(j in (i+1L):nTraits){
+      if(!(gamma[i] || gamma[j]) || R[i,j]==0){
+        next
+      }
+      w = coef[,i]*coef[,j]
+      corFun = function(rho) sum(w*rho^seq_len(nCoef))
+      # Only odd orders are nonzero, so the attainable range is symmetric
+      maxCor = corFun(1)
+      if(abs(R[i,j])>=maxCor){
+        if(abs(R[i,j])>maxCor+1e-8){
+          warning(sprintf(paste("A correlation of %.3f between traits %d and",
+                                "%d cannot be reached with these effect",
+                                "distributions. The attainable limit of %.3f",
+                                "is used instead."),
+                          R[i,j], i, j, sign(R[i,j])*maxCor))
+        }
+        Rz[i,j] = sign(R[i,j])
+      }else{
+        Rz[i,j] = uniroot(function(rho) corFun(rho)-R[i,j],
+                          c(-1,1), tol=1e-10)$root
+      }
+      Rz[j,i] = Rz[i,j]
+    }
+  }
+  return(Rz)
+}
+
+#' @title Sample additive genotypic effects
 #'
 #' @description Samples deviates from a normal distribution or gamma distribution
 #' with a random sign
@@ -2811,36 +3259,49 @@ SimParam = R6Class(
 #' @param qtlLoci total number of loci
 #' @param nTraits number of traits
 #' @param corr correlation between traits
-#' @param gamma indicator of trait should use a gamma distribution
+#' @param gamma indicator of whether trait should use a gamma distribution
 #' @param shape gamma distribution shape parameter
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'
 #' @keywords internal
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
+  # The gamma transform is nonlinear, which pulls correlations towards zero.
+  # Sampling the normal deviates at an adjusted correlation undoes this, so
+  # the transformed effects have the requested correlation.
+  if(any(gamma)){
+    corr = gammaLatentCorr(corr,gamma,shape)
+  }
   addEff = matrix(rnorm(qtlLoci@nLoci*nTraits),
                   ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      x = (pnorm(addEff[,i])-0.5)*2
-      addEff[,i] = sign(x)*qgamma(abs(x),shape=shape)
+      # shape holds one value per trait, so trait i takes shape[i].
+      # Passing the whole vector recycles it down the loci instead.
+      addEff[,i] = gammaTransform(addEff[,i],shape[i])
     }
   }
   return(addEff)
 }
 
-#' @title Sample dominance effects
+#' @title Sample dominance genotypic effects
 #'
 #' @description Samples dominance deviation effects from a normal distribution
-#' and uses previously sampled additive effects to form dominance
+#' and uses previously sampled additive genotypic effects to form dominance
 #' effects
 #'
 #' @param qtlLoci total number of loci
 #' @param nTraits number of traits
-#' @param addEff previously sampled additive effects
+#' @param addEff previously sampled additive genotypic effects
 #' @param corDD correlation between dominance degrees
 #' @param meanDD mean value of dominance degrees
 #' @param varDD variance of dominance degrees
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'
@@ -2858,25 +3319,32 @@ sampDomEff = function(qtlLoci,nTraits,addEff,corDD,
 #' @title Sample epistatic effects
 #'
 #' @description Samples epistatic effects from a normal distribution or gamma distribution
-#' with a variance relative to the variance of the additive effects
+#' with a variance relative to the variance of the additive genotypic effects
 #'
 #' @param qtlLoci total number of loci
 #' @param nTraits number of traits
 #' @param corr correlation between epistatic effects
-#' @param gamma indicator of trait should use a gamma distribution
+#' @param gamma indicator of whether trait should use a gamma distribution
 #' @param shape gamma distribution shape parameter
 #' @param relVar desired variance for epistatic effects
+#'
+#' @details See \code{vignette("traits", package = "AlphaSimR")} for the
+#' implemented trait model and genotypic effects.
 #'
 #' @returns a matrix with dimensions qtlLoci by nTraits
 #'
 #' @keywords internal
 sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
+  # As in sampAddEff, the correlation is adjusted for the gamma transform
+  if(any(gamma)){
+    corr = gammaLatentCorr(corr,gamma,shape)
+  }
   epiEff = matrix(rnorm(qtlLoci@nLoci*nTraits/2),
                   ncol=nTraits)%*%transMat(corr)
   if(any(gamma)){
     for(i in which(gamma)){
-      x = (pnorm(epiEff[,i])-0.5)*2
-      epiEff[,i] = sign(x)*qgamma(abs(x),shape=shape)
+      # As in sampAddEff, shape is per trait
+      epiEff[,i] = gammaTransform(epiEff[,i],shape[i])
     }
   }
   epiEff = sweep(epiEff,2,sqrt(relVar),"*")
@@ -2891,16 +3359,16 @@ isSimParam = function(x) {
 
 #' @title Find LociMap superset
 #'
-#' @description Compares to a \code{\link{LociMap-class}} objects to determine if
+#' @description Compares two \code{\link{LociMap-class}} objects to determine if
 #' the first one is a superset of the second. If it is, the function returns NULL.
-#' If it is not, the function return a \code{\link{LociMap-class}} object that is
-#' a superset of both a \code{\link{LociMap-class}} objects.
+#' If it is not, the function returns a \code{\link{LociMap-class}} object that is
+#' a superset of both \code{\link{LociMap-class}} objects.
 #'
 #' @param lociMap1 a \code{\link{LociMap-class}} that is tested to determine if
 #' it is a superset
 #' @param lociMap2 a second \code{\link{LociMap-class}} that is tested
 #'
-#' @returns NULL if locMap1 is a superset, or a \code{\link{LociMap-class}} if it
+#' @returns NULL if lociMap1 is a superset, or a \code{\link{LociMap-class}} if it
 #' is not
 #'
 #' @keywords internal
@@ -2940,10 +3408,9 @@ findLociMapSuperset = function(lociMap1, lociMap2){
 
 #' @title Find trait QTL index
 #'
-#' @description Compares to a \code{\link{LociMap-class}} objects to determine if
-#' the first one is a superset of the second. If it is, the function returns NULL.
-#' If it is not, the function return a \code{\link{LociMap-class}} object that is
-#' a superset of both a \code{\link{LociMap-class}} objects.
+#' @description Finds the positions of a trait's QTL within the set of all
+#' active QTL. The QTL of the trait are assumed to be a subset of the active
+#' QTL, so every trait QTL is expected to be matched.
 #'
 #' @param activeQtl a \code{\link{LociMap-class}} representing all active QTL
 #' @param traitQtl a \code{\link{LociMap-class}} representing QTL for a trait of
@@ -2963,4 +3430,23 @@ findQtlIndex = function(activeQtl, traitQtl){
                     traitQtl@lociLoc, sep="_")
 
   return(match(traitLoci, activeLoci))
+}
+
+# The genetic length of each chromosome on the female or male map of a
+# SimParam. A SimParam saved before genLen existed has no such field, and
+# reading it gives NULL, so it falls back to the position of each
+# chromosome's last locus, which is where those chromosomes ended.
+.simGenLen = function(simParam, female=TRUE){
+  if(female){
+    genLen = simParam$femaleGenLen
+    if(is.null(genLen)){
+      genLen = .lastLocus(simParam$femaleMap)
+    }
+  }else{
+    genLen = simParam$maleGenLen
+    if(is.null(genLen)){
+      genLen = .lastLocus(simParam$maleMap)
+    }
+  }
+  return(genLen)
 }

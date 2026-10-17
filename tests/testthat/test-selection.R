@@ -37,8 +37,8 @@ test_that("selectInd_and_getResponse",{
   expect_equal(pop5@id, pop6@id)
 })
 
-test_that("selectPop",{
-  founderPop = quickHaplo(nInd=14, nChr=1, segSites=10)
+test_that("selectPop_and_calcPopValue",{
+  founderPop = quickHaplo(nInd=100, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
@@ -69,12 +69,11 @@ test_that("selectPop",{
   expect_warning(selectPop(mp1, nPop = 10, simParam = SP),
                  paste("Suitable candidate populations smaller than nPop, returning", 
                        length(mp1), "populations"))
-  
-  # Invalid level
+
   expect_error(selectPop(mp1, nPop = 2, level = 0.5, simParam = SP),
                "`level` must be a positive integer",
                fixed=TRUE)
-               expect_error(selectPop(mp1, nPop = 2, level = 1:2, simParam = SP),
+  expect_error(selectPop(mp1, nPop = 2, level = 1:2, simParam = SP),
                "`level` must be a positive integer",
                fixed=TRUE)
   
@@ -126,9 +125,9 @@ test_that("selectPop",{
   
   # MultiPop with 1 nested object
   
-  mp2 = newMultiPop(pop[1:2], pop[3:4],
-                    newMultiPop(pop[5:6],
-                                newMultiPop(pop[7:8], pop[9:10])))
+  mp2 = newMultiPop(pop[1:20], pop[21:40],
+                    newMultiPop(pop[41:60],
+                                newMultiPop(pop[61:80], pop[81:100])))
   
   # setPheno for all traits
   mp2 = setPheno(mp2, varE = c(1,1), simParam = SP)
@@ -153,11 +152,11 @@ test_that("selectPop",{
   
   # MultiPop with >1 nested object
   
-  mp3 = newMultiPop(pop[1:2],
-                    newMultiPop(pop[3:4],
-                                newMultiPop(pop[5:6], pop[7:8])),
-                    newMultiPop(pop[9:10],
-                                newMultiPop(pop[11:12], pop[13:14])))
+  mp3 = newMultiPop(pop[1:20],
+                    newMultiPop(pop[21:30],
+                                newMultiPop(pop[31:35], pop[36:40])),
+                    newMultiPop(pop[41:60],
+                                newMultiPop(pop[61:80], pop[81:100])))
   
   mp3 = setPheno(mp3, varE = c(1,1), simParam = SP)
   
@@ -220,7 +219,7 @@ test_that("calcPopValue", {
     randCross(pop, nCrosses = 3, nProgeny = 4, simParam = SP),
     by = list(
       function(x) rep(LETTERS[1:2], length.out = length(x)),
-      function(x) getFam(x, famType = "B")
+      function(x) AlphaSimR:::getFam(x, famType = "B")
     )
   )
 
@@ -311,7 +310,7 @@ test_that("calcPopValue", {
 
   # Error and warning handling
   expect_warning(
-    calcPopValue(mp1, FUN = \(x) list(x@pheno), simplify = TRUE, simParam = SP),
+    calcPopValue(mp1, FUN = function(x) list(x@pheno), simplify = TRUE, simParam = SP),
     "Some values returned by FUN have unsupported types for simplification. Returning list output.",
     fixed = TRUE
   )

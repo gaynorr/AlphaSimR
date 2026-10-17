@@ -503,3 +503,27 @@ test_that("finalizePheno can recode phenotypes via setPhenoProgTest", {
   )
   expect_equal(pheno(finalizedPop), expected)
 })
+
+test_that("setPheno accepts trait names in traits", {
+  founderPop = quickHaplo(nInd = 20, nChr = 1, segSites = 20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr = 5, mean = c(0, 0), var = c(1, 1),
+               corA = diag(2), name = c("Yield", "Height"))
+  pop = newPop(founderPop, simParam = SP)
+
+  set.seed(274)
+  byNumber = setPheno(pop, varE = 1, traits = 2, onlyPheno = TRUE,
+                      simParam = SP)
+  set.seed(274)
+  byName = setPheno(pop, varE = 1, traits = "Height",
+                    onlyPheno = TRUE, simParam = SP)
+  expect_identical(byName, byNumber)
+
+  expect_error(setPheno(pop, varE = 1, traits = "Weight",
+                        simParam = SP),
+               "did not match any trait names")
+  expect_error(setPheno(pop, varE = 1, traits = function(x) x,
+                        simParam = SP),
+               "not a function")
+})

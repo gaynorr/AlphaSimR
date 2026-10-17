@@ -2,18 +2,27 @@
 % Please edit documentation in R/misc.R
 \name{mutate}
 \alias{mutate}
+\alias{mutate,Pop-method}
+\alias{mutate,ANY-method}
 \title{Add Random Mutations}
 \usage{
-mutate(
+mutate(pop, ...)
+
+\S4method{mutate}{Pop}(
   pop,
   mutRate = 2.5e-08,
   returnPos = FALSE,
   simParam = NULL,
   nThreads = NULL
 )
+
+\S4method{mutate}{ANY}(pop, ...)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
+
+\item{...}{arguments passed on to the method, or to another package's
+\code{mutate} when pop is not a population. See details.}
 
 \item{mutRate}{rate of new mutations}
 
@@ -30,7 +39,7 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 an object of \code{\link{Pop-class}} if
 returnPos=FALSE or a list containing a
 \code{\link{Pop-class}} and a data.frame containing the
-postions of mutations if returnPos=TRUE
+positions of mutations if returnPos=TRUE
 }
 \description{
 Adds random mutations to individuals in a
@@ -39,6 +48,19 @@ or EBVs are kept. Thus, the user will need to run
 \code{\link{setPheno}} and/or \code{\link{setEBV}}
 to generate new phenotypes or EBVs that reflect
 changes introduced by the new mutations.
+}
+\details{
+\code{mutate} is a generic, and dispatches on its first argument. This
+is so that attaching AlphaSimR does not take \code{mutate} away from a
+package that also provides one, such as dplyr. Anything that is not a
+\code{\link{Pop-class}} is passed on to the next \code{mutate} on the
+search path, and an error is raised only when there is no other one to
+pass it to.
+
+The reverse is not true. If AlphaSimR is attached first and another
+package providing \code{mutate} is attached after it, that package's
+function is found first and this one is not reached. Call
+\code{AlphaSimR::mutate} in that case.
 }
 \examples{
 #Create founder haplotypes

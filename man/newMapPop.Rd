@@ -4,7 +4,7 @@
 \alias{newMapPop}
 \title{New MapPop}
 \usage{
-newMapPop(genMap, haplotypes, inbred = FALSE, ploidy = 2L)
+newMapPop(genMap, haplotypes, inbred = FALSE, ploidy = 2L, genLen = NULL)
 }
 \arguments{
 \item{genMap}{a list of genetic maps}
@@ -15,6 +15,11 @@ can be coerced to matrices. See details.}
 \item{inbred}{are individuals fully inbred}
 
 \item{ploidy}{ploidy level of the organism}
+
+\item{genLen}{an optional vector of chromosome genetic lengths in
+Morgans, either one value or one per chromosome. Each must be at
+least the position of the chromosome's last locus. If NULL, each
+chromosome ends at its last locus.}
 }
 \value{
 an object of \code{\link{MapPop-class}}
@@ -24,9 +29,15 @@ Creates a new \code{\link{MapPop-class}} from user supplied
 genetic maps and haplotypes.
 }
 \details{
-Each item of genMap must be a vector of ordered genetic lengths in
-Morgans. The first value must be zero. The length of the vector
-determines the number of segregating sites on the chromosome.
+Each item of genMap must be a vector of ordered genetic positions in
+Morgans. Positions are absolute, measured from the start of the
+chromosome, so they must be non-negative but the first need not be
+zero. The length of the vector determines the number of segregating
+sites on the chromosome.
+
+A chromosome runs from position 0 to its genetic length, which can
+extend past the last locus. Crossovers are simulated over the whole
+chromosome. The centromere is placed at half of the genetic length.
 
 Each item of haplotypes must be coercible to a matrix. The columns
 of this matrix correspond to segregating sites. The number of rows

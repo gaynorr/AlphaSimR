@@ -10,7 +10,7 @@ isPop(x)
 \item{x}{\code{\link{Pop-class}}}
 }
 \description{
-Utilify function to test if object is of a Population class
+Utility function to test if object is of a Population class
 }
 \examples{
 #Create founder haplotypes

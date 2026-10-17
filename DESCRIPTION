@@ -1,8 +1,8 @@
 Package: AlphaSimR
 Type: Package
 Title: Breeding Program Simulations
-Version: 2.1.0.9003
-Date: 2026-04-18
+Version: 2.1.0.9021
+Date: 2026-10-17
 Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0558-6656")),
   person("Gregor", "Gorjanc", role = "ctb",
@@ -21,7 +21,10 @@ Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   person("Ros", "Craddock", role = "ctb",
   comment = c(ORCID = "0009-0004-1578-1580")),
   person("Jana", "Obsteter", role = "ctb",
-  comment = c(ORCID = "0000-0003-1511-3916")))
+  comment = c(ORCID = "0000-0003-1511-3916")),
+  person("Masoud", "Ghaderi", role = "ctb"),
+  person("Gary", "Chen", role = c("ctb", "cph"),
+  comment = "Author of the bundled MaCS software, see LICENSE.note"))
 Description: The successor to the 'AlphaSim' software for breeding program
   simulation [Faux et al. (2016) <doi:10.3835/plantgenome2016.02.0013>].
   Used for stochastic simulations of breeding programs to the level of DNA
@@ -46,4 +49,4 @@ LinkingTo: Rcpp, RcppArmadillo (>= 0.7.500.0.0), BH, dqrng (>= 0.4.1)
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 NeedsCompilation: true
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.1

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Class-SimParam.R
 \name{sampAddEff}
 \alias{sampAddEff}
-\title{Sample additive effects}
+\title{Sample additive genotypic effects}
 \usage{
 sampAddEff(qtlLoci, nTraits, corr, gamma, shape)
 }
@@ -13,7 +13,7 @@ sampAddEff(qtlLoci, nTraits, corr, gamma, shape)
 
 \item{corr}{correlation between traits}
 
-\item{gamma}{indicator of trait should use a gamma distribution}
+\item{gamma}{indicator of whether trait should use a gamma distribution}
 
 \item{shape}{gamma distribution shape parameter}
 }
@@ -23,5 +23,9 @@ a matrix with dimensions qtlLoci by nTraits
 \description{
 Samples deviates from a normal distribution or gamma distribution
 with a random sign
+}
+\details{
+See \code{vignette("traits", package = "AlphaSimR")} for the
+implemented trait model and genotypic effects.
 }
 \keyword{internal}

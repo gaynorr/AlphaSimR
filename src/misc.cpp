@@ -1,13 +1,6 @@
 // These functions may be called by R, but are not listed in the package namespace
 #include "alphasimr.h"
-
-std::bitset<8> toBits(unsigned char byte){
-  return std::bitset<8>(byte);
-}
-
-unsigned char toByte(std::bitset<8> bits){
-  return bits.to_ulong(); 
-}
+#include <cstring>
 
 // Calculates population variance
 //' @title Population variance
@@ -32,44 +25,93 @@ arma::mat popVarCpp(const arma::mat& X) {
   }
 }
 
-// Merges geno objects, i.e. fields containing cubes of unsigned char
+// Allocates the raw array that holds one chromosome of packed genotypes,
+// with the dimensions nBins by ploidy by nInd that the rest of the package
+// expects. The contents are left for the caller to write.
+Rcpp::RawVector newChrGeno(arma::uword nBins, arma::uword ploidy,
+                           arma::uword nInd){
+  Rcpp::RawVector out(Rcpp::no_init(nBins*ploidy*nInd));
+  out.attr("dim") = Rcpp::IntegerVector::create(int(nBins), int(ploidy),
+                                                int(nInd));
+  return out;
+}
+
+// Merges geno objects, i.e. lists of raw arrays holding packed genotypes.
+// The genotypes are read in place and copied once, straight into the arrays
+// that are returned. Returning an arma::field would copy the merged
+// genotypes a second time on the way out.
 // [[Rcpp::export]]
-arma::field<arma::Cube<unsigned char> > mergeGeno(
-    const arma::field<arma::Cube<unsigned char> >& x, 
-    const arma::field<arma::Cube<unsigned char> >& y){
-  arma::uword nChr = x.n_elem;
-  arma::field<arma::Cube<unsigned char> > z(nChr);
+Rcpp::List mergeGeno(const Rcpp::List& x, const Rcpp::List& y){
+  PackedGeno gx(x);
+  PackedGeno gy(y);
+  arma::uword nChr = gx.chrPtr.size();
+  if(gy.chrPtr.size()!=nChr){
+    Rcpp::stop("mergeGeno: the genotypes do not have the same chromosomes");
+  }
+  // An individual's genotypes are a contiguous run of nBins*ploidy bytes
+  // and individuals follow each other, so merging is two copies per
+  // chromosome
+  Rcpp::List z(nChr);
   for(arma::uword i=0; i<nChr; ++i){
-    z(i) = arma::join_slices(x(i),y(i));
+    if((gx.nBins[i]!=gy.nBins[i]) || (gx.ploidy!=gy.ploidy)){
+      Rcpp::stop("mergeGeno: the genotypes do not have the same chromosomes");
+    }
+    arma::uword xBytes = gx.nBins[i]*gx.ploidy*gx.nInd;
+    arma::uword yBytes = gy.nBins[i]*gy.ploidy*gy.nInd;
+    Rcpp::RawVector chrGeno = newChrGeno(gx.nBins[i], gx.ploidy,
+                                         gx.nInd+gy.nInd);
+    unsigned char* out = RAW(chrGeno);
+    if(xBytes>0){
+      std::memcpy(out, gx.chrPtr[i], xBytes);
+    }
+    if(yBytes>0){
+      std::memcpy(out+xBytes, gy.chrPtr[i], yBytes);
+    }
+    z[i] = chrGeno;
   }
   return z;
 }
 
-// Merges multiple geno objects contained a list of Class-Pop
+// Merges multiple geno objects contained a list of Class-Pop.
+// As in mergeGeno, each population's genotypes are read in place and
+// copied once into the arrays that are returned.
 // [[Rcpp::export]]
-arma::field<arma::Cube<unsigned char> > mergeMultGeno(Rcpp::List& popList,
-                                                      arma::uvec nInd,
-                                                      arma::uvec nBin,
-                                                      arma::uword ploidy){
-  arma::field<arma::Cube<unsigned char> > output(nBin.n_elem);
+Rcpp::List mergeMultGeno(Rcpp::List& popList,
+                         arma::uvec nInd,
+                         arma::uvec nBin,
+                         arma::uword ploidy){
+  arma::uword nChr = nBin.n_elem;
   arma::uword nTot = sum(nInd);
   arma::uword nPop = nInd.n_elem;
+  if(arma::uword(popList.size())!=nPop){
+    Rcpp::stop("mergeMultGeno: nInd must have one value per population");
+  }
   // Allocate output
-  for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
-    output(chr).set_size(nBin(chr),ploidy,nTot);
+  Rcpp::List output(nChr);
+  std::vector<unsigned char*> outPtr(nChr);
+  for(arma::uword chr=0; chr<nChr; ++chr){
+    Rcpp::RawVector chrGeno = newChrGeno(nBin(chr), ploidy, nTot);
+    outPtr[chr] = RAW(chrGeno);
+    output[chr] = chrGeno;
   }
   // Add individual genotypes
-  arma::uword startInd=0, endInd=0;
+  arma::uword startInd=0;
   for(arma::uword i=0; i<nPop; ++i){
     if(nInd(i)>0){
-      endInd += nInd(i)-1;
       Rcpp::S4 pop = popList[i];
-      arma::field<arma::Cube<unsigned char> >geno = pop.slot("geno");
-      for(arma::uword chr=0; chr<nBin.n_elem; ++chr){
-        output(chr).slices(startInd,endInd) = geno(chr);
+      PackedGeno g(pop);
+      if(g.chrPtr.size()!=nChr || g.ploidy!=ploidy || g.nInd!=nInd(i)){
+        Rcpp::stop("mergeMultGeno: a population does not match the others");
+      }
+      for(arma::uword chr=0; chr<nChr; ++chr){
+        if(g.nBins[chr]!=nBin(chr)){
+          Rcpp::stop("mergeMultGeno: a population does not match the others");
+        }
+        arma::uword indBytes = nBin(chr)*ploidy;
+        std::memcpy(outPtr[chr]+indBytes*startInd, g.chrPtr[chr],
+                    indBytes*nInd(i));
       }
       startInd += nInd(i);
-      endInd = startInd;
     }
   }
   return output;
@@ -83,9 +125,12 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
   arma::Mat<int> output(sum(nRow),nCol);
   arma::uword start=0, end=0;
   for(arma::uword i=0; i<nRow.n_elem; i++){
-    if(nRow(i)>0){
-      end += nRow(i)-1;
+    // A block with no rows contributes nothing. Without this the assignment
+    // below would copy a zero-row matrix into a one-row span.
+    if(nRow(i)==0){
+      continue;
     }
+    end += nRow(i)-1;
     output.rows(start,end) = X(i);
     start += nRow(i);
     end = start;
@@ -104,6 +149,27 @@ arma::Mat<int> mergeMultIntMat(const arma::field<arma::Mat<int> >& X,
 arma::uword mapIndex(arma::uword i, arma::uword j,
                      arma::uword n){
   return (n*(n-1)/2) - (n-i)*((n-i)-1)/2 + j-i-1;
+}
+
+// The number of blocks used for nItem work items. Blocks are never empty,
+// and there is always at least one, so that a function allocating one
+// accumulator per block always has somewhere to put its results.
+arma::uword countBlocks(arma::uword nItem){
+  if(nItem<1){
+    return 1;
+  }
+  if(nItem<nWorkBlocks){
+    return nItem;
+  }
+  return nWorkBlocks;
+}
+
+// The first work item of a block. Called with block and block+1 to get the
+// half open range a block covers. Any remainder is spread over the blocks
+// instead of landing entirely on the last one.
+arma::uword blockStart(arma::uword nItem, arma::uword nBlock,
+                       arma::uword block){
+  return (nItem*block)/nBlock;
 }
 
 // Find row given mapping index

@@ -64,11 +64,20 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model that estimates seperate marker effects for
+Fits an RR-BLUP model that estimates separate marker effects for
 females and males. This implementation is meant for situations where
 \code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2
 is only faster in certain situations. Most users should use
 \code{\link{RRBLUP_GCA}}.
+}
+\details{
+The model uses separate maternal and paternal marker dosages from
+the training population.
+The solution can be applied with \code{\link{setEBV}}:
+\code{value="female"} or \code{value="male"} gives parental
+predictions, while \code{value="gv"} predicts total hybrid genetic value.
+These model predictions obviously differ from the observed cross means
+returned by \code{\link{calcGCA}}.
 }
 \examples{
 #Create founder haplotypes

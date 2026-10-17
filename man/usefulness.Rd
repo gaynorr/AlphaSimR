@@ -16,7 +16,7 @@ usefulness(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}} or
+\item{pop}{an object of \code{\link{Pop-class}} or
 \code{\link{HybridPop-class}}}
 
 \item{trait}{the trait for selection. Either a number indicating

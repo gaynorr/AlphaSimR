@@ -37,7 +37,7 @@ See also details.}
 \code{p} is given to convert category probabilities to thresholds.
 See also details.}
 
-\item{threshold}{\code{NULL}, numeric or, list, when numeric, provide
+\item{threshold}{\code{NULL}, numeric, or list, when numeric, provide
 a vector of category thresholds to convert continuous values into for
 a single trait (the thresholds specify left-closed and right-opened
 intervals [t1, t2), which can be changed with \code{include.lowest}
@@ -63,14 +63,14 @@ Convert a normal (Gaussian) trait to an ordered categorical (threshold)
   trait
 }
 \details{
-If input trait is normal (Gaussian) then this function generates a
+If the input trait is normal (Gaussian) then this function generates a
   categorical trait according to the ordered probit model.
   No sampling happens in this function, which makes it deterministic.
 
   When \code{p} is used, \code{mean} and \code{var} describe the latent
   distribution of \code{x} and are used only to derive thresholds.
-  In normal AlphaSimR workflow, this latent mean and variance are usually
-  set via \code{SP$addTrait*(..., mean = ..., var = ...)} in founding
+  In a normal AlphaSimR workflow, this latent mean and variance are usually
+  set via \code{SP$addTrait*(..., mean = ..., var = ...)} in the founding
   population and \code{SP$setVarE}. \code{p} or \code{threshold} values
   should be established at the start of simulation and kept constant
   for most use cases.

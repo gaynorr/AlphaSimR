@@ -1,0 +1,7 @@
+We now have two bib files!?
+
+add nd() for non-additive deviations - should be simple
+
+VarN() then too!?
+
+mention nd and varN in the vignette

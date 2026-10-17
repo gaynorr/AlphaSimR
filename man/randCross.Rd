@@ -43,7 +43,7 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 A wrapper for \code{\link{makeCross}} that randomly
-selects parental combinations for all possible combinantions.
+selects parental combinations for all possible combinations.
 }
 \examples{
 #Create founder haplotypes
@@ -60,3 +60,18 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = randCross(pop, 10, simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}

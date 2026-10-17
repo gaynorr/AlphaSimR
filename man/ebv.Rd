@@ -12,19 +12,26 @@ ebv(pop)
 \description{
 A wrapper for accessing the ebv slot
 }
+\details{
+The \code{ebv} slot stores predictions supplied by the user or
+\code{\link{setEBV}}.
+Depending on how it was populated, it can contain estimated breeding
+values, estimated genetic values, or other estimated/predicted values.
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
+SP$addTraitA(10)
+trtH2 = 0.5
+SP$setVarE(h2=trtH2)
 \dontshow{SP$nThreads = 1L}
-SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
 
 #Create population
 pop = newPop(founderPop, simParam=SP)
-pop@ebv = matrix(rnorm(pop@nInd), nrow=pop@nInd, ncol=1)
+pop@ebv = trtH2 * (pop@pheno - meanP(pop)) #ind performance based EBV
 ebv(pop)
 
 }

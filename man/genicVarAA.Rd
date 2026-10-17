@@ -2,7 +2,7 @@
 % Please edit documentation in R/popSummary.R
 \name{genicVarAA}
 \alias{genicVarAA}
-\title{Additive-by-additive genic variance}
+\title{Additive-by-additive epistatic genic variance}
 \usage{
 genicVarAA(pop, simParam = NULL, nThreads = NULL)
 }
@@ -16,9 +16,24 @@ global environment.}
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 }
+\value{
+A vector of length nTraits.
+}
 \description{
 Returns additive-by-additive epistatic
 genic variance for all traits
+}
+\details{
+Genic variances refer to an idealized population with the same allele
+frequencies as \code{pop}, but with Hardy-Weinberg genotype frequencies
+and linkage equilibrium.
+They are theoretical expectations under this reference distribution,
+rather than variances of values evaluated in the observed population.
+See \code{\link{genParam}} for the corresponding genetic variances
+and contributions from departures from equilibrium.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 #Create founder haplotypes
@@ -26,8 +41,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)
-SP$addTraitAD(10, meanDD=0.5)
-SP$setVarE(h2=0.5)
+SP$addTraitADE(10, meanDD=0.5, relAA=0.2)
 \dontshow{SP$nThreads = 1L}
 
 #Create population

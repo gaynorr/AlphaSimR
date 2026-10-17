@@ -32,7 +32,7 @@ Returns an object of \code{\link{Pop-class}}
 \description{
 Edits selected loci of selected individuals to a homozygous
 state for either the 1 or 0 allele. The gv slot is recalculated to
-reflect the any changes due to editing, but other slots remain the same.
+reflect any changes due to editing, but other slots remain the same.
 }
 \examples{
 #Create founder haplotypes

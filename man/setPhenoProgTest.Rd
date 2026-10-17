@@ -80,7 +80,7 @@ number of times equal to 'nMatePerInd'.
 The reps parameter is for convenient representation of replicated data.
 It was intended for representation of replicated yield trials in plant
 breeding programs. In this case, varE is set to the plot error and
-reps is set to the number plots per entry. The resulting phenotype
+reps is set to the number of plots per entry. The resulting phenotype
 would reflect the mean of all replications.
 }
 \examples{
@@ -100,3 +100,18 @@ pop2 = newPop(founderPop[6:10], simParam=SP)
 pop3 = setPhenoProgTest(pop1, pop2, use="gv", simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}}
+}
+\concept{mating functions}

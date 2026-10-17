@@ -1,0 +1,861 @@
+---
+title: "Simulating founder genomes from demographic models in AlphaSimR"
+author: "Gregor Gorjanc and Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Simulating founder genomes from demographic models in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse=TRUE,
+  comment="#>")
+library(AlphaSimR)
+
+# Python examples are opt-in so that ordinary site builds need no Python
+# (see the msprime section)
+runPython = FALSE
+# Uncomment this next line to run the Python examples while rendering this article
+# runPython = TRUE
+```
+
+# Introduction
+
+Founder genomes provide the initial genetic variation for `AlphaSimR` simulations.
+Their allele frequencies, linkage disequilibrium (LD), and relatedness
+reflect the population's genetic history.
+This variation reflects population genetic processes and events,
+which we encode in demographic models using
+changes in population size, population splits, and migration,
+together with genome parameters such as
+ploidy, chromosome lengths, and mutation and recombination rates
+[@lauterbur2023stdpopsimzoo].
+These parameters can be estimated from data or chosen to explore a scenario.
+
+We can use the demographic models to simulate plausible founder genomes
+using either backward-in-time or forward-in-time simulators.
+Backward-in-time (coalescent) simulators efficiently generate genomes by
+tracing only their ancestry through recombination and then overlaying mutations.
+Forward-in-time simulators model populations across generations,
+offering greater flexibility for modeling selection and other processes,
+typically at greater computational cost.
+
+`AlphaSimR` supports founder genome simulation with the bundled coalescent
+simulator `MaCS` [@chen2009Fast], including preset demographic models,
+or external tools such as `msprime` [@baumdicker2022Efficient] and
+the associated project `stdpopsim` with a catalog of demographic models
+[@lauterbur2023stdpopsimzoo].
+`AlphaSimR` can also import founder genome data, real or simulated.
+This vignette assumes that you are familiar with the content of
+`vignette("Genome")`.
+
+---
+
+# Preset demographic models with `runMacs()`
+
+`AlphaSimR` bundles `MaCS` [@chen2009Fast] to facilitate simulation
+without requiring a separate installation.
+We call `MaCS` via the `runMacs()` function.
+For example, to sample genomes of 20 diploid individuals with 2 chromosomes
+using a "generic" demographic model, we run:
+
+```{r preset}
+foundersGeneric = runMacs(nInd=20, nChr=2, species="GENERIC")
+print(foundersGeneric)
+print(foundersGeneric@nLoci)
+haps = pullSegSiteHaplo(foundersGeneric)
+str(haps)
+haps[1:4, 1:5]
+```
+
+This call produced a `MapPop` object holding
+40 whole-chromosome haplotypes for each chromosome,
+comprising the requested genomes.
+Note that multiple chromosomes are simulated independently
+and in our example they have `r foundersGeneric@nLoci[1]`
+and `r foundersGeneric@nLoci[2]` segregating sites.
+
+These numbers, and any other genome statistics, are random variables and
+vary across chromosomes and replicates,
+in line with the stochastic nature of the coalescent process
+parameterized with the demographic model.
+To show this variation,
+we will repeat the simulation 100 times from the same demographic model
+for one chromosome and plot the distribution of segregating sites,
+allele frequency spectra (AFS), and linkage disequilibrium (LD).
+For LD, we calculate $r^2$, the squared correlation between haplotype
+alleles at two loci.
+To limit computation, we randomly select up to 1,000 segregating loci and
+calculate LD for all pairs of these loci.
+We average their $r^2$ values in 200-kb distance bins up to 5 Mb.
+The `GENERIC` model has a constant recombination rate of $10^{-8}$
+per bp per generation, so genetic distances divided by this rate give
+physical distances.
+
+First the simulation, collection of statistics, and
+distribution of segregating sites:
+
+```{r presetReps}
+#| out.width: "75%"
+#| fig.align: "center"
+#| fig.width: 7
+#| fig.height: 4.5
+#| dpi: 150
+#| fig.retina: 2
+#| dev.args: {pointsize: 11}
+# Review: A larger plotting canvas keeps text proportional; double-density output prevents pixelation.
+par(mar=c(4, 4, 2, 1), mgp=c(2.5, 0.7, 0), las=1)
+nInd = 20
+nHap = nInd * 2
+nReps = 100
+nSites = integer(nReps)
+spectra = matrix(data=0, nrow=nHap - 1L, ncol=nReps)
+ldBreaks = seq(0, 5e6, by=2e5)
+ld = matrix(NA_real_, nrow=length(ldBreaks) - 1L, ncol=nReps)
+for (rep in seq_len(nReps)) {
+  foundersGeneric = runMacs(nInd=nInd, nChr=1, species="GENERIC")
+  nSites[rep] = foundersGeneric@nLoci
+  haps = pullSegSiteHaplo(foundersGeneric)
+  counts = colSums(haps)
+  spectra[, rep] = tabulate(counts, nbins=nHap - 1L)
+
+  # Sample segregating loci without filtering by allele frequency.
+  loci = sort(sample.int(nSites[rep], min(1000L, nSites[rep])))
+  pos = foundersGeneric@genMap[[1]][loci] / 1e-8
+  r2 = cor(haps[, loci, drop=FALSE])^2
+  pairs = upper.tri(r2)
+  distance = abs(outer(pos, pos, "-"))[pairs]
+  bins = cut(distance, breaks=ldBreaks, include.lowest=TRUE)
+  ld[, rep] = tapply(r2[pairs], bins, mean)
+}
+# Review: Use a descriptive axis label and omit the redundant default histogram title.
+hist(nSites, main="", xlab="Number of segregating sites")
+abline(v=mean(nSites), col="red", lty=2, lwd=2)
+```
+
+Now the distribution of allele frequency spectra
+(each gray line is one replicate and the red line is the mean across replicates):
+
+```{r presetRepsAlleleFreq}
+#| out.width: "75%"
+#| fig.align: "center"
+#| fig.width: 7
+#| fig.height: 4.5
+#| dpi: 150
+#| fig.retina: 2
+#| dev.args: {pointsize: 11}
+# Review: A larger plotting canvas keeps text proportional; double-density output prevents pixelation.
+par(mar=c(4, 4, 2, 1), mgp=c(2.5, 0.7, 0), las=1)
+freq = seq_len(nHap - 1L) / nHap
+props = sweep(spectra, 2, nSites, "/")
+matplot(freq, props, type="l", lty=1,
+        col=adjustcolor("gray40", alpha.f=0.25),
+        xlab="Allele frequency", ylab="Proportion of sites")
+lines(freq, rowMeans(props, na.rm=TRUE), col="red", lwd=2)
+```
+
+Finally, the decay of LD with physical distance
+(each gray line is one replicate and the red line is the mean across replicates):
+
+```{r presetRepsLD}
+#| out.width: "75%"
+#| fig.align: "center"
+#| fig.width: 7
+#| fig.height: 4.5
+#| dpi: 150
+#| fig.retina: 2
+#| dev.args: {pointsize: 11}
+# Review: A larger plotting canvas keeps text proportional; double-density output prevents pixelation.
+par(mar=c(4, 4, 2, 1), mgp=c(2.5, 0.7, 0), las=1)
+distanceMb = (head(ldBreaks, -1) + tail(ldBreaks, -1)) / 2 / 1e6
+matplot(distanceMb, ld, type="l", lty=1,
+        col=adjustcolor("gray40", alpha.f=0.25),
+        xlab="Physical distance (Mb)", ylab=expression("Mean LD (" * r^2 * ")"))
+lines(distanceMb, rowMeans(ld, na.rm=TRUE), col="red", lwd=2)
+```
+
+To control the number of segregating sites retained,
+`runMacs()` uses the `segSites` argument,
+where the default `segSites=NULL` retains all segregating sites.
+Requesting more sites than were generated raises an error.
+Retained sites can subsequently be assigned as QTL or
+markers in `SimParam`.
+
+Argument `inbred=TRUE` simulates one whole-chromosome haplotype
+per individual and then copies this haplotype across all homologues.
+This creates fully inbred founders but does not simulate a history of selfing.
+
+## What are the parameters of the preset demographic models?
+
+The genome parameters for the preset demographic models
+are listed in the table below.
+Mutation and recombination rates are per base pair per generation and
+genetic lengths are in Morgans (1 Morgan = 100 cM).
+
+| Model | Present diploid $N_e$ | Physical length (bp) | Mutation rate | Recombination rate | Genetic length (Morgan) |
+|:--|--:|--:|--:|--:|--:|
+| `GENERIC` | 100 | $10^8$ | $10^{-8}$ | $10^{-8}$ | 1.00 |
+| `CATTLE` | 90 | $2.8\times10^9/30$ | $9.4\times10^{-9}$ | $9.26\times10^{-9}$ | 0.86 |
+| `WHEAT` | 50 | $8\times10^8$ | $2\times10^{-9}$ | $1.8\times10^{-9}$ | 1.43 |
+| `MAIZE` | 100 | $2\times10^8$ | $1.25\times10^{-8}$ | $10^{-8}$ | 2.00 |
+
+Each preset demographic model also specifies
+a piecewise constant population-size history,
+measured with effective population size, $N_e$.
+
+The `GENERIC` demographic model is an illustrative general-purpose model,
+not a fitted model for a species,
+but it has hallmarks of a species that underwent repeated bottlenecks
+due to domestication and selective breeding.
+Its present $N_e$ is 100 and moving backward in time,
+it changes to the following `histNe` at `histGen` generations ago:
+
+```{r presetGenericNe}
+histNe  = c(500, 1500, 6000, 12000, 100000)
+histGen = c(100, 1000, 10000, 100000, 1000000)
+```
+
+The `CATTLE` demographic model follows estimates from @macleod2013Inferring.
+Its present $N_e$ is 90 and moving backward in time
+it changes to the following `histNe` at `histGen` generations ago:
+
+```{r presetCattleNe}
+histNe  = c(120, 250, 350, 1000, 1500, 2000, 2500, 3500, 7000, 10000, 17000, 62000)
+histGen = c(  3,   6,  12,   18,   24,  154,  454,  654, 1754,  2354,  3354, 33154)
+```
+
+The `WHEAT` demographic model follows values used in @gaynor2017Two.
+Note that these values were chosen for a computationally convenient scenario,
+based on multiple publications, and are not a formal demographic estimate for wheat.
+Its present $N_e$ is 50; moving backward in time,
+it changes to the following `histNe` at `histGen` generations ago:
+
+```{r presetWheatNe}
+histNe  = c(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 16000, 20000, 24000, 28000, 32000)
+histGen = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 60000, 80000, 100000)
+```
+
+The `MAIZE` demographic model follows values used in @hickey2014Evaluation.
+Note that these values were chosen for a computationally convenient scenario,
+based on multiple publications, and are not a formal demographic estimate for maize.
+Its present $N_e$ is 100; moving backward in time,
+it changes to the following `histNe` at `histGen` generations ago:
+
+```{r presetMaizeNe}
+histNe  = c(200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000)
+histGen = c(20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 800, 1200, 1600, 2000)
+```
+
+## How many segregating sites can we expect with the preset demographic models?
+
+In breeding simulations we often need a specific number of segregating sites
+for SNP markers matching real datasets and the assumed numbers of QTL.
+Here we focus on these site counts because they are easy to measure and compare
+across models, affect storage and computational requirements, and determine
+how many loci are available for assignment as markers or QTL.
+
+The table below summarizes segregating-site counts per chromosome
+for each preset demographic model, using 100 replicates for samples of
+10, 100, and 1,000 individuals and one replicate for 10,000 individuals.
+Site-count summaries are rounded to the nearest 100 for clarity.
+The table also reports the mean time to simulate one chromosome
+on a 2024 Apple M3 laptop.
+
+| Model | Individuals | Replicates | Mean | SD | Minimum | Maximum | Mean time (s) |
+|:---|---:|---:|---:|---:|---:|---:| ---:|
+| `GENERIC` | 10 | 100 | 7,300 | 400 | 6,400 | 8,200 | 0.02 |
+| `GENERIC` | 100 | 100 | 8,900 | 400 | 8,000 | 9,900 | 0.1 |
+| `GENERIC` | 1,000 | 100 | 9,900 | 400 | 9,000 | 10,600 | 1.7 |
+| `GENERIC` | 10,000 | 1 | 11,700 | — | — | — | 23.9 |
+|---|---|---|---|---|---|---| ---|
+| `CATTLE` | 10 | 100 | 233,600 | 3,700 | 223,700 | 243,200 | 0.6 |
+| `CATTLE` | 100 | 100 | 262,800 | 2,800 | 255,800 | 269,600 | 3.5 |
+| `CATTLE` | 1,000 | 100 | 267,000 | 2,600 | 258,200 | 273,100 | 50.8 |
+| `CATTLE` | 10,000 | 1 | 268,400 | — | — | — | 611.0 |
+|---|---|---|---|---|---|---| ---|
+| `WHEAT` | 10 | 100 | 164,800 | 3,400 | 156,500 | 173,100 | 0.4 |
+| `WHEAT` | 100 | 100 | 184,200 | 3,500 | 173,900 | 191,800 | 2.2 |
+| `WHEAT` | 1,000 | 100 | 186,700 | 3,100 | 179,700 | 193,000 | 32.3 |
+| `WHEAT` | 10,000 | 1 | 191,200 | — | — | — | 386.0 |
+|---|---|---|---|---|---|---| ---|
+| `MAIZE` | 10 | 100 | 191,100 | 3,500 | 181,100 | 199,000 | 0.41 |
+| `MAIZE` | 100 | 100 | 216,700 | 2,600 | 207,900 | 223,400 | 2.5 |
+| `MAIZE` | 1,000 | 100 | 221,600 | 2,400 | 215,300 | 225,500 | 35.1 |
+| `MAIZE` | 10,000 | 1 | 221,400 | — | — | — | 487.0 |
+
+Increasing the sample from 10 to 100, 1000, and 10,000 individuals
+respectively increased the mean site count by
+~22%, ~36%, and ~60% for `GENERIC`,
+~12%, ~14%, and ~15% for `CATTLE`,
+~12%, ~13%, and ~16% for `WHEAT`, and
+~13%, ~16%, and ~16% for `MAIZE`.
+Thus, increasing sample size by orders of magnitude yields relatively few
+additional sites, particularly for the `CATTLE`, `WHEAT`, and `MAIZE` models.
+The standard deviations are small relative to the means, although their
+relative sizes vary among models. Runtime increases substantially with
+sample size, even when site counts change little.
+Use the accompanying `DemographicModelsBenchmark.R` script
+to run the simulations and generate the table on your system.
+
+## What might we expect with other numbers of individuals?
+
+Increasing the sample adds segregating sites, particularly rare variants,
+but does not increase site counts in proportion to the number of individuals.
+Under a constant-size neutral coalescent,
+the expected number of segregating sites is
+$E[S_n]=4N_e\mu L H_{n-1}$ [@watterson1975Genealogical], where
+$N_e$ is effective population size,
+$\mu$ is mutation rate per base pair per generation,
+$L$ is genome region length in base pairs, and
+$H_{n-1}=\sum_{j=1}^{n-1}1/j$ with
+$n$ the number of haplotypes.
+This equation gives approximately logarithmic growth with sample size.
+For 10, 100, and 1,000 diploid individuals, $n$ is 20, 200, and 2,000,
+so the corresponding harmonic sums are
+`r H_19 = sum(1/seq_len(19)); H_19`,
+`r H_199 = sum(1/seq_len(199)); H_199`, and
+`r H_1999 = sum(1/seq_len(1999)); H_1999`.
+Using these values with the `GENERIC` parameters gives
+`r round(4*100*1e-8*1e8*c(H_19, H_199, H_1999), digits=-2)` expected segregating sites
+(rounded to the nearest 100).
+However, population-size changes alter this relationship
+(see @zivkovic2008Second and references therein),
+as we can see by comparing these expected values under constant demography
+with the values observed in the simulations above.
+
+Following the theory from @zivkovic2008Second,
+we can predict the expected number of segregating sites and their variance
+under the preset demographic models.
+For comparison with the simulations above, we predict the mean for the
+`GENERIC` model with 10, 100, 1,000, and 10,000 individuals:
+
+```{r predictSegSitesMoments}
+for (nInd in c(10, 100, 1000, 10000)) {
+  cat("GENERIC", nInd, "\n")
+  tmp = predictSegSitesMoments(n=nInd * 2, Ne=100, bp=1e8, mutRate=1e-8,
+                               histNe=c(500,1500,6000,12000,100000),
+                               histGen=c(100,1000,10000,100000,1000000))
+  print(tmp[c("expectedS")])
+}
+```
+
+## Adjusting the mutation rate in `runMacs()`
+
+The preset demographic models can generate more segregating sites
+than we need for a particular simulation.
+We can use the `mutRate` argument in `runMacs()`
+to reduce the mutation rate and hence the expected number of segregating sites.
+For a fixed sample size, chromosome length, and demographic history,
+the expected number of segregating sites is proportional to
+$\theta=4N_e\mu L$.
+Thus, reducing the mutation rate tenfold or hundredfold
+reduces the expected number of segregating sites by the same factor.
+Reducing the mutation rate can save computation and storage,
+although the time spent simulating ancestry remains.
+The saving depends on how much computation is spent generating sites
+rather than simulating ancestry; it need not increase with sample size.
+It also reduces sequence diversity and changes other sequence-based
+statistics, so consider whether this is appropriate for the simulation's goals.
+
+For example, the `CATTLE` model generates approximately 263,000
+segregating sites per chromosome for 100 diploid individuals.
+We first predict this expectation with `predictSegSitesMoments()`,
+using 200 haplotypes:
+
+```{r presetMutationRatePrediction}
+nInd = 100
+mutRate = 9.4e-9
+Ne = 90
+bp = round(2.8e9 / 30)
+histNe = c(120,250,350,1000,1500,2000,2500,3500,7000,10000,17000,62000)
+histGen = c(3,6,12,18,24,154,454,654,1754,2354,3354,33154)
+tmp = predictSegSitesMoments(n=nInd * 2, Ne=Ne, bp=bp,
+                             mutRate=mutRate,
+                             histNe=histNe, histGen=histGen)
+expectedSites = tmp$expectedS
+expectedSites
+```
+
+To target an expectation of 10,000, 1,000, or 100 segregating sites,
+we multiply the original mutation rate by
+the ratio of the target to the predicted expectation:
+
+```{r presetMutationRateTargets}
+targetSites = c(10000, 1000, 100)
+adjustedMutRate = mutRate * targetSites / expectedSites
+data.frame(targetSites, adjustedMutRate)
+```
+
+These rates are approximately
+$3.6 \times \{10^{-10}, 10^{-11}, 10^{-12}\}$
+per base pair per generation.
+We can now compare the original and adjusted mutation rates,
+recording site counts and simulation time for three independent chromosomes.
+We use `nThreads=1` and divide elapsed time by the number of chromosomes
+so that times per chromosome are comparable with the table above.
+With parallel execution, elapsed time divided by the number of chromosomes
+instead measures throughput and is not directly comparable with these
+single-threaded timings.
+
+```{r presetMutationRate}
+mutationRates = c(mutRate, adjustedMutRate)
+nChr = 3
+for (i in seq_along(mutationRates)) {
+  cat("Mutation rate:", mutationRates[i], "\n")
+  tmp = predictSegSitesMoments(n=nInd * 2, Ne=Ne, bp=bp,
+                               mutRate=mutationRates[i],
+                               histNe=histNe, histGen=histGen)
+  cat("Expected:", tmp$expectedS, "\n")
+
+  time = system.time({
+    foundersAdjusted = runMacs(nInd=nInd, nChr=nChr, species="CATTLE",
+                               mutRate=mutationRates[i], nThreads=1)
+  })
+  cat("Realized:", foundersAdjusted@nLoci, "\n")
+  cat("Mean time per chr:", time[["elapsed"]] / nChr, "s\n")
+  cat("Object size:", object.size(foundersAdjusted), "bytes\n")
+  cat("\n")
+}
+```
+
+Further reductions in mutation rate can give diminishing runtime savings
+as ancestry simulation accounts for more of the remaining work,
+while the size of the retained genotype data continues to decrease.
+The targets are expected counts; realized counts vary across chromosomes
+and replicates. To retain exactly 10,000, 1,000, or 100 sites, target a higher
+expectation and then subsample with the `segSites` argument to `runMacs()`.
+
+---
+
+# A custom history with `runMacs2()`
+
+A simple teaching example is a population that underwent a bottleneck and
+then recovered. For example:
+
+| Generations ago | Diploid $N_e$ | Interpretation (forwards in time) |
+|:--|--:|:--|
+| 0 to less than 20 | 1,000 | Recovered population |
+| 20 to less than 100 | 100 | Bottleneck |
+| 100 and earlier | 1,000 | Ancestral population |
+
+The bottleneck can remove variation and change linkage disequilibrium (LD).
+Recovery of population size does not immediately restore the lost diversity.
+We simulate two short chromosomes to keep this example quick.
+
+```{r bottleneckModel}
+nInd = 20L
+nChr = 2L
+bp = 1e6
+genLen = 0.01
+mutRate = 1e-8
+Ne = 1000
+histGen = c(20, 100)
+histNe = c(100, 1000)
+
+bottleneckArgs = list(nInd=nInd, nChr=nChr, segSites=NULL,
+                      Ne=Ne, bp=bp, genLen=genLen, mutRate=mutRate,
+                      histNe=histNe, histGen=histGen,
+                      inbred=FALSE, ploidy=2L, nThreads=1)
+set.seed(42)
+foundersMacs = do.call(runMacs2, bottleneckArgs)
+foundersMacs@nLoci
+```
+
+## Seeing the MaCS command
+
+`runMacs2()` translates this simple model without requiring command-line
+expertise. Its `returnCommand` option exposes that translation:
+
+```{r macsCommand}
+command = do.call(runMacs2, c(bottleneckArgs, list(returnCommand=TRUE)))
+cat(command)
+```
+
+For diploids the relevant conversions are:
+
+| MaCS argument | Meaning | This example |
+|:--|:--|:--|
+| Initial length | Physical sequence length in bp | `1e6` |
+| `-t` | $4N_e\mu$, **per base pair** | `4e-5` |
+| `-r` | $4N_e\rho$, **per base pair** | `4e-5` |
+| `-eN t x` | Time $t=g/(4N_e)$; new size relative to present $N_e$ | `-eN 0.005 0.1` and `-eN 0.025 1` |
+
+Here $\rho$ is the recombination rate per base pair per generation.
+All event times and size ratios use the same present reference size,
+not the size in the preceding interval.
+`MaCS` shares much of the demographic syntax of Hudson's ms,
+but its mutation and recombination arguments above are per-base quantities;
+do not substitute whole-region ms parameters. See the
+[MaCS documentation](https://github.com/gchen98/macs#readme) and the
+[`ms` manual](https://home.uchicago.edu/rhudson1/source/mksamples.html)
+(`msdoc.pdf` in the linked source archive) for more detail on the shared demographic options.
+
+## Diploid and polyploid simulations
+
+All the above examples use `ploidy=2`,
+including for `WHEAT`,
+which represents an allohexaploid with three diploid subgenomes.
+We use the diploid coalescent simulation for `WHEAT`
+because the subgenomes have largely independent histories.
+This does not hold for autopolyploids.
+For such cases,
+`runMacs2()` multiplies `Ne` and `histNe` by `ploidy / 2`
+before constructing the `MaCS` command, regardless of the `inbred` argument.
+For example, `ploidy=4` doubles the effective sizes.
+This follows the coalescent scaling for autotetraploids with tetrasomic
+inheritance described by @arnold2012Extending.
+Changing `ploidy` in `runMacs()` does not rescale the preset effective sizes.
+In both functions, `inbred=TRUE` samples one haplotype per individual and
+copies it across all homologues; it does not simulate ancestral selfing.
+
+## When a MaCS command becomes unmanageable
+
+`runMacs2()` supports population-size changes and a simple two-population
+split (`split` is in generations ago). More elaborate structure requires
+`runMacs(manualCommand=...)`; but
+sample allocations,
+backward-in-time population joins,
+migration, and population-specific events must be coordinated
+(see the [MaCS documentation](https://github.com/gchen98/macs#readme) and the
+[`ms` manual](https://home.uchicago.edu/rhudson1/source/mksamples.html)).
+
+For richer models and efficient storage and analysis of large sets of genomes,
+we can use the `Python` package `msprime` [@baumdicker2022Efficient]
+through the `R` package `reticulate`.
+
+---
+
+# Simulating with `msprime` through `reticulate`
+
+`msprime` is an efficient, widely used coalescent simulator
+[@baumdicker2022Efficient]; see the [msprime website](https://tskit.dev/software/msprime.html).
+Related projects include [`stdpopsim`](https://popsim-consortium.github.io/stdpopsim-docs),
+which provides a catalog of published demographic models [@lauterbur2023stdpopsimzoo],
+and [`demes`](https://popsim-consortium.github.io/demes-docs),
+which provides a standard format for describing and sharing demographic models
+that can be visualized with `demesdraw` [@gower2022Demes].
+
+One reason `msprime` is efficient is that it stores ancestry and mutations
+in a tree sequence, a compact representation of gene trees along the genome.
+We call this population genetics object as an ancestral recombination graph (ARGs),
+(see @wong2024General and [tree-sequence introduction](https://tskit.dev/tutorials/what_is.html)).
+
+## Installation
+
+`msprime` is a `Python` package, so we use `reticulate` to call it from `R`.
+Run the following setup once before rendering the `Python` examples.
+It installs `reticulate` and declares the `Python` packages required below.
+
+```{r pythonInstall, eval=FALSE}
+install.packages("reticulate")
+reticulate::py_require(c("msprime", "demesdraw", "stdpopsim"))
+```
+
+The `R` chunks calling `Python` below are displayed but skipped in ordinary
+site builds. After running the installation chunk manually, set
+`runPython = TRUE` in the top (setup) chunk to execute them while rendering.
+
+## Set up demography
+
+Here we simulate the `GENERIC` demographic model presented above,
+with 20 diploid individuals, two independent chromosomes each of length $10^8$ bp,
+with mutation and recombination rates of $10^{-8}$ per bp per generation.
+
+```{r msprimeDemography, eval=runPython}
+nInd = 20L
+nChr = 2L
+bp = 1e8
+recRate = 1e-8
+mutRate = 1e-8
+Ne = 100
+histNe = c(500, 1500, 6000, 12000, 100000)
+histGen = c(100, 1000, 10000, 100000, 1000000)
+
+msprime = reticulate::import("msprime")
+
+# Build demographic model
+demography = msprime$Demography()
+demography$add_population(name="population", initial_size=Ne)
+for(i in seq_along(histGen)){
+  demography$add_population_parameters_change(
+    time=histGen[i], initial_size=histNe[i], population="population")
+}
+
+# Inspect the model
+print(demography)
+cat(reticulate::py_str(demography$debug()), "\n")
+```
+
+While the demography debugger is informative,
+a `demesdraw` plot is more intuitive.
+
+```{r demesdrawGeneric, eval=runPython}
+#| fig.cap: "GENERIC demographic model"
+#| out.width: "75%"
+#| fig.align: "center"
+demesdraw = reticulate::import("demesdraw")
+ax = demesdraw$tubes(demography$to_demes(), log_time=TRUE)
+
+plotFile = tempfile(fileext=".png")
+ax$figure$savefig(plotFile, dpi=150L, bbox_inches="tight")
+knitr::include_graphics(plotFile)
+```
+
+## Simulate ancestry and mutations
+
+Now we are ready to simulate from the model.
+
+```{r msprimeSimulate, eval=runPython}
+# Simulate ancestry and mutations for each chromosome and
+# store outputs in a list of tree sequences
+treeSequences = vector("list", nChr)
+for(chr in seq_len(nChr)){
+  ancestry = msprime$sim_ancestry(
+    samples=nInd, ploidy=2L, demography=demography,
+    sequence_length=bp, recombination_rate=recRate)
+  treeSequences[[chr]] = msprime$sim_mutations(
+    ancestry, rate=mutRate, model=msprime$BinaryMutationModel())
+}
+
+# Inspect the tree sequences
+for (chr in seq_along(treeSequences)) {
+  cat("\nChromosome", chr, "\n")
+  cat(reticulate::py_str(treeSequences[[chr]]), "\n")
+}
+tmp = sapply(treeSequences, function(ts) ts$nbytes)
+cat("Tree-sequence data size: ", sum(tmp), " bytes\n")
+```
+
+`msprime` supports multiple ancestry and mutation models [@baumdicker2022Efficient].
+Above we used the default Hudson coalescent model with recombination
+(`MaCS` uses the SMC(k) approximation, also available in recent `msprime` versions) and
+the binary mutation model (to match the output of `MaCS` and the format for `AlphaSimR`).
+Our comparison of the SMC(k) and Hudson models
+under the demographic scenarios and parameter settings considered here
+showed that SMC(k) was faster with up to 10,000 haploid samples per population,
+whereas Hudson was faster with 100,000 or more haploid samples per population.
+There is also a difference in how mutations are placed along the genome.
+`MaCS` uses the infinite-sites mutation model
+where each mutation occurs at a unique position along the genome.
+In `msprime$sim_mutations()`, `discrete_genome=FALSE` places mutations
+on continuous coordinates, giving an infinite-sites model.
+The default, `discrete_genome=TRUE`, uses integer positions and allows
+multiple mutations at the same site. This choice concerns mutation placement
+and is separate from the allele-state model, such as `BinaryMutationModel()`.
+
+## Convert maps and haplotypes to a `MapPop` {#convert-maps-and-haplotypes-to-a-mappop}
+
+We now extract a haplotype matrix and genetic map
+for each chromosome and pass these to `newMapPop()`.
+The "genotype" matrix from `msprime` stores alleles for individual haplotypes,
+with sites in rows,
+so we transpose it to get haplotypes in rows for `AlphaSimR`.
+For the diploid sample above,
+consecutive pairs of haplotypes belong to the same individual.
+
+```{r alphasimrImport, eval=runPython}
+# Prepare inputs for AlphaSimR
+haplotypes = genMap = vector("list", nChr)
+genLen = numeric(nChr)
+for(chr in seq_len(nChr)){
+  # Extract haplotype and physical map for each chromosome
+  ts = treeSequences[[chr]]
+  haplo = t(ts$genotype_matrix())
+  pos = ts$tables$sites$position
+
+  # Retain sites segregating in the sampled founders
+  freq = colMeans(haplo)
+  keep = freq > 0 & freq < 1
+  haplotypes[[chr]] = haplo[, keep, drop=FALSE]
+  pos = pos[keep]
+
+  # Genetic map and chromosome length in Morgans
+  genMap[[chr]] = pos * recRate
+  genLen[chr] = ts$sequence_length * recRate
+}
+cat("Approximate memory usage for haplotypes: ", object.size(haplotypes), " bytes\n")
+
+# Convert to AlphaSimR's MapPop object
+foundersMsprime = newMapPop(genMap=genMap, haplotypes=haplotypes,
+                            inbred=FALSE, ploidy=2L, genLen=genLen)
+print(foundersMsprime)
+print(foundersMsprime@nLoci)
+haps = pullSegSiteHaplo(foundersMsprime)
+str(haps)
+```
+
+The binary mutation model above supplies alleles coded as 0 and 1
+as expected by `AlphaSimR`.
+We remove sites fixed in the sampled founders,
+keeping the haplotype columns and map positions in the same order.
+Multiplying positions by the constant recombination rate gives Morgans.
+Passing `genLen` preserves the full simulated chromosome,
+including the region beyond the last retained site.
+Without `genLen`, `newMapPop()` ends each chromosome at its last segregating site.
+We report the approximate R object size of the haplotype matrices.
+For one chromosome with `nInd * ploidy` haplotypes and `nLoci` sites,
+the matrix has `nInd * ploidy * nLoci` entries. R integer matrices use
+four bytes per entry and double matrices use eight, plus object overhead.
+To estimate the size of the haplotype matrices in bytes,
+multiply the number of entries by four for an integer matrix or by eight
+for a double matrix.
+Divide the bytes by `2^20` for MiB or by `2^30` for GiB.
+Tree sequences do not need to store this dense matrix,
+allowing them to represent much larger sets of genomes.
+If `nLoci` is too large,
+consider reducing the mutation rate in `msprime$sim_mutations`.
+
+This import assumes the contemporary diploid sample and constant
+recombination rate used above.
+Other sampling designs need explicit pairing of haplotypes,
+and variable recombination maps need cumulative genetic distances.
+The `MapPop` stores haplotypes and maps,
+while `treeSequences` also retain the ancestry information.
+
+---
+
+# Simulating from `stdpopsim` demographic models through `reticulate`
+
+`stdpopsim` provides a catalog of published demographic models and
+species-specific genome parameters [@lauterbur2023stdpopsimzoo].
+We illustrate a Holstein-Friesian cattle model and a rice domestication model.
+For short examples, we simulate a region of $10^6$ bp and
+sample a small number of individuals.
+
+```{r stdpopsimSetup, eval=runPython}
+reticulate::py_require(c("msprime", "demesdraw", "stdpopsim"))
+stdpopsim = reticulate::import("stdpopsim")
+demesdraw = reticulate::import("demesdraw")
+msprime = reticulate::import("msprime")
+
+engine = stdpopsim$get_engine("msprime")
+
+showModel = function(model){
+  ax = demesdraw$tubes(model$model$to_demes(), log_time=TRUE)
+  plotFile = tempfile(fileext=".png")
+  ax$figure$savefig(plotFile, dpi=150L, bbox_inches="tight")
+  knitr::include_graphics(plotFile)
+}
+```
+
+The default `msprime` engine in `stdpopsim` simulates ancestry and nucleotide
+mutations. To generate binary haplotypes, we replace those mutations with
+binary mutations on the same ancestry using `keep=FALSE`.
+Direct mutation-model selection has been requested in
+[stdpopsim issue #1895](https://github.com/popsim-consortium/stdpopsim/issues/1895).
+
+## Cattle
+
+We select the Holstein-Friesian model of @macleod2013Inferring from the
+[stdpopsim catalog](https://popsim-consortium.github.io/stdpopsim-docs/stable/catalog.html#sec_catalog_BosTau),
+which uses the same population-size history as the `CATTLE` preset in `runMacs()`.
+Here we simulate a shorter region.
+
+```{r stdpopsimCattle, eval=runPython}
+#| fig.cap: "Holstein-Friesian demographic model"
+#| out.width: "75%"
+#| fig.align: "center"
+species = stdpopsim$get_species("BosTau")
+model = species$get_demographic_model("HolsteinFriesian_1M13")
+showModel(model)
+
+contig = species$get_contig(
+  length=1e6,
+  mutation_rate=model$mutation_rate,
+  recombination_rate=model$recombination_rate)
+tsCattle = engine$simulate(
+  model, contig, samples=reticulate::dict(Holstein_Friesian=20L))
+tsCattle = msprime$sim_mutations(
+  tsCattle, rate=contig$mutation_rate,
+  model=msprime$BinaryMutationModel(), keep=FALSE)
+  # keep=FALSE to replace nucleotide mutations with binary mutations
+recRateCattle = contig$recombination_map$mean_rate
+
+cat(reticulate::py_str(tsCattle), "\n")
+```
+
+To import these founders, set `treeSequences = list(tsCattle)`,
+`nChr = 1L`, and `recRate = recRateCattle`, then run the code in
+[Convert maps and haplotypes to a `MapPop`](#convert-maps-and-haplotypes-to-a-mappop).
+
+## Rice
+
+The rice model of [Caicedo et al. (2007)](https://doi.org/10.1371/journal.pgen.0030163)
+describes domestication bottlenecks and migration among wild rice,
+indica, and tropical japonica (see the
+[stdpopsim catalog](https://popsim-consortium.github.io/stdpopsim-docs/stable/catalog.html#sec_catalog_OrySat)).
+Here we sample 10 diploid individuals from each population:
+wild rice (`RUF`), indica (`IND`), and tropical japonica (`TRJ`).
+This gives 30 individuals and 60 sampled haplotypes in total.
+
+```{r stdpopsimRice, eval=runPython}
+#| fig.cap: "Rice demographic model"
+#| out.width: "75%"
+#| fig.align: "center"
+species = stdpopsim$get_species("OrySat")
+model = species$get_demographic_model("BottleneckMigration_3C07")
+showModel(model)
+
+contig = species$get_contig(
+  length=1e6, mutation_rate=model$mutation_rate,
+  recombination_rate=model$recombination_rate)
+tsRice = engine$simulate(
+  model, contig, samples=reticulate::dict(RUF=10L, IND=10L, TRJ=10L))
+tsRice = msprime$sim_mutations(
+  tsRice, rate=contig$mutation_rate,
+  model=msprime$BinaryMutationModel(), keep=FALSE)
+  # keep=FALSE to replace nucleotide mutations with binary mutations
+recRateRice = contig$recombination_map$mean_rate
+
+cat(reticulate::py_str(tsRice), "\n")
+```
+
+To import these founders, set `treeSequences = list(tsRice)`,
+`nChr = 1L`, and `recRate = recRateRice`, then run the code in
+[Convert maps and haplotypes to a `MapPop`](#convert-maps-and-haplotypes-to-a-mappop).
+The resulting `MapPop` contains founders from all three rice populations;
+population labels remain in the tree sequence and are not transferred by
+this conversion.
+
+The examples above simulate neutral demographic histories without selection.
+If selection is important for the simulation’s goals,
+a forward-in-time burn-in can establish its effects on genomes
+before the breeding simulation begins.
+`stdpopsim` supports simulations with selection
+through its `SLiM` engine [@gower2025accessible].
+Alternatively, we can use `AlphaSimR` to simulate selection
+after the founders have been generated [@bancic2025Plant].
+
+---
+
+# Continue a breeding simulation
+
+Founder genomes generated with `runMacs()`, `runMacs2()`, `msprime`, or
+`stdpopsim` can all be used for breeding simulations once stored in a `MapPop`.
+Here we continue with `foundersMsprime`.
+
+```{r breeding, eval=runPython}
+SP = SimParam$new(foundersMsprime)
+SP$addTraitA(nQtlPerChr=10, mean=0, var=1)
+SP$setVarE(h2=0.5)
+pop = newPop(foundersMsprime, simParam=SP)
+meanG(pop)
+varG(pop)
+
+progeny = randCross(pop, nCrosses=10, nProgeny=5, simParam=SP)
+progeny@nInd
+meanG(progeny)
+varG(progeny)
+```
+
+---
+
+# References
