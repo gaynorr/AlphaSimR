@@ -177,6 +177,21 @@ test_that("setEBV appends rather than replaces when asked", {
   expect_equal(ncol(ebv(replaced)), 1L)
 })
 
+test_that("setEBV returns only the estimates when onlyValues is TRUE", {
+  d = gsPop(nInd=20, nQtl=5, nSnp=5)
+  ans = RRBLUP(d$pop, simParam=d$SP)
+
+  pred = setEBV(d$pop, ans, simParam=d$SP)
+  est = setEBV(d$pop, ans, onlyValues=TRUE, simParam=d$SP)
+
+  # The matrix is the one that would have been written to the EBV slot,
+  # and append has no effect because nothing is written
+  expect_true(is.matrix(est))
+  expect_equal(est, ebv(pred))
+  expect_equal(setEBV(pred, ans, append=TRUE, onlyValues=TRUE,
+                      simParam=d$SP), est)
+})
+
 test_that("a model fitted on genetic values recovers the QTL effects", {
   # Needs a few hundred individuals for the effects to be recoverable
   skip_on_cran()

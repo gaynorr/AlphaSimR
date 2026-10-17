@@ -1660,9 +1660,13 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param onlyValues should only the estimated values be returned,
+#' see return. When TRUE, append is ignored and the population is
+#' not changed.
 #'
 #'
-#' @return Returns an object of \code{\link{Pop-class}}
+#' @return Returns an object of \code{\link{Pop-class}} if
+#' onlyValues=FALSE, if onlyValues=TRUE a matrix is returned
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1685,9 +1689,13 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Evaluate accuracy
 #' cor(gv(pop), ebv(pop))
 #'
+#' #Return the estimates without changing the population
+#' est = setEBV(pop, ans, onlyValues=TRUE, simParam=SP)
+#'
 #' @export
 setEBV = function(pop, solution, value="gv", targetPop=NULL,
-                  append=FALSE, simParam=NULL, nThreads=NULL){
+                  append=FALSE, simParam=NULL, nThreads=NULL,
+                  onlyValues=FALSE){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1884,6 +1892,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 
   }else{
     stop(paste0("value=",value," is not a valid option"))
+  }
+
+  if(onlyValues){
+    return(ebv)
   }
 
   if(append){

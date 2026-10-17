@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9020
 
+* Added `onlyValues` to `setEBV`. When `TRUE`, the estimated values are returned as a matrix and the population is left unchanged, as `onlyPheno` does for `setPheno`, `setPhenoGCA` and `setPhenoProgTest`.
+
 * Fixed the intercept of the genetic values predicted by single trait `fastRRBLUP`, which was found against the centered marker genotypes but used with the uncentered ones, shifting every genetic value predicted with `setEBV` by the same constant, the mean genotype times the marker effects. Predictions of genetic values now agree with `RRBLUP`. Breeding values and the ranking of individuals were not affected.
 
 * Added multiple trait models to `fastRRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`. Give `traits` more than one trait and the traits are fitted together, with unstructured covariance matrices among the traits for the marker effects and for the errors, estimated by REML. Every trait must be recorded on every individual. Single trait fits are exactly the same as before.
