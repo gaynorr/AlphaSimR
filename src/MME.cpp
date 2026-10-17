@@ -1427,8 +1427,10 @@ arma::Mat<unsigned char> decodeChipDosage(const PackedGeno& g,
 // tables hold every trait's contribution for each bit pattern side by side,
 // so the half byte of a haplotype is read and looked up once for all of the
 // traits, and an individual's results are contiguous in Tt. The traits share
-// the reads of the genotypes, while the additions grow with the number of
-// traits.
+// the reads of the genotypes, but with the markers packed those reads are
+// cheap, and the additions, which grow with the number of traits, take most
+// of the time. A product for several traits therefore costs about as much as
+// one product per trait.
 //
 // The work is split over blocks of records. A block owns its own columns of
 // Tt and every record sums the columns of the genotypes in order, so the
