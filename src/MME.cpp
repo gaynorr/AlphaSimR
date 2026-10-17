@@ -1689,6 +1689,12 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
       (Ve.n_rows!=nT) || (Ve.n_cols!=nT) ){
     Rcpp::stop("fastRRBLUP: Vu and Ve must be square with one row per trait");
   }
+  // Vu is checked on its own scale. After the transformation below its
+  // eigenvalues are measured against those of Ve^-1, so an error variance
+  // close to zero for one trait could make a clearly negative variance of
+  // another look like rounding. A negative eigenvalue at rounding level is
+  // set to zero, and the Vu returned is the one fitted.
+  Vu = psdKernel(Vu, "fastRRBLUP: Vu must be positive semidefinite");
 
   // The canonical transformation
   arma::mat Le;
@@ -1707,20 +1713,15 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
     Rcpp::stop("fastRRBLUP: decomposition of Vu failed");
   }
   // These are the eigenvalues of a covariance matrix among traits, not of a
-  // cross product of records, so rankCutoff does not apply. An eigenvalue
-  // that is negative beyond rounding means Vu is not a covariance matrix, and
-  // one that is negative within rounding is a direction with no genetic
-  // variance. A positive eigenvalue is the variance ratio of its transformed
-  // trait and is kept however small it is next to the largest, because the
-  // ratios of different transformed traits need not be comparable: an error
-  // variance close to zero for one trait makes its ratio huge without making
-  // any other trait's ratio negligible.
-  double lamMax = lam.max();
-  if(!(lamMax>0.0)){
+  // cross product of records, so rankCutoff does not apply. Vu has been
+  // checked above, so a negative eigenvalue here is rounding and a direction
+  // with no genetic variance. A positive eigenvalue is the variance ratio of
+  // its transformed trait and is kept however small it is next to the
+  // largest, because the ratios of different transformed traits need not be
+  // comparable: an error variance close to zero for one trait makes its ratio
+  // huge without making any other trait's ratio negligible.
+  if(!(lam.max()>0.0)){
     Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
-  }
-  if(lam.min() < -1.0e-8*lamMax){
-    Rcpp::stop("fastRRBLUP: Vu must be positive semidefinite");
   }
   lam.elem(find(lam<0.0)).zeros();
   arma::vec sqrtLam = sqrt(lam);

@@ -970,6 +970,16 @@ public:
     arma::mat Ys = removeLeastSquares(Xr, Yin, B0);
     ts = traitScale(Ys);
     Y = ts.Y;
+    // The smallest eigenvalue Ve may take, as in the single trait solver: a
+    // small fraction of the least residual variance of a standardized trait.
+    // Without it a response that the markers fit almost exactly drives Ve, and
+    // with it V, toward singular, where the likelihood cannot be evaluated.
+    arma::rowvec vyFloor = arma::sum(arma::square(Y), 0)/double(n-p);
+    double vyMin = vyFloor.min();
+    if(!(vyMin>0.0) || !std::isfinite(vyMin)){
+      vyMin = 1.0;
+    }
+    veFloor = 1e-8*vyMin;
     // Each term is fitted on the scale of the mean diagonal of its G_i, so the
     // Newton steps and the eigenvalue floor on their Hessian behave the same
     // whatever the units of the markers. Vu_i is returned to those units at
@@ -1049,6 +1059,29 @@ public:
   FixedDesign fd;
   TraitScale ts;
   arma::mat B0;
+  double veFloor = 0.0;
+
+  // Raises any eigenvalue of Ve below the floor to it
+  arma::mat floorVe(const arma::mat& Ve) const{
+    arma::vec val;
+    arma::mat vec;
+    if(!arma::eig_sym(val, vec, 0.5*(Ve+Ve.t())) || (val.min()>=veFloor)){
+      return Ve;
+    }
+    val.elem(find(val<veFloor)).fill(veFloor);
+    arma::mat out = vec*arma::diagmat(val)*vec.t();
+    return 0.5*(out+out.t());
+  }
+
+  // Whether Ve is at or above the floor, allowing for the rounding of a
+  // matrix that was floored exactly
+  bool aboveFloor(const arma::mat& Ve) const{
+    arma::vec val;
+    if(!arma::eig_sym(val, 0.5*(Ve+Ve.t()))){
+      return false;
+    }
+    return val.min() >= 0.5*veFloor;
+  }
 
   // Starting values. Half of each trait's residual variance after the least
   // squares fit goes to the error and half is shared equally among the terms
@@ -1085,13 +1118,18 @@ public:
       pt.Lf[i] = held(i) ? arma::mat(nT, nT, arma::fill::zeros) :
         lowerChol(pt.V[i]);
     }
-    pt.V[k] = Ve;
-    pt.Lf[k] = lowerChol(Ve);
+    pt.V[k] = floorVe(Ve);
+    pt.Lf[k] = lowerChol(pt.V[k]);
+    pt.V[k] = pt.Lf[k]*pt.Lf[k].t();
   }
 
   // Fills in the REML log-likelihood at pt.V, with the factors the derivatives
   // start from. Returns false if V, or C, is not positive definite.
   bool evaluate(MvMkPoint& pt) const{
+    if(!aboveFloor(pt.V[k])){
+      pt.ok = false;
+      return false;
+    }
     if(side==Side::record){
       return evaluateRecord(pt);
     }
@@ -1188,19 +1226,35 @@ public:
       if(!accepted){
         // The EM update V + V*S*V/r, with S the score matrix of V and r the
         // rank of its term, or an upper bound for it, which only shortens the
-        // step and keeps V positive semidefinite
-        next.V = pt.V;
-        next.Lf = pt.Lf;
+        // step and keeps V positive semidefinite. Ve is held at its floor. If
+        // the result cannot be evaluated, the step is halved toward the
+        // current point, which every point between the two keeps positive
+        // semidefinite.
+        std::vector<arma::mat> target(nMat);
         for(arma::uword g : freeMat){
           arma::mat S = gradMatrix(gV, g*nPar, nT, rowIdx, colIdx);
           S = S + S.t(); // the diagonal doubles, as gradParam halves it
           double r = (g<k) ? rankBound(g) : double(n);
           arma::mat Vn = pt.V[g] + pt.V[g]*S*pt.V[g]/r;
-          next.V[g] = 0.5*(Vn+Vn.t());
-          next.Lf[g] = lowerChol(next.V[g]);
-          next.V[g] = next.Lf[g]*next.Lf[g].t();
+          target[g] = 0.5*(Vn+Vn.t());
         }
-        if(!evaluate(next)){
+        bool emOk = false;
+        double alpha = 1.0;
+        for(int h=0; (h<=10) && !emOk; ++h){
+          next.V = pt.V;
+          next.Lf = pt.Lf;
+          for(arma::uword g : freeMat){
+            arma::mat Vg = pt.V[g] + alpha*(target[g]-pt.V[g]);
+            if(g==k){
+              Vg = floorVe(Vg);
+            }
+            next.Lf[g] = lowerChol(Vg);
+            next.V[g] = next.Lf[g]*next.Lf[g].t();
+          }
+          emOk = evaluate(next);
+          alpha *= 0.5;
+        }
+        if(!emOk){
           Rcpp::stop("%s: REML iteration left the parameter space", name);
         }
       }
@@ -1417,7 +1471,14 @@ private:
                          arma::solve(arma::trimatl(pt.Lc), rhs, fast), fast);
     arma::mat E = Y - multW(pt, pt.sol);
     pt.A = E*pt.VeInv;
-    double yPy = arma::accu(Y%pt.A);
+    // y'*P*y = e'*R^-1*e + a'*a for the whitened effects a. This is equal to
+    // y'*R^-1*e, but every term is a sum of squares, so nothing cancels: with
+    // the residual variance close to zero, y'*R^-1*e would subtract numbers
+    // amplified by Ve^-1 and lose the contribution of the random effects.
+    double yPy = arma::accu(E%pt.A);
+    if(nT*p<pt.sol.n_elem){
+      yPy += arma::accu(arma::square(pt.sol.tail(pt.sol.n_elem-nT*p)));
+    }
     pt.LL = -0.5*(double(N-p*nT)*std::log(2.0*arma::datum::pi) +
       double(n)*logDetVe + logDetC + yPy);
     pt.ok = std::isfinite(pt.LL);

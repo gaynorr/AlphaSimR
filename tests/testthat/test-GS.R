@@ -709,6 +709,8 @@ test_that("multiple trait fastRRBLUP rejects unusable variance components", {
   expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=diag(c(1,1,0)),
                           simParam=d$SP), "positive definite")
   expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=-mvVu, Ve=mvVe,
+                          simParam=d$SP), "positive semidefinite")
+  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=0*mvVu, Ve=mvVe,
                           simParam=d$SP), "not positive")
 })
 
@@ -716,6 +718,15 @@ test_that("multiple trait fastRRBLUP rejects an indefinite Vu", {
   d = mvPop(nInd=40, nSnp=10)
   expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=diag(c(0.01,0.01,-0.005)),
                           Ve=mvVe, simParam=d$SP), "positive semidefinite")
+})
+
+test_that("multiple trait fastRRBLUP checks Vu on its own scale", {
+  # An error variance close to zero for the second trait would make the
+  # first trait's negative variance look like rounding after whitening
+  d = mvPop(nInd=40, nSnp=10)
+  expect_error(fastRRBLUP(d$pop, traits=1:2, Vu=diag(c(-0.01, 0.01)),
+                          Ve=diag(c(1, 1e-14)), simParam=d$SP),
+               "positive semidefinite")
 })
 
 test_that("multiple trait fastRRBLUP warns when maxIter is reached", {
@@ -738,6 +749,25 @@ test_that("multiple trait fastRRBLUP with diagonal covariance matrices fits each
                    simParam=d$SP)
   expect_gt(max(abs(addEff(one))), 0)
   expect_equal(addEffAll(ans)[, 2], addEff(one), tolerance=1e-6)
+})
+
+test_that("models name a response that is not one column per trait", {
+  d = mvPop(nInd=60, nSnp=12)
+  # Random values are a single column whatever traits are asked for
+  for(fit in list(RRBLUP_D, RRBLUP_GCA, RRBLUP_SCA)){
+    ans = fit(d$pop, traits=1:2, use="rand", simParam=d$SP)
+    expect_equal(length(ans@gv), 1L)
+    expect_equal(dim(ans@Ve), c(1L, 1L))
+  }
+  # A function of the traits returning two columns
+  pair = function(x) x[, 1:2]
+  ans = fastRRBLUP(d$pop, traits=pair, Vu=mvVu[1:2, 1:2], Ve=mvVe[1:2, 1:2],
+                   simParam=d$SP)
+  expect_equal(dimnames(ans@Vu), list(c("Response1","Response2"),
+                                      c("Response1","Response2")))
+  expect_equal(ans@gv[[2]]@name, "est_GV_Response2")
+  ans = RRBLUP_D(d$pop, traits=pair, simParam=d$SP)
+  expect_equal(rownames(ans@Vu)[1:2], c("a:Response1", "a:Response2"))
 })
 
 test_that("models accept a function of the traits that returns a vector", {

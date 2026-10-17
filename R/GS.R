@@ -114,10 +114,30 @@ blockVu = function(Vu, terms, traits){
 #' @keywords internal
 traitMatrix = function(Ve, traits){
   Ve = as.matrix(Ve)
-  if(length(traits)>1){
+  if( (length(traits)>1) & (nrow(Ve)==length(traits)) ){
     dimnames(Ve) = list(traits, traits)
   }
   return(Ve)
+}
+
+#' @title Names of the responses
+#'
+#' @description The names given to a fit's traits. They are the names of the
+#' traits asked for when there is one per column of the responses. A
+#' response that is not one column per trait, such as random values or a
+#' function of the traits returning several columns, is named "Response1",
+#' "Response2" and so on, unless it is a single column, which keeps the name
+#' it has always had.
+#'
+#' @param traits the names of the traits asked for
+#' @param nResponse the number of columns of the responses
+#'
+#' @keywords internal
+responseNames = function(traits, nResponse){
+  if( (nResponse==1) | (length(traits)==nResponse) ){
+    return(traits)
+  }
+  return(paste0("Response", seq_len(nResponse)))
 }
 
 #' @title Fast RR-BLUP
@@ -230,6 +250,7 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   traits = convertTraitsToNames(traits, simParam)
   nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
   if(nTraits>1){
     checkCompleteRecords(y)
   }
@@ -722,6 +743,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
   if(nTraits>1){
     checkCompleteRecords(y)
   }
@@ -1028,6 +1050,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
   if(nTraits>1){
     checkCompleteRecords(y)
   }
@@ -1360,6 +1383,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   #Fit model
   nTraits = ncol(y)
+  traits = responseNames(traits, nTraits)
   if(nTraits>1){
     checkCompleteRecords(y)
   }

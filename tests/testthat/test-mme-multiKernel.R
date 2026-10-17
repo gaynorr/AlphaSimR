@@ -882,6 +882,23 @@ test_that("MULTITRAIT BOUNDARY a kernel within the span of X is held at zero", {
   }
 })
 
+test_that("MULTITRAIT RESIDUAL a response the markers fit exactly still gives an answer", {
+  # With no noise the residual variance goes toward zero, where the
+  # likelihood has to be summed from squares to keep its precision. The two
+  # sides must still agree, and the fit must still recover the signal.
+  d = simTwoKernelsMV()
+  U = matrix(rep(c(1, -1, 0.5, 0.2, 0, -0.3), length.out=ncol(d$M1)*3),
+             nrow=ncol(d$M1), ncol=3)
+  Y = d$X %*% matrix(1, 2, 3) + d$M1 %*% U
+  rec = suppressWarnings(fitSide(Y, d$X, list(d$M1, d$M2), list(), TRUE, 1))
+  coef = suppressWarnings(fitSide(Y, d$X, list(d$M1, d$M2), list(), TRUE, 2))
+  expect_true(is.finite(rec$LL))
+  expect_true(is.finite(coef$LL))
+  expect_equal(rec$LL, coef$LL, tolerance=1e-6)
+  fitted = d$M1 %*% coef$u[[1]] + d$M2 %*% coef$u[[2]]
+  expect_equal(cor(c(fitted), c(d$M1 %*% U)), 1, tolerance=1e-4)
+})
+
 test_that("MULTITRAIT MAXITER reaching the iteration limit gives a warning", {
   d = simTwoKernelsMV()
   expect_warning(solveRRBLUPMK(d$Y, d$X, list(d$M1, d$M2), maxIter=2L),
