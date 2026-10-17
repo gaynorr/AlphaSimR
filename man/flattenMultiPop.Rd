@@ -4,13 +4,23 @@
 \alias{flattenMultiPop}
 \title{Flatten a MultiPop object to a specified depth}
 \usage{
-flattenMultiPop(x, level = 1)
+flattenMultiPop(x, level = 1, preserveNames = "auto")
 }
 \arguments{
 \item{x}{A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.}
 
 \item{level}{Integer scalar >= 1. Number of \code{MultiPop} levels to
 preserve.}
+
+\item{preserveNames}{Character scalar controlling how to handle names when
+flattening. One of:  \cr
+- \code{"auto"} (default): Keep names only if all are present and
+    unique after flattening; otherwise drop them.  \cr
+- \code{"concatenate"}: Prefix child names with parent names using
+    underscore separator. Keep names only if resulting names are unique.  \cr
+- \code{"force"}: Always keep concatenated names, making them unique
+    via \code{\link{make.unique}} if duplicates are found (with a warning).  \cr
+- \code{"none"}: Drop all names.}
 }
 \value{
 If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
@@ -33,6 +43,14 @@ The \code{level} argument controls how many levels of nesting are preserved.  \c
 
 If \code{level} is greater than or equal to the nesting depth, the original
 object is returned unchanged.
+
+The \code{preserveNames} argument allows control over name preservation during
+flattening. This is useful when you want to track the source of flattened
+populations through their hierarchical names. The default \code{"auto"} mode
+is conservative: names are kept only when they are meaningful (all present
+and unique). Use \code{"concatenate"} to always build hierarchical names
+(when possible), \code{"force"} to guarantee names with uniqueness enforcement,
+or \code{"none"} to explicitly discard all names.
 }
 \examples{
 # Create founder haplotypes
@@ -46,16 +64,27 @@ SP = SimParam$new(founderPop)
 pop = newPop(founderPop, simParam=SP)
 
 # Create a multi-population with down to level 3 nesting
-mp_nested = newMultiPop(pop[1:2],
-                        newMultiPop(pop[3:4],
-                                    newMultiPop(pop[5:7], pop[8:12])))
+mp_nested = newMultiPop(pop1 = pop[1:2],
+                        mp1 = newMultiPop(pop2 = pop[3:4],
+                                          mp2 = newMultiPop(pop3 = pop[5:7], pop4 = pop[8:12])))
 mp_nested
 
 # Completely flatten to a single top-level MultiPop
+# With default "auto" mode: names are kept if unique
 flattenMultiPop(mp_nested)
 
-# Preserve two levels of nesting
-flattenMultiPop(mp_nested, level=2)
+# With "concatenate": build hierarchical names
+flattenMultiPop(mp_nested, preserveNames = "concatenate")
+
+# With "force": guarantee unique names with suffixes
+# (not needed here but useful if duplicates were present)
+flattenMultiPop(mp_nested, preserveNames = "force")
+
+# With "none": drop all names
+flattenMultiPop(mp_nested, preserveNames = "none")
+
+# Preserve two levels of nesting (level 2 names are kept)
+flattenMultiPop(mp_nested, level = 2)
 
 }
 \seealso{
