@@ -504,3 +504,50 @@ test_that("SHORTFALL selectOCS stops when a sex has no candidates", {
                          simParam=d$SP, onShortfall="none"),
                "no suitable male candidates")
 })
+
+test_that("UNKNOWN parents of 0 or NA each form their own family", {
+  d = shortfallSP()
+
+  # Known parents keep the labels they have always had
+  expect_identical(AlphaSimR:::getFam(d$fam, "B"),
+                   paste(d$fam@mother, d$fam@father, sep="_"))
+  expect_identical(AlphaSimR:::getFam(d$fam, "F"), d$fam@mother)
+  expect_identical(AlphaSimR:::getFam(d$fam, "M"), d$fam@father)
+
+  # The case from discussion #71: with the parents blanked, every
+  # individual used to fall into one family and only one was returned
+  for(unknown in c("0", NA_character_)){
+    fam = d$fam
+    fam@mother[] = unknown
+    fam@father[] = unknown
+    for(famType in c("B", "F", "M")){
+      expect_identical(AlphaSimR:::getFam(fam, famType),
+                       paste0("unknown_", fam@id))
+      expect_equal(nInd(selectWithinFam(fam, 1, famType=famType,
+                                        simParam=d$SP)),
+                   nInd(fam))
+    }
+  }
+
+  # Founders have parents of "0", so each founder is a family
+  expect_equal(nInd(selectFam(d$pop, 2, simParam=d$SP)), 2L)
+
+  # pedigreeCross records unknown parents as NA. Individual 4 has a known
+  # mother and an unknown father, so it is a half sib of 5 on the female
+  # side but cannot be placed in a full-sib family.
+  id = as.character(1:5)
+  mother = c(NA, NA, NA, "1", "1")
+  father = c(NA, NA, "2", NA, "2")
+  ped = pedigreeCross(d$pop, id, mother, father, simParam=d$SP)
+  expect_identical(AlphaSimR:::getFam(ped, "B"),
+                   c(paste0("unknown_", 1:4), "1_2"))
+  expect_identical(AlphaSimR:::getFam(ped, "F"),
+                   c(paste0("unknown_", 1:3), "1", "1"))
+  expect_identical(AlphaSimR:::getFam(ped, "M"),
+                   c("unknown_1", "unknown_2", "2", "unknown_4", "2"))
+
+  # Nothing is dropped: aggregate would discard NA labels in selectFam
+  expect_equal(nInd(selectFam(ped, 5, simParam=d$SP)), 5L)
+  expect_equal(nInd(selectWithinFam(ped, 1, famType="F", simParam=d$SP)),
+               4L)
+})

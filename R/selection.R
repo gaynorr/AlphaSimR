@@ -437,20 +437,31 @@ isEmptyMember = function(pop){
 #' Determine families
 #'
 #' @param pop a population object
-#' @param famType type of family (fullsib "B", maternal "M", or paternal "F")
+#' @param famType type of family (fullsib "B", maternal "F", or paternal "M")
 #'
 #' @keywords internal
 getFam = function(pop,famType){
   famType = toupper(famType)
+  # Unknown parents are "0" from newPop and the import functions, and NA from
+  # pedigreeCross. Sharing an unknown parent says nothing about relatedness,
+  # so each individual with one gets a family of its own rather than all of
+  # them being pooled into one.
+  unknownMother = is.na(pop@mother) | pop@mother=="0"
+  unknownFather = is.na(pop@father) | pop@father=="0"
   if(famType=="B"){
-    return(paste(pop@mother,pop@father,sep="_"))
+    families = paste(pop@mother,pop@father,sep="_")
+    unknown = unknownMother | unknownFather
   }else if(famType=="F"){
-    return(pop@mother)
+    families = pop@mother
+    unknown = unknownMother
   }else if(famType=="M"){
-    return(pop@father)
+    families = pop@father
+    unknown = unknownFather
   }else{
     stop(paste0("famType=",famType," is not a valid option"))
   }
+  families[unknown] = paste0("unknown_",pop@id[unknown])
+  return(families)
 }
 
 #' @title Select individuals
@@ -620,7 +631,10 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'   the argument is ignored.
 #' @param famType which type of family to select. Use "B" for
 #'   full-sib families, "F" for half-sib families on female side and "M"
-#'   for half-sib families on the male side.
+#'   for half-sib families on the male side. An individual whose family
+#'   is not known, because a parent defining it is unknown ("0" or
+#'   \code{NA}), is treated as a family of its own. For "B", that is
+#'   either parent.
 #' @param selectTop selects highest values if true.
 #'   Selects lowest values if false.
 #' @param returnPop should results be returned as a
@@ -761,7 +775,10 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #'   the argument is ignored.
 #' @param famType which type of family to select. Use "B" for
 #'   full-sib families, "F" for half-sib families on female side and "M"
-#'   for half-sib families on the male side.
+#'   for half-sib families on the male side. An individual whose family
+#'   is not known, because a parent defining it is unknown ("0" or
+#'   \code{NA}), is treated as a family of its own. For "B", that is
+#'   either parent.
 #' @param selectTop selects highest values if true.
 #'   Selects lowest values if false.
 #' @param returnPop should results be returned as a

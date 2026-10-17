@@ -445,10 +445,12 @@ test_that("splitPop", {
   expect_identical(mp1, splitPop(pop, by = by_df))
 
   # splitPop can create nested MultiPop objects using a data frame with multiple columns
-  nms = sapply(mp2@pops, lengths)
-  by_df = data.frame(level1 = rep(names(nms), nms),
-                     level2 = "0_0",
-                     row.names = mergePops(mp2)@id)
+  # Founders have unknown parents, so each is a family of its own at level2
+  flat = mergePops(mp2)
+  nms = vapply(mp2@pops, function(x) nInd(mergePops(x)), integer(1))
+  by_df = data.frame(level1 = rep(names(mp2@pops), nms),
+                     level2 = AlphaSimR:::getFam(flat, famType = "B"),
+                     row.names = flat@id)
   expect_identical(mp2, splitPop(pop, by = by_df))
 
   # A data frame with NA values in the grouping columns creates an uneven nested structure
