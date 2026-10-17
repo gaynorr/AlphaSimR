@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9019
+# AlphaSimR 2.1.0.9020
 
 * Fixed `setMarkerHaplo` changing the genotypes of the population it was given, and of every R object sharing them, as well as those of the population it returns. The haplotypes are now written into a copy of each chromosome that has loci to set.
 
