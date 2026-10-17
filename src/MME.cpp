@@ -1381,13 +1381,16 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
     Rf_warning("callFastRRBLUP: reached maxIter without converging");
   }
   
-  // Fixed effects, recovered from the solution
+  // Fixed effects, recovered from the solution. They are found against the
+  // centered genotypes, while the genetic values are predicted from the
+  // uncentered ones, so the intercept takes off Mmean*u.
   multMc(t, planes, ploidy, offset, u, tabs, nThreads);
   arma::vec beta = XtXi*(Xfix.t()*(y-t));
+  double shift = as_scalar(Mmean*u);
   
   return Rcpp::List::create(Rcpp::Named("alpha")=u,
-                            Rcpp::Named("beta")=-as_scalar(Mmean*u),
-                            Rcpp::Named("mu")=beta(0),
+                            Rcpp::Named("beta")=-shift,
+                            Rcpp::Named("mu")=beta(0)-shift,
                             Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve);
 }

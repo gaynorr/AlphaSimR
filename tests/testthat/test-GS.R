@@ -654,6 +654,19 @@ test_that("multiple trait fastRRBLUP agrees with RRBLUP on every record", {
   }
 })
 
+test_that("fastRRBLUP predicts the same genetic values as RRBLUP", {
+  # The intercept of the genetic values goes with the uncentered markers.
+  # Taking it from the centered ones shifts every prediction by Mmean*u,
+  # which is not zero in general, so this checks a trait where it is not.
+  d = mvPop(nInd=80, nSnp=15)
+  ans = fastRRBLUP(d$pop, traits=1, nSubsample=0L, simParam=d$SP)
+  ref = RRBLUP(d$pop, traits=1, simParam=d$SP)
+  expect_gt(abs(ref@bv[[1]]@intercept), 1e-8)
+  expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
+  expect_equal(c(ebv(setEBV(d$pop, ans, simParam=d$SP))),
+               c(ebv(setEBV(d$pop, ref, simParam=d$SP))), tolerance=1e-6)
+})
+
 test_that("multiple trait fastRRBLUP leaves its inputs unchanged", {
   d = mvPop(nInd=40, nSnp=10)
   Vu = mvVu + 0
