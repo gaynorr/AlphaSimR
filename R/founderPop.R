@@ -52,7 +52,8 @@
 #' @export
 newMapPop = function(genMap, haplotypes, inbred=FALSE,
                      ploidy=2L, genLen=NULL){
-  stopifnot(length(genMap)==length(haplotypes))
+  stopifnot("genMap and haplotypes must have one element per chromosome each"=
+              length(genMap)==length(haplotypes))
   .checkGenMap(genMap)
   genLen = .checkGenLen(genLen, genMap)
   nRow = lapply(haplotypes,nrow)
@@ -336,7 +337,8 @@ runMacs = function(nInd, nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
       splitI = ""
       splitJ = ""
     }else{
-      stopifnot(popSize%%2==0)
+      stopifnot("popSize must be even to split it into two populations"=
+                popSize%%2==0)
       splitI = paste(" -I 2",popSize%/%2,popSize%/%2)
       splitJ = paste(" -ej",split/(4*Ne)+0.000001,"2 1")
     }
@@ -474,7 +476,8 @@ runMacs2 = function(nInd,nChr=1,segSites=NULL,Ne=100,
                     histGen=c(100,1000,10000,100000,1000000),
                     inbred=FALSE,split=NULL,ploidy=2L,returnCommand=FALSE,
                     nThreads=NULL){
-  stopifnot(length(histNe)==length(histGen))
+  stopifnot("histNe and histGen must have the same length"=
+              length(histNe)==length(histGen))
   # Adjust Ne according to ploidy level
   Ne = Ne*(ploidy/2L)
   if(!is.null(histNe)){
@@ -671,7 +674,8 @@ sampleHaplo = function(mapPop,nInd,inbred=FALSE,ploidy=NULL,replace=TRUE){
     nSamp = nInd*ploidy
   }
   nBin = mapPop@nLoci%/%8L + (mapPop@nLoci%%8L > 0L)
-  if(!replace) stopifnot(nHaplo>=nSamp)
+  if(!replace) stopifnot("mapPop has too few haplotypes to sample without replacement; use replace=TRUE"=
+                            nHaplo>=nSamp)
   output = vector("list",mapPop@nChr)
   for(chr in seq_len(mapPop@nChr)){
     haplo = sample.int(nHaplo,nSamp,replace=replace)
@@ -816,8 +820,9 @@ quickHaplo = function(nInd,nChr,segSites,genLen=1,ploidy=2L,inbred=FALSE){
 addSegSite = function(mapPop, siteName, chr, mapPos, haplo, nThreads=NULL,
                       extendGenLen=FALSE){
   # Check validity of input data
-  stopifnot(is(mapPop, "MapPop"))
-  stopifnot(length(haplo)==(mapPop@nInd*mapPop@ploidy))
+  stopifnot("mapPop must be a MapPop"=is(mapPop, "MapPop"))
+  stopifnot("haplo must have one value per haplotype, nInd*ploidy"=
+              length(haplo)==(mapPop@nInd*mapPop@ploidy))
   if(is.null(nThreads)){
     nThreads = getNumThreads()
   }else{

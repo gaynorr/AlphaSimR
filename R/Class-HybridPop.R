@@ -110,7 +110,8 @@ setMethod("c",
           signature(x = "HybridPop"),
           function (x, ...){
             for(y in list(...)){
-              stopifnot(class(y)=="HybridPop")
+              stopifnot("only HybridPop objects can be combined with a HybridPop"=
+                        class(y)=="HybridPop")
               x@nInd = x@nInd+y@nInd
               x@id = c(x@id,y@id)
               x@mother = c(x@mother,y@mother)

@@ -58,14 +58,16 @@ writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
   nMarkerPath = file.path(dir,"nMarkers.txt")
   if(file.exists(nMarkerPath)){
     nMarkersDir = scan(nMarkerPath,integer(),quiet=TRUE)
-    stopifnot(nMarkersDir==nMarkers)
+    stopifnot("dir already holds records for a different number of markers; use a new dir"=
+                nMarkersDir==nMarkers)
   }else{
     writeLines(as.character(nMarkers),nMarkerPath)
   }
   markerTypePath = file.path(dir,"markerType.txt")
   if(file.exists(markerTypePath)){
     markerTypeDir = scan(markerTypePath,character(),quiet=TRUE)
-    stopifnot(markerTypeDir==markerType)
+    stopifnot("dir already holds records for a different snpChip or useQtl; use a new dir"=
+                markerTypeDir==markerType)
   }else{
     writeLines(markerType,markerTypePath)
   }

@@ -80,7 +80,8 @@ SimParam = R6Class(
     #' #Set simulation parameters
     #' SP = SimParam$new(founderPop)
     initialize = function(founderPop){
-      stopifnot(is(founderPop, "MapPop"))
+      stopifnot("founderPop must be a MapPop, such as one made by runMacs, quickHaplo or importHaplo"=
+                  is(founderPop, "MapPop"))
 
       # Public items
       self$nThreads = getNumThreads()
@@ -147,7 +148,7 @@ SimParam = R6Class(
     #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackPed(TRUE)
     setTrackPed = function(isTrackPed, force=FALSE){
-      stopifnot(is.logical(isTrackPed))
+      stopifnot("isTrackPed must be TRUE or FALSE"=is.logical(isTrackPed))
       if(!force){
         private$.isRunning()
       }
@@ -178,7 +179,7 @@ SimParam = R6Class(
     #' \dontshow{SP$nThreads = 1L}
     #' SP$setTrackRec(TRUE)
     setTrackRec = function(isTrackRec, force=FALSE){
-      stopifnot(is.logical(isTrackRec))
+      stopifnot("isTrackRec must be TRUE or FALSE"=is.logical(isTrackRec))
       if(!force){
         private$.isRunning()
       }
@@ -322,14 +323,16 @@ SimParam = R6Class(
           if(length(minSnpPerChr)==1){
             minSnpPerChr = rep(minSnpPerChr,self$nChr)
           }else{
-            stopifnot(length(minSnpPerChr)==self$nChr)
+            stopifnot("minSnpPerChr must have length 1 or nChr"=
+                        length(minSnpPerChr)==self$nChr)
           }
         }
         if(!is.null(minQtlPerChr)){
           if(length(minQtlPerChr)==1){
             minQtlPerChr = rep(minQtlPerChr,self$nChr)
           }else{
-            stopifnot(length(minQtlPerChr)==self$nChr)
+            stopifnot("minQtlPerChr must have length 1 or nChr"=
+                        length(minQtlPerChr)==self$nChr)
           }
         }
 
@@ -466,7 +469,12 @@ SimParam = R6Class(
 
       # Check that the markers are present on the map
       genMapMarkerNames = unlist(lapply(genMap, names))
-      stopifnot(all(markers%in%genMapMarkerNames))
+      missing = setdiff(markers, genMapMarkerNames)
+      if(length(missing)>0L){
+        stop("markers not found on the genetic map: ",
+             paste(head(missing, 5L), collapse=", "),
+             if(length(missing)>5L) paste0(" and ", length(missing)-5L, " more"))
+      }
 
       # Create lociPerChr and lociLoc
       lociPerChr = integer(length(genMap))
@@ -519,15 +527,18 @@ SimParam = R6Class(
       if(length(nSnpPerChr)==1){
         nSnpPerChr = rep(nSnpPerChr,self$nChr)
       }
-      stopifnot(length(nSnpPerChr)==self$nChr)
+      stopifnot("nSnpPerChr must have length 1 or nChr"=
+                  length(nSnpPerChr)==self$nChr)
       # There is no potSnp field, so the eligible sites are worked out
       # here the same way restrSegSites does it: every segregating site on
       # the chromosome that has not been marked an invalid SNP.
       potSnp = lapply(seq_len(self$nChr), function(i){
         setdiff(1:private$.segSites[i], self$invalidSnp[[i]])
       })
-      stopifnot(vapply(potSnp,length,integer(1))>=nSnpPerChr)
-      stopifnot(dim(structure)[2]==sum(nSnpPerChr))
+      stopifnot("nSnpPerChr is more than the sites available for SNPs on a chromosome"=
+                  vapply(potSnp,length,integer(1))>=nSnpPerChr)
+      stopifnot("structure must have one column per SNP, sum(nSnpPerChr)"=
+                  dim(structure)[2]==sum(nSnpPerChr))
       lociLoc = lapply(1:self$nChr,function(x){
         sort(sample(potSnp[[x]],nSnpPerChr[x]))
       })
@@ -602,8 +613,10 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
       addEff = sampAddEff(qtlLoci=qtlLoci,nTraits=nTraits,
@@ -683,8 +696,10 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corDD, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
@@ -898,10 +913,14 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(mean)==length(varGxE),
-                length(mean)==length(varEnv),
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "varGxE must have one value per trait"=
+                  length(mean)==length(varGxE),
+                "varEnv must have one value per trait"=
+                  length(mean)==length(varEnv),
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corGxE, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
@@ -1011,10 +1030,14 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(varGxE)==nTraits,
-                length(varEnv)==nTraits,
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "varGxE must have one value per trait"=
+                  length(varGxE)==nTraits,
+                "varEnv must have one value per trait"=
+                  length(varEnv)==nTraits,
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corDD, nTraits)
       checkCorMat(corGxE, nTraits)
@@ -1135,10 +1158,14 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(relAA)==length(mean),
-                (sum(nQtlPerChr)%%2L)==0L,
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "relAA must have one value per trait"=
+                  length(relAA)==length(mean),
+                "the total number of QTL must be even, because epistatic QTL are paired"=
+                  (sum(nQtlPerChr)%%2L)==0L,
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corAA, nTraits)
       qtlLoci = private$.pickLoci(nQtlPerChr)
@@ -1242,10 +1269,14 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(relAA)==length(mean),
-                (sum(nQtlPerChr)%%2L)==0L,
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "relAA must have one value per trait"=
+                  length(relAA)==length(mean),
+                "the total number of QTL must be even, because epistatic QTL are paired"=
+                  (sum(nQtlPerChr)%%2L)==0L,
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corDD, nTraits)
       checkCorMat(corAA, nTraits)
@@ -1352,12 +1383,18 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(relAA)==length(mean),
-                length(mean)==length(varGxE),
-                length(mean)==length(varEnv),
-                (sum(nQtlPerChr)%%2L)==0L,
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "relAA must have one value per trait"=
+                  length(relAA)==length(mean),
+                "varGxE must have one value per trait"=
+                  length(mean)==length(varGxE),
+                "varEnv must have one value per trait"=
+                  length(mean)==length(varEnv),
+                "the total number of QTL must be even, because epistatic QTL are paired"=
+                  (sum(nQtlPerChr)%%2L)==0L,
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corAA, nTraits)
       checkCorMat(corGxE, nTraits)
@@ -1493,12 +1530,18 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }
-      stopifnot(length(mean)==length(var),
-                length(varGxE)==nTraits,
-                length(varEnv)==nTraits,
-                length(relAA)==length(mean),
-                (sum(nQtlPerChr)%%2L)==0L,
-                length(mean)==length(name))
+      stopifnot("mean and var must have the same length"=
+                  length(mean)==length(var),
+                "varGxE must have one value per trait"=
+                  length(varGxE)==nTraits,
+                "varEnv must have one value per trait"=
+                  length(varEnv)==nTraits,
+                "relAA must have one value per trait"=
+                  length(relAA)==length(mean),
+                "the total number of QTL must be even, because epistatic QTL are paired"=
+                  (sum(nQtlPerChr)%%2L)==0L,
+                "name must have one value per trait"=
+                  length(mean)==length(name))
       checkCorMat(corA, nTraits)
       checkCorMat(corDD, nTraits)
       checkCorMat(corAA, nTraits)
@@ -1585,7 +1628,8 @@ SimParam = R6Class(
       }else{
         nThreads = as.integer(nThreads)
       }
-      stopifnot(is(lociMap,"LociMap"))
+      stopifnot("lociMap must be a LociMap, such as a TraitA object"=
+                  is(lociMap,"LociMap"))
       tmp = calcGenParam(lociMap, self$founderPop, nThreads)
       varA = popVar(tmp$bv)[1]
       varG = popVar(tmp$gv)[1]
@@ -1689,15 +1733,18 @@ SimParam = R6Class(
 
       # Check addEff and domEff inputs
       addEff = as.matrix(addEff)
-      stopifnot(length(markerNames)==nrow(addEff))
+      stopifnot("addEff must have one row per marker in markerNames"=
+                  length(markerNames)==nrow(addEff))
       nTraits = ncol(addEff)
       if(is.null(domEff)){
         useDom = FALSE
       }else{
         useDom = TRUE
         domEff = as.matrix(domEff)
-        stopifnot(nrow(addEff)==nrow(domEff),
-                  ncol(addEff)==ncol(domEff))
+        stopifnot("domEff must have the same number of rows as addEff"=
+                    nrow(addEff)==nrow(domEff),
+                  "domEff must have the same number of traits as addEff"=
+                    ncol(addEff)==ncol(domEff))
       }
 
       # Check epiPairs and epiEff inputs
@@ -1738,13 +1785,15 @@ SimParam = R6Class(
         intercept = rep(0, nTraits)
       }else{
         intercept = as.numeric(intercept)
-        stopifnot(length(intercept)==nTraits)
+        stopifnot("intercept must have one value per trait"=
+                    length(intercept)==nTraits)
       }
 
       # Prepare varE
       if(!is.null(varE)){
         varE = as.numeric(varE)
-        stopifnot(length(varE)==nTraits)
+        stopifnot("varE must have one value per trait"=
+                    length(varE)==nTraits)
       }else{
         varE = rep(NA_real_, nTraits)
       }
@@ -1753,12 +1802,18 @@ SimParam = R6Class(
       if(is.null(name)){
         name = paste0("Trait",1:nTraits+self$nTraits)
       }else{
-        stopifnot(length(name)==nTraits)
+        stopifnot("name must have one value per trait"=
+                    length(name)==nTraits)
       }
 
       # Extract genetic map and check if marker names are on the map
       genMapMarkerNames = unlist(lapply(private$.femaleMap, names))
-      stopifnot(all(markerNames%in%genMapMarkerNames))
+      missing = setdiff(markerNames, genMapMarkerNames)
+      if(length(missing)>0L){
+        stop("markerNames not found on the genetic map: ",
+             paste(head(missing, 5L), collapse=", "),
+             if(length(missing)>5L) paste0(" and ", length(missing)-5L, " more"))
+      }
 
       # Create trait variables
       lociPerChr = integer(self$nChr)
@@ -1892,10 +1947,12 @@ SimParam = R6Class(
         nThreads = as.integer(nThreads)
       }
       traitPos = convertTraitsToIndex(traitPos, self)
-      stopifnot(is(lociMap,"LociMap"),
-                length(traitPos)==1L,
-                traitPos<=self$nTraits,
-                traitPos>0)
+      stopifnot("lociMap must be a LociMap, such as a TraitA object"=
+                  is(lociMap,"LociMap"),
+                "traitPos must be a single trait"=
+                  length(traitPos)==1L,
+                "traitPos must be between 1 and nTraits"=
+                  traitPos<=self$nTraits && traitPos>0)
       tmp = calcGenParam(lociMap, self$founderPop, nThreads)
       private$.traits[[traitPos]] = lociMap
       private$.varA[traitPos] = popVar(tmp$bv)[1]
@@ -1924,7 +1981,9 @@ SimParam = R6Class(
         private$.isRunning()
       }
       traits = convertTraitsToIndex(traits, self)
-      stopifnot(length(traits)>0L, max(traits)<=self$nTraits, min(traits)>0)
+      stopifnot("traits must name at least one trait"=length(traits)>0L,
+                "traits must be between 1 and nTraits"=
+                  max(traits)<=self$nTraits && min(traits)>0)
       private$.traits = private$.traits[-traits]
       private$.varA = private$.varA[-traits]
       private$.varG = private$.varG[-traits]
@@ -1969,9 +2028,12 @@ SimParam = R6Class(
 
       # Set error variances (.varE)
       if(!is.null(h2)){
-        stopifnot(length(h2)==self$nTraits,
-                  all(private$.varG>0),
-                  all(private$.varA>0))
+        stopifnot("h2 must have one value per trait"=
+                    length(h2)==self$nTraits,
+                  "h2 needs every trait to have genetic variance in the founders"=
+                    all(private$.varG>0),
+                  "h2 needs every trait to have additive variance in the founders; use H2 or varE instead"=
+                    all(private$.varA>0))
         varE = numeric(self$nTraits)
         for(i in seq_len(length(h2))){
           tmp = private$.varA[i]/h2[i]-private$.varG[i]
@@ -1982,7 +2044,8 @@ SimParam = R6Class(
         }
         private$.varE = varE
       }else if(!is.null(H2)){
-        stopifnot(length(H2)==self$nTraits)
+        stopifnot("H2 must have one value per trait"=
+                    length(H2)==self$nTraits)
         varE = numeric(self$nTraits)
         for(i in seq_len(length(H2))){
           tmp = private$.varG[i]/H2[i]-private$.varG[i]
@@ -1991,10 +2054,11 @@ SimParam = R6Class(
         private$.varE = varE
       }else if(!is.null(varE)){
         if(is.matrix(varE)){
-          stopifnot(nrow(varE)==self$nTraits,
-                    ncol(varE)==self$nTraits)
+          stopifnot("a varE matrix must have one row and one column per trait"=
+                      nrow(varE)==self$nTraits && ncol(varE)==self$nTraits)
         }else{
-          stopifnot(length(varE)==self$nTraits)
+          stopifnot("varE must have one value per trait"=
+                      length(varE)==self$nTraits)
         }
         private$.varE = varE
       }else{
@@ -2038,8 +2102,8 @@ SimParam = R6Class(
     setCorE = function(corE){
       warning("This function has been deprecated. Use simParam$setVarE instead.")
       checkCorMat(corE, self$nTraits)
-      stopifnot(length(private$.varE)==self$nTraits,
-                !any(is.na(private$.varE)))
+      stopifnot("setCorE needs varE set for every trait first, with setVarE"=
+                  length(private$.varE)==self$nTraits && !any(is.na(private$.varE)))
       if(is.matrix(private$.varE)){
         varE = diag(private$.varE)
       }else{
@@ -2100,10 +2164,14 @@ SimParam = R6Class(
       }else{
         nThreads = as.integer(nThreads)
       }
-      stopifnot(length(mean)==self$nTraits,
-                length(var)==self$nTraits,
-                length(varEnv)==self$nTraits,
-                length(varGxE)==self$nTraits)
+      stopifnot("mean must have one value per trait"=
+                  length(mean)==self$nTraits,
+                "var must have one value per trait"=
+                  length(var)==self$nTraits,
+                "varEnv must have one value per trait"=
+                  length(varEnv)==self$nTraits,
+                "varGxE must have one value per trait"=
+                  length(varGxE)==self$nTraits)
       for(i in seq_len(self$nTraits)){
         trait = private$.traits[[i]]
         trait@intercept = 0
@@ -2194,7 +2262,7 @@ SimParam = R6Class(
     #' \dontshow{SP$nThreads = 1L}
     #' SP$setRecombRatio(2) #Twice as much recombination in females
     setRecombRatio = function(femaleRatio){
-      stopifnot(femaleRatio>0)
+      stopifnot("femaleRatio must be greater than 0"=femaleRatio>0)
       # Both must be read before .sepMap is set, because the accessors
       # switch to averaging the sex-specific values once it is TRUE
       genMap = self$genMap
@@ -2243,12 +2311,16 @@ SimParam = R6Class(
       if(is.null(centromere)){
         centromere=genLen/2
       }
-      stopifnot(length(genMap)==self$nChr,
-                centromere>=0,
-                centromere<=genLen)
+      stopifnot("genMap must have one element per chromosome"=
+                  length(genMap)==self$nChr,
+                "centromere must not be negative"=
+                  all(centromere>=0),
+                "centromere must not be past the end of its chromosome"=
+                  all(centromere<=genLen))
 
       tmp = do.call("c",lapply(genMap,length))
-      stopifnot(all(tmp==private$.segSites))
+      stopifnot("genMap must have the same number of loci on each chromosome as the founder population"=
+                  all(tmp==private$.segSites))
 
       private$.sepMap = FALSE
       private$.femaleMap = genMap
@@ -2285,12 +2357,16 @@ SimParam = R6Class(
       if(is.null(centromere)){
         centromere=genLen/2
       }
-      stopifnot(length(genMap)==self$nChr,
-                centromere>=0,
-                centromere<=genLen)
+      stopifnot("genMap must have one element per chromosome"=
+                  length(genMap)==self$nChr,
+                "centromere must not be negative"=
+                  all(centromere>=0),
+                "centromere must not be past the end of its chromosome"=
+                  all(centromere<=genLen))
 
       tmp = do.call("c",lapply(genMap,length))
-      stopifnot(all(tmp==private$.segSites))
+      stopifnot("genMap must have the same number of loci on each chromosome as the founder population"=
+                  all(tmp==private$.segSites))
 
       if(private$.sepMap){
         private$.femaleMap = genMap
@@ -2333,12 +2409,16 @@ SimParam = R6Class(
       if(is.null(centromere)){
         centromere=genLen/2
       }
-      stopifnot(length(genMap)==self$nChr,
-                centromere>=0,
-                centromere<=genLen)
+      stopifnot("genMap must have one element per chromosome"=
+                  length(genMap)==self$nChr,
+                "centromere must not be negative"=
+                  all(centromere>=0),
+                "centromere must not be past the end of its chromosome"=
+                  all(centromere<=genLen))
 
       tmp = do.call("c",lapply(genMap,length))
-      stopifnot(all(tmp==private$.segSites))
+      stopifnot("genMap must have the same number of loci on each chromosome as the founder population"=
+                  all(tmp==private$.segSites))
 
       private$.sepMap = TRUE
       private$.maleMap = genMap

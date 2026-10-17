@@ -606,7 +606,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
       Ve = var(y)/2
     }
   }else{
-    stopifnot(length(traits)==1)
+    stopifnot("this model fits a single trait, so traits must give one trait"=
+                length(traits)==1)
     if(is.null(Vu)){
       Vu = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(Vu)){
@@ -897,7 +898,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
       Ve = var(y)/2
     }
   }else{
-    stopifnot(length(traits)==1)
+    stopifnot("this model fits a single trait, so traits must give one trait"=
+                length(traits)==1)
     if(is.null(Va)){
       Va = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(Va)){
@@ -919,7 +921,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  stopifnot("this model fits a single trait, so the response must have one column"=
+              ncol(y)==1)
   ans = callRRBLUP_D2(y, fixEff, pop, lociPerChr,
                       lociLoc, maxIter, Va, Vd, Ve, tol, useEM,
                       nThreads)
@@ -1219,7 +1222,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
       Ve = var(y)/2
     }
   }else{
-    stopifnot(length(traits)==1)
+    stopifnot("this model fits a single trait, so traits must give one trait"=
+                length(traits)==1)
     if(is.null(VuF)){
       VuF = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuF)){
@@ -1241,7 +1245,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  stopifnot("this model fits a single trait, so the response must have one column"=
+              ncol(y)==1)
 
   ans = callRRBLUP_GCA2(y, fixEff, pop,
                         lociPerChr, lociLoc, maxIter,
@@ -1563,7 +1568,8 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
       Ve = var(y)/2
     }
   }else{
-    stopifnot(length(traits)==1)
+    stopifnot("this model fits a single trait, so traits must give one trait"=
+                length(traits)==1)
     if(is.null(VuF)){
       VuF = 2*simParam$varA[traitIndex]/nLoci
       if(is.na(VuF)){
@@ -1591,7 +1597,8 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   }
 
   #Fit model
-  stopifnot(ncol(y)==1)
+  stopifnot("this model fits a single trait, so the response must have one column"=
+              ncol(y)==1)
   ans = callRRBLUP_SCA2(y, fixEff, pop,
                         lociPerChr, lociLoc, maxIter,
                         VuF, VuM, VuD, Ve, tol, useEM,

@@ -115,13 +115,17 @@ importInbredGeno = function(geno, genMap, ped=NULL, genLen=NULL){
   if(!is.null(ped)){
     if(is.vector(ped)){
       id = as.character(ped)
-      stopifnot(length(id)==nrow(geno),
-                !any(duplicated(id)))
+      stopifnot("ped must have one id per row of geno"=
+                  length(id)==nrow(geno),
+                "ped must not contain duplicated ids"=
+                  !any(duplicated(id)))
       mother = father = rep("0", length(id))
     }else{
       id = as.character(ped[,1])
-      stopifnot(length(id)==nrow(geno),
-                !any(duplicated(id)))
+      stopifnot("ped must have one id per row of geno"=
+                  length(id)==nrow(geno),
+                "ped must not contain duplicated ids"=
+                  !any(duplicated(id)))
       mother = as.character(ped[,2])
       father = as.character(ped[,3])
     }
@@ -142,17 +146,20 @@ importInbredGeno = function(geno, genMap, ped=NULL, genLen=NULL){
   }else{
     minGeno = min(geno)
     maxGeno = max(geno)
-    stopifnot(minGeno >= (-1-1e-8) )
+    stopifnot("geno must be coded 0,1,2 or -1,0,1, but has values below -1"=
+                minGeno >= (-1-1e-8) )
     
     if(minGeno < (0-1e-8) ){
       # Suspect -1,0,1 coding
-      stopifnot(maxGeno <= (1+1e-8) )
+      stopifnot("geno has negative values, so it is read as -1,0,1 coding, but it has values above 1"=
+                  maxGeno <= (1+1e-8) )
       # Converting to 0,1 haplotypes with hard thresholds
       geno = matrix(as.raw( round( (geno+1)/2 ) ),
                     ncol=ncol(geno))
     }else{
       # Suspect 0,1,2 coding
-      stopifnot(maxGeno <= (2+1e-8) )
+      stopifnot("geno must be coded 0,1,2 or -1,0,1, but has values above 2"=
+                  maxGeno <= (2+1e-8) )
       # Converting to 0,1 haplotypes with hard thresholds
       geno = matrix(as.raw( round( geno/2 ) ),
                     ncol=ncol(geno))
@@ -171,7 +178,8 @@ importInbredGeno = function(geno, genMap, ped=NULL, genLen=NULL){
       # are kept are the ones where take is NOT missing. Dropping the
       # complement kept exactly the wrong loci.
       genMap[[i]] = genMap[[i]][!is.na(take)]
-      stopifnot(length(genMap[[i]]) >= 1L)
+      stopifnot("a chromosome of genMap has no markers in common with the column names of the genotypes"=
+                  length(genMap[[i]]) >= 1L)
       take = na.omit(take)
     }
     haplotypes[[i]] = geno[,take,drop=FALSE]
@@ -256,13 +264,17 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
   if(!is.null(ped)){
     if(is.vector(ped)){
       id = as.character(ped)
-      stopifnot(length(id)==(nrow(haplo)/ploidy),
-                !any(duplicated(id)))
+      stopifnot("ped must have one id per individual, nrow(haplo)/ploidy"=
+                  length(id)==(nrow(haplo)/ploidy),
+                "ped must not contain duplicated ids"=
+                  !any(duplicated(id)))
       mother = father = rep("0", length(id))
     }else{
       id = as.character(ped[,1])
-      stopifnot(length(id)==(nrow(haplo)/ploidy),
-                !any(duplicated(id)))
+      stopifnot("ped must have one id per individual, nrow(haplo)/ploidy"=
+                  length(id)==(nrow(haplo)/ploidy),
+                "ped must not contain duplicated ids"=
+                  !any(duplicated(id)))
       mother = as.character(ped[,2])
       father = as.character(ped[,3])
     }
@@ -278,7 +290,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
   
   # Convert haplotypes to raw
   haplo = matrix(as.raw(haplo), ncol=ncol(haplo))
-  stopifnot(haplo==as.raw(0) | haplo==as.raw(1))
+  stopifnot("haplo must contain only 0 and 1"=
+              all(haplo==as.raw(0) | haplo==as.raw(1)))
   
   # Create haplotype list
   haplotypes = vector("list", length=length(genMap))
@@ -292,7 +305,8 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
       # are kept are the ones where take is NOT missing. Dropping the
       # complement kept exactly the wrong loci.
       genMap[[i]] = genMap[[i]][!is.na(take)]
-      stopifnot(length(genMap[[i]]) >= 1L)
+      stopifnot("a chromosome of genMap has no markers in common with the column names of the genotypes"=
+                  length(genMap[[i]]) >= 1L)
       take = na.omit(take)
     }
     haplotypes[[i]] = haplo[,take,drop=FALSE]
@@ -313,4 +327,3 @@ importHaplo = function(haplo, genMap, ploidy=2L, ped=NULL,
   
   return(founderPop)
 }
-

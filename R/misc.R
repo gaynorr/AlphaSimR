@@ -312,17 +312,19 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
     nThreads = as.integer(nThreads)
   }
   ind = unique(as.integer(ind))
-  stopifnot(all(ind %in% (1:pop@nInd)))
+  stopifnot("ind must index individuals in pop"=all(ind %in% (1:pop@nInd)))
   chr = as.integer(chr)
   segSites = as.integer(segSites)
-  stopifnot(length(chr) == length(segSites))
+  stopifnot("chr and segSites must have the same length"=
+              length(chr) == length(segSites))
   allele = as.integer(allele)
-  stopifnot(all(allele == 0L | allele == 1L))
+  stopifnot("allele must be 0 or 1"=all(allele == 0L | allele == 1L))
   allele = as.raw(allele)
   if(length(allele) == 1L){
     allele = rep(allele, length(segSites))
   }
-  stopifnot(length(allele) == length(segSites))
+  stopifnot("allele must have length 1 or the same length as segSites"=
+              length(allele) == length(segSites))
   for (selChr in unique(chr)) {
     sel = which(chr == selChr)
     for (i in sel) {
@@ -395,11 +397,14 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
     nThreads = as.integer(nThreads)
   }
   trait = convertTraitsToIndex(trait, simParam)
-  stopifnot(length(trait) == 1L, trait > 0L, trait <= simParam$nTraits)
+  stopifnot("trait must be a single trait"=length(trait) == 1L,
+            "trait must be between 1 and nTraits"=
+              trait > 0L && trait <= simParam$nTraits)
   ind = unique(as.integer(ind))
-  stopifnot(all(ind %in% (1:pop@nInd)))
+  stopifnot("ind must index individuals in pop"=all(ind %in% (1:pop@nInd)))
   nQtl = as.integer(nQtl)
-  stopifnot(nQtl > 0 & nQtl <= simParam$traits[[trait]]@nLoci)
+  stopifnot("nQtl must be between 1 and the trait's number of QTL"=
+              nQtl > 0 & nQtl <= simParam$traits[[trait]]@nLoci)
 
   findTopQtl = function(pop, ind, nQtl, trait, increase, simParam,
                         nThreads) {

@@ -1070,7 +1070,7 @@ selectPop = function(
   FUN.ARGS = list()
 ) {
 
-  stopifnot(nPop >= 0)
+  stopifnot("nPop must be >= 0" = nPop >= 0)
   if (is.null(simParam)) {
     simParam = get("SP", envir = .GlobalEnv)
   }
@@ -1078,7 +1078,7 @@ selectPop = function(
   if (isPop(x)) {
     return(x)
   }
-  stopifnot(isMultiPop(x))
+  stopifnot("x must be a Pop or a MultiPop" = isMultiPop(x))
 
   if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
         level < 1 || level != as.integer(level)) {

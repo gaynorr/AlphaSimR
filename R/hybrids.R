@@ -505,7 +505,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(class(testers)=="Pop", !onlyPheno)
+    stopifnot("testers must be a Pop"=class(testers)=="Pop",
+              "onlyPheno must be FALSE for a MultiPop"=!onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoGCA, testers=testers,
                       use=use, h2=h2, H2=H2, varE=varE, corE=corE,
                       reps=reps, fixEff=fixEff, p=p, inbred=inbred,
@@ -516,7 +517,8 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
   if(any(duplicated(pop@id))){
     stop("This function does not work with duplicate IDs")
   }
-  stopifnot(class(pop)=="Pop",class(testers)=="Pop")
+  stopifnot("pop must be a Pop"=class(pop)=="Pop",
+            "testers must be a Pop"=class(testers)=="Pop")
   use = tolower(use)
   #Make hybrids
   tmp = hybridCross(females=pop, males=testers, crossPlan="testcross",
@@ -633,7 +635,8 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
     nThreads = as.integer(nThreads)
   }
   if(is(pop,"MultiPop")){
-    stopifnot(class(testPop)=="Pop", !onlyPheno)
+    stopifnot("testPop must be a Pop"=class(testPop)=="Pop",
+              "onlyPheno must be FALSE for a MultiPop"=!onlyPheno)
     pop@pops = lapply(pop@pops, setPhenoProgTest, testPop=testPop,
                       nMatePerInd=nMatePerInd, use=use, h2=h2, H2=H2,
                       varE=varE, corE=corE, reps=reps, fixEff=fixEff,
@@ -644,7 +647,8 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
   if(any(duplicated(pop@id))){
     stop("This function does not work with duplicate IDs")
   }
-  stopifnot(class(pop)=="Pop",class(testPop)=="Pop")
+  stopifnot("pop must be a Pop"=class(pop)=="Pop",
+            "testPop must be a Pop"=class(testPop)=="Pop")
   use = tolower(use)
   #Make hybrids
   tmp = randCross2(females=pop, males=testPop, nCrosses=nInd(pop)*nMatePerInd,

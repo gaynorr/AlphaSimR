@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9021
 
+* Gave the checks on user input in `SimParam`, the founder and import functions, `editGenome`, `editGenomeTopQtl`, `setPhenoGCA`, `setPhenoProgTest`, the single trait `RRBLUP` models, `selectPop` and `writeRecords` messages that say which argument is wrong and what is expected, in place of R's generic "... is not TRUE". `SimParam$addSnpChipByName` and `SimParam$importTrait` now list the marker names that are not on the genetic map. The conditions checked are unchanged.
+
 * Added `onShortfall` to `selectInd`, `selectFam`, `selectWithinFam`, `selectOP`, `selectOCS` and `selectCross`, for when fewer suitable candidates are available than requested. The default, `"warning"`, behaves as before: it warns and returns all of them. `"error"` stops instead, with a message giving how many were available, and `"none"` returns them without a warning, which suits `selectWithinFam` used as a cap on family size. The `selectWithinFam` warning now says how many families fall short.
 
 * Changed the selection functions to give the error "pop contains no individuals to select from" for a population with no individuals, instead of failing later with an unrelated message. An empty population inside a `MultiPop` is returned unchanged. Fixed `selectFam` failing with "no rows to aggregate" when none of the individuals were eligible, which now returns no individuals, and `selectOCS` now says when there are no female or male candidates to select from. Fixed `selectWithinFam` ignoring `famType` for a `MultiPop`.
