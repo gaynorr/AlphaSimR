@@ -103,8 +103,8 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 #' used by GxE traits. If NULL, a value is
 #' sampled at random.
 #' @param onlyPheno should only the phenotype be returned, see return
-#' @param traits an integer vector indicating which traits to set. If NULL,
-#' all traits will be set.
+#' @param traits an integer vector or a character vector of trait names
+#' indicating which traits to set. If NULL, all traits will be set.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -181,7 +181,12 @@ setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
       traits = integer()
     }
   }else{
-    traits = as.integer(traits)
+    # A custom function selects a response rather than the traits to
+    # phenotype, so it has no meaning here
+    if(is.function(traits)){
+      stop("traits must be trait numbers or trait names, not a function")
+    }
+    traits = convertTraitsToIndex(traits, simParam)
     if(!all(traits>0L)){
       stop("traits must be positive")
     }

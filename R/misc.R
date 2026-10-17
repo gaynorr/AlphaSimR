@@ -269,7 +269,8 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
 #' @param nQtl number of QTL to edit
-#' @param trait which trait effects should guide selection of the top QTL
+#' @param trait which trait effects should guide selection of the top QTL,
+#' given as an integer or a trait name
 #' @param increase should the trait value be increased or decreased
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -305,6 +306,8 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
   }else{
     nThreads = as.integer(nThreads)
   }
+  trait = convertTraitsToIndex(trait, simParam)
+  stopifnot(length(trait) == 1L, trait > 0L, trait <= simParam$nTraits)
   ind = unique(as.integer(ind))
   stopifnot(all(ind %in% (1:pop@nInd)))
   nQtl = as.integer(nQtl)
