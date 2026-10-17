@@ -11,7 +11,7 @@ mergeGenome(females, males, crossPlan, simParam = NULL, nThreads = NULL)
 
 \item{males}{an object of \code{\link{Pop-class}} for male parents.}
 
-\item{crossPlan}{a matrix with two column representing
+\item{crossPlan}{a matrix with two columns representing
 female and male parents. Either integers for the position in
 population or character strings for the IDs.}
 
@@ -28,7 +28,7 @@ Returns an object of \code{\link{Pop-class}}
 \description{
 This function is designed to model the pairing of gametes. The male
 and female individuals are treated as gametes, so the ploidy of newly 
-created individuals will be the sum of it parents.
+created individuals will be the sum of its parents.
 }
 \examples{
 #Create founder haplotypes

@@ -28,6 +28,13 @@ individual genetic values.
 \details{
 A variance-covariance matrix of genetic values is computed for each
 \code{Pop} across traits.
+
+This is the variance of genetic values in \code{pop}.
+Variances and covariances use the population divisor \code{nInd},
+rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 # Create founder haplotypes
@@ -36,7 +43,6 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 # Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
-SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
 # Create population

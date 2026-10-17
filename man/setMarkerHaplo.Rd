@@ -36,7 +36,7 @@ with the option haplo="all". Thus, it is recommended that this
 function is first used to extract the haplotypes and that any 
 desired changes be made to the output of pullMarkerHaplo before 
 passing the matrix to setMarkerHaplo. Any changes made to QTL 
-may potentially result in changes to an individuals genetic 
+may potentially result in changes to an individual's genetic 
 value. These changes will be reflected in the gv and/or gxe slot. 
 All other slots will remain unchanged, so the ebv and pheno slots 
 will not reflect the new genotypes.

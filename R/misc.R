@@ -54,9 +54,37 @@ isMale <- function(x) {
 #' @description
 #' Returns the population's pedigree as stored in the
 #' id, mother and father slots. NULL is returned if the
-#' input population lacks the required.
+#' input population lacks the required information.
+#' With \code{nGen} greater than 1, ancestors are added
+#' from the pedigree recorded in \code{\link{SimParam}}.
 #'
 #' @param pop a population
+#' @param nGen number of generations of pedigree to return. The
+#' default of 1 returns the parents recorded in the population's
+#' slots. A larger value, or \code{Inf} for all ancestors, follows
+#' the pedigree recorded in \code{simParam}, which requires pedigree
+#' tracking to be turned on with \code{SimParam$setTrackPed(TRUE)}
+#' before the individuals were created.
+#' @param simParam an object of \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment. Only used when \code{nGen} is greater than 1.
+#'
+#' @details
+#' The two sources can differ. The slots of a population made by
+#' \code{\link{self}} or \code{\link{makeDH}} with
+#' \code{keepParents=TRUE} name the parents of the individuals that
+#' were selfed, while the pedigree in \code{simParam} always records
+#' the immediate parents. With \code{nGen} greater than 1, every
+#' meiosis, including each generation of selfing and each doubled
+#' haploid, therefore counts as one generation.
+#'
+#' The returned pedigree then contains the individuals in
+#' \code{pop} and their ancestors up to \code{nGen} generations
+#' back, each once, ordered so that parents come before their
+#' progeny. Ancestors whose own parents are not included have their
+#' parents given as "0", as do founders.
+#'
+#' @return a data.frame with columns id, mother and father, or NULL
 #'
 #' @examples
 #' # Create a founder population
@@ -75,18 +103,78 @@ isMale <- function(x) {
 #' # Returns NULL when a population lacks a pedigree
 #' getPed(founderPop)
 #'
+#' # Pedigree for more than one generation, which needs pedigree
+#' # tracking from the start of the simulation
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$setTrackPed(TRUE)
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=2, simParam=SP)
+#' pop3 = randCross(pop2, nCrosses=2, simParam=SP)
+#' getPed(pop3, nGen=2, simParam=SP)
+#'
 #' @export
-getPed = function(pop){
-  if(.hasSlot(pop, "id") &
-     .hasSlot(pop, "mother") &
-     .hasSlot(pop, "father")){
+getPed = function(pop, nGen=1, simParam=NULL){
+  if(!(is.numeric(nGen) && length(nGen)==1L && !is.na(nGen) && nGen>=1 &&
+       (is.infinite(nGen) || nGen==round(nGen)))){
+    stop("nGen must be a whole number of at least 1, or Inf")
+  }
+  if(!(.hasSlot(pop, "id") &
+       .hasSlot(pop, "mother") &
+       .hasSlot(pop, "father"))){
+    return(NULL)
+  }
+  if(nGen==1){
     df = data.frame(id = pop@id,
                     mother = pop@mother,
                     father = pop@father)
     return(df)
-  }else{
-    return(NULL)
   }
+
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(!.hasSlot(pop, "iid")){
+    stop("nGen > 1 needs internal IDs, which this population lacks")
+  }
+  if(!simParam$isTrackPed){
+    stop("nGen > 1 needs pedigree tracking; turn it on with ",
+         "SimParam$setTrackPed(TRUE) before creating individuals")
+  }
+  ped = simParam$pedigree
+  if(any(pop@iid<1L | pop@iid>nrow(ped))){
+    stop("pop contains individuals not recorded in simParam's pedigree")
+  }
+
+  # Walk up the recorded pedigree one generation at a time. An individual
+  # already reached is not walked again, so each appears once however many
+  # paths lead to it.
+  keep = logical(nrow(ped))
+  cur = unique(pop@iid)
+  keep[cur] = TRUE
+  gen = 1
+  while(gen<nGen && length(cur)>0L){
+    cur = unique(c(ped[cur,1:2]))
+    cur = cur[cur>0L & !keep[cur]]
+    keep[cur] = TRUE
+    gen = gen + 1
+  }
+
+  # Parents always have smaller internal IDs than their progeny, so
+  # ordering by internal ID puts parents first. A parent left outside the
+  # walk is reported as unknown.
+  iid = which(keep)
+  ids = rownames(ped)
+  parentId = function(x){
+    out = rep("0", length(x))
+    known = x>0L & keep[pmax(x,1L)]
+    out[known] = ids[x[known]]
+    out
+  }
+  df = data.frame(id = ids[iid],
+                  mother = parentId(ped[iid,1]),
+                  father = parentId(ped[iid,2]))
+  return(df)
 }
 
 
@@ -108,14 +196,14 @@ selInt = function(p){
 #' @title Calculate Smith-Hazel weights
 #'
 #' @description
-#' Calculates weights for Smith-Hazel index given economice weights
+#' Calculates weights for Smith-Hazel index given economic weights
 #' and phenotypic and genotypic variance-covariance matrices.
 #'
 #' @param econWt vector of economic weights
 #' @param varG the genetic variance-covariance matrix
 #' @param varP the phenotypic variance-covariance matrix
 #'
-#' @return a vector of weight for calculating index values
+#' @return a vector of weights for calculating index values
 #'
 #' @examples
 #' G = 1.5*diag(2)-0.5
@@ -178,7 +266,7 @@ selIndex = function(Y,b,scale=FALSE){
 #' @description
 #' Edits selected loci of selected individuals to a homozygous
 #' state for either the 1 or 0 allele. The gv slot is recalculated to
-#' reflect the any changes due to editing, but other slots remain the same.
+#' reflect any changes due to editing, but other slots remain the same.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
@@ -263,13 +351,14 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #'
 #' @description
 #' Edits the top QTL (with the largest additive effect) to a homozygous
-#' state for the allele increasing. Only nonfixed QTL are edited The gv slot is
-#' recalculated to reflect the any changes due to editing, but other slots remain the same.
+#' state for the allele increasing. Only nonfixed QTL are edited. The gv slot is
+#' recalculated to reflect any changes due to editing, but other slots remain the same.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
 #' @param nQtl number of QTL to edit
-#' @param trait which trait effects should guide selection of the top QTL
+#' @param trait which trait effects should guide selection of the top QTL,
+#' given as an integer or a trait name
 #' @param increase should the trait value be increased or decreased
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -305,6 +394,8 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
   }else{
     nThreads = as.integer(nThreads)
   }
+  trait = convertTraitsToIndex(trait, simParam)
+  stopifnot(length(trait) == 1L, trait > 0L, trait <= simParam$nTraits)
   ind = unique(as.integer(ind))
   stopifnot(all(ind %in% (1:pop@nInd)))
   nQtl = as.integer(nQtl)
@@ -337,10 +428,10 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
     while (nQtlInd < nQtl) {
       Qtl = Qtl + 1
       if(Qtl>ncol(QtlGeno)){
-        ret[[1]] = ret[[1]][1:nQtlInd]
-        ret[[2]] = ret[[2]][1:nQtlInd]
-        ret[[3]] = ret[[3]][1:nQtlInd]
-        ret[[4]] = ret[[4]][1:nQtlInd]
+        ret[[1]] = ret[[1]][seq_len(nQtlInd)]
+        ret[[2]] = ret[[2]][seq_len(nQtlInd)]
+        ret[[3]] = ret[[3]][seq_len(nQtlInd)]
+        ret[[4]] = ret[[4]][seq_len(nQtlInd)]
         nQtl = nQtlInd
         break()
       }
@@ -397,7 +488,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
 #'
 #' @description Calculates the usefulness criterion
 #'
-#' @param pop and object of \code{\link{Pop-class}} or
+#' @param pop an object of \code{\link{Pop-class}} or
 #' \code{\link{HybridPop-class}}
 #' @param trait the trait for selection. Either a number indicating
 #' a single trait or a function returning a vector of length nInd.
@@ -461,7 +552,7 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' sampled from a standard normal distribution to produce
 #' correlated deviates with an arbitrary correlation
 #' of R. If R is not positive semi-definite, the function
-#' returns smoothing and returns a warning (see details).
+#' applies smoothing and returns a warning (see details).
 #'
 #' @param R a correlation matrix
 #'
@@ -470,7 +561,7 @@ usefulness = function(pop,trait=1,use="gv",p=0.1,
 #' matrix and used to test if it is positive semi-definite.
 #' If the matrix is not positive semi-definite, it is not a
 #' valid correlation matrix. In this case, smoothing is
-#' applied to the matrix (as described in the 'cor.smooth' of
+#' applied to the matrix (as described in the 'cor.smooth' function of
 #' the 'psych' library) to obtain a valid correlation matrix.
 #' The resulting deviates will thus not exactly match the
 #' desired correlation, but will hopefully be close if the
@@ -487,15 +578,29 @@ transMat = function(R){
     stop(nameR, " is not a symmetric matrix")
   }
 
+  # R may be a covariance matrix rather than a correlation matrix, so the
+  # scale is taken out before anything else. The smoothing below calls
+  # cov2cor and compares eigenvalues against a fixed tolerance, neither of
+  # which is meaningful until the diagonal is one.
+  scale = sqrt(diag(as.matrix(R)))
+  if(any(scale<=0)){
+    stop(nameR, " must have a positive diagonal")
+  }
+  corR = R/tcrossprod(scale)
+
   # Check if matrix is positive semi-definite
   # Provide a warning if it is not
-  eig = eigen(R, symmetric=TRUE)
+  eig = eigen(corR, symmetric=TRUE)
 
-  if(min(eig$values)<.Machine$double.eps){
+  # Relative to the largest eigenvalue, because an absolute tolerance is
+  # only the right size for a matrix whose entries are already order one.
+  tol = ncol(corR)*max(abs(eig$values))*.Machine$double.eps
+
+  if(min(eig$values)<tol){
     warning("Matrix is not positive semi-definite, see ?transMat for details")
     # Performing correlation matrix smoothing
-    eig$values[eig$values<.Machine$double.eps] = 100*.Machine$double.eps
-    m = ncol(R)
+    eig$values[eig$values<tol] = 100*tol
+    m = ncol(corR)
     totVar = sum(eig$values)
     eig$values = eig$values * m/totVar
     newR = eig$vectors%*%diag(eig$values)%*%t(eig$vectors)
@@ -503,11 +608,13 @@ transMat = function(R){
     eig = eigen(newR, symmetric=TRUE)
   }
 
-  return(
-    t(eig$vectors %*%
-        (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
-    )
+  # Symmetric square root of the correlation matrix, with the scale put
+  # back so that crossprod of the result returns R and not corR.
+  L = t(eig$vectors %*%
+          (t(eig$vectors)*sqrt(pmax(eig$values, 0)))
   )
+
+  return(L %*% diag(scale, nrow=length(scale)))
 }
 
 #' @title Add Random Mutations
@@ -528,11 +635,26 @@ transMat = function(R){
 #' global environment.
 #' @param nThreads number of threads to use if OpenMP is available.
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' @param ... arguments passed on to the method, or to another package's
+#' \code{mutate} when pop is not a population. See details.
 #'
 #' @return an object of \code{\link{Pop-class}} if
 #' returnPos=FALSE or a list containing a
 #' \code{\link{Pop-class}} and a data.frame containing the
-#' postions of mutations if returnPos=TRUE
+#' positions of mutations if returnPos=TRUE
+#'
+#' @details
+#' \code{mutate} is a generic, and dispatches on its first argument. This
+#' is so that attaching AlphaSimR does not take \code{mutate} away from a
+#' package that also provides one, such as dplyr. Anything that is not a
+#' \code{\link{Pop-class}} is passed on to the next \code{mutate} on the
+#' search path, and an error is raised only when there is no other one to
+#' pass it to.
+#'
+#' The reverse is not true. If AlphaSimR is attached first and another
+#' package providing \code{mutate} is attached after it, that package's
+#' function is found first and this one is not reached. Call
+#' \code{AlphaSimR::mutate} in that case.
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -552,10 +674,23 @@ transMat = function(R){
 #' pop = mutate(pop, mutRate = 0.1, simParam=SP)
 #' hapAfter = pullSegSiteHaplo(pop)
 #' hapAfter - hapBefore
-#' 
+#'
+#' @rdname mutate
 #' @export
-mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
-                  nThreads=NULL){
+setGeneric("mutate", function(pop, ...) standardGeneric("mutate"))
+
+# This is the package's only setGeneric. The generic and both of its
+# methods are kept in this one file because DESCRIPTION has no Collate
+# field, so files are sourced in alphabetical order and a method defined
+# in an earlier file would not find the generic. Moving either method
+# elsewhere means adding Collate.
+
+#' @rdname mutate
+#' @export
+setMethod("mutate",
+          signature(pop = "Pop"),
+          function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
+                   nThreads=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -586,9 +721,11 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
       # Sample mutation sites
       sites = sample.int(size = nMut[take], n = s)
 
-      # Resolve all mutations
-      chr = 1L
+      # Resolve all mutations. sites comes back from sample.int in no
+      # particular order and the walk below only ever moves forward, so
+      # the search has to start from the first chromosome each time.
       for(i in sites){
+        chr = 1L
         # Find chromosome
         repeat{
           if(i > sum(pop@nLoci[1L:chr])){
@@ -639,6 +776,35 @@ mutate = function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
     return(pop)
   }
 }
+)
+
+#' @rdname mutate
+#' @export
+setMethod("mutate",
+          signature(pop = "ANY"),
+          function(pop, ...){
+            # Not a population, so this call was meant for whatever else
+            # provides mutate. Hand it to the next one on the search path,
+            # skipping this package so that the search cannot come back
+            # here and recurse.
+            here = "package:AlphaSimR"
+            for(where in search()){
+              if(identical(where, here)){
+                next
+              }
+              env = as.environment(where)
+              if(exists("mutate", envir=env, inherits=FALSE)){
+                nextMutate = get("mutate", envir=env, inherits=FALSE)
+                if(is.function(nextMutate)){
+                  return(nextMutate(pop, ...))
+                }
+              }
+            }
+            stop("mutate() expects a Pop, and was given a ",
+                 paste(class(pop), collapse="/"),
+                 ". No other mutate() is attached to pass it to.")
+          }
+)
 
 #' @title Lose individuals at random
 #'
@@ -678,7 +844,7 @@ attrition = function(pop, p){
 #' 
 #' This function is designed for future expansion. The intent is to use it 
 #' to develop a GxE model based on compound symmetry. In this model, the 
-#' p-value used in the current GxE model will serve a a seed for sampling 
+#' p-value used in the current GxE model will serve as a seed for sampling 
 #' environmental effects.
 #'
 #' @param n number of deviates to sample

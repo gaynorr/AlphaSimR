@@ -68,7 +68,7 @@ List optimize(List (*objective)(double, List), List args, double l,
     }
     
     if((std::abs(p)<std::abs(0.5*q*r))&&
-       (p<(q*(l-x)))&&
+       (p>(q*(l-x)))&&
        (p<(q*(u-x)))){
       // Parabolic interpolation step
       d = p/q;

@@ -26,6 +26,11 @@ Returns variance of estimated breeding values for all traits within a
 \details{
 A variance-covariance matrix of estimated breeding values is computed for
 each \code{Pop} across traits in \code{ebv(pop)}.
+
+This function calculated the variance of values stored in the \code{ebv} slot;
+supplied by the user or \code{\link{setEBV}}.
+Depending on how it was populated, it can contain estimated breeding
+values, estimated genetic values, or other estimated/predicted values.
 }
 \examples{
 # Create founder haplotypes

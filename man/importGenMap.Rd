@@ -17,8 +17,10 @@ a list of named vectors
 }
 \description{
 Formats a genetic map stored in a data.frame to
-AlphaSimR's internal format. Map positions must be 
-in Morgans.
+AlphaSimR's internal format. Map positions must be
+in Morgans. Positions are absolute, measured from the
+start of the chromosome, and are kept as supplied, so
+they must be non-negative.
 }
 \examples{
 genMap = data.frame(markerName=letters[1:5],

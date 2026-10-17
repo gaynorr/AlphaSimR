@@ -56,6 +56,6 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Creates a new \code{\link{Pop-class}} from an object of
-of the Pop superclass.
+the Pop superclass.
 }
 \keyword{internal}

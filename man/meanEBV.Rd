@@ -57,6 +57,11 @@ combined with \code{\link{rbind}}.
 Simplified output includes a \code{"source"} attribute. This is a data frame
 with columns \code{level1}, \code{level2}, etc., indicating the name (or
 index) of the source population for each row at each retained nesting level.
+
+This function calculated the mean of values stored in the \code{ebv} slot;
+supplied by the user or \code{\link{setEBV}}.
+Depending on how it was populated, it can contain estimated breeding
+values, estimated genetic values, or other estimated/predicted values.
 }
 \examples{
 # Create founder haplotypes

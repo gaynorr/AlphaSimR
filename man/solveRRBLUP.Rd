@@ -9,10 +9,37 @@ solveRRBLUP(y, X, M)
 \arguments{
 \item{y}{a matrix with n rows and 1 column}
 
-\item{X}{a matrix with n rows and x columns}
+\item{X}{a matrix with n rows and x columns. Columns that are linearly
+dependent on the others are dropped and get a fixed effect of zero. An
+intercept, a column whose values are all the same, is always kept.}
 
 \item{M}{a matrix with n rows and m columns}
 }
+\value{
+A list with the marker variance \code{Vu}, the residual variance
+\code{Ve}, the fixed effects \code{beta} and the marker effects \code{u}.
+}
 \description{
-Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}
+Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e}, where
+\eqn{u \sim N(0,I\sigma^2_u)} and \eqn{e \sim N(0,I\sigma^2_e)}. The
+variance components are estimated by REML
+\insertCite{patterson1971Recovery}{AlphaSimR} using the factored spectral
+approach of FaST-LMM \insertCite{lippert2011FaST}{AlphaSimR}.
+}
+\details{
+REML is reduced to a one dimensional search over delta, the ratio of the
+residual variance to the marker variance. FaST-LMM works with M*M' itself
+and re-estimates the fixed effects at every delta. One decomposition
+therefore supplies the likelihood, the generalized least squares solution
+for the fixed effects, and the BLUPs, and that decomposition is taken in
+whichever of the two spaces is smaller. When there are fewer markers than
+records the eigenvectors of M'*M serve in place of those of M*M', the rank
+deficient directions are summarized analytically, and no matrix larger
+than M is ever formed.
+
+This is an independent implementation of the published method. It shares
+no code with the FaST-LMM software distributed by Microsoft.
+}
+\references{
+\insertAllCited{}
 }

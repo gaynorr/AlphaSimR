@@ -1,0 +1,296 @@
+---
+title: "Importing Data"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Importing Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+set.seed(124)
+```
+
+# Introduction
+
+Most simulations start from founder genomes simulated by `runMacs` or
+`quickHaplo`. Sometimes it is better to start from real data: the
+haplotypes or genotypes of an existing breeding population, a genetic
+map from a linkage study, or marker effects estimated in a genomic
+prediction model. This article shows how to bring each of these into
+`AlphaSimR` and start a simulation from them.
+
+Three functions create a founder population from external data:
+
+| Function | Input | Use when |
+|:--|:--|:--|
+| `importHaplo` | phased haplotypes | the phase of every allele is known |
+| `importInbredGeno` | genotypes of inbred lines | the individuals are fully inbred, so genotypes give the haplotypes |
+| `newMapPop` | lists in `AlphaSimR`'s internal format | another function has produced that format already |
+
+All of them need a genetic map, which `importGenMap` formats. Each
+returns a `MapPop`, or a `NamedMapPop` when a pedigree is supplied, that
+is passed to `SimParam$new` like any other founder population.
+
+So that the article can run anywhere, its examples make their own
+stand-in for external data instead of reading files from disk.
+
+# The genetic map
+
+A genetic map is a `data.frame` whose first three columns are the
+marker name, the chromosome and the map position. Here is a small map,
+in centimorgans as it would usually come from a linkage study:
+
+```{r genMap}
+mapCM = data.frame(
+  marker = paste0("snp", 1:8),
+  chr = rep(c("1", "2"), each = 4),
+  posCM = c(0, 35, 80, 115, 5, 30, 60, 85)
+)
+mapCM
+```
+
+`AlphaSimR` measures map positions in Morgans, so positions in
+centimorgans are divided by 100. Positions are absolute, measured from
+the start of the chromosome. They are kept as supplied, so they must not
+be negative, and a map that starts at 5 cM leaves 5 cM before its first
+marker in which crossovers can still occur.
+
+```{r importGenMap}
+genMap = data.frame(
+  marker = mapCM$marker,
+  chr = mapCM$chr,
+  pos = mapCM$posCM / 100
+)
+str(importGenMap(genMap))
+```
+
+By default each chromosome ends at its last marker. When the full
+length of a chromosome is known, give it with `genLen`, one value per
+chromosome in Morgans, so that crossovers beyond the last marker are
+simulated too. Each length must be at least the position of the
+chromosome's last marker.
+
+```{r genLen}
+genLen = c(1.25, 0.95)
+```
+
+# Phased haplotypes
+
+`importHaplo` takes a matrix with one row per haplotype and one column
+per marker. The haplotypes of an individual are in consecutive rows, so
+for a diploid the first two rows are the two haplotypes of the first
+individual. Alleles are coded 0 and 1, and the column names are the
+marker names used in the genetic map.
+
+Here we stand in for real data by drawing haplotypes for six diploid
+individuals at random.
+
+```{r haplo}
+nInd = 6
+haplo = matrix(rbinom(2 * nInd * nrow(genMap), size = 1, prob = 0.5),
+               nrow = 2 * nInd)
+colnames(haplo) = genMap$marker
+head(haplo, 4)
+```
+
+A pedigree is optional. With one, the individuals keep their own IDs
+and parents, and the result is a `NamedMapPop`. It can be a vector of
+IDs, or a `data.frame` whose first three columns are the ID, mother and
+father.
+
+```{r importHaplo}
+ped = data.frame(id = paste0("ind", 1:nInd),
+                 mother = "0",
+                 father = "0")
+
+founderPop = importHaplo(haplo = haplo,
+                         genMap = genMap,
+                         ploidy = 2L,
+                         ped = ped,
+                         genLen = genLen)
+founderPop
+```
+
+The imported haplotypes come back unchanged:
+
+```{r checkHaplo}
+all(pullSegSiteHaplo(founderPop) == haplo)
+```
+
+For large data sets the haplotype matrix can be stored as `raw`, which
+uses one byte per allele instead of eight. `pullSegSiteHaplo`,
+`pullSnpHaplo` and `pullMarkerHaplo` return this format with
+`asRaw = TRUE`, which makes it easy to keep a subset of a population's
+markers, as when a sequence is thinned to the density of a SNP array:
+
+```{r rawHaplo}
+keep = genMap[c(1, 3, 5, 7), ]
+rawHaplo = pullMarkerHaplo(founderPop, markers = keep$marker,
+                           asRaw = TRUE)
+thinnedPop = importHaplo(haplo = rawHaplo, genMap = keep)
+thinnedPop
+```
+
+# Genotypes of inbred lines
+
+Genotyping usually gives unphased genotypes rather than haplotypes. For
+fully inbred lines that loses nothing, because both haplotypes are the
+same. `importInbredGeno` takes genotypes with one row per individual,
+coded either 0, 1, 2 or -1, 0, 1; it detects which. Heterozygous or
+fractional values are rounded to the nearest homozygote.
+
+```{r importInbredGeno}
+geno = 2 * matrix(rbinom(nInd * nrow(genMap), size = 1, prob = 0.5),
+                  nrow = nInd)
+colnames(geno) = genMap$marker
+
+inbredPop = importInbredGeno(geno = geno, genMap = genMap,
+                             ped = paste0("line", 1:nInd))
+pullSegSiteGeno(inbredPop)
+```
+
+# PLINK files
+
+PLINK's text format stores a pedigree and genotypes in a `.ped` file
+and the map in a `.map` file. The `.ped` file has six columns describing
+each individual (family, ID, father, mother, sex and phenotype) followed
+by two allele columns per marker. The `.map` file has four columns:
+chromosome, marker name, position in centimorgans and position in base
+pairs.
+
+Both are plain text and can be read with `read.table`. To make a pair
+to read, we write one with `writePlink`, which needs a simulation with a
+trait and a SNP chip.
+
+```{r writePlink}
+SP = SimParam$new(founderPop)
+SP$nThreads = 1L
+SP$addTraitA(nQtlPerChr = 2)
+SP$setVarE(h2 = 0.5)
+SP$addSnpChip(nSnpPerChr = 2)
+pop = newPop(founderPop, simParam = SP)
+
+baseName = file.path(tempdir(), "example")
+writePlink(pop, baseName = baseName, simParam = SP)
+```
+
+Read the two files back, keeping the alleles as text. `AlphaSimR` has
+no physical map, so `writePlink` fills the base pair column with each
+site's index on its chromosome.
+
+```{r readPlink}
+pedFile = read.table(paste0(baseName, ".ped"), colClasses = "character")
+mapFile = read.table(paste0(baseName, ".map"), colClasses = "character")
+mapFile
+```
+
+`writePlink` codes the alleles as "1" and "2". Each marker's two allele
+columns are split into the individual's first and second haplotype,
+recoded to 0 and 1, and interleaved so that each individual's two
+haplotypes are in consecutive rows. The map positions are converted from
+centimorgans to Morgans.
+
+```{r plinkToHaplo}
+alleles = as.matrix(pedFile[, -(1:6)])
+allele1 = alleles[, seq(1, ncol(alleles), by = 2), drop = FALSE]
+allele2 = alleles[, seq(2, ncol(alleles), by = 2), drop = FALSE]
+
+plinkHaplo = matrix(0L, nrow = 2 * nrow(alleles), ncol = ncol(allele1))
+plinkHaplo[seq(1, nrow(plinkHaplo), by = 2), ] = (allele1 == "2") * 1L
+plinkHaplo[seq(2, nrow(plinkHaplo), by = 2), ] = (allele2 == "2") * 1L
+colnames(plinkHaplo) = mapFile$V2
+
+plinkMap = data.frame(marker = mapFile$V2,
+                      chr = mapFile$V1,
+                      pos = as.numeric(mapFile$V3) / 100)
+
+# PLINK lists the father before the mother
+plinkPed = data.frame(id = pedFile$V2,
+                      mother = pedFile$V4,
+                      father = pedFile$V3)
+
+plinkPop = importHaplo(haplo = plinkHaplo, genMap = plinkMap,
+                       ped = plinkPed)
+all(pullSegSiteHaplo(plinkPop) == pullSnpHaplo(pop, simParam = SP))
+```
+
+This round trip keeps the phase only because `writePlink` writes each
+individual's haplotypes in order. Genotypes from a SNP array or from
+sequencing are not phased: PLINK does not record which allele of a
+heterozygote is on which haplotype. Treating the first allele column as
+one haplotype would then pair alleles at random, which breaks up the
+linkage disequilibrium in the data. Inbred lines can be imported with
+`importInbredGeno`, but outbred individuals, such as most animals,
+should be phased with dedicated phasing software before their
+haplotypes are imported. Real PLINK files also tend to code alleles as
+nucleotides and to mark missing genotypes with "0", so each marker
+needs recoding to 0 and 1 against a chosen reference allele, and
+missing genotypes need imputing first.
+
+PLINK's binary `.bed` format is not plain text. Packages that read it,
+such as `genio` and `BEDMatrix`, return a genotype matrix that can be
+handled as above.
+
+# Starting a simulation
+
+An imported founder population starts a simulation in the usual way.
+When the causal loci and their effects are known, for example from a
+mapping study, `SimParam$importTrait` adds a trait from marker names and
+effects instead of sampling them. Here two markers on each chromosome
+are given additive effects:
+
+```{r importTrait}
+SP = SimParam$new(founderPop)
+SP$nThreads = 1L
+SP$importTrait(markerNames = c("snp1", "snp3", "snp6", "snp8"),
+               addEff = c(0.5, -0.25, 0.4, 0.1),
+               name = "Yield")
+```
+
+`domEff` adds dominance effects. Additive-by-additive epistasis is added
+with `epiPairs`, a two-column matrix naming the interacting pairs of
+markers, and `epiEff`, their effects. Every marker must then be in
+exactly one pair, and a pair may span two chromosomes.
+
+```{r importTraitEpi}
+SP$importTrait(markerNames = c("snp2", "snp4", "snp5", "snp7"),
+               addEff = c(0.3, 0.2, -0.1, 0.4),
+               epiPairs = rbind(c("snp2", "snp5"),
+                                c("snp4", "snp7")),
+               epiEff = c(0.2, -0.3),
+               name = "Height")
+```
+
+A SNP chip whose markers are known, such as a commercial array, is
+added by marker name with `addSnpChipByName`:
+
+```{r addSnpChipByName}
+SP$addSnpChipByName(markers = c("snp1", "snp2", "snp5", "snp6"),
+                    name = "Array")
+```
+
+The founders then carry their own IDs into the simulation, and every
+function works as usual:
+
+```{r newPop}
+pop = newPop(founderPop, simParam = SP)
+pop@id
+gv(pop)
+pullSnpGeno(pop, snpChip = "Array", simParam = SP)
+```
+
+# Further reading
+
+The [Demographic Models](DemographicModels.html) article shows how to
+import founder genomes simulated by msprime and stdpopsim, and the
+[Gene Drop Simulations](GeneDropSimulations.html) article shows how to
+simulate genomes through a known pedigree, starting from imported
+founders.

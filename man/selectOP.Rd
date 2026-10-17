@@ -20,7 +20,7 @@ selectOP(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}}
+\item{pop}{an object of \code{\link{Pop-class}}
 or \code{\link{MultiPop-class}}}
 
 \item{nInd}{the number of plants to select}
@@ -69,7 +69,7 @@ or \code{\link{MultiPop-class}}
 This function models selection in an open pollinating
 plant population. It allows for varying the percentage of
 selfing. The function also provides an option for modeling
-selection as occuring before or after pollination.
+selection as occurring before or after pollination.
 }
 \examples{
 #Create founder haplotypes
@@ -89,3 +89,26 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = selectOP(pop, nInd=3, nSeeds=10, probSelf=0.5, simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectFam]{selectFam()}},
+\code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
+\code{\link[=selectWithinFam]{selectWithinFam()}}
+}
+\concept{mating functions}
+\concept{selection functions}

@@ -57,6 +57,11 @@ populations so that results can be combined with \code{\link{rbind}}.
 Simplified output includes a \code{"source"} attribute. This is a data frame
 with columns \code{level1}, \code{level2}, etc., indicating the name (or
 index) of the source population for each row at each retained nesting level.
+
+The \code{ebv} slot stores predictions supplied by the user or
+\code{\link{setEBV}}.
+Depending on how it was populated, it can contain estimated breeding
+values, estimated genetic values, or other estimated/predicted values.
 }
 \examples{
 # Create founder haplotypes
@@ -66,7 +71,7 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
 trtH2 = 0.5
-SP$setVarE(h2=0.5)
+SP$setVarE(h2=trtH2)
 \dontshow{SP$nThreads = 1L}
 
 # Create population

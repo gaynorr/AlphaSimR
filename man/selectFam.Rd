@@ -20,7 +20,7 @@ selectFam(
 )
 }
 \arguments{
-\item{pop}{and object of \code{\link{Pop-class}},
+\item{pop}{an object of \code{\link{Pop-class}},
 \code{\link{HybridPop-class}} or \code{\link{MultiPop-class}}}
 
 \item{nFam}{the number of families to select}
@@ -94,3 +94,12 @@ pop2 = randCross(pop, nCrosses=3, nProgeny=10, simParam=SP)
 pop3 = selectFam(pop2, 2, simParam=SP)
 
 }
+\seealso{
+Other selection functions:
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectInd]{selectInd()}},
+\code{\link[=selectOCS]{selectOCS()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=selectWithinFam]{selectWithinFam()}}
+}
+\concept{selection functions}

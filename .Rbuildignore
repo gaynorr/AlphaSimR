@@ -5,3 +5,8 @@
 ^\.git$
 ^_pkgdown\.yml$
 ^vignettes/web_only$
+^\.positai$
+^\.claude$
+^codecov\.yml$
+^AGENTS\.md$
+^TODO\.txt$

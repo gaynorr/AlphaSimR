@@ -54,6 +54,22 @@ sets \code{level=1} and issues a warning.
 Simplified output includes a \code{"source"} attribute. This is a data frame
 with columns \code{level1}, \code{level2}, etc., indicating the name (or
 index) of the source population for each row at each retained nesting level.
+
+Genetic values include the trait intercept and the contributions of
+additive, dominance, and additive-by-additive epistatic genotypic effects
+present in the trait model.
+For a fixed trait definition, these values do not depend on the population,
+unlike the breeding values and non-additive deviations.
+For traits with genotype-by-environment effects, these genetic values
+refer to the target environment, where the environmental covariate is zero.
+
+See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
+
+See \code{vignette("GxE", package = "AlphaSimR")} for
+the genotype-by-environment model
 }
 \examples{
 # Create founder haplotypes

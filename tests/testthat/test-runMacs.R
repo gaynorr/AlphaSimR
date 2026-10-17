@@ -1,0 +1,207 @@
+context("runMacs")
+
+# MaCS draws the requested number of segregating sites while it simulates a
+# chromosome, using reservoir sampling, rather than generating every site and
+# subsampling afterwards. These tests cover the properties that behavior has
+# to keep. The statistical comparison of the retained sites against a uniform
+# subset of all sites is too slow for the test suite and lives in
+# macs_check.R at the top of the package.
+
+test_that("runMacs returns exactly the requested number of sites", {
+  set.seed(6001)
+  pop = runMacs(nInd = 6, nChr = 3, segSites = 12, nThreads = 1)
+  expect_equal(unname(sapply(pop@genMap, length)), rep(12L, 3L))
+  expect_equal(unname(pop@nLoci), rep(12L, 3L))
+})
+
+test_that("the retained sites form a valid genetic map", {
+  set.seed(6002)
+  pop = runMacs(nInd = 6, nChr = 2, segSites = 15, nThreads = 1)
+  for (chr in seq_along(pop@genMap)) {
+    pos = pop@genMap[[chr]]
+    # Sites come back in position order, at absolute positions within the
+    # 1 Morgan chromosome, with no repeats
+    expect_false(is.unsorted(pos, strictly = TRUE))
+    expect_true(all(pos >= 0 & pos <= 1))
+    expect_false(any(duplicated(pos)))
+  }
+})
+
+test_that("every retained site is segregating", {
+  set.seed(6003)
+  pop = runMacs(nInd = 8, nChr = 2, segSites = 15, nThreads = 1)
+  SP = SimParam$new(pop)
+  SP$nThreads = 1L
+  basePop = newPop(pop, simParam = SP)
+  freq = colMeans(pullSegSiteHaplo(basePop, simParam = SP))
+  expect_true(all(freq > 0))
+  expect_true(all(freq < 1))
+})
+
+test_that("asking for all sites returns more than a capped request", {
+  set.seed(6004)
+  capped = runMacs(nInd = 6, nChr = 1, segSites = 10, nThreads = 1)
+  set.seed(6004)
+  uncapped = runMacs(nInd = 6, nChr = 1, segSites = NULL, nThreads = 1)
+  expect_equal(length(capped@genMap[[1]]), 10L)
+  expect_gt(length(uncapped@genMap[[1]]), 10L)
+})
+
+test_that("requesting more sites than are generated is an error", {
+  set.seed(6005)
+  expect_error(runMacs(nInd = 4, nChr = 1, segSites = 1e6, nThreads = 1),
+               "segSites")
+})
+
+test_that("runMacs site sampling is reproducible", {
+  set.seed(6006)
+  pop1 = runMacs(nInd = 6, nChr = 2, segSites = 12, nThreads = 1)
+  set.seed(6006)
+  pop2 = runMacs(nInd = 6, nChr = 2, segSites = 12, nThreads = 1)
+  expect_equal(pop1@genMap, pop2@genMap)
+
+  SP1 = SimParam$new(pop1); SP1$nThreads = 1L
+  SP2 = SimParam$new(pop2); SP2$nThreads = 1L
+  expect_equal(pullSegSiteHaplo(newPop(pop1, simParam = SP1), simParam = SP1),
+               pullSegSiteHaplo(newPop(pop2, simParam = SP2), simParam = SP2))
+
+  # A different seed gives a different map
+  set.seed(6007)
+  pop3 = runMacs(nInd = 6, nChr = 2, segSites = 12, nThreads = 1)
+  expect_false(isTRUE(all.equal(pop1@genMap, pop3@genMap)))
+})
+
+test_that("runMacs site sampling does not depend on the thread count", {
+  skip_on_cran()
+  nThreads = getNumThreads()
+  skip_if_not(nThreads > 1L, "only one thread available")
+
+  set.seed(6008)
+  pop1 = runMacs(nInd = 6, nChr = 4, segSites = 12, nThreads = 1)
+  set.seed(6008)
+  popN = runMacs(nInd = 6, nChr = 4, segSites = 12, nThreads = nThreads)
+  expect_equal(pop1@genMap, popN@genMap)
+
+  SP1 = SimParam$new(pop1); SP1$nThreads = 1L
+  SPN = SimParam$new(popN); SPN$nThreads = 1L
+  expect_equal(pullSegSiteHaplo(newPop(pop1, simParam = SP1), simParam = SP1),
+               pullSegSiteHaplo(newPop(popN, simParam = SPN), simParam = SPN))
+})
+
+test_that("REFUSE segSites whose length is not 1 or nChr", {
+  # One seed is drawn per chromosome, and the C++ code reads a seed for
+  # every element of segSites
+  expect_error(runMacs(nInd = 4, nChr = 2, segSites = c(5, 5, 5),
+                       nThreads = 1),
+               "segSites must have length 1 or nChr")
+  expect_error(runMacs(nInd = 4, nChr = 3, segSites = c(5, 5),
+                       nThreads = 1),
+               "segSites must have length 1 or nChr")
+  expect_error(AlphaSimR:::MaCS("8 1E6 -t 1E-4 -r 1E-4 -s ", c(5L, 5L),
+                                FALSE, 2L, 1L, 1L),
+               "same length")
+  set.seed(6009)
+  pop = runMacs(nInd = 4, nChr = 2, segSites = c(5, 7), nThreads = 1)
+  expect_equal(unname(pop@nLoci), c(5L, 7L))
+})
+
+test_that("REFUSE MaCS population IDs that do not exist", {
+  # nInd = 4 diploids is 8 chromosomes, split over two populations with
+  # migration between them, so that every lineage can coalesce
+  base = "1E6 -t 1E-4 -r 1E-4 -I 2 4 4 1.0"
+  runCommand = function(extra) {
+    runMacs(nInd = 4, nChr = 1, segSites = 5, nThreads = 1,
+            manualCommand = paste(base, extra), manualGenLen = 1)
+  }
+  # Options applied as the command is read
+  for (extra in c("-n 0 1.0", "-n 3 1.0", "-n -1 1.0", "-n x 1.0",
+                  "-g 0 1.0", "-g 3 1.0",
+                  "-m 0 1 1.0", "-m 1 3 1.0", "-m -1 2 1.0",
+                  "-en 0.001 0 1.0", "-eg 0.001 -1 1.0",
+                  "-es 0.001 0 0.5", "-ej 0.001 0 1",
+                  "-em 0.001 1 0 1.0")) {
+    expect_error(runCommand(extra), "MaCS failed", info = extra)
+  }
+  # Historical events, whose upper bound is only known when they run
+  for (extra in c("-en 0.001 3 1.0", "-eg 0.001 3 1.0",
+                  "-es 0.001 3 0.5", "-em 0.001 1 3 1.0",
+                  "-em 0.001 3 1 1.0")) {
+    expect_error(runCommand(extra), "does not exist", info = extra)
+  }
+  # The number of populations must be a positive whole number
+  for (I in c("-I 0", "-I -1", "-I x")) {
+    expect_error(runMacs(nInd = 4, nChr = 1, segSites = 5, nThreads = 1,
+                         manualCommand = paste("1E6 -t 1E-4 -r 1E-4", I),
+                         manualGenLen = 1),
+                 "MaCS failed", info = I)
+  }
+  # IDs that exist still work
+  set.seed(6010)
+  pop = runCommand("-n 2 1.0 -g 1 0.0 -m 1 2 1.0 -en 0.001 2 2.0")
+  expect_equal(unname(pop@nLoci), 5L)
+})
+
+test_that("preset and user-given mutation rates work", {
+  for(rate in list(0, -1, NA_real_, NaN, Inf, -Inf, numeric(),
+                   c(1e-8, 2e-8), "1e-8", TRUE)){
+    expect_error(runMacs(nInd=2, mutRate=rate),
+                 "mutRate must be a single positive finite number")
+  }
+  expect_error(runMacs(nInd=2, mutRate=1e-8,
+                       manualCommand="1E6 -t 1E-4 -r 1E-4", manualGenLen=1),
+               "mutRate cannot be combined with manualCommand")
+  skip_on_cran() # not very fast
+  # Check that preset and equal user-given mutation rates give the same number of segregating sites
+  rates = c(GENERIC=1e-8, CATTLE=9.4e-9, WHEAT=2e-9, MAIZE=1.25e-8)
+  for(species in names(rates)){
+    set.seed(6011)
+    original = runMacs(nInd=2, species=species, nThreads=1)
+    set.seed(6011)
+    explicit = runMacs(nInd=2, species=species, nThreads=1,
+                       mutRate=unname(rates[species]))
+    expect_identical(explicit@nLoci, original@nLoci, info=species)
+  }
+  # Check that lower user-given mutation rates gives fewer segregating sites
+  set.seed(6011)
+  original = runMacs(nInd=2, species="GENERIC", nThreads=1)
+  set.seed(6011)
+  lower = runMacs(nInd=2, species="GENERIC", nThreads=1, mutRate=1e-9)
+  expect_true(lower@nLoci < original@nLoci)
+})
+
+test_that("Gene conversion produces reproducible valid founder haplotypes", {
+  command = "1000 -t 0.01 -r 0.001 -c 10 100 -h 200"
+  set.seed(6024)
+  a = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  set.seed(6024)
+  b = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  expect_identical(a@geno,b@geno)
+  expect_identical(a@genMap,b@genMap)
+  h = pullSegSiteHaplo(a,nThreads=1)
+  expect_equal(nrow(h),8L)
+  expect_gt(ncol(h),0)
+  expect_true(all(colSums(h)>0 & colSums(h)<8))
+  expect_false(is.unsorted(a@genMap[[1]]))
+  expect_true(all(a@genMap[[1]]>=0 & a@genMap[[1]]<=0.01))
+})
+
+test_that("MaCS reads multiple allele-frequency bins from a file", {
+  bins = tempfile()
+  on.exit(unlink(bins),add=TRUE)
+  writeLines(c("0.25 0.5","1.0 0.5"),bins)
+  command = paste("1000 -t 0.02 -r 0.001 -F",bins,"0")
+  set.seed(6025)
+  a = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  set.seed(6025)
+  b = runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1)
+  expect_identical(a@geno,b@geno)
+  expect_identical(a@genMap,b@genMap)
+  h = pullSegSiteHaplo(a,nThreads=1)
+  expect_equal(nrow(h),8L)
+  expect_gt(ncol(h),0)
+  expect_true(all(colSums(h)>0 & colSums(h)<8))
+  # Invalid ranges must fail during parsing, rather than corrupt bin lookup.
+  writeLines(c("0.25 0.5","0.2 0.5"),bins)
+  expect_error(runMacs(4,manualCommand=command,manualGenLen=0.01,nThreads=1),
+               "freq range entered is incorrect")
+})

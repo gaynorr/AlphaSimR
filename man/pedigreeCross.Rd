@@ -10,34 +10,44 @@ pedigreeCross(
   mother,
   father,
   matchID = FALSE,
-  maxCycle = 100,
+  maxCycle = NULL,
   DH = NULL,
   nSelf = NULL,
   useFemale = TRUE,
   simParam = NULL,
-  nThreads = NULL
+  nThreads = NULL,
+  unknownParent = NA_character_,
+  ...
 )
 }
 \arguments{
-\item{founderPop}{a \code{\link{Pop-class}}}
+\item{founderPop}{a \code{\link{Pop-class}}, \code{\link{MapPop-class}}
+or \code{\link{NamedMapPop-class}}. A map population is taken to mean
+that no simulation has been set up yet: see details. Matching on ID needs
+a population that has IDs, so a \code{\link{MapPop-class}} can only be
+used with matchID=FALSE.}
 
 \item{id}{a vector of unique identifiers for individuals
-in the pedigree. The values of these IDs are seperate from
+in the pedigree. The values of these IDs are separate from
 the IDs in the founderPop if matchID=FALSE.}
 
 \item{mother}{a vector of identifiers for the mothers
-of individuals in the pedigree. Must match one of the
-elements in the id vector or they will be treated as unknown.}
+of individuals in the pedigree. See details for the treatment of
+unknown parents.}
 
 \item{father}{a vector of identifiers for the fathers
-of individuals in the pedigree. Must match one of the
-elements in the id vector or they will be treated as unknown.}
+of individuals in the pedigree. See details for the treatment of
+unknown parents.}
 
 \item{matchID}{indicates if the IDs in founderPop should be
 matched to the id argument. See details.}
 
-\item{maxCycle}{the maximum number of loops to make over the pedigree
-to sort it.}
+\item{maxCycle}{the maximum number of passes to make over the pedigree
+while working out which generation each individual belongs to. If
+\code{NULL}, the number of individuals is used, which is the deepest a
+pedigree of that size can be and so is always enough. A pedigree that
+cannot be sorted is reported as such whatever this is set to, because a
+pass that places nobody is a cycle and is detected as one.}
 
 \item{DH}{an optional vector indicating if an individual
 should be made a doubled haploid.}
@@ -46,24 +56,99 @@ should be made a doubled haploid.}
 individual should be selfed.}
 
 \item{useFemale}{If creating DH lines, should female recombination
-rates be used. This parameter has no effect if, recombRatio=1.}
+rates be used. This parameter has no effect if recombRatio=1.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
-global environment.}
+global environment. Ignored, with a warning, when founderPop is a map
+population.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{unknownParent}{the values in mother and father that mean the
+parent is unknown, such as \code{"0"} or \code{""}. More than one may
+be given. \code{NA} is always treated as unknown, whatever this is set
+to, because it cannot name an individual.}
+
+\item{...}{the recombination settings \code{v}, \code{p} and
+\code{quadProb}, used only when founderPop is a map population. Any that
+are not given keep the \code{\link{SimParam}} defaults. Passing them
+with a \code{\link{Pop-class}} is an error, because that simulation
+already defines them.}
+}
+\value{
+a \code{\link{Pop-class}}, or a
+\code{\link{NamedMapPop-class}} when founderPop is a map population.
+With matchID=TRUE this holds the matched individuals and their
+descendants, which may be fewer than the pedigree supplied.
 }
 \description{
 Creates a \code{\link{Pop-class}} from a generic
 pedigree and a set of founder individuals.
+}
+\details{
+A map population and a population are handled differently, because they
+mean different things about where the user is.
 
-The way in which the user supplied pedigree is used depends on
-the value of matchID. If matchID is TRUE, the IDs in the user
-supplied pedigree are matched against founderNames. If matchID
-is FALSE, founder individuals in the user supplied pedigree are
-randomly sampled from founderPop.
+Passing a \code{\link{Pop-class}} means a simulation is already running,
+so the pedigree is built with the user's \code{\link{SimParam}} and the
+result is a \code{\link{Pop-class}} belonging to that simulation.
+
+Passing a \code{\link{MapPop-class}} or a
+\code{\link{NamedMapPop-class}} means no simulation has been set up yet.
+No \code{\link{SimParam}} is looked for and none is created for the user:
+the function makes a temporary one of its own, uses it to run the crossing,
+and discards it. The result is a \code{\link{NamedMapPop-class}} carrying
+the supplied genetic map and the pedigree's IDs, which the user can then
+pass to \code{SimParam$new()} to start a simulation from. Because the
+temporary \code{\link{SimParam}} defines no traits, nothing about traits
+or SNP chips survives the call. The recombination settings it uses can be
+given as \code{v}, \code{p} and \code{quadProb} through \code{...}.
+The id, mother and father vectors are always taken as character vectors,
+and anything else is coerced to one. A parent is unknown if it is
+\code{NA} or one of the values given as unknownParent, and any other
+value names an individual. By default \code{NA} is the only unknown
+value, so a parent of \code{0} names an individual called "0" unless
+\code{unknownParent="0"} is given. An id of \code{NA}, or an id that is
+one of the unknownParent values, is not allowed.
+
+The pedigree is extended backwards before it is used, so that every
+parent is either another row of the pedigree or unknown. An individual
+named as a parent but without a row of its own is given one, with both of
+its parents unknown, and those rows are placed ahead of the supplied
+pedigree. How much is added depends on matchID.
+
+What happens next also depends on matchID.
+
+If matchID is FALSE, only the missing names that are needed are added. A
+missing name is added when it is used as a parent twice or more, counting
+the mother and father vectors together, because leaving it out would
+break a relationship: two half sibs would come back unrelated, and an
+individual whose mother and father are the same missing name would come
+back as an outcross rather than a self. A missing name used once carries
+no relationship, so it is treated as unknown, and the individual it
+belonged to becomes a founder. A pedigree of id "3" with mother "2" and
+father "1" is therefore the single founder "3", because neither "1" nor
+"2" is used anywhere else. The returned mother and father show what was
+simulated, so a dropped name comes back as \code{NA}.
+
+The founders are then the individuals whose parents are both unknown, and
+they are randomly sampled from founderPop. An individual with exactly one
+unknown parent is a half founder, and that parent is given a founder
+genome of its own, so a pedigree with several half founders needs one
+extra founder for each of them. Two half founders never share a genome.
+Every individual in the extended pedigree is returned.
+
+If matchID is TRUE, every missing name is added, because a name has to
+have a row of its own before it can be matched. An individual whose id is
+found in founderPop takes its genotype from there, and its own ancestry
+is not simulated. Only the
+matched individuals and what descends from them are simulated, so the
+returned population is smaller than the extended pedigree whenever the
+pedigree reaches back beyond a match. An individual that is neither
+matched nor descended from a match cannot be made at all, and the
+function stops rather than guessing.
 }
 \examples{
 #Create founder haplotypes
@@ -76,10 +161,53 @@ SP = SimParam$new(founderPop)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Pedigree for a biparental cross with 7 generations of selfing
-id = 1:10
-mother = c(0,0,1,3:9)
-father = c(0,0,2,3:9)
+#Pedigree for a biparental cross with 7 generations of selfing.
+#An unknown parent is NA.
+id = as.character(1:10)
+mother = c(NA, NA, "1", as.character(3:9))
+father = c(NA, NA, "2", as.character(3:9))
 pop2 = pedigreeCross(pop, id, mother, father, simParam=SP)
 
+#An incomplete pedigree, with half founders in rows 3 and 4
+founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
+SP = SimParam$new(founderPop)
+\dontshow{SP$nThreads = 1L}
+pop = newPop(founderPop, simParam=SP)
+id = as.character(1:5)
+mother = c(NA, NA, NA, "1", "1")
+father = c(NA, NA, "2", NA, "2")
+pop3 = pedigreeCross(pop, id, mother, father, simParam=SP)
+
+#A pedigree naming parents that have no row of their own. "A" is used
+#twice, so it is added and "11" and "12" come back as half sibs. "B" and
+#"C" are used once, so they are treated as unknown and "13" comes back as
+#a founder.
+id = c("11", "12", "13")
+mother = c("A", "A", "B")
+father = c(NA, NA, "C")
+pop4 = pedigreeCross(pop, id, mother, father, simParam=SP)
+getPed(pop4)
+
+#A pedigree that writes an unknown parent as 0
+id = as.character(1:3)
+mother = c("0", "0", "1")
+father = c("0", "0", "2")
+pop5 = pedigreeCross(pop, id, mother, father, unknownParent="0",
+                     simParam=SP)
+
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}

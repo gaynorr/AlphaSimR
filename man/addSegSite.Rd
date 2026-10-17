@@ -4,7 +4,15 @@
 \alias{addSegSite}
 \title{Add segregating site to MapPop}
 \usage{
-addSegSite(mapPop, siteName, chr, mapPos, haplo, nThreads = NULL)
+addSegSite(
+  mapPop,
+  siteName,
+  chr,
+  mapPos,
+  haplo,
+  nThreads = NULL,
+  extendGenLen = FALSE
+)
 }
 \arguments{
 \item{mapPop}{an object of \code{\link{MapPop-class}}}
@@ -13,12 +21,17 @@ addSegSite(mapPop, siteName, chr, mapPos, haplo, nThreads = NULL)
 
 \item{chr}{which chromosome to add the site}
 
-\item{mapPos}{genetic map position of site in Morgans}
+\item{mapPos}{absolute genetic map position of site in Morgans}
 
 \item{haplo}{haplotypes for the site}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{getNumThreads()}.}
+
+\item{extendGenLen}{should the chromosome's genetic length be
+extended to \code{mapPos} when the site lies past it. If FALSE, a
+site past the end of the chromosome is an error. The centromere is
+not moved.}
 }
 \value{
 an object of \code{\link{MapPop-class}}

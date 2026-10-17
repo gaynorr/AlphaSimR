@@ -1,7 +1,7 @@
 #' Find loci on specific chromosomes
 #' 
 #' This function alters the lociPerChr and lociLoc vectors to reflect 
-#' only loci on a specific chromosomes.
+#' only loci on specific chromosomes.
 #'
 #' @param chr chromosomes to select
 #' @param inLociPerChr original lociPerChr vector
@@ -16,8 +16,12 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
                 lociLoc=inLociLoc))
   }
   nChr = length(inLociPerChr)
-  stopifnot(any(chr%in%(1:nChr)),
-            max(chr)<=nChr)
+  if(!any(chr%in%(1:nChr))){
+    stop("chr does not name any chromosome in the population")
+  }
+  if(max(chr)>nChr){
+    stop("chr exceeds the number of chromosomes in the population")
+  }
   outLociPerChr = numeric(nChr)
   outLociPerChr[chr] = inLociPerChr[chr]
   outLociLoc = numeric(sum(outLociPerChr))
@@ -37,10 +41,36 @@ selectLoci = function(chr, inLociPerChr, inLociLoc){
               lociLoc=outLociLoc))
 }
 
+#' Check a haplotype selector
+#'
+#' Checks the haplo argument of the pull*Haplo functions. A single
+#' haplotype is read through a raw pointer in C++, so a value outside
+#' 1 to ploidy would read memory outside the genotypes.
+#'
+#' @param haplo either "all" or a single haplotype number
+#' @param ploidy ploidy level of the population
+#'
+#' @return "all", or haplo as an integer
+#'
+#' @keywords internal
+checkHaplo = function(haplo, ploidy){
+  if(identical(haplo, "all")){
+    return(haplo)
+  }
+  # The range is checked before the whole number test so that a very large
+  # value never reaches as.integer, which would turn it into NA
+  if((length(haplo)!=1L) || !is.numeric(haplo) || is.na(haplo) ||
+     (haplo<1) || (haplo>ploidy) || (haplo!=round(haplo))){
+    stop(paste0("haplo must be \"all\" or a whole number from 1 to ",
+                ploidy))
+  }
+  return(haplo)
+}
+
 #' Retrieves marker names from genMap
 #'
 #' @param lociPerChr number of loci per chromosome
-#' @param lociLoc position of loci on chromosome
+#' @param lociLoc index of loci within each chromosome's segregating sites
 #' @param genMap internal AlphaSimR genetic map with names
 #'
 #' @keywords internal
@@ -61,7 +91,7 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
 #' Finds positions of loci by marker name
 #' 
 #' @description Used to generate lociPerChr and lociLoc 
-#' objects for a set of markers. These objects can be passed 
+#' objects for a set of markers. These objects can be passed to 
 #' other functions for pulling genotypes or haplotypes.
 #' 
 #' @param markers a vector of marker names
@@ -69,13 +99,14 @@ getLociNames = function(lociPerChr, lociLoc, genMap){
 #' genetic map format
 #'
 #' @return A list containing lociPerChr and lociLoc 
-#' that can be
 #' 
 #' @keywords internal
 mapLoci = function(markers, genMap){
   # Check that the markers are present on the map
   genMapMarkerNames = unlist(lapply(genMap, names))
-  stopifnot(all(markers%in%genMapMarkerNames))
+  if(!all(markers%in%genMapMarkerNames)){
+    stop("markers contains names that are not in the genetic map")
+  }
   
   # Create lociPerChr and lociLoc
   lociPerChr = integer(length(genMap))
@@ -266,7 +297,8 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
 #' @description Retrieves the genetic map for the 
 #' QTL of a given trait.
 #' 
-#' @param trait an integer for the 
+#' @param trait an integer or a trait name indicating which trait's QTL
+#' to return
 #' @param sex determines which sex specific map 
 #' is returned. Options are "A" for average map, "F" 
 #' for female map, and "M" for male map. All options are 
@@ -358,7 +390,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' @param snpChip an integer. Indicates which SNP
 #' chip's genotypes to retrieve.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -430,10 +462,10 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' @description Retrieves QTL genotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer. Indicates which trait's
+#' @param trait an integer or a trait name. Indicates which trait's
 #' QTL genotypes to retrieve.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -508,7 +540,7 @@ pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' @param pop an object of \code{\link{RawPop-class}} or
 #' \code{\link{MapPop-class}}
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}} for non-
 #' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
@@ -592,7 +624,7 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' for a single set of haplotypes. Use a value of 1 for female
 #' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -646,6 +678,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
   lociPerChr = tmp$lociPerChr
   lociLoc = tmp$lociLoc
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
@@ -662,7 +695,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),nThreads)
+                         haplo,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -685,13 +718,13 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' @description Retrieves QTL haplotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer. Indicates which trait's
+#' @param trait an integer or a trait name. Indicates which trait's
 #' QTL haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female
 #' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -746,6 +779,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
   
   lociLoc = tmp$lociLoc
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
     
@@ -762,7 +796,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
     }
   }else{
     output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         as.integer(haplo),nThreads)
+                         haplo,nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -791,7 +825,7 @@ pullQtlHaplo = function(pop, trait=1, haplo="all",
 #' for a single set of haplotypes. Use a value of 1 for female
 #' haplotypes and a value of 2 for male haplotypes in diploids.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosome are retrieved.
+#' all chromosomes are retrieved.
 #' @param asRaw return in raw (byte) format
 #' @param simParam an object of class \code{\link{SimParam}} for non-
 #' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
@@ -851,6 +885,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
   }else{
     chr = 1:pop@nChr
   }
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno,
                       lociTot,
@@ -872,7 +907,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
     output = getOneHaplo(pop@geno,
                          lociTot,
                          allLoci,
-                         as.integer(haplo),
+                         haplo,
                          nThreads)
     
     if(!asRaw){
@@ -973,10 +1008,14 @@ pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL,
   if(!is.null(snpChip)){
     nLoci = pop@nLoci[chr]
     tmp = getSnpMap(snpChip=snpChip,simParam=simParam)
-    tmp = tmp[tmp$chr%in%chr,]
+    # getSnpMap reports chromosomes by name while chr is an index, so the
+    # names are looked up before the two are matched. Comparing an index
+    # to a name silently returned no markers for any named genetic map.
+    chrNames = names(simParam$genMap)[chr]
+    tmp = tmp[tmp$chr%in%chrNames,]
     if(length(chr)>1){
       for(i in 2:length(chr)){
-        j = chr[i]
+        j = chrNames[i]
         tmp[tmp$chr==j,"site"] =
           tmp[tmp$chr==j,"site"] + sum(nLoci[1:(i-1)])
       }
@@ -1142,6 +1181,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
   # Map markers to genetic map
   lociMap = mapLoci(markers, genMap)
   
+  haplo = checkHaplo(haplo, pop@ploidy)
   if(haplo=="all"){
     output = getHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, nThreads)
     
@@ -1158,7 +1198,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
     }
   }else{
     output = getOneHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc,
-                         as.integer(haplo), nThreads)
+                         haplo, nThreads)
     
     if(!asRaw){
       output = convToImat(output)
@@ -1203,7 +1243,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
 #' function is first used to extract the haplotypes and that any 
 #' desired changes be made to the output of pullMarkerHaplo before 
 #' passing the matrix to setMarkerHaplo. Any changes made to QTL 
-#' may potentially result in changes to an individuals genetic 
+#' may potentially result in changes to an individual's genetic 
 #' value. These changes will be reflected in the gv and/or gxe slot. 
 #' All other slots will remain unchanged, so the ebv and pheno slots 
 #' will not reflect the new genotypes.
@@ -1228,7 +1268,9 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
 #' @export
 setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
   # Check validity of rows
-  stopifnot(nrow(haplo)==(pop@nInd*pop@ploidy))
+  if(nrow(haplo)!=(pop@nInd*pop@ploidy)){
+    stop("nrow(haplo) must equal nInd(pop)*ploidy")
+  }
   
   # Get genetic map
   if(is(pop,"MapPop")){
@@ -1258,7 +1300,10 @@ setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
   orderedMapNames = getLociNames(lociMap$lociPerChr, 
                                  lociMap$lociLoc, 
                                  genMap)
-  haplo = haplo[,match(markers, orderedMapNames), drop=FALSE]
+  # The columns have to be put into the order setHaplo expects, which
+  # means indexing haplo by where each ordered map name sits in markers.
+  # Matching the other way round produces the inverse permutation.
+  haplo = haplo[,match(orderedMapNames, markers), drop=FALSE]
   
   # Set haplotypes
   geno = setHaplo(pop@geno, haplo, lociMap$lociPerChr, 

@@ -16,7 +16,10 @@ makeDH(
 \arguments{
 \item{pop}{an object of 'Pop' superclass}
 
-\item{nDH}{total number of DH lines per individual}
+\item{nDH}{total number of DH lines per individual. May be a single
+value for all individuals or a vector with values for each individual.
+A value of zero produces no DH lines for that individual, and if no
+individual produces any the function returns an empty population.}
 
 \item{useFemale}{should female recombination rates be used.}
 
@@ -53,3 +56,18 @@ pop = newPop(founderPop, simParam=SP)
 pop2 = makeDH(pop, simParam=SP)
 
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross]{makeCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}

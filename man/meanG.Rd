@@ -51,6 +51,13 @@ sets \code{level=1} issuing a warning.
 Simplified output includes a \code{"source"} attribute. This is a data frame
 with columns \code{level1}, \code{level2}, etc., indicating the name (or
 index) of the source population for each row at each retained nesting level.
+
+The mean is calculated from the genetic values in \code{pop}.
+It includes the trait intercept and can differ from both the intercept
+and the requested founder mean.
+
+See \code{vignette("QuanGen", package = "AlphaSimR")} for
+background theory and its demonstration.
 }
 \examples{
 # Create founder haplotypes
@@ -59,7 +66,6 @@ founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
 # Set simulation parameters
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
-SP$setVarE(h2=0.5)
 \dontshow{SP$nThreads = 1L}
 
 # Create population

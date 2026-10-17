@@ -27,7 +27,7 @@ if \code{NULL} must provide \code{parents}}
 \item{fathers}{\code{\link{Pop-class}} with fathers of individuals in \code{pop};
 if \code{NULL} must provide \code{parents}}
 
-\item{use}{character, calculate using \code{"\link{gv}"}, \code{"\link{bv}"},
+\item{use}{character, calculate using \code{"\link{gv}"},
 \code{"\link{ebv}"}, or \code{"\link{pheno}"}}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If

@@ -10,7 +10,7 @@ RRBLUP_SCA(
   use = "pheno",
   snpChip = 1,
   useQtl = FALSE,
-  maxIter = 40L,
+  maxIter = 100L,
   simParam = NULL,
   nThreads = NULL,
   ...
@@ -19,8 +19,10 @@ RRBLUP_SCA(
 \arguments{
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
-\item{traits}{an integer indicating the trait to model, a trait name, or a
-function of the traits returning a single value.}
+\item{traits}{an integer indicating the trait or traits to model, a vector
+of trait names, or a function of the traits returning a single value.
+Several traits are fitted together as a multiple trait model, which needs
+every trait recorded on every individual. See details.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
@@ -45,13 +47,28 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-An extention of \code{\link{RRBLUP_GCA}} that adds dominance effects.
+An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
 Note that we have not seen any consistent benefit of this model over
 \code{\link{RRBLUP_GCA}}.
 }
+\details{
+The model uses separate maternal and paternal marker dosages from
+the training population.
+A multiple trait model gives each of the female, male and dominance effects, and the
+errors, an unstructured covariance matrix among the traits. The Vu slot of
+the result then holds those covariance matrices of the marker effects as
+a block diagonal matrix, with rows and columns named "female:trait", "male:trait" and "d:trait".
+The solution can be applied with \code{\link{setEBV}}:
+\code{value="female"} or \code{value="male"} gives parental
+predictions, while \code{value="gv"} predicts total hybrid genetic value.
+These model predictions obviously differ from the observed cross means
+returned by \code{\link{calcGCA}}.
+The dominance terms allow cross-specific deviations,
+but SCA's are not returned.
+}
 \examples{
 #Create founder haplotypes
-founderPop = quickHaplo(nInd=2, nChr=1, segSites=20)
+founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
 
 #Set simulation parameters
 SP = SimParam$new(founderPop)

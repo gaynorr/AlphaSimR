@@ -7,7 +7,7 @@
 getResponse(pop, trait, use, simParam = NULL, nThreads = NULL, ...)
 }
 \arguments{
-\item{pop}{an object of class Pop or HybirdPop}
+\item{pop}{an object of class Pop or HybridPop}
 
 \item{trait}{a vector or custom function}
 

@@ -1,3 +1,23 @@
+/**
+Copyright Gary K. Chen (gchen98@gmail.com)
+
+This file is part of the Markovian Coalescent Simulator (MaCS),
+<https://github.com/gchen98/macs>. It has been modified by the AlphaSimR
+authors for use in AlphaSimR. The file LICENSE.note, in the root of the
+AlphaSimR sources, describes those modifications.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**/
 #include <Rcpp.h>
 #include <iostream>
 #include <sstream>
@@ -97,6 +117,8 @@ Edge::Edge(NodePtr & topNode,NodePtr & bottomNode):
   this->bInQueue = false;
   this->bInCurrentTree = false;
   this->iGraphIteration = 0;
+  this->iVectorIndex = -1;
+  this->iVectorPop = 0;
 }
 
 Edge::~Edge(){
@@ -173,7 +195,7 @@ void Node::replaceOldWithNewEdge(EdgeLocation iLocation,
 // Thread-local node ids make ordering deterministic (only within a thread).
 thread_local unsigned long long Node::sNextId = 0;
 // thread_local will not work across OpenMP threads, but we don't need that,
-// in fact it will slow OpenMP parallelisation!
+// in fact it will slow OpenMP parallelization!
 
 Node::Node(NodeType iType,short int iPopulation,double dHeight):
   PtrRefCountable(){
@@ -182,7 +204,7 @@ Node::Node(NodeType iType,short int iPopulation,double dHeight):
   // Assign a stable id so NodePtrSet ordering is reproducible (only within a thread).
   this->iNodeId = sNextId++;
   // sNextId++ will not work across OpenMP threads, but we don't need that,
-  // in fact it will slow OpenMP parallelisation!
+  // in fact it will slow OpenMP parallelization!
   this->iType = iType;
   this->iPopulation = iPopulation;
   this->dHeight = dHeight;
@@ -219,7 +241,7 @@ GenericEvent::GenericEvent(EventType iType,double dTime,
                            double dParameterValue):
   Event(iType,dTime){
   this->dParameterValue = dParameterValue;
-  //Rcpp::Rcerr<<"destroying generic event at height "<<dTime<<endl;
+  //macsMessages()<<"destroying generic event at height "<<dTime<<endl;
 }
 
 double GenericEvent::getParamValue(){
@@ -334,7 +356,14 @@ GraphBuilder::GraphBuilder(Configuration *pConfig,RandNumGenerator * pRG){
   this->iGraphIteration = 0;
   this->bIncrementHistory = false;
   this->iTotalTreeEdges = 0;
-  this->dArgLength = 0.;
+  this->dLastTreeLength = 0.;
+  this->iSitesSeen = 0;
+  // Ascertainment needs the allele frequency of every site, so it cannot be
+  // combined with the reservoir
+  this->bReservoir = (pConfig->iMaxSites>0) && !pConfig->bSNPAscertainment;
+  if (this->bReservoir){
+    this->mutations.reserve(pConfig->iMaxSites);
+  }
   this->pConfig = pConfig;
   this->pChrPositionQueue = new ChrPositionQueue;
   this->dTrailingGap = pConfig->dBasesToTrack/pConfig->dSeqLength;
@@ -405,9 +434,9 @@ void GraphBuilder::checkPopCountIntegrity(PopVector & pPopList,
   
   for (int j=0;j<iTotalPops;++j){
     if (pPopList[j].getChrSampled()!=iCounts[j]){
-      Rcpp::Rcerr<<"At time: "<<dTime<<endl;
-      Rcpp::Rcerr<<"pop:"<<j<<",size:"<<pPopList[j].getChrSampled()<<endl;
-      Rcpp::Rcerr<<"pop:"<<j<<",found:"<<iCounts[j]<<endl;
+      macsMessages()<<"At time: "<<dTime<<endl;
+      macsMessages()<<"pop:"<<j<<",size:"<<pPopList[j].getChrSampled()<<endl;
+      macsMessages()<<"pop:"<<j<<",found:"<<iCounts[j]<<endl;
       printDataStructures();
       throw "Mismatch in pop counts in CheckPopCountIntegrity" ;
     }
@@ -465,6 +494,15 @@ void GraphBuilder::insertNodeInEdge(NodePtr & newNode,
 void GraphBuilder::deleteEdge(EdgePtr & edge){
   if (!edge->bDeleted){
     edge->bDeleted = true;
+    // Hand the vector slot back straight away. It used to be recycled only
+    // when getRandomEdgeToCoalesce happened to draw it, so the vector filled
+    // up with deleted edges and the rejection sampler paid to skip them.
+    if (edge->iVectorIndex>=0 && !edge->bInQueue){
+      EdgeIndexQueue & queue = this->pVectorIndicesToRecycle->
+        at(edge->iVectorPop);
+      queue.push(edge->iVectorIndex);
+      edge->bInQueue = true;
+    }
   }
 }
 
@@ -486,12 +524,20 @@ void GraphBuilder::addEdge(EdgePtr & edge){
   EdgeIndexQueue & pVectorIndicesToRecycle = this->pVectorIndicesToRecycle->
     at(iPopulation);
   if (pVectorIndicesToRecycle.empty()){
+    edge->iVectorIndex = static_cast<int>(pEdgeVector.size());
     pEdgeVector.push_back(edge);
   }else{
     int iIndex = pVectorIndicesToRecycle.front();
     pVectorIndicesToRecycle.pop();
+    // The edge being evicted no longer owns this slot
+    if (pEdgeVector[iIndex]!=NULL){
+      pEdgeVector[iIndex]->iVectorIndex = -1;
+    }
+    edge->iVectorIndex = iIndex;
     pEdgeVector[iIndex] = edge;
   }
+  edge->iVectorPop = iPopulation;
+  edge->bInQueue = false;
 }
 
 void GraphBuilder::addEdgeToCurrentTree(EdgePtr & edge){
@@ -506,37 +552,50 @@ void GraphBuilder::addEdgeToCurrentTree(EdgePtr & edge){
 }
 
 
+void GraphBuilder::buildTreeIndex(){
+  // Walks the current tree once, recording a running total of the length of
+  // its live edges, and clears the in-tree flag as it goes. The running
+  // totals are what getRandomEdgeOnTree searches, and their final value is
+  // the total tree length, so both are produced by this single pass.
+  treePrefixSum.clear();
+  treePrefixIdx.clear();
+  double dRunningLength = 0.0;
+  for (unsigned int i=0;i<iTotalTreeEdges;++i){
+    EdgePtr & curEdge = pEdgeVectorInTree->at(i);
+    // The flag is cleared for every edge this pass sees, deleted or not.
+    // Clearing it only for live edges leaves a deleted edge marked as
+    // already in the tree, and markEdgesAbove reads that flag as a signal
+    // to stop climbing.
+    curEdge->bInCurrentTree = false;
+    if (!curEdge->bDeleted){
+      dRunningLength+=curEdge->getLength();
+      treePrefixSum.push_back(dRunningLength);
+      treePrefixIdx.push_back(i);
+    }
+  }
+  dLastTreeLength = dRunningLength;
+}
+
 void GraphBuilder::initializeCurrentTree(){
-  // this method does two things, traverses the edges
-  // to compute the total length, and clears out the status for
-  // in current tree
-  dLastTreeLength = 0.0;
-  dArgLength = 0.;
+  // this method does two things, drops the edges that have been marked for
+  // deletion, and rebuilds the index over the current tree
   if (iGraphIteration==0){
     EdgePtrList::iterator it;
     for (it=pEdgeListInARG->begin();it!=pEdgeListInARG->end();++it){
       EdgePtr curEdge=*it;
-      dLastTreeLength+=curEdge->getLength();
       this->addEdgeToCurrentTree(curEdge);
-      curEdge->bInCurrentTree = false;
     }
-    dArgLength = dLastTreeLength;
   }else{
     EdgePtrList::iterator it1=pEdgeListInARG->begin();
     while(it1!=pEdgeListInARG->end()){
-      EdgePtr curEdge = *it1;
-      if (!curEdge->bDeleted){
-        dArgLength+=curEdge->getLength();
-        if (curEdge->bInCurrentTree){
-          dLastTreeLength+=curEdge->getLength();
-          curEdge->bInCurrentTree = false;
-        }
+      if (!(*it1)->bDeleted){
         ++it1;
       }else{
         it1 = pEdgeListInARG->erase(it1);
       }
     }
   }
+  buildTreeIndex();
 }
 
 void GraphBuilder::printHaplotypes(){
@@ -565,7 +624,7 @@ void GraphBuilder::printHaplotypes(){
         }
       }while(!bSufficientObs && !bZeroCellCount);
       if (bZeroCellCount){
-        Rcpp::Rcerr<<"Warning: Some observed SNP counts were zero when they should have been positive.\n"<<
+        macsMessages()<<"Warning: Some observed SNP counts were zero when they should have been positive.\n"<<
           "No ascertainment correction was applied.\n"<<
             "Try expanding frequency bin sizes and/or increasing mutation rate.\n";
         iReducedSites = 0;
@@ -589,7 +648,7 @@ void GraphBuilder::printHaplotypes(){
           }
         }
         iReducedSites = tally;
-        Rcpp::Rcerr<<"Total sites reduced from "<<iTotalSites<<" to "<<iReducedSites<<endl;
+        macsMessages()<<"Total sites reduced from "<<iTotalSites<<" to "<<iReducedSites<<endl;
       }
     }
     // if (iReducedSites){
@@ -601,12 +660,12 @@ void GraphBuilder::printHaplotypes(){
 
 
 void GraphBuilder::printDataStructures(){
-  Rcpp::Rcerr<<endl<<"*** Begin printing structures ***"<<endl;
+  macsMessages()<<endl<<"*** Begin printing structures ***"<<endl;
   
-  Rcpp::Rcerr<<"Full ARG (list of edges)\n";
+  macsMessages()<<"Full ARG (list of edges)\n";
   for (EdgePtrList::iterator it=pEdgeListInARG->begin();it!=pEdgeListInARG->end();it++){
     EdgePtr curEdge = *it;
-    Rcpp::Rcerr<<"low:ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
+    macsMessages()<<"low:ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
       ",type:"<<curEdge->getBottomNodeRef()->getTypeStr()<<
         ",pop:"<<curEdge->getBottomNodeRef()->getPopulation()<<
           ";high:ht:"<<curEdge->getTopNodeRef()->getHeight()<<
@@ -617,13 +676,13 @@ void GraphBuilder::printDataStructures(){
   }
   
   
-  Rcpp::Rcerr<<"Last tree (list of edges)\n";
+  macsMessages()<<"Last tree (list of edges)\n";
   EdgePtrVector::iterator it=pEdgeVectorInTree->begin();
   unsigned int count=0;
   while(count<iTotalTreeEdges){
     //    for (EdgePtrVector::iterator it=pEdgeVectorInTree->begin();it!=pEdgeVectorInTree->end();++it){
     EdgePtr curEdge = *it;
-    Rcpp::Rcerr<<"low_ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
+    macsMessages()<<"low_ht:"<<curEdge->getBottomNodeRef()->getHeight()<<
       ",type:"<<curEdge->getBottomNodeRef()->getTypeStr()<<
         ",pop:"<<curEdge->getBottomNodeRef()->getPopulation()<<
           ";high_ht:"<<curEdge->getTopNodeRef()->getHeight()<<
@@ -632,11 +691,11 @@ void GraphBuilder::printDataStructures(){
     ++count;
     ++it;
   }
-  Rcpp::Rcerr<<"MRCA: "<<localMRCA->getHeight()<<endl;
-  Rcpp::Rcerr<<"Graph grandMRCA: "<<grandMRCA->getHeight()<<endl;
-  //    Rcpp::Rcerr<<"true length:"<<trueLen<<endl;
+  macsMessages()<<"MRCA: "<<localMRCA->getHeight()<<endl;
+  macsMessages()<<"Graph grandMRCA: "<<grandMRCA->getHeight()<<endl;
+  //    macsMessages()<<"true length:"<<trueLen<<endl;
   
-  Rcpp::Rcerr<<"*** Done printing structures ***"<<endl;
+  macsMessages()<<"*** Done printing structures ***"<<endl;
 }
 
 string GraphBuilder::getNewickTree(double lastCoalHeight,NodePtr & curNode){

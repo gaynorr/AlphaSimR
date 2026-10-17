@@ -21,7 +21,8 @@ editGenomeTopQtl(
 
 \item{nQtl}{number of QTL to edit}
 
-\item{trait}{which trait effects should guide selection of the top QTL}
+\item{trait}{which trait effects should guide selection of the top QTL,
+given as an integer or a trait name}
 
 \item{increase}{should the trait value be increased or decreased}
 
@@ -37,8 +38,8 @@ Returns an object of \code{\link{Pop-class}}
 }
 \description{
 Edits the top QTL (with the largest additive effect) to a homozygous
-state for the allele increasing. Only nonfixed QTL are edited The gv slot is
-recalculated to reflect the any changes due to editing, but other slots remain the same.
+state for the allele increasing. Only nonfixed QTL are edited. The gv slot is
+recalculated to reflect any changes due to editing, but other slots remain the same.
 }
 \examples{
 #Create founder haplotypes

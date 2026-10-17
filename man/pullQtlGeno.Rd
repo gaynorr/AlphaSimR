@@ -16,11 +16,11 @@ pullQtlGeno(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{trait}{an integer. Indicates which trait's
+\item{trait}{an integer or a trait name. Indicates which trait's
 QTL genotypes to retrieve.}
 
 \item{chr}{a vector of chromosomes to retrieve. If NULL,
-all chromosome are retrieved.}
+all chromosomes are retrieved.}
 
 \item{asRaw}{return in raw (byte) format}
 

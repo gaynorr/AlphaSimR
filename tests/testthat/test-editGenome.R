@@ -14,3 +14,22 @@ test_that("editGenome",{
   pop = randCross(pop=pop,nCrosses=10,simParam=SP)
   expect_equal(c(varG(pop)),0,tolerance=1e-6)
 })
+
+test_that("editGenomeTopQtl accepts a trait name",{
+  founderPop = quickHaplo(nInd=10, nChr=2, segSites=20)
+  SP = SimParam$new(founderPop=founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr=5, mean=c(0,0), var=c(1,1), corA=diag(2),
+               name=c("Yield","Height"))
+  pop = newPop(founderPop, simParam=SP)
+
+  byNumber = editGenomeTopQtl(pop, ind=1:3, nQtl=2, trait=2,
+                              simParam=SP)
+  byName = editGenomeTopQtl(pop, ind=1:3, nQtl=2, trait="Height",
+                            simParam=SP)
+  expect_identical(pullQtlGeno(byName, trait=2, simParam=SP),
+                   pullQtlGeno(byNumber, trait=2, simParam=SP))
+  expect_error(editGenomeTopQtl(pop, ind=1, nQtl=1, trait="Weight",
+                                simParam=SP),
+               "did not match any trait names")
+})

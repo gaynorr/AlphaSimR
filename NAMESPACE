@@ -32,6 +32,7 @@ export(genicVarA)
 export(genicVarAA)
 export(genicVarD)
 export(genicVarG)
+export(genicVarN)
 export(getGenMap)
 export(getNumThreads)
 export(getPed)
@@ -66,6 +67,7 @@ export(mergePops)
 export(mutate)
 export(nInd)
 export(nPop)
+export(nd)
 export(newEmptyMultiPop)
 export(newEmptyPop)
 export(newMapPop)
@@ -75,6 +77,7 @@ export(parentAverage)
 export(pedigreeCross)
 export(pheno)
 export(popVar)
+export(predictSegSitesMoments)
 export(pullIbdHaplo)
 export(pullMarkerGeno)
 export(pullMarkerHaplo)
@@ -97,6 +100,7 @@ export(selInt)
 export(selectCross)
 export(selectFam)
 export(selectInd)
+export(selectOCS)
 export(selectOP)
 export(selectPop)
 export(selectWithinFam)
@@ -125,6 +129,7 @@ export(varD)
 export(varEBV)
 export(varG)
 export(varGPop)
+export(varN)
 export(varP)
 export(varPPop)
 export(writePlink)
@@ -147,6 +152,7 @@ exportClasses(TraitADG)
 exportClasses(TraitAE)
 exportClasses(TraitAEG)
 exportClasses(TraitAG)
+exportMethods(mutate)
 import(Rcpp)
 importFrom(R6,R6Class)
 importFrom(Rdpack,reprompt)
@@ -164,6 +170,7 @@ importFrom(stats,
   coef,
   cov2cor,
   dnorm,
+  integrate,
   lm,
   model.matrix,
   na.omit,
@@ -174,7 +181,9 @@ importFrom(stats,
   rnorm,
   rpois,
   runif,
+  sd,
   setNames,
+  uniroot,
   var
 )
 importFrom(utils,

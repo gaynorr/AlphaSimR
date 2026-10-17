@@ -9,7 +9,7 @@ makeCross(pop, crossPlan, nProgeny = 1, simParam = NULL, nThreads = NULL)
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{crossPlan}{a matrix with two column representing
+\item{crossPlan}{a matrix with two columns representing
 female and male parents. Either integers for the position in
 population or character strings for the IDs.}
 
@@ -52,3 +52,18 @@ getPed(pop2)
 pop3 = makeCross(pop, crossPlan, nProgeny=c(1,2),simParam=SP)
 getPed(pop3)
 }
+\seealso{
+Other mating functions:
+\code{\link[=hybridCross]{hybridCross()}},
+\code{\link[=makeCross2]{makeCross2()}},
+\code{\link[=makeDH]{makeDH()}},
+\code{\link[=pedigreeCross]{pedigreeCross()}},
+\code{\link[=randCross]{randCross()}},
+\code{\link[=randCross2]{randCross2()}},
+\code{\link[=selectCross]{selectCross()}},
+\code{\link[=selectOP]{selectOP()}},
+\code{\link[=self]{self()}},
+\code{\link[=setPhenoGCA]{setPhenoGCA()}},
+\code{\link[=setPhenoProgTest]{setPhenoProgTest()}}
+}
+\concept{mating functions}
