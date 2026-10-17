@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9021
 
+* Added an article on importing data, covering genetic maps, phased haplotypes, genotypes of inbred lines, PLINK text files, and starting a simulation from imported founders with `SimParam$importTrait` and `SimParam$addSnpChipByName`.
+
 * Added `nGen` to `getPed`, which returns the pedigree for more than one generation. With `nGen` greater than 1, or `Inf` for all ancestors, the pedigree recorded in `SimParam` is followed, so pedigree tracking must be on. The result holds the individuals and their ancestors, each once, with parents before their progeny. Every meiosis counts as a generation, including each generation of selfing and each doubled haploid. The default `nGen=1` returns the parents in the population's slots, as before.
 
 * Trait names can now be used to choose traits in `setPheno`, `editGenomeTopQtl`, `SimParam$removeTrait` and `SimParam$switchTrait`, as they already could in the selection and genomic selection functions. An unknown name gives an error. `getQtlMap`, `pullQtlGeno` and `pullQtlHaplo` already accepted trait names, and their documentation now says so.
