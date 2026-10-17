@@ -304,3 +304,22 @@ varG_via_partsAN = unname(ans$varA[1,1] + ans$varN[1,1] +
 
 c(varG = varG, varG_via_partsADAA = varG_via_partsADAA, varG_via_partsAN = varG_via_partsAN)
 
+## -----------------------------------------------------------------------------
+founders = quickHaplo(nInd = 200, nChr = 2, segSites = 100)
+SP2 = SimParam$new(founders)
+SP2$nThreads = 1L
+SP2$addTraitA(nQtlPerChr = 20, mean = c(0, 0), var = c(1, 1),
+              corA = matrix(c(1, 0.7, 0.7, 1), nrow = 2))
+SP2$addTraitA(nQtlPerChr = 20)
+pop2 = newPop(founders, simParam = SP2)
+ans2 = genParam(pop2, simParam = SP2)
+
+# Genic, Hardy-Weinberg and linkage disequilibrium parts of
+# the additive genetic covariances
+round(ans2$genicCovA, 3)
+round(ans2$covA_HWMat, 3)
+round(ans2$covA_LMat, 3)
+
+# The parts add up to the additive genetic (co)variances
+all.equal(ans2$genicCovA + ans2$covA_HWMat + ans2$covA_LMat, ans2$varA)
+

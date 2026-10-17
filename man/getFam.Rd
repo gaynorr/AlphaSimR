@@ -9,7 +9,7 @@ getFam(pop, famType)
 \arguments{
 \item{pop}{a population object}
 
-\item{famType}{type of family (fullsib "B", maternal "M", or paternal "F")}
+\item{famType}{type of family (fullsib "B", maternal "F", or paternal "M")}
 }
 \description{
 Determine families
