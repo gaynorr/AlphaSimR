@@ -11,7 +11,8 @@ setEBV(
   targetPop = NULL,
   append = FALSE,
   simParam = NULL,
-  nThreads = NULL
+  nThreads = NULL,
+  onlyValues = FALSE
 )
 }
 \arguments{
@@ -38,9 +39,14 @@ global environment.}
 
 \item{nThreads}{number of threads to use if OpenMP is available.
 If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{onlyValues}{should only the estimated values be returned,
+see return. When TRUE, append is ignored and the population is
+not changed.}
 }
 \value{
-Returns an object of \code{\link{Pop-class}}
+Returns an object of \code{\link{Pop-class}} if
+onlyValues=FALSE, if onlyValues=TRUE a matrix is returned
 }
 \description{
 Adds genomic estimated values to a population's EBV
@@ -69,5 +75,8 @@ pop = setEBV(pop, ans, simParam=SP)
 
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
+
+#Return the estimates without changing the population
+est = setEBV(pop, ans, onlyValues=TRUE, simParam=SP)
 
 }

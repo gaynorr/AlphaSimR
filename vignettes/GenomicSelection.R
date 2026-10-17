@@ -49,6 +49,33 @@ combined = c(setPheno(pop[1:200], reps = 1, simParam = SP),
 nInd(combined)
 
 ## -----------------------------------------------------------------------------
+SP2 = SimParam$new(founderPop)
+
+## ----include=FALSE------------------------------------------------------------
+SP2$nThreads = 1L
+
+## -----------------------------------------------------------------------------
+SP2$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 50, overlap = FALSE)
+SP2$addTraitAD(nQtlPerChr = 20, mean = c(0, 0), var = c(1, 1),
+               meanDD = c(0.4, 0.4), varDD = c(0.04, 0.04),
+               corA = matrix(c(1, 0.7, 0.7, 1), nrow = 2))
+SP2$addSnpChip(nSnpPerChr = 50)
+SP2$setVarE(h2 = c(0.4, 0.1))
+
+pop2 = newPop(founderPop, simParam = SP2)
+trainPop2 = setPheno(pop2[1:400], simParam = SP2)
+candidates2 = pop2[401:500]
+
+mvModel = RRBLUP_D(trainPop2, traits = 1:2, simParam = SP2)
+candidates2 = setEBV(candidates2, mvModel, simParam = SP2)
+
+# One column of estimates per trait
+diag(cor(ebv(candidates2), gv(candidates2)))
+
+## -----------------------------------------------------------------------------
+round(mvModel@Vu, 5)
+
+## -----------------------------------------------------------------------------
 ans2 = RRBLUP2(trainPop, Vu = ans@Vu[1, 1], Ve = ans@Ve[1, 1],
                useEM = FALSE, simParam = SP)
 
