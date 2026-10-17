@@ -60,6 +60,25 @@ std::vector<alphasimrRng::rngPtr> makeWorkRngs(arma::uword nWork) {
 
 } // namespace
 
+namespace {
+
+// Creates one stable dqrng substream per chromosome for the current call.
+// Stream ids follow chromosome order so results stay reproducible if the
+// OpenMP thread count changes.
+std::vector<alphasimrRng::rngPtr> makeChrRngs(arma::uword nChr) {
+  dqrng::rng64_t baseRng = alphasimrRng::createRng();
+  std::vector<alphasimrRng::rngPtr> chrRngs;
+  chrRngs.reserve(nChr);
+  for (arma::uword chr = 0; chr < nChr; ++chr) {
+    // One stable dqrng substream per chromosome keeps meiosis reproducible
+    // even when the OpenMP thread count changes.
+    chrRngs.push_back(alphasimrRng::cloneStream(baseRng, chr + 1));
+  }
+  return chrRngs;
+}
+
+} // namespace
+
 // Class for storing recombination history
 class RecHist{
 public:

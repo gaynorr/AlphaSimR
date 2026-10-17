@@ -1,0 +1,125 @@
+---
+title: "Parallelization in AlphaSimR"
+author: "Gregor Gorjanc and Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Parallelization in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+`AlphaSimR` leverages `OpenMP`-type parallelization
+to speed-up execution of some underlying `C++` code called by `R` code.
+This speed-up can be substantial for large-scale simulations.
+Depending on the version and source of your installed `R` and `AlphaSimR`,
+`OpenMP` might or might not be supported out of the box.
+In our experience,
+it is usually available automatically on Windows and Linux.
+macOS users most often need to take extra steps.
+We show below how to check if you can use multiple threads and
+how these get used in `AlphaSimR`.
+We also point to more information on installation/building to enable `OpenMP`.
+
+## Check whether OpenMP is available
+
+The simplest check is via `getNumThreads()`.
+
+```{r}
+library(AlphaSimR)
+getNumThreads()
+```
+
+If `OpenMP` is not available (or when you only have one available thread),
+`getNumThreads()` returns `1` and all code will run single-threaded.
+When `getNumThreads()` returns more than `1`,
+some code will run in parallel.
+
+## Controlling the number of threads
+
+When `OpenMP` is enabled,
+`AlphaSimR` uses all the available threads by default.
+You can control the number of threads used
+via the `nThreads` argument
+globally in the `SP` object or
+individually in some functions.
+
+```{r}
+founderPop = quickHaplo(nInd = 4, nChr = 2, segSites = 5)
+SP = SimParam$new(founderPop)
+SP$nThreads
+```
+
+Assuming that you have more than one thread,
+but want to use just one globally,
+you can specify that in the `SP` object:
+
+```{r}
+pop = newPop(founderPop, simParam = SP)
+SP$nThreads = 1L
+pullSegSiteGeno(pop)
+# Note that pullSegSiteGeno() uses internally SP$nThreads,
+# when the nThreads argument is not specified.
+```
+
+As indicated above,
+we can specify the number of threads in some functions:
+
+```{r}
+pullSegSiteGeno(pop, nThreads = 1L)
+```
+
+## A demonstration
+
+There are several `AlphaSimR` functions that leverage parallelization,
+particularly when working across chromosomes or
+with linear algebra operations.
+`runMacs()` is one such example.
+The code below reports time for simulating genomes with 10 chromosomes for 50 individuals
+in serial mode and in parallel mode.
+You can evaluate the speed-up due to parallelization by
+changing the number of chromosomes,
+and also increasing the size of simulation by increasing the number of individuals.
+
+```{r}
+system.time(runMacs(nInd = 50, nChr = 10, nThreads = 1L))
+system.time(runMacs(nInd = 50, nChr = 10, nThreads = getNumThreads()))
+```
+
+## How to get OpenMP support
+
+This topic depends on your platform and `R` toolchain,
+so we keep the guidance short and point to the relevant docs:
+
+- Windows and Linux: in our experience, `OpenMP` is usually enabled automatically.
+  Install `AlphaSimR` and check `AlphaSimR::getNumThreads()`.
+
+- macOS: if `OpenMP` is not already available,
+  follow the instructions at <https://mac.r-project.org/openmp/>,
+  then reinstall `AlphaSimR` from the `CRAN` or `GitHub` source, and
+  then check `AlphaSimR::getNumThreads()`.
+
+## A note on `BLAS`
+
+For linear algebra-heavy work (such as fitting genomic prediction models),
+a multithreaded `BLAS` can also help.
+This is separate to `OpenMP` support.
+In our experience, this is even more platform- and `R`-build-specific than `OpenMP`,
+so it is best treated as an advanced local optimisation.
+
+- Windows: We have had reasonable results with `OpenBLAS`:
+  <https://github.com/OpenMathLib/OpenBLAS>.
+
+- Linux: `BLAS` setup depends on how `R` was installed.
+  You may be able to replace the shared `BLAS` library,
+  or compile `R` against a specific `BLAS`.
+  See the `R Installation and Administration` manual:
+  <https://cran.r-project.org/doc/manuals/r-release/R-admin.html#BLAS>.
+
+- macOS: see the `R for macOS FAQ`:
+  <https://cran.r-project.org/bin/macosx/RMacOSX-FAQ.html#Which-BLAS-is-used-and-how-can-it-be-changed_003f>.
+  On recent `R` versions, simple `BLAS` library swapping may not work cleanly,
+  so follow the guidance for your specific `R` build and verify that base `R`
+  still starts correctly after any change.
