@@ -135,15 +135,6 @@ void checkLoci(const std::vector<arma::uword>& nBins,
   }
 }
 
-// Bytes per haplotype of each chromosome of a field, for checkLoci
-std::vector<arma::uword> fieldBins(const arma::field<arma::Cube<unsigned char> >& geno){
-  std::vector<arma::uword> nBins(geno.n_elem);
-  for(arma::uword i=0; i<geno.n_elem; ++i){
-    nBins[i] = geno(i).n_rows;
-  }
-  return nBins;
-}
-
 // Number of copies of the counted allele at each of a set of loci, summed
 // over every haplotype of every individual. Nothing the size of the
 // genotype matrix is formed. The loci are split over a fixed number of
@@ -373,23 +364,64 @@ arma::Mat<unsigned char> getOneHaplo(const Rcpp::List& geno,
 }
 
 // Manually sets haplotype data
+//
+// geno is taken as an R list rather than as an Armadillo field, because
+// RcppArmadillo builds the field's cubes on R's own memory instead of
+// copying it. Writing into them would change the population passed in, and
+// every R object sharing its genotypes, as well as the one returned. Each
+// chromosome with loci to set is therefore duplicated before it is written
+// to, and the others are shared with the input, which R copies on write.
 // [[Rcpp::export]]
-arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned char> > geno,
-                                                 const arma::Mat<unsigned char>& haplo,
-                                                 const arma::Col<int>& lociPerChr,
-                                                 arma::uvec lociLoc, int nThreads){
-  checkLoci(fieldBins(geno), lociPerChr, lociLoc);
+Rcpp::List setHaplo(const Rcpp::List& geno,
+                    const arma::Mat<unsigned char>& haplo,
+                    const arma::Col<int>& lociPerChr,
+                    arma::uvec lociLoc, int nThreads){
+  arma::uword nChr = geno.size();
+  if(nChr==0){
+    Rcpp::stop("geno must contain at least one chromosome");
+  }
+  // Every chromosome is written through raw pointers below, so each one is
+  // checked to be a raw array with the same ploidy and individuals.
+  arma::uvec nBins(nChr);
+  arma::uword ploidy = 0, nInd = 0;
+  for(arma::uword i=0; i<nChr; ++i){
+    SEXP chr = geno[i];
+    SEXP dims = Rf_getAttrib(chr, R_DimSymbol);
+    if((TYPEOF(chr)!=RAWSXP) || (Rf_length(dims)!=3)){
+      Rcpp::stop("Each chromosome in geno must be a three dimensional raw array");
+    }
+    const int* d = INTEGER(dims);
+    if(i==0){
+      ploidy = d[1];
+      nInd = d[2];
+    }else if(((arma::uword) d[1]!=ploidy) || ((arma::uword) d[2]!=nInd)){
+      Rcpp::stop("Every chromosome in geno must have the same ploidy and individuals");
+    }
+    nBins(i) = d[0];
+  }
+  checkLoci(std::vector<arma::uword>(nBins.begin(), nBins.end()),
+            lociPerChr, lociLoc);
   // R to C++ index correction
   lociLoc -= 1;
 
-  arma::uword nInd = geno(0).n_slices;
-  arma::uword nChr = geno.n_elem;
-  arma::uword ploidy = geno(0).n_cols;
   // haplo is read with bounds checked accessors inside the parallel region
   // below, where the exception they throw cannot be caught safely, so its
   // shape is checked here first.
   if((haplo.n_rows!=nInd*ploidy) || (haplo.n_cols!=lociLoc.n_elem)){
     Rcpp::stop("haplo must have nInd*ploidy rows and one column per locus");
+  }
+  // The copies are made on this thread, because R's allocator must not be
+  // called from inside a parallel region.
+  Rcpp::List output(nChr);
+  std::vector<unsigned char*> outPtr(nChr, nullptr);
+  for(arma::uword i=0; i<nChr; ++i){
+    if(lociPerChr(i)>0){
+      Rcpp::RawVector chr = Rcpp::clone(Rcpp::RawVector(geno[i]));
+      outPtr[i] = chr.begin();
+      output[i] = chr;
+    }else{
+      output[i] = geno[i];
+    }
   }
   if(nInd < static_cast<arma::uword>(nThreads) ){
     nThreads = nInd;
@@ -410,6 +442,8 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
       loc1 = loc2+1;
       loc2 += lociPerChr(i);
       arma::uvec chrLociLoc = lociLoc(arma::span(loc1,loc2));
+      const arma::uword chrBins = nBins(i);
+      unsigned char* chrPtr = outPtr[i];
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
@@ -417,25 +451,27 @@ arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned
         std::bitset<8> workBits;
         arma::uword currentByte, newByte;
         for(arma::uword p=0; p<ploidy; ++p){
+          // The cube is stored as bins by ploidy by individuals
+          unsigned char* hap = chrPtr + chrBins*(p + ploidy*ind);
           currentByte = chrLociLoc(0)/8;
-          workBits = toBits(geno(i)(currentByte,p,ind));
+          workBits = toBits(hap[currentByte]);
           workBits[chrLociLoc(0)%8] = haplo(ind*ploidy+p,loc1);
-          geno(i)(currentByte,p,ind) = toByte(workBits);
+          hap[currentByte] = toByte(workBits);
           for(arma::uword j=1; j<chrLociLoc.n_elem; ++j){
             newByte = chrLociLoc(j)/8;
             if(newByte != currentByte){
               currentByte = newByte;
-              workBits = toBits(geno(i)(currentByte,p,ind));
+              workBits = toBits(hap[currentByte]);
             }
             workBits[chrLociLoc(j)%8] = haplo(ind*ploidy+p,j+loc1);
-            geno(i)(currentByte,p,ind) = toByte(workBits);
+            hap[currentByte] = toByte(workBits);
           }
         }
       }
     }
   }
   }
-  return geno;
+  return output;
 }
 
 

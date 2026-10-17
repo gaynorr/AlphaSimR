@@ -448,12 +448,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // setHaplo
-arma::field<arma::Cube<unsigned char> > setHaplo(arma::field<arma::Cube<unsigned char> > geno, const arma::Mat<unsigned char>& haplo, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, int nThreads);
+Rcpp::List setHaplo(const Rcpp::List& geno, const arma::Mat<unsigned char>& haplo, const arma::Col<int>& lociPerChr, arma::uvec lociLoc, int nThreads);
 RcppExport SEXP _AlphaSimR_setHaplo(SEXP genoSEXP, SEXP haploSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::field<arma::Cube<unsigned char> > >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type geno(genoSEXP);
     Rcpp::traits::input_parameter< const arma::Mat<unsigned char>& >::type haplo(haploSEXP);
     Rcpp::traits::input_parameter< const arma::Col<int>& >::type lociPerChr(lociPerChrSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type lociLoc(lociLocSEXP);
