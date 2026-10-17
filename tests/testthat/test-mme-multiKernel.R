@@ -870,6 +870,35 @@ test_that("MULTITRAIT INPUT missing values are rejected and inputs left alone", 
   expect_identical(d$M1, M0)
 })
 
+test_that("MULTITRAIT BOUNDARY a kernel within the span of X is held at zero", {
+  # A term whose markers are a column of X is absorbed by the fixed effects,
+  # so its covariance matrix cannot be estimated and is held at zero
+  d = simTwoKernelsMV()
+  inX = matrix(d$X[, 2], ncol=1)
+  for(side in 1:2){
+    ans = fitSide(d$Y, d$X, list(d$M1, inX), list(), TRUE, side)
+    expect_equal(ans$Vu[[2]], matrix(0, 3, 3))
+    expect_true(all(is.finite(ans$Vu[[1]])))
+  }
+})
+
+test_that("MULTITRAIT MAXITER reaching the iteration limit gives a warning", {
+  d = simTwoKernelsMV()
+  expect_warning(solveRRBLUPMK(d$Y, d$X, list(d$M1, d$M2), maxIter=2L),
+                 "did not converge")
+})
+
+test_that("MULTITRAIT INPUT mismatched dimensions and unusable X are rejected", {
+  d = simTwoKernelsMV()
+  n = nrow(d$Y)
+  expect_error(solveRRBLUPMK(d$Y, d$X[-1, ], list(d$M1)), "same number of rows")
+  expect_error(solveRRBLUPMK(d$Y, d$X, list(d$M1[-1, ])), "one row per record")
+  expect_error(solveRRBLUPMK(d$Y, matrix(0, n, 1), list(d$M1)),
+               "nonzero column")
+  expect_error(solveRRBLUPMK(d$Y, diag(n), list(d$M1)),
+               "smaller than the number of records")
+})
+
 # The genomic selection models with two traits, against solveRRBLUPMK on the
 # same matrices built in R
 mkPopMV = function(seed){

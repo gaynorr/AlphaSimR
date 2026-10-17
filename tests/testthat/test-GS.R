@@ -351,6 +351,21 @@ test_that("RRBLUPMemUse counts the multiple trait multikernel models", {
   }
 })
 
+test_that("RRBLUPMemUse follows the multiple trait models to the record side", {
+  # With many more markers than records, the record side is the cheaper
+  # one, and its square matrix has a row per record and trait
+  nRec = 2*200
+  floorGB = 5*8*nRec^2/10^9
+  v = RRBLUPMemUse(nInd=200, nMarker=5000, model="RRBLUP_D", nTraits=2)
+  expect_gt(v, floorGB)
+  expect_lt(v, RRBLUPMemUse(nInd=200, nMarker=5000, model="RRBLUP_D2",
+                            nTraits=1))
+  # And fastRRBLUP's variance components from a record cross product
+  expect_gt(RRBLUPMemUse(nInd=10000, nMarker=10000, model="fastRRBLUP",
+                         nTraits=3, nSubsample=2000),
+            4*8*2000^2/10^9)
+})
+
 test_that("RRBLUPMemUse follows RRBLUP2 between its two methods", {
   # Estimating variance components holds one more square matrix
   withEM = RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP2", useEM=TRUE)
@@ -686,6 +701,18 @@ test_that("multiple trait fastRRBLUP rejects unusable variance components", {
                           simParam=d$SP), "positive definite")
   expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=-mvVu, Ve=mvVe,
                           simParam=d$SP), "not positive")
+})
+
+test_that("multiple trait fastRRBLUP rejects an indefinite Vu", {
+  d = mvPop(nInd=40, nSnp=10)
+  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=diag(c(0.01,0.01,-0.005)),
+                          Ve=mvVe, simParam=d$SP), "positive semidefinite")
+})
+
+test_that("multiple trait fastRRBLUP warns when maxIter is reached", {
+  d = mvPop(nInd=80, nSnp=15)
+  expect_warning(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, maxIter=1,
+                            simParam=d$SP), "without converging")
 })
 
 test_that("multiple trait fastRRBLUP needs every trait recorded", {
