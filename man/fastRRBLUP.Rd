@@ -78,11 +78,11 @@ the traits' marker effects are correlated through Vu and their errors
 through Ve. Every trait must then be recorded on every individual. The
 traits are separated by a canonical transformation, which is exact when
 every trait is recorded and they share their fixed effects, and the
-transformed traits are solved together by one conjugate gradient
-iteration. Each of its iterations costs about as much as one iteration for
-each trait on its own, so a fit to several traits takes about as long as
-fitting them one at a time, while the memory used stays close to the size
-of the genotypes.
+transformed traits are solved together by conjugate gradient, each with
+its own recurrence and test of convergence. Each iteration costs about as
+much as one iteration for each trait on its own, so a fit to several traits
+takes about as long as fitting them one at a time, while the memory used
+stays close to the size of the genotypes.
 
 Variance components are estimated by REML when they are not supplied.
 REML needs a matrix decomposition whose cost is the square of the number

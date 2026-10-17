@@ -140,11 +140,11 @@ traitMatrix = function(Ve, traits){
 #' through Ve. Every trait must then be recorded on every individual. The
 #' traits are separated by a canonical transformation, which is exact when
 #' every trait is recorded and they share their fixed effects, and the
-#' transformed traits are solved together by one conjugate gradient
-#' iteration. Each of its iterations costs about as much as one iteration for
-#' each trait on its own, so a fit to several traits takes about as long as
-#' fitting them one at a time, while the memory used stays close to the size
-#' of the genotypes.
+#' transformed traits are solved together by conjugate gradient, each with
+#' its own recurrence and test of convergence. Each iteration costs about as
+#' much as one iteration for each trait on its own, so a fit to several traits
+#' takes about as long as fitting them one at a time, while the memory used
+#' stays close to the size of the genotypes.
 #'
 #' Variance components are estimated by REML when they are not supplied.
 #' REML needs a matrix decomposition whose cost is the square of the number
@@ -224,6 +224,9 @@ fastRRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
   nTraits = ncol(y)
@@ -699,6 +702,9 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -1002,6 +1008,9 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -1331,6 +1340,9 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -2062,8 +2074,10 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     nEval = 10
     recordCost = nEval*(nRec^3+nRec^2*nCoef)
     coefCost = nRec*nCoef^2+nEval*(nCoef^3+nRec*nCoef*(nPar+2))
-    # The optimizer's square matrices over the parameters
-    optimDoubles = 8*nPar^2
+    # The optimizer's square matrices over the parameters, and the working
+    # variates of the derivatives with their products with P, one vector of
+    # records per parameter each
+    optimDoubles = 8*nPar^2+2*nRec*nPar
     if(coefCost<recordCost){
       # The dosages and a scaled copy of them, the design of all the effects,
       # its cross product and that of each term, and the coefficient matrix

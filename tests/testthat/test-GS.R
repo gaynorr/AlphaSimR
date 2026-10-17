@@ -351,6 +351,15 @@ test_that("RRBLUPMemUse counts the multiple trait multikernel models", {
   }
 })
 
+test_that("RRBLUPMemUse counts the multiple trait working variates", {
+  # The derivatives hold a vector of records per parameter twice over. For
+  # the SCA model with 10 traits on 10,000 records that is two matrices of
+  # 100,000 rows by 4*55 parameters.
+  floorGB = 2*8*(10000*10)*(4*55)/10^9
+  expect_gt(RRBLUPMemUse(nInd=10000, nMarker=10, model="RRBLUP_SCA",
+                         nTraits=10), floorGB)
+})
+
 test_that("RRBLUPMemUse follows the multiple trait models to the record side", {
   # With many more markers than records, the record side is the cheaper
   # one, and its square matrix has a row per record and trait
@@ -713,6 +722,36 @@ test_that("multiple trait fastRRBLUP warns when maxIter is reached", {
   d = mvPop(nInd=80, nSnp=15)
   expect_warning(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, maxIter=1,
                             simParam=d$SP), "without converging")
+})
+
+test_that("multiple trait fastRRBLUP with diagonal covariance matrices fits each trait on its own", {
+  # With no covariance between the traits, the multiple trait BLUP of each
+  # trait is its single trait BLUP. An error variance close to zero for the
+  # first trait makes its variance ratio far larger than the second's, which
+  # must not stop the second trait from being fitted or from converging.
+  d = mvPop(nInd=80, nSnp=15)
+  Vu = diag(c(0.02, 0.03))
+  Ve = diag(c(1e-14, 1))
+  ans = fastRRBLUP(d$pop, traits=1:2, Vu=Vu, Ve=Ve, maxIter=10000,
+                   simParam=d$SP)
+  one = fastRRBLUP(d$pop, traits=2, Vu=Vu[2,2], Ve=Ve[2,2], maxIter=10000,
+                   simParam=d$SP)
+  expect_gt(max(abs(addEff(one))), 0)
+  expect_equal(addEffAll(ans)[, 2], addEff(one), tolerance=1e-6)
+})
+
+test_that("models accept a function of the traits that returns a vector", {
+  d = mvPop(nInd=60, nSnp=12)
+  index = function(x) rowSums(x)
+  ans = fastRRBLUP(d$pop, traits=index, Vu=0.01, Ve=1, simParam=d$SP)
+  expect_equal(length(ans@gv), 1L)
+  ans = fastRRBLUP(d$pop, traits=index, simParam=d$SP)
+  expect_true(all(is.finite(addEff(ans))))
+  for(fit in list(RRBLUP_D, RRBLUP_GCA, RRBLUP_SCA)){
+    ans = fit(d$pop, traits=index, simParam=d$SP)
+    expect_equal(length(ans@gv), 1L)
+    expect_equal(dim(ans@Ve), c(1L, 1L))
+  }
 })
 
 test_that("multiple trait fastRRBLUP needs every trait recorded", {

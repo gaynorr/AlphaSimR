@@ -1611,14 +1611,16 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
 // of the transformed responses is a single trait RR-BLUP model with variance
 // ratio 1/lam_k. The marker effects are T^-1 times the transformed ones.
 //
-// The transformed models are solved together by one preconditioned
-// conjugate gradient iteration, whose products with the genotypes serve
-// every trait at once. It works in whitened effects a_k = u_k/sqrt(lam_k),
-// whose coefficient matrix is lam_k*Mc'*S*Mc+I. A direction with no genetic
-// variance, lam_k of zero, then has no effects and needs no special case.
-// The products, the absorption of the fixed effects and the preconditioner
-// are kept apart from the iteration so that another residual structure only
-// has to replace the last two.
+// The transformed models are solved together by preconditioned conjugate
+// gradient, each trait by its own recurrence, with the products with the
+// genotypes taken for every trait at once. The iteration works in whitened
+// effects a_k = u_k/sqrt(lam_k), whose coefficient matrix is
+// lam_k*Mc'*S*Mc+I. A direction with no genetic variance, lam_k of zero,
+// then has no effects and needs no special case. The products, the
+// absorption of the fixed effects and the preconditioner are kept apart from
+// the iteration so that another residual structure only has to replace the
+// last two; one that couples the traits would also need the recurrences
+// joined.
 //
 // x is an indicator vector for the fixed effect levels, as in callRRBLUP
 // [[Rcpp::export]]
@@ -1707,8 +1709,12 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   // These are the eigenvalues of a covariance matrix among traits, not of a
   // cross product of records, so rankCutoff does not apply. An eigenvalue
   // that is negative beyond rounding means Vu is not a covariance matrix, and
-  // one at rounding level next to the largest is a direction with no genetic
-  // variance.
+  // one that is negative within rounding is a direction with no genetic
+  // variance. A positive eigenvalue is the variance ratio of its transformed
+  // trait and is kept however small it is next to the largest, because the
+  // ratios of different transformed traits need not be comparable: an error
+  // variance close to zero for one trait makes its ratio huge without making
+  // any other trait's ratio negligible.
   double lamMax = lam.max();
   if(!(lamMax>0.0)){
     Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
@@ -1716,7 +1722,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   if(lam.min() < -1.0e-8*lamMax){
     Rcpp::stop("fastRRBLUP: Vu must be positive semidefinite");
   }
-  lam.elem(find(lam<=1.0e-12*lamMax)).zeros();
+  lam.elem(find(lam<0.0)).zeros();
   arma::vec sqrtLam = sqrt(lam);
   arma::mat T = Qv.t()*Linv;
   arma::mat Tinv = Le*Qv;
@@ -1787,20 +1793,35 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   arma::vec offset = 1.0+Mmean.t();
   arma::mat tabs(32*nT,planes.n_cols);
 
-  // Preconditioned conjugate gradient on the whitened effects of all of the
-  // traits together, with inner products summed over the traits. Each
-  // product with the coefficient matrix is
+  // Preconditioned conjugate gradient on the whitened effects. The
+  // transformed traits are separate systems, so each has its own recurrence,
+  // with its own step lengths and its own test of convergence against its
+  // initial residual, as if it were fitted on its own. A shared recurrence
+  // would let a trait whose residual is far larger, such as one with an
+  // error variance close to zero, decide when every trait stops. The
+  // recurrences share only the products with the genotypes, which are taken
+  // for every trait at once. Each product with the coefficient matrix is
   //   sqrt(lam)*(Mc'*(S*(Mc*(sqrt(lam)*p)))) + p
-  // with the scaling by sqrt(lam) applied trait by trait.
+  // with the scaling by sqrt(lam) applied trait by trait. A trait that has
+  // converged keeps a search direction of zero, which leaves it unchanged.
   arma::mat At(nT,nLoci,arma::fill::zeros);
   arma::mat Zt = Rt/precond;
   arma::mat Pt = Zt;
   arma::mat Apt(nT,nLoci), Ps(nT,nLoci);
   arma::mat Tt(nT,nInd);
-  double rNorm0 = norm(Rt,"fro");
-  double rz = accu(Rt%Zt);
-  bool converged = (rNorm0<=0.0);
-  for(arma::uword iter=0; (iter<maxIter)&&(!converged); ++iter){
+  arma::vec rNorm0 = sqrt(sum(square(Rt),1));
+  arma::vec rz = sum(Rt%Zt,1);
+  std::vector<bool> active(nT);
+  arma::uword nActive = 0;
+  for(arma::uword k=0; k<nT; ++k){
+    active[k] = (rNorm0(k)>0.0);
+    if(active[k]){
+      ++nActive;
+    }else{
+      Pt.row(k).zeros();
+    }
+  }
+  for(arma::uword iter=0; (iter<maxIter)&&(nActive>0); ++iter){
     Ps = Pt;
     Ps.each_col() %= sqrtLam;
     multMcBlock(Tt, planes, ploidy, offset, Ps, tabs, nThreads);
@@ -1808,26 +1829,33 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
     multMcTBlock(Apt, planes, ploidy, offset, Tt, nThreads);
     Apt.each_col() %= sqrtLam;
     Apt += Pt;
-    double pAp = accu(Pt%Apt);
-    if(pAp<=0.0){
-      // The matrix is positive definite, so this is rounding once there is
-      // nothing left to solve for
-      converged = true;
-      break;
+    arma::vec pAp = sum(Pt%Apt,1);
+    for(arma::uword k=0; k<nT; ++k){
+      if(!active[k]) continue;
+      if(pAp(k)<=0.0){
+        // The matrix is positive definite, so this is rounding once there is
+        // nothing left to solve for
+        active[k] = false;
+        --nActive;
+        Pt.row(k).zeros();
+        continue;
+      }
+      double step = rz(k)/pAp(k);
+      At.row(k) += step*Pt.row(k);
+      Rt.row(k) -= step*Apt.row(k);
+      if(norm(Rt.row(k),2)<=1.0e-8*rNorm0(k)){
+        active[k] = false;
+        --nActive;
+        Pt.row(k).zeros();
+        continue;
+      }
+      Zt.row(k) = Rt.row(k)/precond.row(k);
+      double rzNew = accu(Rt.row(k)%Zt.row(k));
+      Pt.row(k) = Zt.row(k)+(rzNew/rz(k))*Pt.row(k);
+      rz(k) = rzNew;
     }
-    double step = rz/pAp;
-    At += step*Pt;
-    Rt -= step*Apt;
-    if(norm(Rt,"fro")<=1.0e-8*rNorm0){
-      converged = true;
-      break;
-    }
-    Zt = Rt/precond;
-    double rzNew = accu(Rt%Zt);
-    Pt = Zt+(rzNew/rz)*Pt;
-    rz = rzNew;
   }
-  if(!converged){
+  if(nActive>0){
     Rf_warning("callFastRRBLUP: reached maxIter without converging");
   }
 
