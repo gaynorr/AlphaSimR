@@ -2249,3 +2249,213 @@ local({
 
 })
 
+
+# ---------------------------------------------------------------------------
+# Covariances between traits: genic, HW and LD matrices
+# ---------------------------------------------------------------------------
+
+covFounders = function(ploidy=2L){
+  set.seed(2951)
+  quickHaplo(nInd=40, nChr=2, segSites=30, ploidy=ploidy)
+}
+
+covSP = function(founderPop){
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP
+}
+
+# Selfing departs from Hardy-Weinberg proportions, so the HW matrices are
+# not zero
+covPop = function(founderPop, SP){
+  self(newPop(founderPop, simParam=SP), simParam=SP)
+}
+
+covNames = c("G","A","D","AA","N")
+
+test_that("COVMAT diagonals of the computed matrices equal the vectors", {
+  for(ploidy in c(2L, 4L)){
+    founderPop = covFounders(ploidy)
+    SP = covSP(founderPop)
+    SP$addTraitA(5)
+    SP$addTraitAD(5, meanDD=0.3, varDD=0.2)
+    SP$addTraitAE(6, relAA=0.4)
+    SP$addTraitADE(6, meanDD=0.2, relAA=0.3)
+    pop = covPop(founderPop, SP)
+    gp = genParam(pop, simParam=SP)
+    tabs = AlphaSimR:::calcGenParamMulti(SP$traits, pop, 1L,
+                                         locusTables=TRUE)
+    cm = AlphaSimR:::.genicCovMatrices(lapply(tabs, function(x) x$tables),
+                                       SP$traits, pop)
+    expect_equal(diag(cm$A), unname(gp$genicVarA), tolerance=1e-10)
+    expect_equal(diag(cm$D), unname(gp$genicVarD), tolerance=1e-10)
+    expect_equal(diag(cm$AA), unname(gp$genicVarAA), tolerance=1e-10)
+    expect_equal(diag(cm$A_HW), unname(gp$covA_HW), tolerance=1e-10)
+    expect_equal(diag(cm$D_HW), unname(gp$covD_HW), tolerance=1e-10)
+    expect_equal(diag(cm$AA_HW), unname(gp$covAA_HW), tolerance=1e-10)
+    # The returned diagonals are the vectors themselves
+    expect_identical(unname(diag(gp$genicCovG)), unname(gp$genicVarG))
+    expect_identical(unname(diag(gp$covN_HWMat)), unname(gp$covN_HW))
+    expect_identical(unname(diag(gp$covA_LMat)), unname(gp$covA_L))
+  }
+})
+
+test_that("COVMAT genic, HW and LD matrices add up to the observed matrices", {
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  SP$addTraitAD(5, mean=c(0,0), var=c(1,1), meanDD=0.3, varDD=0.2,
+                corA=matrix(c(1,0.6,0.6,1),2))
+  SP$addTraitADE(6, meanDD=0.2, relAA=0.3)
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+  for(x in covNames){
+    expect_equal(gp[[paste0("genicCov",x)]] + gp[[paste0("cov",x,"_HWMat")]] +
+                   gp[[paste0("cov",x,"_LMat")]],
+                 gp[[paste0("var",x)]], tolerance=1e-12)
+    m = gp[[paste0("genicCov",x)]]
+    expect_identical(dimnames(m), list(SP$traitNames, SP$traitNames))
+    expect_true(isSymmetric(m))
+  }
+  expect_equal(gp$genicCovG, gp$genicCovA + gp$genicCovD + gp$genicCovAA)
+  expect_equal(gp$genicCovN, gp$genicCovD + gp$genicCovAA)
+})
+
+test_that("COVMAT scaled copies of a trait covary in proportion to its variance", {
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  markers = c("1_2","1_9","1_17","2_4","2_11","2_25")
+  addEff = c(0.5,-0.3,0.8,0.2,-0.6,0.4)
+  domEff = c(0.2,0.1,-0.3,0.4,0.0,0.2)
+  epiEff = c(0.3,-0.5,0.4)
+  pairs = rbind(c("1_2","2_4"), c("1_9","1_17"), c("2_11","2_25"))
+  SP$importTrait(markers, addEff=addEff, domEff=domEff,
+                 epiPairs=pairs, epiEff=epiEff, name="T1")
+  # The same trait at twice the scale, with its pairs written the other
+  # way round, so that the AA tables have to be aligned by transposing
+  SP$importTrait(rev(markers), addEff=2*rev(addEff), domEff=2*rev(domEff),
+                 epiPairs=pairs[,2:1], epiEff=2*epiEff, name="T2")
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+  for(x in covNames){
+    for(type in c("genicCov%s","cov%s_HWMat","cov%s_LMat")){
+      m = gp[[sprintf(type, x)]]
+      expect_equal(m[1,2], 2*m[1,1], tolerance=1e-10)
+      expect_equal(m[2,2], 4*m[1,1], tolerance=1e-10)
+    }
+  }
+  expect_gt(gp$genicCovAA[1,1], 0)
+})
+
+test_that("COVMAT traits on disjoint QTL have no genic covariance", {
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  SP$importTrait(c("1_3","1_8","1_14"), addEff=c(1,-0.5,0.7),
+                 domEff=c(0.3,0.2,-0.1), name="First")
+  SP$importTrait(c("1_5","2_8","2_20"), addEff=c(0.4,0.9,-0.6),
+                 domEff=c(0.1,-0.2,0.3), name="Second")
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+  for(x in c("G","A","D")){
+    expect_identical(gp[[paste0("genicCov",x)]][1,2], 0)
+    expect_identical(gp[[paste0("cov",x,"_HWMat")]][1,2], 0)
+    expect_equal(gp[[paste0("cov",x,"_LMat")]][1,2],
+                 gp[[paste0("var",x)]][1,2])
+  }
+
+  # An epistatic trait and an additive trait on the same loci share
+  # additive genic covariance but no epistatic genic covariance
+  SP = covSP(founderPop)
+  markers = c("1_3","1_8","2_5","2_9")
+  SP$importTrait(markers, addEff=c(1,-0.5,0.7,0.3),
+                 epiPairs=rbind(c("1_3","2_5"), c("1_8","2_9")),
+                 epiEff=c(0.6,-0.4), name="AE")
+  SP$importTrait(markers, addEff=c(0.2,0.8,-0.3,0.5), name="A")
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+  expect_identical(gp$genicCovAA[1,2], 0)
+  expect_identical(gp$covAA_HWMat[1,2], 0)
+  expect_false(gp$genicCovA[1,2]==0)
+})
+
+test_that("COVMAT matches a direct calculation from genotype frequencies", {
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  m1 = c("1_2","1_6","1_11","2_3","2_15")
+  m2 = c("1_6","1_11","1_20","2_15","2_22")
+  a1 = c(0.5,-0.8,0.3,1.0,-0.4); d1 = c(0.2,0.4,-0.1,0.3,0.2)
+  a2 = c(-0.6,0.7,0.9,0.4,-0.2); d2 = c(0.3,-0.2,0.5,0.1,0.4)
+  SP$importTrait(m1, addEff=a1, domEff=d1, name="T1")
+  SP$importTrait(m2, addEff=a2, domEff=d2, name="T2")
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+
+  geno = pullSegSiteGeno(pop, simParam=SP)
+  x = 0:2
+  xa = x - 1
+  xd = x*(2 - x)
+  # Statistical values at one locus under genotype frequencies f, with the
+  # mean dosage taken from the observed frequencies, as in genParam
+  stats = function(f, mu, a, d){
+    gv = xa*a + xd*d
+    gvMu = sum(f*gv)
+    alpha = sum(f*(gv - gvMu)*(x - mu))/sum(f*(x - mu)^2)
+    bv = (x - mu)*alpha
+    list(bv=bv, dd=gv - bv - gvMu)
+  }
+  eff = function(m, marker, a, d){
+    i = match(m, marker)
+    if(is.na(i)) c(0, 0) else c(a[i], d[i])
+  }
+  expected = c(A=0, A_HW=0, D=0, D_HW=0)
+  for(m in union(m1, m2)){
+    f = tabulate(geno[,m] + 1L, nbins=3)/nrow(geno)
+    mu = sum(f*x)
+    p = mu/2
+    fE = c((1 - p)^2, 2*p*(1 - p), p^2)
+    e1 = eff(m, m1, a1, d1)
+    e2 = eff(m, m2, a2, d2)
+    o1 = stats(f, mu, e1[1], e1[2])
+    o2 = stats(f, mu, e2[1], e2[2])
+    h1 = stats(fE, mu, e1[1], e1[2])
+    h2 = stats(fE, mu, e2[1], e2[2])
+    expected["A"] = expected["A"] + sum(fE*h1$bv*h2$bv)
+    expected["A_HW"] = expected["A_HW"] + sum(f*o1$bv*o2$bv) -
+      sum(fE*h1$bv*h2$bv)
+    expected["D"] = expected["D"] + sum(fE*h1$dd*h2$dd)
+    expected["D_HW"] = expected["D_HW"] + sum(f*o1$dd*o2$dd) -
+      sum(fE*h1$dd*h2$dd)
+  }
+  expect_equal(gp$genicCovA[1,2], unname(expected["A"]), tolerance=1e-10)
+  expect_equal(gp$covA_HWMat[1,2], unname(expected["A_HW"]), tolerance=1e-10)
+  expect_equal(gp$genicCovD[1,2], unname(expected["D"]), tolerance=1e-10)
+  expect_equal(gp$covD_HWMat[1,2], unname(expected["D_HW"]), tolerance=1e-10)
+  expect_false(gp$covA_HWMat[1,2]==0)
+})
+
+test_that("COVMAT a single trait gives 1 by 1 matrices of the vectors", {
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  SP$addTraitADE(6, meanDD=0.2, relAA=0.3)
+  pop = covPop(founderPop, SP)
+  gp = genParam(pop, simParam=SP)
+  expect_identical(c(gp$genicCovA), unname(gp$genicVarA))
+  expect_identical(c(gp$covAA_HWMat), unname(gp$covAA_HW))
+  expect_identical(c(gp$covG_LMat), unname(gp$covG_L))
+  expect_identical(dim(gp$genicCovN), c(1L,1L))
+})
+
+test_that("COVMAT matrices do not depend on the number of threads", {
+  skip_if(getNumThreads() < 2)
+  founderPop = covFounders()
+  SP = covSP(founderPop)
+  SP$addTraitAD(5, mean=c(0,0), var=c(1,1), meanDD=0.3, varDD=0.2)
+  SP$addTraitADE(6, meanDD=0.2, relAA=0.3)
+  pop = covPop(founderPop, SP)
+  one = genParam(pop, simParam=SP, nThreads=1L)
+  two = genParam(pop, simParam=SP, nThreads=2L)
+  for(x in covNames){
+    for(type in c("genicCov%s","cov%s_HWMat","cov%s_LMat")){
+      expect_identical(one[[sprintf(type, x)]], two[[sprintf(type, x)]])
+    }
+  }
+})

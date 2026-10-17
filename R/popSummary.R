@@ -189,6 +189,143 @@ varEBV = function(pop){
   return(ebv)
 }
 
+#' @title Genic covariance matrices between traits
+#'
+#' @description
+#' Forms the genic covariances between traits, and their adjustments for
+#' departures from Hardy-Weinberg genotype frequencies, from the per-locus
+#' tables returned by \code{calcGenParamMulti} with
+#' \code{locusTables=TRUE}. Used by \code{\link{genParam}}.
+#'
+#' @param tabs a list with one element per trait, the \code{tables}
+#' returned for that trait
+#' @param traits the list of traits, in the same order
+#' @param pop the population the tables were calculated in
+#'
+#' @details
+#' A genic covariance is a sum over loci of the product of two traits'
+#' statistical values at each genotype, weighted by the genotype
+#' frequencies, which belong to the locus rather than to either trait. A
+#' trait contributes nothing at a locus where it has no QTL, so traits on
+#' disjoint QTL have no genic covariance. Additive-by-additive deviations
+#' are defined for pairs of loci, and two traits' deviations only covary
+#' where both traits pair the same two loci, because a deviation averages
+#' to zero over either locus of its pair. The sums are taken in R, in a
+#' fixed order, so that they do not depend on BLAS threading.
+#'
+#' @return a list of nTraits by nTraits matrices: \code{A}, \code{D} and
+#' \code{AA}, the genic covariances under Hardy-Weinberg and linkage
+#' equilibrium, and \code{A_HW}, \code{D_HW} and \code{AA_HW}, the genic
+#' covariances under the observed marginal genotype frequencies less those
+#' under Hardy-Weinberg frequencies
+#'
+#' @keywords internal
+.genicCovMatrices = function(tabs, traits, pop){
+  nTraits = length(traits)
+  nGeno = pop@ploidy + 1L
+
+  # Genome-wide index of each trait's loci, in the order of its tables
+  offset = c(0L, cumsum(pop@nLoci))[seq_len(pop@nChr)]
+  locKey = lapply(traits, function(trait){
+    chr = rep(seq_along(trait@lociPerChr), trait@lociPerChr)
+    offset[chr] + trait@lociLoc
+  })
+  keys = sort(unique(unlist(locKey)))
+  nKey = length(keys)
+  take = lapply(locKey, match, table=keys)
+
+  # Genotype frequencies are the same in every trait that has a locus
+  freq = freqE = matrix(0, nGeno, nKey)
+  for(t in seq_len(nTraits)){
+    freq[,take[[t]]] = tabs[[t]]$freq
+    freqE[,take[[t]]] = tabs[[t]]$freqE
+  }
+
+  # A trait's values spread over every locus, zero where it has no QTL
+  spread = function(t, name){
+    out = matrix(0, nGeno, nKey)
+    if(!is.null(tabs[[t]][[name]])){
+      out[,take[[t]]] = tabs[[t]][[name]]
+    }
+    c(out)
+  }
+
+  # Weighted sums of products for every pair of traits
+  crossAll = function(cols, w){
+    out = matrix(0, nTraits, nTraits)
+    for(t in seq_len(nTraits)){
+      wt = w*cols[[t]]
+      for(s in t:nTraits){
+        out[t,s] = out[s,t] = sum(wt*cols[[s]])
+      }
+    }
+    out
+  }
+
+  covPair = function(name, nameE){
+    obs = crossAll(lapply(seq_len(nTraits), spread, name=name), c(freq))
+    hwe = crossAll(lapply(seq_len(nTraits), spread, name=nameE), c(freqE))
+    list(genic=hwe, hw=obs-hwe)
+  }
+  covA = covPair("bv", "bvE")
+  covD = covPair("dd", "ddE")
+
+  # Epistatic deviations are keyed by their pair of loci, with the lower
+  # index first. A table whose pair runs the other way is transposed, so
+  # that the dosage at the lower locus varies fastest in every table.
+  pairs = lapply(seq_len(nTraits), function(t){
+    if(is.null(tabs[[t]]$pair1)) return(NULL)
+    k1 = locKey[[t]][tabs[[t]]$pair1]
+    k2 = locKey[[t]][tabs[[t]]$pair2]
+    flip = k1 > k2
+    aa = tabs[[t]]$aa
+    aaE = tabs[[t]]$aaE
+    if(any(flip)){
+      # Row order of a transposed table
+      tr = c(t(matrix(seq_len(nGeno*nGeno), nGeno, nGeno)))
+      aa[,flip] = aa[tr,flip,drop=FALSE]
+      aaE[,flip] = aaE[tr,flip,drop=FALSE]
+    }
+    list(lo=pmin(k1,k2), hi=pmax(k1,k2), aa=aa, aaE=aaE)
+  })
+  hasAA = !vapply(pairs, is.null, logical(1))
+  if(any(hasAA)){
+    pairId = function(p) paste(p$lo, p$hi)
+    allPairs = unique(do.call(rbind, lapply(pairs[hasAA], function(p){
+      cbind(p$lo, p$hi)
+    })))
+    allPairs = allPairs[order(allPairs[,1], allPairs[,2]),,drop=FALSE]
+    allId = paste(allPairs[,1], allPairs[,2])
+    nCell = nGeno*nGeno
+    lo = match(allPairs[,1], keys)
+    hi = match(allPairs[,2], keys)
+    # Frequencies of the joint genotypes of each pair under linkage
+    # equilibrium, from the marginal frequencies of its two loci, with the
+    # dosage at the lower locus varying fastest
+    rowLo = rep(seq_len(nGeno), times=nGeno)
+    rowHi = rep(seq_len(nGeno), each=nGeno)
+    wNoLD = freq[rowLo,lo,drop=FALSE]*freq[rowHi,hi,drop=FALSE]
+    wNoLDE = freqE[rowLo,lo,drop=FALSE]*freqE[rowHi,hi,drop=FALSE]
+    spreadAA = function(t, name){
+      out = matrix(0, nCell, nrow(allPairs))
+      if(hasAA[t]){
+        out[,match(pairId(pairs[[t]]), allId)] = pairs[[t]][[name]]
+      }
+      c(out)
+    }
+    obs = crossAll(lapply(seq_len(nTraits), spreadAA, name="aa"), c(wNoLD))
+    hwe = crossAll(lapply(seq_len(nTraits), spreadAA, name="aaE"), c(wNoLDE))
+    covAA = list(genic=hwe, hw=obs-hwe)
+  }else{
+    zero = matrix(0, nTraits, nTraits)
+    covAA = list(genic=zero, hw=zero)
+  }
+
+  return(list(A=covA$genic, A_HW=covA$hw,
+              D=covD$genic, D_HW=covD$hw,
+              AA=covAA$genic, AA_HW=covAA$hw))
+}
+
 #' @title Calculate quantitative genetic quantities
 #'
 #' @description
@@ -266,6 +403,25 @@ varEBV = function(pop){
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than sample divisor \code{nInd - 1}.
 #'
+#' The same decomposition is also given between traits, as nTraits by
+#' nTraits matrices.
+#' \code{genicCovX} is the genic covariance under Hardy-Weinberg and
+#' linkage equilibrium at the observed allele frequencies,
+#' \code{covX_HWMat} is the adjustment for departures from Hardy-Weinberg
+#' genotype frequencies, and \code{covX_LMat} is
+#' \code{varX - genicCovX - covX_HWMat}, the contribution of linkage
+#' disequilibrium, so the three add up to \code{varX}.
+#' Their diagonals are the vectors \code{genicVarX}, \code{covX_HW} and
+#' \code{covX_L}.
+#' Genic covariances between traits come only from loci that both traits
+#' have as QTL, so traits on disjoint QTL have no genic covariance, and any
+#' observed covariance between them is due to linkage disequilibrium.
+#' Additive-by-additive genic covariances come only from pairs of loci that
+#' both traits treat as interacting.
+#' These matrices are covariances between traits within one component; the
+#' within-trait covariances between components, such as \code{covAD_L},
+#' are only given as vectors.
+#'
 #' @return
 #' \describe{
 #' \item{varG}{an nTraits by nTraits matrix of total genetic variances and covariances between traits}
@@ -306,6 +462,31 @@ varEBV = function(pop){
 #'   between dominance deviations and additive-by-additive epistatic deviations}
 #' \item{covAN_L}{an nTraits vector of within-trait covariances
 #'   between breeding values and non-additive deviations}
+#' \item{genicCovG}{an nTraits by nTraits matrix of total genic variances
+#'   and covariances between traits}
+#' \item{genicCovA}{an nTraits by nTraits matrix of additive genic variances
+#'   and covariances between traits}
+#' \item{genicCovD}{an nTraits by nTraits matrix of dominance genic variances
+#'   and covariances between traits}
+#' \item{genicCovAA}{an nTraits by nTraits matrix of additive-by-additive
+#'   epistatic genic variances and covariances between traits}
+#' \item{genicCovN}{an nTraits by nTraits matrix of non-additive genic
+#'   variances and covariances between traits}
+#' \item{covG_HWMat}{an nTraits by nTraits matrix of adjustments to total genic
+#'   variances and covariances due to departures from Hardy-Weinberg
+#'   genotype frequencies}
+#' \item{covA_HWMat}{as \code{covG_HWMat}, for additive genic variances and covariances}
+#' \item{covD_HWMat}{as \code{covG_HWMat}, for dominance genic variances and covariances}
+#' \item{covAA_HWMat}{as \code{covG_HWMat}, for additive-by-additive epistatic
+#'   genic variances and covariances}
+#' \item{covN_HWMat}{as \code{covG_HWMat}, for non-additive genic variances and covariances}
+#' \item{covG_LMat}{an nTraits by nTraits matrix of contributions to total genetic
+#'   variances and covariances due to linkage disequilibrium}
+#' \item{covA_LMat}{as \code{covG_LMat}, for additive genetic variances and covariances}
+#' \item{covD_LMat}{as \code{covG_LMat}, for dominance genetic variances and covariances}
+#' \item{covAA_LMat}{as \code{covG_LMat}, for additive-by-additive epistatic
+#'   genetic variances and covariances}
+#' \item{covN_LMat}{as \code{covG_LMat}, for non-additive genetic variances and covariances}
 #' \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 #' \item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
 #' \item{mu_HW}{an nTraits vector of genetic value means expected under
@@ -377,8 +558,10 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   alpha_HW = alpha
 
   # Traits sharing loci, such as correlated traits, are worked out together
-  # so their genotypes are only counted and read once
-  allTmp = calcGenParamMulti(simParam$traits,pop,nThreads)
+  # so their genotypes are only counted and read once. The per-locus tables
+  # for genic covariances are only needed when there is more than one trait.
+  allTmp = calcGenParamMulti(simParam$traits,pop,nThreads,
+                             locusTables=nTraits>1)
 
   #Loop through trait calculations
   for(i in seq_len(nTraits)){
@@ -459,6 +642,35 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   genicVarG = genicVarA + genicVarD + genicVarAA
   covG_HW = covA_HW + covD_HW + covAA_HW
 
+  # Genic covariance matrices between traits. Their diagonals are set to the
+  # vectors above, which they equal up to rounding, so that the two forms of
+  # the output agree exactly.
+  if(nTraits>1){
+    cm = .genicCovMatrices(lapply(allTmp, function(x) x$tables),
+                           simParam$traits, pop)
+  }else{
+    cm = NULL
+  }
+  traitMat = function(m, v){
+    if(is.null(m)){
+      m = matrix(0, nTraits, nTraits)
+    }
+    diag(m) = v
+    rownames(m) = colnames(m) = traitNames
+    m
+  }
+  genicCovA = traitMat(cm$A, genicVarA)
+  genicCovD = traitMat(cm$D, genicVarD)
+  genicCovAA = traitMat(cm$AA, genicVarAA)
+  # Summed in the same order as the vectors, so the diagonals match exactly
+  genicCovN = genicCovD + genicCovAA
+  genicCovG = genicCovA + genicCovD + genicCovAA
+  covA_HWMat = traitMat(cm$A_HW, covA_HW)
+  covD_HWMat = traitMat(cm$D_HW, covD_HW)
+  covAA_HWMat = traitMat(cm$AA_HW, covAA_HW)
+  covN_HWMat = covD_HWMat + covAA_HWMat
+  covG_HWMat = covA_HWMat + covD_HWMat + covAA_HWMat
+
   output = list(varG=varG,
                 varA=varA,
                 varD=varD,
@@ -483,6 +695,21 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
                 covAAA_L=covAAA_L,
                 covDAA_L=covDAA_L,
                 covAN_L=covAN_L,
+                genicCovG=genicCovG,
+                genicCovA=genicCovA,
+                genicCovD=genicCovD,
+                genicCovAA=genicCovAA,
+                genicCovN=genicCovN,
+                covG_HWMat=covG_HWMat,
+                covA_HWMat=covA_HWMat,
+                covD_HWMat=covD_HWMat,
+                covAA_HWMat=covAA_HWMat,
+                covN_HWMat=covN_HWMat,
+                covG_LMat=varG-genicCovG-covG_HWMat,
+                covA_LMat=varA-genicCovA-covA_HWMat,
+                covD_LMat=varD-genicCovD-covD_HWMat,
+                covAA_LMat=varAA-genicCovAA-covAA_HWMat,
+                covN_LMat=varN-genicCovN-covN_HWMat,
                 gv=gv,
                 mu=mu, # mean gv for the trait in the pop
                 mu_HW=mu_HW,

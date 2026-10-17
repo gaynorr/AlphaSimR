@@ -192,8 +192,8 @@ calcGenParam <- function(trait, pop, nThreads) {
     .Call(`_AlphaSimR_calcGenParam`, trait, pop, nThreads)
 }
 
-calcGenParamMulti <- function(traitList, pop, nThreads) {
-    .Call(`_AlphaSimR_calcGenParamMulti`, traitList, pop, nThreads)
+calcGenParamMulti <- function(traitList, pop, nThreads, locusTables = FALSE) {
+    .Call(`_AlphaSimR_calcGenParamMulti`, traitList, pop, nThreads, locusTables)
 }
 
 getGeno <- function(geno, lociPerChr, lociLoc, nThreads) {

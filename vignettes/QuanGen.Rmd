@@ -967,6 +967,46 @@ varG_via_partsAN = unname(ans$varA[1,1] + ans$varN[1,1] +
 c(varG = varG, varG_via_partsADAA = varG_via_partsADAA, varG_via_partsAN = varG_via_partsAN)
 ```
 
+### Covariances between traits {#trait-covariances}
+
+With more than one trait, `genParam()` gives the same decomposition
+for the covariances between traits, as matrices.
+For each component `X`, `genicCovX` is the genic covariance
+under Hardy-Weinberg and linkage equilibrium,
+`covX_HWMat` adjusts it for departures from Hardy-Weinberg proportions, and
+`covX_LMat` is the contribution of linkage disequilibrium,
+so that `genicCovX + covX_HWMat + covX_LMat` equals `varX`.
+The diagonals of these matrices are the vectors described above.
+
+A genic covariance between two traits only comes from loci
+that are QTL for both of them.
+Below, the first two traits are added together, so they share their QTL,
+and their genic covariance reflects the correlation between their effects.
+The third trait's QTL are sampled separately, so it shares at most a few
+of them with the first two.
+Its genic covariance with them comes only from those few shared QTL,
+and the rest of its covariance with them is due to linkage disequilibrium.
+
+```{r}
+founders = quickHaplo(nInd = 200, nChr = 2, segSites = 100)
+SP2 = SimParam$new(founders)
+SP2$nThreads = 1L
+SP2$addTraitA(nQtlPerChr = 20, mean = c(0, 0), var = c(1, 1),
+              corA = matrix(c(1, 0.7, 0.7, 1), nrow = 2))
+SP2$addTraitA(nQtlPerChr = 20)
+pop2 = newPop(founders, simParam = SP2)
+ans2 = genParam(pop2, simParam = SP2)
+
+# Genic, Hardy-Weinberg and linkage disequilibrium parts of
+# the additive genetic covariances
+round(ans2$genicCovA, 3)
+round(ans2$covA_HWMat, 3)
+round(ans2$covA_LMat, 3)
+
+# The parts add up to the additive genetic (co)variances
+all.equal(ans2$genicCovA + ans2$covA_HWMat + ans2$covA_LMat, ans2$varA)
+```
+
 ## Polyploids and digenic dominance {#polyploids}
 
 ### Genotype coding and model limitations

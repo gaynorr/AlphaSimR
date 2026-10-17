@@ -56,6 +56,31 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
   between dominance deviations and additive-by-additive epistatic deviations}
 \item{covAN_L}{an nTraits vector of within-trait covariances
   between breeding values and non-additive deviations}
+\item{genicCovG}{an nTraits by nTraits matrix of total genic variances
+  and covariances between traits}
+\item{genicCovA}{an nTraits by nTraits matrix of additive genic variances
+  and covariances between traits}
+\item{genicCovD}{an nTraits by nTraits matrix of dominance genic variances
+  and covariances between traits}
+\item{genicCovAA}{an nTraits by nTraits matrix of additive-by-additive
+  epistatic genic variances and covariances between traits}
+\item{genicCovN}{an nTraits by nTraits matrix of non-additive genic
+  variances and covariances between traits}
+\item{covG_HWMat}{an nTraits by nTraits matrix of adjustments to total genic
+  variances and covariances due to departures from Hardy-Weinberg
+  genotype frequencies}
+\item{covA_HWMat}{as \code{covG_HWMat}, for additive genic variances and covariances}
+\item{covD_HWMat}{as \code{covG_HWMat}, for dominance genic variances and covariances}
+\item{covAA_HWMat}{as \code{covG_HWMat}, for additive-by-additive epistatic
+  genic variances and covariances}
+\item{covN_HWMat}{as \code{covG_HWMat}, for non-additive genic variances and covariances}
+\item{covG_LMat}{an nTraits by nTraits matrix of contributions to total genetic
+  variances and covariances due to linkage disequilibrium}
+\item{covA_LMat}{as \code{covG_LMat}, for additive genetic variances and covariances}
+\item{covD_LMat}{as \code{covG_LMat}, for dominance genetic variances and covariances}
+\item{covAA_LMat}{as \code{covG_LMat}, for additive-by-additive epistatic
+  genetic variances and covariances}
+\item{covN_LMat}{as \code{covG_LMat}, for non-additive genetic variances and covariances}
 \item{gv}{a matrix of genetic values with dimensions nInd by nTraits}
 \item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
 \item{mu_HW}{an nTraits vector of genetic value means expected under
@@ -148,6 +173,25 @@ The cross-component terms \code{covAD_L}, \code{covAAA_L}, \code{covDAA_L}, and
 \code{covAN_L} are covariances.
 Variances and covariances use the population divisor \code{nInd},
 rather than sample divisor \code{nInd - 1}.
+
+The same decomposition is also given between traits, as nTraits by
+nTraits matrices.
+\code{genicCovX} is the genic covariance under Hardy-Weinberg and
+linkage equilibrium at the observed allele frequencies,
+\code{covX_HWMat} is the adjustment for departures from Hardy-Weinberg
+genotype frequencies, and \code{covX_LMat} is
+\code{varX - genicCovX - covX_HWMat}, the contribution of linkage
+disequilibrium, so the three add up to \code{varX}.
+Their diagonals are the vectors \code{genicVarX}, \code{covX_HW} and
+\code{covX_L}.
+Genic covariances between traits come only from loci that both traits
+have as QTL, so traits on disjoint QTL have no genic covariance, and any
+observed covariance between them is due to linkage disequilibrium.
+Additive-by-additive genic covariances come only from pairs of loci that
+both traits treat as interacting.
+These matrices are covariances between traits within one component; the
+within-trait covariances between components, such as \code{covAD_L},
+are only given as vectors.
 }
 \examples{
 #Create founder haplotypes

@@ -14,9 +14,14 @@
 // gvGroupEffects. The epistatic deviation is what is left of an
 // individual's genetic value: gv_a+gv_d+gv_aa-bv-dd less the sum of each
 // pair's mean genetic value.
+//
+// With locusTables, the genotype frequencies and statistical values at each
+// locus, and the epistatic deviations of each pair, are also returned, so
+// that genParam can form genic covariances between traits.
 Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                          const Rcpp::S4& pop,
-                         int nThreads){
+                         int nThreads,
+                         bool locusTables=false){
   //Information from pop
   bool hasD = trait.hasSlot("domEff");
   PackedGeno g(pop);
@@ -144,6 +149,23 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   // For each pair: its mean genetic value.
   arma::vec locGenoMu(nLoci), locGvMu(nLoci), locPartnerXa(nLoci),
     locPartnerVal(nLoci), locEpi(nLoci), pairGvMu(nPair);
+  // Tables for genic covariances between traits: one column per locus, or
+  // per pair for the epistatic deviations. Each column is written by the
+  // one pair that owns it, so the writes need no synchronization, and none
+  // of these values feeds the sums above.
+  arma::mat tabFreq, tabFreqE, tabBv, tabBvE, tabDd, tabDdE, tabAA, tabAAE;
+  if(locusTables){
+    tabFreq.set_size(nGeno, nLoci);
+    tabFreqE.set_size(nGeno, nLoci);
+    tabBv.set_size(nGeno, nLoci);
+    tabBvE.set_size(nGeno, nLoci);
+    if(hasD){
+      tabDd.set_size(nGeno, nLoci);
+      tabDdE.set_size(nGeno, nLoci);
+    }
+    tabAA.set_size(nCell, nPair);
+    tabAAE.set_size(nCell, nPair);
+  }
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
@@ -318,6 +340,28 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
       }
       genicAA(tid) += accu(freqNoLD%AANoLD%AANoLD);
       genicAA2(tid) += accu(freqNoLDE%AAE%AAE);
+
+      if(locusTables){
+        arma::uword t1 = loc1(i), t2 = loc2(i);
+        tabFreq.col(t1) = freq1;
+        tabFreq.col(t2) = freq2;
+        tabFreqE.col(t1) = freqE1;
+        tabFreqE.col(t2) = freqE2;
+        tabBv.col(t1) = bv1;
+        tabBv.col(t2) = bv2;
+        tabBvE.col(t1) = bvE1;
+        tabBvE.col(t2) = bvE2;
+        if(hasD){
+          tabDd.col(t1) = dd1;
+          tabDd.col(t2) = dd2;
+          tabDdE.col(t1) = ddE1;
+          tabDdE.col(t2) = ddE2;
+        }
+        // Column major, so the dosage at the pair's first locus varies
+        // fastest
+        tabAA.col(i) = arma::vectorise(AANoLD);
+        tabAAE.col(i) = arma::vectorise(AAE);
+      }
     
       // Values needed for individuals
       arma::uword l1 = loc1(i), l2 = loc2(i);
@@ -386,6 +430,33 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   const arma::vec& gvA = ind[0](0);
   const arma::vec& bvInd = ind[1](0);
 
+  // Left empty unless requested
+  Rcpp::List tables;
+  if(locusTables){
+    arma::uvec pair1 = loc1+1, pair2 = loc2+1; // C++ to R
+    if(hasD){
+      tables = Rcpp::List::create(Rcpp::Named("freq")=tabFreq,
+                                  Rcpp::Named("freqE")=tabFreqE,
+                                  Rcpp::Named("bv")=tabBv,
+                                  Rcpp::Named("bvE")=tabBvE,
+                                  Rcpp::Named("dd")=tabDd,
+                                  Rcpp::Named("ddE")=tabDdE,
+                                  Rcpp::Named("aa")=tabAA,
+                                  Rcpp::Named("aaE")=tabAAE,
+                                  Rcpp::Named("pair1")=pair1,
+                                  Rcpp::Named("pair2")=pair2);
+    }else{
+      tables = Rcpp::List::create(Rcpp::Named("freq")=tabFreq,
+                                  Rcpp::Named("freqE")=tabFreqE,
+                                  Rcpp::Named("bv")=tabBv,
+                                  Rcpp::Named("bvE")=tabBvE,
+                                  Rcpp::Named("aa")=tabAA,
+                                  Rcpp::Named("aaE")=tabAAE,
+                                  Rcpp::Named("pair1")=pair1,
+                                  Rcpp::Named("pair2")=pair2);
+    }
+  }
+
   if(hasD){
     const arma::vec& gvD = ind[2](0);
     const arma::vec& ddInd = ind[3](0);
@@ -406,7 +477,8 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
                               Rcpp::Named("alpha")=alpha,
-                              Rcpp::Named("alpha_HW")=alphaHW);
+                              Rcpp::Named("alpha_HW")=alphaHW,
+                              Rcpp::Named("tables")=tables);
   }else{
     return Rcpp::List::create(Rcpp::Named("gv")=gvA+gvAA+intercept,
                               Rcpp::Named("bv")=bvInd,
@@ -421,7 +493,8 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
                               Rcpp::Named("alpha")=alpha,
-                              Rcpp::Named("alpha_HW")=alphaHW);
+                              Rcpp::Named("alpha_HW")=alphaHW,
+                              Rcpp::Named("tables")=tables);
   }
 }
 
@@ -568,10 +641,15 @@ arma::Mat<arma::uword> countGenotypes(const PackedGeno& g, const LociPos& pos,
 // loci and are worked out together by gvGroupEffects, which reads the
 // genotypes once for all of them. Each trait's statistics for loci are the
 // same whichever traits it is worked out with.
+//
+// With locusTables, the genotype frequencies and statistical values at each
+// locus are also returned, so that genParam can form genic covariances
+// between traits.
 std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                           const PackedGeno& g,
                                           const LociPos& pos,
-                                          int nThreads){
+                                          int nThreads,
+                                          bool locusTables=false){
   arma::uword nTrait = traits.size();
   arma::uword ploidy = g.ploidy;
   double dP = double(ploidy);
@@ -599,6 +677,19 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
     genicD2(nTrait), mu(nTrait), eMu(nTrait), alpha(nTrait), alphaHW(nTrait);
   std::vector<GvEffects> effs;
   std::vector<arma::uword> gvAIdx(nTrait), bvIdx(nTrait), gvDIdx(nTrait);
+  // Tables for genic covariances between traits, one column per locus.
+  // Genotype frequencies belong to the loci, not the traits, so they are
+  // written while the first trait is worked out and shared by the rest.
+  // Each column is written by the one work item that owns the locus, and
+  // none of these values feeds the sums.
+  arma::uword nGeno = ploidy+1;
+  arma::mat tabFreq, tabFreqE;
+  std::vector<arma::mat> tabBv(nTrait), tabBvE(nTrait), tabDd(nTrait),
+    tabDdE(nTrait);
+  if(locusTables){
+    tabFreq.set_size(nGeno, nLoci);
+    tabFreqE.set_size(nGeno, nLoci);
+  }
 
   for(arma::uword t=0; t<nTrait; ++t){
     const Rcpp::S4& trait = traits[t];
@@ -630,6 +721,19 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
     arma::vec& eMut = eMu[t];
     arma::vec& alphat = alpha[t];
     arma::vec& alphaHWt = alphaHW[t];
+    if(locusTables){
+      tabBv[t].set_size(nGeno, nLoci);
+      tabBvE[t].set_size(nGeno, nLoci);
+      if(hasDt){
+        tabDd[t].set_size(nGeno, nLoci);
+        tabDdE[t].set_size(nGeno, nLoci);
+      }
+    }
+    arma::mat& tabBvt = tabBv[t];
+    arma::mat& tabBvEt = tabBvE[t];
+    arma::mat& tabDdt = tabDd[t];
+    arma::mat& tabDdEt = tabDdE[t];
+    bool writeFreq = locusTables && t==0;
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreadsLoci)
@@ -702,6 +806,19 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
 
         locusGenoMu(i) = genoMu;
         locusGvMu(i) = gvMu;
+
+        if(locusTables){
+          tabBvt.col(i) = bv;
+          tabBvEt.col(i) = bvE;
+          if(hasDt){
+            tabDdt.col(i) = dd;
+            tabDdEt.col(i) = ddE;
+          }
+          if(writeFreq){
+            tabFreq.col(i) = freq;
+            tabFreqE.col(i) = freqE;
+          }
+        }
       }
     }
 
@@ -749,6 +866,23 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
   for(arma::uword t=0; t<nTrait; ++t){
     const arma::vec& gvA = ind[gvAIdx[t]](0);
     const arma::vec& bvInd = ind[bvIdx[t]](0);
+    // Left empty unless requested
+    Rcpp::List tables;
+    if(locusTables){
+      if(hasD[t]){
+        tables = Rcpp::List::create(Rcpp::Named("freq")=tabFreq,
+                                    Rcpp::Named("freqE")=tabFreqE,
+                                    Rcpp::Named("bv")=tabBv[t],
+                                    Rcpp::Named("bvE")=tabBvE[t],
+                                    Rcpp::Named("dd")=tabDd[t],
+                                    Rcpp::Named("ddE")=tabDdE[t]);
+      }else{
+        tables = Rcpp::List::create(Rcpp::Named("freq")=tabFreq,
+                                    Rcpp::Named("freqE")=tabFreqE,
+                                    Rcpp::Named("bv")=tabBv[t],
+                                    Rcpp::Named("bvE")=tabBvE[t]);
+      }
+    }
     if(hasD[t]){
       const arma::vec& gvD = ind[gvDIdx[t]](0);
       output[t] = Rcpp::List::create(Rcpp::Named("gv")=gvA+gvD+intercept[t],
@@ -764,7 +898,8 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("gv_d")=gvD,
                                      Rcpp::Named("gv_mu")=intercept[t],
                                      Rcpp::Named("alpha")=alpha[t],
-                                     Rcpp::Named("alpha_HW")=alphaHW[t]);
+                                     Rcpp::Named("alpha_HW")=alphaHW[t],
+                                     Rcpp::Named("tables")=tables);
     }else{
       output[t] = Rcpp::List::create(Rcpp::Named("gv")=gvA+intercept[t],
                                      Rcpp::Named("bv")=bvInd,
@@ -775,7 +910,8 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("gv_a")=gvA,
                                      Rcpp::Named("gv_mu")=intercept[t],
                                      Rcpp::Named("alpha")=alpha[t],
-                                     Rcpp::Named("alpha_HW")=alphaHW[t]);
+                                     Rcpp::Named("alpha_HW")=alphaHW[t],
+                                     Rcpp::Named("tables")=tables);
     }
   }
   return output;
@@ -801,11 +937,14 @@ Rcpp::List calcGenParam(const Rcpp::S4& trait,
 // calcGenParam for every trait in traitList, returned in a list in the same
 // order. Traits without epistasis that have exactly the same loci, as
 // correlated traits added together do, are worked out together, so their
-// genotypes are counted and read once for all of them.
+// genotypes are counted and read once for all of them. With locusTables,
+// each trait's result also holds the tables genParam uses to form genic
+// covariances between traits.
 // [[Rcpp::export]]
 Rcpp::List calcGenParamMulti(const Rcpp::List& traitList,
                              const Rcpp::S4& pop,
-                             int nThreads){
+                             int nThreads,
+                             bool locusTables=false){
   R_xlen_t nTraits = traitList.size();
   Rcpp::List output(nTraits);
   PackedGeno g(pop);
@@ -815,7 +954,7 @@ Rcpp::List calcGenParamMulti(const Rcpp::List& traitList,
   for(R_xlen_t i=0; i<nTraits; ++i){
     Rcpp::S4 trait = traitList[i];
     if(trait.hasSlot("epiEff")){
-      output[i] = calcGenParamE(trait, pop, nThreads);
+      output[i] = calcGenParamE(trait, pop, nThreads, locusTables);
       continue;
     }
     arma::Col<int> perChr = Rcpp::as<arma::Col<int> >(trait.slot("lociPerChr"));
@@ -842,7 +981,8 @@ Rcpp::List calcGenParamMulti(const Rcpp::List& traitList,
       members.push_back(traitList[groups[k][t]]);
     }
     LociPos pos = findLoci(g, groupPerChr[k], groupLoc[k]);
-    std::vector<Rcpp::List> res = calcGenParamGroup(members, g, pos, nThreads);
+    std::vector<Rcpp::List> res = calcGenParamGroup(members, g, pos, nThreads,
+                                                    locusTables);
     for(arma::uword t=0; t<groups[k].size(); ++t){
       output[groups[k][t]] = res[t];
     }
