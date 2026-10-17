@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9020
+# AlphaSimR 2.1.0.9021
 
 * Added `onlyValues` to `setEBV`. When `TRUE`, the estimated values are returned as a matrix and the population is left unchanged, as `onlyPheno` does for `setPheno`, `setPhenoGCA` and `setPhenoProgTest`.
 
