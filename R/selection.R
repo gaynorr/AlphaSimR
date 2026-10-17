@@ -96,9 +96,12 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' \code{\link{MultiPop-class}} and optionally simplify the output to a
 #' requested level of nesting.
 #'
-#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param x A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+#'   \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
+#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
+#'   accepted on its own.
 #' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
-#'   as its first argument.
+#'   (or \code{HybridPop}, when \code{x} is one) as its first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
 #'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
@@ -108,8 +111,6 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
 #'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
 #'   Ignored if \code{simplify=FALSE}.
-#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
-#'   the function uses the object named \code{SP} from the global environment.
 #' @param ... Additional arguments passed to \code{FUN}.
 #'
 #' @details
@@ -167,32 +168,39 @@ calcPopValue = function(
   FUN,
   simplify = FALSE,
   level = 1,
-  simParam = NULL,
   ...
 ) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
-
   dots = list(...)
+  .paths = dots[[".paths"]]
   .level_offset = dots[[".level_offset"]]
   if (is.null(.level_offset)) {
     .level_offset = 0L
   }
   dots[[".level_offset"]] = NULL
+  dots[[".paths"]] = NULL
 
-  if (isPop(x)) {
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+
+  if (isPop(x) || isHybridPop(x)) {
     FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
 
   if (!isMultiPop(x)) {
-    stop("`x` must be a Pop or MultiPop object.")
+    stop("`x` must be a Pop, HybridPop or MultiPop object.")
+  }
+
+  if (is.null(.paths) && simplify) {
+    .paths = .collectLeafPaths(x)
   }
 
   source = NULL
   if (simplify && level == 1L) {
-    source = .collectLeafPaths(x)
+    source = .paths
   }
 
   if (simplify) {
@@ -200,16 +208,36 @@ calcPopValue = function(
   }
 
   popValueList = lapply(
-    x@pops,
-    function(pop) {
+    seq_along(x@pops),
+    function(i) {
+      child = x@pops[[i]]
+
+      # Only a nested MultiPop uses the leaf paths, so filtering them for a
+      # terminal Pop would scan every path once per child for nothing.
+      childPaths = NULL
+      if (isMultiPop(child)) {
+        nm = names(x@pops)
+        valid_name = !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])
+        unique_name = valid_name && sum(nm == nm[i], na.rm = TRUE) == 1L
+        child_label = if (unique_name) nm[i] else i
+        keep = vapply(
+          .paths,
+          function(p) {
+            length(p) > 0 && identical(p[[1]], child_label)
+          },
+          logical(1)
+        )
+        childPaths = lapply(.paths[keep], function(p) p[-1])
+      }
+
       FUN.ARGS = c(
         list(
-          pop,
+          child,
           FUN = FUN,
           simplify = simplify,
           level = level - 1L,
-          simParam = simParam,
-          .level_offset = .level_offset + 1L
+          .level_offset = .level_offset + 1L,
+          .paths = childPaths
         ),
         dots
       )
@@ -239,11 +267,33 @@ calcPopValue = function(
         "Some values returned by FUN have unsupported types for simplification. Returning list output.",
         call. = FALSE
       )
+      if (!is.null(names(x@pops))) {
+        names(popValueList) = names(x@pops)
+      }
+      return(popValueList)
+    }
+
+    # Check consistent column names across matrices before combining
+    same_columns = all(vapply(
+      popValueList,
+      function(x) {
+        reference = popValueList[[1]]
+        x_names = if (is.atomic(x) && is.null(dim(x))) names(x) else colnames(x)
+        reference_names = if (is.atomic(reference) && is.null(dim(reference))) names(reference) else colnames(reference)
+        identical(x_names, reference_names)
+      },
+      logical(1)
+    ))
+    if (!same_columns) {
+      warning("Some values returned by FUN do not have consistent column names. Returning list output.")
+      if (!is.null(names(x@pops))) {
+        names(popValueList) = names(x@pops)
+      }
       return(popValueList)
     }
 
     popValue = do.call(rbind, popValueList)
-    attr(popValue, "source") = .formatCalcPopSource(
+    attr(popValue, "source") = .formatPopSource(
       paths = source,
       nRows = nRows,
       level_offset = .level_offset
@@ -952,14 +1002,10 @@ selectPop = function(
   stopifnot(isMultiPop(x))
 
   if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
-        level < 1 || level != as.integer(level)) {
-      stop("`level` must be a positive integer")
+      !is.finite(level) || level < 1 || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+      stop("`level` must be a single non-NA integer value.")
     }
-
-  md = .depthMultiPop(x)
-  if (md < level) {
-    stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
-  }
 
   is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
   is_pop = vapply(unname(x@pops), isPop, logical(1L))
@@ -1015,8 +1061,7 @@ selectPop = function(
       getResponse(pop = pop, trait = trait, use = use, simParam = simParam, ...)
     },
     simplify = FALSE,
-    level = 1L,
-    simParam = simParam
+    level = 1L
   )
 
   popValues = vapply(response, function(res) {
@@ -1043,14 +1088,17 @@ selectPop = function(
 
   out = list()
   nm = names(x@pops)
+  if (!is.null(nm)) {
+    valid_names = !is.na(nm) & nzchar(nm)
+    duplicated_names = valid_names & duplicated(nm) |
+      valid_names & duplicated(nm, fromLast = TRUE)
+  } else {
+    valid_names = duplicated_names = logical(length(x@pops))
+  }
 
   for (i in seq_along(x@pops)) {
     child = x@pops[[i]]
-    if (!is.null(nm) && length(nm) >= i && !is.na(nm[i]) && nzchar(nm[i])) {
-      label = nm[i]
-    } else {
-      label = i
-    }
+    label = if (valid_names[i] && !duplicated_names[i]) nm[i] else i
     childPath = c(path, list(label))
     out = c(out, .collectLeafPaths(child, path = childPath))
   }
@@ -1058,14 +1106,15 @@ selectPop = function(
   return(out)
 }
 
-#' Helper function to format the source attribute for \code{calcPopValue}
+#' Helper function to format the source attribute for simplified \code{MultiPop}
+#' output
 #'
 #' @param paths List of character vectors representing leaf paths.
 #' @param nRows Vector of row counts for each path.
 #' @param level_offset Integer scalar used to label source levels.
 #'
 #' @keywords internal
-.formatCalcPopSource = function(paths, nRows, level_offset = 0L) {
+.formatPopSource = function(paths, nRows, level_offset = 0L) {
   if (length(paths) == 0L) {
     return(NULL)
   }

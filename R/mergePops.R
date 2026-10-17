@@ -317,6 +317,11 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
   if (!isMultiPop(x)) {
     stop("x must be a Pop or a MultiPop")
   }
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+    stop("`level` must be a single non-NA integer value.")
+  }
 
   if (level > 1L) {
     for (i in seq_along(x@pops)) {
@@ -505,6 +510,12 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' @export
 mergeMultiPops = function(..., level=0){
 
+  if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
+      !is.finite(level) || level != trunc(level) ||
+      abs(level) > .Machine$integer.max) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
 
@@ -681,13 +692,13 @@ splitPop = function(x, by, level = Inf) {
       levels = Inf
     } else {
       if (!is.numeric(level) || is.na(level) ||
-          level < 1 || level != as.integer(level)) {
+          level < 1 || level != trunc(level)) {
         stop("`level` must be a positive integer or Inf")
       }
       if (level > md) {
         stop(sprintf("requested `level` exceeds max depth of `x` (%d)", md))
       }
-      levels = as.integer(level)
+      levels = trunc(level)
     }
   } else {
     if (!is.numeric(level) || any(is.na(level)) || any(level <= 0)) {
@@ -702,7 +713,7 @@ splitPop = function(x, by, level = Inf) {
     if (any(level > md)) {
       stop(sprintf("requested level(s) exceed max depth of `x` (%d)", md))
     }
-    levels = as.integer(unique(level))
+    levels = trunc(unique(level))
   }
 
   # Recursively split at requested levels
