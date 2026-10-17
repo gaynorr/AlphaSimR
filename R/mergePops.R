@@ -340,6 +340,8 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' Helper function to recursively extract Pop objects from a MultiPop
 #'
 #' @param mp \code{\link{MultiPop-class}} object
+#' @param preserveNames how names are handled when flattening; see
+#'   \code{\link{flattenMultiPop}}
 #'
 #' @keywords internal
 .flattenMultiPop = function(mp, preserveNames = "auto") {

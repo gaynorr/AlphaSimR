@@ -8,6 +8,9 @@
 }
 \arguments{
 \item{mp}{\code{\link{MultiPop-class}} object}
+
+\item{preserveNames}{how names are handled when flattening; see
+\code{\link{flattenMultiPop}}}
 }
 \description{
 Helper function to recursively extract Pop objects from a MultiPop
