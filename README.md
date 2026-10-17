@@ -18,6 +18,10 @@ Gaynor, R Chris and Gorjanc, Gregor and Hickey, John M (2021) AlphaSimR: an R pa
 
 Bančič, Jon and Greenspoon, Philip and Gaynor, R Chris and Gorjanc, Gregor (2024) Plant breeding simulations with AlphaSimR. Crop Science, 65(1):e21312. https://doi.org/10.1002/csc2.21312.
 
+## Examples
+
+AlphaSimR can be combined with mechanistic models of trait biology. For example, Powell et al. modeled a gene-to-phenotype network for shoot branching and followed how it changed across cycles of selection: Powell, Owen M and Barbier, Francois and Voss-Fels, Kai P and Beveridge, Christine and Cooper, Mark (2022) Investigations into the emergent properties of gene-to-phenotype networks across cycles of selection: a case study of shoot branching in plants. in silico Plants, 4(1):diac006. https://doi.org/10.1093/insilicoplants/diac006. The code is available at https://github.com/powellow/GeneticCanalizationOfG2PNetworks and the outputs at https://doi.org/10.6084/m9.figshare.23590083.v1.
+
 ## Online course
 
 Free course on breeding program simulations and how to use AlphaSimR is available on [edX](https://www.edx.org/learn/animal-breeding/the-university-of-edinburgh-breeding-programme-modelling-with-alphasimr).
