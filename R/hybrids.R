@@ -149,11 +149,6 @@ hybridCross = function(females, males,
       nThreads = as.integer(nThreads)
     }
   }
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
   if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
     stop("You can not cross indiviuals with odd ploidy levels")

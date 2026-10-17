@@ -89,36 +89,84 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
   return(response)
 }
 
-#' Calculate summary response from a population
+#' @title Calculate values from Pop or MultiPop objects
 #'
-#' Calculates a summary response from a \code{\link{Pop-class}} or
-#' \code{\link{MultiPop-class}} object. For \code{MultiPop} objects,
-#' the function is applied recursively to all populations.
+#' @description
+#' Apply a summary function to each \code{\link{Pop-class}} in a
+#' \code{\link{MultiPop-class}} and optionally simplify the output to a
+#' requested level of nesting.
 #'
-#' @param x a \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
-#' @param trait the trait for selection. Either a number indicating
-#'   a single trait or a character for a trait name, or a function
-#'   returning a vector of values.
-#' @param use the selection criterion. Either a character ("rand", "gv",
-#'   "ebv", or "pheno") or a custom function.
-#' @param FUN a summary function to be applied to the vector or matrix of
-#'   values. Default is \code{mean}.
-#' @param FUN.ARGS a list of additional arguments passed to \code{FUN}.
-#' @param returnList logical to return a list (when \code{TRUE}) 
-#'   or a vector (when \code{FALSE} and the return object can be 
-#'   simplified to a vector).
-#' @param simParam an object of \code{\link{SimParam}}.
-#' @param ... additional arguments passed to \code{trait} or \code{use}
-#'   when they are custom functions.
+#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
+#'   as its first argument.
+#' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
+#'   the \code{MultiPop} in \code{x} to the requested \code{level} using
+#'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
+#'   each \code{Pop} are combined with \code{\link{rbind}}, and a
+#'   \code{"source"} attribute is added to indicate the origin of each row
+#'   (see Details).
+#' @param level Integer scalar >= 1. Number of \code{MultiPop} levels to
+#'   preserve when \code{simplify=TRUE}. Passed to \code{\link{flattenMultiPop}}.
+#'   Ignored if \code{simplify=FALSE}.
+#' @param simParam an object of class \code{\link{SimParam}}. If \code{NULL},
+#'   the function uses the object named \code{SP} from the global environment.
+#' @param ... Additional arguments passed to \code{FUN}.
 #'
-#' @keywords internal
+#' @details
+#' The \code{level} argument controls the depth of nesting retained when
+#' \code{simplify=TRUE}. If \code{level} exceeds the depth of \code{x}, the
+#' output structure is returned unchanged.
+#'
+#' When the output is simplified (\code{simplify=TRUE}), a
+#' \code{"source"} attribute is attached to the resulting matrix. This
+#' attribute is a data frame with columns \code{level1}, \code{level2}, etc.,
+#' that record the origin of each row. The values correspond to the name or
+#' index of the population from which the row was derived at each nesting
+#' level.
+#'
+#' @return If \code{x} is a \code{Pop}, returns the value of \code{FUN(x, ...)}.
+#' Otherwise returns a list (or a simplified matrix) of results, optionally with
+#' a \code{"source"} attribute.
+#'
+#' @seealso \code{\link{MultiPop-class}}, \code{\link{flattenMultiPop}}
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=6, nChr=1, segSites=10)
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
+#' SP$setVarE(h2 = c(0.6, 0.4))
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses = 3, nProgeny = 4)
+#'
+#' # Create a nested MultiPop
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out = length(x)),
+#'     function(x) paste(x@mother, x@father, sep = "_")
+#'   )
+#' )
+#'
+#' # Calculate phenotypes at different levels
+#' calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 2)
+#' calcPopValue(mp1, FUN = pheno, simplify = TRUE, level = 1)
+#'
+#' # Custom function returning a summary matrix
+#' calcPopValue(mp1, FUN = function(x) colMeans(pheno(x)),
+#'              simplify = TRUE, level = 1)
+#'
+#' @export
 calcPopValue = function(
   x,
-  trait = 1,
-  use = 'pheno',
-  FUN = mean,
-  FUN.ARGS = list(),
-  returnList = FALSE,
+  FUN,
+  simplify = FALSE,
+  level = 1,
   simParam = NULL,
   ...
 ) {
@@ -126,48 +174,88 @@ calcPopValue = function(
     simParam = get("SP", envir = .GlobalEnv)
   }
 
-  if (isMultiPop(x)) {
-    popValueList = lapply(x@pops, function(x) {
-      calcPopValue(
-        x,
-        trait = trait,
-        use = use,
-        FUN = FUN,
-        FUN.ARGS = FUN.ARGS,
-        returnList = returnList,
-        simParam = simParam,
-        ...
-      )
-    })
+  dots = list(...)
+  .level_offset = dots[[".level_offset"]]
+  if (is.null(.level_offset)) {
+    .level_offset = 0L
+  }
+  dots[[".level_offset"]] = NULL
 
-    if (returnList || any(sapply(popValueList, length) != 1)) {
-      return(popValueList)
-    } else {
-      popValue = do.call('c', popValueList)
-      return(unname(popValue))
-    }
-  } else if (isPop(x)) {
-    # TODO: Update support for use='bv' with genParamPop()
-    if (is.character(use)) {
-      if (use == 'bv') {
-        stop("use='bv' is not currently supported for populations")
-      }
-    }
-    response = getResponse(
-      x,
-      trait = trait,
-      use = use,
-      simParam = simParam,
-      ...
-    )
-    if (is.matrix(response)) {
-      if (ncol(response) != 1) {
-        stop("response must have a single column")
-      }
-    }
-    FUN.ARGS = append(FUN.ARGS, list(response), after = 0)
+  if (isPop(x)) {
+    FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
+
+  if (!isMultiPop(x)) {
+    stop("`x` must be a Pop or MultiPop object.")
+  }
+
+  source = NULL
+  if (simplify && level == 1L) {
+    source = .collectLeafPaths(x)
+  }
+
+  if (simplify) {
+    x = flattenMultiPop(x, level = level)
+  }
+
+  popValueList = lapply(
+    x@pops,
+    function(pop) {
+      FUN.ARGS = c(
+        list(
+          pop,
+          FUN = FUN,
+          simplify = simplify,
+          level = level - 1L,
+          simParam = simParam,
+          .level_offset = .level_offset + 1L
+        ),
+        dots
+      )
+      do.call(calcPopValue, FUN.ARGS)
+    }
+  )
+
+  if (simplify && level == 1L) {
+    nRows = vapply(
+      popValueList,
+      function(v) {
+        if (is.null(v)) {
+          return(0L)
+        }
+        if (is.data.frame(v) || is.matrix(v) || is.array(v)) {
+          return(dim(v)[1]) # number of rows
+        }
+        if (is.atomic(v) && is.null(dim(v))) {
+          return(1L) # vectors are one row
+        }
+        return(NA_integer_)
+      },
+      integer(1L)
+    )
+    if (any(is.na(nRows))) {
+      warning(
+        "Some values returned by FUN have unsupported types for simplification. Returning list output.",
+        call. = FALSE
+      )
+      return(popValueList)
+    }
+
+    popValue = do.call(rbind, popValueList)
+    attr(popValue, "source") = .formatCalcPopSource(
+      paths = source,
+      nRows = nRows,
+      level_offset = .level_offset
+    )
+    return(popValue)
+  }
+
+  if (!is.null(names(x@pops))) {
+    names(popValueList) = names(x@pops)
+  }
+
+  return(popValueList)
 }
 
 #' Identify candidate individuals
@@ -733,200 +821,6 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   crossPlan = mergeMultIntMat(crossPlan,rep(nSeeds,nInd),2L)
   return(makeCross(pop=pop,crossPlan=crossPlan,simParam=simParam,
                    nThreads=nThreads))
-}
-
-#' @title Select populations
-#'
-#' @description
-#' Selects a subset of \code{nPop} populations from a 
-#' \code{\link{MultiPop-class}} object based on a summary value 
-#' calculated from the selection criterion \code{use}.
-#' 
-#' For nested \code{MultiPop} objects (containing one or more 
-#' \code{MultiPop} objects), selection is performed at the specified 
-#' \code{level}, where \code{level=1} selects among direct children 
-#' that are \code{\link{Pop-class}} objects, \code{level=2} descends 
-#' one level into nested \code{MultiPop}s to select among their direct 
-#' children, and so on.
-#' 
-#' Internally, \code{selectPop} executes the summary function \code{FUN} 
-#' on the vector or matrix of \code{use} values for each population. The 
-#' resulting vector of summary values is used to rank and select populations.
-#'
-#' @param x a \code{\link{MultiPop-class}} object
-#' @param nPop the number of populations to select
-#' @param level nesting depth at which selection is performed. 
-#'   \code{level=1} selects among direct children, \code{level=2} 
-#'   descends one level into nested \code{MultiPop}s, etc.
-#' @param trait the trait for selection. Either a number indicating 
-#'   a single trait or a character for a trait name, or a function 
-#'   returning a vector of length \code{nInd(pop)} for each population 
-#'   at \code{level}. The function must work on a vector or matrix of 
-#'   \code{use} values as \code{trait(pop@use, ...)} - depending on what 
-#'   \code{use} is. See the examples and \code{\link{selIndex}}.
-#' @param use the selection criterion. Either a character
-#'   (genetic values "gv", estimated breeding values "ebv", 
-#'   phenotypes "pheno", or random values "rand") or a function 
-#'   returning a vector of length \code{nInd(pop)} for each population 
-#'   at \code{level}. The function must work on each \code{pop} at 
-#'   \code{level} in \code{x} as \code{use(pop, trait, ...)} or as 
-#'   \code{trait(pop@use, ...)} depending on what \code{trait} is.
-#'   See the examples.
-#' @param selectTop selects highest values if \code{TRUE}. 
-#'   Selects lowest values if \code{FALSE}.
-#' @param simParam an object of \code{\link{SimParam}}
-#' @param ... additional arguments if using a function for 
-#'   \code{trait} or \code{use}
-#' @param FUN a summary function to be applied to the vector of 
-#'   selection criterion values per population. Default is \code{\link{mean}}.
-#' @param FUN.ARGS a list of additional arguments passed to \code{FUN}
-#'
-#' @details
-#' The \code{level} argument controls at which nesting depth selection 
-#' operates. At \code{level=1}, selection occurs among direct children 
-#' of \code{x} (which must be \code{\link{Pop-class}} objects). At 
-#' \code{level=2}, the function descends one level into nested 
-#' \code{MultiPop}s and selects among their direct children, and so on. 
-#' If \code{level} exceeds the nesting depth of \code{x}, the 
-#' function stops with an error.
-#' 
-#' If the number of eligible populations is less than \code{nPop}, the
-#' function returns all eligible populations and issues a warning.
-#'
-#' @return Returns a \code{\link{MultiPop-class}} object
-#'   containing the selected populations. When \code{x} is a 
-#'   \code{\link{Pop-class}}, the original object is returned unchanged.
-#'
-#' @examples
-#' # Create founder haplotypes
-#' founderPop = quickHaplo(nInd=20, nChr=1, segSites=10)
-#' 
-#' # Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$setVarE(h2=0.5)
-#' 
-#' # Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' 
-#' # Create multi-population with one level of nesting
-#' mp1 = newMultiPop(pop[1:4], pop[5:8], pop[9:12], pop[13:16], pop[17:20])
-#' 
-#' # Select best 2 populations
-#' selectPop(mp1, nPop=2, simParam=SP)
-#' 
-#' # Select 2 most deviating populations from an optima
-#' squaredDeviation = function(x, optima=0) (x - optima)^2
-#' selectPop(mp1, nPop=2, trait=squaredDeviation, simParam=SP)
-#' 
-#' # Create multi-population with two levels of nesting
-#' pop@misc = list(smth=rnorm(20), smth2=rnorm(20))
-#' mp2 = newMultiPop(
-#'   do.call(newMultiPop, split(pop[1:10], rep(1:5, 2))),
-#'   do.call(newMultiPop, split(pop[11:20], rep(1:5, 2)))
-#' )
-#' 
-#' # Select best 2 populations at level 2
-#' selectPop(mp2, nPop=2, level=2, simParam=SP)
-#' 
-#' # Select 2 populations at level 2 based on miscellaneous info with use function
-#' useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
-#' selectPop(mp2, nPop=2, level=2, simParam=SP, use=useFunc)
-#' 
-#' # ... equivalent result with the use & trait function
-#' useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
-#' trtFunc = function(x) rowSums(x)
-#' selectPop(mp2, nPop=2, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
-#'
-#' @export
-selectPop = function(
-  x,
-  nPop,
-  level = 1,
-  trait = 1,
-  use = "pheno",
-  selectTop = TRUE,
-  simParam = NULL,
-  ...,
-  FUN = mean,
-  FUN.ARGS = list()
-) {
-  if (nPop < 0) stop("nPop must be >= 0")
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
-
-  if (isPop(x)) {
-    return(x)
-  }
-  if (!isMultiPop(x)) stop("x must be a Pop or a MultiPop")
-
-  multi = which(sapply(unname(x@pops), isMultiPop))
-
-  if (level > 1 & identical(multi, integer(0))) {
-    stop(paste(
-      "The MultiPop object does not contain other MultiPop objects",
-      "at this level. You may want to decrease the value of 'level'"
-    ))
-  }
-
-  while (level > 1) {
-    level = level - 1
-    for (i in multi) {
-      x@pops[[i]] = selectPop(
-        x = x[[i]],
-        nPop = nPop,
-        level = level,
-        trait = trait,
-        use = use,
-        selectTop = selectTop,
-        simParam = simParam,
-        FUN = FUN,
-        FUN.ARGS = FUN.ARGS,
-        ...
-      )
-    }
-    multiPop = do.call(newMultiPop, x@pops)
-    return(multiPop)
-  }
-
-  if (!identical(multi, integer(0))) {
-    stop(paste(
-      "This level contains",
-      length(multi),
-      "MultiPop-class objects.",
-      "\nSelection can only be performed when all populations at this level are",
-      "Pop-class objects.\nYou may want to increase the value of 'level'"
-    ))
-  }
-
-  eligible = which(sapply(x@pops, isPop))
-
-  if (length(eligible) < nPop) {
-    nPop = length(eligible)
-    warning(
-      "Suitable candidate populations smaller than nPop, returning ",
-      nPop,
-      " populations"
-    )
-  }
-
-  popValues = calcPopValue(
-    x,
-    trait = trait,
-    use = use,
-    FUN = FUN,
-    returnList = FALSE,
-    FUN.ARGS = FUN.ARGS,
-    simParam = simParam,
-    ...
-  )
-
-  take = order(popValues, decreasing = selectTop)
-  take = take[take %in% eligible]
-
-  return(x[take[0:nPop]])
 }
 
 #' @title Select populations
