@@ -96,9 +96,12 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' \code{\link{MultiPop-class}} and optionally simplify the output to a
 #' requested level of nesting.
 #'
-#' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
+#' @param x A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+#'   \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
+#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
+#'   accepted on its own.
 #' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
-#'   as its first argument.
+#'   (or \code{HybridPop}, when \code{x} is one) as its first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
 #'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
@@ -182,13 +185,13 @@ calcPopValue = function(
     stop("`level` must be a single non-NA integer value.")
   }
 
-  if (isPop(x)) {
+  if (isPop(x) || isHybridPop(x)) {
     FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
 
   if (!isMultiPop(x)) {
-    stop("`x` must be a Pop or MultiPop object.")
+    stop("`x` must be a Pop, HybridPop or MultiPop object.")
   }
 
   if (is.null(.paths) && simplify) {
@@ -207,26 +210,34 @@ calcPopValue = function(
   popValueList = lapply(
     seq_along(x@pops),
     function(i) {
-      nm = names(x@pops)
-      valid_name = !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])
-      unique_name = valid_name && sum(nm == nm[i], na.rm = TRUE) == 1L
-      child_label = if (unique_name) nm[i] else i
-      keep = vapply(
-        .paths,
-        function(p) {
-          length(p) > 0 && identical(p[[1]], child_label)
-        },
-        logical(1)
-      )
+      child = x@pops[[i]]
+
+      # Only a nested MultiPop uses the leaf paths, so filtering them for a
+      # terminal Pop would scan every path once per child for nothing.
+      childPaths = NULL
+      if (isMultiPop(child)) {
+        nm = names(x@pops)
+        valid_name = !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])
+        unique_name = valid_name && sum(nm == nm[i], na.rm = TRUE) == 1L
+        child_label = if (unique_name) nm[i] else i
+        keep = vapply(
+          .paths,
+          function(p) {
+            length(p) > 0 && identical(p[[1]], child_label)
+          },
+          logical(1)
+        )
+        childPaths = lapply(.paths[keep], function(p) p[-1])
+      }
 
       FUN.ARGS = c(
         list(
-          x@pops[[i]],
+          child,
           FUN = FUN,
           simplify = simplify,
           level = level - 1L,
           .level_offset = .level_offset + 1L,
-          .paths = lapply(.paths[keep], function(p) p[-1])
+          .paths = childPaths
         ),
         dots
       )
@@ -256,6 +267,9 @@ calcPopValue = function(
         "Some values returned by FUN have unsupported types for simplification. Returning list output.",
         call. = FALSE
       )
+      if (!is.null(names(x@pops))) {
+        names(popValueList) = names(x@pops)
+      }
       return(popValueList)
     }
 
@@ -272,6 +286,9 @@ calcPopValue = function(
     ))
     if (!same_columns) {
       warning("Some values returned by FUN do not have consistent column names. Returning list output.")
+      if (!is.null(names(x@pops))) {
+        names(popValueList) = names(x@pops)
+      }
       return(popValueList)
     }
 

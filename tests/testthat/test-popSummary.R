@@ -175,12 +175,12 @@ test_that("slots_means_and_variances", {
     pop,
     by = list(
       sample(rep(LETTERS[1:2], length.out = pop@nInd)),
-      \(x) sample(rep(letters[5:6], length.out = length(x))),
-      \(x) sample(rep(letters[7:8], length.out = length(x)))
+      function(x) sample(rep(letters[5:6], length.out = length(x))),
+      function(x) sample(rep(letters[7:8], length.out = length(x)))
     )
   )
   idx = sample(1:16, 8)
-  mp$C = splitPop(pop[idx], \(x) sample(rep(letters[5:6], length.out = length(x))))
+  mp$C = splitPop(pop[idx], function(x) sample(rep(letters[5:6], length.out = length(x))))
   mp$D = pop[-idx]
 
   # Verify the number of terminal Pop objects
@@ -239,7 +239,7 @@ test_that("slots_means_and_variances", {
   expect_equal(mnP3, calcP3)
   expect_equal(
     meanEBV(mp[1:2], simplify = FALSE),
-    lapply(mp@pops[1:2], \(x) lapply(x@pops, \(y) lapply(y@pops, \(z) colMeans(z@ebv))))
+    lapply(mp@pops[1:2], function(x) lapply(x@pops, function(y) lapply(y@pops, function(z) colMeans(z@ebv))))
   )
 
   # Level 3: Calculate between-pop variance
@@ -471,4 +471,23 @@ test_that("slots_means_and_variances", {
     "`x` contains no populations.",
     fixed = TRUE
   )
+})
+
+test_that("HYBRIDPOP summaries accept a HybridPop", {
+  founderPop = quickHaplo(nInd=6, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10, mean=c(0, 0), var=c(1, 1))
+  SP$setVarE(h2=c(0.6, 0.4))
+  pop = newPop(founderPop, simParam=SP)
+  hybrid = hybridCross(pop[1:3], pop[4:6], returnHybridPop=TRUE,
+                       simParam=SP)
+  expect_true(isHybridPop(hybrid))
+
+  expect_equal(meanG(hybrid), colMeans(hybrid@gv))
+  expect_equal(meanP(hybrid), colMeans(hybrid@pheno))
+  expect_equal(gv(hybrid), hybrid@gv)
+  expect_equal(pheno(hybrid), hybrid@pheno)
+  expect_equivalent(varG(hybrid), popVar(hybrid@gv))
+  expect_equivalent(varP(hybrid), popVar(hybrid@pheno))
 })

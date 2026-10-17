@@ -348,17 +348,47 @@ test_that("calcPopValue", {
   )
   expect_error(
     calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop or MultiPop object.",
+    "`x` must be a Pop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
     calcPopValue(1:5, FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop or MultiPop object.",
+    "`x` must be a Pop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
     calcPopValue(list(pop), FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop or MultiPop object.",
+    "`x` must be a Pop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
 })
+
+test_that("calcPopValue KEEPS names when simplification falls back to a list", {
+  founderPop = quickHaplo(nInd=5, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10)
+  pop = newPop(founderPop, simParam=SP)
+  mp = newMultiPop(A=pop[1:2], B=pop[3:5])
+
+  # A list is not a type that can be simplified.
+  out = expect_warning(
+    calcPopValue(mp, FUN=function(x) list(x@nInd), simplify=TRUE),
+    "unsupported types"
+  )
+  expect_identical(names(out), c("A", "B"))
+  expect_identical(out$A, list(2L))
+
+  # Vectors whose names differ cannot be bound by column.
+  out = expect_warning(
+    calcPopValue(
+      mp,
+      FUN=function(x) setNames(x@nInd, if(x@nInd == 2L) "a" else "b"),
+      simplify=TRUE
+    ),
+    "consistent column names"
+  )
+  expect_identical(names(out), c("A", "B"))
+  expect_identical(out$B, c(b=3L))
+})
+
