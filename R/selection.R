@@ -208,11 +208,9 @@ calcPopValue = function(
     seq_along(x@pops),
     function(i) {
       nm = names(x@pops)
-      child_label = ifelse(
-        !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i]),
-        nm[i],
-        i
-      )
+      valid_name = !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])
+      unique_name = valid_name && sum(nm == nm[i], na.rm = TRUE) == 1L
+      child_label = if (unique_name) nm[i] else i
       keep = vapply(
         .paths,
         function(p) {
