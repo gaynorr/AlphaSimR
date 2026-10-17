@@ -231,6 +231,71 @@ checkSexes = function(pop,sex,simParam=NULL,...){
   }
 }
 
+#' Check the onShortfall argument
+#'
+#' @param onShortfall what to do when fewer candidates are available than
+#' requested: "warning", "error" or "none"
+#'
+#' @return the validated value
+#'
+#' @keywords internal
+checkShortfall = function(onShortfall){
+  match.arg(onShortfall, c("warning","error","none"))
+}
+
+#' Report a selection shortfall
+#'
+#' Raises a warning or an error, or does nothing, according to
+#' onShortfall. The condition carries the call of the selection function
+#' rather than of this helper, so the message names the function the user
+#' called.
+#'
+#' @param msg the message for a warning, which says what is returned
+#' @param onShortfall "warning", "error" or "none"
+#' @param errorMsg the message for an error, which must not say that
+#' anything is returned
+#' @param call the call to report
+#'
+#' @keywords internal
+reportShortfall = function(msg, onShortfall, errorMsg=msg,
+                           call=sys.call(-1)){
+  if(onShortfall=="warning"){
+    warning(simpleWarning(msg, call))
+  }else if(onShortfall=="error"){
+    stop(simpleError(errorMsg, call))
+  }
+  invisible(NULL)
+}
+
+#' Stop if a population has no individuals
+#'
+#' The selection functions index candidates as 1:nInd, which is c(1, 0)
+#' for an empty population, so without this check they fail later with
+#' messages that say nothing about the cause.
+#'
+#' @param pop a population
+#' @param call the call to report
+#'
+#' @keywords internal
+checkNotEmpty = function(pop, call=sys.call(-1)){
+  if(pop@nInd==0L){
+    stop(simpleError("pop contains no individuals to select from", call))
+  }
+  invisible(NULL)
+}
+
+#' Is a population an empty member of a MultiPop
+#'
+#' A MultiPop may hold empty populations, which the selection functions
+#' pass through unchanged rather than treating as an error.
+#'
+#' @param pop an element of a MultiPop
+#'
+#' @keywords internal
+isEmptyMember = function(pop){
+  !is(pop,"MultiPop") && pop@nInd==0L
+}
+
 #' Determine families
 #'
 #' @param pop a population object
@@ -279,6 +344,9 @@ getFam = function(pop,famType){
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
+#' @param onShortfall what to do when fewer suitable candidates are
+#'   available than requested. "warning" (the default) warns and returns
+#'   all of them, "error" stops, and "none" returns them silently.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -336,8 +404,10 @@ getFam = function(pop,famType){
 #' @export
 selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      selectTop=TRUE,returnPop=TRUE,
-                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
+                     candidates=NULL,simParam=NULL,nThreads=NULL,
+                     onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -349,20 +419,29 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is(pop,"MultiPop")){
     if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
     if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
-    pop@pops = lapply(pop@pops, selectInd, nInd=nInd, trait=trait,
-                      use=use, sex=sex, selectTop=selectTop,
-                      returnPop=TRUE, candidates=NULL,
-                      simParam=simParam, nThreads=nThreads, ...)
+    pop@pops = lapply(pop@pops, function(x, ...){
+      if(isEmptyMember(x)) return(x)
+      selectInd(x, nInd=nInd, trait=trait,
+                use=use, sex=sex, selectTop=selectTop,
+                returnPop=TRUE, candidates=NULL,
+                simParam=simParam, nThreads=nThreads,
+                onShortfall=onShortfall, ...)
+    }, ...)
     return(pop)
   }
+  checkNotEmpty(pop)
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     candidates = getCandidates(pop=pop,candidates=candidates)
     eligible = eligible[eligible%in%candidates]
   }
   if(length(eligible)<nInd){
+    reportShortfall(paste0("Suitable candidates smaller than nInd, returning ",
+                           length(eligible)," individuals"),
+                    onShortfall,
+                    paste0("Only ", length(eligible),
+                           " suitable candidates for nInd = ", nInd))
     nInd = length(eligible)
-    warning("Suitable candidates smaller than nInd, returning ",nInd," individuals")
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
@@ -410,6 +489,9 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
+#' @param onShortfall what to do when fewer suitable candidates are
+#'   available than requested. "warning" (the default) warns and returns
+#'   all of them, "error" stops, and "none" returns them silently.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -445,8 +527,10 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @export
 selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      famType="B",selectTop=TRUE,returnPop=TRUE,
-                     candidates=NULL,simParam=NULL,nThreads=NULL,...){
+                     candidates=NULL,simParam=NULL,nThreads=NULL,
+                     onShortfall="warning",...){
   if(nFam<0) stop("nFam must be >= 0")
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -458,13 +542,17 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   if(is(pop,"MultiPop")){
     if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
     if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
-    pop@pops = lapply(pop@pops, selectFam, nFam=nFam, trait=trait,
-                      use=use, sex=sex, famType=famType,
-                      selectTop=selectTop, returnPop=TRUE,
-                      candidates=NULL, simParam=simParam,
-                      nThreads=nThreads, ...)
+    pop@pops = lapply(pop@pops, function(x, ...){
+      if(isEmptyMember(x)) return(x)
+      selectFam(x, nFam=nFam, trait=trait,
+                use=use, sex=sex, famType=famType,
+                selectTop=selectTop, returnPop=TRUE,
+                candidates=NULL, simParam=simParam,
+                nThreads=nThreads, onShortfall=onShortfall, ...)
+    }, ...)
     return(pop)
   }
+  checkNotEmpty(pop)
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     candidates = getCandidates(pop=pop,candidates=candidates)
@@ -473,8 +561,20 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   allFam = getFam(pop=pop,famType=famType)
   availFam = allFam[eligible]
   if(nFam>length(unique(availFam))){
+    reportShortfall(paste0("Suitable families smaller than nFam, returning ",
+                           length(unique(availFam)), " families"),
+                    onShortfall,
+                    paste0("Only ", length(unique(availFam)),
+                           " suitable families for nFam = ", nFam))
     nFam = length(unique(availFam))
-    warning("Suitable families smaller than nFam, returning ", nFam, " families")
+  }
+  # aggregate fails on zero rows, and there is nothing to rank
+  if(length(eligible)==0L){
+    if(returnPop){
+      return(pop[integer(0)])
+    }else{
+      return(integer(0))
+    }
   }
   response = getResponse(pop=pop,trait=trait,use=use,
                          simParam=simParam,nThreads=nThreads,...)
@@ -530,6 +630,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #'   \code{\link{Pop-class}}. If FALSE, only the index of selected
 #'   individuals is returned.
 #' @param candidates an optional vector of eligible selection candidates.
+#' @param onShortfall what to do when a family has fewer suitable
+#'   candidates than \code{nInd}. "warning" (the default) warns and
+#'   returns all of that family's candidates, "error" stops, and "none"
+#'   returns them silently. Use "none" when \code{nInd} is meant as a cap
+#'   on family size, so that small families are expected.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -565,8 +670,10 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
 #' @export
 selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            famType="B",selectTop=TRUE,returnPop=TRUE,
-                           candidates=NULL,simParam=NULL,nThreads=NULL,...){
+                           candidates=NULL,simParam=NULL,nThreads=NULL,
+                           onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -578,12 +685,17 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is(pop,"MultiPop")){
     if(!returnPop) stop("returnPop must be TRUE for a MultiPop")
     if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
-    pop@pops = lapply(pop@pops, selectWithinFam, nInd=nInd, trait=trait,
-                      use=use, sex=sex, selectTop=selectTop,
-                      returnPop=TRUE, candidates=NULL,
-                      simParam=simParam, nThreads=nThreads, ...)
+    pop@pops = lapply(pop@pops, function(x, ...){
+      if(isEmptyMember(x)) return(x)
+      selectWithinFam(x, nInd=nInd, trait=trait,
+                      use=use, sex=sex, famType=famType,
+                      selectTop=selectTop, returnPop=TRUE,
+                      candidates=NULL, simParam=simParam,
+                      nThreads=nThreads, onShortfall=onShortfall, ...)
+    }, ...)
     return(pop)
   }
+  checkNotEmpty(pop)
   eligible = checkSexes(pop=pop,sex=sex,simParam=simParam,...)
   if(!is.null(candidates)){
     candidates = getCandidates(pop=pop,candidates=candidates)
@@ -595,22 +707,28 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
   if(is.matrix(response)){
     if(ncol(response)!=1) stop("response must have a single column")
   }
-  warn = FALSE
+  nShort = 0L
   selInFam = function(selFam){
     index = which(families%in%selFam)
     y = response[index]
     index = index[order(y,decreasing=selectTop)]
     index = index[index%in%eligible]
     if(length(index)<nInd){
-      warn <<- TRUE
+      nShort <<- nShort + 1L
       return(index)
     }else{
       return(index[0:nInd])
     }
   }
   take = unlist(sapply(unique(families),selInFam))
-  if(warn){
-    warning("One or more families are smaller than nInd")
+  if(nShort>0L){
+    reportShortfall(paste0(nShort, " of ", length(unique(families)),
+                           " families have fewer suitable candidates than ",
+                           "nInd; all of their candidates are returned"),
+                    onShortfall,
+                    paste0(nShort, " of ", length(unique(families)),
+                           " families have fewer suitable candidates than ",
+                           "nInd = ", nInd))
   }
   if(returnPop){
     return(pop[take])
@@ -649,6 +767,9 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 #' @param selectTop selects highest values if true.
 #'   Selects lowest values if false.
 #' @param candidates an optional vector of eligible selection candidates.
+#' @param onShortfall what to do when fewer suitable candidates are
+#'   available than requested. "warning" (the default) warns and returns
+#'   all of them, "error" stops, and "none" returns them silently.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -684,8 +805,10 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
 selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     pollenControl=FALSE,trait=1,
                     use="pheno",selectTop=TRUE,
-                    candidates=NULL,simParam=NULL,nThreads=NULL,...){
+                    candidates=NULL,simParam=NULL,nThreads=NULL,
+                    onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -696,17 +819,23 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
   }
   if(is(pop,"MultiPop")){
     if(!is.null(candidates)) stop("candidates must be NULL for a MultiPop")
-    pop@pops = lapply(pop@pops, selectOP, nInd=nInd, nSeeds=nSeeds,
-                      probSelf=probSelf,
-                      pollenControl=pollenControl, trait=trait, use=use,
-                      selectTop=selectTop, candidates=NULL,
-                      simParam=simParam, nThreads=nThreads, ...)
+    pop@pops = lapply(pop@pops, function(x, ...){
+      if(isEmptyMember(x)) return(x)
+      selectOP(x, nInd=nInd, nSeeds=nSeeds,
+               probSelf=probSelf,
+               pollenControl=pollenControl, trait=trait, use=use,
+               selectTop=selectTop, candidates=NULL,
+               simParam=simParam, nThreads=nThreads,
+               onShortfall=onShortfall, ...)
+    }, ...)
     return(pop)
   }
+  checkNotEmpty(pop)
   female = selectInd(pop=pop,nInd=nInd,trait=trait,
                      use=use,sex="B",selectTop=selectTop,
                      returnPop=FALSE,candidates=candidates,
-                     simParam=simParam,nThreads=nThreads,...)
+                     simParam=simParam,nThreads=nThreads,
+                     onShortfall=onShortfall,...)
   # selectInd returns at most as many individuals as there are eligible
   # candidates, which can be fewer than nInd. Everything below indexes
   # female, so the count has to come from female itself.

@@ -182,3 +182,116 @@ test_that("selectPop_and_calcPopValue",{
     selectPop(mp3[[3]][[2]], nPop = 1, level = 1, simParam = SP)
   )
 })
+
+# ---------------------------------------------------------------------------
+# PART 1  Empty populations
+# ---------------------------------------------------------------------------
+
+shortfallSP = function(sexes="no"){
+  set.seed(2811)
+  founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(5)
+  SP$setVarE(h2=0.5)
+  SP$addSnpChip(10)
+  SP$setSexes(sexes)
+  pop = newPop(founderPop, simParam=SP)
+  list(SP=SP, pop=pop, fam=randCross(pop, nCrosses=3, nProgeny=2,
+                                     simParam=SP))
+}
+
+test_that("EMPTY a population with no individuals gives a clear error", {
+  d = shortfallSP()
+  empty = d$pop[integer(0)]
+  msg = "pop contains no individuals to select from"
+  expect_error(selectInd(empty, 1, simParam=d$SP), msg)
+  expect_error(selectFam(empty, 1, simParam=d$SP), msg)
+  expect_error(selectWithinFam(empty, 1, simParam=d$SP), msg)
+  expect_error(selectOP(empty, 1, nSeeds=2, simParam=d$SP), msg)
+  expect_error(selectOCS(empty, nInd=1, simParam=d$SP), msg)
+  expect_error(selectCross(empty, nInd=1, nCrosses=1, simParam=d$SP), msg)
+})
+
+test_that("EMPTY members of a MultiPop are passed through", {
+  d = shortfallSP()
+  mp = newMultiPop(d$pop, d$pop[integer(0)])
+  for(f in list(function(x) selectInd(x, 2, simParam=d$SP),
+                function(x) selectFam(x, 1, simParam=d$SP),
+                function(x) selectWithinFam(x, 1, simParam=d$SP))){
+    out = f(mp)
+    expect_equal(nInd(out[[2]]), 0L)
+    expect_gt(nInd(out[[1]]), 0L)
+  }
+  out = selectInd(mp, 2, simParam=d$SP)
+  expect_identical(out[[1]]@id, selectInd(d$pop, 2, simParam=d$SP)@id)
+})
+
+# ---------------------------------------------------------------------------
+# PART 2  Fewer candidates than requested
+# ---------------------------------------------------------------------------
+
+test_that("SHORTFALL warning is the default and the result is unchanged", {
+  d = shortfallSP()
+  expect_warning(warned <- selectInd(d$pop, 20, simParam=d$SP),
+                 "Suitable candidates smaller than nInd")
+  quiet = selectInd(d$pop, 20, simParam=d$SP, onShortfall="none")
+  expect_identical(warned@id, quiet@id)
+  expect_equal(nInd(quiet), 10L)
+
+  expect_warning(warned <- selectFam(d$fam, 5, simParam=d$SP),
+                 "Suitable families smaller than nFam")
+  expect_identical(warned@id,
+                   selectFam(d$fam, 5, simParam=d$SP, onShortfall="none")@id)
+})
+
+test_that("SHORTFALL error stops and none is silent in every function", {
+  d = shortfallSP()
+  calls = list(
+    function(o) selectInd(d$pop, 20, simParam=d$SP, onShortfall=o),
+    function(o) selectFam(d$fam, 5, simParam=d$SP, onShortfall=o),
+    function(o) selectWithinFam(d$fam, 5, simParam=d$SP, onShortfall=o),
+    function(o) selectOP(d$pop, 20, nSeeds=1, simParam=d$SP,
+                         onShortfall=o),
+    function(o) selectOCS(d$pop, nInd=20, inbrTarget=0.5, simParam=d$SP,
+                          onShortfall=o),
+    function(o) selectCross(d$pop, nInd=20, nCrosses=2, simParam=d$SP,
+                            onShortfall=o)
+  )
+  for(f in calls){
+    expect_error(f("error"), "^Only [0-9]+ suitable|fewer suitable candidates than nInd = ")
+    expect_warning(suppressMessages(f("none")), NA)
+  }
+  expect_error(selectInd(d$pop, 20, simParam=d$SP, onShortfall="error"),
+               "Only 10 suitable candidates for nInd = 20")
+  expect_error(selectInd(d$pop, 2, simParam=d$SP, onShortfall="stop"),
+               "should be one of")
+})
+
+test_that("SHORTFALL selectWithinFam reports how many families fall short", {
+  d = shortfallSP()
+  expect_warning(out <- selectWithinFam(d$fam, 5, simParam=d$SP),
+                 "3 of 3 families have fewer suitable candidates than nInd")
+  expect_equal(nInd(out), nInd(d$fam))
+  expect_silent(selectWithinFam(d$fam, 1, simParam=d$SP))
+})
+
+test_that("SHORTFALL selectFam with no eligible candidates returns none", {
+  d = shortfallSP()
+  expect_warning(out <- selectFam(d$fam, 1, candidates=integer(0),
+                                  simParam=d$SP),
+                 "returning 0 families")
+  expect_equal(nInd(out), 0L)
+  expect_identical(selectFam(d$fam, 1, candidates=integer(0),
+                             returnPop=FALSE, simParam=d$SP,
+                             onShortfall="none"),
+                   integer(0))
+})
+
+test_that("SHORTFALL selectOCS stops when a sex has no candidates", {
+  d = shortfallSP(sexes="yes_sys")
+  females = selectInd(d$pop, 5, sex="F", simParam=d$SP)
+  expect_error(selectOCS(females, nFemale=2, nMale=2, inbrTarget=0.5,
+                         simParam=d$SP, onShortfall="none"),
+               "no suitable male candidates")
+})

@@ -261,6 +261,11 @@
 #' @param useQtl should QTL genotypes be used instead of a SNP chip
 #' to measure expected fixation. If TRUE, snpChip specifies which
 #' trait's QTL to use.
+#' @param onShortfall what to do when fewer suitable candidates are
+#' available than requested. "warning" (the default) warns and selects
+#' from all of them, "error" stops, and "none" does so silently. When
+#' no candidates of a required sex are available, selection is not
+#' possible and an error is raised whatever the value.
 #' @param returnPop should results be returned as a
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected
 #' individuals is returned.
@@ -397,7 +402,9 @@
 selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                      use="pheno", selectTop=TRUE, inbrTarget=0.01,
                      inbrType="relative", snpChip=1, useQtl=FALSE,
-                     returnPop=TRUE, simParam=NULL, nThreads=NULL, ...){
+                     returnPop=TRUE, simParam=NULL, nThreads=NULL,
+                     onShortfall="warning", ...){
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -414,12 +421,14 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
   if(is(pop,"HybridPop")){
     stop("selectOCS does not support a HybridPop")
   }
+  checkNotEmpty(pop)
   take = .ocsSelectParents(pop=pop, nInd=nInd, nFemale=nFemale,
                            nMale=nMale, trait=trait, use=use,
                            selectTop=selectTop, inbrTarget=inbrTarget,
                            inbrType=inbrType, snpChip=snpChip,
                            useQtl=useQtl, simParam=simParam,
-                           nThreads=nThreads, ...)
+                           nThreads=nThreads, onShortfall=onShortfall,
+                           call=sys.call(), ...)
   if(returnPop){
     return(pop[take])
   }else{
@@ -447,13 +456,17 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
 #' @param simParam an object of class \code{\link{SimParam}}
 #' @param nThreads number of threads to use if OpenMP is available
 #' @param ... additional arguments if using a function for trait
+#' @param onShortfall "warning", "error" or "none"
+#' @param call the call of selectOCS, for messages
 #'
 #' @return indices of the selected individuals
 #'
 #' @keywords internal
 .ocsSelectParents = function(pop, nInd, nFemale, nMale, trait, use,
                              selectTop, inbrTarget, inbrType, snpChip,
-                             useQtl, simParam, nThreads, ...){
+                             useQtl, simParam, nThreads,
+                             onShortfall="warning", call=sys.call(-1),
+                             ...){
   inbrType = tolower(inbrType)
   if(length(inbrType)!=1 || !(inbrType%in%c("relative","absolute"))){
     stop("inbrType must be \"relative\" or \"absolute\"")
@@ -507,8 +520,13 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
   if(!is.null(nInd)){
     if(nInd<1) stop("nInd must be >= 1")
     if(pop@nInd<nInd){
+      reportShortfall(paste0("Suitable candidates smaller than nInd, returning ",
+                             pop@nInd," individuals"),
+                      onShortfall,
+                      paste0("Only ", pop@nInd,
+                             " suitable candidates for nInd = ", nInd),
+                      call=call)
       nInd = pop@nInd
-      warning("Suitable candidates smaller than nInd, returning ",nInd," individuals")
     }
     f = function(kappa){
       .ocsTrunc(kappa=kappa, ker=ker, m=m, N=nInd)
@@ -524,13 +542,34 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
     if(nMale<1) stop("nMale must be >= 1")
     female = checkSexes(pop=pop, sex="F", simParam=simParam)
     male = checkSexes(pop=pop, sex="M", simParam=simParam)
+    # The contributions are solved for within each sex, which has no
+    # solution with no candidates of that sex, so this is an error
+    # whatever onShortfall says
+    if(length(female)==0L){
+      stop(simpleError("no suitable female candidates", call))
+    }
+    if(length(male)==0L){
+      stop(simpleError("no suitable male candidates", call))
+    }
     if(length(female)<nFemale){
+      reportShortfall(paste0("Suitable candidates smaller than nFemale, returning ",
+                             length(female)," individuals"),
+                      onShortfall,
+                      paste0("Only ", length(female),
+                             " suitable female candidates for nFemale = ",
+                             nFemale),
+                      call=call)
       nFemale = length(female)
-      warning("Suitable candidates smaller than nFemale, returning ",nFemale," individuals")
     }
     if(length(male)<nMale){
+      reportShortfall(paste0("Suitable candidates smaller than nMale, returning ",
+                             length(male)," individuals"),
+                      onShortfall,
+                      paste0("Only ", length(male),
+                             " suitable male candidates for nMale = ",
+                             nMale),
+                      call=call)
       nMale = length(male)
-      warning("Suitable candidates smaller than nMale, returning ",nMale," individuals")
     }
     f = function(kappa){
       .ocsTruncSex(kappa=kappa, ker=ker, m=m, female=female, male=male,

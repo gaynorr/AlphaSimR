@@ -311,6 +311,10 @@ randCross = function(pop, nCrosses, nProgeny=1,
 #' to measure expected fixation. If TRUE, snpChip specifies which
 #' trait's QTL to use. This argument occurs after ..., so the argument
 #' name must be matched exactly.
+#' @param onShortfall what to do when fewer suitable candidates are
+#' available than requested. "warning" (the default) warns and uses all
+#' of them, "error" stops, and "none" uses them silently. This argument
+#' occurs after ..., so the argument name must be matched exactly.
 #'
 #' @details
 #' When \code{restrInbr=TRUE}, parents are selected with
@@ -357,7 +361,9 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
                        nProgeny=1, trait=1, use="pheno", selectTop=TRUE,
                        simParam=NULL, nThreads=NULL, ..., balance=TRUE,
                        restrInbr=FALSE, inbrTarget=0.01,
-                       inbrType="relative", snpChip=1, useQtl=FALSE){
+                       inbrType="relative", snpChip=1, useQtl=FALSE,
+                       onShortfall="warning"){
+  onShortfall = checkShortfall(onShortfall)
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -365,6 +371,9 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  if(!is(pop,"MultiPop")){
+    checkNotEmpty(pop)
   }
   if(restrInbr){
     # randCross crosses only between sexes, so the parents selected
@@ -379,12 +388,13 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
                         selectTop=selectTop, inbrTarget=inbrTarget,
                         inbrType=inbrType, snpChip=snpChip,
                         useQtl=useQtl, returnPop=FALSE,
-                        simParam=simParam, nThreads=nThreads, ...)
+                        simParam=simParam, nThreads=nThreads,
+                        onShortfall=onShortfall, ...)
   }else if(!is.null(nInd)){
     parents = selectInd(pop=pop, nInd=nInd, trait=trait, use=use,
                         sex="B", selectTop=selectTop,
                         returnPop=FALSE, simParam=simParam,
-                        nThreads=nThreads, ...)
+                        nThreads=nThreads, onShortfall=onShortfall, ...)
   }else{
     if(simParam$sexes=="no")
       stop("You must specify nInd when simParam$sexes is `no`")
@@ -395,11 +405,11 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
     females = selectInd(pop=pop, nInd=nFemale, trait=trait, use=use,
                         sex="F", selectTop=selectTop,
                         returnPop=FALSE, simParam=simParam,
-                        nThreads=nThreads, ...)
+                        nThreads=nThreads, onShortfall=onShortfall, ...)
     males = selectInd(pop=pop, nInd=nMale, trait=trait, use=use,
                       sex="M", selectTop=selectTop,
                       returnPop=FALSE, simParam=simParam,
-                      nThreads=nThreads, ...)
+                      nThreads=nThreads, onShortfall=onShortfall, ...)
     parents = c(females,males)
   }
   

@@ -1,5 +1,9 @@
 # AlphaSimR 2.1.0.9021
 
+* Added `onShortfall` to `selectInd`, `selectFam`, `selectWithinFam`, `selectOP`, `selectOCS` and `selectCross`, for when fewer suitable candidates are available than requested. The default, `"warning"`, behaves as before: it warns and returns all of them. `"error"` stops instead, with a message giving how many were available, and `"none"` returns them without a warning, which suits `selectWithinFam` used as a cap on family size. The `selectWithinFam` warning now says how many families fall short.
+
+* Changed the selection functions to give the error "pop contains no individuals to select from" for a population with no individuals, instead of failing later with an unrelated message. An empty population inside a `MultiPop` is returned unchanged. Fixed `selectFam` failing with "no rows to aggregate" when none of the individuals were eligible, which now returns no individuals, and `selectOCS` now says when there are no female or male candidates to select from. Fixed `selectWithinFam` ignoring `famType` for a `MultiPop`.
+
 * Added an article on importing data, covering genetic maps, phased haplotypes, genotypes of inbred lines, PLINK text files, and starting a simulation from imported founders with `SimParam$importTrait` and `SimParam$addSnpChipByName`.
 
 * Added `nGen` to `getPed`, which returns the pedigree for more than one generation. With `nGen` greater than 1, or `Inf` for all ancestors, the pedigree recorded in `SimParam` is followed, so pedigree tracking must be on. The result holds the individuals and their ancestors, each once, with parents before their progeny. Every meiosis counts as a generation, including each generation of selfing and each doubled haploid. The default `nGen=1` returns the parents in the population's slots, as before.
