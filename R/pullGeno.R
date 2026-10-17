@@ -297,7 +297,8 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
 #' @description Retrieves the genetic map for the 
 #' QTL of a given trait.
 #' 
-#' @param trait an integer indicating which trait's QTL to return
+#' @param trait an integer or a trait name indicating which trait's QTL
+#' to return
 #' @param sex determines which sex specific map 
 #' is returned. Options are "A" for average map, "F" 
 #' for female map, and "M" for male map. All options are 
@@ -461,7 +462,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' @description Retrieves QTL genotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer. Indicates which trait's
+#' @param trait an integer or a trait name. Indicates which trait's
 #' QTL genotypes to retrieve.
 #' @param chr a vector of chromosomes to retrieve. If NULL,
 #' all chromosomes are retrieved.
@@ -717,7 +718,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 #' @description Retrieves QTL haplotype data
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer. Indicates which trait's
+#' @param trait an integer or a trait name. Indicates which trait's
 #' QTL haplotypes to retrieve.
 #' @param haplo either "all" for all haplotypes or an integer
 #' for a single set of haplotypes. Use a value of 1 for female

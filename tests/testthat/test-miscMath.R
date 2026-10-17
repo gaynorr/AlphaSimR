@@ -197,3 +197,62 @@ test_that("getPed returns the pedigree of a population", {
   expect_true(all(as.character(ped$father) %in% parents@id))
   expect_equal(as.character(ped$id), progeny@id)
 })
+
+test_that("getPed with nGen follows the pedigree recorded in SimParam", {
+  set.seed(1191)
+  founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  gen0 = newPop(founderPop, simParam=SP)
+  gen1 = randCross(gen0, nCrosses=4, simParam=SP)
+  gen2 = randCross(gen1, nCrosses=4, simParam=SP)
+
+  # nGen=1 is unchanged
+  expect_identical(getPed(gen2, nGen=1, simParam=SP), getPed(gen2))
+
+  # nGen=2 adds the parents, whose own parents are outside the pedigree
+  ped2 = getPed(gen2, nGen=2, simParam=SP)
+  expect_true(all(gen2@id %in% ped2$id))
+  expect_true(all(c(gen2@mother, gen2@father) %in% ped2$id))
+  expect_false(any(gen0@id %in% ped2$id))
+  parents = ped2[!(ped2$id %in% gen2@id),]
+  expect_true(all(parents$mother=="0" & parents$father=="0"))
+
+  # nGen=Inf reaches the founders, and parents come before progeny
+  pedAll = getPed(gen2, nGen=Inf, simParam=SP)
+  founders = pedAll[pedAll$mother=="0" & pedAll$father=="0",]
+  expect_true(all(founders$id %in% gen0@id))
+  expect_true(all(pedAll$mother[pedAll$mother!="0"] %in% pedAll$id))
+  expect_true(all(match(pedAll$mother[pedAll$mother!="0"], pedAll$id) <
+                    match(pedAll$id[pedAll$mother!="0"], pedAll$id)))
+  expect_false(any(duplicated(pedAll$id)))
+})
+
+test_that("getPed with nGen counts each generation of selfing", {
+  founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  f0 = newPop(founderPop, simParam=SP)
+  f1 = makeCross(f0, matrix(c(1,2), ncol=2), simParam=SP)
+  s1 = self(f1, simParam=SP)
+  s2 = self(s1, simParam=SP)
+
+  # The slots name the parents of the selfed individual, but the recorded
+  # pedigree names the immediate parent
+  ped2 = getPed(s2, nGen=2, simParam=SP)
+  expect_equal(ped2$id, c(s1@id, s2@id))
+  expect_equal(ped2$mother[ped2$id==s2@id], s1@id)
+  expect_equal(nrow(getPed(s2, nGen=4, simParam=SP)), 5L)
+})
+
+test_that("getPed with nGen needs pedigree tracking", {
+  founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  expect_error(getPed(pop, nGen=2, simParam=SP), "pedigree tracking")
+  expect_error(getPed(pop, nGen=0, simParam=SP), "nGen")
+  expect_error(getPed(pop, nGen=1.5, simParam=SP), "nGen")
+})

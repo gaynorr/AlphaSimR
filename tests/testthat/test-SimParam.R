@@ -134,3 +134,21 @@ test_that("reduceGenome uses the centromeres of the map it recombines on",{
   expect_equal(male@ploidy,2L)
   expect_equal(male@nInd,4L)
 })
+
+test_that("removeTrait and switchTrait accept trait names",{
+  founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(nQtlPerChr=5, name="Yield")
+  SP$addTraitA(nQtlPerChr=5, name="Height")
+  SP$addTraitA(nQtlPerChr=5, name="Weight")
+
+  SP$switchTrait("Weight", SP$traits[[1]])
+  expect_identical(SP$traits[[3]]@lociLoc, SP$traits[[1]]@lociLoc)
+
+  SP$removeTrait("Height")
+  expect_equal(SP$nTraits, 2L)
+  expect_equal(SP$traitNames, c("Yield","Yield"))
+
+  expect_error(SP$removeTrait("Missing"), "did not match any trait names")
+})

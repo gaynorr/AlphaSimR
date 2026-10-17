@@ -1872,7 +1872,8 @@ SimParam = R6Class(
     #' @description
     #' Switch a trait in the simulation.
     #'
-    #' @param traitPos an integer indicating which trait to switch
+    #' @param traitPos an integer or a trait name indicating which trait
+    #' to switch
     #' @param lociMap a new object descended from
     #' \code{\link{LociMap-class}}
     #' @param varE default error variance for phenotype, optional
@@ -1890,7 +1891,9 @@ SimParam = R6Class(
       }else{
         nThreads = as.integer(nThreads)
       }
+      traitPos = convertTraitsToIndex(traitPos, self)
       stopifnot(is(lociMap,"LociMap"),
+                length(traitPos)==1L,
                 traitPos<=self$nTraits,
                 traitPos>0)
       tmp = calcGenParam(lociMap, self$founderPop, nThreads)
@@ -1912,14 +1915,16 @@ SimParam = R6Class(
     #' @description
     #' Remove a trait from the simulation
     #'
-    #' @param traits an integer vector indicating which traits to remove
+    #' @param traits an integer vector or a character vector of trait
+    #' names indicating which traits to remove
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing
     removeTrait = function(traits,force=FALSE){
       if(!force){
         private$.isRunning()
       }
-      stopifnot(max(traits)<=self$nTraits, min(traits)>0)
+      traits = convertTraitsToIndex(traits, self)
+      stopifnot(length(traits)>0L, max(traits)<=self$nTraits, min(traits)>0)
       private$.traits = private$.traits[-traits]
       private$.varA = private$.varA[-traits]
       private$.varG = private$.varG[-traits]

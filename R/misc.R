@@ -55,8 +55,36 @@ isMale <- function(x) {
 #' Returns the population's pedigree as stored in the
 #' id, mother and father slots. NULL is returned if the
 #' input population lacks the required information.
+#' With \code{nGen} greater than 1, ancestors are added
+#' from the pedigree recorded in \code{\link{SimParam}}.
 #'
 #' @param pop a population
+#' @param nGen number of generations of pedigree to return. The
+#' default of 1 returns the parents recorded in the population's
+#' slots. A larger value, or \code{Inf} for all ancestors, follows
+#' the pedigree recorded in \code{simParam}, which requires pedigree
+#' tracking to be turned on with \code{SimParam$setTrackPed(TRUE)}
+#' before the individuals were created.
+#' @param simParam an object of \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment. Only used when \code{nGen} is greater than 1.
+#'
+#' @details
+#' The two sources can differ. The slots of a population made by
+#' \code{\link{self}} or \code{\link{makeDH}} with
+#' \code{keepParents=TRUE} name the parents of the individuals that
+#' were selfed, while the pedigree in \code{simParam} always records
+#' the immediate parents. With \code{nGen} greater than 1, every
+#' meiosis, including each generation of selfing and each doubled
+#' haploid, therefore counts as one generation.
+#'
+#' The returned pedigree then contains the individuals in
+#' \code{pop} and their ancestors up to \code{nGen} generations
+#' back, each once, ordered so that parents come before their
+#' progeny. Ancestors whose own parents are not included have their
+#' parents given as "0", as do founders.
+#'
+#' @return a data.frame with columns id, mother and father, or NULL
 #'
 #' @examples
 #' # Create a founder population
@@ -75,18 +103,78 @@ isMale <- function(x) {
 #' # Returns NULL when a population lacks a pedigree
 #' getPed(founderPop)
 #'
+#' # Pedigree for more than one generation, which needs pedigree
+#' # tracking from the start of the simulation
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$setTrackPed(TRUE)
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=2, simParam=SP)
+#' pop3 = randCross(pop2, nCrosses=2, simParam=SP)
+#' getPed(pop3, nGen=2, simParam=SP)
+#'
 #' @export
-getPed = function(pop){
-  if(.hasSlot(pop, "id") &
-     .hasSlot(pop, "mother") &
-     .hasSlot(pop, "father")){
+getPed = function(pop, nGen=1, simParam=NULL){
+  if(!(is.numeric(nGen) && length(nGen)==1L && !is.na(nGen) && nGen>=1 &&
+       (is.infinite(nGen) || nGen==round(nGen)))){
+    stop("nGen must be a whole number of at least 1, or Inf")
+  }
+  if(!(.hasSlot(pop, "id") &
+       .hasSlot(pop, "mother") &
+       .hasSlot(pop, "father"))){
+    return(NULL)
+  }
+  if(nGen==1){
     df = data.frame(id = pop@id,
                     mother = pop@mother,
                     father = pop@father)
     return(df)
-  }else{
-    return(NULL)
   }
+
+  if(is.null(simParam)){
+    simParam = get("SP",envir=.GlobalEnv)
+  }
+  if(!.hasSlot(pop, "iid")){
+    stop("nGen > 1 needs internal IDs, which this population lacks")
+  }
+  if(!simParam$isTrackPed){
+    stop("nGen > 1 needs pedigree tracking; turn it on with ",
+         "SimParam$setTrackPed(TRUE) before creating individuals")
+  }
+  ped = simParam$pedigree
+  if(any(pop@iid<1L | pop@iid>nrow(ped))){
+    stop("pop contains individuals not recorded in simParam's pedigree")
+  }
+
+  # Walk up the recorded pedigree one generation at a time. An individual
+  # already reached is not walked again, so each appears once however many
+  # paths lead to it.
+  keep = logical(nrow(ped))
+  cur = unique(pop@iid)
+  keep[cur] = TRUE
+  gen = 1
+  while(gen<nGen && length(cur)>0L){
+    cur = unique(c(ped[cur,1:2]))
+    cur = cur[cur>0L & !keep[cur]]
+    keep[cur] = TRUE
+    gen = gen + 1
+  }
+
+  # Parents always have smaller internal IDs than their progeny, so
+  # ordering by internal ID puts parents first. A parent left outside the
+  # walk is reported as unknown.
+  iid = which(keep)
+  ids = rownames(ped)
+  parentId = function(x){
+    out = rep("0", length(x))
+    known = x>0L & keep[pmax(x,1L)]
+    out[known] = ids[x[known]]
+    out
+  }
+  df = data.frame(id = ids[iid],
+                  mother = parentId(ped[iid,1]),
+                  father = parentId(ped[iid,2]))
+  return(df)
 }
 
 
@@ -269,7 +357,8 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param ind a vector of individuals to edit
 #' @param nQtl number of QTL to edit
-#' @param trait which trait effects should guide selection of the top QTL
+#' @param trait which trait effects should guide selection of the top QTL,
+#' given as an integer or a trait name
 #' @param increase should the trait value be increased or decreased
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -305,6 +394,8 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
   }else{
     nThreads = as.integer(nThreads)
   }
+  trait = convertTraitsToIndex(trait, simParam)
+  stopifnot(length(trait) == 1L, trait > 0L, trait <= simParam$nTraits)
   ind = unique(as.integer(ind))
   stopifnot(all(ind %in% (1:pop@nInd)))
   nQtl = as.integer(nQtl)
