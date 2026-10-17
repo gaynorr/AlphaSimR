@@ -245,3 +245,27 @@ test_that("REFUSE a manual trait with loci outside their chromosome", {
   }
   expect_equal(x$SP$nTraits, 1L)
 })
+
+test_that("KEEP the input population unchanged in setMarkerHaplo", {
+  set.seed(5011)
+  founder = quickHaplo(nInd = 4, nChr = 2, segSites = 16)
+  SP = SimParam$new(founder)
+  SP$nThreads = 1L
+  pop = newPop(founder, simParam = SP)
+  # A deep copy, so it cannot share memory with pop@geno
+  before = unserialize(serialize(pop@geno, NULL))
+  other = pop
+  H = pullSegSiteHaplo(pop, simParam = SP)[, 1:3]
+  H[] = 1L - H
+  edited = setMarkerHaplo(pop, H, simParam = SP)
+  expect_identical(pop@geno, before)
+  expect_identical(other@geno, before)
+  expect_equal(pullSegSiteHaplo(pop, simParam = SP)[, 1:3], 1L - H)
+  # The result carries the new haplotypes and nothing else changes
+  newHaplo = pullSegSiteHaplo(edited, simParam = SP)
+  oldHaplo = pullSegSiteHaplo(pop, simParam = SP)
+  expect_equal(newHaplo[, 1:3], H)
+  expect_equal(newHaplo[, -(1:3)], oldHaplo[, -(1:3)])
+  # The second chromosome has no loci set, so it is the same as before
+  expect_identical(edited@geno[[2L]], before[[2L]])
+})
