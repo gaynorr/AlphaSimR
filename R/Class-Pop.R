@@ -1629,14 +1629,15 @@ unnameMultiPop = function(x, level = Inf) {
         !is.numeric(level) ||
           is.na(level) ||
           level < 1 ||
-          level != as.integer(level)
+          level != trunc(level) ||
+          abs(level) > .Machine$integer.max
       ) {
         stop("level must be a positive integer or Inf")
       }
       if (level > md) {
         stop(sprintf("requested level exceed max depth of x (%d)", md))
       }
-      levels = as.integer(level)
+      levels = trunc(level)
     }
   } else {
     if (!is.numeric(level) || any(is.na(level)) || any(level <= 0)) {
@@ -1651,7 +1652,7 @@ unnameMultiPop = function(x, level = Inf) {
     if (any(level > md)) {
       stop(sprintf("requested level(s) exceed max depth of x (%d)", md))
     }
-    levels = as.integer(unique(level))
+    levels = trunc(unique(level))
   }
 
   # Recursively unname pops at specified level(s)

@@ -327,3 +327,23 @@ test_that("Multipop unnameMultiPop", {
     fixed = TRUE
   )
 })
+
+test_that("MultiPop REJECTS a HybridPop", {
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10)
+  pop = newPop(founderPop, simParam=SP)
+  hybrid = hybridCross(pop[1:2], pop[3:4], returnHybridPop=TRUE,
+                       simParam=SP)
+
+  expect_error(newMultiPop(pop, hybrid), "must be a Pop or a MultiPop")
+  expect_error(new("MultiPop", pops=list(hybrid)), "is not a Pop or a MultiPop")
+
+  mp = newMultiPop(A=pop[1:2])
+  expect_error(mp[["B"]] <- hybrid)
+  expect_error(mp$B <- hybrid)
+  expect_error(mp[1] <- list(hybrid))
+  expect_error(c(mp, hybrid), "must be a Pop or a MultiPop")
+})
+
