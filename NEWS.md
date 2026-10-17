@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9019
+# AlphaSimR 2.1.0.9020
 
 * Fixed the intercept of the genetic values predicted by single trait `fastRRBLUP`, which was found against the centered marker genotypes but used with the uncentered ones, shifting every genetic value predicted with `setEBV` by the same constant, the mean genotype times the marker effects. Predictions of genetic values now agree with `RRBLUP`. Breeding values and the ranking of individuals were not affected.
 
