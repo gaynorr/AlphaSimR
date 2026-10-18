@@ -861,6 +861,18 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // iteration is restarted from it. By then the largest directions have
   // converged, so the restarted sums are no longer dominated by them. Every
   // product with the coefficient matrix counts toward maxIter.
+  //
+  // A direction can sit at rounding level above its tolerance, as one whose
+  // right hand side is zero does when it is coupled to the others: its
+  // tolerance is then a fraction of nothing, and the rounding it picks up
+  // from the larger directions cannot be removed. The tolerance is not
+  // floored at a fraction of the largest direction instead, because that
+  // would release a direction far smaller than the largest, such as a trait
+  // whose error variance is far larger than another's, long before it had
+  // converged. A restart only follows a recurrence that has converged, so
+  // when a restart fails to halve the true residual of every direction still
+  // above its tolerance, those directions are at rounding level and the
+  // solution is accepted as converged.
   const arma::mat Bt = Rt;
   double rNorm0 = arma::norm(Bt, "fro");
   arma::vec rowTol = sqrt(sum(square(Bt),1));
@@ -875,6 +887,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   arma::mat Zt(nR,nLoci), Apt(nR,nLoci), Pt;
   bool converged = (rNorm0<=0.0);
   arma::uword iter = 0;
+  arma::vec prevNorm;
   for(arma::uword restart=0; (restart<=maxRestart)&&(!converged); ++restart){
     if(restart>0){
       // The true residual
@@ -885,6 +898,17 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     if(rowsConverged(Rt)){
       converged = true;
       break;
+    }
+    if(restart>0){
+      arma::vec rowNorm = sqrt(sum(square(Rt),1));
+      if(restart>1){
+        arma::uvec open = find(rowNorm>rowTol);
+        if(arma::all(rowNorm(open)>0.5*prevNorm(open))){
+          converged = true;
+          break;
+        }
+      }
+      prevNorm = rowNorm;
     }
     if(iter>=maxIter){
       break;

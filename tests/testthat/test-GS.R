@@ -1209,3 +1209,30 @@ test_that("the RR-BLUP models keep the positions of their arguments", {
                      fit(d$pop, simParam=d$SP, nThreads=1L), info=model)
   }
 })
+
+test_that("fast mode converges when a coupled term has no right hand side", {
+  # A response orthogonal to the paternal codes and the fixed effects gives
+  # that term a right hand side of zero, while the maternal term, which is
+  # coupled to it through the records, has one. The paternal term's
+  # tolerance is then a fraction of nothing, which rounding cannot reach, and
+  # the fit must still stop without a warning and give the BLUP.
+  d = mvPop(nInd=40, nSnp=4)
+  codes = mkCodes("RRBLUP_GCA", d$pop, d$SP)
+  X = mkFixed("RRBLUP_GCA", d$pop, codes)
+  set.seed(31)
+  z = rnorm(d$pop@nInd)
+  y = qr.resid(qr(cbind(X, codes[[2]])), z)
+  expect_lt(max(abs(crossprod(codes[[2]], y))), 1e-12)
+  d$pop@pheno[, 1] = y+10
+  Vu = c(0.02, 0.02)
+  expect_warning(ans <- RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=Vu, Ve=1,
+                                   simParam=d$SP), NA)
+  ref = denseMkBlup(d$pop@pheno[, 1, drop=FALSE], X, codes,
+                    lapply(Vu, as.matrix), matrix(1))
+  eff = mkEffects("RRBLUP_GCA", ans)
+  expected = mkExpected("RRBLUP_GCA", ref, codes)
+  for(k in seq_along(eff)){
+    expect_equal(matrix(eff[[k]], ncol=1), expected[[k]], tolerance=1e-6,
+                 info=paste("term", k))
+  }
+})
