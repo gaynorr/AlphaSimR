@@ -1391,3 +1391,32 @@ test_that("fast mode gives the BLUP when several null directions share a marker"
   expect_equal(sapply(ans@gv, function(x) x@addEffMale), ref$u[[2]],
                tolerance=1e-6)
 })
+
+test_that("fast mode separates terms whose covariance matrices are nearly aligned", {
+  # In doubled haploids the two GCA terms have the same code at the one
+  # marker, and each term's variance lies along one trait direction, (1,0)
+  # and (1,d), so the records tell them apart only through differences of
+  # order d. Next to the variance ratio those are below the precision of the
+  # preconditioner's blocks, which must not stop the iteration from
+  # searching along them. With u1 = a*(1,0) and u2 = b*(1,d), each of prior
+  # variance 1/64, and 100 records of code -1 or 1, the BLUP solves
+  #   (100/d^2)*(a+b)+64*a = 0
+  #   (100/d^2)*(a+b)-100*(1-b)+64*b = 0
+  # whose solution is below.
+  d = 2^-27
+  dd = haploPop(list(c("0", "0"), c("1", "1")), 50)
+  x = rep(c(-1, 1), each=50)
+  dd$pop@pheno = cbind(0, d*x)
+  Vu = list(diag(c(1/64, 0)), tcrossprod(c(1, d))/64)
+  ans = RRBLUP_GCA(dd$pop, traits=1:2, fastMode=TRUE, Vu=Vu,
+                   Ve=diag(2)*d^2, maxIter=10000L, simParam=dd$SP)
+  k = 0.64*d^2
+  b = 100*(1+k)/(164*(1+k)+64)
+  a = -b/(1+k)
+  female = sapply(ans@female, function(x) x@addEff)
+  male = sapply(ans@male, function(x) x@addEff)
+  expect_equal(female[1], a, tolerance=1e-6)
+  expect_equal(male[1], b, tolerance=1e-6)
+  expect_lt(abs(female[2]), 1e-12)
+  expect_equal(male[2], b*d, tolerance=1e-6)
+})

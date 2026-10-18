@@ -742,10 +742,15 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // records see has an eigenvalue found to rounding level, where the
   // unscaled block's decomposition would find small ones only to rounding of
   // its largest entry, mixing them up with each other and with the unseen
-  // directions. An eigenvalue at rounding level belongs to a direction the
-  // records do not see, which the deflation below removes, and gets an
-  // inverse of zero rather than the reciprocal of rounding error. The
-  // inverse is kept and applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
+  // directions. An eigenvalue at rounding level is not resolved by the
+  // block: it may belong to a direction the records do not see, which the
+  // deflation below removes, or to one they see only through differences
+  // below the block's precision, as terms whose covariance matrices are
+  // nearly but not exactly aligned have. Its inverse is taken as one, the
+  // scaled block's diagonal, rather than the reciprocal of rounding error or
+  // zero: the preconditioner then stays positive definite, so every
+  // direction is still searched in, and bounded. The inverse is kept and
+  // applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
   // rather than multiplied out, so that its scales are never added together.
   // Should the decomposition fail, the inverse of the diagonal is used, which
   // is still a positive definite preconditioner.
@@ -793,7 +798,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         if(arma::eig_sym(lambda, V, B)){
           double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
           Bvec.slice(j) = V;
-          arma::vec dInv(nR, arma::fill::zeros);
+          arma::vec dInv(nR, arma::fill::ones);
           for(arma::uword c=0; c<nR; ++c){
             if(lambda(c)>cut){
               dInv(c) = 1.0/lambda(c);
@@ -1078,8 +1083,10 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // whose error variance is far larger than another's, long before it had
   // converged. A restart only follows a recurrence that has converged, so
   // when a restart fails to halve the true residual of every direction still
-  // above its tolerance, those directions are at rounding level and the
-  // solution is accepted as converged.
+  // above its tolerance, and that residual is at rounding level of the
+  // product it was computed from, the solution is accepted as converged. A
+  // residual that has stopped falling while still above rounding level is
+  // not progress lost to rounding, and is never accepted.
   const arma::mat Bt = Rt;
   double rNorm0 = arma::norm(Bt, "fro");
   arma::vec rowTol = sqrt(sum(square(Bt),1));
@@ -1115,7 +1122,9 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       bool errOpen = rNorm>errTol*arma::norm(At, "fro");
       if(restart>1){
         arma::uvec open = find(rowNorm>rowTol);
-        if(arma::all(rowNorm(open)>0.5*prevNorm(open)) &&
+        bool atRounding = rNorm<=1.0e3*arma::datum::eps*
+          (arma::norm(Apt, "fro")+arma::norm(Bt, "fro"));
+        if(atRounding && arma::all(rowNorm(open)>0.5*prevNorm(open)) &&
            (!errOpen || (rNorm>0.5*prevErr))){
           converged = true;
           break;
