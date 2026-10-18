@@ -164,7 +164,7 @@ matter of memory and speed.
 | Performance of an individual with dominance | `RRBLUP_D` | `"gv"` |
 | GCA of inbreds in a two-pool hybrid program | `RRBLUP_GCA` | `"female"`, `"male"` |
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
-| Additive trait and training population too large to fit | `fastRRBLUP` | `"bv"` or `"gv"` |
+| Additive trait and training population too large to fit | `RRBLUP` with `fastMode=TRUE` | `"bv"` or `"gv"` |
 
 **`RRBLUP`** is the default choice. It fits additive marker effects. If
 you are unsure, start here. Every model in this table can also fit
@@ -196,8 +196,8 @@ notes that no consistent benefit over `RRBLUP_GCA` has been observed in
 `AlphaSimR`'s own testing, so it is worth checking both in your own
 simulation rather than assuming the more complex model wins.
 
-**`fastRRBLUP`** is the escape hatch for size. It solves the same
-additive model as `RRBLUP` but never forms a square matrix to solve it,
+**`RRBLUP` with `fastMode=TRUE`** is the escape hatch for size. It solves
+the same additive model but never forms a square matrix to solve it,
 so its memory cost stays close to the cost of the genotypes themselves and
 of the subset of records it uses for the variance components. Use it
 when the training population has grown large enough that the others will
@@ -209,7 +209,7 @@ Giving `traits` more than one trait fits a multiple trait model. The
 marker effects of the traits are correlated, as are their errors, and
 both covariance matrices are estimated by REML, so a trait with a low
 heritability can borrow information from a correlated trait with a high
-one. `RRBLUP`, `fastRRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`
+one. `RRBLUP`, in either mode, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`
 all do this; the numbered models fit one trait at a time. Every trait
 must be recorded on every individual in the training population, and a
 missing value stops the fit.
@@ -244,8 +244,8 @@ diag(cor(ebv(candidates2), gv(candidates2)))
 
 The solution holds one trait object per trait in each of its slots, so
 `setEBV` fills one column of the `ebv` slot per trait. `Ve` becomes the
-covariance matrix of the errors among the traits. For `RRBLUP` and
-`fastRRBLUP`, `Vu` is the covariance matrix of the marker effects. The
+covariance matrix of the errors among the traits. For `RRBLUP`, in either
+mode, `Vu` is the covariance matrix of the marker effects. The
 dominance and hybrid models have one covariance matrix per random term,
 and they are stored together as a block diagonal matrix, with rows and
 columns named after the term and the trait:
@@ -255,15 +255,15 @@ round(mvModel@Vu, 5)
 ```
 
 How the cost grows with the number of traits depends on the model.
-`RRBLUP` and `fastRRBLUP` estimate the covariance matrices after a single
+`RRBLUP`, in either mode, estimates the covariance matrices after a single
 rotation of the records, and a fit to several traits takes about as long
 as fitting the traits one at a time. The dominance and hybrid models
 cannot use that rotation. Every record and every marker effect is counted
 once per trait, so a fit to three traits can take several times as long
 as three single trait fits; `RRBLUPMemUse` takes the number of traits into
-account. `fastRRBLUP` keeps its memory close to the size of the genotypes
-however many traits are fitted, so it stays the choice for a large
-training population.
+account. `RRBLUP` with `fastMode=TRUE` keeps its memory close to the size
+of the genotypes however many traits are fitted, so it stays the choice for
+a large training population.
 
 ### Fitting the same model more cheaply
 
@@ -271,7 +271,7 @@ training population.
 counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
 fit *exactly the same models* and differ only in how the equations are
 solved, except that the numbered versions fit one trait at a time, while
-the unnumbered ones can fit several. `fastRRBLUP` has no numbered counterpart. The practical reason to
+the unnumbered ones can fit several. `RRBLUP2` does not have a fast mode. The practical reason to
 care is that the numbered versions let you supply the variance
 components and skip estimating them:
 
@@ -402,7 +402,7 @@ they give up:
 
 - Refit every cycle with `RRBLUP2` and fixed `Vu` and `Ve`, taken from
   one full `RRBLUP` fit at the start.
-- Refit every cycle with `fastRRBLUP`, whose cost grows far more slowly
+- Refit every cycle with `RRBLUP` and `fastMode=TRUE`, whose cost grows far more slowly
   with the number of records.
 - Refit every *k* cycles and reuse the solution in between. A solution
   is an ordinary object; nothing stops you applying it to several
@@ -557,10 +557,11 @@ modeling.
 The cost of these models is driven by the number of training records and
 the number of markers, and the balance between the two decides which
 implementation to use. `RRBLUPMemUse` estimates the memory required, and
-takes the model as the name of the function that fits it:
+takes the model as the name of the function that fits it, with
+`fastMode` for the fast mode of `RRBLUP`:
 
 ```{r}
-RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "fastRRBLUP")
+RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP", fastMode = TRUE)
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP")
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA")
 ```
@@ -663,7 +664,7 @@ variance components, so it is free to solve the model written on the
 records instead, and takes whichever of the two is cheaper. `RRBLUPMemUse`
 reports what each model and choice costs.
 
-**`fastRRBLUP`** forms no square matrix to solve the model. It solves the mixed
+**`RRBLUP` with `fastMode=TRUE`** forms no square matrix to solve the model. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the
 genotypes rather than over a stored coefficient matrix
 [@stranden1999Solving]. Neither the coefficient matrix nor a numeric copy of
@@ -673,7 +674,7 @@ shared across `nThreads`.
 
 It also differs in how it gets its variance components. REML needs a
 matrix decomposition costing the square of the number of records in
-memory and their cube in time, which is exactly what `fastRRBLUP` exists
+memory and their cube in time, which is exactly what the fast mode exists
 to avoid, so it estimates the variance components from a random subset
 of the records. `nSubsample` sets the size of that subset and defaults
 to 5000. Variance components are nuisance parameters here, estimated far
@@ -681,7 +682,7 @@ more precisely than a breeding program needs, so a few thousand records
 give values good enough to shrink with - and the marker effects
 themselves are always solved for using every record. Supplying `Vu` and
 `Ve` skips the estimation entirely. Fitted to several traits, it estimates
-covariance matrices by the multiple trait REML of `RRBLUP` on the same
+covariance matrices by the multiple trait REML of `RRBLUP`'s default mode on the same
 subset, separates the traits with a canonical transformation, and solves
 them together by conjugate gradient, which takes about as long as solving
 each trait on its own.

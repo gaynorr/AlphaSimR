@@ -157,7 +157,7 @@ trainPop = setEBV(trainPop, ans, simParam = SP)
 cor(ebv(trainPop)[, 1], gv(trainPop)[, 1])
 
 ## -----------------------------------------------------------------------------
-RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "fastRRBLUP")
+RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP", fastMode = TRUE)
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP")
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA")
 

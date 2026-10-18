@@ -125,17 +125,25 @@ test_that("RRBLUP2 gives the same answer whatever its starting values", {
   expect_gt(sum(addEff(c2)^2), sum(addEff(a)^2))
 })
 
-test_that("fastRRBLUP agrees with RRBLUP given the same variance components", {
+test_that("fast mode RRBLUP agrees with RRBLUP given the same variance components", {
   # Iterates to convergence rather than solving, so it is the slowest fit here
   skip_on_cran()
   d = gsPop(nInd=40, nQtl=5, nSnp=5)
   ref = RRBLUP(d$pop, simParam=d$SP)
-  ans = fastRRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], maxIter=10000,
-                   simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+               maxIter=10000, simParam=d$SP)
 
-  # fastRRBLUP iterates rather than solving directly, so it is held to a
+  # Fast mode iterates rather than solving directly, so it is held to a
   # looser tolerance than the direct solvers are held to each other
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-4)
+})
+
+test_that("RRBLUP takes variance components only in fast mode", {
+  # The direct solver always estimates them, so supplying them without
+  # fastMode would otherwise be ignored without notice
+  d = gsPop(nInd=30, nQtl=5, nSnp=5)
+  expect_error(RRBLUP(d$pop, Vu=0.01, simParam=d$SP), "fastMode")
+  expect_error(RRBLUP(d$pop, Ve=1, simParam=d$SP), "fastMode")
 })
 
 test_that("setEBV reproduces the model's own predictions", {
@@ -314,6 +322,13 @@ test_that("RRBLUPMemUse answers for every model it accepts", {
                RRBLUPMemUse(nInd=100, nMarker=50, model="RRBLUP_GCA"))
   expect_equal(RRBLUPMemUse(nInd=100, nMarker=50, model="SCA"),
                RRBLUPMemUse(nInd=100, nMarker=50, model="RRBLUP_SCA"))
+  # fastRRBLUP became RRBLUP's fast mode
+  expect_equal(RRBLUPMemUse(nInd=100, nMarker=50, model="fastRRBLUP"),
+               RRBLUPMemUse(nInd=100, nMarker=50, model="RRBLUP",
+                            fastMode=TRUE))
+  expect_false(isTRUE(all.equal(
+    RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP"),
+    RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP", fastMode=TRUE))))
 
   expect_error(RRBLUPMemUse(nInd=100, nMarker=50, model="notAModel"),
                "not recognized")
@@ -384,9 +399,9 @@ test_that("RRBLUPMemUse follows the multiple trait models to the record side", {
   expect_gt(v, floorGB)
   expect_lt(v, RRBLUPMemUse(nInd=200, nMarker=5000, model="RRBLUP_D2",
                             nTraits=1))
-  # And fastRRBLUP's variance components from a record cross product
-  expect_gt(RRBLUPMemUse(nInd=10000, nMarker=10000, model="fastRRBLUP",
-                         nTraits=3, nSubsample=2000),
+  # And fast mode RRBLUP's variance components from a record cross product
+  expect_gt(RRBLUPMemUse(nInd=10000, nMarker=10000, model="RRBLUP",
+                         fastMode=TRUE, nTraits=3, nSubsample=2000),
             4*8*2000^2/10^9)
 })
 
@@ -606,11 +621,11 @@ test_that("the dominance and hybrid models are not affected by the number of thr
   }
 })
 
-# Multiple trait fastRRBLUP. With the variance components supplied it is the
-# BLUP of the multiple trait model, which Henderson's equations give directly
-# for a population small enough to write them out in R. With every record
-# used for the variance components it is the same REML fit as multiple trait
-# RRBLUP, so the two have to agree.
+# Multiple trait fast mode RRBLUP. With the variance components supplied it is
+# the BLUP of the multiple trait model, which Henderson's equations give
+# directly for a population small enough to write them out in R. With every
+# record used for the variance components it is the same REML fit as multiple
+# trait RRBLUP in its default mode, so the two have to agree.
 
 # A population with three correlated traits
 mvPop = function(nInd, nSnp, ploidy=2L, seed=8601){
@@ -635,7 +650,7 @@ addEffAll = function(ans){
 }
 
 # Henderson's equations for the multiple trait model with known Vu and Ve,
-# with the markers centered as fastRRBLUP centers them
+# with the markers centered as fast mode RRBLUP centers them
 denseMvBlup = function(pop, SP, Vu, Ve){
   P = pop@ploidy
   M = (pullSnpGeno(pop, simParam=SP) - P/2)*(2/P)
@@ -655,9 +670,10 @@ denseMvBlup = function(pop, SP, Vu, Ve){
 mvVu = matrix(c(0.02,0.01,-0.004,0.01,0.03,0.002,-0.004,0.002,0.025), 3)
 mvVe = matrix(c(1,0.3,0.1,0.3,1.5,-0.2,0.1,-0.2,0.8), 3)
 
-test_that("multiple trait fastRRBLUP is the BLUP of the multiple trait model", {
+test_that("multiple trait fast mode RRBLUP is the BLUP of the multiple trait model", {
   d = mvPop(nInd=80, nSnp=15)
-  ans = fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu, Ve=mvVe,
+               simParam=d$SP)
   ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
   # It iterates rather than solving, so it is held to a looser tolerance
   expect_equal(unname(addEffAll(ans)), ref, tolerance=1e-6)
@@ -665,21 +681,23 @@ test_that("multiple trait fastRRBLUP is the BLUP of the multiple trait model", {
   expect_equal(dimnames(ans@Vu), list(d$SP$traitNames, d$SP$traitNames))
 })
 
-test_that("multiple trait fastRRBLUP reads a tetraploid's markers", {
+test_that("multiple trait fast mode RRBLUP reads a tetraploid's markers", {
   # A ploidy other than two goes through the general loop of the products
   d = mvPop(nInd=60, nSnp=12, ploidy=4L)
-  ans = fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu, Ve=mvVe,
+               simParam=d$SP)
   ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
   expect_equal(unname(addEffAll(ans)), ref, tolerance=1e-6)
 })
 
-test_that("multiple trait fastRRBLUP agrees with RRBLUP on every record", {
+test_that("multiple trait fast mode RRBLUP agrees with RRBLUP on every record", {
   skip_on_cran()
   # More records than markers decomposes the markers, and fewer decomposes
   # the record cross product built from the genotypes
   for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
     d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
-    ans = fastRRBLUP(d$pop, traits=1:3, nSubsample=0L, simParam=d$SP)
+    ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nSubsample=0L,
+                 simParam=d$SP)
     ref = RRBLUP(d$pop, traits=1:3, simParam=d$SP)
     info = paste("nInd", size[["nInd"]])
     expect_equal(unname(ans@Vu), unname(ref@Vu), tolerance=1e-8, info=info)
@@ -693,12 +711,13 @@ test_that("multiple trait fastRRBLUP agrees with RRBLUP on every record", {
   }
 })
 
-test_that("fastRRBLUP predicts the same genetic values as RRBLUP", {
+test_that("fast mode RRBLUP predicts the same genetic values as RRBLUP", {
   # The intercept of the genetic values goes with the uncentered markers.
   # Taking it from the centered ones shifts every prediction by Mmean*u,
   # which is not zero in general, so this checks a trait where it is not.
   d = mvPop(nInd=80, nSnp=15)
-  ans = fastRRBLUP(d$pop, traits=1, nSubsample=0L, simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1, nSubsample=0L,
+               simParam=d$SP)
   ref = RRBLUP(d$pop, traits=1, simParam=d$SP)
   expect_gt(abs(ref@bv[[1]]@intercept), 1e-8)
   expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
@@ -706,51 +725,53 @@ test_that("fastRRBLUP predicts the same genetic values as RRBLUP", {
                c(ebv(setEBV(d$pop, ref, simParam=d$SP))), tolerance=1e-6)
 })
 
-test_that("multiple trait fastRRBLUP leaves its inputs unchanged", {
+test_that("multiple trait fast mode RRBLUP leaves its inputs unchanged", {
   d = mvPop(nInd=40, nSnp=10)
   Vu = mvVu + 0
   Ve = mvVe + 0
   pheno0 = d$pop@pheno + 0
-  fastRRBLUP(d$pop, traits=1:3, Vu=Vu, Ve=Ve, simParam=d$SP)
+  RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=Vu, Ve=Ve, simParam=d$SP)
   expect_identical(Vu, mvVu)
   expect_identical(Ve, mvVe)
   expect_identical(d$pop@pheno, pheno0)
 })
 
-test_that("multiple trait fastRRBLUP rejects unusable variance components", {
+test_that("multiple trait fast mode RRBLUP rejects unusable variance components", {
   d = mvPop(nInd=40, nSnp=10)
-  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=diag(2), Ve=diag(3),
-                          simParam=d$SP), "one row per trait")
-  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=diag(c(1,1,0)),
-                          simParam=d$SP), "positive definite")
-  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=-mvVu, Ve=mvVe,
-                          simParam=d$SP), "positive semidefinite")
-  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=0*mvVu, Ve=mvVe,
-                          simParam=d$SP), "not positive")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=diag(2),
+                      Ve=diag(3), simParam=d$SP), "one row per trait")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu,
+                      Ve=diag(c(1,1,0)), simParam=d$SP), "positive definite")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=-mvVu, Ve=mvVe,
+                      simParam=d$SP), "positive semidefinite")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=0*mvVu, Ve=mvVe,
+                      simParam=d$SP), "not positive")
 })
 
-test_that("multiple trait fastRRBLUP rejects an indefinite Vu", {
+test_that("multiple trait fast mode RRBLUP rejects an indefinite Vu", {
   d = mvPop(nInd=40, nSnp=10)
-  expect_error(fastRRBLUP(d$pop, traits=1:3, Vu=diag(c(0.01,0.01,-0.005)),
-                          Ve=mvVe, simParam=d$SP), "positive semidefinite")
-})
-
-test_that("multiple trait fastRRBLUP checks Vu on its own scale", {
-  # An error variance close to zero for the second trait would make the
-  # first trait's negative variance look like rounding after whitening
-  d = mvPop(nInd=40, nSnp=10)
-  expect_error(fastRRBLUP(d$pop, traits=1:2, Vu=diag(c(-0.01, 0.01)),
-                          Ve=diag(c(1, 1e-14)), simParam=d$SP),
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:3,
+                      Vu=diag(c(0.01,0.01,-0.005)), Ve=mvVe, simParam=d$SP),
                "positive semidefinite")
 })
 
-test_that("multiple trait fastRRBLUP warns when maxIter is reached", {
-  d = mvPop(nInd=80, nSnp=15)
-  expect_warning(fastRRBLUP(d$pop, traits=1:3, Vu=mvVu, Ve=mvVe, maxIter=1,
-                            simParam=d$SP), "without converging")
+test_that("multiple trait fast mode RRBLUP checks Vu on its own scale", {
+  # An error variance close to zero for the second trait would make the
+  # first trait's negative variance look like rounding after whitening
+  d = mvPop(nInd=40, nSnp=10)
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, traits=1:2,
+                      Vu=diag(c(-0.01, 0.01)), Ve=diag(c(1, 1e-14)),
+                      simParam=d$SP),
+               "positive semidefinite")
 })
 
-test_that("multiple trait fastRRBLUP with diagonal covariance matrices fits each trait on its own", {
+test_that("multiple trait fast mode RRBLUP warns when maxIter is reached", {
+  d = mvPop(nInd=80, nSnp=15)
+  expect_warning(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu, Ve=mvVe,
+                        maxIter=1, simParam=d$SP), "without converging")
+})
+
+test_that("multiple trait fast mode RRBLUP with diagonal covariance matrices fits each trait on its own", {
   # With no covariance between the traits, the multiple trait BLUP of each
   # trait is its single trait BLUP. An error variance close to zero for the
   # first trait makes its variance ratio far larger than the second's, which
@@ -758,10 +779,10 @@ test_that("multiple trait fastRRBLUP with diagonal covariance matrices fits each
   d = mvPop(nInd=80, nSnp=15)
   Vu = diag(c(0.02, 0.03))
   Ve = diag(c(1e-14, 1))
-  ans = fastRRBLUP(d$pop, traits=1:2, Vu=Vu, Ve=Ve, maxIter=10000,
-                   simParam=d$SP)
-  one = fastRRBLUP(d$pop, traits=2, Vu=Vu[2,2], Ve=Ve[2,2], maxIter=10000,
-                   simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:2, Vu=Vu, Ve=Ve, maxIter=10000,
+               simParam=d$SP)
+  one = RRBLUP(d$pop, fastMode=TRUE, traits=2, Vu=Vu[2,2], Ve=Ve[2,2],
+               maxIter=10000, simParam=d$SP)
   expect_gt(max(abs(addEff(one))), 0)
   expect_equal(addEffAll(ans)[, 2], addEff(one), tolerance=1e-6)
 })
@@ -776,8 +797,8 @@ test_that("models name a response that is not one column per trait", {
   }
   # A function of the traits returning two columns
   pair = function(x) x[, 1:2]
-  ans = fastRRBLUP(d$pop, traits=pair, Vu=mvVu[1:2, 1:2], Ve=mvVe[1:2, 1:2],
-                   simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=pair, Vu=mvVu[1:2, 1:2],
+               Ve=mvVe[1:2, 1:2], simParam=d$SP)
   expect_equal(dimnames(ans@Vu), list(c("Response1","Response2"),
                                       c("Response1","Response2")))
   expect_equal(ans@gv[[2]]@name, "est_GV_Response2")
@@ -788,9 +809,10 @@ test_that("models name a response that is not one column per trait", {
 test_that("models accept a function of the traits that returns a vector", {
   d = mvPop(nInd=60, nSnp=12)
   index = function(x) rowSums(x)
-  ans = fastRRBLUP(d$pop, traits=index, Vu=0.01, Ve=1, simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=index, Vu=0.01, Ve=1,
+               simParam=d$SP)
   expect_equal(length(ans@gv), 1L)
-  ans = fastRRBLUP(d$pop, traits=index, simParam=d$SP)
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=index, simParam=d$SP)
   expect_true(all(is.finite(addEff(ans))))
   for(fit in list(RRBLUP_D, RRBLUP_GCA, RRBLUP_SCA)){
     ans = fit(d$pop, traits=index, simParam=d$SP)
@@ -799,18 +821,20 @@ test_that("models accept a function of the traits that returns a vector", {
   }
 })
 
-test_that("multiple trait fastRRBLUP needs every trait recorded", {
+test_that("multiple trait fast mode RRBLUP needs every trait recorded", {
   expect_error(AlphaSimR:::checkCompleteRecords(matrix(c(1,NA,3,4), 2)),
                "every trait recorded")
   expect_null(AlphaSimR:::checkCompleteRecords(matrix(1:4, 2)))
 })
 
-test_that("multiple trait fastRRBLUP is not affected by the number of threads", {
+test_that("multiple trait fast mode RRBLUP is not affected by the number of threads", {
   skip_on_cran()
   skip_if(getNumThreads() < 2L)
   d = mvPop(nInd=80, nSnp=15)
-  one = fastRRBLUP(d$pop, traits=1:3, nThreads=1L, simParam=d$SP)
-  two = fastRRBLUP(d$pop, traits=1:3, nThreads=2L, simParam=d$SP)
+  one = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=1L,
+               simParam=d$SP)
+  two = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=2L,
+               simParam=d$SP)
   expect_identical(addEffAll(one), addEffAll(two))
   expect_identical(one@Vu, two@Vu)
 })

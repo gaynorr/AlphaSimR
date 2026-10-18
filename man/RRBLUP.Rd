@@ -11,6 +11,10 @@ RRBLUP(
   snpChip = 1,
   useQtl = FALSE,
   maxIter = 1000L,
+  fastMode = FALSE,
+  Vu = NULL,
+  Ve = NULL,
+  nSubsample = 5000L,
   simParam = NULL,
   nThreads = NULL,
   ...
@@ -32,8 +36,29 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations. Only used
-when number of traits is greater than 1.}
+\item{maxIter}{maximum number of iterations. When fastMode is FALSE, it
+is only used when the number of traits is greater than 1, and limits the
+iterations of the REML fit. When fastMode is TRUE, it limits the
+iterations of the conjugate gradient solver.}
+
+\item{fastMode}{should the model be solved by preconditioned conjugate
+gradient, using less time and memory for large training populations.
+See details.}
+
+\item{Vu}{marker effect variance, or for several traits the covariance
+matrix of the marker effects among traits. Only used when fastMode is
+TRUE. If value is NULL, this and Ve are estimated by REML. See details.}
+
+\item{Ve}{error variance, or for several traits the covariance matrix of
+the errors among traits, which must be positive definite. Only used when
+fastMode is TRUE. If value is NULL, this and Vu are estimated by REML.
+See details.}
+
+\item{nSubsample}{the number of records used to estimate the variance
+components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+when fastMode is FALSE. A value of zero uses every record, which is only
+advisable for small training populations, because the memory needed grows
+with the square of this value.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -46,7 +71,44 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model for genomic predictions.
+Fits an RR-BLUP model for genomic predictions. Fixed effects are fit
+using the levels of the population's fixEff slot.
+
+By default, the model is solved directly, through an eigendecomposition
+of whichever of the marker and record cross products is smaller, after
+the variance components are estimated by REML. Several traits are fitted
+together as a multiple trait model with unstructured covariance matrices
+among the traits for the marker effects and for the errors.
+
+Setting fastMode to TRUE gives a fast and low memory alternative for
+training populations too large to fit directly. The mixed model equations
+are then solved by preconditioned conjugate gradient, iterating over the
+genotypes rather than over a stored coefficient matrix
+\insertCite{stranden1999Solving}{AlphaSimR}. Neither the coefficient
+matrix nor a numeric copy of the genotypes is formed, so memory use stays
+close to the size of the genotypes, and the iteration is shared across
+nThreads.
+
+In fast mode, several traits are fitted together as a multiple trait
+model, in which the traits' marker effects are correlated through Vu and
+their errors through Ve. Every trait must then be recorded on every
+individual. The traits are separated by a canonical transformation, which
+is exact when every trait is recorded and they share their fixed effects,
+and the transformed traits are solved together by conjugate gradient, each
+with its own recurrence and test of convergence. Each iteration costs about
+as much as one iteration for each trait on its own, so a fit to several
+traits takes about as long as fitting them one at a time, while the memory
+used stays close to the size of the genotypes.
+
+In fast mode, variance components are estimated by REML when they are not
+supplied. REML needs a matrix decomposition whose cost is the square of the
+number of records in memory and their cube in time, which is what fast mode
+is built to avoid, so the estimate is taken from a random subset of the
+records set by nSubsample. Variance components are nuisance parameters
+for genomic prediction and are estimated far more precisely than a
+breeding program needs, so a few thousand records give values good
+enough to shrink with. The marker effects are always solved for using
+every record.
 }
 \examples{
 #Create founder haplotypes
@@ -69,4 +131,10 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+#Run GS model in fast mode
+ans = RRBLUP(pop, fastMode=TRUE, simParam=SP)
+
+}
+\references{
+\insertAllCited{}
 }

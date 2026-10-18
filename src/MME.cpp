@@ -1172,13 +1172,13 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   double delta = fastLMMDelta(args);
   FastLMMFit fit = fastLMMFit(delta, yt, Xt, eigval, yy0, Xy0, XX0, nNull);
   if(!fit.ok){
-    Rcpp::stop("fastRRBLUP: could not estimate the variance components");
+    Rcpp::stop("RRBLUP fastMode: could not estimate the variance components");
   }
   Vu = fit.r/df;
   Ve = delta*Vu;
 }
 
-// Called by fastRRBLUP function
+// Called by RRBLUP with fastMode TRUE
 // Solves the mixed model equations of an RR-BLUP model by preconditioned
 // conjugate gradient, iterating on the genotypes rather than on a stored
 // coefficient matrix. See Stranden and Lidauer (1999),
@@ -1274,7 +1274,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
       remlFromGram(Vu, Ve, ySub, XSub, K);
     }
     if(!(Vu>0.0)){
-      Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
+      Rcpp::stop("RRBLUP fastMode: estimated marker variance is not positive");
     }
   }
   double lambda = Ve/Vu;
@@ -1596,7 +1596,7 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
   }
 }
 
-// Called by fastRRBLUP function for more than one trait
+// Called by RRBLUP with fastMode TRUE for more than one trait
 //
 // The model is the multiple trait RR-BLUP model, with the marker effects of
 // the traits correlated through Vu and the errors through Ve, and every trait
@@ -1632,7 +1632,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                              arma::uvec subset, int nThreads){
   const arma::uword nT = Y.n_cols;
   if(!Y.is_finite()){
-    Rcpp::stop("fastRRBLUP: every trait must be recorded on every individual");
+    Rcpp::stop("RRBLUP fastMode: every trait must be recorded on every individual");
   }
   PackedGeno g(pop);
   LociPos pos = findLoci(g, lociPerChr, lociLoc);
@@ -1640,7 +1640,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   arma::uword nInd = g.nInd;
   arma::uword nLoci = pos.base.size();
   if(Y.n_rows!=nInd){
-    Rcpp::stop("fastRRBLUP: the responses must have one row per individual");
+    Rcpp::stop("RRBLUP fastMode: the responses must have one row per individual");
   }
   arma::Mat<unsigned char> M = decodeChipDosage(g, pos, nThreads);
   double dP = double(ploidy);
@@ -1687,30 +1687,30 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   }
   if( (Vu.n_rows!=nT) || (Vu.n_cols!=nT) ||
       (Ve.n_rows!=nT) || (Ve.n_cols!=nT) ){
-    Rcpp::stop("fastRRBLUP: Vu and Ve must be square with one row per trait");
+    Rcpp::stop("RRBLUP fastMode: Vu and Ve must be square with one row per trait");
   }
   // Vu is checked on its own scale. After the transformation below its
   // eigenvalues are measured against those of Ve^-1, so an error variance
   // close to zero for one trait could make a clearly negative variance of
   // another look like rounding. A negative eigenvalue at rounding level is
   // set to zero, and the Vu returned is the one fitted.
-  Vu = psdKernel(Vu, "fastRRBLUP: Vu must be positive semidefinite");
+  Vu = psdKernel(Vu, "RRBLUP fastMode: Vu must be positive semidefinite");
 
   // The canonical transformation
   arma::mat Le;
   if(!arma::chol(Le, Ve, "lower")){
-    Rcpp::stop("fastRRBLUP: Ve must be positive definite");
+    Rcpp::stop("RRBLUP fastMode: Ve must be positive definite");
   }
   arma::mat Linv;
   if(!arma::inv(Linv, arma::trimatl(Le))){
-    Rcpp::stop("fastRRBLUP: Ve must be positive definite");
+    Rcpp::stop("RRBLUP fastMode: Ve must be positive definite");
   }
   arma::mat A = Linv*Vu*Linv.t();
   A = 0.5*(A+A.t());
   arma::vec lam;
   arma::mat Qv;
   if(!arma::eig_sym(lam, Qv, A)){
-    Rcpp::stop("fastRRBLUP: decomposition of Vu failed");
+    Rcpp::stop("RRBLUP fastMode: decomposition of Vu failed");
   }
   // These are the eigenvalues of a covariance matrix among traits, not of a
   // cross product of records, so rankCutoff does not apply. Vu has been
@@ -1721,7 +1721,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   // comparable: an error variance close to zero for one trait makes its ratio
   // huge without making any other trait's ratio negligible.
   if(!(lam.max()>0.0)){
-    Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
+    Rcpp::stop("RRBLUP fastMode: estimated marker variance is not positive");
   }
   lam.elem(find(lam<0.0)).zeros();
   arma::vec sqrtLam = sqrt(lam);

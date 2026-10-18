@@ -10,6 +10,7 @@ RRBLUPMemUse(
   model = "RRBLUP",
   nTraits = 1L,
   nFixEff = 1L,
+  fastMode = FALSE,
   nSubsample = 5000L,
   useEM = TRUE
 )
@@ -20,22 +21,27 @@ RRBLUPMemUse(
 \item{nMarker}{the number of markers per individual}
 
 \item{model}{the model being fitted, given as the name of the function
-that fits it. One of "fastRRBLUP", "RRBLUP", "RRBLUP2", "RRBLUP_D",
-"RRBLUP_D2", "RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
+that fits it. One of "RRBLUP", "RRBLUP2", "RRBLUP_D", "RRBLUP_D2",
+"RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
 The older values "REG", "GCA" and "SCA" are still accepted and are read as
-"RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".}
+"RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA", and "fastRRBLUP" is read as
+"RRBLUP" with fastMode TRUE.}
 
 \item{nTraits}{the number of traits fitted at once.
-\code{\link{fastRRBLUP}}, \code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
+\code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
 \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} fit more than one;
 the numbered models fit one.}
 
 \item{nFixEff}{the number of fixed effect levels, which is the number of
 distinct values in the population's fixEff slot.}
 
-\item{nSubsample}{the number of records \code{\link{fastRRBLUP}} uses to
-estimate variance components. Ignored by every other model, and by
-fastRRBLUP itself when Vu and Ve are supplied.}
+\item{fastMode}{whether \code{\link{RRBLUP}} will be fitted with
+fastMode TRUE. Ignored by every other model.}
+
+\item{nSubsample}{the number of records \code{\link{RRBLUP}} uses to
+estimate variance components when fastMode is TRUE. Ignored by every
+other model, by RRBLUP when fastMode is FALSE, and in fast mode when Vu
+and Ve are supplied.}
 
 \item{useEM}{whether the numbered models will estimate their variance
 components. Estimating them holds one more square matrix, and for
@@ -59,9 +65,9 @@ the genotypes of the loci that are not markers.
 The models differ in what they have to hold in memory, and the differences
 are large enough to decide which one is usable.
 
-\code{\link{fastRRBLUP}} reads the genotypes as one byte per locus, then
-frees them and iterates over a copy packed to one bit per allele, so it
-holds no square matrix at all. Its estimate is
+\code{\link{RRBLUP}} with fastMode TRUE reads the genotypes as one byte
+per locus, then frees them and iterates over a copy packed to one bit per
+allele, so it holds no square matrix at all. Its estimate is
 dominated by the genotypes themselves and by the subset of records used
 for the variance components. Fitted to several traits, it holds a few
 vectors of markers and of records per trait, and the variance components
@@ -104,7 +110,7 @@ needed grows with the square of the number of traits.
 RRBLUPMemUse(nInd=1000, nMarker=5000)
 
 # The same training data, fitted three ways
-RRBLUPMemUse(nInd=5000, nMarker=2000, model="fastRRBLUP")
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP", fastMode=TRUE)
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
 
