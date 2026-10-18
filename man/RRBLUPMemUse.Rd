@@ -35,13 +35,15 @@ the numbered models fit one.}
 \item{nFixEff}{the number of fixed effect levels, which is the number of
 distinct values in the population's fixEff slot.}
 
-\item{fastMode}{whether \code{\link{RRBLUP}} will be fitted with
-fastMode TRUE. Ignored by every other model.}
+\item{fastMode}{whether to estimate the memory of the fast mode of
+\code{\link{RRBLUP}}, \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}}
+or \code{\link{RRBLUP_SCA}}. Ignored by every other model. A model given
+fastMode TRUE uses fast mode only where it is expected to be faster, and
+otherwise needs the memory estimated with fastMode FALSE.}
 
-\item{nSubsample}{the number of records \code{\link{RRBLUP}} uses to
-estimate variance components when fastMode is TRUE. Ignored by every
-other model, by RRBLUP when fastMode is FALSE, and in fast mode when Vu
-and Ve are supplied.}
+\item{nSubsample}{the number of records used to estimate variance
+components in fast mode. Ignored when fastMode is FALSE, by the models
+without a fast mode, and in fast mode when Vu and Ve are supplied.}
 
 \item{useEM}{whether the numbered models will estimate their variance
 components. Estimating them holds one more square matrix, and for
@@ -95,6 +97,17 @@ methods holds the smaller square matrix. Its estimate therefore depends on
 useEM, and with useEM false it grows with the number of records once the
 markers outnumber them.
 
+The GCA, SCA and dominance models with fastMode TRUE hold the markers
+packed to one bit per allele, assumed here to be a diploid's two bits per
+marker, and no square matrix of the markers or the records. Their
+iteration holds a few matrices of markers by terms and traits, and a block
+of the preconditioner for every marker, whose size is the square of the
+number of terms times the number of traits. Before that, the variance
+components are estimated by the same model on the subset of records,
+given each term's markers or, with more markers than records in the
+subset, a factor of their cross product, which holds a square matrix of
+the subset for each term.
+
 The GCA, SCA and dominance models fit more than one random effect. They
 work with whichever of two forms is cheaper: a square matrix of the
 records, holding several of them when there are more marker effects than
@@ -109,10 +122,11 @@ needed grows with the square of the number of traits.
 \examples{
 RRBLUPMemUse(nInd=1000, nMarker=5000)
 
-# The same training data, fitted three ways
+# The same training data, fitted several ways
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP", fastMode=TRUE)
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA", fastMode=TRUE)
 
 # RRBLUP2 with more markers than records, with and without estimating
 # variance components. The two use different methods and different memory.

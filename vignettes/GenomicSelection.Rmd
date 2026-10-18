@@ -164,7 +164,7 @@ matter of memory and speed.
 | Performance of an individual with dominance | `RRBLUP_D` | `"gv"` |
 | GCA of inbreds in a two-pool hybrid program | `RRBLUP_GCA` | `"female"`, `"male"` |
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
-| Additive trait and training population too large to fit | `RRBLUP` with `fastMode=TRUE` | `"bv"` or `"gv"` |
+| Training population too large to fit | The model above with `fastMode=TRUE` | as for that model |
 
 **`RRBLUP`** is the default choice. It fits additive marker effects. If
 you are unsure, start here. Every model in this table can also fit
@@ -196,12 +196,16 @@ notes that no consistent benefit over `RRBLUP_GCA` has been observed in
 `AlphaSimR`'s own testing, so it is worth checking both in your own
 simulation rather than assuming the more complex model wins.
 
-**`RRBLUP` with `fastMode=TRUE`** is the escape hatch for size. It solves
-the same additive model but never forms a square matrix to solve it,
-so its memory cost stays close to the cost of the genotypes themselves and
-of the subset of records it uses for the variance components. Use it
-when the training population has grown large enough that the others will
-not fit.
+**`fastMode=TRUE`** is the escape hatch for size. `RRBLUP`, `RRBLUP_D`,
+`RRBLUP_GCA` and `RRBLUP_SCA` all take it. Each still fits the same model,
+but never forms a square matrix to solve it, so its memory cost stays close
+to the cost of the genotypes themselves and of the subset of records it
+uses for the variance components. Use it when the training population has
+grown large enough that the default mode will not fit. Fast mode is a
+request rather than a command: the cost of both ways of fitting is
+estimated, and fast mode is used only when it is expected to take less than
+half as long, and never when `nSubsample` covers every record. Otherwise the
+model is fitted exactly as without it.
 
 ### Fitting several traits
 
@@ -261,9 +265,9 @@ as fitting the traits one at a time. The dominance and hybrid models
 cannot use that rotation. Every record and every marker effect is counted
 once per trait, so a fit to three traits can take several times as long
 as three single trait fits; `RRBLUPMemUse` takes the number of traits into
-account. `RRBLUP` with `fastMode=TRUE` keeps its memory close to the size
-of the genotypes however many traits are fitted, so it stays the choice for
-a large training population.
+account. With `fastMode=TRUE`, every model keeps its memory close to the
+size of the genotypes however many traits are fitted, so fast mode stays the
+choice for a large training population.
 
 ### Fitting the same model more cheaply
 
@@ -402,7 +406,7 @@ they give up:
 
 - Refit every cycle with `RRBLUP2` and fixed `Vu` and `Ve`, taken from
   one full `RRBLUP` fit at the start.
-- Refit every cycle with `RRBLUP` and `fastMode=TRUE`, whose cost grows far more slowly
+- Refit every cycle with `fastMode=TRUE`, whose cost grows far more slowly
   with the number of records.
 - Refit every *k* cycles and reuse the solution in between. A solution
   is an ordinary object; nothing stops you applying it to several
@@ -558,12 +562,13 @@ The cost of these models is driven by the number of training records and
 the number of markers, and the balance between the two decides which
 implementation to use. `RRBLUPMemUse` estimates the memory required, and
 takes the model as the name of the function that fits it, with
-`fastMode` for the fast mode of `RRBLUP`:
+`fastMode` for the fast mode of a model:
 
 ```{r}
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP", fastMode = TRUE)
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP")
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA")
+RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA", fastMode = TRUE)
 ```
 
 The estimate covers the matrices the solvers hold at their peak, not the
@@ -686,6 +691,21 @@ covariance matrices by the multiple trait REML of `RRBLUP`'s default mode on the
 subset, separates the traits with a canonical transformation, and solves
 them together by conjugate gradient, which takes about as long as solving
 each trait on its own.
+
+**`RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` with `fastMode=TRUE`** work the
+same way, but have two or three random terms, each with its own variance,
+or for several traits its own covariance matrix. The canonical
+transformation cannot separate them, so the effects of every term and trait
+are solved together as one system by conjugate gradient. The responses are
+first whitened by `Ve`, which makes the coefficient matrix the identity plus
+a positive semidefinite matrix whatever the variance components are, and the
+iteration is preconditioned with a small block for each marker that covers
+every term and trait, because the codes of different terms at one marker are
+correlated. The variance components come from the default mode's REML on the
+subset of records. An iteration costs about as much as one product with the
+genotypes for each term and trait, so the time taken grows with the number
+of terms times the number of traits, while the memory stays close to the
+size of the genotypes. `RRBLUP_SCA` supports fast mode for diploids only.
 
 ## Fixed effects
 

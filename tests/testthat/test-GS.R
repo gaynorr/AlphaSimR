@@ -621,6 +621,15 @@ test_that("the dominance and hybrid models are not affected by the number of thr
   }
 })
 
+# Fast mode is only taken when it is expected to be faster, which it never is
+# on a population small enough to check against a dense solution. This takes
+# it whatever it is expected to cost.
+forceFast = function(expr){
+  old = options(AlphaSimR.fastModeRoute="fast")
+  on.exit(options(old))
+  expr
+}
+
 # Multiple trait fast mode RRBLUP. With the variance components supplied it is
 # the BLUP of the multiple trait model, which Henderson's equations give
 # directly for a population small enough to write them out in R. With every
@@ -696,8 +705,8 @@ test_that("multiple trait fast mode RRBLUP agrees with RRBLUP on every record", 
   # the record cross product built from the genotypes
   for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
     d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
-    ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nSubsample=0L,
-                 simParam=d$SP)
+    ans = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nSubsample=0L,
+                           simParam=d$SP))
     ref = RRBLUP(d$pop, traits=1:3, simParam=d$SP)
     info = paste("nInd", size[["nInd"]])
     expect_equal(unname(ans@Vu), unname(ref@Vu), tolerance=1e-8, info=info)
@@ -716,8 +725,8 @@ test_that("fast mode RRBLUP predicts the same genetic values as RRBLUP", {
   # Taking it from the centered ones shifts every prediction by Mmean*u,
   # which is not zero in general, so this checks a trait where it is not.
   d = mvPop(nInd=80, nSnp=15)
-  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1, nSubsample=0L,
-               simParam=d$SP)
+  ans = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1, nSubsample=0L,
+                         simParam=d$SP))
   ref = RRBLUP(d$pop, traits=1, simParam=d$SP)
   expect_gt(abs(ref@bv[[1]]@intercept), 1e-8)
   expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
@@ -831,10 +840,300 @@ test_that("multiple trait fast mode RRBLUP is not affected by the number of thre
   skip_on_cran()
   skip_if(getNumThreads() < 2L)
   d = mvPop(nInd=80, nSnp=15)
-  one = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=1L,
-               simParam=d$SP)
-  two = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=2L,
-               simParam=d$SP)
+  one = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=1L,
+                         simParam=d$SP))
+  two = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=2L,
+                         simParam=d$SP))
   expect_identical(addEffAll(one), addEffAll(two))
   expect_identical(one@Vu, two@Vu)
+})
+
+# Fast mode of the multikernel models. With the variance components supplied
+# it is the BLUP of the model the direct form fits, which Henderson's
+# equations give directly for a population small enough to write them out in
+# R. With every record used for the variance components it is the same REML
+# fit as the direct form, so the two have to agree.
+
+mkModels = list(RRBLUP_D=RRBLUP_D, RRBLUP_GCA=RRBLUP_GCA,
+                RRBLUP_SCA=RRBLUP_SCA)
+
+# Each random term's codes, as the direct form of the model builds them
+mkCodes = function(model, pop, SP){
+  P = pop@ploidy
+  x = pullSnpGeno(pop, simParam=SP)
+  dom = x*(P-x)*(2/P)^2
+  if(model=="RRBLUP_D"){
+    return(lapply(list((x-P/2)*(2/P), dom), unname))
+  }
+  H = pullSnpHaplo(pop, simParam=SP)
+  hap = rep(seq_len(P), pop@nInd)
+  ind = rep(seq_len(pop@nInd), each=P)
+  half = P/2
+  code = function(take){
+    (rowsum(H[take, , drop=FALSE], ind[take]) - half/2)*(2/half)
+  }
+  codes = list(code(hap<=half), code(hap>half))
+  if(model=="RRBLUP_SCA"){
+    codes[[3]] = dom
+  }
+  return(lapply(codes, unname))
+}
+
+# The fixed effects of the direct form: the sum to zero design of makeX, and
+# for the models with dominance the summed dominance codes
+mkFixed = function(model, pop, codes){
+  f = factor(pop@fixEff)
+  X = model.matrix(~f, contrasts.arg=list(f="contr.sum"))
+  if(model!="RRBLUP_GCA"){
+    X = cbind(X, rowSums(codes[[length(codes)]]))
+  }
+  return(unname(X))
+}
+
+# Henderson's equations for the multikernel model with known Vu and Ve
+denseMkBlup = function(Y, X, Mlist, Vu, Ve){
+  Y = as.matrix(Y)
+  nT = ncol(Y)
+  W = cbind(kronecker(diag(nT), X),
+            do.call(cbind, lapply(Mlist, function(M) kronecker(diag(nT), M))))
+  Rinv = kronecker(solve(Ve), diag(nrow(Y)))
+  C = crossprod(W, Rinv %*% W)
+  idx = list()
+  at = ncol(X)*nT
+  for(k in seq_along(Mlist)){
+    idx[[k]] = at+seq_len(ncol(Mlist[[k]])*nT)
+    at = max(idx[[k]])
+    C[idx[[k]], idx[[k]]] = C[idx[[k]], idx[[k]]] +
+      kronecker(solve(Vu[[k]]), diag(ncol(Mlist[[k]])))
+  }
+  sol = solve(C, crossprod(W, Rinv %*% c(Y)))
+  beta = matrix(sol[seq_len(ncol(X)*nT)], ncol(X), nT)
+  u = lapply(seq_along(Mlist),
+             function(k) matrix(sol[idx[[k]]], ncol(Mlist[[k]]), nT))
+  return(list(beta=beta, u=u))
+}
+
+# The effects a fit returns that come straight from the model, one matrix per
+# term with a column per trait
+mkEffects = function(model, ans){
+  get = function(s, what){
+    unname(sapply(slot(ans, s), function(x) slot(x, what)))
+  }
+  if(model=="RRBLUP_D"){
+    return(list(get("gv", "addEff"), get("gv", "domEff")))
+  }
+  if(model=="RRBLUP_GCA"){
+    return(list(get("female", "addEff"), get("male", "addEff")))
+  }
+  return(list(get("gv", "addEff"), get("gv", "addEffMale"),
+              get("gv", "domEff")))
+}
+
+# What mkEffects should return for a dense solution. Dominance effects
+# include the effect of the summed dominance codes, and are zero at markers
+# where every individual has the same genotype.
+mkExpected = function(model, ref, codes){
+  eff = lapply(ref$u, function(u) unname(as.matrix(u)))
+  if(model!="RRBLUP_GCA"){
+    k = length(eff)
+    meanD = ref$beta[nrow(ref$beta), ]
+    if(model=="RRBLUP_SCA"){
+      dose = codes[[1]]+codes[[2]]
+    }else{
+      dose = codes[[1]]
+    }
+    fixed = apply(dose, 2, function(x) all(x==x[1]))
+    eff[[k]] = sweep(eff[[k]], 2, meanD, "+")
+    eff[[k]][fixed, ] = 0
+  }
+  return(eff)
+}
+
+mkVu = function(model, nTraits){
+  nTerm = if(model=="RRBLUP_SCA") 3 else 2
+  scale = c(1, 0.5, 0.3)[seq_len(nTerm)]
+  if(nTraits==1){
+    return(0.02*scale)
+  }
+  return(lapply(scale, function(s) s*mvVu))
+}
+
+test_that("fast mode multikernel models are the BLUP of their models", {
+  for(model in names(mkModels)){
+    for(ploidy in c(2L, 4L)){
+      if( (model=="RRBLUP_SCA") & (ploidy!=2L) ) next
+      d = mvPop(nInd=80, nSnp=15, ploidy=ploidy)
+      codes = mkCodes(model, d$pop, d$SP)
+      X = mkFixed(model, d$pop, codes)
+      for(traits in list(1L, 1:3)){
+        nT = length(traits)
+        Vu = mkVu(model, nT)
+        Ve = if(nT==1) 1 else mvVe
+        ans = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                                Ve=Ve, simParam=d$SP)
+        VuList = if(nT==1) as.list(Vu) else Vu
+        ref = denseMkBlup(d$pop@pheno[, traits, drop=FALSE], X, codes,
+                          lapply(VuList, as.matrix), as.matrix(Ve))
+        info = paste(model, "ploidy", ploidy, "traits", nT)
+        eff = mkEffects(model, ans)
+        expected = mkExpected(model, ref, codes)
+        for(k in seq_along(eff)){
+          # It iterates rather than solving, so it is held to a looser
+          # tolerance
+          expect_equal(matrix(eff[[k]], ncol=nT), expected[[k]],
+                       tolerance=1e-6, info=paste(info, "term", k))
+        }
+        # The intercept goes with the uncentered codes, as in the direct form
+        expect_equal(sapply(ans@gv, function(x) x@intercept), ref$beta[1, ],
+                     tolerance=1e-6, info=info)
+      }
+    }
+  }
+})
+
+test_that("fast mode multikernel models agree with direct mode on every record", {
+  skip_on_cran()
+  # More records than markers gives the REML fit the codes, and fewer gives
+  # it a factor of their cross product
+  for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
+    d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
+    for(model in names(mkModels)){
+      for(traits in list(1L, 1:2)){
+        info = paste(model, "nInd", size[["nInd"]], "traits", length(traits))
+        ans = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                          fastMode=TRUE, nSubsample=0L,
+                                          simParam=d$SP))
+        ref = mkModels[[model]](d$pop, traits=traits, simParam=d$SP)
+        expect_equal(ans@Vu, ref@Vu, tolerance=1e-6, info=info)
+        expect_equal(ans@Ve, ref@Ve, tolerance=1e-6, info=info)
+        if(model=="RRBLUP_D"){
+          values = c("gv", "bv")
+        }else{
+          values = c("gv", "female", "male")
+        }
+        for(value in values){
+          expect_equal(setEBV(d$pop, ans, value=value, onlyValues=TRUE,
+                              simParam=d$SP),
+                       setEBV(d$pop, ref, value=value, onlyValues=TRUE,
+                              simParam=d$SP),
+                       tolerance=1e-5, info=paste(info, value))
+        }
+      }
+    }
+  }
+})
+
+test_that("fast mode multikernel models take back their own variance components", {
+  d = mvPop(nInd=60, nSnp=12)
+  for(model in names(mkModels)){
+    for(traits in list(1L, 1:2)){
+      fit = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, simParam=d$SP))
+      again = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE,
+                                Vu=fit@Vu, Ve=fit@Ve, simParam=d$SP)
+      info = paste(model, length(traits))
+      expect_equal(again@Vu, fit@Vu, info=info)
+      expect_equal(mkEffects(model, again), mkEffects(model, fit),
+                   tolerance=1e-8, info=info)
+    }
+  }
+})
+
+test_that("a term with no variance has no effects in fast mode", {
+  d = mvPop(nInd=60, nSnp=12)
+  ans = RRBLUP_D(d$pop, fastMode=TRUE, Vu=c(0.02, 0), Ve=1, simParam=d$SP)
+  dom = ans@gv[[1]]@domEff
+  # Every dominance effect is the effect of the summed dominance codes, or
+  # zero where the marker is fixed
+  expect_lte(length(unique(dom[dom!=0])), 1L)
+  expect_gt(max(abs(ans@gv[[1]]@addEff)), 0)
+})
+
+test_that("fast mode multikernel models check their arguments", {
+  d = mvPop(nInd=40, nSnp=10)
+  for(model in names(mkModels)){
+    fit = mkModels[[model]]
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    expect_error(fit(d$pop, Vu=rep(0.01, nTerm), simParam=d$SP),
+                 "fastMode", info=model)
+    expect_error(fit(d$pop, fastMode=TRUE, Vu=0.01, Ve=1, simParam=d$SP),
+                 "one value per random term", info=model)
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE,
+                     Vu=matrix(0.01, 2*nTerm, 2*nTerm),
+                     Ve=diag(2), simParam=d$SP),
+                 "block diagonal", info=model)
+    Vu = rep(list(diag(2)), nTerm)
+    Vu[[1]] = diag(c(0.01, -0.01))
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE, Vu=Vu, Ve=diag(2),
+                     simParam=d$SP),
+                 "positive semidefinite", info=model)
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE,
+                     Vu=rep(list(diag(2)), nTerm), Ve=diag(c(1, 0)),
+                     simParam=d$SP),
+                 "positive definite", info=model)
+    expect_warning(fit(d$pop, fastMode=TRUE, Vu=rep(0.01, nTerm), Ve=1,
+                       maxIter=1L, simParam=d$SP),
+                   "without converging", info=model)
+  }
+  d4 = mvPop(nInd=40, nSnp=10, ploidy=4L)
+  expect_error(forceFast(RRBLUP_SCA(d4$pop, fastMode=TRUE, simParam=d4$SP)),
+               "only diploids")
+})
+
+test_that("fast mode multikernel models are not affected by the number of threads", {
+  skip_on_cran()
+  skip_if(getNumThreads() < 2L)
+  d = mvPop(nInd=80, nSnp=15)
+  for(model in names(mkModels)){
+    for(traits in list(1L, 1:3)){
+      one = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, nThreads=1L,
+                                        simParam=d$SP))
+      two = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, nThreads=2L,
+                                        simParam=d$SP))
+      info = paste(model, length(traits))
+      expect_identical(mkEffects(model, one), mkEffects(model, two),
+                       info=info)
+      expect_identical(one@Vu, two@Vu, info=info)
+    }
+  }
+})
+
+test_that("RRBLUPMemUse counts the fast mode of the multikernel models", {
+  for(m in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+    small = RRBLUPMemUse(nInd=500, nMarker=500, model=m, fastMode=TRUE)
+    large = RRBLUPMemUse(nInd=20000, nMarker=5000, model=m, fastMode=TRUE)
+    expect_true(is.finite(small), info=m)
+    expect_gt(large, small)
+    # Far less than the direct form once the records are many
+    expect_lt(large, RRBLUPMemUse(nInd=20000, nMarker=5000, model=m),
+              label=m)
+    expect_gt(RRBLUPMemUse(nInd=20000, nMarker=5000, model=m, nTraits=3,
+                           fastMode=TRUE), large)
+  }
+})
+
+test_that("fast mode is taken only when it is expected to be faster", {
+  route = AlphaSimR:::useFastRoute
+  # Supplied variance components need the fast route
+  expect_true(route("RRBLUP_D", 0.1, 1, 100, 50, 1, 1, 5000))
+  # A subset of every record would repeat the direct fit
+  expect_false(route("RRBLUP_D", NULL, NULL, 4000, 50000, 1, 1, 5000))
+  expect_false(route("RRBLUP_D", NULL, NULL, 50000, 50000, 1, 1, 0))
+  # Many records and many markers favor the fast route
+  for(m in c("RRBLUP", "RRBLUP_D", "RRBLUP_GCA", "RRBLUP_SCA")){
+    expect_true(route(m, NULL, NULL, 50000, 20000, 1, 1, 2000), info=m)
+  }
+  # Few markers make the direct fit of RRBLUP cheap
+  expect_false(route("RRBLUP", NULL, NULL, 20000, 500, 1, 1, 2000))
+})
+
+test_that("fast mode that is not expected to be faster fits the direct form", {
+  d = mvPop(nInd=60, nSnp=12)
+  for(model in c("RRBLUP", names(mkModels))){
+    fit = get(model)
+    expect_identical(fit(d$pop, fastMode=TRUE, simParam=d$SP),
+                     fit(d$pop, simParam=d$SP), info=model)
+  }
 })

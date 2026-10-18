@@ -36,14 +36,19 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations. When fastMode is FALSE, it
-is only used when the number of traits is greater than 1, and limits the
-iterations of the REML fit. When fastMode is TRUE, it limits the
-iterations of the conjugate gradient solver.}
+\item{maxIter}{maximum number of iterations. In fast mode, it limits the
+iterations of the conjugate gradient solver. Otherwise it is only used
+when the number of traits is greater than 1, and limits the iterations of
+the REML fit.}
 
 \item{fastMode}{should the model be solved by preconditioned conjugate
-gradient, using less time and memory for large training populations.
-See details.}
+gradient where that is expected to be faster, as it is for large training
+populations. The cost of both ways of fitting the model is estimated from
+the numbers of records, markers, traits and nSubsample, and fast mode is
+used only when its cost is less than half that of the default, and never
+when nSubsample covers every record. Otherwise the model is fitted as it
+is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+always uses fast mode. See details.}
 
 \item{Vu}{marker effect variance, or for several traits the covariance
 matrix of the marker effects among traits. Only used when fastMode is
@@ -81,7 +86,8 @@ together as a multiple trait model with unstructured covariance matrices
 among the traits for the marker effects and for the errors.
 
 Setting fastMode to TRUE gives a fast and low memory alternative for
-training populations too large to fit directly. The mixed model equations
+training populations too large to fit directly. It is used only where it
+is expected to be faster, see fastMode. The mixed model equations
 are then solved by preconditioned conjugate gradient, iterating over the
 genotypes rather than over a stored coefficient matrix
 \insertCite{stranden1999Solving}{AlphaSimR}. Neither the coefficient

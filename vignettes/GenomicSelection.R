@@ -160,6 +160,7 @@ cor(ebv(trainPop)[, 1], gv(trainPop)[, 1])
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP", fastMode = TRUE)
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP")
 RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA")
+RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA", fastMode = TRUE)
 
 ## -----------------------------------------------------------------------------
 class(ans)
