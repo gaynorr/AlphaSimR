@@ -83,6 +83,14 @@ candidates = setEBV(candidates, ans2, simParam = SP)
 
 cor(ebv(candidates)[, 1], gv(candidates)[, 1])
 
+## -----------------------------------------------------------------------------
+mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
+                  Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
+candidatesFast = setEBV(candidates2, mvFast, simParam = SP2)
+
+# The default mode's predictions and fast mode's agree
+diag(cor(ebv(candidatesFast), ebv(candidates2)))
+
 ## ----eval=FALSE---------------------------------------------------------------
 # # Predict every DH and advance the best to the first yield trial
 # DH = setEBV(DH, gsModel, simParam = SP)

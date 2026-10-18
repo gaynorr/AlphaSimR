@@ -265,9 +265,13 @@ as fitting the traits one at a time. The dominance and hybrid models
 cannot use that rotation. Every record and every marker effect is counted
 once per trait, so a fit to three traits can take several times as long
 as three single trait fits; `RRBLUPMemUse` takes the number of traits into
-account. With `fastMode=TRUE`, every model keeps its memory close to the
-size of the genotypes however many traits are fitted, so fast mode stays the
-choice for a large training population.
+account. With `fastMode=TRUE`, the solve for the marker effects keeps its
+memory close to the size of the genotypes however many traits are fitted, but
+the variance components are still estimated by the default mode's REML on the
+`nSubsample` records, and that fit grows with the number of traits just as the
+default mode does. For several traits on a large training population it
+dominates both the time and the memory. Supplying `Vu` and `Ve`, or a smaller
+`nSubsample`, avoids it, as described next.
 
 ### Fitting the same model more cheaply
 
@@ -275,9 +279,9 @@ choice for a large training population.
 counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
 fit *exactly the same models* and differ only in how the equations are
 solved, except that the numbered versions fit one trait at a time, while
-the unnumbered ones can fit several. `RRBLUP2` does not have a fast mode. The practical reason to
-care is that the numbered versions let you supply the variance
-components and skip estimating them:
+the unnumbered ones can fit several. None of the numbered models has a
+fast mode. The practical reason to care is that the numbered versions let
+you supply the variance components and skip estimating them:
 
 ```{r}
 ans2 = RRBLUP2(trainPop, Vu = ans@Vu[1, 1], Ve = ans@Ve[1, 1],
@@ -296,6 +300,24 @@ re-training. Whether holding the variance components fixed is acceptable
 depends on how far the population drifts over the simulation, and that
 is a question only the simulation can answer - check against a full
 re-fit before relying on it.
+
+The unnumbered models take supplied variance components too, in fast mode.
+Giving `Vu` and `Ve` with `fastMode=TRUE` always uses fast mode, because the
+default mode cannot use them, and skips the REML fit, leaving only the solve
+for the marker effects. Unlike `RRBLUP2`, this works for several traits and
+for the dominance and hybrid models, and a fit's own `Vu` and `Ve` slots can
+be passed back as they are, including the block diagonal `Vu` of the
+dominance and hybrid models. Refitting the multiple trait dominance model
+from above with its own variance components gives the same predictions:
+
+```{r}
+mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
+                  Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
+candidatesFast = setEBV(candidates2, mvFast, simParam = SP2)
+
+# The default mode's predictions and fast mode's agree
+diag(cor(ebv(candidatesFast), ebv(candidates2)))
+```
 
 If you let the numbered models estimate the variance components
 themselves they use an EM algorithm, which is slower and less reliable
@@ -406,8 +428,13 @@ they give up:
 
 - Refit every cycle with `RRBLUP2` and fixed `Vu` and `Ve`, taken from
   one full `RRBLUP` fit at the start.
-- Refit every cycle with `fastMode=TRUE`, whose cost grows far more slowly
-  with the number of records.
+- Refit every cycle with `fastMode=TRUE` and fixed `Vu` and `Ve`, which
+  leaves only the solve for the marker effects, whose cost grows far more
+  slowly with the number of records than a full fit's. This also works for
+  several traits and for the dominance and hybrid models. Without supplied
+  variance components, fast mode is used only when it is expected to be
+  faster, and most of its time goes on estimating them from the subset of
+  records.
 - Refit every *k* cycles and reuse the solution in between. A solution
   is an ordinary object; nothing stops you applying it to several
   generations of candidates.
@@ -573,7 +600,9 @@ RRBLUPMemUse(nInd = 5000, nMarker = 2000, model = "RRBLUP_SCA", fastMode = TRUE)
 
 The estimate covers the matrices the solvers hold at their peak, not the
 population object or the rest of the session, so it is a lower bound on
-what the simulation needs. It is most useful for spotting the point at
+what the simulation needs. With `fastMode = TRUE` it estimates fast mode
+itself. A model given `fastMode=TRUE` uses fast mode only when it is
+expected to be faster, and otherwise needs the memory estimated without it. It is most useful for spotting the point at
 which a training population outgrows the machine.
 
 ## What the models fit
@@ -706,6 +735,23 @@ subset of records. An iteration costs about as much as one product with the
 genotypes for each term and trait, so the time taken grows with the number
 of terms times the number of traits, while the memory stays close to the
 size of the genotypes. `RRBLUP_SCA` supports fast mode for diploids only.
+
+Some combinations of effects cannot be told apart by the records at all.
+For inbred lines, whose two haplotypes are the same, the maternal and
+paternal codes of `RRBLUP_GCA` coincide, and only the prior decides how an
+effect is split between the two parents. Fast mode finds those combinations
+at each marker and removes them exactly, so the split follows the variance
+components however large the variance ratio. Iteration stops only when the
+residual bounds the error of the marker effects, as well as being small next
+to the data, because effects that only the prior holds, such as effects that
+cancel across markers in complete linkage disequilibrium, can otherwise stay
+far from their values while the residual looks small. At variance ratios
+near the limits of double precision, when the error variance is many orders
+of magnitude below the genetic variance, a fit can warn that rounding limits
+the accuracy of the solution, giving how much the effects still change
+between restarts, or that the iteration stalled. Those warnings mean the
+problem is beyond what the arithmetic can resolve, not that the model is
+wrong, and they do not arise for heritabilities a simulation would use.
 
 ## Fixed effects
 

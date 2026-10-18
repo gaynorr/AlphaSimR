@@ -251,6 +251,19 @@ map first; otherwise the genetic map comes out wrong without any error.
   that happened to come out. The Mendelian bound holds for a direct cross;
   it does not survive selfing or doubled haploid production, where only the
   weaker "a locus fixed in both ancestors stays fixed" bound does.
+- `quickHaplo` samples every allele independently, so its founders have no
+  linkage disequilibrium: every locus has an allele frequency of one half and
+  is independent of every other, and a generation or two of crossing does
+  little to change that. Markers then carry no information about QTL they do
+  not overlap, so genomic selection fitted to them predicts candidates with an
+  accuracy near zero, and variance components estimated from them can come out
+  at or near zero. That makes it the wrong founder for anything that depends
+  on markers tracking QTL, such as genomic selection accuracy, comparisons of
+  models' predictions, or benchmarks of the solvers on realistic data. Use
+  `runMacs` or `runMacs2` founders for that, followed by `randCross` to reach
+  the size needed. `quickHaplo` remains the right choice where linkage does
+  not matter, as in tests that compare a solver with Henderson's equations
+  written out in R.
 - Roxygen examples that build a `SimParam` nearly always include
   `\dontshow{SP$nThreads = 1L}` so that checks run single threaded. New
   examples need it too.
