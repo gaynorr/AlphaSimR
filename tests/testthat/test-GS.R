@@ -1280,7 +1280,9 @@ test_that("coinciding terms share their effects in proportion to their variances
   # effect of RRBLUP with their summed variance in proportion to their own.
   d = mvPop(nInd=100, nSnp=12)
   dh = setPheno(makeDH(d$pop, simParam=d$SP), simParam=d$SP)
-  for(Ve in c(1, 1e-8, 1e-16)){
+  # Down to 1e-12, which every platform resolves; at 1e-16 whether the
+  # iteration converges depends on the platform's rounding
+  for(Ve in c(1, 1e-8, 1e-12)){
     ans = quietRounding(RRBLUP_GCA(dh, fastMode=TRUE, Vu=c(0.02, 0.03),
                                    Ve=Ve, maxIter=10000L, simParam=d$SP))
     ref = RRBLUP(dh, fastMode=TRUE, Vu=0.05, Ve=Ve, maxIter=10000L,
@@ -1445,4 +1447,36 @@ test_that("fast mode separates terms whose covariance matrices are nearly aligne
   expect_equal(male[1], b, tolerance=1e-6)
   expect_lt(abs(female[2]), 1e-12)
   expect_equal(male[2], b*d, tolerance=1e-6)
+})
+
+test_that("fast mode multikernel models are not affected by the mean of the response", {
+  # The intercept absorbs any shift of the response, so the marker effects
+  # must not change. A large shift keeps the response's variation in its low
+  # order bits, which must not be rounded away before the mean is taken off.
+  # The responses are rounded to multiples of 2^-20, so that shifted by 2^30
+  # they are still exact and the two fits are given the same information.
+  d = mvPop(nInd=60, nSnp=12)
+  d$pop@pheno = round(d$pop@pheno*2^20)/2^20
+  shifted = d$pop
+  shifted@pheno = shifted@pheno+2^30
+  expect_identical(shifted@pheno-2^30, d$pop@pheno)
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    for(traits in list(1L, 1:2)){
+      if(length(traits)==1){
+        Vu = 0.02*c(1, 0.5, 0.3)[seq_len(nTerm)]
+        Ve = 0.3
+      }else{
+        Vu = lapply(c(1, 0.5, 0.3)[seq_len(nTerm)],
+                    function(s) s*mvVu[1:2, 1:2])
+        Ve = mvVe[1:2, 1:2]
+      }
+      ref = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      ans = mkModels[[model]](shifted, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      expect_equal(mkEffects(model, ans), mkEffects(model, ref),
+                   tolerance=1e-7, info=paste(model, length(traits)))
+    }
+  }
 })

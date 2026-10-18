@@ -1029,9 +1029,20 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     deflate(Z);
   };
 
-  // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T
-  Tt = Linv*Y.t();
-  Tt -= (Tt*Q)*Q.t();
+  // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T.
+  // A response with a large mean keeps its variation in its low order bits,
+  // which any product with it rounds away: whitening by Le^-1, and absorbing
+  // the fixed effects through Q, whose entries are not exact either. The
+  // first record's response is therefore taken off every record's first.
+  // That subtraction is exact wherever the responses share a large offset,
+  // since two doubles within a factor of two of each other subtract without
+  // rounding, and it changes nothing else, because the intercept absorbs a
+  // constant. The fixed effects are then absorbed, and the result whitened.
+  arma::mat Yc = Y;
+  if(nInd>0){
+    Yc.each_row() -= Y.row(0);
+  }
+  Tt = Linv*(Yc-Q*(Q.t()*Yc)).t();
   multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
   arma::mat Rt(nR,nLoci);
   for(arma::uword t=0; t<nTerm; ++t){
@@ -1115,6 +1126,15 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     return arma::all(sqrt(sum(square(R),1))<=rowTol) &&
       (arma::norm(R, "fro")<=errTol*arma::norm(At, "fro"));
   };
+  // The largest diagonal entry of the coefficient matrix, a lower bound on
+  // its norm, for judging when a residual is at rounding level. Rounding in
+  // a product with the coefficient matrix grows with the matrix times the
+  // effects, not with the product, which is far smaller when the effects
+  // cancel.
+  double lamMax = 1.0;
+  if(nR>0){
+    lamMax = 1.0/square(Bds).min();
+  }
   const arma::uword maxRestart = 20;
   arma::mat Zt(nR,nLoci), Apt(nR,nLoci), Pt;
   bool converged = (rNorm0<=0.0);
@@ -1139,8 +1159,8 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       bool errOpen = rNorm>errTol*arma::norm(At, "fro");
       if(restart>1){
         arma::uvec open = find(rowNorm>rowTol);
-        double scale = arma::norm(Apt, "fro")+arma::norm(Bt, "fro");
-        bool atRounding = rNorm<=1.0e3*arma::datum::eps*scale;
+        double scale = lamMax*arma::norm(At, "fro")+arma::norm(Bt, "fro");
+        bool atRounding = rNorm<=64.0*arma::datum::eps*scale;
         if( !atRounding &&
             (lastMove<=arma::datum::eps*arma::norm(At, "fro")) ){
           stalledAt = rNorm/scale;
@@ -1240,8 +1260,14 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // centered codes, while the direct form, and the genetic values, use the
   // uncentered ones, so the intercept takes off the means times the effects.
   multTerms(Tt, planes, ploidy, terms, offset, Ut, tabs, nThreads);
-  arma::mat Bq = Q.t()*(Y-Tt.t());
+  // From the responses with the first record's taken off, as for the right
+  // hand side, and that constant then added back to the intercept, the
+  // first column of X, which is all ones
+  arma::mat Bq = Q.t()*(Yc-Tt.t());
   fit.beta = fixedEffectsFromBasis(fd, Bq, X.n_cols);
+  if(nInd>0){
+    fit.beta.row(0) += Y.row(0);
+  }
   for(arma::uword t=0; t<nTerm; ++t){
     fit.beta.row(0) -= fit.stats.Mmean.col(t).t()*fit.U[t];
   }
