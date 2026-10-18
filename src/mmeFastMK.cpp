@@ -687,7 +687,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // apply, and a positive eigenvalue is kept however small it is next to
   // the others, for the reason given in callFastRRBLUP_MV. A tiny one only
   // adds a direction that barely moves.
-  std::vector<arma::mat> F(nTerm);
+  std::vector<arma::mat> F(nTerm), Finv(nTerm);
   std::vector<arma::uword> off(nTerm+1, 0);
   for(arma::uword t=0; t<nTerm; ++t){
     arma::mat A = Linv*fit.Vu[t]*Linv.t();
@@ -700,6 +700,8 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     arma::uvec keep = find(lam>0.0);
     F[t] = Qv.cols(keep);
     F[t].each_row() %= sqrt(lam(keep)).t();
+    Finv[t] = Qv.cols(keep).t();
+    Finv[t].each_col() /= sqrt(lam(keep));
     off[t+1] = off[t]+keep.n_elem;
   }
   // With every variance zero there are no effects to solve for, nR is zero
@@ -725,21 +727,29 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // correlated, as the additive and dominance codes are wherever the allele
   // frequency is not one half, so the blocks hold their cross products as
   // well as the diagonal. Each block is the identity plus a positive
-  // semidefinite matrix G, so it always has an inverse, but not always one
-  // that a Cholesky factorization can find: when terms coincide at a marker,
-  // as the maternal and paternal codes of inbred lines do, and the variance
-  // ratio is large, the identity is lost to rounding next to G and the block
-  // is singular in floating point. The inverse is therefore taken through
-  // the eigendecomposition of G, as V*diag(1/(1+lambda))*V', which is
-  // defined however large or collinear G is. It is kept and applied in that
-  // factored form, V*(dInv%(V'*r)), rather than multiplied out: its scales
-  // can differ by more than the precision of a double, as 1 and 1e-17 do for
-  // two coinciding terms with a large variance ratio, and multiplied out the
-  // smaller would be lost in the sum. Should the decomposition itself fail,
-  // the inverse of the diagonal is used, which is still a positive definite
-  // preconditioner.
+  // semidefinite matrix G, so it always has an inverse, but finding it takes
+  // care, because the entries of a block can differ in scale by more than
+  // the precision of a double. They do when one trait's error variance is
+  // far below another's, which whitening turns into variance ratios many
+  // orders of magnitude apart, and when terms coincide at a marker, as the
+  // maternal and paternal codes of inbred lines do, the identity is lost to
+  // rounding next to G and the block is singular in floating point.
+  //
+  // The block is therefore first scaled to unit diagonal, Ds*B*Ds for
+  // Ds = diag(1/sqrt(1+diag(G))), and its eigendecomposition taken. The
+  // scaled block's entries are all of order one, so every direction the
+  // records see has an eigenvalue found to rounding level, where the
+  // unscaled block's decomposition would find small ones only to rounding of
+  // its largest entry, mixing them up with each other and with the unseen
+  // directions. An eigenvalue at rounding level belongs to a direction the
+  // records do not see, which the deflation below removes, and gets an
+  // inverse of zero rather than the reciprocal of rounding error. The
+  // inverse is kept and applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
+  // rather than multiplied out, so that its scales are never added together.
+  // Should the decomposition fail, the inverse of the diagonal is used, which
+  // is still a positive definite preconditioner.
   arma::cube Bvec(nR,nR,nLoci);
-  arma::mat Bdinv(nR,nLoci);
+  arma::mat Bdinv(nR,nLoci), Bds(nR,nLoci);
   if(nR>0){
     arma::uword nBlocks = countBlocks(nLoci);
     int precondThreads = nThreads;
@@ -773,14 +783,25 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
           }
         }
         B = 0.5*(B+B.t());
+        arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
+                                                arma::datum::inf));
+        Bds.col(j) = ds;
+        B.each_col() %= ds;
+        B.each_row() %= ds.t();
+        B.diag() += square(ds);
         if(arma::eig_sym(lambda, V, B)){
-          lambda.elem(find(lambda<0.0)).zeros();
+          double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
           Bvec.slice(j) = V;
-          Bdinv.col(j) = 1.0/(1.0+lambda);
+          arma::vec dInv(nR, arma::fill::zeros);
+          for(arma::uword c=0; c<nR; ++c){
+            if(lambda(c)>cut){
+              dInv(c) = 1.0/lambda(c);
+            }
+          }
+          Bdinv.col(j) = dInv;
         }else{
           Bvec.slice(j).eye();
-          Bdinv.col(j) = 1.0/(1.0+arma::clamp(B.diag(), 0.0,
-                                              arma::datum::inf));
+          Bdinv.col(j).ones();
         }
       }
     }
@@ -793,6 +814,113 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     Wt[t].set_size(nT,nLoci);
   }
   arma::mat Tt(nT,nInd);
+
+  // Directions the records cannot see. When some combination of the terms'
+  // codes at a marker is zero once centered and absorbed, as the maternal
+  // and paternal codes are for inbred lines, whose two haplotypes are the
+  // same, the effects along that combination do not change any prediction,
+  // and their BLUP is exactly zero: only the prior holds them. With a large
+  // variance ratio the data dwarf the prior, so rounding in the residual is
+  // as large as the prior's pull, and the iteration would let those effects
+  // drift. Their sum would stay right while the split between the terms went
+  // wrong. They are therefore removed exactly: every residual, search
+  // direction and product is kept orthogonal to them.
+  //
+  // The combinations are the null space of the terms' cross products at the
+  // marker, Dkl, among the terms with any variance. Those are all on the
+  // scale of the number of records, so their null space is found reliably,
+  // unlike that of the preconditioner's block, whose scales can differ by
+  // more than the precision of a double. For a null vector c, the effects
+  // F_k*a_k = c_k*w for any w over the traits are unseen, so in whitened
+  // effects they are a_k = F_k^-1*c_k*w. That needs F_k to be square, every
+  // trait direction having variance, for each term in the combination; a
+  // marker where it is not is left as it is.
+  std::vector<arma::mat> nullBasis(nLoci);
+  bool anyNull = false;
+  {
+    std::vector<arma::uword> active;
+    for(arma::uword t=0; t<nTerm; ++t){
+      if(off[t+1]>off[t]){
+        active.push_back(t);
+      }
+    }
+    arma::uword nA = active.size();
+    arma::uword nBlocks = countBlocks(nLoci);
+    int nullThreads = nThreads;
+    if(nBlocks < static_cast<arma::uword>(nullThreads)){
+      nullThreads = static_cast<int>(nBlocks);
+    }
+    std::vector<int> found(nBlocks, 0);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nullThreads)
+#endif
+    for(arma::uword block=0; block<nBlocks; ++block){
+      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+      arma::mat D(nA,nA), C, N;
+      arma::vec dl;
+      for(arma::uword j=lociStart; (j<lociEnd)&&(nA>0); ++j){
+        for(arma::uword a=0; a<nA; ++a){
+          for(arma::uword b=0; b<nA; ++b){
+            D(a,b) = fit.stats.Dkl(active[a]*nTerm+active[b],j);
+          }
+        }
+        if(!arma::eig_sym(dl, C, D)){
+          continue;
+        }
+        arma::uvec nul = find(dl<=rankCutoff(dl.max(), nInd));
+        if(nul.n_elem==0){
+          continue;
+        }
+        N.zeros(nR, nul.n_elem*nT);
+        bool ok = true;
+        for(arma::uword q=0; (q<nul.n_elem)&&ok; ++q){
+          arma::vec c = C.col(nul(q));
+          double cMax = arma::abs(c).max();
+          for(arma::uword a=0; a<nA; ++a){
+            arma::uword t = active[a];
+            if(std::abs(c(a))<=1.0e-8*cMax){
+              continue;
+            }
+            if(off[t+1]-off[t]!=nT){
+              ok = false;
+              break;
+            }
+            N.submat(off[t], q*nT, off[t+1]-1, (q+1)*nT-1) = c(a)*Finv[t];
+          }
+        }
+        if(ok){
+          // The columns can differ in length by many orders of magnitude, as
+          // F_k^-1 does, and an orthonormal basis taken through the singular
+          // value decomposition would find the short ones' directions only to
+          // the ratio of the lengths times the precision, mixing in part of
+          // the directions the records do see. Each column is normalized
+          // first, and the basis then taken by QR.
+          for(arma::uword c=0; c<N.n_cols; ++c){
+            N.col(c) /= arma::norm(N.col(c));
+          }
+          arma::mat Qn, Rn;
+          if(arma::qr_econ(Qn, Rn, N)){
+            nullBasis[j] = Qn;
+            found[block] = 1;
+          }
+        }
+      }
+    }
+    anyNull = std::find(found.begin(), found.end(), 1)!=found.end();
+  }
+  // Removes the unseen directions from each marker's column of R
+  auto deflate = [&](arma::mat& R){
+    if(!anyNull){
+      return;
+    }
+    for(arma::uword j=0; j<nLoci; ++j){
+      const arma::mat& N = nullBasis[j];
+      if(N.n_cols>0){
+        R.col(j) -= N*(N.t()*R.col(j));
+      }
+    }
+  };
 
   // One product with the coefficient matrix, out = (I+F'*W'*S*W*F)*in, with
   // the effects of every term stacked in the rows of in and out
@@ -813,6 +941,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         out.rows(off[t], off[t+1]-1) += F[t].t()*Wt[t];
       }
     }
+    deflate(out);
   };
   // Each marker's block is applied to its own column, so the work splits
   // over blocks of markers
@@ -832,14 +961,15 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       for(arma::uword j=lociStart; j<lociEnd; ++j){
         const double* Vj = Bvec.slice_memptr(j);
         const double* dj = Bdinv.colptr(j);
+        const double* sj = Bds.colptr(j);
         const double* rj = R.colptr(j);
         double* zj = Z.colptr(j);
-        // w = dInv%(V'*r), then z = V*w
+        // w = dInv%(V'*(Ds*r)), then z = Ds*(V*w)
         for(arma::uword c=0; c<nR; ++c){
           const double* vc = Vj+c*nR;
           double sum = 0.0;
           for(arma::uword a=0; a<nR; ++a){
-            sum += vc[a]*rj[a];
+            sum += vc[a]*(sj[a]*rj[a]);
           }
           w[c] = dj[c]*sum;
         }
@@ -848,10 +978,11 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
           for(arma::uword c=0; c<nR; ++c){
             sum += Vj[a+c*nR]*w[c];
           }
-          zj[a] = sum;
+          zj[a] = sj[a]*sum;
         }
       }
     }
+    deflate(Z);
   };
 
   // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T
@@ -864,6 +995,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       Rt.rows(off[t], off[t+1]-1) = F[t].t()*Wt[t];
     }
   }
+  deflate(Rt);
 
   // Preconditioned conjugate gradient on the stacked whitened effects. The
   // terms and traits share one recurrence, because the terms are coupled
@@ -970,6 +1102,8 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   if(!converged){
     Rf_warning("%s: reached maxIter without converging", name.c_str());
   }
+
+  deflate(At);
 
   // Back to the marker effects of the original traits. On the whitened
   // scale the effects are F_k*A_k, held with one row per trait, and

@@ -1257,3 +1257,36 @@ test_that("fast mode handles terms that coincide at every marker", {
                simParam=d$SP)
   expect_equal(2*female, ref@bv[[1]]@addEff, tolerance=1e-6)
 })
+
+test_that("coinciding terms share their effects in proportion to their variances", {
+  # Effects along the difference of two coinciding terms are unseen by the
+  # records and held at zero by the prior alone, which a large variance
+  # ratio dwarfs, so they are removed exactly. The terms then split each
+  # effect of RRBLUP with their summed variance in proportion to their own.
+  d = mvPop(nInd=100, nSnp=12)
+  dh = setPheno(makeDH(d$pop, simParam=d$SP), simParam=d$SP)
+  for(Ve in c(1, 1e-8, 1e-16)){
+    ans = RRBLUP_GCA(dh, fastMode=TRUE, Vu=c(0.02, 0.03), Ve=Ve,
+                     maxIter=10000L, simParam=d$SP)
+    ref = RRBLUP(dh, fastMode=TRUE, Vu=0.05, Ve=Ve, maxIter=10000L,
+                 simParam=d$SP)
+    u = ref@bv[[1]]@addEff
+    expect_equal(ans@female[[1]]@addEff, 0.4*u, tolerance=1e-6,
+                 info=paste("Ve", Ve))
+    expect_equal(ans@male[[1]]@addEff, 0.6*u, tolerance=1e-6,
+                 info=paste("Ve", Ve))
+  }
+  # Two traits, one with an error variance far below the other's
+  V = diag(c(0.02, 0.03))
+  Ve = diag(c(1e-16, 1))
+  expect_warning(ans <- RRBLUP_GCA(dh, traits=1:2, fastMode=TRUE,
+                                   Vu=list(V, 1.5*V), Ve=Ve,
+                                   maxIter=10000L, simParam=d$SP), NA)
+  ref = RRBLUP(dh, traits=1:2, fastMode=TRUE, Vu=2.5*V, Ve=Ve,
+               maxIter=10000L, simParam=d$SP)
+  u = sapply(ref@bv, function(x) x@addEff)
+  expect_equal(sapply(ans@female, function(x) x@addEff), 0.4*u,
+               tolerance=1e-6)
+  expect_equal(sapply(ans@male, function(x) x@addEff), 0.6*u,
+               tolerance=1e-6)
+})
