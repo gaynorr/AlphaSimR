@@ -11,13 +11,13 @@ RRBLUP_D(
   snpChip = 1,
   useQtl = FALSE,
   maxIter = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  ...,
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 5000L,
-  simParam = NULL,
-  nThreads = NULL,
-  ...
+  nSubsample = 5000L
 )
 }
 \arguments{
@@ -41,6 +41,16 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 \item{maxIter}{maximum number of iterations. In fast mode, it limits the
 iterations of the conjugate gradient solver, and NULL gives 1000.
 Otherwise it limits the iterations of the REML fit, and NULL gives 100.}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
+
+\item{nThreads}{number of threads to use if OpenMP is available.
+If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
+
+\item{...}{additional arguments if using a function for
+traits}
 
 \item{fastMode}{should the model be solved by preconditioned conjugate
 gradient where that is expected to be faster, as it is for large training
@@ -66,16 +76,6 @@ REML. See details.}
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
 advisable for small training populations.}
-
-\item{simParam}{an object of class \code{\link{SimParam}}. If
-\code{NULL}, the function uses the object named \code{SP} from the
-global environment.}
-
-\item{nThreads}{number of threads to use if OpenMP is available.
-If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
-
-\item{...}{additional arguments if using a function for
-traits}
 }
 \description{
 Fits an RR-BLUP model for genomic predictions that includes

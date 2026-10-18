@@ -702,10 +702,10 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     F[t].each_row() %= sqrt(lam(keep)).t();
     off[t+1] = off[t]+keep.n_elem;
   }
+  // With every variance zero there are no effects to solve for, nR is zero
+  // and the model is fitted on its fixed effects alone, as the direct form
+  // fits it
   const arma::uword nR = off[nTerm];
-  if(nR==0){
-    Rcpp::stop("%s: estimated marker variance is not positive", name.c_str());
-  }
 
   // The fixed effects are absorbed with S = I-Q*Q', for an orthonormal basis
   // Q of their span. Columns of X that depend on the others, as the summed
@@ -727,7 +727,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // well as the diagonal. Each block is the identity plus a positive
   // semidefinite matrix, so it always has an inverse.
   arma::cube Binv(nR,nR,nLoci);
-  {
+  if(nR>0){
     arma::uword nBlocks = countBlocks(nLoci);
     int precondThreads = nThreads;
     if(nBlocks < static_cast<arma::uword>(precondThreads)){
@@ -843,35 +843,81 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
 
   // Preconditioned conjugate gradient on the stacked whitened effects. The
   // terms and traits share one recurrence, because the terms are coupled
-  // through the records. On the whitened scale every error has unit
-  // variance, so no trait's residual is out of scale with the others.
+  // through the records.
+  //
+  // Whitening gives every error unit variance, but the right hand sides of
+  // different directions can still differ in scale by many orders of
+  // magnitude, as they do when one trait's error variance is close to zero,
+  // because F_k carries the variance ratio of each direction. Two things
+  // follow. A test on the residual as a whole would stop once the largest
+  // direction had converged, so each row of the residual, one whitened
+  // direction of one term, is tested against its own initial value, as if
+  // it were fitted on its own, down to rounding level of the largest. And the
+  // step lengths, which come from sums over every direction, are then
+  // decided by the largest, so the smaller directions' part of the
+  // recurrence is lost to rounding and its residual stops describing them.
+  // When the recurrence claims convergence, the true residual b-A*x is
+  // therefore worked out, and if any direction has not converged the
+  // iteration is restarted from it. By then the largest directions have
+  // converged, so the restarted sums are no longer dominated by them. Every
+  // product with the coefficient matrix counts toward maxIter.
+  const arma::mat Bt = Rt;
+  double rNorm0 = arma::norm(Bt, "fro");
+  arma::vec rowTol = sqrt(sum(square(Bt),1));
+  rowTol.elem(find(rowTol<arma::datum::eps*rNorm0)).fill(
+    arma::datum::eps*rNorm0);
+  rowTol *= 1.0e-8;
+  auto rowsConverged = [&](const arma::mat& R){
+    return arma::all(sqrt(sum(square(R),1))<=rowTol);
+  };
+  const arma::uword maxRestart = 20;
   arma::mat At(nR,nLoci,arma::fill::zeros);
-  arma::mat Zt(nR,nLoci), Apt(nR,nLoci);
-  precondition(Zt, Rt);
-  arma::mat Pt = Zt;
-  double rNorm0 = arma::norm(Rt, "fro");
-  double rz = arma::accu(Rt%Zt);
+  arma::mat Zt(nR,nLoci), Apt(nR,nLoci), Pt;
   bool converged = (rNorm0<=0.0);
-  for(arma::uword iter=0; (iter<maxIter)&&(!converged); ++iter){
-    applyCoef(Apt, Pt);
-    double pAp = arma::accu(Pt%Apt);
-    if(pAp<=0.0){
-      // The matrix is positive definite, so this is rounding once there is
-      // nothing left to solve for
+  arma::uword iter = 0;
+  for(arma::uword restart=0; (restart<=maxRestart)&&(!converged); ++restart){
+    if(restart>0){
+      // The true residual
+      applyCoef(Apt, At);
+      ++iter;
+      Rt = Bt-Apt;
+    }
+    if(rowsConverged(Rt)){
       converged = true;
       break;
     }
-    double step = rz/pAp;
-    At += step*Pt;
-    Rt -= step*Apt;
-    if(arma::norm(Rt, "fro")<=1.0e-8*rNorm0){
-      converged = true;
+    if(iter>=maxIter){
       break;
     }
     precondition(Zt, Rt);
-    double rzNew = arma::accu(Rt%Zt);
-    Pt = Zt+(rzNew/rz)*Pt;
-    rz = rzNew;
+    Pt = Zt;
+    double rz = arma::accu(Rt%Zt);
+    bool claimed = false;
+    while(iter<maxIter){
+      applyCoef(Apt, Pt);
+      ++iter;
+      double pAp = arma::accu(Pt%Apt);
+      if(pAp<=0.0){
+        // The matrix is positive definite, so this is rounding once there is
+        // nothing left to solve for
+        claimed = true;
+        break;
+      }
+      double step = rz/pAp;
+      At += step*Pt;
+      Rt -= step*Apt;
+      if(rowsConverged(Rt)){
+        claimed = true;
+        break;
+      }
+      precondition(Zt, Rt);
+      double rzNew = arma::accu(Rt%Zt);
+      Pt = Zt+(rzNew/rz)*Pt;
+      rz = rzNew;
+    }
+    if(!claimed){
+      break;
+    }
   }
   if(!converged){
     Rf_warning("%s: reached maxIter without converging", name.c_str());

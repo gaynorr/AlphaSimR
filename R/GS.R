@@ -561,9 +561,9 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #'
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
-                  useQtl=FALSE, maxIter=1000L, fastMode=FALSE,
-                  Vu=NULL, Ve=NULL, nSubsample=5000L,
-                  simParam=NULL, nThreads=NULL, ...){
+                  useQtl=FALSE, maxIter=1000L,
+                  simParam=NULL, nThreads=NULL, ...,
+                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -943,9 +943,9 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
-                    useQtl=FALSE, maxIter=NULL, fastMode=FALSE,
-                    Vu=NULL, Ve=NULL, nSubsample=5000L,
-                    simParam=NULL, nThreads=NULL, ...){
+                    useQtl=FALSE, maxIter=NULL,
+                    simParam=NULL, nThreads=NULL, ...,
+                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1314,9 +1314,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=NULL, fastMode=FALSE,
-                      Vu=NULL, Ve=NULL, nSubsample=5000L,
-                      simParam=NULL, nThreads=NULL, ...){
+                      useQtl=FALSE, maxIter=NULL,
+                      simParam=NULL, nThreads=NULL, ...,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1712,9 +1712,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=NULL, fastMode=FALSE,
-                      Vu=NULL, Ve=NULL, nSubsample=5000L,
-                      simParam=NULL, nThreads=NULL, ...){
+                      useQtl=FALSE, maxIter=NULL,
+                      simParam=NULL, nThreads=NULL, ...,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }

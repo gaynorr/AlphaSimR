@@ -1137,3 +1137,75 @@ test_that("fast mode that is not expected to be faster fits the direct form", {
                      fit(d$pop, simParam=d$SP), info=model)
   }
 })
+
+test_that("fast mode multikernel models fit the fixed effects alone when every variance is zero", {
+  d = mvPop(nInd=60, nSnp=12)
+  y = d$pop@pheno[, 1]
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    codes = mkCodes(model, d$pop, d$SP)
+    X = mkFixed(model, d$pop, codes)
+    b = qr.solve(X, y)
+    for(traits in list(1L, 1:2)){
+      nT = length(traits)
+      if(nT==1){
+        Vu = rep(0, nTerm)
+        Ve = 1
+      }else{
+        Vu = rep(list(matrix(0, 2, 2)), nTerm)
+        Ve = diag(2)
+      }
+      ans = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      info = paste(model, nT)
+      eff = mkEffects(model, ans)
+      ref = list(beta=matrix(b, ncol=1),
+                 u=lapply(codes, function(M) matrix(0, ncol(M), 1)))
+      expected = mkExpected(model, ref, codes)
+      for(k in seq_along(eff)){
+        expect_equal(matrix(eff[[k]], ncol=nT)[, 1], expected[[k]][, 1],
+                     tolerance=1e-8, info=paste(info, "term", k))
+      }
+      expect_equal(ans@gv[[1]]@intercept, b[1], tolerance=1e-8, info=info)
+    }
+  }
+})
+
+test_that("fast mode multikernel models converge for every trait whatever their error variances", {
+  # With no covariance between the traits, each trait's BLUP is its single
+  # trait BLUP. An error variance close to zero for the first trait makes its
+  # right hand sides far larger than the second's, which must not stop the
+  # second trait from converging.
+  d = mvPop(nInd=80, nSnp=15)
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    scale = c(1, 0.5, 0.3)[seq_len(nTerm)]
+    Vu = lapply(scale, function(s) diag(c(0.02, 0.03))*s)
+    Ve = diag(c(1e-14, 1))
+    ans = mkModels[[model]](d$pop, traits=1:2, fastMode=TRUE, Vu=Vu, Ve=Ve,
+                            maxIter=10000L, simParam=d$SP)
+    one = mkModels[[model]](d$pop, traits=2, fastMode=TRUE,
+                            Vu=0.03*scale, Ve=1, maxIter=10000L,
+                            simParam=d$SP)
+    two = mkEffects(model, ans)
+    single = mkEffects(model, one)
+    for(k in seq_along(two)){
+      expect_gt(max(abs(single[[k]])), 0)
+      expect_equal(two[[k]][, 2], c(single[[k]]), tolerance=1e-6,
+                   info=paste(model, "term", k))
+    }
+  }
+})
+
+test_that("the RR-BLUP models keep the positions of their arguments", {
+  # The fast mode arguments come after the dots, so calls that give simParam
+  # and nThreads by position are unchanged
+  d = mvPop(nInd=60, nSnp=12)
+  expect_identical(RRBLUP(d$pop, 1, "pheno", 1, FALSE, 1000L, d$SP, 1L),
+                   RRBLUP(d$pop, simParam=d$SP, nThreads=1L))
+  for(model in names(mkModels)){
+    fit = mkModels[[model]]
+    expect_identical(fit(d$pop, 1, "pheno", 1, FALSE, 100L, d$SP, 1L),
+                     fit(d$pop, simParam=d$SP, nThreads=1L), info=model)
+  }
+})
