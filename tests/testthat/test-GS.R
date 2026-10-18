@@ -621,6 +621,15 @@ test_that("the dominance and hybrid models are not affected by the number of thr
   }
 })
 
+# Fast mode is only taken when it is expected to be faster, which it never is
+# on a population small enough to check against a dense solution. This takes
+# it whatever it is expected to cost.
+forceFast = function(expr){
+  old = options(AlphaSimR.fastModeRoute="fast")
+  on.exit(options(old))
+  expr
+}
+
 # Multiple trait fast mode RRBLUP. With the variance components supplied it is
 # the BLUP of the multiple trait model, which Henderson's equations give
 # directly for a population small enough to write them out in R. With every
@@ -696,8 +705,8 @@ test_that("multiple trait fast mode RRBLUP agrees with RRBLUP on every record", 
   # the record cross product built from the genotypes
   for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
     d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
-    ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nSubsample=0L,
-                 simParam=d$SP)
+    ans = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nSubsample=0L,
+                           simParam=d$SP))
     ref = RRBLUP(d$pop, traits=1:3, simParam=d$SP)
     info = paste("nInd", size[["nInd"]])
     expect_equal(unname(ans@Vu), unname(ref@Vu), tolerance=1e-8, info=info)
@@ -716,8 +725,8 @@ test_that("fast mode RRBLUP predicts the same genetic values as RRBLUP", {
   # Taking it from the centered ones shifts every prediction by Mmean*u,
   # which is not zero in general, so this checks a trait where it is not.
   d = mvPop(nInd=80, nSnp=15)
-  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1, nSubsample=0L,
-               simParam=d$SP)
+  ans = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1, nSubsample=0L,
+                         simParam=d$SP))
   ref = RRBLUP(d$pop, traits=1, simParam=d$SP)
   expect_gt(abs(ref@bv[[1]]@intercept), 1e-8)
   expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
@@ -831,10 +840,662 @@ test_that("multiple trait fast mode RRBLUP is not affected by the number of thre
   skip_on_cran()
   skip_if(getNumThreads() < 2L)
   d = mvPop(nInd=80, nSnp=15)
-  one = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=1L,
-               simParam=d$SP)
-  two = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=2L,
-               simParam=d$SP)
+  one = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=1L,
+                         simParam=d$SP))
+  two = forceFast(RRBLUP(d$pop, fastMode=TRUE, traits=1:3, nThreads=2L,
+                         simParam=d$SP))
   expect_identical(addEffAll(one), addEffAll(two))
   expect_identical(one@Vu, two@Vu)
+})
+
+# Fast mode of the multikernel models. With the variance components supplied
+# it is the BLUP of the model the direct form fits, which Henderson's
+# equations give directly for a population small enough to write them out in
+# R. With every record used for the variance components it is the same REML
+# fit as the direct form, so the two have to agree.
+
+mkModels = list(RRBLUP_D=RRBLUP_D, RRBLUP_GCA=RRBLUP_GCA,
+                RRBLUP_SCA=RRBLUP_SCA)
+
+# Each random term's codes, as the direct form of the model builds them
+mkCodes = function(model, pop, SP){
+  P = pop@ploidy
+  x = pullSnpGeno(pop, simParam=SP)
+  dom = x*(P-x)*(2/P)^2
+  if(model=="RRBLUP_D"){
+    return(lapply(list((x-P/2)*(2/P), dom), unname))
+  }
+  H = pullSnpHaplo(pop, simParam=SP)
+  hap = rep(seq_len(P), pop@nInd)
+  ind = rep(seq_len(pop@nInd), each=P)
+  half = P/2
+  code = function(take){
+    (rowsum(H[take, , drop=FALSE], ind[take]) - half/2)*(2/half)
+  }
+  codes = list(code(hap<=half), code(hap>half))
+  if(model=="RRBLUP_SCA"){
+    codes[[3]] = dom
+  }
+  return(lapply(codes, unname))
+}
+
+# The fixed effects of the direct form: the sum to zero design of makeX, and
+# for the models with dominance the summed dominance codes
+mkFixed = function(model, pop, codes){
+  f = factor(pop@fixEff)
+  X = model.matrix(~f, contrasts.arg=list(f="contr.sum"))
+  if(model!="RRBLUP_GCA"){
+    X = cbind(X, rowSums(codes[[length(codes)]]))
+  }
+  return(unname(X))
+}
+
+# Henderson's equations for the multikernel model with known Vu and Ve
+denseMkBlup = function(Y, X, Mlist, Vu, Ve){
+  Y = as.matrix(Y)
+  nT = ncol(Y)
+  W = cbind(kronecker(diag(nT), X),
+            do.call(cbind, lapply(Mlist, function(M) kronecker(diag(nT), M))))
+  Rinv = kronecker(solve(Ve), diag(nrow(Y)))
+  C = crossprod(W, Rinv %*% W)
+  idx = list()
+  at = ncol(X)*nT
+  for(k in seq_along(Mlist)){
+    idx[[k]] = at+seq_len(ncol(Mlist[[k]])*nT)
+    at = max(idx[[k]])
+    C[idx[[k]], idx[[k]]] = C[idx[[k]], idx[[k]]] +
+      kronecker(solve(Vu[[k]]), diag(ncol(Mlist[[k]])))
+  }
+  sol = solve(C, crossprod(W, Rinv %*% c(Y)))
+  beta = matrix(sol[seq_len(ncol(X)*nT)], ncol(X), nT)
+  u = lapply(seq_along(Mlist),
+             function(k) matrix(sol[idx[[k]]], ncol(Mlist[[k]]), nT))
+  return(list(beta=beta, u=u))
+}
+
+# The effects a fit returns that come straight from the model, one matrix per
+# term with a column per trait
+mkEffects = function(model, ans){
+  get = function(s, what){
+    unname(sapply(slot(ans, s), function(x) slot(x, what)))
+  }
+  if(model=="RRBLUP_D"){
+    return(list(get("gv", "addEff"), get("gv", "domEff")))
+  }
+  if(model=="RRBLUP_GCA"){
+    return(list(get("female", "addEff"), get("male", "addEff")))
+  }
+  return(list(get("gv", "addEff"), get("gv", "addEffMale"),
+              get("gv", "domEff")))
+}
+
+# What mkEffects should return for a dense solution. Dominance effects
+# include the effect of the summed dominance codes, and are zero at markers
+# where every individual has the same genotype.
+mkExpected = function(model, ref, codes){
+  eff = lapply(ref$u, function(u) unname(as.matrix(u)))
+  if(model!="RRBLUP_GCA"){
+    k = length(eff)
+    meanD = ref$beta[nrow(ref$beta), ]
+    if(model=="RRBLUP_SCA"){
+      dose = codes[[1]]+codes[[2]]
+    }else{
+      dose = codes[[1]]
+    }
+    fixed = apply(dose, 2, function(x) all(x==x[1]))
+    eff[[k]] = sweep(eff[[k]], 2, meanD, "+")
+    eff[[k]][fixed, ] = 0
+  }
+  return(eff)
+}
+
+mkVu = function(model, nTraits){
+  nTerm = if(model=="RRBLUP_SCA") 3 else 2
+  scale = c(1, 0.5, 0.3)[seq_len(nTerm)]
+  if(nTraits==1){
+    return(0.02*scale)
+  }
+  return(lapply(scale, function(s) s*mvVu))
+}
+
+test_that("fast mode multikernel models are the BLUP of their models", {
+  for(model in names(mkModels)){
+    for(ploidy in c(2L, 4L)){
+      if( (model=="RRBLUP_SCA") & (ploidy!=2L) ) next
+      d = mvPop(nInd=80, nSnp=15, ploidy=ploidy)
+      codes = mkCodes(model, d$pop, d$SP)
+      X = mkFixed(model, d$pop, codes)
+      for(traits in list(1L, 1:3)){
+        nT = length(traits)
+        Vu = mkVu(model, nT)
+        Ve = if(nT==1) 1 else mvVe
+        ans = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                                Ve=Ve, simParam=d$SP)
+        VuList = if(nT==1) as.list(Vu) else Vu
+        ref = denseMkBlup(d$pop@pheno[, traits, drop=FALSE], X, codes,
+                          lapply(VuList, as.matrix), as.matrix(Ve))
+        info = paste(model, "ploidy", ploidy, "traits", nT)
+        eff = mkEffects(model, ans)
+        expected = mkExpected(model, ref, codes)
+        for(k in seq_along(eff)){
+          # It iterates rather than solving, so it is held to a looser
+          # tolerance
+          expect_equal(matrix(eff[[k]], ncol=nT), expected[[k]],
+                       tolerance=1e-6, info=paste(info, "term", k))
+        }
+        # The intercept goes with the uncentered codes, as in the direct form
+        expect_equal(sapply(ans@gv, function(x) x@intercept), ref$beta[1, ],
+                     tolerance=1e-6, info=info)
+      }
+    }
+  }
+})
+
+test_that("fast mode multikernel models agree with direct mode on every record", {
+  skip_on_cran()
+  # More records than markers gives the REML fit the codes, and fewer gives
+  # it a factor of their cross product
+  for(size in list(c(nInd=80, nSnp=15), c(nInd=40, nSnp=30))){
+    d = mvPop(nInd=size[["nInd"]], nSnp=size[["nSnp"]])
+    for(model in names(mkModels)){
+      for(traits in list(1L, 1:2)){
+        info = paste(model, "nInd", size[["nInd"]], "traits", length(traits))
+        ans = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                          fastMode=TRUE, nSubsample=0L,
+                                          simParam=d$SP))
+        ref = mkModels[[model]](d$pop, traits=traits, simParam=d$SP)
+        expect_equal(ans@Vu, ref@Vu, tolerance=1e-6, info=info)
+        expect_equal(ans@Ve, ref@Ve, tolerance=1e-6, info=info)
+        if(model=="RRBLUP_D"){
+          values = c("gv", "bv")
+        }else{
+          values = c("gv", "female", "male")
+        }
+        for(value in values){
+          expect_equal(setEBV(d$pop, ans, value=value, onlyValues=TRUE,
+                              simParam=d$SP),
+                       setEBV(d$pop, ref, value=value, onlyValues=TRUE,
+                              simParam=d$SP),
+                       tolerance=1e-5, info=paste(info, value))
+        }
+      }
+    }
+  }
+})
+
+test_that("fast mode multikernel models take back their own variance components", {
+  d = mvPop(nInd=60, nSnp=12)
+  for(model in names(mkModels)){
+    for(traits in list(1L, 1:2)){
+      fit = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, simParam=d$SP))
+      again = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE,
+                                Vu=fit@Vu, Ve=fit@Ve, simParam=d$SP)
+      info = paste(model, length(traits))
+      expect_equal(again@Vu, fit@Vu, info=info)
+      expect_equal(mkEffects(model, again), mkEffects(model, fit),
+                   tolerance=1e-8, info=info)
+    }
+  }
+})
+
+test_that("a term with no variance has no effects in fast mode", {
+  d = mvPop(nInd=60, nSnp=12)
+  ans = RRBLUP_D(d$pop, fastMode=TRUE, Vu=c(0.02, 0), Ve=1, simParam=d$SP)
+  dom = ans@gv[[1]]@domEff
+  # Every dominance effect is the effect of the summed dominance codes, or
+  # zero where the marker is fixed
+  expect_lte(length(unique(dom[dom!=0])), 1L)
+  expect_gt(max(abs(ans@gv[[1]]@addEff)), 0)
+})
+
+test_that("fast mode multikernel models check their arguments", {
+  d = mvPop(nInd=40, nSnp=10)
+  for(model in names(mkModels)){
+    fit = mkModels[[model]]
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    expect_error(fit(d$pop, Vu=rep(0.01, nTerm), simParam=d$SP),
+                 "fastMode", info=model)
+    expect_error(fit(d$pop, fastMode=TRUE, Vu=0.01, Ve=1, simParam=d$SP),
+                 "one value per random term", info=model)
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE,
+                     Vu=matrix(0.01, 2*nTerm, 2*nTerm),
+                     Ve=diag(2), simParam=d$SP),
+                 "block diagonal", info=model)
+    Vu = rep(list(diag(2)), nTerm)
+    Vu[[1]] = diag(c(0.01, -0.01))
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE, Vu=Vu, Ve=diag(2),
+                     simParam=d$SP),
+                 "positive semidefinite", info=model)
+    expect_error(fit(d$pop, traits=1:2, fastMode=TRUE,
+                     Vu=rep(list(diag(2)), nTerm), Ve=diag(c(1, 0)),
+                     simParam=d$SP),
+                 "positive definite", info=model)
+    expect_warning(fit(d$pop, fastMode=TRUE, Vu=rep(0.01, nTerm), Ve=1,
+                       maxIter=1L, simParam=d$SP),
+                   "without converging", info=model)
+  }
+  d4 = mvPop(nInd=40, nSnp=10, ploidy=4L)
+  expect_error(forceFast(RRBLUP_SCA(d4$pop, fastMode=TRUE, simParam=d4$SP)),
+               "only diploids")
+})
+
+test_that("fast mode multikernel models are not affected by the number of threads", {
+  skip_on_cran()
+  skip_if(getNumThreads() < 2L)
+  d = mvPop(nInd=80, nSnp=15)
+  for(model in names(mkModels)){
+    for(traits in list(1L, 1:3)){
+      one = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, nThreads=1L,
+                                        simParam=d$SP))
+      two = forceFast(mkModels[[model]](d$pop, traits=traits,
+                                        fastMode=TRUE, nThreads=2L,
+                                        simParam=d$SP))
+      info = paste(model, length(traits))
+      expect_identical(mkEffects(model, one), mkEffects(model, two),
+                       info=info)
+      expect_identical(one@Vu, two@Vu, info=info)
+    }
+  }
+})
+
+test_that("RRBLUPMemUse counts the fast mode of the multikernel models", {
+  for(m in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+    small = RRBLUPMemUse(nInd=500, nMarker=500, model=m, fastMode=TRUE)
+    large = RRBLUPMemUse(nInd=20000, nMarker=5000, model=m, fastMode=TRUE)
+    expect_true(is.finite(small), info=m)
+    expect_gt(large, small)
+    # Far less than the direct form once the records are many
+    expect_lt(large, RRBLUPMemUse(nInd=20000, nMarker=5000, model=m),
+              label=m)
+    expect_gt(RRBLUPMemUse(nInd=20000, nMarker=5000, model=m, nTraits=3,
+                           fastMode=TRUE), large)
+  }
+})
+
+test_that("fast mode is taken only when it is expected to be faster", {
+  route = AlphaSimR:::useFastRoute
+  # Supplied variance components need the fast route
+  expect_true(route("RRBLUP_D", 0.1, 1, 100, 50, 1, 1, 5000))
+  # A subset of every record would repeat the direct fit
+  expect_false(route("RRBLUP_D", NULL, NULL, 4000, 50000, 1, 1, 5000))
+  expect_false(route("RRBLUP_D", NULL, NULL, 50000, 50000, 1, 1, 0))
+  # Many records and many markers favor the fast route
+  for(m in c("RRBLUP", "RRBLUP_D", "RRBLUP_GCA", "RRBLUP_SCA")){
+    expect_true(route(m, NULL, NULL, 50000, 20000, 1, 1, 2000), info=m)
+  }
+  # Few markers make the direct fit of RRBLUP cheap
+  expect_false(route("RRBLUP", NULL, NULL, 20000, 500, 1, 1, 2000))
+})
+
+test_that("fast mode that is not expected to be faster fits the direct form", {
+  d = mvPop(nInd=60, nSnp=12)
+  for(model in c("RRBLUP", names(mkModels))){
+    fit = get(model)
+    expect_identical(fit(d$pop, fastMode=TRUE, simParam=d$SP),
+                     fit(d$pop, simParam=d$SP), info=model)
+  }
+})
+
+test_that("fast mode multikernel models fit the fixed effects alone when every variance is zero", {
+  d = mvPop(nInd=60, nSnp=12)
+  y = d$pop@pheno[, 1]
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    codes = mkCodes(model, d$pop, d$SP)
+    X = mkFixed(model, d$pop, codes)
+    b = qr.solve(X, y)
+    for(traits in list(1L, 1:2)){
+      nT = length(traits)
+      if(nT==1){
+        Vu = rep(0, nTerm)
+        Ve = 1
+      }else{
+        Vu = rep(list(matrix(0, 2, 2)), nTerm)
+        Ve = diag(2)
+      }
+      ans = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      info = paste(model, nT)
+      eff = mkEffects(model, ans)
+      ref = list(beta=matrix(b, ncol=1),
+                 u=lapply(codes, function(M) matrix(0, ncol(M), 1)))
+      expected = mkExpected(model, ref, codes)
+      for(k in seq_along(eff)){
+        expect_equal(matrix(eff[[k]], ncol=nT)[, 1], expected[[k]][, 1],
+                     tolerance=1e-8, info=paste(info, "term", k))
+      }
+      expect_equal(ans@gv[[1]]@intercept, b[1], tolerance=1e-8, info=info)
+    }
+  }
+})
+
+# At variance ratios near the precision of a double, a fit may warn that
+# rounding limits its accuracy or that its iteration stalled. Those warnings
+# describe the whole solution, while the tests below check the effects they
+# can verify, so only those two warnings are let through quietly; any other,
+# such as reaching maxIter, still fails expect_warning(..., NA) or is
+# reported.
+quietRounding = function(expr){
+  withCallingHandlers(expr, warning=function(w){
+    if(grepl("rounding limits|stalled", conditionMessage(w))){
+      invokeRestart("muffleWarning")
+    }
+  })
+}
+
+test_that("fast mode multikernel models converge for every trait whatever their error variances", {
+  # With no covariance between the traits, each trait's BLUP is its single
+  # trait BLUP. An error variance close to zero for the first trait makes its
+  # right hand sides far larger than the second's, which must not stop the
+  # second trait from converging.
+  d = mvPop(nInd=80, nSnp=15)
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    scale = c(1, 0.5, 0.3)[seq_len(nTerm)]
+    Vu = lapply(scale, function(s) diag(c(0.02, 0.03))*s)
+    Ve = diag(c(1e-14, 1))
+    ans = quietRounding(mkModels[[model]](d$pop, traits=1:2, fastMode=TRUE,
+                                          Vu=Vu, Ve=Ve, maxIter=10000L,
+                                          simParam=d$SP))
+    one = mkModels[[model]](d$pop, traits=2, fastMode=TRUE,
+                            Vu=0.03*scale, Ve=1, maxIter=10000L,
+                            simParam=d$SP)
+    two = mkEffects(model, ans)
+    single = mkEffects(model, one)
+    for(k in seq_along(two)){
+      expect_gt(max(abs(single[[k]])), 0)
+      expect_equal(two[[k]][, 2], c(single[[k]]), tolerance=1e-6,
+                   info=paste(model, "term", k))
+    }
+  }
+})
+
+test_that("the RR-BLUP models keep the positions of their arguments", {
+  # The fast mode arguments come after the dots, so calls that give simParam
+  # and nThreads by position are unchanged
+  d = mvPop(nInd=60, nSnp=12)
+  expect_identical(RRBLUP(d$pop, 1, "pheno", 1, FALSE, 1000L, d$SP, 1L),
+                   RRBLUP(d$pop, simParam=d$SP, nThreads=1L))
+  for(model in names(mkModels)){
+    fit = mkModels[[model]]
+    expect_identical(fit(d$pop, 1, "pheno", 1, FALSE, 100L, d$SP, 1L),
+                     fit(d$pop, simParam=d$SP, nThreads=1L), info=model)
+  }
+})
+
+test_that("fast mode converges when a coupled term has no right hand side", {
+  # A response orthogonal to the paternal codes and the fixed effects gives
+  # that term a right hand side of zero, while the maternal term, which is
+  # coupled to it through the records, has one. The paternal term's
+  # tolerance is then a fraction of nothing, which rounding cannot reach, and
+  # the fit must still stop without a warning and give the BLUP.
+  d = mvPop(nInd=40, nSnp=4)
+  codes = mkCodes("RRBLUP_GCA", d$pop, d$SP)
+  X = mkFixed("RRBLUP_GCA", d$pop, codes)
+  set.seed(31)
+  z = rnorm(d$pop@nInd)
+  y = qr.resid(qr(cbind(X, codes[[2]])), z)
+  expect_lt(max(abs(crossprod(codes[[2]], y))), 1e-12)
+  d$pop@pheno[, 1] = y+10
+  Vu = c(0.02, 0.02)
+  expect_warning(ans <- RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=Vu, Ve=1,
+                                   simParam=d$SP), NA)
+  ref = denseMkBlup(d$pop@pheno[, 1, drop=FALSE], X, codes,
+                    lapply(Vu, as.matrix), matrix(1))
+  eff = mkEffects("RRBLUP_GCA", ans)
+  expected = mkExpected("RRBLUP_GCA", ref, codes)
+  for(k in seq_along(eff)){
+    expect_equal(matrix(eff[[k]], ncol=1), expected[[k]], tolerance=1e-6,
+                 info=paste("term", k))
+  }
+})
+
+test_that("fast mode handles terms that coincide at every marker", {
+  # In doubled haploids the maternal and paternal codes are the same, so the
+  # two GCA terms coincide at every marker, and with a variance ratio this
+  # large the identity in each block of the preconditioner is lost to
+  # rounding. The fit must still succeed. With equal variances the two terms
+  # share the effects equally, and together they are RRBLUP on the same codes
+  # with twice the variance.
+  d = mvPop(nInd=100, nSnp=12)
+  dh = setPheno(makeDH(d$pop, simParam=d$SP), simParam=d$SP)
+  ans = quietRounding(RRBLUP_GCA(dh, fastMode=TRUE, Vu=c(0.02, 0.02),
+                                 Ve=1e-16, maxIter=10000L, simParam=d$SP))
+  female = ans@female[[1]]@addEff
+  male = ans@male[[1]]@addEff
+  expect_true(all(is.finite(female)))
+  expect_gt(max(abs(female)), 0)
+  expect_equal(female, male, tolerance=1e-6)
+  ref = RRBLUP(dh, fastMode=TRUE, Vu=0.04, Ve=1e-16, maxIter=10000L,
+               simParam=d$SP)
+  expect_equal(2*female, ref@bv[[1]]@addEff, tolerance=1e-6)
+})
+
+test_that("coinciding terms share their effects in proportion to their variances", {
+  # Effects along the difference of two coinciding terms are unseen by the
+  # records and held at zero by the prior alone, which a large variance
+  # ratio dwarfs, so they are removed exactly. The terms then split each
+  # effect of RRBLUP with their summed variance in proportion to their own.
+  d = mvPop(nInd=100, nSnp=12)
+  dh = setPheno(makeDH(d$pop, simParam=d$SP), simParam=d$SP)
+  # Down to 1e-12, which every platform resolves; at 1e-16 whether the
+  # iteration converges depends on the platform's rounding
+  for(Ve in c(1, 1e-8, 1e-12)){
+    ans = quietRounding(RRBLUP_GCA(dh, fastMode=TRUE, Vu=c(0.02, 0.03),
+                                   Ve=Ve, maxIter=10000L, simParam=d$SP))
+    ref = RRBLUP(dh, fastMode=TRUE, Vu=0.05, Ve=Ve, maxIter=10000L,
+                 simParam=d$SP)
+    u = ref@bv[[1]]@addEff
+    expect_equal(ans@female[[1]]@addEff, 0.4*u, tolerance=1e-6,
+                 info=paste("Ve", Ve))
+    expect_equal(ans@male[[1]]@addEff, 0.6*u, tolerance=1e-6,
+                 info=paste("Ve", Ve))
+  }
+  # Two traits, one with an error variance far below the other's. At 1e-12
+  # the split drifts by about 1e-4 without removing the unseen directions,
+  # while the solve stays well within double precision on every platform; at
+  # 1e-16 whether it converges depends on the platform's rounding.
+  V = diag(c(0.02, 0.03))
+  Ve = diag(c(1e-12, 1))
+  expect_warning(ans <- quietRounding(
+    RRBLUP_GCA(dh, traits=1:2, fastMode=TRUE, Vu=list(V, 1.5*V), Ve=Ve,
+               maxIter=10000L, simParam=d$SP)), NA)
+  ref = RRBLUP(dh, traits=1:2, fastMode=TRUE, Vu=2.5*V, Ve=Ve,
+               maxIter=10000L, simParam=d$SP)
+  u = sapply(ref@bv, function(x) x@addEff)
+  expect_equal(sapply(ans@female, function(x) x@addEff), 0.4*u,
+               tolerance=1e-6)
+  expect_equal(sapply(ans@male, function(x) x@addEff), 0.6*u,
+               tolerance=1e-6)
+  # Singular covariance matrices, with variance in the first trait alone.
+  # The unseen directions are then confined to the trait directions both
+  # terms carry.
+  for(Ve in list(diag(2), diag(c(1e-16, 1)))){
+    ans = quietRounding(
+      RRBLUP_GCA(dh, traits=1:2, fastMode=TRUE,
+                 Vu=list(diag(c(0.02, 0)), diag(c(0.03, 0))), Ve=Ve,
+                 maxIter=10000L, simParam=d$SP))
+    ref = RRBLUP(dh, traits=1:2, fastMode=TRUE, Vu=diag(c(0.05, 0)), Ve=Ve,
+                 maxIter=10000L, simParam=d$SP)
+    u = sapply(ref@bv, function(x) x@addEff)
+    info = paste("Ve", Ve[1,1])
+    expect_equal(sapply(ans@female, function(x) x@addEff), 0.4*u,
+                 tolerance=1e-6, info=info)
+    expect_equal(sapply(ans@male, function(x) x@addEff), 0.6*u,
+                 tolerance=1e-6, info=info)
+  }
+})
+
+# A population of diploids made of groups of identical individuals, each
+# group given by its maternal and paternal haplotypes as strings of alleles,
+# with no traits, so that its response can be set by hand
+haploPop = function(groups, nPerGroup){
+  bits = function(h) as.integer(strsplit(h, "")[[1]])
+  H = do.call(rbind, lapply(groups, function(g){
+    rbind(bits(g[1]), bits(g[2]))[rep(1:2, nPerGroup), , drop=FALSE]
+  }))
+  nLoci = ncol(H)
+  genMap = data.frame(markerName=paste0("m", seq_len(nLoci)), chromosome=1,
+                      position=seq(0, 0.5, length.out=nLoci))
+  colnames(H) = genMap$markerName
+  founderPop = importHaplo(H, genMap, ploidy=2L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addSnpChip(nSnpPerChr=nLoci)
+  pop = newPop(founderPop, simParam=SP)
+  return(list(pop=pop, SP=SP))
+}
+
+# The BLUP of a multikernel model from the variance matrix of the records,
+# which needs no inverse of Vu, so Vu may be singular
+recordMkBlup = function(Y, X, Mlist, Vu, Ve){
+  Y = as.matrix(Y)
+  n = nrow(Y)
+  V = kronecker(Ve, diag(n))
+  for(k in seq_along(Mlist)){
+    V = V + kronecker(Vu[[k]], tcrossprod(Mlist[[k]]))
+  }
+  XX = kronecker(diag(ncol(Y)), X)
+  Vi = solve(V)
+  b = solve(crossprod(XX, Vi %*% XX), crossprod(XX, Vi %*% c(Y)))
+  r = Vi %*% (c(Y)-XX %*% b)
+  u = lapply(seq_along(Mlist), function(k){
+    matrix(kronecker(Vu[[k]], t(Mlist[[k]])) %*% r, ncol(Mlist[[k]]),
+           ncol(Y))
+  })
+  return(list(beta=matrix(b, ncol(X)), u=u))
+}
+
+test_that("fast mode gives the BLUP when markers depend on each other", {
+  # Every individual of a group is the same, and the maternal and paternal
+  # codes of the two markers are linearly dependent across the groups, so
+  # some effects cancel across markers. Only the prior holds them, against
+  # data many orders of magnitude stronger, so a residual small next to the
+  # right hand sides would leave them far off.
+  d = haploPop(list(c("00", "11"), c("10", "10"), c("01", "00")), 32)
+  y = rep(c(0, 1, 3), each=32)
+  d$pop@pheno = matrix(y, ncol=1)
+  ans = RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=c(0.02, 0.03), Ve=1e-8,
+                   maxIter=10000L, simParam=d$SP)
+  codes = mkCodes("RRBLUP_GCA", d$pop, d$SP)
+  X = matrix(1, length(y), 1)
+  ref = denseMkBlup(matrix(y), X, codes, list(matrix(0.02), matrix(0.03)),
+                    matrix(1e-8))
+  expect_equal(ans@female[[1]]@addEff, c(ref$u[[1]]), tolerance=1e-6)
+  expect_equal(ans@male[[1]]@addEff, c(ref$u[[2]]), tolerance=1e-6)
+  # With a variance ratio this much larger, rounding alone moves the effects
+  # that cancel across the markers by more than the tolerance, and the fit
+  # must say so rather than report convergence
+  expect_warning(RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=c(0.02, 0.03),
+                            Ve=1e-12, maxIter=10000L, simParam=d$SP),
+                 "rounding limits the accuracy")
+})
+
+test_that("fast mode gives the BLUP when several null directions share a marker", {
+  # At the first marker the three SCA codes are proportional once the
+  # intercept and the summed dominance codes are absorbed, so their cross
+  # products have two null vectors. With each term's variance confined to
+  # different trait directions, no single null vector is carried by every
+  # term it involves, but combinations of them are, and those are removed
+  # together. The reference is the BLUP from the variance matrix of the
+  # records, which takes the singular covariance matrices as they are.
+  d = haploPop(list(c("00", "00"), c("10", "10"), c("11", "01")), 32)
+  set.seed(77)
+  Y = cbind(rep(c(0, 1, 3), each=32), rep(c(2, -1, 1), each=32))+
+    matrix(rnorm(2*96, sd=1e-3), ncol=2)
+  d$pop@pheno = Y
+  Vu = list(diag(c(0.02, 0)), diag(c(0, 0.03)), matrix(0.04, 2, 2))
+  Ve = diag(c(1e-6, 1e-6))
+  ans = RRBLUP_SCA(d$pop, traits=1:2, fastMode=TRUE, Vu=Vu, Ve=Ve,
+                   maxIter=10000L, simParam=d$SP)
+  codes = mkCodes("RRBLUP_SCA", d$pop, d$SP)
+  X = cbind(1, rowSums(codes[[3]]))
+  ref = recordMkBlup(Y, X, codes, Vu, Ve)
+  expect_equal(sapply(ans@gv, function(x) x@addEff), ref$u[[1]],
+               tolerance=1e-6)
+  expect_equal(sapply(ans@gv, function(x) x@addEffMale), ref$u[[2]],
+               tolerance=1e-6)
+})
+
+test_that("fast mode separates terms whose covariance matrices are nearly aligned", {
+  # In doubled haploids the two GCA terms have the same code at the one
+  # marker, and each term's variance lies along one trait direction, (1,0)
+  # and (1,d), so the records tell them apart only through differences of
+  # order d. Next to the variance ratio those are below the precision of the
+  # preconditioner's blocks, which must not stop the iteration from
+  # searching along them. With u1 = a*(1,0) and u2 = b*(1,d), each of prior
+  # variance 1/64, and 100 records of code -1 or 1, the BLUP solves
+  #   (100/d^2)*(a+b)+64*a = 0
+  #   (100/d^2)*(a+b)-100*(1-b)+64*b = 0
+  # whose solution is below.
+  d = 2^-27
+  dd = haploPop(list(c("0", "0"), c("1", "1")), 50)
+  x = rep(c(-1, 1), each=50)
+  dd$pop@pheno = cbind(0, d*x)
+  Vu = list(diag(c(1/64, 0)), tcrossprod(c(1, d))/64)
+  ans = quietRounding(RRBLUP_GCA(dd$pop, traits=1:2, fastMode=TRUE, Vu=Vu,
+                                 Ve=diag(2)*d^2, maxIter=10000L,
+                                 simParam=dd$SP))
+  k = 0.64*d^2
+  b = 100*(1+k)/(164*(1+k)+64)
+  a = -b/(1+k)
+  female = sapply(ans@female, function(x) x@addEff)
+  male = sapply(ans@male, function(x) x@addEff)
+  expect_equal(female[1], a, tolerance=1e-6)
+  expect_equal(male[1], b, tolerance=1e-6)
+  expect_lt(abs(female[2]), 1e-12)
+  expect_equal(male[2], b*d, tolerance=1e-6)
+})
+
+test_that("fast mode multikernel models are not affected by the mean of the response", {
+  # The intercept absorbs any shift of the response, so the marker effects
+  # must not change. A large shift keeps the response's variation in its low
+  # order bits, which must not be rounded away before the mean is taken off.
+  # The responses are rounded to multiples of 2^-20, so that shifted by 2^30
+  # they are still exact and the two fits are given the same information.
+  d = mvPop(nInd=60, nSnp=12)
+  d$pop@pheno = round(d$pop@pheno*2^20)/2^20
+  shifted = d$pop
+  shifted@pheno = shifted@pheno+2^30
+  expect_identical(shifted@pheno-2^30, d$pop@pheno)
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    for(traits in list(1L, 1:2)){
+      if(length(traits)==1){
+        Vu = 0.02*c(1, 0.5, 0.3)[seq_len(nTerm)]
+        Ve = 0.3
+      }else{
+        Vu = lapply(c(1, 0.5, 0.3)[seq_len(nTerm)],
+                    function(s) s*mvVu[1:2, 1:2])
+        Ve = mvVe[1:2, 1:2]
+      }
+      ref = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      ans = mkModels[[model]](shifted, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      expect_equal(mkEffects(model, ans), mkEffects(model, ref),
+                   tolerance=1e-7, info=paste(model, length(traits)))
+    }
+  }
+})
+
+test_that("fast mode keeps each fixed effect level's variation whatever the levels' means", {
+  # Two fixed effect levels of 32 individuals, with maternal codes z of -1 or
+  # 1 balanced within each. The first level's responses are all 2^60 and the
+  # second's are z, so the level effects absorb the first level entirely and
+  # the BLUP of the maternal effect is z'y/(z'z+Ve/Vu) = 32/(64+50) = 16/57.
+  # Giving the second level -z instead reverses it. Taking one offset off
+  # every level would round the second level's variation away next to 2^60.
+  d = haploPop(list(c("0", "0"), c("1", "0"), c("0", "0"), c("1", "0")), 16)
+  d$pop@fixEff = rep(1:2, each=32)
+  z = rep(c(-1, 1, -1, 1), each=16)
+  for(sgn in c(1, -1)){
+    d$pop@pheno = matrix(c(rep(2^60, 32), sgn*z[33:64]), ncol=1)
+    ans = RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=c(0.02, 0), Ve=1,
+                     simParam=d$SP)
+    expect_equal(ans@female[[1]]@addEff, sgn*16/57, tolerance=1e-8,
+                 info=paste("sign", sgn))
+  }
 })

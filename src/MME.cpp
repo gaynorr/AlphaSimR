@@ -1941,6 +1941,114 @@ arma::rowvec negMeanProduct(const arma::rowvec& Mmean, const arma::mat& U){
   return out;
 }
 
+// Average effects and dominance effects of a dominance model, trait by trait,
+// from the fitted additive effects ua and dominance deviations ud. freqMat
+// holds the genotype frequencies of each marker that is not fixed, and meanD
+// the fitted effect of the summed dominance codes for each trait. Shared by
+// callRRBLUP_D and the fast mode of RRBLUP_D.
+void domAverageEffects(const arma::mat& freqMat, const arma::uvec& fixed,
+                       const arma::mat& ua, const arma::mat& ud,
+                       const arma::rowvec& meanDAll, arma::uword ploidy,
+                       int nThreads, arma::mat& alpha, arma::mat& d){
+  //Scaled genotypes
+  double dP = double(ploidy);
+  arma::vec xx(ploidy+1);
+  for(arma::uword i=0; i<xx.n_elem; ++i)
+    xx(i) = double(i);
+  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
+  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
+
+  arma::uword m = ua.n_rows;
+  arma::uword nT = ua.n_cols;
+  alpha.set_size(m,nT);
+  d.set_size(m,nT);
+  for(arma::uword k=0; k<nT; ++k){
+    double meanD = meanDAll(k);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for(arma::uword j=0; j<m; ++j){
+      double genoMu, gvMu;
+      arma::vec gv(ploidy+1);
+      if(fixed(j) == 1){
+        d(j,k) = 0;
+        alpha(j,k) = 0;
+      }else{
+        d(j,k) = ud(j,k) + meanD;
+        gv = xa*ua(j,k) + xd*d(j,k);
+        genoMu = accu(freqMat.col(j)%xa);
+        gvMu = accu(freqMat.col(j)%gv);
+        alpha(j,k) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
+          accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
+      }
+    }
+  }
+}
+
+// Average effects of each parent in an SCA model, trait by trait, from the
+// fitted maternal, paternal and dominance effects. Mmean1 and Mmean2 are the
+// mean maternal and paternal codes, p12 the frequency of records carrying the
+// allele on both haplotypes, and meanD the fitted effect of the summed
+// dominance codes for each trait. Shared by callRRBLUP_SCA and the fast mode
+// of RRBLUP_SCA.
+void scaAverageEffects(const arma::rowvec& Mmean1, const arma::rowvec& Mmean2,
+                       const arma::rowvec& p12, const arma::uvec& fixed,
+                       const arma::mat& u0, const arma::mat& u1,
+                       const arma::mat& u2, const arma::rowvec& meanDAll,
+                       int nThreads, arma::mat& alpha1, arma::mat& alpha2,
+                       arma::mat& d){
+  arma::rowvec p1 = (Mmean1+1)/2;
+  arma::rowvec p2 = (Mmean2+1)/2;
+  arma::rowvec intraD = p12-p1%p2;
+  arma::uword m = u0.n_rows;
+  arma::uword nT = u0.n_cols;
+  alpha1.set_size(m,nT);
+  alpha2.set_size(m,nT);
+  d.set_size(m,nT);
+  for(arma::uword k=0; k<nT; ++k){
+    double meanD = meanDAll(k);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for(arma::uword i=0; i<Mmean1.n_cols; ++i){
+      double gv1, gv0, gvMu, alpha, numer, denom;
+      if(fixed(i)==0){
+        d(i,k) = u2(i,k) + meanD;
+        //alpha1
+        gv1 = (p2(i)+intraD(i)/p1(i))*(u0(i,k)+u1(i,k)) +
+          ((1-p2(i))-intraD(i)/p1(i))*d(i,k);
+        gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i,k) +
+          ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u0(i,k)-u1(i,k));
+        gvMu = p1(i)*gv1+(1-p1(i))*gv0;
+        numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) +
+          (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
+        denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) +
+          (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
+        alpha = numer/denom;
+        if(!std::isfinite(alpha)) alpha=0;
+        alpha1(i,k) = alpha;
+        //alpha2
+        gv1 = (p1(i)+intraD(i)/p2(i))*(u0(i,k)+u1(i,k)) +
+          ((1-p1(i))-intraD(i)/p2(i))*d(i,k);
+        gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i,k) +
+          ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u0(i,k)-u1(i,k));
+        gvMu = p2(i)*gv1+(1-p2(i))*gv0;
+        numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) +
+          (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
+        denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) +
+          (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
+        alpha = numer/denom;
+        if(!std::isfinite(alpha)) alpha=0;
+        alpha2(i,k) = alpha;
+      }else{
+        alpha1(i,k) = 0;
+        alpha2(i,k) = 0;
+        d(i,k) = 0;
+      }
+    }
+  }
+}
+
 // Called by RRBLUP_D function
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
@@ -1957,14 +2065,6 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
   Mlist(1) = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(1),1));
-
-  //Scaled genotypes
-  double dP = double(ploidy);
-  arma::vec xx(ploidy+1);
-  for(arma::uword i=0; i<xx.n_elem; ++i)
-    xx(i) = double(i);
-  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
-  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
   
   // Calculate genotype frequencies
   arma::mat freqMat(ploidy+1,M.n_cols);
@@ -1989,7 +2089,6 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
 
   // The genotypes are only needed for the frequencies above, so they are
   // freed before the model is fitted rather than held through it
-  arma::uword m = M.n_cols;
   M.reset();
   Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
 
@@ -2002,30 +2101,10 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
   // same for every trait, and a multiple trait fit has one column of fixed
   // effects and of marker effects per trait.
   arma::mat beta = ans["beta"];
-  arma::uword nT = beta.n_cols;
-  arma::mat alpha(m,nT), d(m,nT);
   arma::field<arma::mat> u = ans["u"];
-  for(arma::uword k=0; k<nT; ++k){
-    double meanD = beta(beta.n_rows-1,k);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-    for(arma::uword j=0; j<m; ++j){
-      double genoMu, gvMu;
-      arma::vec gv(ploidy+1);
-      if(fixed(j) == 1){
-        d(j,k) = 0;
-        alpha(j,k) = 0;
-      }else{
-        d(j,k) = u(1)(j,k) + meanD;
-        gv = xa*u(0)(j,k) + xd*d(j,k);
-        genoMu = accu(freqMat.col(j)%xa);
-        gvMu = accu(freqMat.col(j)%gv);
-        alpha(j,k) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
-          accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
-      }
-    }
-  }
+  arma::mat alpha, d;
+  domAverageEffects(freqMat, fixed, u(0), u(1), beta.row(beta.n_rows-1),
+                    ploidy, nThreads, alpha, d);
 
   return Rcpp::List::create(
     Rcpp::Named("alpha")=alpha,
@@ -2268,56 +2347,11 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
   // Solve for average effect, trait by trait. The frequencies above are the
   // same for every trait, and a multiple trait fit has one column of fixed
   // effects and of marker effects per trait.
-
-  arma::rowvec p1 = (Mmean1+1)/2;
-  arma::rowvec p2 = (Mmean2+1)/2;
-  arma::rowvec intraD = p12-p1%p2;
   arma::mat beta = ans["beta"];
-  arma::uword nT = beta.n_cols;
-  arma::mat alpha1(m,nT), alpha2(m,nT), d(m,nT);
   arma::field<arma::mat> u = ans["u"];
-  for(arma::uword k=0; k<nT; ++k){
-    double meanD = beta(beta.n_rows-1,k);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-    for(arma::uword i=0; i<Mmean1.n_cols; ++i){
-      double gv1, gv0, gvMu, alpha, numer, denom;
-      if(fixed(i)==0){
-        d(i,k) = u(2)(i,k) + meanD;
-        //alpha1
-        gv1 = (p2(i)+intraD(i)/p1(i))*(u(0)(i,k)+u(1)(i,k)) +
-          ((1-p2(i))-intraD(i)/p1(i))*d(i,k);
-        gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i,k) +
-          ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u(0)(i,k)-u(1)(i,k));
-        gvMu = p1(i)*gv1+(1-p1(i))*gv0;
-        numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) +
-          (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
-        denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) +
-          (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
-        alpha = numer/denom;
-        if(!std::isfinite(alpha)) alpha=0;
-        alpha1(i,k) = alpha;
-        //alpha2
-        gv1 = (p1(i)+intraD(i)/p2(i))*(u(0)(i,k)+u(1)(i,k)) +
-          ((1-p1(i))-intraD(i)/p2(i))*d(i,k);
-        gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i,k) +
-          ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u(0)(i,k)-u(1)(i,k));
-        gvMu = p2(i)*gv1+(1-p2(i))*gv0;
-        numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) +
-          (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
-        denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) +
-          (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
-        alpha = numer/denom;
-        if(!std::isfinite(alpha)) alpha=0;
-        alpha2(i,k) = alpha;
-      }else{
-        alpha1(i,k) = 0;
-        alpha2(i,k) = 0;
-        d(i,k) = 0;
-      }
-    }
-  }
+  arma::mat alpha1, alpha2, d;
+  scaAverageEffects(Mmean1, Mmean2, p12, fixed, u(0), u(1), u(2),
+                    beta.row(beta.n_rows-1), nThreads, alpha1, alpha2, d);
 
   return Rcpp::List::create(
     Rcpp::Named("alpha1")=alpha1,

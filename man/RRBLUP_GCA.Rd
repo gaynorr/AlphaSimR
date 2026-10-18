@@ -10,10 +10,14 @@ RRBLUP_GCA(
   use = "pheno",
   snpChip = 1,
   useQtl = FALSE,
-  maxIter = 100L,
+  maxIter = NULL,
   simParam = NULL,
   nThreads = NULL,
-  ...
+  ...,
+  fastMode = FALSE,
+  Vu = NULL,
+  Ve = NULL,
+  nSubsample = 5000L
 )
 }
 \arguments{
@@ -34,7 +38,9 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations for convergence.}
+\item{maxIter}{maximum number of iterations. In fast mode, it limits the
+iterations of the conjugate gradient solver, and NULL gives 1000.
+Otherwise it limits the iterations of the REML fit, and NULL gives 100.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -45,6 +51,31 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments if using a function for
 traits}
+
+\item{fastMode}{should the model be solved by preconditioned conjugate
+gradient where that is expected to be faster, as it is for large training
+populations. The cost of both ways of fitting the model is estimated from
+the numbers of records, markers, traits and nSubsample, and fast mode is
+used only when its cost is less than half that of the default, and never
+when nSubsample covers every record. Otherwise the model is fitted as it
+is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+always uses fast mode. See details.}
+
+\item{Vu}{the variances of the marker effects, one per random term, used
+only when fastMode is TRUE. For one trait, a vector, and for several
+traits, a list of covariance matrices among the traits, one per term, or
+the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
+this and Ve are estimated by REML. See details.}
+
+\item{Ve}{the error variance, or for several traits the covariance matrix
+of the errors among traits, which must be positive definite. Only used
+when fastMode is TRUE. If value is NULL, this and Vu are estimated by
+REML. See details.}
+
+\item{nSubsample}{the number of records used to estimate the variance
+components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+when fastMode is FALSE. A value of zero uses every record, which is only
+advisable for small training populations.}
 }
 \description{
 Fits an RR-BLUP model that estimates separate marker effects for
@@ -64,6 +95,18 @@ The solution can be applied with \code{\link{setEBV}}:
 predictions, while \code{value="gv"} predicts total hybrid genetic value.
 These model predictions obviously differ from the observed cross means
 returned by \code{\link{calcGCA}}.
+
+Setting fastMode to TRUE gives a fast and low memory alternative for
+training populations too large to fit directly. It is used only where it
+is expected to be faster, see fastMode. The mixed model equations
+of every random term and trait are then solved together by preconditioned
+conjugate gradient, iterating over the genotypes rather than over a stored
+coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
+use stays close to the size of the genotypes. The variance components are
+estimated by REML on a random subset of the records, set by nSubsample,
+unless Vu and Ve are supplied, and the marker effects are always solved for
+using every record. Given the variance components, the result is the BLUP
+of the same model that is fitted when fastMode is FALSE.
 }
 \examples{
 #Create founder haplotypes
@@ -86,4 +129,10 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+#Run GS model in fast mode
+ans = RRBLUP_GCA(pop, fastMode=TRUE, simParam=SP)
+
+}
+\references{
+\insertAllCited{}
 }

@@ -6,8 +6,8 @@
 \usage{
 fitFastRRBLUP(
   pop,
+  y,
   traits,
-  use,
   snpChip,
   useQtl,
   maxIter,
@@ -15,16 +15,15 @@ fitFastRRBLUP(
   Ve,
   nSubsample,
   simParam,
-  nThreads,
-  ...
+  nThreads
 )
 }
 \arguments{
 \item{pop}{the training population}
 
-\item{traits}{the trait or traits to model}
+\item{y}{the response, as getResponse returns it}
 
-\item{use}{the values the model is trained on}
+\item{traits}{the trait or traits to model, as given to RRBLUP}
 
 \item{snpChip}{the SNP chip, or trait whose QTL, to use}
 
@@ -42,8 +41,6 @@ components}
 \item{simParam}{an object of class \code{\link{SimParam}}}
 
 \item{nThreads}{number of threads}
-
-\item{...}{additional arguments if using a function for traits}
 }
 \description{
 The fast mode of \code{\link{RRBLUP}}, which solves the

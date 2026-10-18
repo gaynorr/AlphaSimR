@@ -148,8 +148,8 @@ responseNames = function(traits, nResponse){
 #' nThreads have already been resolved by the caller.
 #'
 #' @param pop the training population
-#' @param traits the trait or traits to model
-#' @param use the values the model is trained on
+#' @param y the response, as getResponse returns it
+#' @param traits the trait or traits to model, as given to RRBLUP
 #' @param snpChip the SNP chip, or trait whose QTL, to use
 #' @param useQtl whether QTL genotypes are used instead of a SNP chip
 #' @param maxIter maximum number of conjugate gradient iterations
@@ -159,13 +159,10 @@ responseNames = function(traits, nResponse){
 #' components
 #' @param simParam an object of class \code{\link{SimParam}}
 #' @param nThreads number of threads
-#' @param ... additional arguments if using a function for traits
 #'
 #' @keywords internal
-fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
-                         Vu, Ve, nSubsample, simParam, nThreads, ...){
-  y = getResponse(pop=pop,trait=traits,use=use,
-                  simParam=simParam,nThreads=nThreads,...)
+fitFastRRBLUP = function(pop, y, traits, snpChip, useQtl, maxIter,
+                         Vu, Ve, nSubsample, simParam, nThreads){
   # A function of the traits can return a plain vector, which has no columns
   # to count
   y = as.matrix(y)
@@ -200,13 +197,7 @@ fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
       Vu = 1
       Ve = 1
     }
-    nSubsample = as.integer(nSubsample)
-    if((nSubsample>0L) & (nSubsample<nrow(y))){
-      # Sampling here rather than in C++ keeps it under set.seed()
-      subset = sort(sample.int(nrow(y), nSubsample))
-    }else{
-      subset = seq_len(nrow(y))
-    }
+    subset = fastSubset(nSubsample, nrow(y))
   }else{
     subset = 1L
   }
@@ -269,6 +260,193 @@ fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
 
 
 
+#' @title Records for fast mode variance components
+#'
+#' @description The records the fast mode of the RR-BLUP models estimates
+#' variance components on: a random subset of nSubsample records, or every
+#' record when nSubsample is zero or at least the number of records.
+#'
+#' @param nSubsample the number of records to use
+#' @param nRecords the number of records
+#'
+#' @keywords internal
+fastSubset = function(nSubsample, nRecords){
+  nSubsample = as.integer(nSubsample)
+  if((nSubsample>0L) & (nSubsample<nRecords)){
+    # Sampling here rather than in C++ keeps it under set.seed()
+    return(sort(sample.int(nRecords, nSubsample)))
+  }
+  return(seq_len(nRecords))
+}
+
+#' @title Variance components for a fast multikernel model
+#'
+#' @description Puts Vu and Ve in the form the fast mode of
+#' \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}} and
+#' \code{\link{RRBLUP_SCA}} passes to C++: a list with one nTraits by nTraits
+#' matrix per random term, and an nTraits by nTraits matrix. For one trait,
+#' Vu may be a vector with one value per term, and for several traits a list
+#' of covariance matrices or the block diagonal matrix held in the Vu slot of
+#' a fit, so a fit's own values can be passed back. When either is NULL, both
+#' are estimated, and placeholders are returned.
+#'
+#' @param Vu the marker effect variances, or NULL
+#' @param Ve the error variance, or NULL
+#' @param nTerm the number of random terms of the model
+#' @param nTraits the number of traits fitted
+#'
+#' @keywords internal
+fastMKVarComp = function(Vu, Ve, nTerm, nTraits){
+  if(is.null(Vu) | is.null(Ve)){
+    # Values are not used, but something has to be passed
+    return(list(est=TRUE, Vu=rep(list(diag(nTraits)), nTerm),
+                Ve=diag(nTraits)))
+  }
+  if(is.list(Vu)){
+    if(length(Vu)!=nTerm){
+      stop("Vu must have one entry per random term, ", nTerm,
+           " for this model")
+    }
+    Vu = lapply(Vu, as.matrix)
+  }else if(nTraits==1){
+    Vu = as.numeric(Vu)
+    if(length(Vu)!=nTerm){
+      stop("Vu must have one value per random term, ", nTerm,
+           " for this model")
+    }
+    Vu = lapply(Vu, as.matrix)
+  }else{
+    Vu = as.matrix(Vu)
+    n = nTerm*nTraits
+    if(!all(dim(Vu)==n)){
+      stop("Vu must be a list of ", nTerm, " covariance matrices, or a ",
+           "block diagonal matrix with ", n, " rows, as in the Vu slot of ",
+           "a fit")
+    }
+    blocks = lapply(seq_len(nTerm),
+                    function(i) (i-1L)*nTraits+seq_len(nTraits))
+    offBlock = Vu
+    for(b in blocks){
+      offBlock[b,b] = 0
+    }
+    if(any(offBlock!=0)){
+      stop("Vu given as a matrix must be block diagonal, as in the Vu slot ",
+           "of a fit")
+    }
+    Vu = lapply(blocks, function(b) Vu[b,b,drop=FALSE])
+  }
+  Vu = lapply(Vu, unname)
+  return(list(est=FALSE, Vu=Vu, Ve=unname(as.matrix(Ve))))
+}
+
+#' @title Costs of the two routes of a genomic selection model
+#'
+#' @description Estimates of the work done by the direct route of a model
+#' and by its fast route, in floating point operations, for deciding which is
+#' faster. Only the terms that grow fastest are counted, so the estimates are
+#' rough, but they only have to rank the two routes.
+#'
+#' The direct route of the multikernel models is a REML fit on every record,
+#' costed as useCoefficientSide in src/mme.h costs it, on whichever of the
+#' variance matrix of the records and Henderson's equations is cheaper. The
+#' fast route is the same fit on nSubsample records, given each term's codes
+#' or, with more markers than records in the subset, a factor of their cross
+#' product, plus the conjugate gradient solve on every record. The direct
+#' route of RRBLUP forms and decomposes the smaller of the two cross products
+#' of the markers, and its fast route does the same on the subset.
+#'
+#' The cost of the solve was measured against the REML fits it is compared
+#' with, at 20,000 records and 2,000 markers: about 2,500 operations per
+#' record, marker and term, growing with about the square root of the number
+#' of traits, because the traits share the reads of the genotypes.
+#'
+#' @param model the name of the model's function
+#' @param nInd the number of records
+#' @param nMarker the number of markers
+#' @param nTraits the number of traits
+#' @param nFixEff the number of fixed effect levels
+#' @param nSubsample the number of records in the subset
+#'
+#' @keywords internal
+fastModeCosts = function(model, nInd, nMarker, nTraits, nFixEff, nSubsample){
+  n = as.double(nInd)
+  m = as.double(nMarker)
+  nT = as.double(nTraits)
+  q = as.double(nFixEff)
+  nSub = as.double(nSubsample)
+  remlCost = function(nRec, nCoef, nPar){
+    nEval = 10
+    recordSide = nEval*(nRec^3+nRec^2*nCoef)
+    coefficientSide = nRec*nCoef^2+nEval*(nCoef^3+nRec*nCoef*(nPar+2))
+    return(min(recordSide, coefficientSide))
+  }
+  cgCost = function(nKernel){
+    return(2500*n*m*nKernel*sqrt(nT))
+  }
+  if(model=="RRBLUP"){
+    s = min(n, m)
+    sSub = min(nSub, m)
+    # Forming the cross product, and its eigendecomposition with vectors
+    direct = n*m*s+10*s^3
+    fast = nSub*m*sSub+10*sSub^3+cgCost(1)
+  }else{
+    nKernel = if(model=="RRBLUP_SCA") 3 else 2
+    if(model!="RRBLUP_GCA"){
+      # The summed dominance codes
+      q = q+1
+    }
+    nPar = (nKernel+1)*nT*(nT+1)/2
+    direct = remlCost(n*nT, nT*(q+nKernel*m), nPar)
+    mSub = min(m, nSub)
+    fast = remlCost(nSub*nT, nT*(q+nKernel*mSub), nPar)+cgCost(nKernel)
+    if(m>=nSub){
+      # Each term's cross product on the subset and its decomposition
+      fast = fast+nKernel*(nSub^2*m+10*nSub^3)
+    }
+  }
+  return(list(direct=direct, fast=fast))
+}
+
+#' @title Whether a model takes its fast route
+#'
+#' @description fastMode asks for the fast route of a model, which is taken
+#' when it is expected to be faster than the direct route. Supplied Vu and Ve
+#' always take it, because the direct route cannot use them. A subset of
+#' every record never does, because the fast route would then repeat the
+#' direct route's REML fit and add the solve to it. Otherwise the fast route
+#' is taken when its cost from \code{\link{fastModeCosts}} is less than half
+#' that of the direct route. The margin allows for the REML fit on the subset,
+#' whose number of iterations varies, taking longer than its estimate, as it
+#' did by up to half again in the measurements. Setting the
+#' option AlphaSimR.fastModeRoute to "fast" always takes the fast route,
+#' which the tests use to exercise it on small populations.
+#'
+#' @param model the name of the model's function
+#' @param Vu the supplied marker effect variances, or NULL
+#' @param Ve the supplied error variance, or NULL
+#' @param nInd the number of records
+#' @param nMarker the number of markers
+#' @param nTraits the number of traits
+#' @param nFixEff the number of fixed effect levels
+#' @param nSubsample the number of records in the subset
+#'
+#' @keywords internal
+useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
+                        nSubsample){
+  if(!is.null(Vu) & !is.null(Ve)){
+    return(TRUE)
+  }
+  if(identical(getOption("AlphaSimR.fastModeRoute"), "fast")){
+    return(TRUE)
+  }
+  nSubsample = as.integer(nSubsample)
+  if((nSubsample<=0L) | (nSubsample>=nInd)){
+    return(FALSE)
+  }
+  costs = fastModeCosts(model, nInd, nMarker, nTraits, nFixEff, nSubsample)
+  return(costs$fast<0.5*costs$direct)
+}
+
 #' @title RR-BLUP Model
 #'
 #' @description
@@ -282,7 +460,8 @@ fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
 #' among the traits for the marker effects and for the errors.
 #'
 #' Setting fastMode to TRUE gives a fast and low memory alternative for
-#' training populations too large to fit directly. The mixed model equations
+#' training populations too large to fit directly. It is used only where it
+#' is expected to be faster, see fastMode. The mixed model equations
 #' are then solved by preconditioned conjugate gradient, iterating over the
 #' genotypes rather than over a stored coefficient matrix
 #' \insertCite{stranden1999Solving}{AlphaSimR}. Neither the coefficient
@@ -321,13 +500,18 @@ fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations. When fastMode is FALSE, it
-#' is only used when the number of traits is greater than 1, and limits the
-#' iterations of the REML fit. When fastMode is TRUE, it limits the
-#' iterations of the conjugate gradient solver.
+#' @param maxIter maximum number of iterations. In fast mode, it limits the
+#' iterations of the conjugate gradient solver. Otherwise it is only used
+#' when the number of traits is greater than 1, and limits the iterations of
+#' the REML fit.
 #' @param fastMode should the model be solved by preconditioned conjugate
-#' gradient, using less time and memory for large training populations.
-#' See details.
+#' gradient where that is expected to be faster, as it is for large training
+#' populations. The cost of both ways of fitting the model is estimated from
+#' the numbers of records, markers, traits and nSubsample, and fast mode is
+#' used only when its cost is less than half that of the default, and never
+#' when nSubsample covers every record. Otherwise the model is fitted as it
+#' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+#' always uses fast mode. See details.
 #' @param Vu marker effect variance, or for several traits the covariance
 #' matrix of the marker effects among traits. Only used when fastMode is
 #' TRUE. If value is NULL, this and Ve are estimated by REML. See details.
@@ -377,9 +561,9 @@ fitFastRRBLUP = function(pop, traits, use, snpChip, useQtl, maxIter,
 #'
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
-                  useQtl=FALSE, maxIter=1000L, fastMode=FALSE,
-                  Vu=NULL, Ve=NULL, nSubsample=5000L,
-                  simParam=NULL, nThreads=NULL, ...){
+                  useQtl=FALSE, maxIter=1000L,
+                  simParam=NULL, nThreads=NULL, ...,
+                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -389,20 +573,32 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     nThreads = as.integer(nThreads)
   }
 
-  if(fastMode){
-    return(fitFastRRBLUP(pop=pop, traits=traits, use=use, snpChip=snpChip,
-                         useQtl=useQtl, maxIter=maxIter, Vu=Vu, Ve=Ve,
-                         nSubsample=nSubsample, simParam=simParam,
-                         nThreads=nThreads, ...))
-  }
   # The direct solver always estimates the variance components, so supplied
   # ones would be ignored without notice
-  if(!is.null(Vu) | !is.null(Ve)){
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
     stop("Vu and Ve can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
+
+  if(fastMode){
+    if(useQtl){
+      nLoci = simParam$traits[[snpChip]]@nLoci
+    }else{
+      nLoci = simParam$snpChips[[snpChip]]@nLoci
+    }
+    if(useFastRoute("RRBLUP", Vu, Ve, NROW(y), nLoci, NCOL(y),
+                    length(unique(pop@fixEff)), nSubsample)){
+      return(fitFastRRBLUP(pop=pop, y=y, traits=traits, snpChip=snpChip,
+                           useQtl=useQtl, maxIter=maxIter, Vu=Vu, Ve=Ve,
+                           nSubsample=nSubsample, simParam=simParam,
+                           nThreads=nThreads))
+    }
+  }
+  # A function of the traits can return a plain vector, which has no columns
+  # to count
+  y = as.matrix(y)
 
   traits = convertTraitsToNames(traits, simParam)
 
@@ -667,7 +863,30 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations for convergence.
+#' @param maxIter maximum number of iterations. In fast mode, it limits the
+#' iterations of the conjugate gradient solver, and NULL gives 1000.
+#' Otherwise it limits the iterations of the REML fit, and NULL gives 100.
+#' @param fastMode should the model be solved by preconditioned conjugate
+#' gradient where that is expected to be faster, as it is for large training
+#' populations. The cost of both ways of fitting the model is estimated from
+#' the numbers of records, markers, traits and nSubsample, and fast mode is
+#' used only when its cost is less than half that of the default, and never
+#' when nSubsample covers every record. Otherwise the model is fitted as it
+#' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+#' always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term, used
+#' only when fastMode is TRUE. For one trait, a vector, and for several
+#' traits, a list of covariance matrices among the traits, one per term, or
+#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
+#' this and Ve are estimated by REML. See details.
+#' @param Ve the error variance, or for several traits the covariance matrix
+#' of the errors among traits, which must be positive definite. Only used
+#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
+#' REML. See details.
+#' @param nSubsample the number of records used to estimate the variance
+#' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+#' when fastMode is FALSE. A value of zero uses every record, which is only
+#' advisable for small training populations.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -682,6 +901,21 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' Vu slot of the result then holds the two covariance matrices of the
 #' marker effects as a block diagonal matrix, additive first, with rows and
 #' columns named "a:trait" and "d:trait".
+#'
+#' Setting fastMode to TRUE gives a fast and low memory alternative for
+#' training populations too large to fit directly. It is used only where it
+#' is expected to be faster, see fastMode. The mixed model equations
+#' of every random term and trait are then solved together by preconditioned
+#' conjugate gradient, iterating over the genotypes rather than over a stored
+#' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
+#' use stays close to the size of the genotypes. The variance components are
+#' estimated by REML on a random subset of the records, set by nSubsample,
+#' unless Vu and Ve are supplied, and the marker effects are always solved for
+#' using every record. Given the variance components, the result is the BLUP
+#' of the same model that is fitted when fastMode is FALSE.
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -704,10 +938,14 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Evaluate accuracy
 #' cor(gv(pop), ebv(pop))
 #'
+#' #Run GS model in fast mode
+#' ans = RRBLUP_D(pop, fastMode=TRUE, simParam=SP)
+#'
 #' @export
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
-                    useQtl=FALSE, maxIter=100L,
-                    simParam=NULL, nThreads=NULL, ...){
+                    useQtl=FALSE, maxIter=NULL,
+                    simParam=NULL, nThreads=NULL, ...,
+                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -715,6 +953,11 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  # The direct solver always estimates the variance components, so supplied
+  # ones would be ignored without notice
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
+    stop("Vu and Ve can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -743,8 +986,23 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
-  ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
-                     lociLoc, maxIter, nThreads)
+  if(fastMode){
+    fastMode = useFastRoute("RRBLUP_D", Vu, Ve, nrow(y), nLoci, nTraits,
+                            length(unique(pop@fixEff)), nSubsample)
+  }
+  if(is.null(maxIter)){
+    maxIter = if(fastMode) 1000L else 100L
+  }
+  if(fastMode){
+    varComp = fastMKVarComp(Vu, Ve, 2L, nTraits)
+    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    ans = callFastRRBLUP_D(y, fixEff, pop, lociPerChr, lociLoc,
+                           varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                           as.integer(subset), nThreads)
+  }else{
+    ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
+                       lociLoc, maxIter, nThreads)
+  }
 
   alpha = as.matrix(ans$alpha)
   a = as.matrix(ans$a)
@@ -970,7 +1228,30 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations for convergence.
+#' @param maxIter maximum number of iterations. In fast mode, it limits the
+#' iterations of the conjugate gradient solver, and NULL gives 1000.
+#' Otherwise it limits the iterations of the REML fit, and NULL gives 100.
+#' @param fastMode should the model be solved by preconditioned conjugate
+#' gradient where that is expected to be faster, as it is for large training
+#' populations. The cost of both ways of fitting the model is estimated from
+#' the numbers of records, markers, traits and nSubsample, and fast mode is
+#' used only when its cost is less than half that of the default, and never
+#' when nSubsample covers every record. Otherwise the model is fitted as it
+#' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+#' always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term, used
+#' only when fastMode is TRUE. For one trait, a vector, and for several
+#' traits, a list of covariance matrices among the traits, one per term, or
+#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
+#' this and Ve are estimated by REML. See details.
+#' @param Ve the error variance, or for several traits the covariance matrix
+#' of the errors among traits, which must be positive definite. Only used
+#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
+#' REML. See details.
+#' @param nSubsample the number of records used to estimate the variance
+#' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+#' when fastMode is FALSE. A value of zero uses every record, which is only
+#' advisable for small training populations.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -991,6 +1272,21 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
 #' These model predictions obviously differ from the observed cross means
 #' returned by \code{\link{calcGCA}}.
+#'
+#' Setting fastMode to TRUE gives a fast and low memory alternative for
+#' training populations too large to fit directly. It is used only where it
+#' is expected to be faster, see fastMode. The mixed model equations
+#' of every random term and trait are then solved together by preconditioned
+#' conjugate gradient, iterating over the genotypes rather than over a stored
+#' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
+#' use stays close to the size of the genotypes. The variance components are
+#' estimated by REML on a random subset of the records, set by nSubsample,
+#' unless Vu and Ve are supplied, and the marker effects are always solved for
+#' using every record. Given the variance components, the result is the BLUP
+#' of the same model that is fitted when fastMode is FALSE.
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1013,10 +1309,14 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Evaluate accuracy
 #' cor(gv(pop), ebv(pop))
 #'
+#' #Run GS model in fast mode
+#' ans = RRBLUP_GCA(pop, fastMode=TRUE, simParam=SP)
+#'
 #' @export
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=100L,
-                      simParam=NULL, nThreads=NULL, ...){
+                      useQtl=FALSE, maxIter=NULL,
+                      simParam=NULL, nThreads=NULL, ...,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1024,6 +1324,11 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  # The direct solver always estimates the variance components, so supplied
+  # ones would be ignored without notice
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
+    stop("Vu and Ve can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -1052,9 +1357,24 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
-  ans = callRRBLUP_GCA(y, fixEff, pop,
-                       lociPerChr, lociLoc, maxIter,
-                       nThreads)
+  if(fastMode){
+    fastMode = useFastRoute("RRBLUP_GCA", Vu, Ve, nrow(y), nLoci, nTraits,
+                            length(unique(pop@fixEff)), nSubsample)
+  }
+  if(is.null(maxIter)){
+    maxIter = if(fastMode) 1000L else 100L
+  }
+  if(fastMode){
+    varComp = fastMKVarComp(Vu, Ve, 2L, nTraits)
+    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    ans = callFastRRBLUP_GCA(y, fixEff, pop, lociPerChr, lociLoc,
+                             varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                             as.integer(subset), nThreads)
+  }else{
+    ans = callRRBLUP_GCA(y, fixEff, pop,
+                         lociPerChr, lociLoc, maxIter,
+                         nThreads)
+  }
 
   alpha1 = as.matrix(ans$alpha1)
   alpha2 = as.matrix(ans$alpha2)
@@ -1303,7 +1623,30 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations for convergence.
+#' @param maxIter maximum number of iterations. In fast mode, it limits the
+#' iterations of the conjugate gradient solver, and NULL gives 1000.
+#' Otherwise it limits the iterations of the REML fit, and NULL gives 100.
+#' @param fastMode should the model be solved by preconditioned conjugate
+#' gradient where that is expected to be faster, as it is for large training
+#' populations. The cost of both ways of fitting the model is estimated from
+#' the numbers of records, markers, traits and nSubsample, and fast mode is
+#' used only when its cost is less than half that of the default, and never
+#' when nSubsample covers every record. Otherwise the model is fitted as it
+#' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+#' always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term, used
+#' only when fastMode is TRUE. For one trait, a vector, and for several
+#' traits, a list of covariance matrices among the traits, one per term, or
+#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
+#' this and Ve are estimated by REML. See details.
+#' @param Ve the error variance, or for several traits the covariance matrix
+#' of the errors among traits, which must be positive definite. Only used
+#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
+#' REML. See details.
+#' @param nSubsample the number of records used to estimate the variance
+#' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+#' when fastMode is FALSE. A value of zero uses every record, which is only
+#' advisable for small training populations.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1327,6 +1670,22 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' The dominance terms allow cross-specific deviations,
 #' but SCA's are not returned.
 #'
+#' Setting fastMode to TRUE gives a fast and low memory alternative for
+#' training populations too large to fit directly. It is used only where it
+#' is expected to be faster, see fastMode. The mixed model equations
+#' of every random term and trait are then solved together by preconditioned
+#' conjugate gradient, iterating over the genotypes rather than over a stored
+#' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
+#' use stays close to the size of the genotypes. The variance components are
+#' estimated by REML on a random subset of the records, set by nSubsample,
+#' unless Vu and Ve are supplied, and the marker effects are always solved for
+#' using every record. Given the variance components, the result is the BLUP
+#' of the same model that is fitted when fastMode is FALSE.
+#' Fast mode supports only diploids.
+#'
+#' @references
+#' \insertAllCited{}
+#'
 #' @examples
 #' #Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
@@ -1348,10 +1707,14 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Evaluate accuracy
 #' cor(gv(pop), ebv(pop))
 #'
+#' #Run GS model in fast mode
+#' ans = RRBLUP_SCA(pop, fastMode=TRUE, simParam=SP)
+#'
 #' @export
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
-                      useQtl=FALSE, maxIter=100L,
-                      simParam=NULL, nThreads=NULL, ...){
+                      useQtl=FALSE, maxIter=NULL,
+                      simParam=NULL, nThreads=NULL, ...,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1359,6 +1722,11 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+  # The direct solver always estimates the variance components, so supplied
+  # ones would be ignored without notice
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
+    stop("Vu and Ve can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -1387,9 +1755,24 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
-  ans = callRRBLUP_SCA(y, fixEff, pop,
-                       lociPerChr, lociLoc, maxIter,
-                       nThreads)
+  if(fastMode){
+    fastMode = useFastRoute("RRBLUP_SCA", Vu, Ve, nrow(y), nLoci, nTraits,
+                            length(unique(pop@fixEff)), nSubsample)
+  }
+  if(is.null(maxIter)){
+    maxIter = if(fastMode) 1000L else 100L
+  }
+  if(fastMode){
+    varComp = fastMKVarComp(Vu, Ve, 3L, nTraits)
+    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    ans = callFastRRBLUP_SCA(y, fixEff, pop, lociPerChr, lociLoc,
+                             varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                             as.integer(subset), nThreads)
+  }else{
+    ans = callRRBLUP_SCA(y, fixEff, pop,
+                         lociPerChr, lociLoc, maxIter,
+                         nThreads)
+  }
 
   a1 = as.matrix(ans$a1)
   a2 = as.matrix(ans$a2)
@@ -1935,12 +2318,14 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' the numbered models fit one.
 #' @param nFixEff the number of fixed effect levels, which is the number of
 #' distinct values in the population's fixEff slot.
-#' @param fastMode whether \code{\link{RRBLUP}} will be fitted with
-#' fastMode TRUE. Ignored by every other model.
-#' @param nSubsample the number of records \code{\link{RRBLUP}} uses to
-#' estimate variance components when fastMode is TRUE. Ignored by every
-#' other model, by RRBLUP when fastMode is FALSE, and in fast mode when Vu
-#' and Ve are supplied.
+#' @param fastMode whether to estimate the memory of the fast mode of
+#' \code{\link{RRBLUP}}, \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}}
+#' or \code{\link{RRBLUP_SCA}}. Ignored by every other model. A model given
+#' fastMode TRUE uses fast mode only where it is expected to be faster, and
+#' otherwise needs the memory estimated with fastMode FALSE.
+#' @param nSubsample the number of records used to estimate variance
+#' components in fast mode. Ignored when fastMode is FALSE, by the models
+#' without a fast mode, and in fast mode when Vu and Ve are supplied.
 #' @param useEM whether the numbered models will estimate their variance
 #' components. Estimating them holds one more square matrix, and for
 #' \code{\link{RRBLUP2}} it also decides which of its two solving methods is
@@ -1980,6 +2365,17 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' useEM, and with useEM false it grows with the number of records once the
 #' markers outnumber them.
 #'
+#' The GCA, SCA and dominance models with fastMode TRUE hold the markers
+#' packed to one bit per allele, assumed here to be a diploid's two bits per
+#' marker, and no square matrix of the markers or the records. Their
+#' iteration holds a few matrices of markers by terms and traits, and a block
+#' of the preconditioner for every marker, whose size is the square of the
+#' number of terms times the number of traits. Before that, the variance
+#' components are estimated by the same model on the subset of records,
+#' given each term's markers or, with more markers than records in the
+#' subset, a factor of their cross product, which holds a square matrix of
+#' the subset for each term.
+#'
 #' The GCA, SCA and dominance models fit more than one random effect. They
 #' work with whichever of two forms is cheaper: a square matrix of the
 #' records, holding several of them when there are more marker effects than
@@ -1996,10 +2392,11 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' @examples
 #' RRBLUPMemUse(nInd=1000, nMarker=5000)
 #'
-#' # The same training data, fitted three ways
+#' # The same training data, fitted several ways
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP", fastMode=TRUE)
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
+#' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA", fastMode=TRUE)
 #'
 #' # RRBLUP2 with more markers than records, with and without estimating
 #' # variance components. The two use different methods and different memory.
@@ -2112,6 +2509,36 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # and there are fewer records than markers
       doubles = n*m+2*n^2
     }
+  }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & fastMode){
+    nKernel = if(model=="RRBLUP_SCA") 3 else 2
+    nSub = as.double(nSubsample)
+    if((nSub<=0) | (nSub>n)){
+      nSub = n
+    }
+    # No dosages are decoded. The markers are packed to one bit per allele,
+    # a quarter of a byte per marker for a diploid
+    genoBytes = n*m/4
+    # The iteration: the stacked effects, residuals, preconditioned
+    # residuals, search directions and their products, with a row per term
+    # and trait; each term's effects and products on the scale of the traits
+    # and its lookup tables; the block of the preconditioner and the cross
+    # products of the terms for every marker; a few vectors of records per
+    # trait; and the fixed effects with their orthonormal basis
+    nR = nKernel*nT
+    iterDoubles = 5*nR*m+6*nKernel*nT*m+nR^2*m+nKernel^2*m+3*nT*n+
+      2*(q+1)*n
+    # The variance components, by the direct form of the model on the subset,
+    # given each term's codes or a factor of their cross product with no more
+    # columns than records. Building a factor holds the cross product, its
+    # eigenvectors and the eigensolver's workspace.
+    mSub = min(m, nSub)
+    vcGB = RRBLUPMemUse(nInd=nSub, nMarker=mSub, model=model, nTraits=nTraits,
+                        nFixEff=nFixEff)
+    vcDoubles = (vcGB*10^9-nSub*mSub)/8
+    if(m>=nSub){
+      vcDoubles = vcDoubles+3*nSub^2
+    }
+    doubles = max(iterDoubles, vcDoubles)
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & (nT>1)){
     nKernel = if(model=="RRBLUP_SCA") 3 else 2
     # The multiple trait form chooses between the same two sides, on the
