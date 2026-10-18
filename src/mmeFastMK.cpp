@@ -725,8 +725,21 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // correlated, as the additive and dominance codes are wherever the allele
   // frequency is not one half, so the blocks hold their cross products as
   // well as the diagonal. Each block is the identity plus a positive
-  // semidefinite matrix, so it always has an inverse.
-  arma::cube Binv(nR,nR,nLoci);
+  // semidefinite matrix G, so it always has an inverse, but not always one
+  // that a Cholesky factorization can find: when terms coincide at a marker,
+  // as the maternal and paternal codes of inbred lines do, and the variance
+  // ratio is large, the identity is lost to rounding next to G and the block
+  // is singular in floating point. The inverse is therefore taken through
+  // the eigendecomposition of G, as V*diag(1/(1+lambda))*V', which is
+  // defined however large or collinear G is. It is kept and applied in that
+  // factored form, V*(dInv%(V'*r)), rather than multiplied out: its scales
+  // can differ by more than the precision of a double, as 1 and 1e-17 do for
+  // two coinciding terms with a large variance ratio, and multiplied out the
+  // smaller would be lost in the sum. Should the decomposition itself fail,
+  // the inverse of the diagonal is used, which is still a positive definite
+  // preconditioner.
+  arma::cube Bvec(nR,nR,nLoci);
+  arma::mat Bdinv(nR,nLoci);
   if(nR>0){
     arma::uword nBlocks = countBlocks(nLoci);
     int precondThreads = nThreads;
@@ -740,17 +753,16 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         FF[t*nTerm+t2] = F[t].t()*F[t2];
       }
     }
-    // Each block records its own failure, so no flag is shared by threads
-    std::vector<int> failed(nBlocks, 0);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(precondThreads)
 #endif
     for(arma::uword block=0; block<nBlocks; ++block){
       arma::uword lociStart = blockStart(nLoci, nBlocks, block);
       arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-      arma::mat B(nR,nR), Bi;
+      arma::mat B(nR,nR), V;
+      arma::vec lambda;
       for(arma::uword j=lociStart; j<lociEnd; ++j){
-        B.eye();
+        B.zeros();
         for(arma::uword t=0; t<nTerm; ++t){
           for(arma::uword t2=0; t2<nTerm; ++t2){
             if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
@@ -761,15 +773,16 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
           }
         }
         B = 0.5*(B+B.t());
-        if(arma::inv_sympd(Bi, B)){
-          Binv.slice(j) = Bi;
+        if(arma::eig_sym(lambda, V, B)){
+          lambda.elem(find(lambda<0.0)).zeros();
+          Bvec.slice(j) = V;
+          Bdinv.col(j) = 1.0/(1.0+lambda);
         }else{
-          failed[block] = 1;
+          Bvec.slice(j).eye();
+          Bdinv.col(j) = 1.0/(1.0+arma::clamp(B.diag(), 0.0,
+                                              arma::datum::inf));
         }
       }
-    }
-    if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
-      Rcpp::stop("%s: preconditioner could not be formed", name.c_str());
     }
   }
 
@@ -815,14 +828,25 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     for(arma::uword block=0; block<precondBlocks; ++block){
       arma::uword lociStart = blockStart(nLoci, precondBlocks, block);
       arma::uword lociEnd = blockStart(nLoci, precondBlocks, block+1);
+      std::vector<double> w(nR);
       for(arma::uword j=lociStart; j<lociEnd; ++j){
-        const double* Bj = Binv.slice_memptr(j);
+        const double* Vj = Bvec.slice_memptr(j);
+        const double* dj = Bdinv.colptr(j);
         const double* rj = R.colptr(j);
         double* zj = Z.colptr(j);
+        // w = dInv%(V'*r), then z = V*w
+        for(arma::uword c=0; c<nR; ++c){
+          const double* vc = Vj+c*nR;
+          double sum = 0.0;
+          for(arma::uword a=0; a<nR; ++a){
+            sum += vc[a]*rj[a];
+          }
+          w[c] = dj[c]*sum;
+        }
         for(arma::uword a=0; a<nR; ++a){
           double sum = 0.0;
           for(arma::uword c=0; c<nR; ++c){
-            sum += Bj[a+c*nR]*rj[c];
+            sum += Vj[a+c*nR]*w[c];
           }
           zj[a] = sum;
         }

@@ -1236,3 +1236,24 @@ test_that("fast mode converges when a coupled term has no right hand side", {
                  info=paste("term", k))
   }
 })
+
+test_that("fast mode handles terms that coincide at every marker", {
+  # In doubled haploids the maternal and paternal codes are the same, so the
+  # two GCA terms coincide at every marker, and with a variance ratio this
+  # large the identity in each block of the preconditioner is lost to
+  # rounding. The fit must still succeed. With equal variances the two terms
+  # share the effects equally, and together they are RRBLUP on the same codes
+  # with twice the variance.
+  d = mvPop(nInd=100, nSnp=12)
+  dh = setPheno(makeDH(d$pop, simParam=d$SP), simParam=d$SP)
+  ans = RRBLUP_GCA(dh, fastMode=TRUE, Vu=c(0.02, 0.02), Ve=1e-16,
+                   maxIter=10000L, simParam=d$SP)
+  female = ans@female[[1]]@addEff
+  male = ans@male[[1]]@addEff
+  expect_true(all(is.finite(female)))
+  expect_gt(max(abs(female)), 0)
+  expect_equal(female, male, tolerance=1e-6)
+  ref = RRBLUP(dh, fastMode=TRUE, Vu=0.04, Ve=1e-16, maxIter=10000L,
+               simParam=d$SP)
+  expect_equal(2*female, ref@bv[[1]]@addEff, tolerance=1e-6)
+})
