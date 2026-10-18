@@ -1032,15 +1032,32 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T.
   // A response with a large mean keeps its variation in its low order bits,
   // which any product with it rounds away: whitening by Le^-1, and absorbing
-  // the fixed effects through Q, whose entries are not exact either. The
-  // first record's response is therefore taken off every record's first.
-  // That subtraction is exact wherever the responses share a large offset,
-  // since two doubles within a factor of two of each other subtract without
-  // rounding, and it changes nothing else, because the intercept absorbs a
-  // constant. The fixed effects are then absorbed, and the result whitened.
+  // the fixed effects through Q, whose entries are not exact either. Within
+  // each level of the fixed effects, the first record's response is
+  // therefore taken off every record's first. That subtraction is exact
+  // wherever the level's responses share a large offset, since two doubles
+  // within a factor of two of each other subtract without rounding, and it
+  // changes nothing else, because the level's effect absorbs a constant.
+  // Taking one record's response off every level instead would fail when
+  // the levels' means differ by more than the precision of a double, as the
+  // largest would round the others' variation away. The fixed effects are
+  // then absorbed, and the result whitened.
+  arma::uword nLevel = (nInd>0) ? x.max() : 0;
+  arma::uvec firstOfLevel(nLevel);
+  {
+    std::vector<bool> seen(nLevel, false);
+    for(arma::uword i=0; i<nInd; ++i){
+      arma::uword l = x(i)-1;
+      if(!seen[l]){
+        seen[l] = true;
+        firstOfLevel(l) = i;
+      }
+    }
+  }
+  arma::mat levelOffset = Y.rows(firstOfLevel);
   arma::mat Yc = Y;
-  if(nInd>0){
-    Yc.each_row() -= Y.row(0);
+  for(arma::uword i=0; i<nInd; ++i){
+    Yc.row(i) -= levelOffset.row(x(i)-1);
   }
   Tt = Linv*(Yc-Q*(Q.t()*Yc)).t();
   multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
@@ -1260,13 +1277,19 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // centered codes, while the direct form, and the genetic values, use the
   // uncentered ones, so the intercept takes off the means times the effects.
   multTerms(Tt, planes, ploidy, terms, offset, Ut, tabs, nThreads);
-  // From the responses with the first record's taken off, as for the right
-  // hand side, and that constant then added back to the intercept, the
-  // first column of X, which is all ones
+  // From the responses with each level's offset taken off, as for the right
+  // hand side, and those offsets then added back. In the sum to zero design
+  // of makeX the intercept is the mean of the levels and the first nLevel-1
+  // contrasts are each level's departure from it, so the offsets add their
+  // mean to the intercept and their departures from it to the contrasts.
   arma::mat Bq = Q.t()*(Yc-Tt.t());
   fit.beta = fixedEffectsFromBasis(fd, Bq, X.n_cols);
-  if(nInd>0){
-    fit.beta.row(0) += Y.row(0);
+  if(nLevel>0){
+    arma::rowvec offsetMean = arma::mean(levelOffset, 0);
+    fit.beta.row(0) += offsetMean;
+    for(arma::uword l=0; l+1<nLevel; ++l){
+      fit.beta.row(1+l) += levelOffset.row(l)-offsetMean;
+    }
   }
   for(arma::uword t=0; t<nTerm; ++t){
     fit.beta.row(0) -= fit.stats.Mmean.col(t).t()*fit.U[t];

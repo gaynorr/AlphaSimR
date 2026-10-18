@@ -1480,3 +1480,22 @@ test_that("fast mode multikernel models are not affected by the mean of the resp
     }
   }
 })
+
+test_that("fast mode keeps each fixed effect level's variation whatever the levels' means", {
+  # Two fixed effect levels of 32 individuals, with maternal codes z of -1 or
+  # 1 balanced within each. The first level's responses are all 2^60 and the
+  # second's are z, so the level effects absorb the first level entirely and
+  # the BLUP of the maternal effect is z'y/(z'z+Ve/Vu) = 32/(64+50) = 16/57.
+  # Giving the second level -z instead reverses it. Taking one offset off
+  # every level would round the second level's variation away next to 2^60.
+  d = haploPop(list(c("0", "0"), c("1", "0"), c("0", "0"), c("1", "0")), 16)
+  d$pop@fixEff = rep(1:2, each=32)
+  z = rep(c(-1, 1, -1, 1), each=16)
+  for(sgn in c(1, -1)){
+    d$pop@pheno = matrix(c(rep(2^60, 32), sgn*z[33:64]), ncol=1)
+    ans = RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=c(0.02, 0), Ve=1,
+                     simParam=d$SP)
+    expect_equal(ans@female[[1]]@addEff, sgn*16/57, tolerance=1e-8,
+                 info=paste("sign", sgn))
+  }
+})
