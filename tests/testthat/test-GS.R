@@ -1306,3 +1306,88 @@ test_that("coinciding terms share their effects in proportion to their variances
                  tolerance=1e-6, info=info)
   }
 })
+
+# A population of diploids made of groups of identical individuals, each
+# group given by its maternal and paternal haplotypes as strings of alleles,
+# with no traits, so that its response can be set by hand
+haploPop = function(groups, nPerGroup){
+  bits = function(h) as.integer(strsplit(h, "")[[1]])
+  H = do.call(rbind, lapply(groups, function(g){
+    rbind(bits(g[1]), bits(g[2]))[rep(1:2, nPerGroup), , drop=FALSE]
+  }))
+  nLoci = ncol(H)
+  genMap = data.frame(markerName=paste0("m", seq_len(nLoci)), chromosome=1,
+                      position=seq(0, 0.5, length.out=nLoci))
+  colnames(H) = genMap$markerName
+  founderPop = importHaplo(H, genMap, ploidy=2L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addSnpChip(nSnpPerChr=nLoci)
+  pop = newPop(founderPop, simParam=SP)
+  return(list(pop=pop, SP=SP))
+}
+
+# The BLUP of a multikernel model from the variance matrix of the records,
+# which needs no inverse of Vu, so Vu may be singular
+recordMkBlup = function(Y, X, Mlist, Vu, Ve){
+  Y = as.matrix(Y)
+  n = nrow(Y)
+  V = kronecker(Ve, diag(n))
+  for(k in seq_along(Mlist)){
+    V = V + kronecker(Vu[[k]], tcrossprod(Mlist[[k]]))
+  }
+  XX = kronecker(diag(ncol(Y)), X)
+  Vi = solve(V)
+  b = solve(crossprod(XX, Vi %*% XX), crossprod(XX, Vi %*% c(Y)))
+  r = Vi %*% (c(Y)-XX %*% b)
+  u = lapply(seq_along(Mlist), function(k){
+    matrix(kronecker(Vu[[k]], t(Mlist[[k]])) %*% r, ncol(Mlist[[k]]),
+           ncol(Y))
+  })
+  return(list(beta=matrix(b, ncol(X)), u=u))
+}
+
+test_that("fast mode gives the BLUP when markers depend on each other", {
+  # Every individual of a group is the same, and the maternal and paternal
+  # codes of the two markers are linearly dependent across the groups, so
+  # some effects cancel across markers. Only the prior holds them, against
+  # data many orders of magnitude stronger, so a residual small next to the
+  # right hand sides would leave them far off.
+  d = haploPop(list(c("00", "11"), c("10", "10"), c("01", "00")), 32)
+  y = rep(c(0, 1, 3), each=32)
+  d$pop@pheno = matrix(y, ncol=1)
+  ans = RRBLUP_GCA(d$pop, fastMode=TRUE, Vu=c(0.02, 0.03), Ve=1e-8,
+                   maxIter=10000L, simParam=d$SP)
+  codes = mkCodes("RRBLUP_GCA", d$pop, d$SP)
+  X = matrix(1, length(y), 1)
+  ref = denseMkBlup(matrix(y), X, codes, list(matrix(0.02), matrix(0.03)),
+                    matrix(1e-8))
+  expect_equal(ans@female[[1]]@addEff, c(ref$u[[1]]), tolerance=1e-6)
+  expect_equal(ans@male[[1]]@addEff, c(ref$u[[2]]), tolerance=1e-6)
+})
+
+test_that("fast mode gives the BLUP when several null directions share a marker", {
+  # At the first marker the three SCA codes are proportional once the
+  # intercept and the summed dominance codes are absorbed, so their cross
+  # products have two null vectors. With each term's variance confined to
+  # different trait directions, no single null vector is carried by every
+  # term it involves, but combinations of them are, and those are removed
+  # together. The reference is the BLUP from the variance matrix of the
+  # records, which takes the singular covariance matrices as they are.
+  d = haploPop(list(c("00", "00"), c("10", "10"), c("11", "01")), 32)
+  set.seed(77)
+  Y = cbind(rep(c(0, 1, 3), each=32), rep(c(2, -1, 1), each=32))+
+    matrix(rnorm(2*96, sd=1e-3), ncol=2)
+  d$pop@pheno = Y
+  Vu = list(diag(c(0.02, 0)), diag(c(0, 0.03)), matrix(0.04, 2, 2))
+  Ve = diag(c(1e-6, 1e-6))
+  ans = RRBLUP_SCA(d$pop, traits=1:2, fastMode=TRUE, Vu=Vu, Ve=Ve,
+                   maxIter=10000L, simParam=d$SP)
+  codes = mkCodes("RRBLUP_SCA", d$pop, d$SP)
+  X = cbind(1, rowSums(codes[[3]]))
+  ref = recordMkBlup(Y, X, codes, Vu, Ve)
+  expect_equal(sapply(ans@gv, function(x) x@addEff), ref$u[[1]],
+               tolerance=1e-6)
+  expect_equal(sapply(ans@gv, function(x) x@addEffMale), ref$u[[2]],
+               tolerance=1e-6)
+})

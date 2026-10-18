@@ -839,10 +839,12 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // basis. When some do not, as when a covariance matrix is singular, w is
   // confined to the directions they all have variance in, the intersection
   // of the column spaces of their F_k, found as the null space of the
-  // stacked projections onto the complements of those spaces. A basis is
-  // taken for each null vector of Dkl on its own, which finds every unseen
-  // direction when there is one null vector and is otherwise a part of them,
-  // still exactly unseen.
+  // stacked projections onto the complements of those spaces. With more than
+  // one null vector the unseen effects are F_k*a_k = sum_q c_qk*w_q, and the
+  // weights are found together, because a combination of null vectors can be
+  // carried by every term when no single one of them is: the condition on
+  // vec(W) for each term k is (c_k'(x)P_k)*vec(W) = 0, for P_k the
+  // projection onto the trait directions it has no variance in.
   std::vector<arma::mat> nullBasis(nLoci);
   bool anyNull = false;
   {
@@ -881,37 +883,44 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
           continue;
         }
         std::vector<arma::vec> cols;
-        for(arma::uword q=0; q<nul.n_elem; ++q){
-          arma::vec c = C.col(nul(q));
-          double cMax = arma::abs(c).max();
-          std::vector<arma::uword> involved;
-          bool allFull = true;
-          for(arma::uword a=0; a<nA; ++a){
-            if(std::abs(c(a))>1.0e-8*cMax){
-              involved.push_back(a);
-              if(off[active[a]+1]-off[active[a]]!=nT){
-                allFull = false;
-              }
+        arma::mat Cn = C.cols(nul);
+        arma::uword nq = nul.n_elem;
+        double cMax = arma::abs(Cn).max();
+        std::vector<arma::uword> involved;
+        bool allFull = true;
+        for(arma::uword a=0; a<nA; ++a){
+          if(arma::abs(Cn.row(a)).max()>1.0e-8*cMax){
+            involved.push_back(a);
+            if(off[active[a]+1]-off[active[a]]!=nT){
+              allFull = false;
             }
           }
-          // The trait directions every term in the combination can carry
-          arma::mat W;
-          if(allFull){
-            W.eye(nT,nT);
-          }else{
-            arma::mat stack(0,nT);
-            for(arma::uword a : involved){
-              const arma::mat& Qd = Fdir[active[a]];
-              stack = join_cols(stack, arma::eye(nT,nT)-Qd*Qd.t());
+        }
+        // A basis for the weights vec(W), the trait values of every null
+        // vector stacked
+        arma::mat Wb;
+        if(allFull){
+          Wb.eye(nT*nq,nT*nq);
+        }else{
+          arma::mat E(0,nT*nq);
+          for(arma::uword a : involved){
+            arma::uword t = active[a];
+            if(off[t+1]-off[t]==nT){
+              continue;
             }
-            W = arma::null(stack);
+            arma::mat P = arma::eye(nT,nT)-Fdir[t]*Fdir[t].t();
+            E = join_cols(E, arma::kron(Cn.row(a), P));
           }
-          for(arma::uword i=0; i<W.n_cols; ++i){
-            arma::vec col(nR, arma::fill::zeros);
-            for(arma::uword a : involved){
-              arma::uword t = active[a];
-              col.subvec(off[t], off[t+1]-1) = c(a)*(Finv[t]*W.col(i));
-            }
+          Wb = arma::null(E);
+        }
+        for(arma::uword i=0; i<Wb.n_cols; ++i){
+          arma::mat W = arma::reshape(Wb.col(i), nT, nq);
+          arma::vec col(nR, arma::fill::zeros);
+          for(arma::uword a : involved){
+            arma::uword t = active[a];
+            col.subvec(off[t], off[t+1]-1) = Finv[t]*(W*Cn.row(a).t());
+          }
+          if(arma::norm(col)>0.0){
             cols.push_back(col);
           }
         }
@@ -1048,6 +1057,18 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // converged, so the restarted sums are no longer dominated by them. Every
   // product with the coefficient matrix counts toward maxIter.
   //
+  // A residual that is small next to the right hand sides does not make the
+  // effects accurate, though. Directions that only the prior holds, such as
+  // effects that cancel across markers whose codes are the same, have an
+  // eigenvalue of one against the data's, which can be many orders of
+  // magnitude larger, and their error is as large as their residual. The
+  // coefficient matrix is the identity plus a positive semidefinite matrix,
+  // so the error of the effects is never larger than the residual, and the
+  // residual is therefore also required to be small next to the effects
+  // themselves: 1e-8 of their norm bounds the relative error of the effects
+  // by 1e-8. On the whitened scale every effect has the prior's unit
+  // variance, so the traits are on the same footing in that test.
+  //
   // A direction can sit at rounding level above its tolerance, as one whose
   // right hand side is zero does when it is coupled to the others: its
   // tolerance is then a fraction of nothing, and the rounding it picks up
@@ -1065,15 +1086,18 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   rowTol.elem(find(rowTol<arma::datum::eps*rNorm0)).fill(
     arma::datum::eps*rNorm0);
   rowTol *= 1.0e-8;
+  const double errTol = 1.0e-8;
+  arma::mat At(nR,nLoci,arma::fill::zeros);
   auto rowsConverged = [&](const arma::mat& R){
-    return arma::all(sqrt(sum(square(R),1))<=rowTol);
+    return arma::all(sqrt(sum(square(R),1))<=rowTol) &&
+      (arma::norm(R, "fro")<=errTol*arma::norm(At, "fro"));
   };
   const arma::uword maxRestart = 20;
-  arma::mat At(nR,nLoci,arma::fill::zeros);
   arma::mat Zt(nR,nLoci), Apt(nR,nLoci), Pt;
   bool converged = (rNorm0<=0.0);
   arma::uword iter = 0;
   arma::vec prevNorm;
+  double prevErr = arma::datum::inf;
   for(arma::uword restart=0; (restart<=maxRestart)&&(!converged); ++restart){
     if(restart>0){
       // The true residual
@@ -1087,14 +1111,18 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     }
     if(restart>0){
       arma::vec rowNorm = sqrt(sum(square(Rt),1));
+      double rNorm = arma::norm(Rt, "fro");
+      bool errOpen = rNorm>errTol*arma::norm(At, "fro");
       if(restart>1){
         arma::uvec open = find(rowNorm>rowTol);
-        if(arma::all(rowNorm(open)>0.5*prevNorm(open))){
+        if(arma::all(rowNorm(open)>0.5*prevNorm(open)) &&
+           (!errOpen || (rNorm>0.5*prevErr))){
           converged = true;
           break;
         }
       }
       prevNorm = rowNorm;
+      prevErr = rNorm;
     }
     if(iter>=maxIter){
       break;
@@ -1102,12 +1130,18 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     precondition(Zt, Rt);
     Pt = Zt;
     double rz = arma::accu(Rt%Zt);
+    if(!(rz>0.0)){
+      // The residual is at rounding level in every direction the
+      // preconditioner sees
+      converged = true;
+      break;
+    }
     bool claimed = false;
     while(iter<maxIter){
       applyCoef(Apt, Pt);
       ++iter;
       double pAp = arma::accu(Pt%Apt);
-      if(pAp<=0.0){
+      if(!(pAp>0.0)){
         // The matrix is positive definite, so this is rounding once there is
         // nothing left to solve for
         claimed = true;
@@ -1122,6 +1156,12 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       }
       precondition(Zt, Rt);
       double rzNew = arma::accu(Rt%Zt);
+      if(!(rzNew>0.0)){
+        // Nothing the preconditioner can see is left in the residual, so
+        // there is no direction left to search in
+        claimed = true;
+        break;
+      }
       Pt = Zt+(rzNew/rz)*Pt;
       rz = rzNew;
     }
