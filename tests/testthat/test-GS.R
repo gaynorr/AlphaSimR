@@ -1289,4 +1289,20 @@ test_that("coinciding terms share their effects in proportion to their variances
                tolerance=1e-6)
   expect_equal(sapply(ans@male, function(x) x@addEff), 0.6*u,
                tolerance=1e-6)
+  # Singular covariance matrices, with variance in the first trait alone.
+  # The unseen directions are then confined to the trait directions both
+  # terms carry.
+  for(Ve in list(diag(2), diag(c(1e-16, 1)))){
+    ans = RRBLUP_GCA(dh, traits=1:2, fastMode=TRUE,
+                     Vu=list(diag(c(0.02, 0)), diag(c(0.03, 0))), Ve=Ve,
+                     maxIter=10000L, simParam=d$SP)
+    ref = RRBLUP(dh, traits=1:2, fastMode=TRUE, Vu=diag(c(0.05, 0)), Ve=Ve,
+                 maxIter=10000L, simParam=d$SP)
+    u = sapply(ref@bv, function(x) x@addEff)
+    info = paste("Ve", Ve[1,1])
+    expect_equal(sapply(ans@female, function(x) x@addEff), 0.4*u,
+                 tolerance=1e-6, info=info)
+    expect_equal(sapply(ans@male, function(x) x@addEff), 0.6*u,
+                 tolerance=1e-6, info=info)
+  }
 })

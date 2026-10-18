@@ -687,7 +687,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // apply, and a positive eigenvalue is kept however small it is next to
   // the others, for the reason given in callFastRRBLUP_MV. A tiny one only
   // adds a direction that barely moves.
-  std::vector<arma::mat> F(nTerm), Finv(nTerm);
+  std::vector<arma::mat> F(nTerm), Finv(nTerm), Fdir(nTerm);
   std::vector<arma::uword> off(nTerm+1, 0);
   for(arma::uword t=0; t<nTerm; ++t){
     arma::mat A = Linv*fit.Vu[t]*Linv.t();
@@ -702,6 +702,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     F[t].each_row() %= sqrt(lam(keep)).t();
     Finv[t] = Qv.cols(keep).t();
     Finv[t].each_col() /= sqrt(lam(keep));
+    Fdir[t] = Qv.cols(keep); // the trait directions the term has variance in
     off[t+1] = off[t]+keep.n_elem;
   }
   // With every variance zero there are no effects to solve for, nR is zero
@@ -831,10 +832,17 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // scale of the number of records, so their null space is found reliably,
   // unlike that of the preconditioner's block, whose scales can differ by
   // more than the precision of a double. For a null vector c, the effects
-  // F_k*a_k = c_k*w for any w over the traits are unseen, so in whitened
-  // effects they are a_k = F_k^-1*c_k*w. That needs F_k to be square, every
-  // trait direction having variance, for each term in the combination; a
-  // marker where it is not is left as it is.
+  // F_k*a_k = c_k*w are unseen, for any w over the traits that every term in
+  // the combination can carry, and in whitened effects they are
+  // a_k = F_k^+*c_k*w. When every such term has variance in every trait
+  // direction, w is any vector and the traits' own directions serve as its
+  // basis. When some do not, as when a covariance matrix is singular, w is
+  // confined to the directions they all have variance in, the intersection
+  // of the column spaces of their F_k, found as the null space of the
+  // stacked projections onto the complements of those spaces. A basis is
+  // taken for each null vector of Dkl on its own, which finds every unseen
+  // direction when there is one null vector and is otherwise a part of them,
+  // still exactly unseen.
   std::vector<arma::mat> nullBasis(nLoci);
   bool anyNull = false;
   {
@@ -872,24 +880,46 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         if(nul.n_elem==0){
           continue;
         }
-        N.zeros(nR, nul.n_elem*nT);
-        bool ok = true;
-        for(arma::uword q=0; (q<nul.n_elem)&&ok; ++q){
+        std::vector<arma::vec> cols;
+        for(arma::uword q=0; q<nul.n_elem; ++q){
           arma::vec c = C.col(nul(q));
           double cMax = arma::abs(c).max();
+          std::vector<arma::uword> involved;
+          bool allFull = true;
           for(arma::uword a=0; a<nA; ++a){
-            arma::uword t = active[a];
-            if(std::abs(c(a))<=1.0e-8*cMax){
-              continue;
+            if(std::abs(c(a))>1.0e-8*cMax){
+              involved.push_back(a);
+              if(off[active[a]+1]-off[active[a]]!=nT){
+                allFull = false;
+              }
             }
-            if(off[t+1]-off[t]!=nT){
-              ok = false;
-              break;
+          }
+          // The trait directions every term in the combination can carry
+          arma::mat W;
+          if(allFull){
+            W.eye(nT,nT);
+          }else{
+            arma::mat stack(0,nT);
+            for(arma::uword a : involved){
+              const arma::mat& Qd = Fdir[active[a]];
+              stack = join_cols(stack, arma::eye(nT,nT)-Qd*Qd.t());
             }
-            N.submat(off[t], q*nT, off[t+1]-1, (q+1)*nT-1) = c(a)*Finv[t];
+            W = arma::null(stack);
+          }
+          for(arma::uword i=0; i<W.n_cols; ++i){
+            arma::vec col(nR, arma::fill::zeros);
+            for(arma::uword a : involved){
+              arma::uword t = active[a];
+              col.subvec(off[t], off[t+1]-1) = c(a)*(Finv[t]*W.col(i));
+            }
+            cols.push_back(col);
           }
         }
-        if(ok){
+        if(!cols.empty()){
+          N.set_size(nR, cols.size());
+          for(arma::uword i=0; i<cols.size(); ++i){
+            N.col(i) = cols[i];
+          }
           // The columns can differ in length by many orders of magnitude, as
           // F_k^-1 does, and an orthonormal basis taken through the singular
           // value decomposition would find the short ones' directions only to
