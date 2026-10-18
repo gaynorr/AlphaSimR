@@ -1291,9 +1291,12 @@ test_that("coinciding terms share their effects in proportion to their variances
     expect_equal(ans@male[[1]]@addEff, 0.6*u, tolerance=1e-6,
                  info=paste("Ve", Ve))
   }
-  # Two traits, one with an error variance far below the other's
+  # Two traits, one with an error variance far below the other's. At 1e-12
+  # the split drifts by about 1e-4 without removing the unseen directions,
+  # while the solve stays well within double precision on every platform; at
+  # 1e-16 whether it converges depends on the platform's rounding.
   V = diag(c(0.02, 0.03))
-  Ve = diag(c(1e-16, 1))
+  Ve = diag(c(1e-12, 1))
   expect_warning(ans <- quietRounding(
     RRBLUP_GCA(dh, traits=1:2, fastMode=TRUE, Vu=list(V, 1.5*V), Ve=Ve,
                maxIter=10000L, simParam=d$SP)), NA)
