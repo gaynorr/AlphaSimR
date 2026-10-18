@@ -1084,9 +1084,25 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // converged. A restart only follows a recurrence that has converged, so
   // when a restart fails to halve the true residual of every direction still
   // above its tolerance, and that residual is at rounding level of the
-  // product it was computed from, the solution is accepted as converged. A
-  // residual that has stopped falling while still above rounding level is
-  // not progress lost to rounding, and is never accepted.
+  // product it was computed from, the iteration stops, because more of it
+  // cannot help. A residual that has stopped falling while still above
+  // rounding level is not progress lost to rounding, and never stops it.
+  //
+  // Stopping there does not make the effects accurate when the variance
+  // ratio is so large that rounding moves the directions only the prior
+  // holds. The residual bounds their error, but loosely: rounding in the
+  // directions the records see dominates it and barely affects the effects.
+  // The restarts measure the error more directly. Each one solves for a
+  // correction to the effects, which is small when the residual is rounding
+  // in well determined directions and as large as the drift when the effects
+  // are still moving along poorly determined ones. A last correction above
+  // 1e-6 of the effects is reported in a warning rather than passed over.
+  //
+  // A restart that does not change the effects at all, while the residual is
+  // still above rounding level, has stalled: the preconditioner cannot
+  // resolve a direction the residual lies in, as when terms' covariance
+  // matrices are aligned to within the precision of its blocks. Further
+  // restarts would only repeat it, so the iteration stops and says so.
   const arma::mat Bt = Rt;
   double rNorm0 = arma::norm(Bt, "fro");
   arma::vec rowTol = sqrt(sum(square(Bt),1));
@@ -1105,6 +1121,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   arma::uword iter = 0;
   arma::vec prevNorm;
   double prevErr = arma::datum::inf;
+  double roundingBound = 0.0, lastMove = 0.0, stalledAt = 0.0;
   for(arma::uword restart=0; (restart<=maxRestart)&&(!converged); ++restart){
     if(restart>0){
       // The true residual
@@ -1122,11 +1139,20 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       bool errOpen = rNorm>errTol*arma::norm(At, "fro");
       if(restart>1){
         arma::uvec open = find(rowNorm>rowTol);
-        bool atRounding = rNorm<=1.0e3*arma::datum::eps*
-          (arma::norm(Apt, "fro")+arma::norm(Bt, "fro"));
+        double scale = arma::norm(Apt, "fro")+arma::norm(Bt, "fro");
+        bool atRounding = rNorm<=1.0e3*arma::datum::eps*scale;
+        if( !atRounding &&
+            (lastMove<=arma::datum::eps*arma::norm(At, "fro")) ){
+          stalledAt = rNorm/scale;
+          break;
+        }
         if(atRounding && arma::all(rowNorm(open)>0.5*prevNorm(open)) &&
            (!errOpen || (rNorm>0.5*prevErr))){
           converged = true;
+          double move = lastMove/arma::norm(At, "fro");
+          if(errOpen && (move>1.0e-6)){
+            roundingBound = move;
+          }
           break;
         }
       }
@@ -1146,6 +1172,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       break;
     }
     bool claimed = false;
+    arma::mat Aprev = At;
     while(iter<maxIter){
       applyCoef(Apt, Pt);
       ++iter;
@@ -1174,12 +1201,22 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       Pt = Zt+(rzNew/rz)*Pt;
       rz = rzNew;
     }
+    lastMove = arma::norm(At-Aprev, "fro");
     if(!claimed){
       break;
     }
   }
-  if(!converged){
+  if(stalledAt>0.0){
+    Rf_warning("%s: the iteration stalled without converging, with a "
+               "residual of %.2g of the right hand sides", name.c_str(),
+               stalledAt);
+  }else if(!converged){
     Rf_warning("%s: reached maxIter without converging", name.c_str());
+  }else if(roundingBound>0.0){
+    Rf_warning("%s: rounding limits the accuracy of the solution; the "
+               "marker effects still change by about %.2g of their size "
+               "between restarts",
+               name.c_str(), roundingBound);
   }
 
   deflate(At);
