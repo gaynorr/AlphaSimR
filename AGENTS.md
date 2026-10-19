@@ -83,6 +83,20 @@ Use American English spelling in code, comments, documentation, tests
 and `NEWS.md`: "penalize", "behavior", "toward", not "penalise",
 "behaviour", "towards".
 
+## Editing files
+
+Roxygen comments are Rd markup, full of backslashes, quotes and braces, as
+in `\code{vignette("traits", package = "AlphaSimR")}`. Passed through a
+shell to `sed` or `perl`, the backslashes are eaten by the quoting or read
+as escapes, so a pattern can quietly match nothing and a replacement can
+lose its backslash or turn `\c` into a control character. Make these edits
+with an exact-string file edit, or from a script file whose patterns are
+literal, not inline on the command line. Do not address edits by line
+number taken from earlier output, and do not assume a string occurs once
+on a line: the `bibliography:` field of every vignette names the same path
+twice. Afterward, read the `git diff` and check that every intended line
+changed and nothing else did.
+
 ## Changes that break things silently
 
 None of these produces an error, and most will not fail an existing test.
