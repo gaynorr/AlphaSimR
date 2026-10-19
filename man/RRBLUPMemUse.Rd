@@ -11,7 +11,7 @@ RRBLUPMemUse(
   nTraits = 1L,
   nFixEff = 1L,
   fastMode = FALSE,
-  nSubsample = 5000L,
+  nSubsample = 3000L,
   useEM = TRUE
 )
 }

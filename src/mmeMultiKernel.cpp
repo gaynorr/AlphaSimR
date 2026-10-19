@@ -105,25 +105,8 @@ public:
                   const std::vector<const arma::mat*>& R_,
                   const std::vector<const arma::mat*>& F_)
     : side(side_), y(y_), L(L_), R(R_), F(F_){
-    n = y.n_elem;
     k = L.size();
-    // Columns of X that depend on the others are dropped, and the fit uses
-    // Xr, an orthonormal basis for the span of the rest, so a badly scaled X
-    // costs no precision; see fixedDesign
-    fd = fixedDesign(X);
-    if(fd.keep.n_elem==0){
-      Rcpp::stop("X must have at least one nonzero column");
-    }
-    Xr = fd.Q;
-    p = Xr.n_cols;
-    if(p>=n){
-      Rcpp::stop("the rank of X must be smaller than the number of records");
-    }
-    // A least squares fit is taken off y and added back to the fixed effects
-    // by beta(), which keeps a large mean from swamping the sums of squares
-    arma::mat B0;
-    y = removeLeastSquares(Xr, y, B0).col(0);
-    b0 = B0.col(0);
+    setFixed(X);
     meanDiag.set_size(k);
     rankBound.set_size(k);
     confounded.zeros(k);
@@ -174,6 +157,42 @@ public:
       TtT = T.t()*T;
       TtT = 0.5*(TtT+TtT.t()); // rounding only
       Tty = T.t()*y;
+    }
+  }
+
+  // The record side from each G_i itself, for a caller that has already
+  // formed them and needs only the variance components, so that no thin
+  // factor of G_i has to be found first. The matrices are moved out of Glist.
+  // rank holds an upper bound for the rank of each G_i, which the EM step
+  // uses. The BLUPs need the designs, so blup() cannot be used.
+  //
+  // The quantities the other constructor takes from L_i and R_i follow from
+  // G_i: its mean diagonal is tr(G_i)/n, and the trace left once X is
+  // projected out is tr(G_i)-tr(Xr'*G_i*Xr), with Xr orthonormal.
+  MultiKernelREML(const arma::vec& y_, const arma::mat& X,
+                  arma::field<arma::mat>& Glist, const arma::vec& rank)
+    : side(Side::record), y(y_){
+    k = Glist.n_elem;
+    setFixed(X);
+    L.assign(k, nullptr);
+    R.assign(k, nullptr);
+    F.assign(k, nullptr);
+    meanDiag.set_size(k);
+    rankBound = rank;
+    confounded.zeros(k);
+    G.set_size(k);
+    dense.assign(k, true);
+    for(arma::uword i=0; i<k; ++i){
+      if( (Glist(i).n_rows!=n) || (Glist(i).n_cols!=n) ){
+        Rcpp::stop("each G must be square with one row per record");
+      }
+      G(i) = std::move(Glist(i));
+      G(i) = 0.5*(G(i)+G(i).t()); // rounding only
+      double trG = arma::trace(G(i));
+      meanDiag(i) = trG/double(n);
+      double freeTrace = trG - arma::accu(Xr%(G(i)*Xr));
+      double roundTrace = arma::accu(arma::abs(G(i).diag()));
+      confounded(i) = !(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace);
     }
   }
 
@@ -473,6 +492,9 @@ public:
   // read from the solution, mapped through F_i where the term has one.
   arma::mat blup(const RemlPoint& pt, arma::uword i) const{
     if(side==Side::record){
+      if(L[i]==nullptr){
+        Rcpp::stop("the BLUPs need the designs, which were not given");
+      }
       arma::mat u = pt.theta(i)*(L[i]->t()*pt.Py);
       return u;
     }
@@ -504,6 +526,28 @@ private:
   arma::mat T, TtT;
   arma::vec Tty;
   arma::uvec termStart, termLen;
+
+  // Sets up the fixed effects and takes their least squares fit off y.
+  // Columns of X that depend on the others are dropped, and the fit uses Xr,
+  // an orthonormal basis for the span of the rest, so a badly scaled X costs
+  // no precision; see fixedDesign. The least squares fit is added back to the
+  // fixed effects by beta(), and taking it off keeps a large mean from
+  // swamping the sums of squares.
+  void setFixed(const arma::mat& X){
+    n = y.n_elem;
+    fd = fixedDesign(X);
+    if(fd.keep.n_elem==0){
+      Rcpp::stop("X must have at least one nonzero column");
+    }
+    Xr = fd.Q;
+    p = Xr.n_cols;
+    if(p>=n){
+      Rcpp::stop("the rank of X must be smaller than the number of records");
+    }
+    arma::mat B0;
+    y = removeLeastSquares(Xr, y, B0).col(0);
+    b0 = B0.col(0);
+  }
 
   bool evaluateRecord(RemlPoint& pt) const{
     pt.ok = false;
@@ -951,35 +995,8 @@ public:
   MvMultiKernelREML(const arma::mat& Yin, const arma::mat& X, Side side_,
                     const arma::field<arma::mat>& Mlist)
     : side(side_){
-    n = Yin.n_rows;
-    nT = Yin.n_cols;
     k = Mlist.n_elem;
-    N = n*nT;
-    fd = fixedDesign(X);
-    if(fd.keep.n_elem==0){
-      Rcpp::stop("X must have at least one nonzero column");
-    }
-    Xr = fd.Q;
-    p = Xr.n_cols;
-    if(p>=n){
-      Rcpp::stop("the rank of X must be smaller than the number of records");
-    }
-    // A least squares fit is taken off Y and added back to the fixed effects,
-    // and the traits are standardized, for the reasons given for the single
-    // kernel solver; see traitScale
-    arma::mat Ys = removeLeastSquares(Xr, Yin, B0);
-    ts = traitScale(Ys);
-    Y = ts.Y;
-    // The smallest eigenvalue Ve may take, as in the single trait solver: a
-    // small fraction of the least residual variance of a standardized trait.
-    // Without it a response that the markers fit almost exactly drives Ve, and
-    // with it V, toward singular, where the likelihood cannot be evaluated.
-    arma::rowvec vyFloor = arma::sum(arma::square(Y), 0)/double(n-p);
-    double vyMin = vyFloor.min();
-    if(!(vyMin>0.0) || !std::isfinite(vyMin)){
-      vyMin = 1.0;
-    }
-    veFloor = 1e-8*vyMin;
+    setResponses(Yin, X);
     // Each term is fitted on the scale of the mean diagonal of its G_i, so the
     // Newton steps and the eigenvalue floor on their Hessian behave the same
     // whatever the units of the markers. Vu_i is returned to those units at
@@ -1053,6 +1070,48 @@ public:
         GG(i) = 0.5*(GG(i)+GG(i).t()); // rounding only
       }
     }
+  }
+
+  // The record side from each G_i = M_i*M_i' itself, for a caller that has
+  // already formed them and needs only the variance components, as for the
+  // single trait solver. The matrices are moved out of Glist, and rank holds
+  // an upper bound for the rank of each. The BLUPs need the marker codes, so
+  // blupScaled() cannot be used. The scaling and the test for a term absorbed
+  // by the fixed effects follow from traces, as tr(M_i'*M_i) = tr(G_i) and
+  // tr(M_i'*(I-Xr*Xr')*M_i) = tr(G_i)-tr(Xr'*G_i*Xr).
+  MvMultiKernelREML(const arma::mat& Yin, const arma::mat& X,
+                    arma::field<arma::mat>& Glist, const arma::vec& rank)
+    : side(Side::record){
+    k = Glist.n_elem;
+    setResponses(Yin, X);
+    haveCodes = false;
+    md.zeros(k);
+    rankBound = rank;
+    held.zeros(k);
+    Ms.set_size(k);
+    G.set_size(k);
+    for(arma::uword i=0; i<k; ++i){
+      if( (Glist(i).n_rows!=n) || (Glist(i).n_cols!=n) ){
+        Rcpp::stop("each G must be square with one row per record");
+      }
+      G(i) = std::move(Glist(i));
+      G(i) = 0.5*(G(i)+G(i).t()); // rounding only
+      md(i) = arma::trace(G(i))/double(n);
+      if( !(md(i)>0.0) || !std::isfinite(md(i)) ){
+        held(i) = 1;
+        continue;
+      }
+      G(i) /= md(i);
+      double roundTrace = arma::trace(G(i));
+      double freeTrace = roundTrace - arma::accu(Xr%(G(i)*Xr));
+      if(!(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace)){
+        held(i) = 1;
+      }
+    }
+    paramIndex(nT, rowIdx, colIdx);
+    nPar = rowIdx.n_elem;
+    Xf = arma::kron(arma::eye(nT, nT), Xr);
+    yv = arma::vectorise(Y);
   }
 
   arma::uword n, nT, k, N, p;
@@ -1286,6 +1345,9 @@ public:
   // markers, U_i = M_i'*(P*y)*Vu_i on the record side and A_i*L_i' on the
   // coefficient side
   arma::mat blupScaled(const MvMkPoint& pt, arma::uword i) const{
+    if(!haveCodes){
+      Rcpp::stop("the BLUPs need the marker codes, which were not given");
+    }
     if(held(i)){
       return arma::mat(Ms(i).n_cols, nT, arma::fill::zeros);
     }
@@ -1311,6 +1373,7 @@ private:
   arma::mat Y;   // the standardized responses with the least squares fit off
   arma::mat Xr;
   arma::field<arma::mat> Ms; // the scaled marker matrices
+  bool haveCodes = true;     // false when built from the G_i alone
   arma::vec md, rankBound;
   arma::uvec held;
   arma::uvec rowIdx, colIdx;
@@ -1324,6 +1387,38 @@ private:
   arma::uvec segStart, segLen;
   arma::mat T, TtT, TtY;
   arma::field<arma::mat> GG; // T'*G_i*T
+
+  // Sets up the fixed effects and the responses. A least squares fit is
+  // taken off Y and added back to the fixed effects, and the traits are
+  // standardized, for the reasons given for the single kernel solver; see
+  // traitScale.
+  void setResponses(const arma::mat& Yin, const arma::mat& X){
+    n = Yin.n_rows;
+    nT = Yin.n_cols;
+    N = n*nT;
+    fd = fixedDesign(X);
+    if(fd.keep.n_elem==0){
+      Rcpp::stop("X must have at least one nonzero column");
+    }
+    Xr = fd.Q;
+    p = Xr.n_cols;
+    if(p>=n){
+      Rcpp::stop("the rank of X must be smaller than the number of records");
+    }
+    arma::mat Ys = removeLeastSquares(Xr, Yin, B0);
+    ts = traitScale(Ys);
+    Y = ts.Y;
+    // The smallest eigenvalue Ve may take, as in the single trait solver: a
+    // small fraction of the least residual variance of a standardized trait.
+    // Without it a response that the markers fit almost exactly drives Ve, and
+    // with it V, toward singular, where the likelihood cannot be evaluated.
+    arma::rowvec vyFloor = arma::sum(arma::square(Y), 0)/double(n-p);
+    double vyMin = vyFloor.min();
+    if(!(vyMin>0.0) || !std::isfinite(vyMin)){
+      vyMin = 1.0;
+    }
+    veFloor = 1e-8*vyMin;
+  }
 
   // The factor of a block of the design in the trait dimension: the identity
   // for the fixed effects and L_i for term i
@@ -1658,6 +1753,48 @@ void checkResponseMV(const arma::mat& Y, const arma::mat& X, const char* name){
 }
 
 } // namespace
+
+// Variance components of the RR-BLUP form of the multikernel model, for one
+// trait or several, from each term's G_i = M_i*M_i' rather than from M_i.
+// The fast mode of the multikernel models forms the G_i of a subset of
+// records itself when there are at least as many markers as records, and the
+// record side works with G_i alone, so passing them on saves finding a thin
+// factor of each, which costs a decomposition of every G_i with its
+// eigenvectors. Vu and Ve are returned as solveRRBLUPMK returns them, without
+// the BLUPs. rank is an upper bound for the rank of each G_i, and the G_i
+// are moved out of Glist. The inputs must already have been checked.
+Rcpp::List remlMultiKernelGram(const arma::mat& Y, const arma::mat& X,
+                               arma::field<arma::mat>& Glist,
+                               const arma::vec& rank, int maxIter,
+                               const char* name){
+  const arma::uword k = Glist.n_elem;
+  if(Y.n_cols>1){
+    MvMultiKernelREML reml(Y, X, Glist, rank);
+    MvMkPoint pt;
+    int iter = reml.fit(pt, maxIter, rrblupMKTol, name);
+    // Back to the units of the traits and of the markers, as in
+    // fitMultiKernelMV
+    const arma::mat D = arma::diagmat(reml.ts.sd);
+    Rcpp::List Vu(k);
+    for(arma::uword i=0; i<k; ++i){
+      Vu[i] = Rcpp::wrap(arma::mat(D*pt.V[i]*D/reml.termScale(i)));
+    }
+    arma::mat Ve = D*pt.V[k]*D;
+    return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                              Rcpp::Named("Ve")=Ve,
+                              Rcpp::Named("iter")=iter);
+  }
+  arma::vec yv = Y.col(0);
+  MultiKernelREML reml(yv, X, Glist, rank);
+  RemlPoint pt;
+  int iter = reml.fit(pt, maxIter, rrblupMKTol, name);
+  arma::mat Vu = pt.theta.head(k);
+  arma::mat Ve(1, 1);
+  Ve(0,0) = pt.theta(k);
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("iter")=iter);
+}
 
 // Fits either form of the multikernel model on a chosen side, for testing.
 // side is 0 to choose automatically, 1 for the record side and 2 for the

@@ -253,7 +253,8 @@ fitFastRRBLUP = function(pop, y, traits, snpChip, useQtl, maxIter,
                female = as.list(NULL),
                male = as.list(NULL),
                Vu = Vu,
-               Ve = Ve)
+               Ve = Ve,
+               model = "RRBLUP")
 
   return(output)
 }
@@ -277,6 +278,54 @@ fastSubset = function(nSubsample, nRecords){
     return(sort(sample.int(nRecords, nSubsample)))
   }
   return(seq_len(nRecords))
+}
+
+#' @title Variance components from an earlier fit
+#'
+#' @description Takes Vu and Ve from a fit passed to a model as varComp,
+#' after checking that it was fitted with the same model, to the same number
+#' of traits and on the same markers. Vu is the variance of a marker effect,
+#' so it carries over only to the markers it was estimated on. A fit that
+#' records no model, as one created directly or saved before the model slot
+#' existed, cannot be checked and is refused.
+#'
+#' @param varComp the earlier fit, an object of \code{\link{RRsol-class}}
+#' @param Vu the Vu argument of the model, which must be NULL
+#' @param Ve the Ve argument of the model, which must be NULL
+#' @param model the name of the model being fitted
+#' @param nTraits the number of traits being fitted
+#' @param lociPerChr the number of markers on each chromosome
+#' @param lociLoc the positions of the markers on their chromosomes
+#'
+#' @keywords internal
+varCompFromFit = function(varComp, Vu, Ve, model, nTraits, lociPerChr,
+                          lociLoc){
+  if(!is.null(Vu) | !is.null(Ve)){
+    stop("supply either varComp or Vu and Ve, not both")
+  }
+  if(!isRRsol(varComp)){
+    stop("varComp must be the result of a genomic selection model, ",
+         "an object of class RRsol")
+  }
+  fitModel = if(.hasSlot(varComp, "model")) varComp@model else ""
+  if((length(fitModel)!=1L) || is.na(fitModel) || (fitModel=="")){
+    stop("varComp does not record the model it was fitted with, so its ",
+         "variance components cannot be checked; supply Vu and Ve instead")
+  }
+  if(fitModel!=model){
+    stop("varComp was fitted with ", fitModel, ", not ", model)
+  }
+  if(nrow(varComp@Ve)!=nTraits){
+    stop("varComp was fitted to ", nrow(varComp@Ve), " trait(s), not ",
+         nTraits)
+  }
+  fitTrait = varComp@gv[[1]]
+  if(!identical(as.integer(fitTrait@lociPerChr), as.integer(lociPerChr)) ||
+     !identical(as.integer(fitTrait@lociLoc), as.integer(lociLoc))){
+    stop("varComp was fitted on different markers, and its Vu is the ",
+         "variance of an effect of those markers")
+  }
+  return(list(Vu=varComp@Vu, Ve=varComp@Ve))
 }
 
 #' @title Variance components for a fast multikernel model
@@ -400,8 +449,9 @@ fastModeCosts = function(model, nInd, nMarker, nTraits, nFixEff, nSubsample){
     mSub = min(m, nSub)
     fast = remlCost(nSub*nT, nT*(q+nKernel*mSub), nPar)+cgCost(nKernel)
     if(m>=nSub){
-      # Each term's cross product on the subset and its decomposition
-      fast = fast+nKernel*(nSub^2*m+10*nSub^3)
+      # Each term's cross product on the subset, which the REML fit is given
+      # in place of the codes
+      fast = fast+nKernel*nSub^2*m
     }
   }
   return(list(direct=direct, fast=fast))
@@ -565,6 +615,11 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations, because the memory needed grows
 #' with the square of this value.
+#' @param varComp an earlier fit of this model, from which Vu and Ve are
+#' taken in place of supplying them, so that only the marker effects are
+#' solved for. Only used when fastMode is TRUE, and not together with Vu and
+#' Ve. The fit must be of RRBLUP or RRBLUP2, to the same number of traits,
+#' on the same markers. See the genomic selection vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -600,11 +655,15 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' #Run GS model in fast mode
 #' ans = RRBLUP(pop, fastMode=TRUE, simParam=SP)
 #'
+#' #Refit in fast mode, taking the variance components from that fit
+#' ans = RRBLUP(pop, fastMode=TRUE, varComp=ans, simParam=SP)
+#'
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                   useQtl=FALSE, maxIter=1000L,
                   simParam=NULL, nThreads=NULL, ...,
-                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
+                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                  varComp=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -616,8 +675,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   # The direct solver always estimates the variance components, so supplied
   # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
-    stop("Vu and Ve can only be supplied when fastMode is TRUE")
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
+    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -625,9 +684,16 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 
   if(fastMode){
     if(useQtl){
-      nLoci = simParam$traits[[snpChip]]@nLoci
+      chip = simParam$traits[[snpChip]]
     }else{
-      nLoci = simParam$snpChips[[snpChip]]@nLoci
+      chip = simParam$snpChips[[snpChip]]
+    }
+    nLoci = chip@nLoci
+    if(!is.null(varComp)){
+      vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP", NCOL(y),
+                          chip@lociPerChr, chip@lociLoc)
+      Vu = vc$Vu
+      Ve = vc$Ve
     }
     if(useFastRoute("RRBLUP", Vu, Ve, NROW(y), nLoci, NCOL(y),
                     length(unique(pop@fixEff)), nSubsample)){
@@ -692,7 +758,8 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                female = as.list(NULL),
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Ve = as.matrix(ans$Ve),
+               model = "RRBLUP")
 
   return(output)
 }
@@ -904,7 +971,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                female = as.list(NULL),
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Ve = as.matrix(ans$Ve),
+               model = "RRBLUP")
 
   return(output)
 }
@@ -952,6 +1020,12 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
+#' @param varComp an earlier fit of this model, from which Vu and Ve are
+#' taken in place of supplying them, so that only the marker effects are
+#' solved for. Only used when fastMode is TRUE, and not together with Vu and
+#' Ve. The fit must be of this model or of its counterpart ending in 2, to
+#' the same number of traits, on the same markers. See the genomic selection
+#' vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1053,7 +1127,8 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                     useQtl=FALSE, maxIter=NULL,
                     simParam=NULL, nThreads=NULL, ...,
-                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
+                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                    varComp=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1064,8 +1139,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   }
   # The direct solver always estimates the variance components, so supplied
   # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
-    stop("Vu and Ve can only be supplied when fastMode is TRUE")
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
+    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -1095,6 +1170,12 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
     checkCompleteRecords(y)
   }
   if(fastMode){
+    if(!is.null(varComp)){
+      vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_D", nTraits, lociPerChr,
+                          lociLoc)
+      Vu = vc$Vu
+      Ve = vc$Ve
+    }
     fastMode = useFastRoute("RRBLUP_D", Vu, Ve, nrow(y), nLoci, nTraits,
                             length(unique(pop@fixEff)), nSubsample)
   }
@@ -1102,10 +1183,10 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
     maxIter = if(fastMode) 1000L else 100L
   }
   if(fastMode){
-    varComp = fastMKVarComp(Vu, Ve, 2L, nTraits)
-    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    vc = fastMKVarComp(Vu, Ve, 2L, nTraits)
+    subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
     ans = callFastRRBLUP_D(y, fixEff, pop, lociPerChr, lociLoc,
-                           varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                           vc$Vu, vc$Ve, maxIter, vc$est,
                            as.integer(subset), nThreads)
   }else{
     ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
@@ -1148,7 +1229,8 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                female = as.list(NULL),
                male = as.list(NULL),
                Vu = Vu,
-               Ve = traitMatrix(ans$Ve, traits))
+               Ve = traitMatrix(ans$Ve, traits),
+               model = "RRBLUP_D")
 
   return(output)
 }
@@ -1341,7 +1423,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
                female = as.list(NULL),
                male = as.list(NULL),
                Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Ve = as.matrix(ans$Ve),
+               model = "RRBLUP_D")
 
   return(output)
 }
@@ -1390,6 +1473,12 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
+#' @param varComp an earlier fit of this model, from which Vu and Ve are
+#' taken in place of supplying them, so that only the marker effects are
+#' solved for. Only used when fastMode is TRUE, and not together with Vu and
+#' Ve. The fit must be of this model or of its counterpart ending in 2, to
+#' the same number of traits, on the same markers. See the genomic selection
+#' vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1494,7 +1583,8 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=NULL,
                       simParam=NULL, nThreads=NULL, ...,
-                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                      varComp=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1505,8 +1595,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   }
   # The direct solver always estimates the variance components, so supplied
   # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
-    stop("Vu and Ve can only be supplied when fastMode is TRUE")
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
+    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -1536,6 +1626,12 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
     checkCompleteRecords(y)
   }
   if(fastMode){
+    if(!is.null(varComp)){
+      vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_GCA", nTraits, lociPerChr,
+                          lociLoc)
+      Vu = vc$Vu
+      Ve = vc$Ve
+    }
     fastMode = useFastRoute("RRBLUP_GCA", Vu, Ve, nrow(y), nLoci, nTraits,
                             length(unique(pop@fixEff)), nSubsample)
   }
@@ -1543,10 +1639,10 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
     maxIter = if(fastMode) 1000L else 100L
   }
   if(fastMode){
-    varComp = fastMKVarComp(Vu, Ve, 2L, nTraits)
-    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    vc = fastMKVarComp(Vu, Ve, 2L, nTraits)
+    subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
     ans = callFastRRBLUP_GCA(y, fixEff, pop, lociPerChr, lociLoc,
-                             varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                             vc$Vu, vc$Ve, maxIter, vc$est,
                              as.integer(subset), nThreads)
   }else{
     ans = callRRBLUP_GCA(y, fixEff, pop,
@@ -1597,7 +1693,8 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                female = female,
                male = male,
                Vu = Vu,
-               Ve = traitMatrix(ans$Ve, traits))
+               Ve = traitMatrix(ans$Ve, traits),
+               model = "RRBLUP_GCA")
 
   return(output)
 }
@@ -1805,7 +1902,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                female = list(female),
                male = list(male),
                Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Ve = as.matrix(ans$Ve),
+               model = "RRBLUP_GCA")
 
   return(output)
 }
@@ -1854,6 +1952,12 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
+#' @param varComp an earlier fit of this model, from which Vu and Ve are
+#' taken in place of supplying them, so that only the marker effects are
+#' solved for. Only used when fastMode is TRUE, and not together with Vu and
+#' Ve. The fit must be of this model or of its counterpart ending in 2, to
+#' the same number of traits, on the same markers. See the genomic selection
+#' vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1960,7 +2064,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=NULL,
                       simParam=NULL, nThreads=NULL, ...,
-                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L){
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                      varComp=NULL){
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1971,8 +2076,8 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   }
   # The direct solver always estimates the variance components, so supplied
   # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve))){
-    stop("Vu and Ve can only be supplied when fastMode is TRUE")
+  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
+    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -2002,6 +2107,12 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
     checkCompleteRecords(y)
   }
   if(fastMode){
+    if(!is.null(varComp)){
+      vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_SCA", nTraits, lociPerChr,
+                          lociLoc)
+      Vu = vc$Vu
+      Ve = vc$Ve
+    }
     fastMode = useFastRoute("RRBLUP_SCA", Vu, Ve, nrow(y), nLoci, nTraits,
                             length(unique(pop@fixEff)), nSubsample)
   }
@@ -2009,10 +2120,10 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
     maxIter = if(fastMode) 1000L else 100L
   }
   if(fastMode){
-    varComp = fastMKVarComp(Vu, Ve, 3L, nTraits)
-    subset = if(varComp$est) fastSubset(nSubsample, nrow(y)) else 1L
+    vc = fastMKVarComp(Vu, Ve, 3L, nTraits)
+    subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
     ans = callFastRRBLUP_SCA(y, fixEff, pop, lociPerChr, lociLoc,
-                             varComp$Vu, varComp$Ve, maxIter, varComp$est,
+                             vc$Vu, vc$Ve, maxIter, vc$est,
                              as.integer(subset), nThreads)
   }else{
     ans = callRRBLUP_SCA(y, fixEff, pop,
@@ -2067,7 +2178,8 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                female = female,
                male = male,
                Vu = Vu,
-               Ve = traitMatrix(ans$Ve, traits))
+               Ve = traitMatrix(ans$Ve, traits),
+               model = "RRBLUP_SCA")
 
   return(output)
 }
@@ -2288,7 +2400,8 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                female = list(female),
                male = list(male),
                Vu = as.matrix(ans$Vu),
-               Ve = as.matrix(ans$Ve))
+               Ve = as.matrix(ans$Ve),
+               model = "RRBLUP_SCA")
 
   return(output)
 }
@@ -2679,7 +2792,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #'
 #' @export
 RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
-                        nFixEff=1L, fastMode=FALSE, nSubsample=5000L,
+                        nFixEff=1L, fastMode=FALSE, nSubsample=3000L,
                         useEM=TRUE){
   n = as.double(nInd)
   m = as.double(nMarker)
@@ -2802,15 +2915,15 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     iterDoubles = 5*nR*m+6*nKernel*nT*m+nR^2*m+nKernel^2*m+3*nT*n+
       2*(q+1)*n
     # The variance components, by the direct form of the model on the subset,
-    # given each term's codes or a factor of their cross product with no more
-    # columns than records. Building a factor holds the cross product, its
-    # eigenvectors and the eigensolver's workspace.
+    # given each term's codes or their cross product, which is no larger than
+    # the codes of as many markers as records. Building a cross product holds
+    # a copy of it while it is made symmetric.
     mSub = min(m, nSub)
     vcGB = RRBLUPMemUse(nInd=nSub, nMarker=mSub, model=model, nTraits=nTraits,
                         nFixEff=nFixEff)
     vcDoubles = (vcGB*10^9-nSub*mSub)/8
     if(m>=nSub){
-      vcDoubles = vcDoubles+3*nSub^2
+      vcDoubles = vcDoubles+nSub^2
     }
     doubles = max(iterDoubles, vcDoubles)
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & (nT>1)){
