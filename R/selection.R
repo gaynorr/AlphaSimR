@@ -1400,6 +1400,242 @@ selectPop = function(
   return(x[take[seq_len(nPop)]])
 }
 
+#' @title Select units from a MultiPop hierarchy
+#'
+#' @description
+#' Selects \code{\link{Pop-class}} or \code{\link{MultiPop-class}}
+#' objects at a specified level of a nested \code{MultiPop} hierarchy.
+#' Selection is based on response summaries calculated \emph{within} \code{Pop}
+#' objects and recursively aggregated \emph{across} \code{MultiPop} objects.
+#'
+#' @param x a \code{\link{MultiPop-class}} object
+#' @param nMulti the number of population units to select
+#' @param level an integer indicating the nesting level at which selection is
+#'   performed. \code{level=1} selects among direct children, \code{level=2} 
+#'   descends one level into nested \code{MultiPop}s, etc.
+#' @param trait the trait for selection. Either a number indicating 
+#'   a single trait or a character for a trait name, or a function 
+#'   returning a vector of length \code{nInd(pop)} for each population 
+#'   at \code{level}. The function must work on a vector or matrix of 
+#'   \code{use} values as \code{trait(pop@use, ...)} - depending on what 
+#'   \code{use} is. See \code{\link{selIndex}}.
+#' @param use the selection criterion. Either a character
+#'   (genetic values \code{"gv"}, estimated breeding values \code{"ebv"}, 
+#'   phenotypes \code{"pheno"}, or random values \code{"rand"}) or a function 
+#'   returning a vector of length \code{nInd(pop)} for each population 
+#'   at \code{level}. The function must work on each \code{pop} at 
+#'   \code{level} in \code{x} as \code{use(pop, trait, ...)} or as 
+#'   \code{trait(pop@use, ...)} depending on what \code{trait} is.
+#' @param selectTop selects highest values if \code{TRUE}. 
+#'   Selects lowest values if \code{FALSE}.
+#' @param withinPopFUN a function used to summarize individual responses
+#'   within each \code{Pop} object. The function is applied to the vector of
+#'   selection criterion values per population and returns one summary value.
+#'   Default is \code{\link{mean}}.
+#' @param withinPopArgs a list of additional arguments passed to
+#'   \code{withinPopFUN}
+#' @param acrossPopFUN a function used to aggregate population summaries
+#'   across the immediate children of each \code{MultiPop} object. The
+#'   function is applied to a vector of population summary values and returns
+#'   one aggregated value. Default is \code{\link{mean}}.
+#' @param acrossPopArgs a list of additional arguments passed to
+#'   \code{acrossPopFUN}
+#' @param simParam an object of \code{\link{SimParam}}. If \code{NULL},
+#'   the function uses the object named \code{SP} from the global environment.
+#' @param ... additional arguments passed to the functions supplied to
+#'   \code{trait} or \code{use}
+#'
+#' @details
+#' Individual responses are first obtained for every terminal \code{Pop}
+#' object using the specified \code{trait} and \code{use}. These responses are
+#' summarized within each \code{Pop} using \code{withinPopFUN}. The resulting
+#' summaries are then recursively aggregated with \code{acrossPopFUN} until
+#' the requested \code{level} is reached.
+#'
+#' Population units at the requested \code{level} are ranked using their
+#' aggregated values. The highest \code{nMulti} units are retained when
+#' \code{selectTop = TRUE}, and the lowest \code{nMulti} units are retained
+#' when \code{selectTop = FALSE}.
+#'
+#' Aggregation with \code{acrossPopFUN} is unweighted with respect to the
+#' number of individuals in each child population, unless weighting is
+#' explicitly implemented by the user-supplied function.
+#'
+#' If a branch ends in a \code{Pop} object before the requested \code{level} is
+#' reached, that terminal \code{Pop} is treated as a candidate at its deepest
+#' available level. If candidates have equal selection values at the selection
+#' boundary, ties are resolved according to their existing order in the
+#' \code{MultiPop} hierarchy.
+#'
+#' @return
+#' A \code{\link{MultiPop-class}} object containing the selected
+#' \code{nMulti} population units at the requested \code{level}. Population
+#' units not selected are removed, together with any intermediate
+#' \code{MultiPop} objects left empty by their removal.
+#'
+#' If \code{nMulti} is greater than the number of available candidates, a
+#' warning is issued and \code{x} is returned unchanged.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 50)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(nQtlPerChr = 20)
+#' SP$setVarE(h2 = 0.5)
+#'
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' # Create four groups, each divided into two replicates
+#' multiPop = splitPop(
+#'   pop,
+#'   by = list(
+#'     rep(LETTERS[1:4], each = 4),
+#'     function(x) {
+#'       rep(c("R1", "R2"), length.out = nInd(x))
+#'     }
+#'   )
+#' )
+#'
+#' # Select the two groups with the highest mean phenotypic values
+#' selected = selectMultiPop(
+#'   multiPop,
+#'   nMulti = 2,
+#'   level = 1,
+#'   trait = 1,
+#'   use = "pheno",
+#'   withinPopFUN = mean,
+#'   acrossPopFUN = mean,
+#'   simParam = SP
+#' )
+#' selected
+#'
+#' # Select the three replicates with the lowest sum of phenotypic values
+#' selected = selectMultiPop(
+#'   multiPop,
+#'   nMulti = 3,
+#'   level = 2,
+#'   trait = 1,
+#'   use = "pheno",
+#'   selectTop = FALSE,
+#'   withinPopFUN = sum,
+#'   acrossPopFUN = mean,
+#'   simParam = SP
+#' )
+#' selected
+#'
+#' @seealso \code{\link{calcPopSummary}}, \code{\link{selectPop}},
+#'   \code{\link{selectInd}}, \code{\link{meanPPop}}
+#'
+#' @export
+selectMultiPop = function(
+  x,
+  nMulti,
+  level = 1,
+  trait = 1,
+  use = "pheno",
+  selectTop = TRUE,
+  withinPopFUN = mean,
+  withinPopArgs = list(),
+  acrossPopFUN = mean,
+  acrossPopArgs = list(),
+  simParam = NULL,
+  ...
+) {
+  if (!isMultiPop(x)) {
+    stop("`x` must be a MultiPop object.")
+  }
+  if (
+    !is.numeric(nMulti) ||
+      length(nMulti) != 1L ||
+      is.na(nMulti) ||
+      !is.finite(nMulti) ||
+      nMulti != trunc(nMulti) ||
+      nMulti < 1 ||
+      nMulti > .Machine$integer.max
+  ) {
+    stop("`nMulti` must be a single positive integer.")
+  }
+  if (
+    !is.numeric(level) ||
+      length(level) != 1L ||
+      is.na(level) ||
+      !is.finite(level) ||
+      level != trunc(level) ||
+      level < 1 ||
+      level > .Machine$integer.max
+  ) {
+    stop("`level` must be a single positive integer.")
+  }
+  if (is.character(use) && length(use) == 1L && tolower(use) == "bv") {
+    stop("use='bv' is not currently supported for populations.")
+  }
+  if (!is.logical(selectTop) || length(selectTop) != 1L || is.na(selectTop)) {
+    stop("`selectTop` must be TRUE or FALSE.")
+  }
+  if (!is.function(withinPopFUN)) {
+    stop("`withinPopFUN` must be a function.")
+  }
+  if (!is.list(withinPopArgs)) {
+    stop("`withinPopArgs` must be a list.")
+  }
+
+  nMulti = as.integer(nMulti)
+  level = as.integer(level)
+  dots = list(...)
+
+  # Calculate a response-based summary for each Pop object
+  summarizeResponse = function(pop) {
+    responseArgs = c(
+      list(pop = pop, trait = trait, use = use, simParam = simParam),
+      dots
+    )
+    response = do.call(getResponse, responseArgs)
+    return(do.call(withinPopFUN, c(list(response), withinPopArgs)))
+  }
+
+  candidateScores = calcPopSummary(
+    x,
+    withinPopFUN = summarizeResponse,
+    acrossPopFUN = acrossPopFUN,
+    acrossPopArgs = acrossPopArgs,
+    level = level
+  )
+
+  src = attr(candidateScores, "source")
+
+  if (!is.matrix(candidateScores) || ncol(candidateScores) != 1L) {
+    stop(
+      "`withinPopFUN` and `acrossPopFUN` must produce exactly one ",
+      "selection value per candidate."
+    )
+  }
+  if (anyNA(candidateScores) || any(!is.finite(candidateScores))) {
+    stop("Candidate selection values must be finite and non-missing.")
+  }
+
+  nCandidates = nrow(candidateScores)
+  if (nMulti > nCandidates) {
+    warning(
+      "`nMulti` exceeds the number of available candidates; ",
+      "returning all candidates."
+    )
+    return(x)
+  }
+  if (nMulti == nCandidates) {
+    return(x)
+  }
+
+  ranking = order(candidateScores, decreasing = selectTop)
+
+  # Candidates tied at the selection boundary are retained or removed
+  # according to their existing order in the MultiPop hierarchy.
+  drop = ranking[-seq_len(nMulti)]
+  for (i in drop) {
+    x = .stripPop(x, src[i, , drop = TRUE])
+  }
+
+  return(x)
+}
+
 #' Helper function to collect leaf paths in a \code{MultiPop}
 #'
 #' @param x \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
@@ -1616,3 +1852,34 @@ selectPop = function(
   }
   return(childSummaryMatrix)
 }
+
+#' @title Remove a population from a nested MultiPop
+#'
+#' @description Recursively removes a \code{\link{Pop-class}} or
+#' \code{\link{MultiPop-class}} object identified by a path through a nested
+#' \code{MultiPop} object. Empty \code{MultiPop} objects created by the 
+#' removal are also removed.
+#'
+#' @param x a \code{\link{MultiPop-class}} object
+#' @param path a vector containing the names or indices that identify the
+#'   object to remove at each nesting level. Trailing \code{NA} values are
+#'   ignored.
+#'
+#' @return A \code{\link{MultiPop-class}} object with the specified object
+#'   removed.
+#'
+#' @keywords internal
+.stripPop = function(x, path) {
+  idx = path[[1]]
+  if (length(path) == 1L || is.na(path[[2]])) {
+    x[[idx]] = NULL
+    return(x)
+  }
+  x[[idx]] = .stripPop(x[[idx]], path[-1])
+
+  if (length(x[[idx]]) == 0) {
+    x[[idx]] = NULL
+  }
+  return(x)
+}
+

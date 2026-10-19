@@ -1024,3 +1024,493 @@ test_that("calcPopSummary rejects empty MultiPop objects", {
   )
 })
 
+test_that("selectMultiPop selects populations at different levels", {
+  founderPop = quickHaplo(nInd = 32, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = splitPop(
+    pop,
+    by = data.frame(
+      level1 = rep(c("G1", "G2"), each = 16),
+      level2 = rep(LETTERS[1:4], each = 8),
+      level3 = rep(paste0("R", 1:2), length.out = 32),
+      row.names = pop@id
+    )
+  )
+
+  # A deterministic response based on individual IDs
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  # Select the level-1 group with the highest mean ID
+  selectedTop = selectMultiPop(
+    mp,
+    nMulti = 1,
+    level = 1,
+    use = idResponse,
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP
+  )
+
+  expect_equal(length(selectedTop), 1L)
+  expect_equal(names(selectedTop@pops), "G2")
+
+  # Select the level-1 group with the lowest mean ID
+  selectedBottom = selectMultiPop(
+    mp,
+    nMulti = 1,
+    level = 1,
+    use = idResponse,
+    selectTop = FALSE,
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP
+  )
+
+  expect_equal(length(selectedBottom), 1L)
+  expect_equal(names(selectedBottom@pops), "G1")
+
+  # Select the two highest level-2 units
+  selectedLevel2 = selectMultiPop(
+    mp,
+    nMulti = 2,
+    level = 2,
+    use = idResponse,
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP
+  )
+
+  expect_equal(length(selectedLevel2), 1L)
+  expect_equal(names(selectedLevel2@pops), "G2")
+  expect_equal(
+    names(selectedLevel2[["G2"]]@pops),
+    c("C", "D")
+  )
+})
+
+test_that("selectMultiPop prunes empty parent MultiPops", {
+  founderPop = quickHaplo(nInd = 32, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = splitPop(
+    pop,
+    by = data.frame(
+      level1 = rep(c("G1", "G2"), each = 16),
+      level2 = rep(LETTERS[1:4], each = 8),
+      level3 = rep(paste0("R", 1:2), length.out = 32),
+      row.names = pop@id
+    )
+  )
+
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 2,
+    level = 3,
+    use = idResponse,
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP
+  )
+
+  # The two highest terminal responses are D/R1 and D/R2
+  expect_equal(names(selected@pops), "G2")
+  expect_equal(names(selected[["G2"]]@pops), "D")
+  expect_equal(
+    names(selected[["G2"]][["D"]]@pops),
+    c("R1", "R2")
+  )
+})
+
+test_that("selectMultiPop supports getResponse interfaces", {
+  founderPop = quickHaplo(nInd = 32, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(
+    10,
+    mean = c(0, 0),
+    var = c(1, 1),
+    name = c("TraitA", "TraitB")
+  )
+
+  pop = newPop(founderPop, simParam = SP)
+  pop = setPheno(pop, varE = c(4, 4), simParam = SP)
+
+  mp = splitPop(
+    pop,
+    by = rep(c("G1", "G2", "G3", "G4"), each = 8)
+  )
+
+  byNumber = selectMultiPop(
+    mp,
+    nMulti = 2,
+    trait = 1,
+    use = "pheno",
+    simParam = SP
+  )
+
+  byName = selectMultiPop(
+    mp,
+    nMulti = 2,
+    trait = "TraitA",
+    use = "pheno",
+    simParam = SP
+  )
+
+  expect_equal(
+    names(byNumber@pops),
+    names(byName@pops)
+  )
+
+  byFunction = selectMultiPop(
+    mp,
+    nMulti = 2,
+    trait = selIndex,
+    use = "pheno",
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP,
+    b = c(0.6, 0.4)
+  )
+
+  directScores = vapply(
+    mp@pops,
+    function(x) {
+      mean(selIndex(x@pheno, b = c(0.6, 0.4)))
+    },
+    numeric(1)
+  )
+
+  expected = names(mp@pops)[
+    order(directScores, decreasing = TRUE)[1:2]
+  ]
+
+  expect_setequal(
+    names(byFunction@pops),
+    expected
+  )
+})
+
+test_that("selectMultiPop passes summary arguments", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 1,
+    use = idResponse,
+    withinPopFUN = function(x, offset) mean(x) + offset,
+    withinPopArgs = list(offset = 10),
+    acrossPopFUN = function(x, multiplier) {
+      colMeans(x) * multiplier
+    },
+    acrossPopArgs = list(multiplier = 2),
+    simParam = SP
+  )
+
+  expect_equal(names(selected@pops), "D")
+})
+
+test_that("selectMultiPop validates selection arguments", {
+  founderPop = quickHaplo(nInd = 32, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10, mean = c(0, 0), var = c(1, 1))
+
+  pop = newPop(founderPop, simParam = SP)
+  mp = splitPop(pop, by = rep(c("G1", "G2"), each = 16))
+
+  expect_error(
+    selectMultiPop(pop, nMulti = 1, simParam = SP),
+    "`x` must be a MultiPop object.",
+    fixed = TRUE
+  )
+
+  invalidNMulti = list(
+    0,
+    -1,
+    1.5,
+    NA_real_,
+    Inf,
+    c(1, 2),
+    "1"
+  )
+
+  for (value in invalidNMulti) {
+    expect_error(
+      selectMultiPop(mp, nMulti = value, simParam = SP),
+      "`nMulti` must be a single positive integer.",
+      fixed = TRUE
+    )
+  }
+
+  invalidLevels = list(
+    0,
+    -1,
+    1.5,
+    NA_real_,
+    Inf,
+    c(1, 2),
+    "1"
+  )
+
+  for (value in invalidLevels) {
+    expect_error(
+      selectMultiPop(
+        mp,
+        nMulti = 1,
+        level = value,
+        simParam = SP
+      ),
+      "`level` must be a single positive integer.",
+      fixed = TRUE
+    )
+  }
+
+  invalidSelectTop = list(
+    1,
+    NA,
+    c(TRUE, FALSE),
+    "TRUE"
+  )
+
+  for (value in invalidSelectTop) {
+    expect_error(
+      selectMultiPop(
+        mp,
+        nMulti = 1,
+        selectTop = value,
+        simParam = SP
+      ),
+      "`selectTop` must be TRUE or FALSE.",
+      fixed = TRUE
+    )
+  }
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      withinPopFUN = pi,
+      simParam = SP
+    ),
+    "`withinPopFUN` must be a function.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      withinPopArgs = NULL,
+      simParam = SP
+    ),
+    "`withinPopArgs` must be a list.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      use = "bv",
+      simParam = SP
+    ),
+    "use='bv' is not currently supported for populations.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      acrossPopFUN = NULL,
+      simParam = SP
+    ),
+    "`acrossPopFUN` must be a function.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      acrossPopArgs = NULL,
+      simParam = SP
+    ),
+    "`acrossPopArgs` must be a list.",
+    fixed = TRUE
+  )
+})
+
+test_that("selectMultiPop requires one finite score per candidate", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      use = idResponse,
+      withinPopFUN = function(x) {
+        c(mean = mean(x), variance = var(x))
+      },
+      acrossPopFUN = colMeans,
+      simParam = SP
+    ),
+    paste0(
+      "`withinPopFUN` and `acrossPopFUN` must produce exactly one ",
+      "selection value per candidate."
+    ),
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 1,
+      use = idResponse,
+      withinPopFUN = function(x) Inf,
+      acrossPopFUN = mean,
+      simParam = SP
+    ),
+    "Candidate selection values must be finite and non-missing.",
+    fixed = TRUE
+  )
+})
+
+test_that("selectMultiPop handles candidate counts", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  expect_equal(
+    expect_warning(
+      selectMultiPop(mp, nMulti = 5, use = idResponse, simParam = SP),
+      paste0(
+        "`nMulti` exceeds the number of available candidates; ",
+        "returning all candidates."
+      ),
+      fixed = TRUE
+    ),
+    mp
+  )
+
+  expect_equal(
+    selectMultiPop(
+      mp,
+      nMulti = 4,
+      use = idResponse,
+      simParam = SP
+    ),
+    mp
+  )
+})
+
+test_that("selectMultiPop resolves ties in population order", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+
+  constantResponse = function(pop, trait = NULL) {
+    rep(1, nInd(pop))
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 2,
+    use = constantResponse,
+    withinPopFUN = mean,
+    acrossPopFUN = mean,
+    simParam = SP
+  )
+
+  expect_equal(
+    names(selected@pops),
+    c("A", "B")
+  )
+})
+
+test_that("selectMultiPop propagates getResponse errors", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 2,
+      use = "notAResponse",
+      simParam = SP
+    ),
+    "Use=notaresponse is not an option",
+    fixed = TRUE
+  )
+
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 2,
+      trait = "unknownTrait",
+      simParam = SP
+    ),
+    "'unknownTrait' did not match any trait names",
+    fixed = TRUE
+  )
+
+  # No phenotypes have been set
+  expect_error(
+    selectMultiPop(
+      mp,
+      nMulti = 2,
+      use = "pheno",
+      simParam = SP
+    ),
+    "selection trait has missing values, phenotype may need to be set",
+    fixed = TRUE
+  )
+})
+
