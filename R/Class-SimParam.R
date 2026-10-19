@@ -4,6 +4,95 @@
 #' Container for global simulation parameters. Saving this object
 #' as SP will allow it to be accessed by function defaults.
 #'
+#' @details
+#' \subsection{Methods by task}{
+#' \describe{
+#'   \item{Starting a simulation}{
+#'     \href{#method-SimParam-initialize}{\code{new()}},
+#'     \href{#method-SimParam-setSexes}{\code{setSexes()}},
+#'     \href{#method-SimParam-setTrackPed}{\code{setTrackPed()}},
+#'     \href{#method-SimParam-setTrackRec}{\code{setTrackRec()}},
+#'     \href{#method-SimParam-resetPed}{\code{resetPed()}}}
+#'   \item{Adding traits}{
+#'     \href{#method-SimParam-addTraitA}{\code{addTraitA()}},
+#'     \href{#method-SimParam-addTraitAD}{\code{addTraitAD()}},
+#'     \href{#method-SimParam-addTraitAE}{\code{addTraitAE()}},
+#'     \href{#method-SimParam-addTraitADE}{\code{addTraitADE()}},
+#'     \href{#method-SimParam-addTraitAG}{\code{addTraitAG()}},
+#'     \href{#method-SimParam-addTraitADG}{\code{addTraitADG()}},
+#'     \href{#method-SimParam-addTraitAEG}{\code{addTraitAEG()}},
+#'     \href{#method-SimParam-addTraitADEG}{\code{addTraitADEG()}},
+#'     \href{#method-SimParam-altAddTraitAD}{\code{altAddTraitAD()}},
+#'     \href{#method-SimParam-manAddTrait}{\code{manAddTrait()}},
+#'     \href{#method-SimParam-importTrait}{\code{importTrait()}}.
+#'     Each \code{addTrait} method models additive effects plus the
+#'     effects named in its suffix: D for dominance, E for epistasis and
+#'     G for genotype-by-environment interaction.}
+#'   \item{Phenotypes}{
+#'     \href{#method-SimParam-setVarE}{\code{setVarE()}},
+#'     \href{#method-SimParam-setCorE}{\code{setCorE()}} (deprecated)}
+#'   \item{Choosing loci and SNP chips}{
+#'     \href{#method-SimParam-restrSegSites}{\code{restrSegSites()}},
+#'     \href{#method-SimParam-addSnpChip}{\code{addSnpChip()}},
+#'     \href{#method-SimParam-addSnpChipByName}{\code{addSnpChipByName()}},
+#'     \href{#method-SimParam-addStructuredSnpChip}{\code{addStructuredSnpChip()}},
+#'     \href{#method-SimParam-setFounderHap}{\code{setFounderHap()}}}
+#'   \item{Genetic maps and recombination}{
+#'     \href{#method-SimParam-setRecombRatio}{\code{setRecombRatio()}},
+#'     \href{#method-SimParam-switchGenMap}{\code{switchGenMap()}},
+#'     \href{#method-SimParam-switchFemaleMap}{\code{switchFemaleMap()}},
+#'     \href{#method-SimParam-switchMaleMap}{\code{switchMaleMap()}}}
+#'   \item{Changing traits}{
+#'     \href{#method-SimParam-switchTrait}{\code{switchTrait()}},
+#'     \href{#method-SimParam-removeTrait}{\code{removeTrait()}},
+#'     \href{#method-SimParam-rescaleTraits}{\code{rescaleTraits()}}}
+#'   \item{For internal use}{
+#'     \href{#method-SimParam-addToRec}{\code{addToRec()}},
+#'     \href{#method-SimParam-ibdHaplo}{\code{ibdHaplo()}},
+#'     \href{#method-SimParam-updateLastId}{\code{updateLastId()}},
+#'     \href{#method-SimParam-addToPed}{\code{addToPed()}}}
+#' }
+#' }
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#'
+#' #Settings for how individuals are created and recorded. Make these
+#' #before creating any populations.
+#' SP$setTrackPed(TRUE) #Record the pedigree
+#' SP$setTrackRec(TRUE) #Also record recombination
+#' SP$setSexes("yes_sys") #Assign sexes systematically
+#' SP$setRecombRatio(2) #Twice as much recombination in females
+#'
+#' #Keep SNPs and QTL on different segregating sites
+#' SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=10)
+#'
+#' #Add SNP chips, chosen at random or by marker name
+#' SP$addSnpChip(5)
+#' SP$addSnpChipByName(getSnpMap(snpChip=1, simParam=SP)$id[1:2])
+#'
+#' #Add traits, one for each trait model
+#' SP$addTraitA(10)
+#' SP$addTraitAD(10, meanDD=0.5)
+#' SP$addTraitAE(10, relAA=0.1)
+#' SP$addTraitADE(10)
+#' SP$addTraitAG(10, varGxE=2)
+#' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
+#' SP$addTraitAEG(10, varGxE=2)
+#' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
+#'
+#' #Set default error variances from heritabilities, used by setPheno
+#' SP$setVarE(h2=rep(0.5, SP$nTraits))
+#'
+#' #Create a population
+#' pop = newPop(founderPop, simParam=SP)
+#' meanP(pop)
+#'
 #' @export
 SimParam = R6Class(
   "SimParam",
@@ -72,13 +161,6 @@ SimParam = R6Class(
     #' argument with every call.
     #'
     #' @param founderPop an object of \code{\link{MapPop-class}}
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
     initialize = function(founderPop){
       stopifnot("founderPop must be a MapPop, such as one made by runMacs, quickHaplo or importHaplo"=
                   is(founderPop, "MapPop"))
@@ -138,15 +220,6 @@ SimParam = R6Class(
     #' @param isTrackPed should pedigree tracking be on.
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$setTrackPed(TRUE)
     setTrackPed = function(isTrackPed, force=FALSE){
       stopifnot("isTrackPed must be TRUE or FALSE"=is.logical(isTrackPed))
       if(!force){
@@ -169,15 +242,6 @@ SimParam = R6Class(
     #' @param isTrackRec should recombination tracking be on.
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$setTrackRec(TRUE)
     setTrackRec = function(isTrackRec, force=FALSE){
       stopifnot("isTrackRec must be TRUE or FALSE"=is.logical(isTrackRec))
       if(!force){
@@ -266,15 +330,6 @@ SimParam = R6Class(
     #' @param overlap should SNP and QTL sites be allowed to overlap.
     #' @param minSnpFreq minimum allowable frequency for SNP loci.
     #' No minimum SNP frequency is used if value is NULL.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
     restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, excludeQtl=NULL,
                              excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
       # Handle any named QTL exclusions
@@ -362,15 +417,6 @@ SimParam = R6Class(
     #' "yes_rand"
     #' @param force should the check for a running simulation be
     #' ignored. Only set to TRUE if you know what you are doing.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$setSexes("yes_sys")
     setSexes = function(sexes, force=FALSE){
       if(!force){
         private$.isRunning()
@@ -423,15 +469,6 @@ SimParam = R6Class(
     #' @param refPop reference population for calculating SNP
     #' frequency. If NULL, the founder population is used.
     #' @param name optional name for chip
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addSnpChip(10)
     addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL, name=NULL){
       if(length(nSnpPerChr)==1){
         nSnpPerChr = rep(nSnpPerChr,self$nChr)
@@ -455,15 +492,6 @@ SimParam = R6Class(
     #'
     #' @param markers a vector of names for the markers
     #' @param name optional name for chip
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addSnpChipByName(c("1_1","1_3"))
     addSnpChipByName = function(markers, name=NULL){
       genMap = private$.femaleMap
 
@@ -583,15 +611,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitA(10)
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
                          gamma=FALSE,shape=1,force=FALSE,name=NULL,
                          nThreads=NULL){
@@ -662,15 +681,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitAD(10, meanDD=0.5)
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
                           gamma=FALSE,shape=1,force=FALSE,name=NULL,
@@ -881,15 +891,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitAG(10, varGxE=2)
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
                           force=FALSE,name=NULL,nThreads=NULL){
@@ -994,15 +995,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitADG(10, meanDD=0.5, varGxE=2)
     addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
                            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
@@ -1125,15 +1117,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitAE(10, relAA=0.1)
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
                           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
                           name=NULL,nThreads=NULL){
@@ -1232,15 +1215,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitADE(10)
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
                            useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
@@ -1348,15 +1322,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitAEG(10, varGxE=2)
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
                            shape=1,force=FALSE,name=NULL,nThreads=NULL){
@@ -1490,15 +1455,6 @@ SimParam = R6Class(
     #' @param name optional name for trait(s)
     #' @param nThreads number of threads to use if OpenMP is available.
     #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
     addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
                             corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
@@ -2010,16 +1966,6 @@ SimParam = R6Class(
     #' @param H2 a vector of desired broad-sense heritabilities
     #' @param varE a vector or matrix of error variances
     #' @param corE an optional matrix of error correlations
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitA(10)
-    #' SP$setVarE(h2=0.5)
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
       # Check validity of corE, if supplied
       if(!is.null(corE)){
@@ -2252,15 +2198,6 @@ SimParam = R6Class(
     #' @param femaleRatio relative ratio of recombination in females compared to
     #' males. A value of 2 indicates twice as much recombination in females. The
     #' value must be greater than 0. (default is 1)
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$setRecombRatio(2) #Twice as much recombination in females
     setRecombRatio = function(femaleRatio){
       stopifnot("femaleRatio must be greater than 0"=femaleRatio>0)
       # Both must be read before .sepMap is set, because the accessors
