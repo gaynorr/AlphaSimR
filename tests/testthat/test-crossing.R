@@ -377,6 +377,15 @@ test_that("REFUSE invalid parents in the C++ crossing code",{
   expect_error(doCross(c(1L,2L), 1L), regexp = "same length")
 })
 
+test_that("OCS forwards miscellaneous-data hooks", {
+  f = miscFunctionFixture()
+  pop = f$pop
+  score = function(pop, ...) pop@misc$value
+  f$sp$addSnpChip(10)
+  ocs = selectOCS(pop, nInd=2, use=score, inbrTarget=1, simParam=f$sp)
+  expect_identical(ocs@miscPop$total, sum(ocs@misc$value))
+})
+
 test_that("All noninterfering quadrivalent crossovers match the Poisson pathway", {
   set.seed(6016)
   founders = quickHaplo(nInd=4,nChr=2,segSites=40,ploidy=4)

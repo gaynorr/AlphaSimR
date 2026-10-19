@@ -469,7 +469,11 @@ isNamedMapPop = function(x) {
 #' @param object a \code{Pop} object
 #' @param x a \code{Pop} object
 #' @param i index of individuals
-#' @param ... additional \code{Pop} objects
+#' @param ... additional \code{Pop} objects for combining
+#' @param drop ignored for the \code{Pop-class} objects
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #'
 #' @slot id an individual's identifier
 #' @slot iid an individual's internal identifier
@@ -494,14 +498,17 @@ isNamedMapPop = function(x) {
 #' @slot misc a list whose elements correspond to additional miscellaneous
 #'   nodes with the items for individuals in the population (see example in
 #'   \code{\link{newPop}}) - we support vectors and matrices or objects that
-#'   have a generic length and subset method.
+#'   have a generic \code{length} and subset \code{[} method.
 #'   This list is normally empty and exists solely as an
 #'   open slot available for users to store extra information about individuals.
+#'   Default functions for subsetting and merging are
+#'   described in \code{\link{subsetMisc}} and \code{\link{mergeMisc}}.
 #' @slot miscPop a list of additional miscellaneous data for the
 #'   population (see example in \code{\link{newPop}}).
 #'   This list is empty unless information is supplied by the user.
-#'   Note that the list is emptied every time the population is subsetted or
-#'   combined because the meta data for the old population might not be valid anymore.
+#'   By default it is emptied on subsetting or merging.
+#'   See \code{\link{subsetMiscPop}} and \code{\link{mergeMiscPop}}
+#'   for a description of how to change this default behavior.
 #'
 #' @seealso \code{\link{newPop}}, \code{\link{newEmptyPop}}, \code{\link{resetPop}}
 #'
@@ -622,34 +629,35 @@ validPopContent = function(object){
 #' @describeIn Pop Extract Pop by index or id
 setMethod("[",
           signature(x = "Pop"),
-          function(x, i){
+          function(x, i, ..., simParam=NULL, drop=FALSE){
+            if(missing(i)) i = seq_len(x@nInd)
             if(is.character(i)){
               i = match(i, x@id)
               if(any(is.na(i))){
                 stop("Trying to select invalid individuals")
               }
               if(any(is.null(i))){
-                stop("Not valid ids")
+                stop("Invalid id(s)")
               }
             }else{
               if(any(abs(i)>x@nInd)){
                 stop("Trying to select invalid individuals")
               }
             }
-            subset2 = function(z){
-              if(is.matrix(z)){
-                return(z[i,,drop=FALSE])
-              }else{
-                return(z[i])
-              }
-            }
+            simParam = getSimParam(simParam)
+            miscHook = getSimParamHook(simParam, "subsetMisc")
+            if(is.null(miscHook)) miscHook = subsetMisc
+            miscPopHook = getSimParamHook(simParam, "subsetMiscPop")
+            if(is.null(miscPopHook)) miscPopHook = subsetMiscPop
+            misc = isMiscAList(miscHook(x, i, simParam=simParam), "subsetMisc")
+            miscPop = isMiscAList(miscPopHook(x, i, simParam=simParam), "subsetMiscPop")
             x@id = x@id[i]
             x@iid = x@iid[i]
             x@mother = x@mother[i]
             x@father = x@father[i]
             x@fixEff = x@fixEff[i]
-            x@misc = lapply(x@misc, FUN = subset2)
-            x@miscPop = list()
+            x@misc = misc
+            x@miscPop = miscPop
             x@gv = x@gv[i,,drop=FALSE]
             x@pheno = x@pheno[i,,drop=FALSE]
             x@ebv = x@ebv[i,,drop=FALSE]
@@ -665,6 +673,8 @@ setMethod("[",
             for(chr in seq_len(x@nChr)){
               x@geno[[chr]] = x@geno[[chr]][,,i,drop=FALSE]
             }
+            if(!identical(miscHook, subsetMisc)) validObject(x)
+            if(!identical(miscPopHook, subsetMiscPop)) validObject(x)
             return(x)
           }
 )
@@ -672,14 +682,14 @@ setMethod("[",
 #' @describeIn Pop Combine multiple Pops
 setMethod("c",
           signature(x = "Pop"),
-          function (x, ...){
+          function (x, ..., simParam=NULL){
             args = list(...)
             if (any(sapply(args, isMultiPop))) {
               # Delegate to MultiPop's c method
-              return(c(newMultiPop(x), ...))
+              return(c(newMultiPop(x), ..., simParam=simParam))
             }
             # Use mergePops for increased speed
-            x = mergePops(c(list(x),args))
+            x = mergePops(c(list(x),args), simParam=simParam)
             return(x)
           }
 )
@@ -715,12 +725,12 @@ setMethod("length",
 #' The function is intended for use with output from functions such
 #' as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
 #' \code{\link{quickHaplo}}. It can also be used to create an
-#' empty \code{\link{Pop-class}} object simply by specifying the desired 
+#' empty \code{\link{Pop-class}} object simply by specifying the desired
 #' \code{ploidy}.
 #'
 #' @param rawPop an object of \code{\link{MapPop-class}} or
 #' \code{\link{NamedMapPop-class}}
-#' @param ploidy optional, integer. Ploidy of the new empty population. 
+#' @param ploidy optional, integer. Ploidy of the new empty population.
 #'   Used only if \code{rawPop} is missing.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
@@ -738,9 +748,9 @@ setMethod("length",
 #'   To get genetically different sets of individuals you can subset the
 #'   \code{rawPop} input, say first half for one set and the second half
 #'   for the other set.
-#' 
-#'   When \code{rawPop} is missing, and \code{ploidy} is provided, an empty 
-#'   population with the specified \code{ploidy} is returned by calling 
+#'
+#'   When \code{rawPop} is missing, and \code{ploidy} is provided, an empty
+#'   population with the specified \code{ploidy} is returned by calling
 #'   \code{\link{newEmptyPop}} (useful for programmatic construction or tests).
 #'   If \code{rawPop} is provided, \code{ploidy} is ignored.
 #'
@@ -764,7 +774,7 @@ setMethod("length",
 #' #MiscPop
 #' pop@miscPop$tmp1 = sum(pop@misc$tmp1)
 #' pop@miscPop$tmp2 = sum(pop@misc$tmp2)
-#' 
+#'
 #' #Create empty population with ploidy 2
 #' emptyPop = newPop(ploidy=2L, simParam=SP)
 #' @export
@@ -903,7 +913,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   pheno = gv
 
   if(simParam$nTraits>=1){
-    tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl, 
+    tmp = getGvIndex(rawPop, simParam$traits, simParam$activeQtl,
                      simParam$qtlIndex, simParam$nTraits, nThreads)
 
     gv = tmp[[1]]
@@ -960,7 +970,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
   }else{
     simParam$updateLastId(lastId)
   }
-  
+
   output = simParam$finalizePop(output, simParam=simParam, ...)
 
   return(output)
@@ -1170,12 +1180,16 @@ newEmptyPop = function(ploidy=2L, simParam=NULL){
 #' \code{\link{MultiPop-class}} objects. It is designed to behave like a list
 #' and can hence have a nested structure - see examples in \code{\link{newMultiPop}}.
 #'
-#' @param object a \code{MultiPop} object
-#' @param x a \code{MultiPop} object
-#' @param i index of \code{MultiPop} or \code{Pop} objects
+#' @param object a \code{\link{MultiPop-class}} object
+#' @param x a \code{\link{MultiPop-class}} object
+#' @param i index of \code{\link{MultiPop-class}} or \code{\link{Pop-class}} objects
 #' @param name name used by `$` and `$<-` methods
 #' @param value replacement value for `$<-`, `[[<-` or `names<-`
-#' @param ... additional \code{MultiPop} or \code{Pop} objects
+#' @param ... additional \code{\link{MultiPop-class}} or \code{\link{Pop-class}} objects
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment. Accepted by \code{c} for consistency
+#' with \code{\link{Pop-class}} methods, but currently unused
 #'
 #' @slot pops list of \code{\link{Pop-class}} or
 #' \code{MultiPop-class} objects (the latter gives nested structure)
@@ -1226,7 +1240,7 @@ setMethod("show",
                 connector = paste0(prefix, "|-- ")
                 childPrefix = paste0(prefix, "|     ")
               }
-              
+
               # Print index
               indexLabel = paste0("[[", idx, "]] ")
 
@@ -1234,12 +1248,12 @@ setMethod("show",
               if (nameLabel %in% c(" \"NA\" - ", " \"\" - ")) {
                 nameLabel = ""
               }
-              
+
               if (isMultiPop(obj)) {
                 # Print MultiPop header
-                cat(connector, indexLabel, nameLabel, "An object of class \"MultiPop\" with ", 
+                cat(connector, indexLabel, nameLabel, "An object of class \"MultiPop\" with ",
                     length(obj@pops), " item(s)\n", sep = "")
-                
+
                 # Print level indicator for the nested MultiPop
                 if (length(obj@pops) > 0) {
                   levelPrefix = paste0(childPrefix, "|   ")
@@ -1252,30 +1266,30 @@ setMethod("show",
                 } else {
                   nameLabels = rep("", length(obj@pops))
                 }
-                
+
                 # Process each item in the MultiPop
                 for (i in seq_along(obj@pops)) {
                   isLastItem = (i == length(obj@pops))
                   printMultiPop(obj@pops[[i]], level = level + 1, idx = i,
                                 prefix = childPrefix, isLast = isLastItem, nameLabel = nameLabels[i])
                 }
-                
+
               } else if (isPop(obj)) {
                 # Print Pop object
                 indIds = if (length(obj@id) <= 3) {
                   paste(obj@id, collapse = ", ")
                 } else {
-                  paste(obj@id[1], obj@id[2], "...", obj@id[length(obj)], 
+                  paste(obj@id[1], obj@id[2], "...", obj@id[length(obj)],
                         sep = ", ")
                 }
-                
-                cat(connector, indexLabel, nameLabel, "An object of class \"Pop\" with ", 
+
+                cat(connector, indexLabel, nameLabel, "An object of class \"Pop\" with ",
                     obj@nInd, " individual(s): ", indIds, "\n", sep = "")
               }
             }
-            
+
             # Print top-level header
-            cat("An object of class \"MultiPop\" with ", length(object@pops), 
+            cat("An object of class \"MultiPop\" with ", length(object@pops),
                 " item(s)\n", sep = "")
             if (length(object@pops) > 0) {
               cat("    Level 1:\n")
@@ -1287,11 +1301,11 @@ setMethod("show",
             } else {
               nameLabels = rep("", length(object))
             }
-            
+
             # Print each top-level item
             for (i in seq_along(object@pops)) {
               isLastItem = (i == length(object@pops))
-              printMultiPop(object@pops[[i]], level = 1, prefix = "", 
+              printMultiPop(object@pops[[i]], level = 1, prefix = "",
                             isLast = isLastItem, idx = i, nameLabel = nameLabels[i])
             }
             invisible()
@@ -1462,7 +1476,7 @@ setReplaceMethod("names", signature(x = "MultiPop"), function(x, value) {
 #' @describeIn MultiPop Combine multiple MultiPops (without level control)
 setMethod("c",
           signature(x = "MultiPop"),
-          function (x, ...){
+          function (x, ..., simParam=NULL){
             for(y in list(...)){
               if(is(y,"NULL")){
                 # Do nothing

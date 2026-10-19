@@ -198,6 +198,14 @@ test_that("getPed returns the pedigree of a population", {
   expect_equal(as.character(ped$id), progeny@id)
 })
 
+test_that("ATTRITION forwards local simulation parameters", {
+  f = miscFunctionFixture()
+  withWrongGlobalMiscSP(f$sp, {
+    expect_identical(attrition(f$pop, p=0, simParam=f$sp)@miscPop$total, 20)
+    expect_identical(attrition(f$pop, p=1, simParam=f$sp)@miscPop$total, 0)
+  })
+})
+
 test_that("getPed with nGen follows the pedigree recorded in SimParam", {
   set.seed(1191)
   founderPop = quickHaplo(nInd=8, nChr=1, segSites=10)

@@ -4,13 +4,17 @@
 \alias{attrition}
 \title{Lose individuals at random}
 \usage{
-attrition(pop, p)
+attrition(pop, p, simParam = NULL)
 }
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
 \item{p}{the expected proportion of individuals that will
 be lost to attrition.}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
 }
 \value{
 an object of \code{\link{Pop-class}}

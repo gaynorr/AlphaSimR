@@ -327,20 +327,20 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 
     \item{\code{founderPop}}{founder population used for variance scaling}
 
+    \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
+return an empty population with a warning instead of an error.}
+
     \item{\code{finalizePop}}{function applied to newly created populations.
 It is run as the last step of creating a new population and
 provides a way to automatically modify populations.
 The function must satisfy these four requirements:
 1) The first argument is a \code{\link{Pop-class}} object
    which will be used in this function;
-2) The second argument is a SimParam object
+2) The second argument is a \code{\link{SimParam}} object
    to provide access to global parameters;
 3) The remaining arguments are passed via \code{...}; and
 4) The return is a \code{\link{Pop-class}} object.
 See \code{\link{asCategorical}} for an example.}
-
-    \item{\code{allowEmptyPop}}{if true, population arguments with nInd=0 will
-return an empty population with a warning instead of an error.}
 
     \item{\code{finalizePheno}}{function applied to newly generated phenotype values.
 It is run as the last step of generating new phenotype values and
@@ -349,20 +349,50 @@ While \code{finalizePop} function can be used to a similar effect,
 \code{finalizePheno} function provides more granular support over
 finalizing phenotype values in new and existing populations, say,
 when we repeatedly call \code{\link{setPheno}} on the existing population
-(which would not trigger use of \code{finalizePop}).
+(which would not trigger \code{finalizePop}).
 The function must satisfy these five requirements:
 1) The first argument is a matrix of phenotype values,
    which will be used in this function and
    should have dimensions as \code{pop@pheno};
 2) The second argument is a \code{\link{Pop-class}} object
    to provide access to population specific values;
-3) The third argument must be a SimParam object
+3) The third argument must be a \code{\link{SimParam}} object
    to provide access to global parameters;
 4) The remaining arguments must be passed via \code{...}; and
 5) The return is a matrix of phenotype values that will form the new
    \code{pop@pheno}, so the function should not change column or
    row order.
 See \code{\link{asCategorical}} for an example.}
+
+    \item{\code{subsetMisc}}{function subsetting individual miscellaneous data
+when a \code{\link{Pop-class}} object is subsetted.
+
+Initialized to the default AlphaSimR function.
+\code{NULL} also selects the default.
+See \code{\link{subsetMisc}} for details and examples.}
+
+    \item{\code{mergeMisc}}{function merging individual miscellaneous data
+when \code{\link{Pop-class}} objects are merged.
+
+Initialized to the default AlphaSimR function.
+\code{NULL} also selects the default.
+See \code{\link{mergeMisc}} for details and examples.}
+
+    \item{\code{subsetMiscPop}}{function subsetting population miscellaneous data
+when a \code{\link{Pop-class}} object is subsetted.
+
+Initialized to the default AlphaSimR function,
+which clears \code{miscPop}.
+\code{NULL} also selects the default.
+See \code{\link{subsetMiscPop}} for details and examples.}
+
+    \item{\code{mergeMiscPop}}{function merging population miscellaneous data
+when \code{\link{Pop-class}} objects are merged.
+
+Initialized to the default AlphaSimR function,
+which clears \code{miscPop}.
+\code{NULL} also selects the default.
+See \code{\link{mergeMiscPop}} for details and examples.}
 
     \item{\code{v}}{the crossover interference parameter for a gamma model of
 recombination. A value of 1 indicates no crossover interference

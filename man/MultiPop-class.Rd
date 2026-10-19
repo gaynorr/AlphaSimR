@@ -35,24 +35,29 @@
 
 \S4method{names}{MultiPop}(x) <- value
 
-\S4method{c}{MultiPop}(x, ...)
+\S4method{c}{MultiPop}(x, ..., simParam = NULL)
 
 \S4method{length}{MultiPop}(x)
 
 isMultiPop(x)
 }
 \arguments{
-\item{object}{a \code{MultiPop} object}
+\item{object}{a \code{\link{MultiPop-class}} object}
 
-\item{x}{a \code{MultiPop} object}
+\item{x}{a \code{\link{MultiPop-class}} object}
 
-\item{i}{index of \code{MultiPop} or \code{Pop} objects}
+\item{i}{index of \code{\link{MultiPop-class}} or \code{\link{Pop-class}} objects}
 
 \item{name}{name used by `$` and `$<-` methods}
 
 \item{value}{replacement value for `$<-`, `[[<-` or `names<-`}
 
-\item{...}{additional \code{MultiPop} or \code{Pop} objects}
+\item{...}{additional \code{\link{MultiPop-class}} or \code{\link{Pop-class}} objects}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment. Accepted by \code{c} for consistency
+with \code{\link{Pop-class}} methods, but currently unused}
 }
 \description{
 The multi-population holds multiple \code{\link{Pop-class}} and

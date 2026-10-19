@@ -10,7 +10,7 @@ newPop(rawPop, ploidy = NULL, simParam = NULL, nThreads = NULL, ...)
 \item{rawPop}{an object of \code{\link{MapPop-class}} or
 \code{\link{NamedMapPop-class}}}
 
-\item{ploidy}{optional, integer. Ploidy of the new empty population. 
+\item{ploidy}{optional, integer. Ploidy of the new empty population.
 Used only if \code{rawPop} is missing.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
@@ -31,7 +31,7 @@ Creates an initial \code{\link{Pop-class}} from an object of
 The function is intended for use with output from functions such
 as \code{\link{runMacs}}, \code{\link{newMapPop}}, or
 \code{\link{quickHaplo}}. It can also be used to create an
-empty \code{\link{Pop-class}} object simply by specifying the desired 
+empty \code{\link{Pop-class}} object simply by specifying the desired
 \code{ploidy}.
 }
 \details{
@@ -43,8 +43,8 @@ Note that \code{newPop} takes genomes from the
   \code{rawPop} input, say first half for one set and the second half
   for the other set.
 
-  When \code{rawPop} is missing, and \code{ploidy} is provided, an empty 
-  population with the specified \code{ploidy} is returned by calling 
+  When \code{rawPop} is missing, and \code{ploidy} is provided, an empty
+  population with the specified \code{ploidy} is returned by calling
   \code{\link{newEmptyPop}} (useful for programmatic construction or tests).
   If \code{rawPop} is provided, \code{ploidy} is ignored.
 }

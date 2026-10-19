@@ -4,11 +4,16 @@
 \alias{mergePops}
 \title{Merge list of populations}
 \usage{
-mergePops(popList)
+mergePops(popList, simParam = NULL)
 }
 \arguments{
 \item{popList}{a list containing \code{\link{Pop-class}} elements
 or a \code{\link{MultiPop-class}}}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment. Here this is relevant for \code{mergeMisc} and
+\code{mergeMiscPop} hooks.}
 }
 \value{
 Returns a \code{\link{Pop-class}}
@@ -16,6 +21,9 @@ Returns a \code{\link{Pop-class}}
 \description{
 Rapidly merges a list of populations into a
 single population
+}
+\details{
+See \code{\link{mergeMisc}} for customizing miscellaneous data.
 }
 \examples{
 #Create founder haplotypes

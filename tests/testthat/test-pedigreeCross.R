@@ -1119,3 +1119,60 @@ test_that("BATCH selfing and doubled haploids combine in one generation", {
   expect_false(any(geno["b",]==1))
   expect_descendant(geno["a",], geno["p1",], geno["p2",], label="a")
 })
+
+test_that("PEDIGREE forwards its local SP through all assembly paths", {
+  f = miscFunctionFixture()
+  sp = f$sp
+  calls = c(subset=0L, merge=0L)
+  sp$finalizePop = function(pop, ...){
+    pop@misc = list(value=as.numeric(pop@iid))
+    pop
+  }
+  sp$subsetMisc = function(pop, i, simParam){
+    expect_identical(simParam, sp)
+    calls["subset"] <<- calls["subset"] + 1L
+    subsetMisc(pop, i, simParam=simParam)
+  }
+  sp$mergeMisc = function(popList, simParam){
+    expect_identical(simParam, sp)
+    calls["merge"] <<- calls["merge"] + 1L
+    mergeMisc(popList, simParam=simParam)
+  }
+  sp$subsetMiscPop = function(pop, i, simParam){
+    expect_identical(simParam, sp)
+    list(n=length(pop@id[i]))
+  }
+  sp$mergeMiscPop = function(popList, simParam){
+    expect_identical(simParam, sp)
+    list(n=sum(vapply(popList, function(pop) pop@nInd, integer(1))))
+  }
+  pop = newPop(f$founder, simParam=sp)
+  pop@id = c("A", "B", "M", "X")
+  withWrongGlobalMiscSP(sp, {
+    # C is crossed and M is copied in the same generation, then reordered.
+    # Different selfing counts and DH flags exercise partial reassembly.
+    ids = c("Z", "C", "M", "A", "B", "D")
+    out = pedigreeCross(pop, id=ids,
+                        mother=c("C", "A", "A", NA, NA, "C"),
+                        father=c("M", "B", "B", NA, NA, "A"),
+                        matchID=TRUE, nSelf=c(0, 2, 1, 0, 0, 0),
+                        DH=c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE),
+                        simParam=sp)
+    expect_identical(out@id, ids)
+    expect_equal(out@miscPop$n, 6)
+    expect_length(out@misc$value, 6)
+    expect_true(validObject(out))
+    # One unknown parent mixes a founder subset with a simulated generation.
+    out = pedigreeCross(pop, id=c("child", "founder"),
+                        mother=c("founder", NA), father=c(NA, NA), simParam=sp)
+    expect_equal(out@miscPop$n, 2)
+    expect_length(out@misc$value, 2)
+    # Map input uses its private SimParam, never functions from the global SP.
+    mapped = pedigreeCross(f$founder, id=c("child", "founder"),
+                           mother=c("founder", NA), father=c(NA, NA))
+    expect_s4_class(mapped, "NamedMapPop")
+    expect_identical(mapped@id, c("child", "founder"))
+  })
+  expect_gt(unname(calls["subset"]), 0)
+  expect_gt(unname(calls["merge"]), 0)
+})

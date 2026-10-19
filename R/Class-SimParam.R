@@ -22,22 +22,23 @@ SimParam = R6Class(
     #' @field founderPop founder population used for variance scaling
     founderPop = "MapPop",
 
+    #' @field allowEmptyPop if true, population arguments with nInd=0 will
+    #' return an empty population with a warning instead of an error.
+    allowEmptyPop = "logical",
+
     #' @field finalizePop function applied to newly created populations.
     #' It is run as the last step of creating a new population and
     #' provides a way to automatically modify populations.
     #' The function must satisfy these four requirements:
     #' 1) The first argument is a \code{\link{Pop-class}} object
     #'    which will be used in this function;
-    #' 2) The second argument is a SimParam object
+    #' 2) The second argument is a \code{\link{SimParam}} object
     #'    to provide access to global parameters;
     #' 3) The remaining arguments are passed via \code{...}; and
     #' 4) The return is a \code{\link{Pop-class}} object.
     #' See \code{\link{asCategorical}} for an example.
     finalizePop = "function",
 
-    #' @field allowEmptyPop if true, population arguments with nInd=0 will
-    #' return an empty population with a warning instead of an error.
-    allowEmptyPop = "logical",
 
     #' @field finalizePheno function applied to newly generated phenotype values.
     #' It is run as the last step of generating new phenotype values and
@@ -46,14 +47,14 @@ SimParam = R6Class(
     #' \code{finalizePheno} function provides more granular support over
     #' finalizing phenotype values in new and existing populations, say,
     #' when we repeatedly call \code{\link{setPheno}} on the existing population
-    #' (which would not trigger use of \code{finalizePop}).
+    #' (which would not trigger \code{finalizePop}).
     #' The function must satisfy these five requirements:
     #' 1) The first argument is a matrix of phenotype values,
     #'    which will be used in this function and
     #'    should have dimensions as \code{pop@pheno};
     #' 2) The second argument is a \code{\link{Pop-class}} object
     #'    to provide access to population specific values;
-    #' 3) The third argument must be a SimParam object
+    #' 3) The third argument must be a \code{\link{SimParam}} object
     #'    to provide access to global parameters;
     #' 4) The remaining arguments must be passed via \code{...}; and
     #' 5) The return is a matrix of phenotype values that will form the new
@@ -61,6 +62,40 @@ SimParam = R6Class(
     #'    row order.
     #' See \code{\link{asCategorical}} for an example.
     finalizePheno = "function",
+
+    #' @field subsetMisc function subsetting individual miscellaneous data
+    #' when a \code{\link{Pop-class}} object is subsetted.
+    #'
+    #' Initialized to the default AlphaSimR function.
+    #' \code{NULL} also selects the default.
+    #' See \code{\link{subsetMisc}} for details and examples.
+    subsetMisc = "function",
+
+    #' @field mergeMisc function merging individual miscellaneous data
+    #' when \code{\link{Pop-class}} objects are merged.
+    #'
+    #' Initialized to the default AlphaSimR function.
+    #' \code{NULL} also selects the default.
+    #' See \code{\link{mergeMisc}} for details and examples.
+    mergeMisc = "function",
+
+    #' @field subsetMiscPop function subsetting population miscellaneous data
+    #' when a \code{\link{Pop-class}} object is subsetted.
+    #'
+    #' Initialized to the default AlphaSimR function,
+    #' which clears \code{miscPop}.
+    #' \code{NULL} also selects the default.
+    #' See \code{\link{subsetMiscPop}} for details and examples.
+    subsetMiscPop = "function",
+
+    #' @field mergeMiscPop function merging population miscellaneous data
+    #' when \code{\link{Pop-class}} objects are merged.
+    #'
+    #' Initialized to the default AlphaSimR function,
+    #' which clears \code{miscPop}.
+    #' \code{NULL} also selects the default.
+    #' See \code{\link{mergeMiscPop}} for details and examples.
+    mergeMiscPop = "function",
 
     #' @description Starts the process of building a new simulation
     #' by creating a new \code{SimParam} object and assigning a founder
@@ -95,6 +130,10 @@ SimParam = R6Class(
       self$finalizePop = function(pop, ...){return(pop)}
       self$allowEmptyPop = FALSE # Empty populations trigger an error
       self$finalizePheno = function(pheno, ...){return(pheno)}
+      self$subsetMisc = subsetMisc
+      self$subsetMiscPop = subsetMiscPop
+      self$mergeMisc = mergeMisc
+      self$mergeMiscPop = mergeMiscPop
 
       # Private items
       private$.restrSites = TRUE
@@ -3435,6 +3474,51 @@ sampEpiEff = function(qtlLoci,nTraits,corr,gamma,shape,relVar){
 isSimParam = function(x) {
   ret = is(x, class2 = "SimParam")
   return(ret)
+}
+
+#' Get simulation parameters (SimParam)
+#'
+#' When \code{simParam} is \code{NULL}, look for an object named \code{SP} in
+#' the global environment. Use it only if it inherits from \code{SimParam};
+#' otherwise leave the simulation parameters \code{NULL}.
+#'
+#' @param simParam A \code{\link{SimParam}} object or \code{NULL}.
+#'
+#' @return The supplied \code{\link{SimParam}} object,
+#' the global \code{\link{SimParam}} object, or
+#' \code{NULL} when neither is available.
+#' The object is returned without cloning it.
+#' @keywords internal
+getSimParam <- function(simParam) {
+  if (is.null(simParam)) {
+    candidate <- get0("SP", envir = .GlobalEnv, inherits = FALSE)
+    if (inherits(candidate, "SimParam")) simParam <- candidate
+  }
+  if (!is.null(simParam) && !inherits(simParam, "SimParam")) {
+    stop("simParam must be a SimParam or NULL")
+  }
+  return(simParam)
+}
+
+#' Retrieve a SimParam hook
+#'
+#' Retrieve a named hook from \code{\link{SimParam}} and check that it
+#' is a function or \code{NULL}. This helper does not invoke the hook,
+#' resolve global \code{\link{SimParam}}, or select a default function.
+#' Callers select their default function when the returned value is \code{NULL}.
+#'
+#' @param simParam A \code{\link{SimParam}} object or \code{NULL}.
+#' @param name The name of the \code{\link{SimParam}} object hook to retrieve.
+#' @return The hook function, or \code{NULL} if \code{\link{SimParam}}
+#' or the named hook is \code{NULL}. An error is raised if the hook
+#' is neither a function nor \code{NULL}.
+#' @keywords internal
+getSimParamHook <- function(simParam, name) {
+  hook <- if (is.null(simParam)) NULL else simParam[[name]]
+  if (!is.null(hook) && !is.function(hook)) {
+    stop(paste0("SimParam$", name, " must be a function or NULL"))
+  }
+  return(hook)
 }
 
 #' @title Find LociMap superset

@@ -177,7 +177,6 @@ getPed = function(pop, nGen=1, simParam=NULL){
   return(df)
 }
 
-
 #' @title Selection intensity
 #'
 #' @description
@@ -420,7 +419,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
     #         second indicating which segsite (of all segsites within a chromosome) are the top,
     #         third  indicating chromosome of the QTL
     #         fourth indicates which allele we want to fix (edit to)
-    QtlGeno = pullQtlGeno(pop=pop[ind],trait=trait,simParam=simParam,
+    QtlGeno = pullQtlGeno(pop=pop[ind, simParam=simParam],trait=trait,simParam=simParam,
                           nThreads=nThreads)
 
     QtlEff = simParam$traits[[trait]]@addEff
@@ -821,6 +820,9 @@ setMethod("mutate",
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param p the expected proportion of individuals that will
 #' be lost to attrition.
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
 #'
 #' @return an object of \code{\link{Pop-class}}
 #'
@@ -839,11 +841,10 @@ setMethod("mutate",
 #' pop = attrition(pop, p=0.05)
 #'
 #' @export
-attrition = function(pop, p){
+attrition = function(pop, p, simParam=NULL){
   take = as.logical(rbinom(pop@nInd, size=1, prob=1-p))
-  return(pop[take])
+  return(pop[take, simParam=simParam])
 }
-
 
 #' Sample normal deviates using a seed
 #' 
@@ -870,7 +871,6 @@ rnormWithSeed = function(n, u){
   set.seed(as.integer((u-0.5)*2*2147483647))
   rnorm(n)
 }
-
 
 #' @title Population variance
 #' 

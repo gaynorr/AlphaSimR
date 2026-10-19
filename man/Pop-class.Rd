@@ -9,9 +9,9 @@
 \alias{length,Pop-method}
 \title{Population}
 \usage{
-\S4method{[}{Pop}(x, i)
+\S4method{[}{Pop}(x, i, ..., simParam = NULL, drop = FALSE)
 
-\S4method{c}{Pop}(x, ...)
+\S4method{c}{Pop}(x, ..., simParam = NULL)
 
 \S4method{show}{Pop}(object)
 
@@ -22,7 +22,13 @@
 
 \item{i}{index of individuals}
 
-\item{...}{additional \code{Pop} objects}
+\item{...}{additional \code{Pop} objects for combining}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.}
+
+\item{drop}{ignored for the \code{Pop-class} objects}
 
 \item{object}{a \code{Pop} object}
 }
@@ -78,15 +84,18 @@ Used by genomic selection models but otherwise ignored.}
 \item{\code{misc}}{a list whose elements correspond to additional miscellaneous
 nodes with the items for individuals in the population (see example in
 \code{\link{newPop}}) - we support vectors and matrices or objects that
-have a generic length and subset method.
+have a generic \code{length} and subset \code{[} method.
 This list is normally empty and exists solely as an
-open slot available for users to store extra information about individuals.}
+open slot available for users to store extra information about individuals.
+Default functions for subsetting and merging are
+described in \code{\link{subsetMisc}} and \code{\link{mergeMisc}}.}
 
 \item{\code{miscPop}}{a list of additional miscellaneous data for the
 population (see example in \code{\link{newPop}}).
 This list is empty unless information is supplied by the user.
-Note that the list is emptied every time the population is subsetted or
-combined because the meta data for the old population might not be valid anymore.}
+By default it is emptied on subsetting or merging.
+See \code{\link{subsetMiscPop}} and \code{\link{mergeMiscPop}}
+for a description of how to change this default behavior.}
 }}
 
 \seealso{

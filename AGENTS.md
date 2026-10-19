@@ -156,6 +156,53 @@ are plain entries in the R6 `public` list, including those three, and
 others are active bindings over `private` ones with validation attached.
 Check which kind a neighbouring field is before adding one.
 
+**Pass simulation context explicitly throughout the call chain.** This
+applies to every operation that accepts `simParam`.
+Once a function has received or resolved its `simParam`,
+pass that same object explicitly with `simParam=simParam`
+to downstream functions that accept it.
+Include internal helpers, recursive calls, callbacks, and
+calls made through `lapply`, `do.call`, or S4 methods.
+A default of `simParam=NULL` on the callee is not a reason to omit it:
+doing so can silently switch to a different simulation stored
+in global `SP`.
+
+Keep the documented global `SP` fallback for entry points called without
+an explicit simulation. If a helper needs simulation context but does not
+accept it yet, add an argument and update its callers. Do not pass
+`simParam` blindly to arbitrary user callbacks or generic operations that
+do not accept it; inspect their contracts. A deliberately private or
+replacement simulation, such as the temporary one used for map input,
+must be documented and passed explicitly through its own downstream calls.
+
+When adding or changing simulation-dependent code, inspect both its
+callers and callees for context forwarding, including indirect calls.
+For behavior-changing paths, use regression tests with a local simulation
+and a deliberately conflicting global `SP` so accidental fallback is
+observable. Where practical, also test with no global `SP`. Assert that
+the supplied simulation controls the result or is received by the callee;
+merely asserting that the call succeeds is insufficient. Restore any
+global state changed by the test. Tests using only a global `SP` cannot
+detect a missing forwarding argument.
+
+Run `Rscript dev/audit_simParam.R` from the package root to find calls that
+omit a known function's `simParam` argument. `--strict` fails on these omissions,
+including when the caller has no `simParam` formal. An omission may be intentional;
+the script does not establish whether that input needs `SimParam`.
+Uncertain `[` and `c` calls, including indirect calls through `do.call`, are
+omitted unless `--operators` is supplied and do not fail strict mode.
+Unknown callbacks are not reported as omissions. A clean report is not proof
+of correct forwarding. Run `Rscript dev/audit_simParam_example.R` for a
+demonstration that also tests the auditor and its CLI exit statuses.
+The `dev/` directory is excluded from package builds.
+
+Testthat automatically loads `tests/testthat/helper-simParam.R`. Use
+`withGlobalSimParam(wrongSP, { ... })` with deliberately conflicting settings
+and assert that the explicit local simulation controls the result. Use
+`withoutGlobalSimParam({ ... })` to test without fallback. The specialized
+`withWrongGlobalMiscSP()` detects fallback through metadata hooks only.
+These helpers restore the previous global binding, including after errors.
+
 **Build new individuals with `.newPop`, not with `new("Pop", ...)`.**
 `.newPop` derives each individual's `iid` from `simParam$lastId` and then
 calls exactly one of `addToRec`, `addToPed` or `updateLastId`, depending on
@@ -188,8 +235,10 @@ changing part of a population means subsetting it, rebuilding with
 restore the original order. Subsetting empties `miscPop` outright, and
 `mergePops` drops `misc` with a warning when the populations do not carry
 the same named elements. Check what is in them before taking that route.
-`MultiPop` is the exception to all of this: it has `[<-`, `[[<-`, `$<-` and
-`names<-`.
+Emptying the `miscPop` can be overridden by `subsetMiscPop()` and
+`mergeMiscPops()` functions saved to `SP`.
+`MultiPop` is the exception to all of this:
+it has `[<-`, `[[<-`, `$<-` and `names<-`.
 
 **`c()` on a `Pop` can return something other than a `Pop`.** If any
 argument is a `MultiPop`, the method delegates and the result is a

@@ -184,6 +184,19 @@ test_that("selectPop_and_calcPopValue",{
   )
 })
 
+test_that("SELECTION forwards functions for families and MultiPop", {
+  f = miscFunctionFixture()
+  pop = f$pop
+  score = function(pop, ...) pop@misc$value
+  fam = selectFam(pop, nFam=1, use=score, simParam=f$sp)
+  expect_identical(fam@miscPop$total, sum(fam@misc$value))
+  within = selectWithinFam(pop, nInd=1, use=score, simParam=f$sp)
+  expect_identical(within@miscPop$total, sum(within@misc$value))
+  mp = selectInd(newMultiPop(pop, pop), nInd=1, use=score, simParam=f$sp)
+  expect_identical(mp[[1]]@miscPop$total, 8)
+  expect_identical(mp[[2]]@miscPop$total, 8)
+})
+
 # tests/testthat/test-calcPopValue.R
 test_that("calcPopValue", {
   founderPop = quickHaplo(nInd = 14, nChr = 1, segSites = 10)

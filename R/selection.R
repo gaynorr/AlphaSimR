@@ -600,7 +600,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
   if(returnPop){
-    return(pop[take[0:nInd]])
+    return(pop[take[0:nInd], simParam=simParam])
   }else{
     return(take[0:nInd])
   }
@@ -743,7 +743,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   take = which(allFam%in%bestFam)
   take = take[take%in%eligible]
   if(returnPop){
-    return(pop[take])
+    return(pop[take, simParam=simParam])
   }else{
     return(take)
   }
@@ -886,7 +886,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            "nInd = ", nInd))
   }
   if(returnPop){
-    return(pop[take])
+    return(pop[take, simParam=simParam])
   }else{
     return(take)
   }

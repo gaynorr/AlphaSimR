@@ -8,6 +8,12 @@
 #' @param popList a list containing \code{\link{Pop-class}} elements
 #' or a \code{\link{MultiPop-class}}
 #'
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment. Here this is relevant for \code{mergeMisc} and
+#' \code{mergeMiscPop} hooks.
+#' @details See \code{\link{mergeMisc}} for customizing miscellaneous data.
+#'
 #' @return Returns a \code{\link{Pop-class}}
 #'
 #' @examples
@@ -27,11 +33,12 @@
 #' pop2 = mergePops(popList)
 #'
 #' @export
-mergePops = function(popList){
+mergePops = function(popList, simParam=NULL){
+  simParam = getSimParam(simParam)
   if(is(popList,"MultiPop")){
     for(i in seq_len(length(popList@pops))){
       if(is(popList@pops[[i]],"MultiPop")){
-        popList@pops[[i]] = mergePops(popList@pops[[i]])
+        popList@pops[[i]] = mergePops(popList@pops[[i]], simParam=simParam)
       }
     }
     popList = popList@pops
@@ -94,45 +101,12 @@ mergePops = function(popList){
                          function(x) x@fixEff))
 
   #misc
-  # vapply rather than sapply, which returns a list for an empty popList,
-  # and the count is held separately because tmp is reused for the names
-  # below. Unnamed misc entries have NULL names, so taking the count from
-  # the names dropped every unnamed misc element.
-  nMisc = vapply(popList, function(x) length(x@misc), integer(1))
-  if(!all(nMisc == nMisc[1])) {
-    warning("number of misc elements differs - setting misc to an empty list!")
-    misc = list()
-  } else {
-    if(nMisc[1]>0) {
-      tmp = lapply(popList, function(x) names(x@misc))
-      allMatch = TRUE
-      if(length(tmp)>1){
-        for(i in 2:length(tmp)){
-          if(!all(tmp[[1]]==tmp[[i]])){
-            allMatch = FALSE
-            break
-          }
-        }
-      }
-      if(allMatch){
-        misc = vector("list", length=nMisc[1])
-        for(i in seq_len(nMisc[1])){
-          miscTmp = lapply(popList, function(x) x@misc[[i]])
-          if (is.matrix(miscTmp[[1]])) {
-            misc[[i]] = do.call("rbind", miscTmp)
-          } else {
-            misc[[i]] = do.call("c", miscTmp)
-          }
-        }
-        names(misc) = tmp[[1]]
-      }else{
-        warning("misc element names do not match - setting misc to an empty list!")
-        misc = list()
-      }
-    } else {
-      misc = list()
-    }
-  }
+  hook = getSimParamHook(simParam, "mergeMisc")
+  if(is.null(hook)) hook = mergeMisc
+  popHook = getSimParamHook(simParam, "mergeMiscPop")
+  if(is.null(popHook)) popHook = mergeMiscPop
+  misc = isMiscAList(hook(popList, simParam=simParam), "mergeMisc")
+  miscPop = isMiscAList(popHook(popList, simParam=simParam), "mergeMiscPop")
 
   #sex
   sex = do.call("c",
@@ -217,7 +191,7 @@ mergePops = function(popList){
              father=father,
              fixEff=fixEff,
              misc=misc,
-             miscPop=list(),
+             miscPop=miscPop,
              nTraits=nTraits,
              gv=gv,
              gxe=gxe,
@@ -442,6 +416,10 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #'   \code{NULL} values are ignored.
 #' @param level Integer scalar >= 0 to merge at a specific level of nesting;
 #'   see Details.
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#' See \code{\link{mergeMisc}} for details on how this is used.
 #'
 #' @details
 #' The function accepts multiple inputs and merges them according to the
@@ -510,7 +488,7 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' mergeMultiPops(mp2, mp1[[1]], level=2)
 #'
 #' @export
-mergeMultiPops = function(..., level=0){
+mergeMultiPops = function(..., level=0, simParam=NULL){
 
   if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
       !is.finite(level) || level != trunc(level) ||
@@ -551,7 +529,7 @@ mergeMultiPops = function(..., level=0){
   while (level > 0) {
     level = level - 1
     for (i in multi) {
-      popList[[i]] = mergeMultiPops(popList[[i]], level = level)
+      popList[[i]] = mergeMultiPops(popList[[i]], level = level, simParam=simParam)
     }
     multiPop = do.call(newMultiPop, popList)
     validObject(multiPop)
@@ -559,7 +537,7 @@ mergeMultiPops = function(..., level=0){
   }
 
   flatMultiPop = flattenMultiPop(multiPop)
-  return(mergePops(flatMultiPop))
+  return(mergePops(flatMultiPop, simParam=simParam))
 }
 
 #' @title Split Pop or MultiPop

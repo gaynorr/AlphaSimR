@@ -15,6 +15,26 @@ test_that("editGenome",{
   expect_equal(c(varG(pop)),0,tolerance=1e-6)
 })
 
+test_that("GENOME EDITING forwards local simulation parameters", {
+  f = miscFunctionFixture()
+  withWrongGlobalMiscSP(f$sp, {
+    editSP = SimParam$new(f$founder)
+    editSP$nThreads = 1L
+    editSP$addTraitA(10)
+    pop = newPop(f$founder, simParam=editSP)
+    calls = 0L
+    editSP$subsetMiscPop = function(pop, i, simParam){
+      expect_identical(simParam, editSP)
+      expect_identical(i, 1L)
+      calls <<- calls + 1L
+      list()
+    }
+    edited = editGenomeTopQtl(pop, ind=1, nQtl=1, simParam=editSP)
+    expect_identical(edited@nInd, pop@nInd)
+    expect_identical(calls, 1L)
+  })
+})
+
 test_that("editGenomeTopQtl accepts a trait name",{
   founderPop = quickHaplo(nInd=10, nChr=2, segSites=20)
   SP = SimParam$new(founderPop=founderPop)

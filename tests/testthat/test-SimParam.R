@@ -135,6 +135,53 @@ test_that("reduceGenome uses the centromeres of the map it recombines on",{
   expect_equal(male@nInd,4L)
 })
 
+test_that("getSimParam resolves explicit and global simulations without cloning", {
+  founder = quickHaplo(nInd=2, nChr=1, segSites=1)
+  localSP = SimParam$new(founder)
+  localSP$nThreads = 1L
+  globalSP = localSP$clone()
+  withGlobalSimParam(globalSP, {
+    expect_identical(AlphaSimR:::getSimParam(localSP), localSP)
+    expect_identical(AlphaSimR:::getSimParam(NULL), globalSP)
+    for(value in list(1, "invalid", list())){
+      expect_error(AlphaSimR:::getSimParam(value),
+                   "simParam must be a SimParam or NULL", fixed=TRUE)
+    }
+  })
+  withoutGlobalSimParam({
+    expect_null(AlphaSimR:::getSimParam(NULL))
+    expect_identical(AlphaSimR:::getSimParam(localSP), localSP)
+  })
+  for(value in list(NULL, 1, "invalid", list())){
+    withGlobalSimParam(value, {
+      expect_null(AlphaSimR:::getSimParam(NULL))
+      expect_identical(AlphaSimR:::getSimParam(localSP), localSP)
+    })
+  }
+})
+
+test_that("getSimParamHook retrieves and validates hooks without invoking them", {
+  founder = quickHaplo(nInd=2, nChr=1, segSites=1)
+  localSP = SimParam$new(founder)
+  localSP$nThreads = 1L
+  hook = function(...) stop("Hook must not be invoked during retrieval")
+  withWrongGlobalMiscSP(localSP, {
+    expect_null(AlphaSimR:::getSimParamHook(NULL, "subsetMisc"))
+    for(name in c("subsetMisc", "subsetMiscPop", "mergeMisc", "mergeMiscPop")){
+      localSP[[name]] = hook
+      expect_identical(AlphaSimR:::getSimParamHook(localSP, name), hook)
+      localSP[[name]] = NULL
+      expect_null(AlphaSimR:::getSimParamHook(localSP, name))
+      for(value in list(1, "invalid", list())){
+        localSP[[name]] = value
+        expect_error(AlphaSimR:::getSimParamHook(localSP, name),
+                     paste0("SimParam$", name, " must be a function or NULL"),
+                     fixed=TRUE)
+      }
+    }
+  })
+})
+
 test_that("removeTrait and switchTrait accept trait names",{
   founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
   SP = SimParam$new(founderPop)
@@ -151,4 +198,64 @@ test_that("removeTrait and switchTrait accept trait names",{
   expect_equal(SP$traitNames, c("Yield","Yield"))
 
   expect_error(SP$removeTrait("Missing"), "did not match any trait names")
+})
+
+test_that("GLOBAL SimParam fixtures restore absent, NULL, and existing bindings", {
+  withGlobalSimParam("original", {
+    expect_identical(
+      withGlobalSimParam("other", get("SP", .GlobalEnv)),
+      "other"
+    )
+    expect_identical(get("SP", .GlobalEnv), "original")
+    expect_error(
+      withGlobalSimParam(NULL, stop("fixture failure")),
+      "fixture failure"
+    )
+    expect_identical(get("SP", .GlobalEnv), "original")
+    withoutGlobalSimParam({
+      expect_false(exists("SP", .GlobalEnv, inherits = FALSE))
+      withGlobalSimParam(
+        "nested",
+        expect_identical(get("SP", .GlobalEnv), "nested")
+      )
+      expect_false(exists("SP", .GlobalEnv, inherits = FALSE))
+    })
+    expect_identical(get("SP", .GlobalEnv), "original")
+  })
+  withGlobalSimParam(NULL, {
+    expect_error(
+      withoutGlobalSimParam(stop("fixture failure")),
+      "fixture failure"
+    )
+    expect_true(exists("SP", .GlobalEnv, inherits = FALSE))
+    expect_null(get("SP", .GlobalEnv))
+  })
+})
+
+test_that("EXPLICIT SimParam controls population hooks with a conflicting global SP", {
+  founder <- quickHaplo(nInd = 4, nChr = 1, segSites = 10)
+  localSP <- SimParam$new(founder)
+  localSP$nThreads <- 1L
+  localSP$finalizePop <- function(pop, ...) {
+    pop@miscPop$source <- "local"
+    pop
+  }
+  wrongSP <- localSP$clone()
+  wrongSP$finalizePop <- function(pop, ...) {
+    pop@miscPop$source <- "global"
+    pop
+  }
+  withGlobalSimParam(wrongSP, {
+    expect_identical(newPop(founder)@miscPop$source, "global")
+    expect_identical(
+      newPop(founder, simParam = localSP)@miscPop$source,
+      "local"
+    )
+  })
+  withoutGlobalSimParam({
+    expect_identical(
+      newPop(founder, simParam = localSP)@miscPop$source,
+      "local"
+    )
+  })
 })

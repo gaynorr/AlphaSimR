@@ -1638,7 +1638,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     partRow = integer(0)
 
     if(length(copyAt)>0L){
-      parts = c(parts, list(founderPop[founderRowFP[idx[copyAt]]]))
+      parts = c(parts, list(founderPop[founderRowFP[idx[copyAt]], simParam=simParam]))
       partRow = c(partRow, copyAt)
     }
 
@@ -1657,7 +1657,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       poolRow = integer(0)
       for(sourceGen in sort(unique(gen[pedNeed]))){
         take = pedNeed[gen[pedNeed]==sourceGen]
-        poolList = c(poolList, list(genPop[[sourceGen]][posOf[take]]))
+        poolList = c(poolList, list(genPop[[sourceGen]][posOf[take], simParam=simParam]))
         poolRow = c(poolRow, take)
       }
       nPed = length(poolRow)
@@ -1665,13 +1665,13 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
       fpNeed = unique(c(motherFP[cr], fatherFP[cr]))
       fpNeed = fpNeed[!is.na(fpNeed)]
       if(length(fpNeed)>0L){
-        poolList = c(poolList, list(founderPop[fpNeed]))
+        poolList = c(poolList, list(founderPop[fpNeed, simParam=simParam]))
       }
 
       if(length(poolList)==1L){
         pool = poolList[[1]]
       }else{
-        pool = mergePops(poolList)
+        pool = mergePops(poolList, simParam=simParam)
       }
 
       # Both parents come out of the same pool, so the cross plan is two
@@ -1693,10 +1693,10 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
     if(length(parts)==1L){
       genInd = parts[[1]]
     }else{
-      genInd = mergePops(parts)
+      genInd = mergePops(parts, simParam=simParam)
     }
     if(is.unsorted(partRow)){
-      genInd = genInd[order(partRow)]
+      genInd = genInd[order(partRow), simParam=simParam]
     }
 
     # Selfing, a round at a time across everyone that still has one to do.
@@ -1711,8 +1711,8 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
         rest = which(nSelfGen<selfRound)
         genInd = mergePops(list(self(genInd, parents=take,
                                      simParam=simParam, nThreads=nThreads),
-                                genInd[rest]))
-        genInd = genInd[order(c(take, rest))]
+                                genInd[rest, simParam=simParam]), simParam=simParam)
+        genInd = genInd[order(c(take, rest)), simParam=simParam]
       }
     }
 
@@ -1730,8 +1730,8 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                                        useFemale=useFemale,
                                        simParam=simParam,
                                        nThreads=nThreads),
-                                genInd[kept]))
-        genInd = genInd[order(c(made, kept))]
+                                genInd[kept, simParam=simParam]), simParam=simParam)
+        genInd = genInd[order(c(made, kept)), simParam=simParam]
       }
     }
 
@@ -1749,10 +1749,10 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
   if(length(genPop)==1L){
     output = genPop[[1]]
   }else{
-    output = mergePops(genPop)
+    output = mergePops(genPop, simParam=simParam)
   }
   if(is.unsorted(builtRow)){
-    output = output[order(builtRow)]
+    output = output[order(builtRow), simParam=simParam]
   }
 
   # Copy over names

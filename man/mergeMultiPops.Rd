@@ -4,7 +4,7 @@
 \alias{mergeMultiPops}
 \title{Merge Pop and MultiPop objects}
 \usage{
-mergeMultiPops(..., level = 0)
+mergeMultiPops(..., level = 0, simParam = NULL)
 }
 \arguments{
 \item{...}{\code{\link{Pop-class}} or \code{\link{MultiPop-class}} objects;
@@ -12,6 +12,11 @@ mergeMultiPops(..., level = 0)
 
 \item{level}{Integer scalar >= 0 to merge at a specific level of nesting;
 see Details.}
+
+\item{simParam}{an object of class \code{\link{SimParam}}. If
+\code{NULL}, the function uses the object named \code{SP} from the
+global environment.
+See \code{\link{mergeMisc}} for details on how this is used.}
 }
 \value{
 If \code{level == 0}, or when merging yields a single \code{Pop},

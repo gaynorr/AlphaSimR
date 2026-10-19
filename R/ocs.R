@@ -430,7 +430,7 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                            nThreads=nThreads, onShortfall=onShortfall,
                            call=sys.call(), ...)
   if(returnPop){
-    return(pop[take])
+    return(pop[take, simParam=simParam])
   }else{
     return(take)
   }

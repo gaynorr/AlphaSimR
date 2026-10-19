@@ -1,0 +1,198 @@
+---
+title: "Storing miscellaneous data in AlphaSimR populations"
+author: "Gregor Gorjanc and Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Storing miscellaneous data in AlphaSimR populations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(AlphaSimR)
+```
+
+## Why use miscellaneous data slots?
+
+`AlphaSimR` generates a lot of information about each individual,
+such as genome, genetic values, phenotypes, sex, etc.
+This information is stored in slots of the `Pop` object,
+and can be accessed via the `@` operator (say, `pop@gv`) or
+some accessor functions (say, `gv(pop)`).
+
+Sometimes we may want to store additional information
+beyond these standard `Pop` slots.
+For example, we may want to store covariates, factor levels, or
+other metadata for the individuals in a `Pop` object.
+We may want to also store a summary of a `Pop` object.
+While we can achieve all this by creating objects in the working environment,
+it is convenient to keep the additional information in the `Pop` object itself.
+This is what the `misc` and `miscPop` slots are for.
+
+We use the `misc` slot for **individual miscellaneous data**.
+This slot is a list.
+Each list element must have one item per individual,
+or one row of a matrix per individual,
+both in the same order as individuals are stored in the `Pop` object.
+We use the `miscPop` slot for **population miscellaneous data**.
+This slot is also a list.
+Both slots are empty and users can add data to them as shown below.
+
+```{r create}
+founders = quickHaplo(nInd=4, nChr=1, segSites=10)
+SP = SimParam$new(founders)
+pop = newPop(founders, simParam=SP)
+
+pop@misc$cost = c(2, 4, 6, 8)
+pop@misc$group = c("A", "A", "B", "B")
+pop@misc$mat = matrix(rnorm(8), nrow=4, ncol=2)
+pop@miscPop = list(totalCost=sum(pop@misc$cost),
+                   groupCounts=table(pop@misc$group))
+pop@misc
+pop@miscPop
+```
+
+Because `list` is a flexible data structure,
+we can store different types of objects in list elements of `misc` and `miscPop`.
+Which types of objects are appropriate depends on the context,
+but also if we can define a sensible behavior for these objects
+when we are subsetting and merging populations.
+This is explained in the next section.
+
+## What happens by default when we subset or merge populations?
+
+Subsetting a population **keeps `misc`** slot aligned with the individuals.
+This is achieved by the default `subsetMisc()` function,
+which is called by the subsetting operator.
+This function knows how to subset `Pop` objects
+(say, `pop@misc$otherPop[i]` - useful for mtDNA simulations),
+matrices (say, `pop@misc$mat[i, , drop = FALSE]`), or
+any type of vector-like object that can be subsetted with the `[` method (say, `pop@misc$obj[i]`).
+However, subsetting a population **clears `miscPop`**.
+
+```{r default-subset}
+selected = pop[c(4, 2, 2)]
+selected@misc
+selected@miscPop
+```
+
+Merging populations combines their corresponding `misc` slots,
+using `c()` for vector-like objects aand `rbind()` for matrices.
+However, merging populations **clears `miscPop`**.
+
+```{r default-merge}
+combined = mergePops(list(pop, pop))
+combined@misc
+combined@miscPop
+```
+
+If the number or names of `misc` elements differ between populations,
+the default merge function warns and clears **the entire `misc` slot**.
+Use the same names in the same order to avoid this.
+
+```{r incompatible-misc}
+other = pop
+other@misc$group = NULL
+str(pop)
+str(other)
+combined = mergePops(list(pop, other))
+combined@misc
+```
+
+Subsetting and merging populations clears the `miscPop`
+because it is not clear how to recompute the information.
+This can be customized with user defined functions,
+as described in the next section.
+
+## Customize the behavior with user-defined functions (hooks)
+
+Four independent functions (hooks) saved in `SimParam`
+control the subset and merge operations with `misc` and `miscPop`.
+
+| Function (hook) | Returns |
+|:---|:---|
+| `SP$subsetMisc` | `misc` for a subset |
+| `SP$subsetMiscPop` | `miscPop` for a subset |
+| `SP$mergeMisc` | `misc` for a merged population |
+| `SP$mergeMiscPop` | `miscPop` for a merged population |
+
+Each function returns a list for its own slot.
+Subset functions receive the original `pop` and index `i`.
+Merge functions receive the original populations as `popList`, in merge order.
+By storing these functions into the `SimParam` object,
+they are used by the subsetting and merging operators.
+We can pass this `SimParam` object explicitly to the operators, or
+we can rely on the global `SimParam` object named `SP` if available.
+
+For example, to recompute the total cost whenever individuals are subsetted
+or populations are merged you could use:
+
+```{r population-functions}
+SP$subsetMiscPop = function(pop, i, simParam=NULL){
+  list(totalCost=sum(pop@misc$cost[i]))
+}
+SP$mergeMiscPop = function(popList, simParam=NULL){
+  list(totalCost=sum(vapply(popList, function(pop) sum(pop@misc$cost), numeric(1))))
+}
+
+selected = pop[c(4, 2, 2)]
+selected@miscPop
+combined = c(pop, selected)
+combined@miscPop
+```
+
+These functions also apply to populations created before the functions were set.
+With the above two functions,
+the individual data in `misc` still follow the default handling.
+To customize subsetting and merging of `misc` too,
+you could rewrite the default functions,
+or call the exported default helpers inside a function and
+then adjust their result.
+Here we keep a record of the most recent operation for each individual:
+
+```{r individual-functions}
+SP$subsetMisc = function(pop, i, simParam=NULL){
+  out = subsetMisc(pop, i, simParam=simParam)
+  out$operation = rep("subset", length(out[[1]]))
+  out
+}
+SP$mergeMisc = function(popList, simParam=NULL){
+  out = mergeMisc(popList, simParam=simParam)
+  out$operation = rep("merge", length(out[[1]]))
+  out
+}
+
+left = pop[1:2]
+right = pop[3:4]
+left@misc$operation
+combined = mergePops(list(left, right))
+combined@misc$operation
+combined@miscPop
+```
+
+Both functions for an operation see the original inputs.
+A `miscPop` function does not see the result of the `misc` functions.
+Ensure you use `subsetMisc()` inside a subset function rather than `pop[i]`,
+which would call the function recursively indefinitely.
+Note that the custom `misc` results must still have one item or
+matrix row per resulting individual.
+
+To restore the default behavior set any function to `NULL`
+
+```{r reset-functions}
+SP$subsetMisc = NULL
+SP$mergeMisc = NULL
+SP$subsetMiscPop = NULL
+SP$mergeMiscPop = NULL
+pop[1:2]@miscPop # list() again
+```
+
+See `?subsetMisc` for the function (hook) interface and defaults,
+including `mergeMisc()`, `subsetMiscPop()` and `mergeMiscPop()`.
