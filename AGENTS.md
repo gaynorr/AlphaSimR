@@ -305,6 +305,16 @@ sets those. `Version` in `DESCRIPTION` and the top heading of `NEWS.md` are
 kept in step for releases and may drift apart on the development branch, so
 a difference between those two is not a bug to fix.
 
+A new help topic needs a place in the `reference:` index of
+`_pkgdown.yml`, which groups the website's function reference by topic
+rather than alphabetically. Add the topic's name, the `\name{}` of its
+`.Rd` file, to the section it belongs in, or start a section if none
+fits. pkgdown fails the site build when a public topic is missing from
+the index, so a forgotten entry breaks `pkgdown.yaml` rather than being
+skipped. Topics marked `@keywords internal` are exempt and should not be
+listed. When a function is deprecated, move its entry to the
+`Deprecated` section; when one is removed, delete its entry.
+
 A new file at the top level of the package needs an entry in
 `.Rbuildignore` unless it is meant to ship. This file has such an entry and
 does not ship.
