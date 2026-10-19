@@ -76,8 +76,7 @@ diag(cor(ebv(candidates2), gv(candidates2)))
 round(mvModel@Vu, 5)
 
 ## -----------------------------------------------------------------------------
-ans2 = RRBLUP2(trainPop, Vu = ans@Vu[1, 1], Ve = ans@Ve[1, 1],
-               useEM = FALSE, simParam = SP)
+ans2 = RRBLUP(trainPop, varComp = ans, simParam = SP)
 
 candidates = setEBV(candidates, ans2, simParam = SP)
 
@@ -85,11 +84,15 @@ cor(ebv(candidates)[, 1], gv(candidates)[, 1])
 
 ## -----------------------------------------------------------------------------
 mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
-                  Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
+                  varComp = mvModel, simParam = SP2)
 candidatesFast = setEBV(candidates2, mvFast, simParam = SP2)
 
 # The default mode's predictions and fast mode's agree
 diag(cor(ebv(candidatesFast), ebv(candidates2)))
+
+## ----eval=FALSE---------------------------------------------------------------
+# mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
+#                   Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Predict every DH and advance the best to the first yield trial
@@ -117,6 +120,16 @@ diag(cor(ebv(candidatesFast), ebv(candidates2)))
 #   # Fixed size: drop the oldest year of records
 #   nNew = c(PYT, AYT, EYT)@nInd
 #   trainPop = c(trainPop[-(1:nNew)], PYT, AYT, EYT)
+# }
+
+## ----eval=FALSE---------------------------------------------------------------
+# if (cycle %% 5 == 1) {
+#   # Estimate the variance components afresh
+#   gsModel = RRBLUP(trainPop, fastMode = TRUE, simParam = SP)
+# } else {
+#   # Reuse the last estimates
+#   gsModel = RRBLUP(trainPop, fastMode = TRUE, varComp = gsModel,
+#                    simParam = SP)
 # }
 
 ## -----------------------------------------------------------------------------
