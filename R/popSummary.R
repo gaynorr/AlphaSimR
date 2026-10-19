@@ -302,14 +302,12 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #' \code{\link{Pop-class}} objects in a \code{\link{MultiPop-class}} object.
 #' Means are then recursively aggregated upward through the nested
 #' \code{MultiPop} structure by taking the mean of child-population means
-#' at each level. Aggregation is intentionally unweighted across child 
+#' at each level. Aggregation is intentionally unweighted across child
 #' populations.
 #'
 #' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
 #' @param level Integer scalar \code{>= 0} indicating the requested aggregation
 #'   level (see Details).
-#' @param .req_level Internal argument used during recursion. Do not set
-#'   manually.
 #'
 #' @details
 #' The \code{level} argument controls the nesting level in a
@@ -323,9 +321,9 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #' - When \code{level=0}, the function returns a numeric vector giving the
 #'   overall mean-of-means across all branches for each trait. Any
 #'   \code{level<0} is treated as \code{level=0}.
-#' 
+#'
 #' @seealso
-#' \code{\link{meanG}}, \code{\link{gv}}
+#' \code{\link{meanG}}, \code{\link{gv}}, \code{\link{calcPopSummary}}
 #'
 #' @return
 #' If \code{x} is a \code{\link{Pop-class}} object, or if \code{level=0}, a
@@ -354,62 +352,13 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #' meanGPop(mp, level = 0)
 #'
 #' @export
-meanGPop = function(x, level = 0, .req_level) {
-  if (isPop(x)) {
-    if (nrow(x@gv) == 0L) {
-      stop("One of the populations in `x` is empty")
-    }
-    return(colMeans(x@gv))
-  }
-  stopifnot(isMultiPop(x))
-  if (length(x) == 0L) {
-    stop("`x` contains no populations.")
-  }
-
-  if (missing(.req_level)) {
-    if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
-        !is.finite(level) || level != trunc(level) ||
-        abs(level) > .Machine$integer.max) {
-      stop("`level` must be a single non-NA integer value.")
-    }
-    .req_level = level
-  }
-
-  popValueList = lapply(
-    x@pops,
-    meanGPop,
-    level = level - 1,
-    .req_level = .req_level
+meanGPop = function(x, level = 0) {
+  calcPopSummary(
+    x,
+    withinPopFUN = function(x) colMeans(x@gv),
+    acrossPopFUN = colMeans,
+    level = level
   )
-  value_names = lapply(
-    popValueList,
-    function(v) if (is.null(dim(v))) names(v) else colnames(v)
-  )
-  if (!all(vapply(value_names, identical, logical(1), value_names[[1]]))) {
-    stop("Population values do not have consistent trait names.")
-  }
-  popValues = do.call('rbind', popValueList)
-
-  if (level < 1) {
-    return(colMeans(popValues))
-  } else {
-    if (level == .req_level) {
-      md = .depthMultiPop(x)
-      cols = ifelse(level > md, md, level)
-      paths = .collectLeafPaths(x)
-      src = .formatPopSource(
-        paths = paths,
-        nRows = rep(1, length(paths)),
-        level_offset = 0L
-      )
-      src = src[, seq_len(cols), drop = FALSE]
-      src = unique(src)
-      rownames(src) = NULL
-      attr(popValues, "source") = src
-      rownames(popValues) = NULL
-    }
-    return(popValues)
-  }
 }
 
 #' @title Mean phenotype values between \code{Pops} in a \code{MultiPop}
@@ -424,8 +373,6 @@ meanGPop = function(x, level = 0, .req_level) {
 #' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
 #' @param level Integer scalar \code{>= 0} indicating the requested aggregation
 #'   level (see Details).
-#' @param .req_level Internal argument used during recursion. Do not set
-#'   manually.
 #'
 #' @details
 #' The \code{level} argument controls the nesting level in a
@@ -441,7 +388,8 @@ meanGPop = function(x, level = 0, .req_level) {
 #'   \code{level<0} is treated as \code{level=0}.
 #' 
 #' @seealso
-#' \code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}}
+#' \code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}},
+#'   \code{\link{calcPopSummary}}
 #'
 #' @return
 #' If \code{x} is a \code{\link{Pop-class}} object, or if \code{level=0}, a
@@ -455,6 +403,7 @@ meanGPop = function(x, level = 0, .req_level) {
 #' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
+#' SP$setVarE(h2 = 0.5)
 #' \dontshow{SP$nThreads = 1L}
 #' pop = newPop(founderPop, simParam = SP)
 #'
@@ -470,62 +419,13 @@ meanGPop = function(x, level = 0, .req_level) {
 #' meanPPop(mp, level = 0)
 #'
 #' @export
-meanPPop = function(x, level = 0, .req_level) {
-  if (isPop(x)) {
-    if (nrow(x@pheno) == 0L) {
-      stop("One of the populations in `x` is empty")
-    }
-    return(colMeans(x@pheno))
-  }
-  stopifnot(isMultiPop(x))
-  if (length(x) == 0L) {
-    stop("`x` contains no populations.")
-  }
-
-  if (missing(.req_level)) {
-    if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
-        !is.finite(level) || level != trunc(level) ||
-        abs(level) > .Machine$integer.max) {
-      stop("`level` must be a single non-NA integer value.")
-    }
-    .req_level = level
-  }
-
-  popValueList = lapply(
-    x@pops,
-    meanPPop,
-    level = level - 1,
-    .req_level = .req_level
+meanPPop = function(x, level = 0) {
+  calcPopSummary(
+    x,
+    withinPopFUN = function(x) colMeans(x@pheno),
+    acrossPopFUN = colMeans,
+    level = level
   )
-  value_names = lapply(
-    popValueList,
-    function(v) if (is.null(dim(v))) names(v) else colnames(v)
-  )
-  if (!all(vapply(value_names, identical, logical(1), value_names[[1]]))) {
-    stop("Population values do not have consistent trait names.")
-  }
-  popValues = do.call('rbind', popValueList)
-
-  if (level < 1) {
-    return(colMeans(popValues))
-  } else {
-    if (level == .req_level) {
-      md = .depthMultiPop(x)
-      cols = ifelse(level > md, md, level)
-      paths = .collectLeafPaths(x)
-      src = .formatPopSource(
-        paths = paths,
-        nRows = rep(1, length(paths)),
-        level_offset = 0L
-      )
-      src = src[, seq_len(cols), drop = FALSE]
-      src = unique(src)
-      rownames(src) = NULL
-      attr(popValues, "source") = src
-      rownames(popValues) = NULL
-    }
-    return(popValues)
-  }
 }
 
 #' @title Total genetic variance within a \code{Pop}

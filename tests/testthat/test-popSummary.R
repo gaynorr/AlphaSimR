@@ -429,36 +429,36 @@ test_that("slots_means_and_variances", {
   )
   expect_error(
     meanGPop(mp, level = 0.5),
-    "`level` must be a single non-NA integer value."
+    "`level` must be a single non-negative integer."
   )
   expect_error(
     meanGPop(mp, level = 1:2),
-    "`level` must be a single non-NA integer value."
+    "`level` must be a single non-negative integer."
   )
   expect_error(
     meanPPop(mp, level = 0.5),
-    "`level` must be a single non-NA integer value."
+    "`level` must be a single non-negative integer."
   )
   expect_error(
     meanPPop(mp, level = 1:2),
-    "`level` must be a single non-NA integer value."
+    "`level` must be a single non-negative integer."
   )
   expect_error(
     meanGPop(chimera_mp),
-    "Population values do not have consistent trait names."
+    "Population summaries do not have consistent names."
   )
   expect_error(
     meanPPop(chimera_mp),
-    "Population values do not have consistent trait names."
+    "Population summaries do not have consistent names."
   )
   expect_error(
     meanGPop(newEmptyPop(ploidy = 2L, simParam = SP)),
-    "One of the populations in `x` is empty",
+    "`x` contains no populations.",
     fixed = TRUE
   )
   expect_error(
     meanPPop(newEmptyPop(ploidy = 2L, simParam = SP)),
-    "One of the populations in `x` is empty",
+    "`x` contains no populations.",
     fixed = TRUE
   )
   expect_error(
