@@ -4,7 +4,7 @@
 ^\.github$
 ^\.git$
 ^_pkgdown\.yml$
-^vignettes/web_only$
+^vignettes/articles$
 ^\.positai$
 ^\.claude$
 ^codecov\.yml$

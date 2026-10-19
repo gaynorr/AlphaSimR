@@ -6,7 +6,7 @@ output:
     toc: true
 # Pandoc reads the path as Markdown, which would turn -- into a dash, so its
 # punctuation is escaped, with any quote doubled for YAML.
-bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{General and Specific Combining Ability in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -35,8 +35,8 @@ two sets of inbred diploid parents.
 It distinguishes the cross means returned by `AlphaSimR` from centered GCA
 effects and SCA deviations.
 The companion `vignette("traits")` introduces trait specification,
-`vignette("QuanGen")` explains genetic values and their variances, and
-`vignette("GeneticRecombination")` explains inheritance during crossing.
+the [Quantitative Genetics](QuanGen.html) article explains genetic values and their variances, and
+the [Genetic Recombination](GeneticRecombination.html) article explains inheritance during crossing.
 
 | If you want to understand... | Start with... |
 |:--|:--|
@@ -254,7 +254,7 @@ $$\operatorname{Var}(M_{ij}) =
 \operatorname{Var}(s_{ij}).$$
 
 We use population variances, dividing by the number of values, as in
-`vignette("QuanGen")`.
+the [Quantitative Genetics](QuanGen.html) article.
 
 ```{r combining-variances}
 populationVariance = function(x) mean((x - mean(x))^2)

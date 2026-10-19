@@ -170,7 +170,7 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' does not rescale the demographic model's effective population sizes
 #' when ploidy changes.
 #' @param manualCommand user provided `MaCS` options. For advanced users only.
-#' See the \code{vignette("DemographicModels", package = "AlphaSimR")} for details.
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for details.
 #' @param manualGenLen user provided genetic length. This must be supplied if using
 #' \code{manualCommand}. If not using \code{manualCommand},
 #' this value will replace the predefined genetic length for the species.
@@ -214,7 +214,7 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' when choosing a rate. Consider whether reduced diversity suits the
 #' simulation's goals and report the mutation rate used.
 #'
-#' See the \code{vignette("DemographicModels", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 #' further information on \code{runMacs} and demographic models.
 #'
 #' Segregating sites are placed at absolute genetic map positions, scaled
@@ -439,7 +439,7 @@ runMacs = function(nInd, nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #' If the value is NULL, the number of threads is automatically detected.
 #'
 #' @details
-#' See \code{vignette("DemographicModels", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 #' further information on \code{runMacs2} and demographic models.
 #'
 #' @return an object of \code{\link{MapPop-class}} or if

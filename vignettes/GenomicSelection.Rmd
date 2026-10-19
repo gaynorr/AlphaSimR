@@ -43,10 +43,10 @@ what to hand it, and where the call belongs in a breeding cycle. The
 model each one fits is described later, in a section you can skip on a
 first reading.
 
-Two earlier vignettes are assumed.
+Two earlier documents are assumed.
 The `vignette("Genome")` explains how
 QTL and SNP chips are defined and how genotypes are stored and pulled.
-The `vignette("QuanGen")` explains
+The [Quantitative Genetics in AlphaSimR](https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html) article on the AlphaSimR website explains
 the distinction between a genetic value and a breeding value,
 and why a breeding value is a property of a *reference population*
 rather than of an individual on its own.

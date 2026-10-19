@@ -27,6 +27,6 @@
 #'
 #' Please see the introductory vignette for instructions for using this package.
 #' The vignette can be viewed using the following command:
-#' \code{vignette("intro",package="AlphaSimR")}
+#' \code{vignette("AlphaSimR",package="AlphaSimR")}
 #' @keywords internal
 "_PACKAGE"
