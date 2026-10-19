@@ -558,22 +558,27 @@ arma::mat subsetCodes(const arma::Mat<unsigned char>& planes,
   return K;
 }
 
-// An upper bound for the rank of a term's cross product K = M*M' on the
-// subset, which the EM step of the REML fit divides each update by. The
-// number of records is always a bound, but far too loose for a kernel of low
-// rank, as from many copies of a few genotypes, whose EM steps would then be
-// too short to reach the optimum in the iterations allowed. The numerical
-// rank comes from a pivoted Cholesky factorization of a copy of K, which
-// costs about a third of a cube of the number of records, against the four
-// or more of a decomposition with eigenvectors. Its tolerance is that of
-// rankCutoff, taken against the largest diagonal element, which is no larger
-// than the largest eigenvalue, so the rank found is at least the number of
-// eigenvalues that rankCutoff keeps. The number of records is returned if
-// the factorization is not available or fails.
-double gramRank(const arma::mat& K){
+// A thin factor F of a term's cross product K = M*M' on the subset, with
+// F*F' = K and as many columns as the numerical rank of K. The rank matters
+// twice. The EM step of the REML fit divides each update by a bound for it,
+// and the number of records, the only bound otherwise to hand, is far too
+// loose for a kernel of low rank, as from many copies of a few genotypes.
+// And a kernel of low rank is cheaper to fit on the coefficient side, from
+// its factor, than on the record side from K.
+//
+// The factor comes from a pivoted Cholesky factorization of a copy of K,
+// P'*K*P = L*L' with L lower trapezoidal, so F = P*L. It costs about a third
+// of a cube of the number of records, against the four or more of a
+// decomposition with eigenvectors, which a factor used to come from. The
+// tolerance is that of rankCutoff, taken against the largest diagonal
+// element, which is no larger than the largest eigenvalue, so the rank found
+// is at least the number of eigenvalues that rankCutoff keeps. Returns false
+// if the factorization is not available or fails, and then F is empty.
+bool gramFactor(const arma::mat& K, arma::mat& F){
   arma::uword n = K.n_rows;
+  F.reset();
   if(n==0){
-    return 0.0;
+    return false;
   }
 #if ARMA_VERSION_MAJOR >= 10
   arma::mat A = K;
@@ -586,12 +591,24 @@ double gramRank(const arma::mat& K){
   std::vector<double> work(2*n);
   arma::lapack::pstrf(&uplo, &bn, A.memptr(), &bn, piv.data(), &rank, &tol,
                       work.data(), &info);
-  // info is 1 when K is rank deficient, which is when the rank is wanted
-  if( (info==0) || (info==1) ){
-    return double(std::max<arma::blas_int>(rank, 1));
+  // info is 1 when K is rank deficient, which is the case that matters
+  if( (info!=0) && (info!=1) ){
+    return false;
   }
+  arma::uword r = arma::uword(std::max<arma::blas_int>(rank, 0));
+  // The factor is the first r columns of the lower triangle. Above the
+  // diagonal A still holds K, and below the first r columns, the part of K
+  // left unfactored, so both are left out.
+  F.zeros(n, r);
+  for(arma::uword j=0; j<r; ++j){
+    for(arma::uword i=j; i<n; ++i){
+      F(arma::uword(piv[i]-1), j) = A(i, j);
+    }
+  }
+  return true;
+#else
+  return false;
 #endif
-  return double(n);
 }
 
 // The result of a fast multikernel fit. U holds each term's marker effects,
@@ -663,19 +680,45 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     arma::mat ySub = Y.rows(subset);
     arma::mat XSub = X.rows(subset);
     // With at least as many markers as records, subsetCodes gives each
-    // term's cross product, which goes to the record side directly. That is
-    // the side the codes would be fitted on anyway, as each term then has at
-    // least as many columns as there are records.
+    // term's cross product. Each is factored to find its rank, and the side
+    // is chosen as the REML fit would choose it for factors with that many
+    // columns. Usually the ranks are close to the number of records and the
+    // cross products go to the record side directly. When they are low, as
+    // for many copies of a few genotypes, the factors are fitted instead,
+    // which the REML fit then does on the far smaller coefficient side.
     Rcpp::List varComp;
-    if(nLoci<subset.n_elem){
+    const arma::uword nSub = subset.n_elem;
+    if(nLoci<nSub){
       varComp = solveRRBLUPMK(ySub, XSub, Mlist, fastMKRemlIter);
     }else{
+      std::vector<arma::mat> F(nTerm);
       arma::vec rank(nTerm);
+      bool factored = true;
+      arma::uword nCoef = XSub.n_cols;
       for(arma::uword t=0; t<nTerm; ++t){
-        rank(t) = gramRank(Mlist(t));
+        if(gramFactor(Mlist(t), F[t])){
+          rank(t) = double(std::max<arma::uword>(F[t].n_cols, 1));
+          nCoef += F[t].n_cols;
+        }else{
+          factored = false;
+          rank(t) = double(nSub);
+          nCoef += nSub;
+        }
       }
-      varComp = remlMultiKernelGram(ySub, XSub, Mlist, rank, fastMKRemlIter,
-                                    name.c_str());
+      bool coefficientSide = factored &&
+        ((nT==1) ? useCoefficientSide(nSub, nCoef, nTerm) :
+           useCoefficientSide(nSub*nT, nCoef*nT,
+                              (nTerm+1)*nT*(nT+1)/2));
+      if(coefficientSide){
+        for(arma::uword t=0; t<nTerm; ++t){
+          Mlist(t) = std::move(F[t]);
+        }
+        varComp = solveRRBLUPMK(ySub, XSub, Mlist, fastMKRemlIter);
+      }else{
+        F.clear();
+        varComp = remlMultiKernelGram(ySub, XSub, Mlist, rank,
+                                      fastMKRemlIter, name.c_str());
+      }
     }
     if(nT==1){
       arma::mat Vu = varComp["Vu"];

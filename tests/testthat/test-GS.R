@@ -1067,29 +1067,29 @@ test_that("the REML fit on a subset is the same from cross products as from code
   }
 })
 
-test_that("the REML fit on a subset bounds the rank of a low rank cross product", {
+test_that("the REML fit on a subset handles a low rank cross product", {
   # Many copies of two doubled haploid genotypes give the female and male
-  # terms identical cross products of rank two, whose average information is
-  # singular, so the REML fit leans on EM, which divides each update by a
-  # bound for the rank of the cross product. The fit has to match the one
-  # given a factor of each cross product with as many columns as its rank.
-  # With identical cross products only the sum of the two variances is
-  # identified, so that is what is compared.
+  # terms identical cross products of rank two. Their factors have two
+  # columns, so the fit belongs on the coefficient side, and its average
+  # information is singular, so it leans on EM, which divides each update by
+  # a bound for the rank. The fit has to match the one given a factor of each
+  # cross product with as many columns as its rank, as an eigendecomposition
+  # gives. With identical cross products only the sum of the two variances
+  # is identified, so that is what is compared.
   set.seed(8601)
   founderPop = quickHaplo(nInd=20, nChr=2, segSites=40)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=30, overlap=FALSE)
-  SP$addTraitA(nQtlPerChr=10)
+  SP$addTraitA(nQtlPerChr=10, mean=c(0,0), var=c(1,1),
+               corA=matrix(c(1,0.5,0.5,1), nrow=2))
   SP$addSnpChip(nSnpPerChr=30)
-  SP$setVarE(h2=0.5)
+  SP$setVarE(h2=c(0.5,0.5))
   dh = makeDH(newPop(founderPop, simParam=SP)[1:2], nDH=1, simParam=SP)
   pop = setPheno(dh[rep(1:2, 40)], simParam=SP)
   nSub = 50L
   for(model in c("RRBLUP_GCA", "RRBLUP_SCA")){
-    set.seed(1)
-    ans = forceFast(mkModels[[model]](pop, fastMode=TRUE, nSubsample=nSub,
-                                      simParam=SP))
+    nTerm = if(model=="RRBLUP_SCA") 3L else 2L
     set.seed(1)
     s = AlphaSimR:::fastSubset(nSub, pop@nInd)
     codes = mkCodes(model, pop, SP)
@@ -1104,10 +1104,22 @@ test_that("the REML fit on a subset bounds the rank of a low rank cross product"
       keep = e$values > nSub*.Machine$double.eps*max(e$values)
       e$vectors[, keep, drop=FALSE] %*% diag(sqrt(e$values[keep]), sum(keep))
     })
-    ref = solveRRBLUPMK(matrix(pheno(pop)[s, 1]), X, factors, maxIter=100)
-    expect_equal(sum(ans@Vu[1:2, 1]), sum(ref$Vu[1:2]), tolerance=1e-6,
-                 info=model)
-    expect_equal(c(ans@Ve), c(ref$Ve), tolerance=1e-6, info=model)
+    for(traits in list(1L, 1:2)){
+      info = paste(model, length(traits))
+      set.seed(1)
+      ans = forceFast(mkModels[[model]](pop, traits=traits, fastMode=TRUE,
+                                        nSubsample=nSub, simParam=SP))
+      ref = solveRRBLUPMK(pheno(pop)[s, traits, drop=FALSE], X, factors,
+                          maxIter=100)
+      got = AlphaSimR:::fastMKVarComp(ans@Vu, ans@Ve, nTerm, length(traits))
+      # For one trait ref$Vu is a matrix with a row per term, which lapply
+      # takes element by element
+      refVu = lapply(ref$Vu, function(v) unname(as.matrix(v)))
+      expect_equal(got$Vu[[1]]+got$Vu[[2]], refVu[[1]]+refVu[[2]],
+                   tolerance=1e-6, info=info)
+      expect_equal(got$Ve, unname(as.matrix(ref$Ve)), tolerance=1e-6,
+                   info=info)
+    }
   }
 })
 
