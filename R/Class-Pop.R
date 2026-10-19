@@ -636,9 +636,6 @@ setMethod("[",
               if(any(is.na(i))){
                 stop("Trying to select invalid individuals")
               }
-              if(any(is.null(i))){
-                stop("Invalid id(s)")
-              }
             }else{
               if(any(abs(i)>x@nInd)){
                 stop("Trying to select invalid individuals")

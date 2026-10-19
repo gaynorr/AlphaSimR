@@ -23,6 +23,20 @@ test_that("SUBSET functions preserve order, repetitions, dimensions and source d
   expect_identical(selected@miscPop$ids, selected@id)
 })
 
+test_that("SUBSET character IDs handle empty and invalid selections",{
+  f = miscFunctionFixture()
+  withWrongGlobalMiscSP(f$sp, {
+    empty = f$pop[character(0), simParam=f$sp]
+    expect_identical(empty, f$pop[integer(0), simParam=f$sp])
+    expect_equal(empty@nInd, 0L)
+    expect_identical(empty@miscPop, list(total=0, ids=character(0)))
+    expect_error(f$pop[NA_character_, simParam=f$sp],
+                 "Trying to select invalid individuals", fixed=TRUE)
+    expect_error(f$pop[c(f$pop@id[1], "missing"), simParam=f$sp],
+                 "Trying to select invalid individuals", fixed=TRUE)
+  })
+})
+
 test_that("MERGE functions work through c, nested MultiPop, and empty inputs",{
   f = miscFunctionFixture()
   pop = f$pop
