@@ -184,6 +184,9 @@ calcPopValue = function(
       abs(level) > .Machine$integer.max) {
     stop("`level` must be a single non-NA integer value.")
   }
+  if (!is.function(FUN)) {
+    stop("`FUN` must be a function.")
+  }
 
   if (isPop(x) || isHybridPop(x)) {
     FUN.ARGS = c(list(x), dots)
@@ -198,9 +201,9 @@ calcPopValue = function(
     .paths = .collectLeafPaths(x)
   }
 
-  source = NULL
+  src = NULL
   if (simplify && level == 1L) {
-    source = .paths
+    src = .paths
   }
 
   if (simplify) {
@@ -294,7 +297,7 @@ calcPopValue = function(
 
     popValue = do.call(rbind, popValueList)
     attr(popValue, "source") = .formatPopSource(
-      paths = source,
+      paths = src,
       nRows = nRows,
       level_offset = .level_offset
     )
@@ -1229,8 +1232,8 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
 #'   \code{use} values as \code{trait(pop@use, ...)} - depending on what 
 #'   \code{use} is. See the examples and \code{\link{selIndex}}.
 #' @param use the selection criterion. Either a character
-#'   (genetic values "gv", estimated breeding values "ebv", 
-#'   phenotypes "pheno", or random values "rand") or a function 
+#'   (genetic values \code{"gv"}, estimated breeding values \code{"ebv"}, 
+#'   phenotypes \code{"pheno"}, or random values \code{"rand"}) or a function 
 #'   returning a vector of length \code{nInd(pop)} for each population 
 #'   at \code{level}. The function must work on each \code{pop} at 
 #'   \code{level} in \code{x} as \code{use(pop, trait, ...)} or as 
@@ -1327,11 +1330,26 @@ selectPop = function(
   }
   stopifnot("x must be a Pop or a MultiPop" = isMultiPop(x))
 
-  if (length(level) != 1L || !is.numeric(level) || is.na(level) ||
-      !is.finite(level) || level < 1 || level != trunc(level) ||
-      abs(level) > .Machine$integer.max) {
-      stop("`level` must be a single non-NA integer value.")
-    }
+  if (
+    length(level) != 1L ||
+      !is.numeric(level) ||
+      is.na(level) ||
+      !is.finite(level) ||
+      level < 1 ||
+      level != trunc(level) ||
+      abs(level) > .Machine$integer.max
+  ) {
+    stop("`level` must be a single non-NA integer value.")
+  }
+  if (is.character(use) && length(use) == 1L && tolower(use) == "bv") {
+    stop("use='bv' is not currently supported for populations.")
+  }
+  if (!is.logical(selectTop) || length(selectTop) != 1L || is.na(selectTop)) {
+    stop("`selectTop` must be TRUE or FALSE.")
+  }
+  if (!is.list(FUN.ARGS)) {
+    stop("`FUN.ARGS` must be a list.")
+  }
 
   is_multi = vapply(unname(x@pops), isMultiPop, logical(1L))
   is_pop = vapply(unname(x@pops), isPop, logical(1L))
@@ -1375,10 +1393,6 @@ selectPop = function(
       nPop,
       " populations"
     )
-  }
-
-  if (is.character(use) && use == 'bv') {
-    stop("use='bv' is not currently supported for populations")
   }
 
   response = calcPopValue(

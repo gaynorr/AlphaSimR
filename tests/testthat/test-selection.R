@@ -55,6 +55,11 @@ test_that("selectPop_and_calcPopValue",{
                "selection trait has missing values, phenotype may need to be set",
                fixed=TRUE)
   
+  # Invalid selectTop
+  expect_error(selectPop(mp1, nPop = 2, selectTop = 1, simParam = SP),
+               "`selectTop` must be TRUE or FALSE.",
+               fixed=TRUE)
+  
   # pop@pheno is empty in the 2nd pop
   mp1@pops[[1]] = setPheno(mp1@pops[[1]], varE = c(1,1), simParam = SP)
   expect_error(selectPop(mp1, nPop = 2, simParam = SP),
@@ -105,6 +110,9 @@ test_that("selectPop_and_calcPopValue",{
   values = do.call('rbind', values)
   response = apply(values, 1, sd)
   
+  expect_error(selectPop(mp1, nPop = 2, FUN = mean, FUN.ARGS = 1, simParam = SP),
+               "`FUN.ARGS` must be a list.",
+               fixed=TRUE)
   expect_identical(
     selectPop(mp1, nPop = 1, simParam = SP, selectTop = F,
               use = function(pop, trait = 1:2) c(pop@pheno[,trait]),
@@ -344,6 +352,16 @@ test_that("calcPopValue", {
   expect_warning(
     calcPopValue(mp1, FUN = pheno, simplify = TRUE),
     "Some values returned by FUN do not have consistent column names. Returning list output.",
+    fixed = TRUE
+  )
+  expect_error(
+    calcPopValue(mp1, FUN = pheno, level = NA, simplify = FALSE),
+    "`level` must be a single non-NA integer value.",
+    fixed = TRUE
+  )
+  expect_error(
+    calcPopValue(mp1, FUN = 1:3, simplify = FALSE),
+    "`FUN` must be a function.",
     fixed = TRUE
   )
   expect_error(
