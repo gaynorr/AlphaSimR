@@ -61,12 +61,31 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model for genomic predictions. This implementation is
-meant for situations where \code{\link{RRBLUP}} is too slow. Note that
-RRBLUP2 is only faster in certain situations, see details below. Most
-users should use \code{\link{RRBLUP}}.
+Fits the single trait model of \code{\link{RRBLUP}} with variance
+components estimated by the EM algorithm, or taken as given. It is meant
+for retraining a model cheaply when the variance components are known;
+most users should use \code{\link{RRBLUP}}. See details.
 }
 \details{
+\subsection{The model}{
+The model is the single trait ridge regression model of
+\insertCite{whittaker2000Marker;textual}{AlphaSimR}, applied to
+genome-wide markers by
+\insertCite{meuwissen2001Prediction;textual}{AlphaSimR},
+\deqn{y = X\beta + Mu + e,}
+where y holds the records, X is the design matrix of the fixed effects,
+formed from the levels of the population's fixEff slot, M holds the
+marker dosages, \eqn{u \sim N(0, I\sigma^2_u)} the marker effects and
+\eqn{e \sim N(0, I\sigma^2_e)} the errors. The marker effects are the BLUPs
+\insertCite{henderson1975Best}{AlphaSimR} given the variance components.
+When useEM is TRUE, the variance components are estimated by EM-REML
+\insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+starting from Vu and Ve and iterating until the change is below tol or
+maxIter is reached. When useEM is FALSE, Vu and Ve are taken as the true
+values. Only one trait can be modeled.
+}
+
+\subsection{When to use it}{
 What RRBLUP2 is for is retraining a model cheaply when the variance
 components are already known. Supply Vu and Ve, set useEM to false, and it
 solves the mixed model equations directly. A common pattern is to fit
@@ -76,16 +95,16 @@ simulation. We can make no claim to the general robustness of that
 approach, only that it is much faster.
 
 Do not use RRBLUP2 when the variance components are unknown. It estimates
-them with the EM algorithm, which is generally far slower than the EMMA
-approach \code{\link{RRBLUP}} uses. The number of iterations is set by
+them with the EM algorithm, which is generally far slower than the
+spectral REML approach \code{\link{RRBLUP}} uses. The number of iterations is set by
 maxIter, whose default is typically too small for convergence. When the
 algorithm fails to converge a warning is displayed and the last iteration
 is returned. Those results may be good enough, but again we can make no
 claim to this effect, because we can not generalize to all possible use
 cases.
 }
-\section{How the model is solved}{
 
+\subsection{How the model is solved}{
 There are two ways to solve this model and RRBLUP2 uses whichever is
 cheaper, so how it behaves as a simulation grows depends on which one it
 picks.
@@ -108,7 +127,7 @@ cheaper method is taken, so more markers than records is no longer a
 problem. \code{\link{RRBLUPMemUse}} takes a useEM argument for this reason
 and will tell you what either choice costs.
 }
-
+}
 \examples{
 #Create founder haplotypes
 founderPop = quickHaplo(nInd=10, nChr=1, segSites=20)
@@ -130,4 +149,7 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+}
+\references{
+\insertAllCited{}
 }

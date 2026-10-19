@@ -37,8 +37,7 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations. Only used
-when number of traits is greater than 1.}
+\item{maxIter}{maximum number of iterations of the EM algorithm.}
 
 \item{Va}{marker effect variance for additive effects. If value is NULL,
 a reasonable starting point is chosen automatically.}
@@ -65,11 +64,39 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model for genomic predictions that includes
-dominance effects. This implementation is meant for situations where
-\code{\link{RRBLUP_D}} is too slow. Note that RRBLUP_D2
-is only faster in certain situations. Most users should use
+Fits the single trait model of \code{\link{RRBLUP_D}} with variance
+components estimated by the EM algorithm, or taken as given. It is meant
+for situations where \code{\link{RRBLUP_D}} is too slow, and is only
+faster in certain situations; most users should use
+\code{\link{RRBLUP_D}}. See details.
+}
+\details{
+\subsection{The model}{
+The model is the single trait model of \code{\link{RRBLUP_D}},
+\deqn{y = X\beta + hb + M_au_a + M_du_d + e,}
+with \eqn{u_a \sim N(0, I\sigma^2_a)}, \eqn{u_d \sim N(0, I\sigma^2_d)}
+and \eqn{e \sim N(0, I\sigma^2_e)}, where h is each individual's sum of
+dominance codings, fitted as a covariate for inbreeding depression
+\insertCite{xiang2016Genomic}{AlphaSimR}. The marker effects are the BLUPs
+\insertCite{henderson1975Best}{AlphaSimR} given the variance components.
+When useEM is TRUE, the variance components are estimated by EM-REML
+\insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+starting from Va, Vd and Ve and iterating until the change is below tol or
+maxIter is reached. When useEM is FALSE, Va, Vd and Ve are taken as the
+true values. Only one trait can be modeled. The estimated breeding values
+use average effects of allele substitution, as described for
 \code{\link{RRBLUP_D}}.
+}
+
+\subsection{When to use it}{
+As with \code{\link{RRBLUP2}}, the use for this function is retraining a
+model cheaply when the variance components are already known, for
+example from an earlier fit of \code{\link{RRBLUP_D}}: supply them and set
+useEM to FALSE. The EM algorithm is generally far slower than the average
+information REML used by \code{\link{RRBLUP_D}}, and the default maxIter
+is typically too small for convergence. When the algorithm fails to
+converge a warning is displayed and the last iteration is returned.
+}
 }
 \examples{
 #Create founder haplotypes
@@ -92,4 +119,7 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+}
+\references{
+\insertAllCited{}
 }

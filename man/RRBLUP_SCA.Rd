@@ -79,24 +79,63 @@ advisable for small training populations.}
 }
 \description{
 An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
-Note that we have not seen any consistent benefit of this model over
-\code{\link{RRBLUP_GCA}}.
+One trait is fitted with a single trait model and several traits with a
+multiple trait model; see details for both. Note that we have not seen any
+consistent benefit of this model over \code{\link{RRBLUP_GCA}}.
 }
 \details{
-The model uses separate maternal and paternal marker dosages from
-the training population.
-A multiple trait model gives each of the female, male and dominance effects, and the
-errors, an unstructured covariance matrix among the traits. The Vu slot of
-the result then holds those covariance matrices of the marker effects as
-a block diagonal matrix, with rows and columns named "female:trait", "male:trait" and "d:trait".
+\subsection{The model}{
+The model is
+\deqn{y = X\beta + hb + M_fu_f + M_mu_m + M_du_d + e,}
+where y holds the records, X is the design matrix of the fixed effects,
+formed from the levels of the population's fixEff slot, \eqn{M_f} and
+\eqn{M_m} hold the marker dosages an individual inherited from its female
+and male parents, \eqn{M_d} holds the dominance codings, \eqn{u_f},
+\eqn{u_m} and \eqn{u_d} are their effects, and e the errors. h is each
+individual's sum of dominance codings, and its fixed regression b
+captures directional dominance, as in \code{\link{RRBLUP_D}}. The
+dominance effects allow cross-specific deviations from the parents'
+GCA \insertCite{massman2013Genomewide}{AlphaSimR}. The marker effects are
+the BLUPs \insertCite{henderson1975Best}{AlphaSimR} given variance
+components estimated by REML \insertCite{patterson1971Recovery}{AlphaSimR}.
+}
+
+\subsection{One trait}{
+When traits gives a single trait, or is a function returning a single
+value, \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)},
+\eqn{u_d \sim N(0, I\sigma^2_d)} and \eqn{e \sim N(0, I\sigma^2_e)}. The
+four variances are estimated by average information REML
+\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, with
+EM-REML steps taken where an average information step fails to increase
+the likelihood, for at most maxIter iterations. The model is fitted in
+whichever of two equivalent forms is cheaper: on the variance matrix of the
+records when there are fewer records than marker effects, and on
+Henderson's mixed model equations otherwise.
+}
+
+\subsection{Several traits}{
+When traits gives more than one trait, the traits are fitted together as a
+multiple trait model, which needs every trait recorded on every
+individual. The female, male and dominance effects of each marker and the
+errors of each record each have an unstructured covariance matrix among
+the traits. These are estimated by REML, with EM steps followed by Newton
+steps using the average information matrix
+\insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+iterations. The Vu slot of the result holds the covariance matrices of the
+marker effects as a block diagonal matrix, with rows and columns named
+"female:trait", "male:trait" and "d:trait".
+}
+
+\subsection{Using the solution}{
 The solution can be applied with \code{\link{setEBV}}:
 \code{value="female"} or \code{value="male"} gives parental
 predictions, while \code{value="gv"} predicts total hybrid genetic value.
 These model predictions obviously differ from the observed cross means
-returned by \code{\link{calcGCA}}.
-The dominance terms allow cross-specific deviations,
-but SCA's are not returned.
+returned by \code{\link{calcGCA}}. The dominance effects contribute to
+the predicted genetic value, but SCA's are not returned.
+}
 
+\subsection{Fast mode}{
 Setting fastMode to TRUE gives a fast and low memory alternative for
 training populations too large to fit directly. It is used only where it
 is expected to be faster, see fastMode. The mixed model equations
@@ -105,10 +144,11 @@ conjugate gradient, iterating over the genotypes rather than over a stored
 coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
 use stays close to the size of the genotypes. The variance components are
 estimated by REML on a random subset of the records, set by nSubsample,
-unless Vu and Ve are supplied, and the marker effects are always solved for
-using every record. Given the variance components, the result is the BLUP
-of the same model that is fitted when fastMode is FALSE.
-Fast mode supports only diploids.
+with the same method as outside fast mode, unless Vu and Ve are supplied,
+and the marker effects are always solved for using every record. Given the
+variance components, the result is the BLUP of the same model that is
+fitted when fastMode is FALSE. Fast mode supports only diploids.
+}
 }
 \examples{
 #Create founder haplotypes

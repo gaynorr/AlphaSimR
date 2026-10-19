@@ -24,7 +24,8 @@ RRBLUP(
 \item{pop}{a \code{\link{Pop-class}} to serve as the training population}
 
 \item{traits}{an integer indicating the trait or traits to model, a vector of trait names,
-or a function of the traits returning a single value.}
+or a function of the traits returning a single value. More than one trait
+gives a multiple trait model. See details.}
 
 \item{use}{train model using phenotypes "pheno", genetic values "gv",
 estimated breeding values "ebv", breeding values "bv", or randomly "rand"}
@@ -39,7 +40,7 @@ QTL may not match the QTL underlying the phenotype supplied in traits.}
 \item{maxIter}{maximum number of iterations. In fast mode, it limits the
 iterations of the conjugate gradient solver. Otherwise it is only used
 when the number of traits is greater than 1, and limits the iterations of
-the REML fit.}
+the REML fit of the multiple trait model.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -76,45 +77,85 @@ advisable for small training populations, because the memory needed grows
 with the square of this value.}
 }
 \description{
-Fits an RR-BLUP model for genomic predictions. Fixed effects are fit
-using the levels of the population's fixEff slot.
+Fits an additive ridge regression BLUP (RR-BLUP) model for genomic
+prediction. One trait is fitted with a single trait model and several
+traits with a multiple trait model; see details for both.
+}
+\details{
+\subsection{The model}{
+The model is the ridge regression model of
+\insertCite{whittaker2000Marker;textual}{AlphaSimR}, applied to
+genome-wide markers by
+\insertCite{meuwissen2001Prediction;textual}{AlphaSimR},
+\deqn{y = X\beta + Mu + e,}
+where y holds the records, X is the design matrix of the fixed effects,
+formed from the levels of the population's fixEff slot, M holds the
+marker dosages, u the marker effects and e the errors. The marker effects
+are the BLUPs \insertCite{henderson1975Best}{AlphaSimR} given variance
+components estimated by REML
+\insertCite{patterson1971Recovery}{AlphaSimR}. The estimated breeding
+values and genetic values use the same marker effects and differ only in
+their intercepts.
+}
 
-By default, the model is solved directly, through an eigendecomposition
-of whichever of the marker and record cross products is smaller, after
-the variance components are estimated by REML. Several traits are fitted
-together as a multiple trait model with unstructured covariance matrices
-among the traits for the marker effects and for the errors.
+\subsection{One trait}{
+When traits gives a single trait, or is a function returning a single
+value, \eqn{u \sim N(0, I\sigma^2_u)} and \eqn{e \sim N(0, I\sigma^2_e)}.
+REML is reduced to a one dimensional search over the ratio of the two
+variances using the spectral approach of FaST-LMM
+\insertCite{lippert2011FaST}{AlphaSimR}. One eigendecomposition, of
+whichever of the marker and record cross products is smaller, supplies
+the likelihood, the fixed effects and the marker effects, so the model is
+fitted without iteration and maxIter is not used.
+}
 
+\subsection{Several traits}{
+When traits gives more than one trait, the traits are fitted together as a
+multiple trait model. The effects of each marker on the traits have an
+unstructured covariance matrix \eqn{V_u}, the errors of each record have an
+unstructured covariance matrix \eqn{V_e}, and markers and records are
+independent of each other. These matrices are estimated by REML using the
+algorithm of \insertCite{zhou2014Efficient;textual}{AlphaSimR}, which
+rotates the records by an eigendecomposition of the markers and the traits
+by a transformation that diagonalizes \eqn{V_u} and \eqn{V_e} together, so
+that each evaluation of the likelihood costs time linear in the number of
+records. Starting values come from single trait fits, and the estimates
+are refined by EM steps followed by Newton steps using the average
+information matrix \insertCite{gilmour1995Average}{AlphaSimR}, for at most
+maxIter iterations. The Vu and Ve slots of the result hold the two
+covariance matrices.
+}
+
+\subsection{Fast mode}{
 Setting fastMode to TRUE gives a fast and low memory alternative for
-training populations too large to fit directly. It is used only where it
-is expected to be faster, see fastMode. The mixed model equations
-are then solved by preconditioned conjugate gradient, iterating over the
-genotypes rather than over a stored coefficient matrix
+training populations too large to fit directly. It fits the same model and
+is used only where it is expected to be faster, see fastMode. The mixed
+model equations are then solved by preconditioned conjugate gradient,
+iterating over the genotypes rather than over a stored coefficient matrix
 \insertCite{stranden1999Solving}{AlphaSimR}. Neither the coefficient
 matrix nor a numeric copy of the genotypes is formed, so memory use stays
 close to the size of the genotypes, and the iteration is shared across
 nThreads.
 
-In fast mode, several traits are fitted together as a multiple trait
-model, in which the traits' marker effects are correlated through Vu and
-their errors through Ve. Every trait must then be recorded on every
-individual. The traits are separated by a canonical transformation, which
-is exact when every trait is recorded and they share their fixed effects,
-and the transformed traits are solved together by conjugate gradient, each
-with its own recurrence and test of convergence. Each iteration costs about
-as much as one iteration for each trait on its own, so a fit to several
+For several traits, every trait must be recorded on every individual. The
+traits are separated by a canonical transformation, which is exact when
+every trait is recorded and they share their fixed effects, and the
+transformed traits are solved together by conjugate gradient, each with
+its own recurrence and test of convergence. Each iteration costs about as
+much as one iteration for each trait on its own, so a fit to several
 traits takes about as long as fitting them one at a time, while the memory
 used stays close to the size of the genotypes.
 
-In fast mode, variance components are estimated by REML when they are not
-supplied. REML needs a matrix decomposition whose cost is the square of the
-number of records in memory and their cube in time, which is what fast mode
-is built to avoid, so the estimate is taken from a random subset of the
-records set by nSubsample. Variance components are nuisance parameters
-for genomic prediction and are estimated far more precisely than a
-breeding program needs, so a few thousand records give values good
-enough to shrink with. The marker effects are always solved for using
-every record.
+Variance components are estimated by REML when they are not supplied,
+with the same method as outside fast mode. REML needs a matrix
+decomposition whose cost is the square of the number of records in memory
+and their cube in time, which is what fast mode is built to avoid, so the
+estimate is taken from a random subset of the records set by nSubsample.
+Variance components are nuisance parameters for genomic prediction and are
+estimated far more precisely than a breeding program needs, so a few
+thousand records give values good enough to shrink with. The marker
+effects are always solved for using every record.
+}
 }
 \examples{
 #Create founder haplotypes
