@@ -308,6 +308,203 @@ calcPopValue = function(
   return(popValueList)
 }
 
+#' @title Calculate summaries across a population hierarchy
+#'
+#' @description
+#' Calculates summaries for \code{\link{Pop-class}} objects and recursively
+#' aggregates them across a nested \code{\link{MultiPop-class}} object.
+#'
+#' @param x A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+#'   \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
+#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
+#'   accepted on its own.
+#' @param withinPopFUN a function used to calculate a summary for each
+#'   \code{Pop} (or \code{HybridPop}, when \code{x} is one) object. The
+#'   function must accept a \code{Pop} object as its first argument and 
+#'   return a numeric vector or one-row matrix.
+#' @param withinPopArgs a list of additional arguments passed to
+#'   \code{withinPopFUN}
+#' @param acrossPopFUN a function used to aggregate summaries across the
+#'   immediate children of each \code{MultiPop} object. The function must
+#'   accept a numeric matrix as its first argument and return a numeric vector
+#'   or one-row matrix with the same columns.
+#' @param acrossPopArgs a list of additional arguments passed to
+#'   \code{acrossPopFUN}
+#' @param level an integer indicating the nesting level at which aggregation
+#'   stops. See Details.
+#'
+#' @details
+#' This function performs two operations. First, \code{withinPopFUN} is applied
+#' to every terminal \code{Pop} object. Second, the resulting summaries are
+#' recursively aggregated with \code{acrossPopFUN} through the nested
+#' \code{MultiPop} structure.
+#'
+#' The rows of the matrix supplied to \code{acrossPopFUN} correspond to the
+#' immediate children of a \code{MultiPop}. Aggregation is therefore unweighted
+#' with respect to the number of individuals in each child population, unless
+#' weighting is explicitly implemented by the user-supplied function.
+#'
+#' The \code{level} argument determines where recursive aggregation stops:   \cr
+#'   - \code{level = 0} aggregates summaries across the complete object.    \cr
+#'   - \code{level = 1} returns one summary for each immediate child of
+#'     \code{x}.    \cr
+#'   - Larger values return summaries from progressively deeper levels of
+#'     the hierarchy.
+#'
+#' If a branch ends in a \code{Pop} object before the requested level is
+#' reached, the summary for that terminal \code{Pop} is returned. Consequently,
+#' levels greater than the maximum depth return one summary for every terminal
+#' \code{Pop} object.
+#'
+#' The outputs of \code{withinPopFUN} must have consistent lengths and names.
+#' The output of \code{acrossPopFUN} must preserve the number and names of
+#' these summary values.
+#'
+#' @return If \code{x} is a \code{Pop} object, a numeric vector containing its
+#'   summary.
+#'
+#' If \code{x} is a \code{MultiPop} object and \code{level = 0}, a numeric
+#' vector containing the summary aggregated across the complete object.
+#'
+#' If \code{x} is a \code{MultiPop} object and \code{level > 0}, a numeric
+#' matrix with one row per population unit at the requested level. The matrix
+#' has a \code{"source"} attribute describing the origin of each row in the
+#' population hierarchy.
+#'
+#' @examples
+#' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 20)
+#' SP = SimParam$new(founderPop)
+#' SP$addTraitA(nQtlPerChr = 10)
+#' SP$setVarE(h2 = 0.5)
+#'
+#' pop = newPop(founderPop, simParam = SP)
+#'
+#' # Create a nested MultiPop
+#' multiPop = splitPop(
+#'   pop,
+#'   by = list(
+#'     rep(c("A", "B"), each = 8),
+#'     function(x) {
+#'       rep(c("one", "two"), length.out = nInd(x))
+#'     }
+#'   )
+#' )
+#'
+#' # Calculate mean phenotypic values for each terminal Pop
+#' popMeans = calcPopSummary(
+#'   multiPop,
+#'   withinPopFUN = function(x) colMeans(pheno(x)),
+#'   acrossPopFUN = colMeans,
+#'   level = 2
+#' )
+#' popMeans
+#' attr(popMeans, "source")
+#'
+#' # Aggregate terminal Pop means within each level-1 MultiPop
+#' groupMeans = calcPopSummary(
+#'   multiPop,
+#'   withinPopFUN = function(x) colMeans(pheno(x)),
+#'   acrossPopFUN = colMeans,
+#'   level = 1
+#' )
+#' groupMeans
+#'
+#' # Aggregate across the complete hierarchy
+#' overallMean = calcPopSummary(
+#'   multiPop,
+#'   withinPopFUN = function(x) colMeans(pheno(x)),
+#'   acrossPopFUN = colMeans,
+#'   level = 0
+#' )
+#' overallMean
+#'
+#' @seealso \code{\link{selectMultiPop}}, \code{\link{meanGPop}},
+#'   \code{\link{meanPPop}}
+#'
+#' @export
+calcPopSummary = function(
+  x,
+  withinPopFUN,
+  withinPopArgs = list(),
+  acrossPopFUN,
+  acrossPopArgs = list(),
+  level = 0
+) {
+  # Validate the public arguments once, before starting recursion
+  if (!isPop(x) && !isHybridPop(x) && !isMultiPop(x)) {
+    stop("`x` must be a Pop, HybridPop or MultiPop object.")
+  }
+  if (length(x) == 0L) {
+    stop("`x` contains no populations.")
+  }
+  if (!is.function(withinPopFUN)) {
+    stop("`withinPopFUN` must be a function.")
+  }
+  if (!is.function(acrossPopFUN)) {
+    stop("`acrossPopFUN` must be a function.")
+  }
+  if (!is.list(withinPopArgs)) {
+    stop("`withinPopArgs` must be a list.")
+  }
+  if (!is.list(acrossPopArgs)) {
+    stop("`acrossPopArgs` must be a list.")
+  }
+  if (
+    !is.numeric(level) ||
+      length(level) != 1L ||
+      is.na(level) ||
+      !is.finite(level) ||
+      level != trunc(level) ||
+      level < 0 ||
+      level > .Machine$integer.max
+  ) {
+    stop("`level` must be a single non-negative integer.")
+  }
+
+  level = as.integer(level)
+  result = .calcPopSummary(
+    x,
+    levelsRemaining = level,
+    withinPopFUN = withinPopFUN,
+    withinPopArgs = withinPopArgs,
+    acrossPopFUN = acrossPopFUN,
+    acrossPopArgs = acrossPopArgs
+  )
+
+  # At level 0, recursion returns one summary vector for the complete object.
+  if (level == 0L || isPop(x) || isHybridPop(x)) {
+    return(result)
+  }
+
+  # At positive levels, recursion returns one row for each Pop or MultiPop
+  # unit at the requested level, or for each terminal Pop when a branch ends
+  # before that level.
+  maxDepth = .depthMultiPop(x)
+  sourceDepth = min(level, maxDepth)
+
+  leafPaths = .collectLeafPaths(x)
+  src = .formatPopSource(
+    paths = leafPaths,
+    nRows = rep(1L, length(leafPaths)),
+    level_offset = 0L
+  )
+
+  src = src[, seq_len(sourceDepth), drop = FALSE]
+  src = unique(src)
+  rownames(src) = NULL
+
+  if (nrow(src) != nrow(result)) {
+    stop(
+      "Internal error: the number of population summaries does not ",
+      "match the number of source paths."
+    )
+  }
+  attr(result, "source") = src
+  rownames(result) = NULL
+
+  return(result)
+}
+
 #' Identify candidate individuals
 #' 
 #' This function handles indexing by id and negative value indexing
@@ -1275,4 +1472,147 @@ selectPop = function(
   rownames(pathDf) = NULL
 
   return(pathDf)
+}
+
+#' @title Recursive worker for \code{calcPopSummary}
+#'
+#' @description
+#' Recurses over a nested \code{\link{MultiPop-class}} object, applying a
+#' summary function to each \code{\link{Pop-class}} object and aggregating 
+#' the resulting summaries across \code{MultiPop} objects.
+#'
+#' @param node a \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}} object
+#' @param levelsRemaining an integer indicating the number of nesting levels
+#'   remaining before aggregation stops
+#' @param withinPopFUN a function applied to each \code{Pop} object. The
+#'   function must return a vector or one-row matrix of summary values.
+#' @param withinPopArgs a list of additional arguments passed to
+#'   \code{withinPopFUN}
+#' @param acrossPopFUN a function used to aggregate summaries across the
+#'   immediate children of each \code{MultiPop} object. The function must
+#'   accept a matrix of child summaries and return a vector or one-row matrix
+#'   with the same columns.
+#' @param acrossPopArgs a list of additional arguments passed to
+#'   \code{acrossPopFUN}
+#'
+#' @return A vector or matrix of population summaries, aggregated until the
+#'   requested nesting level is reached.
+#'
+#' @keywords internal
+.calcPopSummary = function(
+  node,
+  levelsRemaining,
+  withinPopFUN,
+  withinPopArgs,
+  acrossPopFUN,
+  acrossPopArgs
+) {
+  # Normalize the output of withinPopFUN and acrossPopFUN.
+  # Each Pop or aggregated MultiPop must contribute exactly one summary
+  # row, represented internally as a numeric vector.
+  normalizeSummary = function(value, functionName) {
+    if (is.data.frame(value)) {
+      value = as.matrix(value)
+    }
+    if (is.matrix(value) && nrow(value) != 1L) {
+      stop("`", functionName, "` must return a vector or a one-row matrix.")
+    }
+    if (
+      !is.numeric(value) ||
+        is.null(value) ||
+        length(value) == 0L ||
+        anyNA(value)
+    ) {
+      stop(
+        "`",
+        functionName,
+        "` must return a non-empty numeric vector or one-row matrix ",
+        "without missing values."
+      )
+    }
+    return(value)
+  }
+
+  if (isPop(node) || isHybridPop(node)) {
+    if (node@nInd == 0L) {
+      stop("`x` contains an empty Pop object.")
+    }
+    value = do.call(withinPopFUN, c(list(node), withinPopArgs))
+    return(normalizeSummary(value, "withinPopFUN"))
+  }
+  if (length(node) == 0L) {
+    stop("`x` contains an empty MultiPop object.")
+  }
+
+  childSummaries = lapply(
+    node@pops,
+    .calcPopSummary,
+    levelsRemaining = levelsRemaining - 1L,
+    withinPopFUN = withinPopFUN,
+    withinPopArgs = withinPopArgs,
+    acrossPopFUN = acrossPopFUN,
+    acrossPopArgs = acrossPopArgs
+  )
+
+  same_columns = all(vapply(
+    childSummaries,
+    function(x) {
+      reference = childSummaries[[1]]
+      x_names = if (is.atomic(x) && is.null(dim(x))) names(x) else colnames(x)
+      reference_names = if (is.atomic(reference) && is.null(dim(reference))) {
+        names(reference)
+      } else {
+        colnames(reference)
+      }
+      identical(x_names, reference_names)
+    },
+    logical(1)
+  ))
+  if (!same_columns) {
+    stop("Population summaries do not have consistent names.")
+  }
+  
+  same_lengths = vapply(
+    childSummaries,
+    function(x) if (is.null(dim(x))) length(x) else ncol(x),
+    integer(1)
+  )
+  if (length(unique(same_lengths)) != 1L) {
+    stop("Population summaries do not have consistent numbers of columns.")
+  }
+
+  childSummaryMatrix = do.call(rbind, childSummaries)
+
+  # Continue aggregating when the requested level has been reached.
+  if (levelsRemaining < 1L) {
+    aggregated = do.call(
+      acrossPopFUN,
+      c(list(childSummaryMatrix), acrossPopArgs)
+    )
+
+    aggregated = normalizeSummary(aggregated, "acrossPopFUN")
+
+    # Aggregation must preserve the summary columns. This is important
+    # for unbalanced hierarchies, where aggregated MultiPop summaries
+    # may later be combined with terminal Pop summaries.
+    if (length(aggregated) != ncol(childSummaryMatrix)) {
+      stop(
+        "`acrossPopFUN` must return one value for each column ",
+        "produced by `withinPopFUN`."
+      )
+    }
+
+    expectedNames = colnames(childSummaryMatrix)
+    observedNames = names(aggregated)
+
+    if (!identical(observedNames, expectedNames)) {
+      stop(
+        "`acrossPopFUN` must preserve the names of the values ",
+        "produced by `withinPopFUN`."
+      )
+    }
+    return(aggregated)
+  }
+  return(childSummaryMatrix)
 }
