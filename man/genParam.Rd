@@ -111,7 +111,7 @@ for an object of \code{\link{Pop-class}}
 }
 \details{
 See \code{vignette("traits", package = "AlphaSimR")} and
-\code{vignette("QuanGen", package = "AlphaSimR")} for
+the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory on trait and quantitative genetics implementation in AlphaSimR.
 The text below is a very short summary of the theory.
 

@@ -31,7 +31,7 @@ rather than variances of values evaluated in the observed population.
 See \code{\link{genParam}} for the corresponding genetic variances
 and contributions from departures from equilibrium.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

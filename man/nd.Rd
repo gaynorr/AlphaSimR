@@ -31,7 +31,7 @@ Evaluating the same individual in a different population can therefore
 change its returned values.
 The total non-additive deviation is \code{nd = dd + aa}.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

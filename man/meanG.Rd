@@ -56,7 +56,7 @@ The mean is calculated from the genetic values in \code{pop}.
 It includes the trait intercept and can differ from both the intercept
 and the requested founder mean.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

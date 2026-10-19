@@ -27,7 +27,7 @@ This is the variance of additive genetic (breeding) values in \code{pop}.
 Variances and covariances use the population divisor \code{nInd},
 rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

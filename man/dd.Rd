@@ -29,7 +29,7 @@ which supplies the reference quantities used by \code{\link{genParam}}.
 Evaluating the same individual in a different population can therefore
 change returned values.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{
