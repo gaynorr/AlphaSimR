@@ -68,11 +68,12 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
+This function is deprecated. Use \code{\link{RRBLUP_SCA}}, which takes
+known variance components as Vu and Ve or as an earlier fit in varComp.
+
 Fits the single trait model of \code{\link{RRBLUP_SCA}} with variance
-components estimated by the EM algorithm, or taken as given. It is meant
-for situations where \code{\link{RRBLUP_SCA}} is too slow, and is only
-faster in certain situations; most users should use
-\code{\link{RRBLUP_SCA}}. See details.
+components estimated by the EM algorithm, or taken as given. Only
+diploids are supported. See details.
 }
 \details{
 \subsection{The model}{
@@ -91,12 +92,16 @@ tol or maxIter is reached. When useEM is FALSE, VuF, VuM, VuD and Ve are
 taken as the true values. Only one trait can be modeled.
 }
 
-\subsection{When to use it}{
-As with \code{\link{RRBLUP2}}, the use for this function is retraining a
-model cheaply when the variance components are already known, for
-example from an earlier fit of \code{\link{RRBLUP_SCA}}: supply them and
-set useEM to FALSE. The EM algorithm is generally far slower than the
-average information REML used by \code{\link{RRBLUP_SCA}}, and the default
+\subsection{Replacing it}{
+This function was for retraining a model cheaply when the variance
+components are already known. \code{\link{RRBLUP_SCA}} now does the same:
+called with an earlier fit as varComp, or with Vu=c(VuF, VuM, VuD) and Ve,
+and fastMode FALSE, it solves the mixed model equations directly with
+the solver of its own REML fit and gives the same result, to rounding,
+as this function with useEM FALSE. With fastMode TRUE it does so for
+several traits as well. When the variance components are unknown,
+use \code{\link{RRBLUP_SCA}} without them: the EM algorithm here is
+generally far slower than its average information REML, and the default
 maxIter is typically too small for convergence. When the algorithm fails
 to converge a warning is displayed and the last iteration is returned.
 }
@@ -124,8 +129,10 @@ SP$addSnpChip(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Run GS model and set EBV
-ans = RRBLUP_SCA2(pop, simParam=SP)
+#Run GS model, then refit with its variance components held fixed,
+#which replaces RRBLUP_SCA2 with useEM=FALSE
+ans = RRBLUP_SCA(pop, simParam=SP)
+ans = RRBLUP_SCA(pop, varComp=ans, simParam=SP)
 pop = setEBV(pop, ans, simParam=SP)
 
 #Evaluate accuracy

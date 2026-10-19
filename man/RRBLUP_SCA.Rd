@@ -60,18 +60,19 @@ the numbers of records, markers, traits and nSubsample, and fast mode is
 used only when its cost is less than half that of the default, and never
 when nSubsample covers every record. Otherwise the model is fitted as it
 is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-always uses fast mode. See details.}
+with fastMode TRUE always uses fast mode. See details.}
 
-\item{Vu}{the variances of the marker effects, one per random term, used
-only when fastMode is TRUE. For one trait, a vector, and for several
-traits, a list of covariance matrices among the traits, one per term, or
-the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
-this and Ve are estimated by REML. See details.}
+\item{Vu}{the variances of the marker effects, one per random term. For
+one trait, a vector, and for several traits, a list of covariance
+matrices among the traits, one per term, or the block diagonal matrix held
+in the Vu slot of a fit. If value is NULL, this and Ve are estimated by
+REML. When supplied with Ve, the marker effects are solved for with the
+variance components held fixed: by fast mode when fastMode is TRUE, and
+directly otherwise, which is for one trait only. See details.}
 
 \item{Ve}{the error variance, or for several traits the covariance matrix
-of the errors among traits, which must be positive definite. Only used
-when fastMode is TRUE. If value is NULL, this and Vu are estimated by
-REML. See details.}
+of the errors among traits, which must be positive definite. If value is
+NULL, this and Vu are estimated by REML. See Vu and details.}
 
 \item{nSubsample}{the number of records used to estimate the variance
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
@@ -80,16 +81,16 @@ advisable for small training populations.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are
-solved for. Only used when fastMode is TRUE, and not together with Vu and
-Ve. The fit must be of this model or of its counterpart ending in 2, to
-the same number of traits, on the same markers. See the genomic selection
-vignette.}
+solved for. Not used together with Vu and Ve. The fit must be of this
+model or of its counterpart ending in 2, to the same number of traits, on
+the same markers. See Vu and the genomic selection vignette.}
 }
 \description{
 An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
 One trait is fitted with a single trait model and several traits with a
-multiple trait model; see details for both. Note that we have not seen any
-consistent benefit of this model over \code{\link{RRBLUP_GCA}}.
+multiple trait model; see details for both. Only diploids are supported.
+Note that we have not seen any consistent benefit of this model over
+\code{\link{RRBLUP_GCA}}.
 }
 \details{
 \subsection{The model}{
@@ -155,7 +156,20 @@ estimated by REML on a random subset of the records, set by nSubsample,
 with the same method as outside fast mode, unless Vu and Ve are supplied,
 and the marker effects are always solved for using every record. Given the
 variance components, the result is the BLUP of the same model that is
-fitted when fastMode is FALSE. Fast mode supports only diploids.
+fitted when fastMode is FALSE.
+}
+
+\subsection{Known variance components}{
+Retraining a model whose variance components are already known,
+for example from an earlier fit in the same simulation, needs only
+the solve for the marker effects. Pass the earlier fit as varComp, or
+give Vu and Ve. With fastMode TRUE the solve is by fast mode, for any
+number of traits. With fastMode FALSE the mixed model equations of one
+trait are solved directly, on whichever of the markers and the records
+is cheaper, with Vu holding one variance per term. A variance of zero,
+as REML often estimates for a dominance term, leaves its term out. This
+takes the place of \code{\link{RRBLUP_SCA2}} with useEM FALSE, which is
+deprecated, and Vu is its VuF, VuM and VuD in that order.
 }
 }
 \examples{

@@ -328,6 +328,77 @@ varCompFromFit = function(varComp, Vu, Ve, model, nTraits, lociPerChr,
   return(list(Vu=varComp@Vu, Ve=varComp@Ve))
 }
 
+#' @title Fixed variance components outside fast mode
+#'
+#' @description Takes the variance components supplied to a model whose
+#' fastMode is FALSE, as Vu and Ve or as an earlier fit in varComp, and puts
+#' them in the form the C++ solvers hold fixed: one variance per random term
+#' followed by the error variance. Returns an empty vector when none are
+#' supplied, in which case they are estimated by REML as usual. Holding them
+#' fixed is for one trait, so supplied values are refused for several, and
+#' both Vu and Ve must be given, because estimating one of them alone would
+#' ignore the other without notice.
+#'
+#' @param Vu the Vu argument of the model
+#' @param Ve the Ve argument of the model
+#' @param varComp the varComp argument of the model
+#' @param model the name of the model being fitted
+#' @param nTerm the number of random terms of the model
+#' @param nTraits the number of traits being fitted
+#' @param lociPerChr the number of markers on each chromosome
+#' @param lociLoc the positions of the markers on their chromosomes
+#'
+#' @keywords internal
+directVarComp = function(Vu, Ve, varComp, model, nTerm, nTraits, lociPerChr,
+                         lociLoc){
+  if(is.null(Vu) & is.null(Ve) & is.null(varComp)){
+    return(numeric(0))
+  }
+  if(nTraits>1){
+    stop("Vu, Ve and varComp can be supplied for several traits only when ",
+         "fastMode is TRUE")
+  }
+  if(!is.null(varComp)){
+    vc = varCompFromFit(varComp, Vu, Ve, model, nTraits, lociPerChr,
+                        lociLoc)
+    Vu = vc$Vu
+    Ve = vc$Ve
+  }
+  if(is.null(Vu) | is.null(Ve)){
+    stop("supply both Vu and Ve, or neither to estimate them")
+  }
+  Vu = unlist(fastMKVarComp(Vu, Ve, nTerm, 1L)$Vu)
+  Ve = as.numeric(Ve)
+  if(length(Ve)!=1L){
+    stop("Ve must be a single value for one trait")
+  }
+  # A term with no variance has no effects, as REML often estimates for a
+  # dominance or SCA term, and the solver leaves it out
+  if(any(!is.finite(c(Vu, Ve))) | any(Vu<0) | !(Ve>0)){
+    stop("Vu must not be negative and Ve must be positive")
+  }
+  return(c(Vu, Ve))
+}
+
+#' @title Deprecation message of a numbered model
+#'
+#' @description The message given when one of the numbered genomic selection
+#' models is called, naming the unnumbered model that replaces it and how its
+#' variance components are passed there.
+#'
+#' @param old the name of the numbered model
+#' @param new the name of the model that replaces it
+#' @param vu how the numbered model's marker variances are written as Vu
+#'
+#' @keywords internal
+numberedDeprecation = function(old, new, vu){
+  return(paste0(
+    old, " is deprecated. To hold the variance components fixed, pass an ",
+    "earlier fit to ", new, " as varComp, or call ", new, " with Vu=", vu,
+    " and Ve=Ve. To estimate them, call ", new, " without them. See help(\"",
+    old, "\")."))
+}
+
 #' @title Variance components for a fast multikernel model
 #'
 #' @description Puts Vu and Ve in the form the fast mode of
@@ -580,6 +651,18 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' effects are always solved for using every record.
 #' }
 #'
+#' \subsection{Known variance components}{
+#' Retraining a model whose variance components are already known, for
+#' example from an earlier fit in the same simulation, needs only the solve
+#' for the marker effects. Pass the earlier fit as varComp, or give Vu and Ve.
+#' With fastMode TRUE the solve is by fast mode, for any number of traits.
+#' With fastMode FALSE the mixed model equations of one trait are solved
+#' directly, written on whichever of the markers and the records is the
+#' smaller, so the result is exact rather than to the tolerance of an
+#' iterative solver. This takes the place of \code{\link{RRBLUP2}} with
+#' useEM FALSE, which is deprecated.
+#' }
+#'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector of trait names,
 #' or a function of the traits returning a single value. More than one trait
@@ -602,14 +685,16 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' used only when its cost is less than half that of the default, and never
 #' when nSubsample covers every record. Otherwise the model is fitted as it
 #' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-#' always uses fast mode. See details.
+#' with fastMode TRUE always uses fast mode. See details.
 #' @param Vu marker effect variance, or for several traits the covariance
-#' matrix of the marker effects among traits. Only used when fastMode is
-#' TRUE. If value is NULL, this and Ve are estimated by REML. See details.
+#' matrix of the marker effects among traits. If value is NULL, this and Ve
+#' are estimated by REML. When supplied with Ve, the marker effects are
+#' solved for with the variance components held fixed: by fast mode when
+#' fastMode is TRUE, and directly otherwise, which is for one trait only. See
+#' details.
 #' @param Ve error variance, or for several traits the covariance matrix of
-#' the errors among traits, which must be positive definite. Only used when
-#' fastMode is TRUE. If value is NULL, this and Vu are estimated by REML.
-#' See details.
+#' the errors among traits, which must be positive definite. If value is
+#' NULL, this and Vu are estimated by REML. See Vu and details.
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
@@ -617,9 +702,9 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' with the square of this value.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
-#' solved for. Only used when fastMode is TRUE, and not together with Vu and
-#' Ve. The fit must be of RRBLUP or RRBLUP2, to the same number of traits,
-#' on the same markers. See the genomic selection vignette.
+#' solved for. Not used together with Vu and Ve. The fit must be of RRBLUP
+#' or RRBLUP2, to the same number of traits, on the same markers. See Vu and
+#' the genomic selection vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -658,6 +743,9 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' #Refit in fast mode, taking the variance components from that fit
 #' ans = RRBLUP(pop, fastMode=TRUE, varComp=ans, simParam=SP)
 #'
+#' #Refit directly with the same variance components held fixed
+#' ans = RRBLUP(pop, varComp=ans, simParam=SP)
+#'
 #' @export
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                   useQtl=FALSE, maxIter=1000L,
@@ -673,15 +761,13 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     nThreads = as.integer(nThreads)
   }
 
-  # The direct solver always estimates the variance components, so supplied
-  # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
-    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
-  }
-
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
 
+  # Variance components supplied outside fast mode are held fixed by the
+  # direct solver below. In fast mode they are passed to the fast route,
+  # which supplying them always takes.
+  fixedVc = numeric(0)
   if(fastMode){
     if(useQtl){
       chip = simParam$traits[[snpChip]]
@@ -720,6 +806,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
     lociPerChr = simParam$snpChips[[snpChip]]@lociPerChr
     lociLoc = simParam$snpChips[[snpChip]]@lociLoc
   }
+  if(!fastMode){
+    fixedVc = directVarComp(Vu, Ve, varComp, "RRBLUP", 1L, ncol(y),
+                            lociPerChr, lociLoc)
+  }
 
   #Fit model
   if(ncol(y)>1){
@@ -727,7 +817,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                         lociLoc, maxIter, nThreads)
   }else{
     ans = callRRBLUP(y, fixEff, pop, lociPerChr, lociLoc,
-                     nThreads)
+                     nThreads, fixedVc)
   }
 
   markerEff=ans$u
@@ -767,10 +857,11 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP Model 2
 #'
 #' @description
+#' This function is deprecated. Use \code{\link{RRBLUP}}, which takes known
+#' variance components as Vu and Ve or as an earlier fit in varComp.
+#'
 #' Fits the single trait model of \code{\link{RRBLUP}} with variance
-#' components estimated by the EM algorithm, or taken as given. It is meant
-#' for retraining a model cheaply when the variance components are known;
-#' most users should use \code{\link{RRBLUP}}. See details.
+#' components estimated by the EM algorithm, or taken as given. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -818,29 +909,26 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' values. Only one trait can be modeled.
 #' }
 #'
-#' \subsection{When to use it}{
-#' What RRBLUP2 is for is retraining a model cheaply when the variance
-#' components are already known. Supply Vu and Ve, set useEM to false, and it
-#' solves the mixed model equations directly. A common pattern is to fit
-#' \code{\link{RRBLUP}} the first time the model is trained and then pass its
-#' variance components to RRBLUP2 for every later retraining in the
-#' simulation. We can make no claim to the general robustness of that
-#' approach, only that it is much faster.
+#' \subsection{Replacing it}{
+#' RRBLUP2 was for retraining a model cheaply when the variance components
+#' are already known. \code{\link{RRBLUP}} now does the same: called with Vu
+#' and Ve, or with an earlier fit as varComp, and fastMode FALSE, it solves
+#' the mixed model equations directly and gives the same result, to
+#' rounding, as RRBLUP2 with useEM FALSE. With fastMode TRUE it does so for
+#' several traits as well.
 #'
-#' Do not use RRBLUP2 when the variance components are unknown. It estimates
-#' them with the EM algorithm, which is generally far slower than the
-#' spectral REML approach \code{\link{RRBLUP}} uses. The number of iterations is set by
-#' maxIter, whose default is typically too small for convergence. When the
-#' algorithm fails to converge a warning is displayed and the last iteration
-#' is returned. Those results may be good enough, but again we can make no
-#' claim to this effect, because we can not generalize to all possible use
-#' cases.
+#' When the variance components are unknown, use \code{\link{RRBLUP}}
+#' without them. RRBLUP2 estimates them with the EM algorithm, which is
+#' generally far slower than the spectral REML approach of
+#' \code{\link{RRBLUP}}, and its default maxIter is typically too small for
+#' convergence. When the algorithm fails to converge a warning is displayed
+#' and the last iteration is returned.
 #' }
 #'
 #' \subsection{How the model is solved}{
-#' There are two ways to solve this model and RRBLUP2 uses whichever is
-#' cheaper, so how it behaves as a simulation grows depends on which one it
-#' picks.
+#' There are two ways to solve this model with the variance components
+#' fixed, and RRBLUP2, like \code{\link{RRBLUP}} given Vu and Ve, uses
+#' whichever is cheaper.
 #'
 #' Henderson's mixed model equations work with a square matrix whose
 #' dimensions are the number of fixed effects plus the number of markers.
@@ -878,8 +966,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Run GS model and set EBV
-#' ans = RRBLUP2(pop, simParam=SP)
+#' #Run GS model, then refit with its variance components held fixed,
+#' #which replaces RRBLUP2 with useEM=FALSE
+#' ans = RRBLUP(pop, simParam=SP)
+#' ans = RRBLUP(pop, Vu=ans@Vu, Ve=ans@Ve, simParam=SP)
 #' pop = setEBV(pop, ans, simParam=SP)
 #'
 #' #Evaluate accuracy
@@ -890,6 +980,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                    useQtl=FALSE, maxIter=10, Vu=NULL, Ve=NULL,
                    useEM=TRUE, tol=1e-6, simParam=NULL,
                    nThreads=NULL, ...){
+  .Deprecated(msg=numberedDeprecation("RRBLUP2", "RRBLUP", "Vu"))
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1006,26 +1097,26 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' used only when its cost is less than half that of the default, and never
 #' when nSubsample covers every record. Otherwise the model is fitted as it
 #' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-#' always uses fast mode. See details.
-#' @param Vu the variances of the marker effects, one per random term, used
-#' only when fastMode is TRUE. For one trait, a vector, and for several
-#' traits, a list of covariance matrices among the traits, one per term, or
-#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
-#' this and Ve are estimated by REML. See details.
+#' with fastMode TRUE always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term. For
+#' one trait, a vector, and for several traits, a list of covariance
+#' matrices among the traits, one per term, or the block diagonal matrix held
+#' in the Vu slot of a fit. If value is NULL, this and Ve are estimated by
+#' REML. When supplied with Ve, the marker effects are solved for with the
+#' variance components held fixed: by fast mode when fastMode is TRUE, and
+#' directly otherwise, which is for one trait only. See details.
 #' @param Ve the error variance, or for several traits the covariance matrix
-#' of the errors among traits, which must be positive definite. Only used
-#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
-#' REML. See details.
+#' of the errors among traits, which must be positive definite. If value is
+#' NULL, this and Vu are estimated by REML. See Vu and details.
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
-#' solved for. Only used when fastMode is TRUE, and not together with Vu and
-#' Ve. The fit must be of this model or of its counterpart ending in 2, to
-#' the same number of traits, on the same markers. See the genomic selection
-#' vignette.
+#' solved for. Not used together with Vu and Ve. The fit must be of this
+#' model or of its counterpart ending in 2, to the same number of traits, on
+#' the same markers. See Vu and the genomic selection vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1096,6 +1187,19 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' fitted when fastMode is FALSE.
 #' }
 #'
+#' \subsection{Known variance components}{
+#' Retraining a model whose variance components are already known,
+#' for example from an earlier fit in the same simulation, needs only
+#' the solve for the marker effects. Pass the earlier fit as varComp, or
+#' give Vu and Ve. With fastMode TRUE the solve is by fast mode, for any
+#' number of traits. With fastMode FALSE the mixed model equations of one
+#' trait are solved directly, on whichever of the markers and the records
+#' is cheaper, with Vu holding one variance per term. A variance of zero,
+#' as REML often estimates for a dominance term, leaves its term out. This
+#' takes the place of \code{\link{RRBLUP_D2}} with useEM FALSE, which is
+#' deprecated, and Vu is its Va and Vd in that order.
+#' }
+#'
 #' @references
 #' \insertAllCited{}
 #'
@@ -1137,11 +1241,6 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     nThreads = as.integer(nThreads)
   }
-  # The direct solver always estimates the variance components, so supplied
-  # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
-    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
-  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
@@ -1169,6 +1268,14 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
+  # Variance components supplied outside fast mode are held fixed by the
+  # direct solver below. In fast mode they are passed to the fast route,
+  # which supplying them always takes.
+  fixedVc = numeric(0)
+  if(!fastMode){
+    fixedVc = directVarComp(Vu, Ve, varComp, "RRBLUP_D", 2L, nTraits,
+                            lociPerChr, lociLoc)
+  }
   if(fastMode){
     if(!is.null(varComp)){
       vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_D", nTraits, lociPerChr,
@@ -1190,7 +1297,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                            as.integer(subset), nThreads)
   }else{
     ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
-                       lociLoc, maxIter, nThreads)
+                       lociLoc, maxIter, nThreads, fixedVc)
   }
 
   alpha = as.matrix(ans$alpha)
@@ -1239,11 +1346,11 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP with Dominance Model 2
 #'
 #' @description
+#' This function is deprecated. Use \code{\link{RRBLUP_D}}, which takes
+#' known variance components as Vu and Ve or as an earlier fit in varComp.
+#'
 #' Fits the single trait model of \code{\link{RRBLUP_D}} with variance
-#' components estimated by the EM algorithm, or taken as given. It is meant
-#' for situations where \code{\link{RRBLUP_D}} is too slow, and is only
-#' faster in certain situations; most users should use
-#' \code{\link{RRBLUP_D}}. See details.
+#' components estimated by the EM algorithm, or taken as given. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -1291,12 +1398,16 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' \code{\link{RRBLUP_D}}.
 #' }
 #'
-#' \subsection{When to use it}{
-#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
-#' model cheaply when the variance components are already known, for
-#' example from an earlier fit of \code{\link{RRBLUP_D}}: supply them and set
-#' useEM to FALSE. The EM algorithm is generally far slower than the average
-#' information REML used by \code{\link{RRBLUP_D}}, and the default maxIter
+#' \subsection{Replacing it}{
+#' This function was for retraining a model cheaply when the variance
+#' components are already known. \code{\link{RRBLUP_D}} now does the same:
+#' called with an earlier fit as varComp, or with Vu=c(Va, Vd) and Ve,
+#' and fastMode FALSE, it solves the mixed model equations directly with
+#' the solver of its own REML fit and gives the same result, to rounding,
+#' as this function with useEM FALSE. With fastMode TRUE it does so for
+#' several traits as well. When the variance components are unknown, use
+#' \code{\link{RRBLUP_D}} without them: the EM algorithm here is generally
+#' far slower than its average information REML, and the default maxIter
 #' is typically too small for convergence. When the algorithm fails to
 #' converge a warning is displayed and the last iteration is returned.
 #' }
@@ -1318,8 +1429,10 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Run GS model and set EBV
-#' ans = RRBLUP_D2(pop, simParam=SP)
+#' #Run GS model, then refit with its variance components held fixed,
+#' #which replaces RRBLUP_D2 with useEM=FALSE
+#' ans = RRBLUP_D(pop, simParam=SP)
+#' ans = RRBLUP_D(pop, varComp=ans, simParam=SP)
 #' pop = setEBV(pop, ans, simParam=SP)
 #'
 #' #Evaluate accuracy
@@ -1330,6 +1443,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
                      useQtl=FALSE, maxIter=10, Va=NULL, Vd=NULL,
                      Ve=NULL, useEM=TRUE, tol=1e-6,
                      simParam=NULL, nThreads=NULL, ...){
+  .Deprecated(msg=numberedDeprecation("RRBLUP_D2", "RRBLUP_D", "c(Va, Vd)"))
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1459,26 +1573,26 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' used only when its cost is less than half that of the default, and never
 #' when nSubsample covers every record. Otherwise the model is fitted as it
 #' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-#' always uses fast mode. See details.
-#' @param Vu the variances of the marker effects, one per random term, used
-#' only when fastMode is TRUE. For one trait, a vector, and for several
-#' traits, a list of covariance matrices among the traits, one per term, or
-#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
-#' this and Ve are estimated by REML. See details.
+#' with fastMode TRUE always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term. For
+#' one trait, a vector, and for several traits, a list of covariance
+#' matrices among the traits, one per term, or the block diagonal matrix held
+#' in the Vu slot of a fit. If value is NULL, this and Ve are estimated by
+#' REML. When supplied with Ve, the marker effects are solved for with the
+#' variance components held fixed: by fast mode when fastMode is TRUE, and
+#' directly otherwise, which is for one trait only. See details.
 #' @param Ve the error variance, or for several traits the covariance matrix
-#' of the errors among traits, which must be positive definite. Only used
-#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
-#' REML. See details.
+#' of the errors among traits, which must be positive definite. If value is
+#' NULL, this and Vu are estimated by REML. See Vu and details.
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
-#' solved for. Only used when fastMode is TRUE, and not together with Vu and
-#' Ve. The fit must be of this model or of its counterpart ending in 2, to
-#' the same number of traits, on the same markers. See the genomic selection
-#' vignette.
+#' solved for. Not used together with Vu and Ve. The fit must be of this
+#' model or of its counterpart ending in 2, to the same number of traits, on
+#' the same markers. See Vu and the genomic selection vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -1552,6 +1666,19 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' fitted when fastMode is FALSE.
 #' }
 #'
+#' \subsection{Known variance components}{
+#' Retraining a model whose variance components are already known,
+#' for example from an earlier fit in the same simulation, needs only
+#' the solve for the marker effects. Pass the earlier fit as varComp, or
+#' give Vu and Ve. With fastMode TRUE the solve is by fast mode, for any
+#' number of traits. With fastMode FALSE the mixed model equations of one
+#' trait are solved directly, on whichever of the markers and the records
+#' is cheaper, with Vu holding one variance per term. A variance of zero,
+#' as REML often estimates for a dominance term, leaves its term out. This
+#' takes the place of \code{\link{RRBLUP_GCA2}} with useEM FALSE, which is
+#' deprecated, and Vu is its VuF and VuM in that order.
+#' }
+#'
 #' @references
 #' \insertAllCited{}
 #'
@@ -1593,11 +1720,6 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     nThreads = as.integer(nThreads)
   }
-  # The direct solver always estimates the variance components, so supplied
-  # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
-    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
-  }
 
   y = getResponse(pop=pop,trait=traits,use=use,
                   simParam=simParam,nThreads=nThreads,...)
@@ -1625,6 +1747,14 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
+  # Variance components supplied outside fast mode are held fixed by the
+  # direct solver below. In fast mode they are passed to the fast route,
+  # which supplying them always takes.
+  fixedVc = numeric(0)
+  if(!fastMode){
+    fixedVc = directVarComp(Vu, Ve, varComp, "RRBLUP_GCA", 2L, nTraits,
+                            lociPerChr, lociLoc)
+  }
   if(fastMode){
     if(!is.null(varComp)){
       vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_GCA", nTraits, lociPerChr,
@@ -1647,7 +1777,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     ans = callRRBLUP_GCA(y, fixEff, pop,
                          lociPerChr, lociLoc, maxIter,
-                         nThreads)
+                         nThreads, fixedVc)
   }
 
   alpha1 = as.matrix(ans$alpha1)
@@ -1702,11 +1832,11 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP GCA Model 2
 #'
 #' @description
+#' This function is deprecated. Use \code{\link{RRBLUP_GCA}}, which takes
+#' known variance components as Vu and Ve or as an earlier fit in varComp.
+#'
 #' Fits the single trait model of \code{\link{RRBLUP_GCA}} with variance
-#' components estimated by the EM algorithm, or taken as given. It is meant
-#' for situations where \code{\link{RRBLUP_GCA}} is too slow, and is only
-#' faster in certain situations; most users should use
-#' \code{\link{RRBLUP_GCA}}. See details.
+#' components estimated by the EM algorithm, or taken as given. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -1752,12 +1882,16 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' the true values. Only one trait can be modeled.
 #' }
 #'
-#' \subsection{When to use it}{
-#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
-#' model cheaply when the variance components are already known, for
-#' example from an earlier fit of \code{\link{RRBLUP_GCA}}: supply them and
-#' set useEM to FALSE. The EM algorithm is generally far slower than the
-#' average information REML used by \code{\link{RRBLUP_GCA}}, and the default
+#' \subsection{Replacing it}{
+#' This function was for retraining a model cheaply when the variance
+#' components are already known. \code{\link{RRBLUP_GCA}} now does the same:
+#' called with an earlier fit as varComp, or with Vu=c(VuF, VuM) and Ve,
+#' and fastMode FALSE, it solves the mixed model equations directly with
+#' the solver of its own REML fit and gives the same result, to rounding,
+#' as this function with useEM FALSE. With fastMode TRUE it does so for
+#' several traits as well. When the variance components are unknown,
+#' use \code{\link{RRBLUP_GCA}} without them: the EM algorithm here is
+#' generally far slower than its average information REML, and the default
 #' maxIter is typically too small for convergence. When the algorithm fails
 #' to converge a warning is displayed and the last iteration is returned.
 #' }
@@ -1787,8 +1921,10 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Run GS model and set EBV
-#' ans = RRBLUP_GCA2(pop, simParam=SP)
+#' #Run GS model, then refit with its variance components held fixed,
+#' #which replaces RRBLUP_GCA2 with useEM=FALSE
+#' ans = RRBLUP_GCA(pop, simParam=SP)
+#' ans = RRBLUP_GCA(pop, varComp=ans, simParam=SP)
 #' pop = setEBV(pop, ans, simParam=SP)
 #'
 #' #Evaluate accuracy
@@ -1799,6 +1935,8 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL,
                        Ve=NULL, useEM=TRUE, tol=1e-6,
                        simParam=NULL, nThreads=NULL, ...){
+  .Deprecated(msg=numberedDeprecation("RRBLUP_GCA2", "RRBLUP_GCA",
+                                      "c(VuF, VuM)"))
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -1913,8 +2051,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @description
 #' An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
 #' One trait is fitted with a single trait model and several traits with a
-#' multiple trait model; see details for both. Note that we have not seen any
-#' consistent benefit of this model over \code{\link{RRBLUP_GCA}}.
+#' multiple trait model; see details for both. Only diploids are supported.
+#' Note that we have not seen any consistent benefit of this model over
+#' \code{\link{RRBLUP_GCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector
@@ -1938,26 +2077,26 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' used only when its cost is less than half that of the default, and never
 #' when nSubsample covers every record. Otherwise the model is fitted as it
 #' is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-#' always uses fast mode. See details.
-#' @param Vu the variances of the marker effects, one per random term, used
-#' only when fastMode is TRUE. For one trait, a vector, and for several
-#' traits, a list of covariance matrices among the traits, one per term, or
-#' the block diagonal matrix held in the Vu slot of a fit. If value is NULL,
-#' this and Ve are estimated by REML. See details.
+#' with fastMode TRUE always uses fast mode. See details.
+#' @param Vu the variances of the marker effects, one per random term. For
+#' one trait, a vector, and for several traits, a list of covariance
+#' matrices among the traits, one per term, or the block diagonal matrix held
+#' in the Vu slot of a fit. If value is NULL, this and Ve are estimated by
+#' REML. When supplied with Ve, the marker effects are solved for with the
+#' variance components held fixed: by fast mode when fastMode is TRUE, and
+#' directly otherwise, which is for one trait only. See details.
 #' @param Ve the error variance, or for several traits the covariance matrix
-#' of the errors among traits, which must be positive definite. Only used
-#' when fastMode is TRUE. If value is NULL, this and Vu are estimated by
-#' REML. See details.
+#' of the errors among traits, which must be positive definite. If value is
+#' NULL, this and Vu are estimated by REML. See Vu and details.
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
-#' solved for. Only used when fastMode is TRUE, and not together with Vu and
-#' Ve. The fit must be of this model or of its counterpart ending in 2, to
-#' the same number of traits, on the same markers. See the genomic selection
-#' vignette.
+#' solved for. Not used together with Vu and Ve. The fit must be of this
+#' model or of its counterpart ending in 2, to the same number of traits, on
+#' the same markers. See Vu and the genomic selection vignette.
 #' @param simParam an object of class \code{\link{SimParam}}. If
 #' \code{NULL}, the function uses the object named \code{SP} from the
 #' global environment.
@@ -2030,7 +2169,20 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' with the same method as outside fast mode, unless Vu and Ve are supplied,
 #' and the marker effects are always solved for using every record. Given the
 #' variance components, the result is the BLUP of the same model that is
-#' fitted when fastMode is FALSE. Fast mode supports only diploids.
+#' fitted when fastMode is FALSE.
+#' }
+#'
+#' \subsection{Known variance components}{
+#' Retraining a model whose variance components are already known,
+#' for example from an earlier fit in the same simulation, needs only
+#' the solve for the marker effects. Pass the earlier fit as varComp, or
+#' give Vu and Ve. With fastMode TRUE the solve is by fast mode, for any
+#' number of traits. With fastMode FALSE the mixed model equations of one
+#' trait are solved directly, on whichever of the markers and the records
+#' is cheaper, with Vu holding one variance per term. A variance of zero,
+#' as REML often estimates for a dominance term, leaves its term out. This
+#' takes the place of \code{\link{RRBLUP_SCA2}} with useEM FALSE, which is
+#' deprecated, and Vu is its VuF, VuM and VuD in that order.
 #' }
 #'
 #' @references
@@ -2074,10 +2226,10 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     nThreads = as.integer(nThreads)
   }
-  # The direct solver always estimates the variance components, so supplied
-  # ones would be ignored without notice
-  if(!fastMode & (!is.null(Vu) | !is.null(Ve) | !is.null(varComp))){
-    stop("Vu, Ve and varComp can only be supplied when fastMode is TRUE")
+  # The model splits each individual's genome into one maternal and one
+  # paternal haplotype, which is the design of a diploid single cross
+  if(pop@ploidy!=2L){
+    stop("RRBLUP_SCA: only diploids are supported")
   }
 
   y = getResponse(pop=pop,trait=traits,use=use,
@@ -2106,6 +2258,14 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(nTraits>1){
     checkCompleteRecords(y)
   }
+  # Variance components supplied outside fast mode are held fixed by the
+  # direct solver below. In fast mode they are passed to the fast route,
+  # which supplying them always takes.
+  fixedVc = numeric(0)
+  if(!fastMode){
+    fixedVc = directVarComp(Vu, Ve, varComp, "RRBLUP_SCA", 3L, nTraits,
+                            lociPerChr, lociLoc)
+  }
   if(fastMode){
     if(!is.null(varComp)){
       vc = varCompFromFit(varComp, Vu, Ve, "RRBLUP_SCA", nTraits, lociPerChr,
@@ -2128,7 +2288,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   }else{
     ans = callRRBLUP_SCA(y, fixEff, pop,
                          lociPerChr, lociLoc, maxIter,
-                         nThreads)
+                         nThreads, fixedVc)
   }
 
   a1 = as.matrix(ans$a1)
@@ -2187,11 +2347,12 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP SCA Model 2
 #'
 #' @description
+#' This function is deprecated. Use \code{\link{RRBLUP_SCA}}, which takes
+#' known variance components as Vu and Ve or as an earlier fit in varComp.
+#'
 #' Fits the single trait model of \code{\link{RRBLUP_SCA}} with variance
-#' components estimated by the EM algorithm, or taken as given. It is meant
-#' for situations where \code{\link{RRBLUP_SCA}} is too slow, and is only
-#' faster in certain situations; most users should use
-#' \code{\link{RRBLUP_SCA}}. See details.
+#' components estimated by the EM algorithm, or taken as given. Only
+#' diploids are supported. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -2240,12 +2401,16 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' taken as the true values. Only one trait can be modeled.
 #' }
 #'
-#' \subsection{When to use it}{
-#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
-#' model cheaply when the variance components are already known, for
-#' example from an earlier fit of \code{\link{RRBLUP_SCA}}: supply them and
-#' set useEM to FALSE. The EM algorithm is generally far slower than the
-#' average information REML used by \code{\link{RRBLUP_SCA}}, and the default
+#' \subsection{Replacing it}{
+#' This function was for retraining a model cheaply when the variance
+#' components are already known. \code{\link{RRBLUP_SCA}} now does the same:
+#' called with an earlier fit as varComp, or with Vu=c(VuF, VuM, VuD) and Ve,
+#' and fastMode FALSE, it solves the mixed model equations directly with
+#' the solver of its own REML fit and gives the same result, to rounding,
+#' as this function with useEM FALSE. With fastMode TRUE it does so for
+#' several traits as well. When the variance components are unknown,
+#' use \code{\link{RRBLUP_SCA}} without them: the EM algorithm here is
+#' generally far slower than its average information REML, and the default
 #' maxIter is typically too small for convergence. When the algorithm fails
 #' to converge a warning is displayed and the last iteration is returned.
 #' }
@@ -2276,8 +2441,10 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' #Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Run GS model and set EBV
-#' ans = RRBLUP_SCA2(pop, simParam=SP)
+#' #Run GS model, then refit with its variance components held fixed,
+#' #which replaces RRBLUP_SCA2 with useEM=FALSE
+#' ans = RRBLUP_SCA(pop, simParam=SP)
+#' ans = RRBLUP_SCA(pop, varComp=ans, simParam=SP)
 #' pop = setEBV(pop, ans, simParam=SP)
 #'
 #' #Evaluate accuracy
@@ -2288,6 +2455,13 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                        useQtl=FALSE, maxIter=10, VuF=NULL, VuM=NULL,
                        VuD=NULL, Ve=NULL, useEM=TRUE, tol=1e-6,
                        simParam=NULL, nThreads=NULL, ...){
+  .Deprecated(msg=numberedDeprecation("RRBLUP_SCA2", "RRBLUP_SCA",
+                                      "c(VuF, VuM, VuD)"))
+  # The model splits each individual's genome into one maternal and one
+  # paternal haplotype, which is the design of a diploid single cross
+  if(pop@ploidy!=2L){
+    stop("RRBLUP_SCA2: only diploids are supported")
+  }
   if(is.null(simParam)){
     simParam = get("SP",envir=.GlobalEnv)
   }
@@ -2713,10 +2887,11 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' @param nSubsample the number of records used to estimate variance
 #' components in fast mode. Ignored when fastMode is FALSE, by the models
 #' without a fast mode, and in fast mode when Vu and Ve are supplied.
-#' @param useEM whether the numbered models will estimate their variance
-#' components. Estimating them holds one more square matrix, and for
-#' \code{\link{RRBLUP2}} it also decides which of its two solving methods is
-#' used. Ignored by the models that do not take a useEM argument.
+#' @param useEM whether the variance components will be estimated. FALSE is
+#' for a numbered model with useEM FALSE, or for an unnumbered model given Vu
+#' and Ve, or varComp, with fastMode FALSE, which solves one trait without
+#' estimating them. Ignored in fast mode, where nSubsample and supplying Vu
+#' and Ve decide it.
 #'
 #' @details
 #' The models differ in what they have to hold in memory, and the differences
@@ -2737,20 +2912,22 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' traits, it does the same with a thin singular value decomposition of the
 #' markers when they are fewer than the records.
 #'
-#' The numbered models set up Henderson's mixed model equations, whose
-#' coefficient matrix is square with dimensions equal to the number of fixed
-#' effects plus the number of random effects, so they grow with the number of
-#' markers rather than the number of records. Estimating variance components
-#' needs the trace of part of the inverse of that matrix, which is reached
-#' through the inverse of its Cholesky factor, so useEM costs one more matrix
-#' of the same size.
+#' The numbered models estimate variance components with Henderson's mixed
+#' model equations, whose coefficient matrix is square with dimensions equal
+#' to the number of fixed effects plus the number of random effects, so they
+#' grow with the number of markers rather than the number of records.
+#' Estimating variance components needs the trace of part of the inverse of
+#' that matrix, which is reached through the inverse of its Cholesky factor,
+#' so it costs one more matrix of the same size.
 #'
-#' \code{\link{RRBLUP2}} is the exception among them. It only sets up
-#' Henderson's equations when it has to, which is when it is estimating
-#' variance components, and otherwise takes whichever of its two solving
-#' methods holds the smaller square matrix. Its estimate therefore depends on
-#' useEM, and with useEM false it grows with the number of records once the
-#' markers outnumber them.
+#' With the variance components fixed, which is useEM false, the numbered
+#' models write the model on the records instead when there are fewer
+#' records than marker effects, so their estimate depends on useEM, and with
+#' useEM false it grows with the number of records once the marker effects
+#' outnumber them. The unnumbered models given Vu and Ve with fastMode FALSE
+#' use the solver of the REML fit of the GCA, SCA and dominance models,
+#' with a single term for \code{\link{RRBLUP}}, and are estimated as that
+#' fit is, which is an upper bound.
 #'
 #' The GCA, SCA and dominance models with fastMode TRUE hold the markers
 #' packed to one bit per allele, assumed here to be a diploid's two bits per
@@ -2785,10 +2962,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
 #' RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA", fastMode=TRUE)
 #'
-#' # RRBLUP2 with more markers than records, with and without estimating
-#' # variance components. The two use different methods and different memory.
-#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=TRUE)
-#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=FALSE)
+#' # RRBLUP with more markers than records, estimating the variance
+#' # components and given them
+#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP")
+#' RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP", useEM=FALSE)
 #'
 #' @export
 RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
@@ -2809,6 +2986,17 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
   if(model=="fastRRBLUP"){
     model = "RRBLUP"
     fastMode = TRUE
+  }
+  # Outside fast mode, a model given its variance components solves one trait
+  # with the solver of its REML fit, which for RRBLUP is the multikernel
+  # solver with one term rather than the spectral one, evaluated once. The
+  # estimate for the REML fit holds a little more than a single evaluation
+  # does, so it serves as an upper bound.
+  fixedVc = !fastMode & !useEM &
+    (model %in% c("RRBLUP","RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA"))
+  if(fixedVc & (nTraits>1)){
+    stop("variance components can be supplied for several traits only ",
+         "when fastMode is TRUE")
   }
 
   # Genotypes are read as one byte per locus before being turned into
@@ -2847,7 +3035,7 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
         doubles = doubles+3*nSub^2
       }
     }
-  }else if(model=="RRBLUP"){
+  }else if((model=="RRBLUP") & !fixedVc){
     if(nT>1){
       # The Newton steps of the REML fit work with square matrices over the
       # t*(t+1) parameters of Vu and Ve, which grow with the fourth power of
@@ -2953,8 +3141,8 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # and trial points, the inverse of a factor and P
       doubles = 2*nKernel*n*m+nKernel*n^2+5*nRec^2+optimDoubles
     }
-  }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
-    nKernel = if(model=="RRBLUP_SCA") 3 else 2
+  }else if((model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")) | fixedVc){
+    nKernel = switch(model, RRBLUP=1, RRBLUP_SCA=3, 2)
     # The solver works with whichever of the variance matrix of the records
     # and Henderson's equations is cheaper, and chooses by the same costs as
     # useCoefficientSide in src/mme.h
@@ -2979,6 +3167,12 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     nKernel = if(model=="RRBLUP_SCA2") 3 else 2
     if(useEM){
       doubles = nKernel*n*m+3*(q+nKernel*m)^2
+    }else if(n<(nKernel*m)){
+      # With the variance components fixed and fewer records than marker
+      # effects, the model is written on the records, which holds the
+      # variance matrix of the records, its inverse and a product of a term
+      # with its transpose on the way to it
+      doubles = nKernel*n*m+3*n^2
     }else{
       doubles = nKernel*n*m+2*(q+nKernel*m)^2
     }

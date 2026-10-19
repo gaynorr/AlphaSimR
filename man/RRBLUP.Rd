@@ -60,16 +60,18 @@ the numbers of records, markers, traits and nSubsample, and fast mode is
 used only when its cost is less than half that of the default, and never
 when nSubsample covers every record. Otherwise the model is fitted as it
 is when fastMode is FALSE, with the same result. Supplying Vu and Ve
-always uses fast mode. See details.}
+with fastMode TRUE always uses fast mode. See details.}
 
 \item{Vu}{marker effect variance, or for several traits the covariance
-matrix of the marker effects among traits. Only used when fastMode is
-TRUE. If value is NULL, this and Ve are estimated by REML. See details.}
+matrix of the marker effects among traits. If value is NULL, this and Ve
+are estimated by REML. When supplied with Ve, the marker effects are
+solved for with the variance components held fixed: by fast mode when
+fastMode is TRUE, and directly otherwise, which is for one trait only. See
+details.}
 
 \item{Ve}{error variance, or for several traits the covariance matrix of
-the errors among traits, which must be positive definite. Only used when
-fastMode is TRUE. If value is NULL, this and Vu are estimated by REML.
-See details.}
+the errors among traits, which must be positive definite. If value is
+NULL, this and Vu are estimated by REML. See Vu and details.}
 
 \item{nSubsample}{the number of records used to estimate the variance
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
@@ -79,9 +81,9 @@ with the square of this value.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are
-solved for. Only used when fastMode is TRUE, and not together with Vu and
-Ve. The fit must be of RRBLUP or RRBLUP2, to the same number of traits,
-on the same markers. See the genomic selection vignette.}
+solved for. Not used together with Vu and Ve. The fit must be of RRBLUP
+or RRBLUP2, to the same number of traits, on the same markers. See Vu and
+the genomic selection vignette.}
 }
 \description{
 Fits an additive ridge regression BLUP (RR-BLUP) model for genomic
@@ -163,6 +165,18 @@ estimated far more precisely than a breeding program needs, so a few
 thousand records give values good enough to shrink with. The marker
 effects are always solved for using every record.
 }
+
+\subsection{Known variance components}{
+Retraining a model whose variance components are already known, for
+example from an earlier fit in the same simulation, needs only the solve
+for the marker effects. Pass the earlier fit as varComp, or give Vu and Ve.
+With fastMode TRUE the solve is by fast mode, for any number of traits.
+With fastMode FALSE the mixed model equations of one trait are solved
+directly, written on whichever of the markers and the records is the
+smaller, so the result is exact rather than to the tolerance of an
+iterative solver. This takes the place of \code{\link{RRBLUP2}} with
+useEM FALSE, which is deprecated.
+}
 }
 \examples{
 #Create founder haplotypes
@@ -190,6 +204,9 @@ ans = RRBLUP(pop, fastMode=TRUE, simParam=SP)
 
 #Refit in fast mode, taking the variance components from that fit
 ans = RRBLUP(pop, fastMode=TRUE, varComp=ans, simParam=SP)
+
+#Refit directly with the same variance components held fixed
+ans = RRBLUP(pop, varComp=ans, simParam=SP)
 
 }
 \references{

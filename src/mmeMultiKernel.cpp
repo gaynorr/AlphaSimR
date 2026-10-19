@@ -802,12 +802,16 @@ void checkZKlist(const arma::mat& y, const arma::field<arma::mat>& Zlist,
 // Fits either form of the model. In the RR-BLUP form (rrForm) the matrices
 // in Zlist are the marker matrices and Klist is not used. side is 0 to
 // choose the cheaper side, 1 for the record side and 2 for the coefficient
-// side. The inputs must already have been checked.
+// side. When fixedTheta is given, holding Vu_1..Vu_k and then Ve, the
+// variance components are not estimated: the model is evaluated once at
+// those values for its BLUPs, and maxIter and tol are not used. The inputs
+// must already have been checked.
 Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
                           const arma::field<arma::mat>& Zlist,
                           const arma::field<arma::mat>& Klist, bool rrForm,
                           int maxIter, double tol, int sideRequest,
-                          const char* name, bool reportSide){
+                          const char* name, bool reportSide,
+                          const arma::vec* fixedTheta=nullptr){
   arma::uword n = y.n_rows;
   arma::uword k = Zlist.n_elem;
 
@@ -890,7 +894,16 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
   arma::vec yv = y.col(0);
   MultiKernelREML reml(yv, X, side, L, R, F);
   RemlPoint pt;
-  int iter = reml.fit(pt, maxIter, tol, name);
+  int iter = 0;
+  if(fixedTheta!=nullptr){
+    pt.theta = *fixedTheta;
+    if(!reml.evaluate(pt)){
+      Rcpp::stop("%s: the variance matrix is not positive definite at the "
+                   "supplied variance components", name);
+    }
+  }else{
+    iter = reml.fit(pt, maxIter, tol, name);
+  }
 
   arma::field<arma::mat> u(k);
   for(arma::uword i=0; i<k; ++i){
@@ -1912,6 +1925,30 @@ Rcpp::List solveRRBLUPMK(const arma::mat& y, const arma::mat& X,
   arma::field<arma::mat> none;
   return fitMultiKernel(y, X, Mlist, none, true, maxIter, rrblupMKTol, 0,
                         name, false);
+}
+
+// The single trait RR-BLUP form of the multikernel model with its variance
+// components held at theta, Vu_1..Vu_k and then Ve, rather than estimated.
+// It is the model solveRRBLUPMK fits, solved on the same cheaper side, so a
+// term whose variance is zero is left out of Henderson's equations just as
+// one estimated at zero is. Used by the models given their variance
+// components outside fast mode.
+Rcpp::List solveRRBLUPMKFixed(const arma::mat& y, const arma::mat& X,
+                              const arma::field<arma::mat>& Mlist,
+                              const arma::vec& theta){
+  const char* name = "the model given Vu and Ve";
+  checkResponse(y, X, name);
+  checkMlist(y, Mlist, name);
+  if(theta.n_elem!=Mlist.n_elem+1){
+    Rcpp::stop("%s: one variance is needed per term, and Ve", name);
+  }
+  if(!theta.is_finite() || any(theta.head(Mlist.n_elem)<0.0) ||
+     !(theta(Mlist.n_elem)>0.0)){
+    Rcpp::stop("%s: Vu must not be negative and Ve must be positive", name);
+  }
+  arma::field<arma::mat> none;
+  return fitMultiKernel(y, X, Mlist, none, true, 0, rrblupMKTol, 0, name,
+                        false, &theta);
 }
 
 //' @title Solve Multikernel Model

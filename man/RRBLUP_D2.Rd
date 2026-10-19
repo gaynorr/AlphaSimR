@@ -64,11 +64,11 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
+This function is deprecated. Use \code{\link{RRBLUP_D}}, which takes
+known variance components as Vu and Ve or as an earlier fit in varComp.
+
 Fits the single trait model of \code{\link{RRBLUP_D}} with variance
-components estimated by the EM algorithm, or taken as given. It is meant
-for situations where \code{\link{RRBLUP_D}} is too slow, and is only
-faster in certain situations; most users should use
-\code{\link{RRBLUP_D}}. See details.
+components estimated by the EM algorithm, or taken as given. See details.
 }
 \details{
 \subsection{The model}{
@@ -88,12 +88,16 @@ use average effects of allele substitution, as described for
 \code{\link{RRBLUP_D}}.
 }
 
-\subsection{When to use it}{
-As with \code{\link{RRBLUP2}}, the use for this function is retraining a
-model cheaply when the variance components are already known, for
-example from an earlier fit of \code{\link{RRBLUP_D}}: supply them and set
-useEM to FALSE. The EM algorithm is generally far slower than the average
-information REML used by \code{\link{RRBLUP_D}}, and the default maxIter
+\subsection{Replacing it}{
+This function was for retraining a model cheaply when the variance
+components are already known. \code{\link{RRBLUP_D}} now does the same:
+called with an earlier fit as varComp, or with Vu=c(Va, Vd) and Ve,
+and fastMode FALSE, it solves the mixed model equations directly with
+the solver of its own REML fit and gives the same result, to rounding,
+as this function with useEM FALSE. With fastMode TRUE it does so for
+several traits as well. When the variance components are unknown, use
+\code{\link{RRBLUP_D}} without them: the EM algorithm here is generally
+far slower than its average information REML, and the default maxIter
 is typically too small for convergence. When the algorithm fails to
 converge a warning is displayed and the last iteration is returned.
 }
@@ -112,8 +116,10 @@ SP$addSnpChip(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Run GS model and set EBV
-ans = RRBLUP_D2(pop, simParam=SP)
+#Run GS model, then refit with its variance components held fixed,
+#which replaces RRBLUP_D2 with useEM=FALSE
+ans = RRBLUP_D(pop, simParam=SP)
+ans = RRBLUP_D(pop, varComp=ans, simParam=SP)
 pop = setEBV(pop, ans, simParam=SP)
 
 #Evaluate accuracy

@@ -214,9 +214,9 @@ marker effects of the traits are correlated, as are their errors, and
 both covariance matrices are estimated by REML, so a trait with a low
 heritability can borrow information from a correlated trait with a high
 one. `RRBLUP`, in either mode, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`
-all do this; the numbered models fit one trait at a time. Every trait
-must be recorded on every individual in the training population, and a
-missing value stops the fit.
+all do this, except that variance components supplied outside fast mode
+are for one trait. Every trait must be recorded on every individual in the
+training population, and a missing value stops the fit.
 
 The example below uses two correlated traits with dominance, the second
 with a lower heritability:
@@ -276,40 +276,26 @@ next.
 
 ### Fitting the same model more cheaply
 
-`RRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` each have a numbered
-counterpart: `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2`, `RRBLUP_SCA2`. These
-fit *exactly the same models* and differ only in how the equations are
-solved, except that the numbered versions fit one trait at a time, while
-the unnumbered ones can fit several. None of the numbered models has a
-fast mode. The practical reason to care is that the numbered versions let
-you supply the variance components and skip estimating them:
+Most of the cost of a fit is estimating the variance components. Retraining
+a model whose variance components are already known, from an earlier fit in
+the same simulation, needs only the solve for the marker effects, and every
+model can be told to skip the estimation. The simplest way is to pass the
+earlier fit as `varComp`:
 
 ```{r}
-ans2 = RRBLUP2(trainPop, Vu = ans@Vu[1, 1], Ve = ans@Ve[1, 1],
-               useEM = FALSE, simParam = SP)
+ans2 = RRBLUP(trainPop, varComp = ans, simParam = SP)
 
 candidates = setEBV(candidates, ans2, simParam = SP)
 
 cor(ebv(candidates)[, 1], gv(candidates)[, 1])
 ```
 
-With `useEM=FALSE` and `Vu` and `Ve` supplied, the work reduces to a
-single solve of the mixed model equations, which is quick. The common
-pattern is to fit `RRBLUP` once at the start of a simulation, keep its
-`Vu` and `Ve`, and use `RRBLUP2` with those values for every subsequent
-re-training. Whether holding the variance components fixed is acceptable
-depends on how far the population drifts over the simulation, and that
-is a question only the simulation can answer - check against a full
-re-fit before relying on it.
-
-The unnumbered models take supplied variance components too, in fast mode,
-and the simplest way to supply them is to pass an earlier fit of the same
-model as `varComp`. With `fastMode=TRUE`, `varComp` skips the REML fit,
-leaving only the solve for the marker effects, and always uses fast mode,
-because the default mode cannot use supplied variance components. Unlike
-`RRBLUP2`, this works for several traits and for the dominance and hybrid
-models. Refitting the multiple trait dominance model from above with its own
-variance components gives the same predictions:
+The work reduces to a single solve of the mixed model equations, which is
+quick. In the default mode that solve is direct, written on whichever of
+the markers and the records is the smaller, and it is for one trait. With
+`fastMode=TRUE` the solve is by fast mode's conjugate gradient, and works
+for any number of traits. Refitting the multiple trait dominance model from
+above with its own variance components gives the same predictions:
 
 ```{r}
 mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
@@ -320,13 +306,17 @@ candidatesFast = setEBV(candidates2, mvFast, simParam = SP2)
 diag(cor(ebv(candidatesFast), ebv(candidates2)))
 ```
 
+The common pattern is to fit a model once at the start of a simulation and
+pass that fit as `varComp` for every subsequent re-training. Whether holding
+the variance components fixed is acceptable depends on how far the
+population drifts over the simulation, and that is a question only the
+simulation can answer - check against a full re-fit before relying on it.
+
 Every fit records the model it came from, and `varComp` checks it, so a fit
-can only be passed to the model that produced it, or to the unnumbered
-version of a numbered model, which fits the same model: an `RRBLUP2` fit can
-be passed to `RRBLUP`, but an `RRBLUP_GCA` fit cannot be passed to
-`RRBLUP_D`, although both have two variance components for one trait. The
-fit must also be for the same number of traits and on the same markers,
-because `Vu` is the variance of an effect of those markers.
+can only be passed to the model that produced it: an `RRBLUP_GCA` fit cannot
+be passed to `RRBLUP_D`, although both have two variance components for one
+trait. The fit must also be for the same number of traits and on the same
+markers, because `Vu` is the variance of an effect of those markers.
 
 `Vu` and `Ve` can still be given directly, which is the way to use values
 that did not come from a fit, or that have been changed. A fit's own `Vu`
@@ -339,23 +329,20 @@ mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
                   Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
 ```
 
-Fits saved before `varComp` was added do not record their model, and are
-passed as `Vu` and `Ve` in this way.
+For one trait, `Vu` holds one variance per random term: the additive and
+dominance effects for `RRBLUP_D`, the female and male effects for
+`RRBLUP_GCA`, and those two followed by the dominance effects for
+`RRBLUP_SCA`. Fits saved before `varComp` was added do not record their
+model, and are passed as `Vu` and `Ve` in this way. A variance of zero,
+which REML often estimates for a dominance term, leaves that term out of
+the model, so a fit like that can be passed on as it is.
 
-If you let the numbered models estimate the variance components
-themselves they use an EM algorithm, which is slower and less reliable
-than the approach the unnumbered models use. `maxIter` defaults to a
-value that is usually too small to converge, and a warning is issued
-when it does not. Left to estimate their own variance components to convergence,
-the numbered models are rarely the better choice. The benefit is obtained only
-when `useEM=FALSE` or `maxIter` is left at a small value to only allow small
-updates to the estimated variance components. The unnumbered models already
-choose the cheaper way of solving for the size of the problem, as described
-below, so speed and memory are not a reason to estimate variance components
-with the numbered ones. With the variance components held fixed, `RRBLUP2`
-also solves whichever way is cheaper, while `RRBLUP_D2`, `RRBLUP_GCA2` and
-`RRBLUP_SCA2` always solve Henderson's equations, so they help most when the
-number of markers is small relative to the number of phenotypic records.
+The numbered functions `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2` and
+`RRBLUP_SCA2` used to be the way to do this, and are deprecated. With
+`useEM=FALSE`, each gives the same result, to rounding, as its unnumbered
+counterpart given the same variance components with `fastMode=FALSE`. Left
+to estimate the variance components, they use an EM algorithm, which is
+slower and less reliable than the REML of the unnumbered models.
 
 ## Using the models in a breeding program
 
@@ -449,8 +436,8 @@ straightforward choice and the one the examples above assume. It is also
 the expensive one. Three cheaper options, in rough order of how much
 they give up:
 
-- Refit every cycle with `RRBLUP2` and fixed `Vu` and `Ve`, taken from
-  one full `RRBLUP` fit at the start.
+- Refit every cycle with the variance components held fixed, passing one
+  full fit from the start as `varComp`, for one trait in the default mode.
 - Refit every cycle with `fastMode=TRUE`, passing an earlier fit as
   `varComp`, which leaves only the solve for the marker effects, whose cost
   grows far more slowly with the number of records than a full fit's. This
@@ -722,16 +709,13 @@ row per record and trait or per marker effect and trait. Their cost
 therefore grows quickly with the number of traits, and `RRBLUPMemUse`
 takes the number of traits into account.
 
-The **numbered** functions set up Henderson's mixed model equations
-directly. The coefficient matrix there has dimension equal to the number
-of fixed effects plus the number of *markers*, and the variance
-components are found with an EM algorithm. Since the unnumbered models
-move to these equations by themselves when the markers are fewer than the
-records, what the numbered functions add is the option of holding the
-variance components fixed. `RRBLUP2` with `useEM=FALSE` does not estimate
-variance components, so it is free to solve the model written on the
-records instead, and takes whichever of the two is cheaper. `RRBLUPMemUse`
-reports what each model and choice costs.
+**Given their variance components** with `fastMode=FALSE`, the models
+estimate nothing. They evaluate the same model the REML of `RRBLUP_D`,
+`RRBLUP_GCA` and `RRBLUP_SCA` fits, with a single term for `RRBLUP`, once at
+the supplied values, on whichever of the variance matrix of the records and
+Henderson's equations is cheaper, and a term whose variance is zero is left
+out. `RRBLUPMemUse` with `useEM=FALSE` reports what it costs, and reports
+what each model and choice costs in general.
 
 **`RRBLUP` with `fastMode=TRUE`** forms no square matrix to solve the model. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the

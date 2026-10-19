@@ -61,10 +61,11 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
+This function is deprecated. Use \code{\link{RRBLUP}}, which takes known
+variance components as Vu and Ve or as an earlier fit in varComp.
+
 Fits the single trait model of \code{\link{RRBLUP}} with variance
-components estimated by the EM algorithm, or taken as given. It is meant
-for retraining a model cheaply when the variance components are known;
-most users should use \code{\link{RRBLUP}}. See details.
+components estimated by the EM algorithm, or taken as given. See details.
 }
 \details{
 \subsection{The model}{
@@ -85,29 +86,26 @@ maxIter is reached. When useEM is FALSE, Vu and Ve are taken as the true
 values. Only one trait can be modeled.
 }
 
-\subsection{When to use it}{
-What RRBLUP2 is for is retraining a model cheaply when the variance
-components are already known. Supply Vu and Ve, set useEM to false, and it
-solves the mixed model equations directly. A common pattern is to fit
-\code{\link{RRBLUP}} the first time the model is trained and then pass its
-variance components to RRBLUP2 for every later retraining in the
-simulation. We can make no claim to the general robustness of that
-approach, only that it is much faster.
+\subsection{Replacing it}{
+RRBLUP2 was for retraining a model cheaply when the variance components
+are already known. \code{\link{RRBLUP}} now does the same: called with Vu
+and Ve, or with an earlier fit as varComp, and fastMode FALSE, it solves
+the mixed model equations directly and gives the same result, to
+rounding, as RRBLUP2 with useEM FALSE. With fastMode TRUE it does so for
+several traits as well.
 
-Do not use RRBLUP2 when the variance components are unknown. It estimates
-them with the EM algorithm, which is generally far slower than the
-spectral REML approach \code{\link{RRBLUP}} uses. The number of iterations is set by
-maxIter, whose default is typically too small for convergence. When the
-algorithm fails to converge a warning is displayed and the last iteration
-is returned. Those results may be good enough, but again we can make no
-claim to this effect, because we can not generalize to all possible use
-cases.
+When the variance components are unknown, use \code{\link{RRBLUP}}
+without them. RRBLUP2 estimates them with the EM algorithm, which is
+generally far slower than the spectral REML approach of
+\code{\link{RRBLUP}}, and its default maxIter is typically too small for
+convergence. When the algorithm fails to converge a warning is displayed
+and the last iteration is returned.
 }
 
 \subsection{How the model is solved}{
-There are two ways to solve this model and RRBLUP2 uses whichever is
-cheaper, so how it behaves as a simulation grows depends on which one it
-picks.
+There are two ways to solve this model with the variance components
+fixed, and RRBLUP2, like \code{\link{RRBLUP}} given Vu and Ve, uses
+whichever is cheaper.
 
 Henderson's mixed model equations work with a square matrix whose
 dimensions are the number of fixed effects plus the number of markers.
@@ -142,8 +140,10 @@ SP$addSnpChip(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Run GS model and set EBV
-ans = RRBLUP2(pop, simParam=SP)
+#Run GS model, then refit with its variance components held fixed,
+#which replaces RRBLUP2 with useEM=FALSE
+ans = RRBLUP(pop, simParam=SP)
+ans = RRBLUP(pop, Vu=ans@Vu, Ve=ans@Ve, simParam=SP)
 pop = setEBV(pop, ans, simParam=SP)
 
 #Evaluate accuracy

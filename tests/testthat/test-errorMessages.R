@@ -82,6 +82,9 @@ test_that("population function checks name the argument", {
                "ind must index individuals in pop")
   expect_error(setPhenoGCA(pop, testers=list(), simParam=d$SP),
                "testers must be a Pop")
-  expect_error(RRBLUP2(pop, traits=1:2, use="gv", simParam=d$SP),
+  # RRBLUP2 is deprecated, which its warning says
+  expect_error(suppressWarnings(RRBLUP2(pop, traits=1:2, use="gv",
+                                        simParam=d$SP),
+                                classes="deprecatedWarning"),
                "this model fits a single trait")
 })

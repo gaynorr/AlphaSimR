@@ -25,6 +25,21 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveRRBLUPMK(const arma::mat& y, const arma::mat& X,
                          const arma::field<arma::mat>& Mlist,
                          int maxIter=40);
+Rcpp::List solveRRBLUPMKFixed(const arma::mat& y, const arma::mat& X,
+                              const arma::field<arma::mat>& Mlist,
+                              const arma::vec& theta);
+
+// The multikernel fit used by the callRRBLUP functions below. theta holds
+// supplied variance components, Vu_1..Vu_k and then Ve, which are then held
+// fixed, and is empty when they are to be estimated by REML.
+Rcpp::List fitRRBLUPMK(const arma::mat& y, const arma::mat& X,
+                       const arma::field<arma::mat>& Mlist, int maxIter,
+                       const arma::vec& theta){
+  if(theta.n_elem>0){
+    return solveRRBLUPMKFixed(y, X, Mlist, theta);
+  }
+  return solveRRBLUPMK(y, X, Mlist, maxIter);
+}
 
 // Factorization of a mixed model coefficient matrix.
 //
@@ -1884,18 +1899,35 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
 
 // Called by RRBLUP function
 // The markers of this function and of the other callRRBLUP functions below
-// are read straight from the population's packed genotypes, see PackedGeno
+// are read straight from the population's packed genotypes, see PackedGeno.
+// theta holds supplied variance components, Vu and then Ve, and is empty
+// when they are to be estimated. Supplied ones are held fixed by the
+// multikernel solver with a single term, which is the same model, because
+// the spectral solver below only estimates them.
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x,
                       const Rcpp::S4& pop,
                       arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                      int nThreads){
+                      int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::mat X = makeX(x);
   arma::mat M = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
+  if(theta.n_elem>0){
+    arma::field<arma::mat> Mlist(1);
+    Mlist(0) = std::move(M);
+    Rcpp::List ans = solveRRBLUPMKFixed(y, X, Mlist, theta);
+    arma::field<arma::mat> uf = ans["u"];
+    arma::vec u = uf(0).col(0);
+    arma::mat beta = ans["beta"];
+    return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                              Rcpp::Named("beta")=-as_scalar(Mmean*u),
+                              Rcpp::Named("mu")=beta(0),
+                              Rcpp::Named("Vu")=ans["Vu"],
+                              Rcpp::Named("Ve")=ans["Ve"]);
+  }
   Rcpp::List ans = solveRRBLUP(y, X, M);
   arma::vec u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -2050,11 +2082,12 @@ void scaAverageEffects(const arma::rowvec& Mmean1, const arma::rowvec& Mmean2,
 }
 
 // Called by RRBLUP_D function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
                         const Rcpp::S4& pop,
                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                        int maxIter, int nThreads){
+                        int maxIter, int nThreads, arma::vec theta){
   // Fit GS model
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
@@ -2090,7 +2123,7 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
   // The genotypes are only needed for the frequencies above, so they are
   // freed before the model is fitted rather than held through it
   M.reset();
-  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y, X, Mlist, maxIter, theta);
 
   // Clear memory
   y.reset();
@@ -2232,11 +2265,12 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x,
 }
 
 // Called by RRBLUP_GCA function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                          int maxIter, int nThreads){
+                          int maxIter, int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(2);
@@ -2247,7 +2281,7 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
   arma::rowvec Mmean1 = mean(Mlist(0));
   arma::rowvec Mmean2 = mean(Mlist(1));
   arma::mat X = makeX(x);
-  Rcpp::List ans = solveRRBLUPMK(y,X,Mlist,maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y,X,Mlist,maxIter,theta);
   // A multiple trait fit has one column of effects per trait
   arma::field<arma::mat> u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -2289,12 +2323,13 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x,
 }
 
 // Called by RRBLUP_SCA function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // Only works with diploids
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                          int maxIter, int nThreads){
+                          int maxIter, int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(3);
@@ -2337,7 +2372,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(2),1));
   
-  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y, X, Mlist, maxIter, theta);
   
   // Clear memory
   y.reset();

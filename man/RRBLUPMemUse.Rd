@@ -45,10 +45,11 @@ otherwise needs the memory estimated with fastMode FALSE.}
 components in fast mode. Ignored when fastMode is FALSE, by the models
 without a fast mode, and in fast mode when Vu and Ve are supplied.}
 
-\item{useEM}{whether the numbered models will estimate their variance
-components. Estimating them holds one more square matrix, and for
-\code{\link{RRBLUP2}} it also decides which of its two solving methods is
-used. Ignored by the models that do not take a useEM argument.}
+\item{useEM}{whether the variance components will be estimated. FALSE is
+for a numbered model with useEM FALSE, or for an unnumbered model given Vu
+and Ve, or varComp, with fastMode FALSE, which solves one trait without
+estimating them. Ignored in fast mode, where nSubsample and supplying Vu
+and Ve decide it.}
 }
 \value{
 Returns an estimate for the required gigabytes of RAM
@@ -82,20 +83,22 @@ matrix and its transpose share their nonzero eigenvalues. Fitted to several
 traits, it does the same with a thin singular value decomposition of the
 markers when they are fewer than the records.
 
-The numbered models set up Henderson's mixed model equations, whose
-coefficient matrix is square with dimensions equal to the number of fixed
-effects plus the number of random effects, so they grow with the number of
-markers rather than the number of records. Estimating variance components
-needs the trace of part of the inverse of that matrix, which is reached
-through the inverse of its Cholesky factor, so useEM costs one more matrix
-of the same size.
+The numbered models estimate variance components with Henderson's mixed
+model equations, whose coefficient matrix is square with dimensions equal
+to the number of fixed effects plus the number of random effects, so they
+grow with the number of markers rather than the number of records.
+Estimating variance components needs the trace of part of the inverse of
+that matrix, which is reached through the inverse of its Cholesky factor,
+so it costs one more matrix of the same size.
 
-\code{\link{RRBLUP2}} is the exception among them. It only sets up
-Henderson's equations when it has to, which is when it is estimating
-variance components, and otherwise takes whichever of its two solving
-methods holds the smaller square matrix. Its estimate therefore depends on
-useEM, and with useEM false it grows with the number of records once the
-markers outnumber them.
+With the variance components fixed, which is useEM false, the numbered
+models write the model on the records instead when there are fewer
+records than marker effects, so their estimate depends on useEM, and with
+useEM false it grows with the number of records once the marker effects
+outnumber them. The unnumbered models given Vu and Ve with fastMode FALSE
+use the solver of the REML fit of the GCA, SCA and dominance models,
+with a single term for \code{\link{RRBLUP}}, and are estimated as that
+fit is, which is an upper bound.
 
 The GCA, SCA and dominance models with fastMode TRUE hold the markers
 packed to one bit per allele, assumed here to be a diploid's two bits per
@@ -128,9 +131,9 @@ RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA", fastMode=TRUE)
 
-# RRBLUP2 with more markers than records, with and without estimating
-# variance components. The two use different methods and different memory.
-RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=TRUE)
-RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=FALSE)
+# RRBLUP with more markers than records, estimating the variance
+# components and given them
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP")
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP", useEM=FALSE)
 
 }

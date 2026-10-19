@@ -132,16 +132,16 @@ callFastRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIte
     .Call(`_AlphaSimR_callFastRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads)
 }
 
-callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads)
+callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads, theta)
 }
 
 callRRBLUP2 <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP2`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads)
 }
 
-callRRBLUP_D <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_D <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_D2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads) {
@@ -152,16 +152,16 @@ callRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_GCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_GCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_GCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP_GCA2`, y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads)
 }
 
-callRRBLUP_SCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_SCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_SCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {

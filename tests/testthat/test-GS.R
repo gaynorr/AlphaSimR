@@ -5,13 +5,21 @@ context("GS")
 # They use the redundancy inside the module instead: the same model can be
 # reached by more than one route, and the routes have to agree.
 #
-# The most important of those is RRBLUP2. It solves the mixed model in one of
-# two ways, working with a square matrix of the records when they are fewer
-# than the markers and of the markers otherwise, and the pair only means
-# anything if both give the same answer as RRBLUP does.
+# The most important of those is RRBLUP given its variance components. It
+# solves the mixed model in one of two ways, working with a square matrix of
+# the records when they are fewer than the markers and of the markers
+# otherwise, and the pair only means anything if both give the same answer as
+# the REML fit does.
 
-# A population with more records than markers, so that RRBLUP2 works with the
-# markers, and one with fewer, so that it works with the records
+# The numbered models are deprecated, and are still tested until they are
+# removed, without the warning they give
+quietDeprecated = function(expr){
+  suppressWarnings(expr, classes="deprecatedWarning")
+}
+
+# A population with more records than markers, so that the fixed variance
+# solve works with the markers, and one with fewer, so that it works with the
+# records
 gsPop = function(nInd, nQtl, nSnp, nChr=2, segSites=NULL, seed=8001,
                  nFixEff=1L){
   if(is.null(segSites)){
@@ -37,20 +45,20 @@ addEff = function(ans, i=1L){
   return(c(ans@gv[[i]]@addEff))
 }
 
-test_that("RRBLUP2 agrees with RRBLUP when it works with the markers", {
+test_that("RRBLUP given its variance components agrees with REML when it works with the markers", {
   # 40 records against 10 markers, so Henderson's equations are cheaper
   d = gsPop(nInd=40, nQtl=5, nSnp=5)
   expect_lt(d$nMarker, nInd(d$pop))
 
   ref = RRBLUP(d$pop, simParam=d$SP)
-  ans = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-                simParam=d$SP)
+  ans = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+               simParam=d$SP)
 
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-6)
   expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
 })
 
-test_that("RRBLUP2 agrees with RRBLUP when it works with the records", {
+test_that("RRBLUP given its variance components agrees with REML when it works with the records", {
   # 15 records against 40 markers, so the record side is cheaper. This is the
   # branch that never forms a markers by records matrix, and the one a
   # mistake in the order of that product would show up in.
@@ -58,14 +66,14 @@ test_that("RRBLUP2 agrees with RRBLUP when it works with the records", {
   expect_gt(d$nMarker, nInd(d$pop))
 
   ref = RRBLUP(d$pop, simParam=d$SP)
-  ans = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-                simParam=d$SP)
+  ans = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+               simParam=d$SP)
 
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-6)
   expect_equal(ans@gv[[1]]@intercept, ref@gv[[1]]@intercept, tolerance=1e-6)
 })
 
-test_that("both RRBLUP2 methods handle more than one fixed effect level", {
+test_that("both sides of the fixed variance solve handle more than one fixed effect level", {
   # The record side splits the solution of V into the fixed effect columns
   # and the response, so it has to keep them apart when there is more than
   # one fixed effect. Both shapes of the problem are checked.
@@ -76,8 +84,8 @@ test_that("both RRBLUP2 methods handle more than one fixed effect level", {
     expect_equal(length(unique(d$pop@fixEff)), 3L)
 
     ref = RRBLUP(d$pop, simParam=d$SP)
-    ans = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-                  simParam=d$SP)
+    ans = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+                 simParam=d$SP)
 
     expect_equal(addEff(ans), addEff(ref), tolerance=1e-6,
                  info=paste("nInd", size[["nInd"]]))
@@ -91,7 +99,8 @@ test_that("RRBLUP2 estimates variance components when asked to", {
   # compare the estimates against, so this checks that they are usable.
   d = gsPop(nInd=40, nQtl=5, nSnp=5)
 
-  ans = RRBLUP2(d$pop, useEM=TRUE, maxIter=200, simParam=d$SP)
+  ans = quietDeprecated(RRBLUP2(d$pop, useEM=TRUE, maxIter=200,
+                                simParam=d$SP))
 
   expect_true(is.finite(ans@Vu[1,1]))
   expect_true(is.finite(ans@Ve[1,1]))
@@ -104,21 +113,21 @@ test_that("RRBLUP2 estimates variance components when asked to", {
   expect_gt(cor(c(ebv(pred)), c(gv(d$pop))), 0.3)
 })
 
-test_that("RRBLUP2 gives the same answer whatever its starting values", {
+test_that("RRBLUP given its variance components holds them fixed", {
   # Supplying the variance components turns estimation off, so two calls with
   # the same components must agree exactly and a third with different
   # components must not
   d = gsPop(nInd=30, nQtl=5, nSnp=5)
   ref = RRBLUP(d$pop, simParam=d$SP)
 
-  a = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-              simParam=d$SP)
-  b = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-              simParam=d$SP)
+  a = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+             simParam=d$SP)
+  b = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+             simParam=d$SP)
   expect_identical(addEff(a), addEff(b))
 
-  c2 = RRBLUP2(d$pop, Vu=ref@Vu[1,1]*10, Ve=ref@Ve[1,1], useEM=FALSE,
-               simParam=d$SP)
+  c2 = RRBLUP(d$pop, Vu=ref@Vu[1,1]*10, Ve=ref@Ve[1,1],
+              simParam=d$SP)
   expect_false(isTRUE(all.equal(addEff(a), addEff(c2))))
 
   # A larger marker variance shrinks the effects less
@@ -138,12 +147,15 @@ test_that("fast mode RRBLUP agrees with RRBLUP given the same variance component
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-4)
 })
 
-test_that("RRBLUP takes variance components only in fast mode", {
-  # The direct solver always estimates them, so supplying them without
-  # fastMode would otherwise be ignored without notice
+test_that("RRBLUP outside fast mode takes both variance components or neither", {
+  # Estimating the other one would ignore the one supplied without notice
   d = gsPop(nInd=30, nQtl=5, nSnp=5)
-  expect_error(RRBLUP(d$pop, Vu=0.01, simParam=d$SP), "fastMode")
-  expect_error(RRBLUP(d$pop, Ve=1, simParam=d$SP), "fastMode")
+  expect_error(RRBLUP(d$pop, Vu=0.01, simParam=d$SP), "both Vu and Ve")
+  expect_error(RRBLUP(d$pop, Ve=1, simParam=d$SP), "both Vu and Ve")
+  expect_error(RRBLUP(d$pop, Vu=-0.01, Ve=1, simParam=d$SP),
+               "must not be negative")
+  expect_error(RRBLUP(d$pop, Vu=0.01, Ve=0, simParam=d$SP),
+               "Ve must be positive")
 })
 
 test_that("setEBV reproduces the model's own predictions", {
@@ -250,7 +262,7 @@ test_that("the dominance and hybrid models run and predict", {
   }
 })
 
-test_that("the numbered dominance and hybrid models run with fixed components", {
+test_that("the dominance and hybrid models run with fixed components", {
   # Three more multi kernel fits
   skip_on_cran()
   # useEM=FALSE is the path that no longer inverts its Cholesky factor
@@ -268,15 +280,15 @@ test_that("the numbered dominance and hybrid models run with fixed components", 
   vg = varG(pop)[1,1]
   ve = varP(pop)[1,1] - vg
 
-  dom = RRBLUP_D2(pop, Va=vg/20, Vd=vg/20, Ve=ve, useEM=FALSE, simParam=SP)
+  dom = RRBLUP_D(pop, Vu=c(vg/20, vg/20), Ve=ve, simParam=SP)
   expect_true(all(is.finite(addEff(dom))))
 
-  gca = RRBLUP_GCA2(pop, VuF=vg/20, VuM=vg/20, Ve=ve, useEM=FALSE,
-                    simParam=SP)
+  gca = RRBLUP_GCA(pop, Vu=c(vg/20, vg/20), Ve=ve,
+                   simParam=SP)
   expect_true(all(is.finite(addEff(gca))))
 
-  sca = RRBLUP_SCA2(pop, VuF=vg/20, VuM=vg/20, VuD=vg/20, Ve=ve,
-                    useEM=FALSE, simParam=SP)
+  sca = RRBLUP_SCA(pop, Vu=c(vg/20, vg/20, vg/20), Ve=ve,
+                   simParam=SP)
   expect_true(all(is.finite(addEff(sca))))
 })
 
@@ -478,10 +490,10 @@ test_that("fitting is not affected by the number of threads", {
   expect_equal(addEff(one), addEff(many), tolerance=1e-8)
 
   ref = one
-  oneB = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-                 nThreads=1L, simParam=d$SP)
-  manyB = RRBLUP2(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1], useEM=FALSE,
-                  nThreads=nThreads, simParam=d$SP)
+  oneB = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+                nThreads=1L, simParam=d$SP)
+  manyB = RRBLUP(d$pop, Vu=ref@Vu[1,1], Ve=ref@Ve[1,1],
+                 nThreads=nThreads, simParam=d$SP)
   expect_equal(addEff(oneB), addEff(manyB), tolerance=1e-8)
 })
 
@@ -490,7 +502,9 @@ test_that("fitting is not affected by the number of threads", {
 # and handing them to the exported solvers is an independent route to the
 # same fit, and with a single fixed effect level the design matrix is a
 # column of ones on both routes. The codings below are exact in double
-# precision, so the two routes have to agree to the last bit.
+# precision, so a fit through the same solver agrees to the last bit. A fit
+# given its variance components is held to rounding against the exported
+# solver for them, which is a different one.
 
 # Dominance coding of a dosage x at ploidy P, as the models code it
 domCode = function(x, P) x*(P - x)*(2/P)^2
@@ -505,11 +519,11 @@ test_that("RRBLUP reads the same markers that pullSnpGeno returns", {
 
   ref2 = solveRRBLUP_EM(y, matrix(1, nrow(y), 1L), M, Vu=0.1, Ve=1,
                         tol=1e-6, maxIter=10L, useEM=FALSE)
-  ans2 = RRBLUP2(d$pop, Vu=0.1, Ve=1, useEM=FALSE, simParam=d$SP)
-  expect_identical(addEff(ans2), c(ref2$u))
+  ans2 = RRBLUP(d$pop, Vu=0.1, Ve=1, simParam=d$SP)
+  expect_equal(addEff(ans2), c(ref2$u), tolerance=1e-8)
 })
 
-test_that("RRBLUP_D2 reads the same markers that pullSnpGeno returns", {
+test_that("RRBLUP_D with fixed components reads the same markers that pullSnpGeno returns", {
   d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
   y = d$pop@pheno[, 1L, drop=FALSE]
   G = pullSnpGeno(d$pop, simParam=d$SP)
@@ -518,11 +532,11 @@ test_that("RRBLUP_D2 reads the same markers that pullSnpGeno returns", {
   X = cbind(1, rowSums(Md))
   ref = solveRRBLUP_EM2(y, X, Ma, Md, Vu1=0.1, Vu2=0.05, Ve=1, tol=1e-6,
                         maxIter=10L, useEM=FALSE)
-  ans = RRBLUP_D2(d$pop, Va=0.1, Vd=0.05, Ve=1, useEM=FALSE, simParam=d$SP)
-  expect_identical(addEff(ans), c(ref$u[, 1L]))
+  ans = RRBLUP_D(d$pop, Vu=c(0.1, 0.05), Ve=1, simParam=d$SP)
+  expect_equal(addEff(ans), c(ref$u[, 1L]), tolerance=1e-8)
 })
 
-test_that("RRBLUP_GCA2 and RRBLUP_SCA2 read the parental haplotypes", {
+test_that("RRBLUP_GCA and RRBLUP_SCA with fixed components read the parental haplotypes", {
   d = gsPop(nInd=60, nQtl=8, nSnp=12, nChr=3)
   y = d$pop@pheno[, 1L, drop=FALSE]
   X1 = matrix(1, nrow(y), 1L)
@@ -530,22 +544,22 @@ test_that("RRBLUP_GCA2 and RRBLUP_SCA2 read the parental haplotypes", {
   M2 = 2*pullSnpHaplo(d$pop, haplo=2, simParam=d$SP) - 1
   ref = solveRRBLUP_EM2(y, X1, M1, M2, Vu1=0.1, Vu2=0.2, Ve=1, tol=1e-6,
                         maxIter=10L, useEM=FALSE)
-  gca = RRBLUP_GCA2(d$pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE,
-                    simParam=d$SP)
-  expect_identical(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]))
-  expect_identical(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]))
+  gca = RRBLUP_GCA(d$pop, Vu=c(0.1, 0.2), Ve=1,
+                   simParam=d$SP)
+  expect_equal(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]), tolerance=1e-8)
+  expect_equal(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]), tolerance=1e-8)
 
   M3 = domCode(pullSnpGeno(d$pop, simParam=d$SP), 2)
   ref3 = solveRRBLUP_EM3(y, cbind(1, rowSums(M3)), M1, M2, M3, Vu1=0.1,
                          Vu2=0.2, Vu3=0.05, Ve=1, tol=1e-6, maxIter=10L,
                          useEM=FALSE)
-  sca = RRBLUP_SCA2(d$pop, VuF=0.1, VuM=0.2, VuD=0.05, Ve=1, useEM=FALSE,
-                    simParam=d$SP)
-  expect_identical(c(sca@gv[[1L]]@addEff), c(ref3$u[, 1L]))
-  expect_identical(c(sca@gv[[1L]]@addEffMale), c(ref3$u[, 2L]))
+  sca = RRBLUP_SCA(d$pop, Vu=c(0.1, 0.2, 0.05), Ve=1,
+                   simParam=d$SP)
+  expect_equal(c(sca@gv[[1L]]@addEff), c(ref3$u[, 1L]), tolerance=1e-8)
+  expect_equal(c(sca@gv[[1L]]@addEffMale), c(ref3$u[, 2L]), tolerance=1e-8)
 })
 
-test_that("RRBLUP_GCA2 splits a tetraploid's haplotypes in two", {
+test_that("RRBLUP_GCA with fixed components splits a tetraploid's haplotypes in two", {
   set.seed(8401)
   founderPop = quickHaplo(nInd=60, nChr=2, segSites=20, ploidy=4L)
   SP = SimParam$new(founderPop)
@@ -562,9 +576,9 @@ test_that("RRBLUP_GCA2 splits a tetraploid's haplotypes in two", {
   M2 = H(3) + H(4) - 1
   ref = solveRRBLUP_EM2(y, matrix(1, nrow(y), 1L), M1, M2, Vu1=0.1,
                         Vu2=0.2, Ve=1, tol=1e-6, maxIter=10L, useEM=FALSE)
-  gca = RRBLUP_GCA2(pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE, simParam=SP)
-  expect_identical(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]))
-  expect_identical(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]))
+  gca = RRBLUP_GCA(pop, Vu=c(0.1, 0.2), Ve=1, simParam=SP)
+  expect_equal(c(gca@gv[[1L]]@addEff), c(ref$u[, 1L]), tolerance=1e-8)
+  expect_equal(c(gca@gv[[1L]]@addEffMale), c(ref$u[, 2L]), tolerance=1e-8)
 })
 
 test_that("setEBV reads the parental haplotypes of GCA and SCA solutions", {
@@ -573,15 +587,14 @@ test_that("setEBV reads the parental haplotypes of GCA and SCA solutions", {
   H1 = pullSnpHaplo(d$pop, haplo=1, simParam=d$SP)
   H2 = pullSnpHaplo(d$pop, haplo=2, simParam=d$SP)
   het = domCode(H1 + H2, 2)
-  gcaSol = RRBLUP_GCA2(d$pop, VuF=0.1, VuM=0.2, Ve=1, useEM=FALSE,
-                       simParam=d$SP)
+  gcaSol = RRBLUP_GCA(d$pop, Vu=c(0.1, 0.2), Ve=1,
+                      simParam=d$SP)
   gca = gcaSol@gv[[1L]]
   expected = gca@intercept + (2*H1 - 1)%*%gca@addEff +
     (2*H2 - 1)%*%gca@addEffMale
   expect_equal(c(ebv(setEBV(d$pop, gcaSol, simParam=d$SP))), c(expected),
                tolerance=1e-10)
-  scaSol = RRBLUP_SCA2(d$pop, VuF=0.1, VuM=0.2, VuD=0.05, Ve=1,
-                       useEM=FALSE, simParam=d$SP)
+  scaSol = RRBLUP_SCA(d$pop, Vu=c(0.1, 0.2, 0.05), Ve=1, simParam=d$SP)
   sca = scaSol@gv[[1L]]
   expected = sca@intercept + (2*H1 - 1)%*%sca@addEff +
     (2*H2 - 1)%*%sca@addEffMale + het%*%sca@domEff
@@ -1130,15 +1143,15 @@ test_that("each model records its name in the fit", {
                                     simParam=d$SP))@model, "RRBLUP")
   # The numbered models fit the same models, so they record the same names.
   # They are given their variance components, so that EM is not run.
-  expect_identical(RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE,
-                           simParam=d$SP)@model, "RRBLUP")
-  numbered = list(
+  expect_identical(quietDeprecated(RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE,
+                                           simParam=d$SP))@model, "RRBLUP")
+  numbered = quietDeprecated(list(
     RRBLUP_D=RRBLUP_D2(d$pop, Va=0.01, Vd=0.01, Ve=1, useEM=FALSE,
                        simParam=d$SP),
     RRBLUP_GCA=RRBLUP_GCA2(d$pop, VuF=0.01, VuM=0.01, Ve=1, useEM=FALSE,
                            simParam=d$SP),
     RRBLUP_SCA=RRBLUP_SCA2(d$pop, VuF=0.01, VuM=0.01, VuD=0.01, Ve=1,
-                           useEM=FALSE, simParam=d$SP))
+                           useEM=FALSE, simParam=d$SP)))
   for(model in names(mkModels)){
     expect_identical(mkModels[[model]](d$pop, simParam=d$SP)@model, model)
     expect_identical(forceFast(mkModels[[model]](d$pop, fastMode=TRUE,
@@ -1160,7 +1173,8 @@ test_that("fast mode takes the variance components of an earlier fit", {
                      info=length(traits))
   }
   # A fit of the numbered model is a fit of the same model
-  fit2 = RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE, simParam=d$SP)
+  fit2 = quietDeprecated(RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE,
+                                 simParam=d$SP))
   expect_identical(RRBLUP(d$pop, fastMode=TRUE, varComp=fit2, simParam=d$SP),
                    RRBLUP(d$pop, fastMode=TRUE, Vu=fit2@Vu, Ve=fit2@Ve,
                           simParam=d$SP))
@@ -1182,10 +1196,12 @@ test_that("an earlier fit is refused when it does not match the model", {
   d = mvPop(nInd=40, nSnp=10)
   fitA = RRBLUP(d$pop, simParam=d$SP)
   fitD = RRBLUP_D(d$pop, simParam=d$SP)
-  expect_error(RRBLUP(d$pop, varComp=fitA, simParam=d$SP), "fastMode")
-  expect_error(RRBLUP_D(d$pop, varComp=fitD, simParam=d$SP), "fastMode")
   expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=fitA, Vu=0.01,
                       simParam=d$SP), "not both")
+  expect_error(RRBLUP(d$pop, varComp=fitA, Vu=0.01, simParam=d$SP),
+               "not both")
+  expect_error(RRBLUP_D(d$pop, varComp=fitA, simParam=d$SP),
+               "fitted with RRBLUP, not RRBLUP_D")
   expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=fitD, simParam=d$SP),
                "fitted with RRBLUP_D, not RRBLUP")
   # Two models with two terms each, which the values alone cannot tell apart
@@ -1225,8 +1241,9 @@ test_that("fast mode multikernel models check their arguments", {
   for(model in names(mkModels)){
     fit = mkModels[[model]]
     nTerm = if(model=="RRBLUP_SCA") 3 else 2
+    # Outside fast mode, estimating Ve alone would ignore Vu without notice
     expect_error(fit(d$pop, Vu=rep(0.01, nTerm), simParam=d$SP),
-                 "fastMode", info=model)
+                 "both Vu and Ve", info=model)
     expect_error(fit(d$pop, fastMode=TRUE, Vu=0.01, Ve=1, simParam=d$SP),
                  "one value per random term", info=model)
     expect_error(fit(d$pop, traits=1:2, fastMode=TRUE,
@@ -1669,4 +1686,139 @@ test_that("fast mode keeps each fixed effect level's variation whatever the leve
     expect_equal(ans@female[[1]]@addEff, sgn*16/57, tolerance=1e-8,
                  info=paste("sign", sgn))
   }
+})
+
+test_that("DEPRECATED numbered models warn and match their replacements", {
+  # Each numbered model with useEM FALSE fits the unnumbered model given the
+  # same variance components outside fast mode, by another solver, so the two
+  # agree to rounding
+  d = mvPop(nInd=40, nSnp=10)
+  expect_warning(old <- RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE,
+                                simParam=d$SP),
+                 "RRBLUP2 is deprecated", class="deprecatedWarning")
+  expect_equal(old, RRBLUP(d$pop, Vu=0.01, Ve=1, simParam=d$SP),
+               tolerance=1e-8)
+  expect_warning(old <- RRBLUP_D2(d$pop, Va=0.01, Vd=0.02, Ve=1,
+                                  useEM=FALSE, simParam=d$SP),
+                 "RRBLUP_D2 is deprecated", class="deprecatedWarning")
+  expect_equal(old, RRBLUP_D(d$pop, Vu=c(0.01, 0.02), Ve=1,
+                             simParam=d$SP), tolerance=1e-8)
+  expect_warning(old <- RRBLUP_GCA2(d$pop, VuF=0.01, VuM=0.02, Ve=1,
+                                    useEM=FALSE, simParam=d$SP),
+                 "RRBLUP_GCA2 is deprecated", class="deprecatedWarning")
+  expect_equal(old, RRBLUP_GCA(d$pop, Vu=c(0.01, 0.02), Ve=1,
+                               simParam=d$SP), tolerance=1e-8)
+  expect_warning(old <- RRBLUP_SCA2(d$pop, VuF=0.01, VuM=0.02, VuD=0.03,
+                                    Ve=1, useEM=FALSE, simParam=d$SP),
+                 "RRBLUP_SCA2 is deprecated", class="deprecatedWarning")
+  expect_equal(old, RRBLUP_SCA(d$pop, Vu=c(0.01, 0.02, 0.03), Ve=1,
+                               simParam=d$SP), tolerance=1e-8)
+})
+
+test_that("FIXED variance components from an earlier fit outside fast mode", {
+  d = mvPop(nInd=40, nSnp=10)
+  fit = RRBLUP(d$pop, simParam=d$SP)
+  expect_identical(RRBLUP(d$pop, varComp=fit, simParam=d$SP),
+                   RRBLUP(d$pop, Vu=fit@Vu, Ve=fit@Ve, simParam=d$SP))
+  # Refitting with the REML estimates gives the REML fit back
+  expect_equal(addEff(RRBLUP(d$pop, varComp=fit, simParam=d$SP)),
+               addEff(fit), tolerance=1e-6)
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3L else 2L
+    Vu = seq_len(nTerm)/100
+    fit = mkModels[[model]](d$pop, Vu=Vu, Ve=1, simParam=d$SP)
+    expect_equal(c(fit@Vu), Vu, info=model)
+    # A fit's own Vu slot is passed back as it is
+    expect_identical(mkModels[[model]](d$pop, varComp=fit, simParam=d$SP),
+                     fit, info=model)
+    expect_identical(mkModels[[model]](d$pop, Vu=fit@Vu, Ve=fit@Ve,
+                                       simParam=d$SP),
+                     fit, info=model)
+    expect_error(mkModels[[model]](d$pop, Vu=Vu[-1], Ve=1, simParam=d$SP),
+                 "one value per random term", info=model)
+  }
+})
+
+test_that("FIXED variance components outside fast mode are for one trait", {
+  # The direct solver for fixed variance components fits one trait, and fast
+  # mode fits several
+  d = mvPop(nInd=40, nSnp=10)
+  fit = RRBLUP(d$pop, traits=1:2, simParam=d$SP)
+  expect_error(RRBLUP(d$pop, traits=1:2, varComp=fit, simParam=d$SP),
+               "only when fastMode is TRUE")
+  expect_error(RRBLUP(d$pop, traits=1:2, Vu=fit@Vu, Ve=fit@Ve,
+                      simParam=d$SP),
+               "only when fastMode is TRUE")
+  expect_error(RRBLUP_D(d$pop, traits=1:2, Vu=list(diag(2), diag(2)),
+                        Ve=diag(2), simParam=d$SP),
+               "only when fastMode is TRUE")
+  expect_error(RRBLUPMemUse(nInd=100, nMarker=50, model="RRBLUP_D",
+                            nTraits=2, useEM=FALSE),
+               "only when fastMode is TRUE")
+})
+
+test_that("RRBLUPMemUse costs a model given its variance components as its REML fit", {
+  # Held fixed, the variance components are evaluated once by the solver of
+  # the multikernel REML fit, so its estimate is the bound used
+  for(size in list(c(1000, 500), c(200, 5000))){
+    for(model in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
+      expect_equal(RRBLUPMemUse(nInd=size[1], nMarker=size[2], model=model,
+                                useEM=FALSE),
+                   RRBLUPMemUse(nInd=size[1], nMarker=size[2], model=model),
+                   info=paste(model, size[1]))
+    }
+    # RRBLUP uses that solver with a single term, which costs less than two
+    v = RRBLUPMemUse(nInd=size[1], nMarker=size[2], model="RRBLUP",
+                     useEM=FALSE)
+    expect_gt(v, 0)
+    expect_lt(v, RRBLUPMemUse(nInd=size[1], nMarker=size[2],
+                              model="RRBLUP_D"))
+  }
+  # Fast mode does not take useEM
+  expect_equal(RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP_D",
+                            fastMode=TRUE, useEM=FALSE),
+               RRBLUPMemUse(nInd=1000, nMarker=500, model="RRBLUP_D",
+                            fastMode=TRUE))
+})
+
+test_that("DIPLOID the SCA models refuse other ploidy levels", {
+  # The model splits each genome into one maternal and one paternal
+  # haplotype, the design of a diploid single cross
+  d4 = mvPop(nInd=40, nSnp=10, ploidy=4L)
+  expect_error(RRBLUP_SCA(d4$pop, simParam=d4$SP), "only diploids")
+  expect_error(RRBLUP_SCA(d4$pop, Vu=c(0.01, 0.01, 0.01), Ve=1,
+                          simParam=d4$SP), "only diploids")
+  expect_error(quietDeprecated(RRBLUP_SCA2(d4$pop, simParam=d4$SP)),
+               "only diploids")
+})
+
+test_that("FIXED a variance of zero outside fast mode leaves its term out", {
+  # REML often estimates a dominance or SCA variance at exactly zero, and a
+  # fit like that has to be usable as varComp. A term with no variance has
+  # no effects, and the other terms are fitted as if it were not there.
+  d = mvPop(nInd=40, nSnp=10)
+  dom = RRBLUP_D(d$pop, Vu=c(0.01, 0), Ve=1, simParam=d$SP)
+  # A marker's dominance effect is then the directional dominance alone, the
+  # same at every segregating marker
+  domEff = dom@gv[[1]]@domEff
+  expect_lte(length(unique(signif(domEff[domEff!=0], 10))), 1L)
+  expect_true(all(is.finite(dom@gv[[1]]@addEff)))
+  expect_identical(RRBLUP_D(d$pop, varComp=dom, simParam=d$SP), dom)
+  # Without the maternal term only the paternal effects are fitted, which is
+  # RRBLUP on the paternal haplotypes
+  gca = RRBLUP_GCA(d$pop, Vu=c(0, 0.01), Ve=1, simParam=d$SP)
+  expect_true(all(gca@gv[[1]]@addEff==0))
+  M2 = 2*pullSnpHaplo(d$pop, haplo=2, simParam=d$SP) - 1
+  y = d$pop@pheno[, 1L, drop=FALSE]
+  # mvPop has three fixed effect levels
+  X = model.matrix(~factor(d$pop@fixEff)-1)
+  ref = solveRRBLUP_EM(y, X, M2, Vu=0.01, Ve=1, tol=1e-6, maxIter=10L,
+                       useEM=FALSE)
+  expect_equal(c(gca@gv[[1]]@addEffMale), c(ref$u), tolerance=1e-8)
+  # Every term at zero leaves only the fixed effects
+  sca = RRBLUP_SCA(d$pop, Vu=c(0, 0, 0), Ve=1, simParam=d$SP)
+  expect_true(all(c(sca@gv[[1]]@addEff, sca@gv[[1]]@addEffMale)==0))
+  domEff = sca@gv[[1]]@domEff
+  expect_lte(length(unique(signif(domEff[domEff!=0], 10))), 1L)
+  expect_true(all(RRBLUP(d$pop, Vu=0, Ve=1, simParam=d$SP)@gv[[1]]@addEff==0))
 })
