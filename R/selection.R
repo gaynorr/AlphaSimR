@@ -600,7 +600,11 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
   take = order(response,decreasing=selectTop)
   take = take[take%in%eligible]
   if(returnPop){
-    return(pop[take[0:nInd], simParam=simParam])
+    if(is(pop,"HybridPop")){
+      return(pop[take[0:nInd]])
+    }else{
+      return(pop[take[0:nInd], simParam=simParam])
+    }
   }else{
     return(take[0:nInd])
   }
@@ -723,7 +727,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   # aggregate fails on zero rows, and there is nothing to rank
   if(length(eligible)==0L){
     if(returnPop){
-      return(pop[integer(0)])
+      if(is(pop,"HybridPop")){
+        return(pop[integer(0)])
+      }else{
+        return(pop[integer(0), simParam=simParam])
+      }
     }else{
       return(integer(0))
     }
@@ -743,7 +751,11 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
   take = which(allFam%in%bestFam)
   take = take[take%in%eligible]
   if(returnPop){
-    return(pop[take, simParam=simParam])
+    if(is(pop,"HybridPop")){
+      return(pop[take])
+    }else{
+      return(pop[take, simParam=simParam])
+    }
   }else{
     return(take)
   }
@@ -886,7 +898,11 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            "nInd = ", nInd))
   }
   if(returnPop){
-    return(pop[take, simParam=simParam])
+    if(is(pop,"HybridPop")){
+      return(pop[take])
+    }else{
+      return(pop[take, simParam=simParam])
+    }
   }else{
     return(take)
   }

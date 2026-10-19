@@ -564,3 +564,37 @@ test_that("UNKNOWN parents of 0 or NA each form their own family", {
   expect_equal(nInd(selectWithinFam(ped, 1, famType="F", simParam=d$SP)),
                4L)
 })
+
+
+test_that("HYBRID selection preserves population indexing", {
+  founder = quickHaplo(nInd=4, nChr=1, segSites=10)
+  sp = SimParam$new(founder)
+  sp$nThreads = 1L
+  sp$addTraitA(5)
+  parents = newPop(founder, simParam=sp)
+  hybrid = hybridCross(parents, parents, returnHybridPop=TRUE, simParam=sp)
+  # Fixed scores make selection independent of the sampled genetic values.
+  score = function(pop, ...) seq_len(pop@nInd)
+  for(select in list(selectInd, selectFam, selectWithinFam)){
+    index = select(hybrid, 1, use=score, returnPop=FALSE, simParam=sp)
+    out = select(hybrid, 1, use=score, simParam=sp)
+    expect_s4_class(out, "HybridPop")
+    expect_identical(out, hybrid[index])
+  }
+  empty = selectFam(hybrid, 1, candidates=integer(0),
+                    simParam=sp, onShortfall="none")
+  expect_identical(empty, hybrid[integer(0)])
+})
+
+test_that("EMPTY family selection uses explicit miscellaneous hooks", {
+  f = miscFunctionFixture()
+  check = function(){
+    out = selectFam(f$pop, 1, candidates=integer(0),
+                    simParam=f$sp, onShortfall="none")
+    expect_equal(out@nInd, 0L)
+    expect_identical(out@miscPop, list(total=0, ids=character(0)))
+    expect_identical(out@misc$value, numeric(0))
+  }
+  withWrongGlobalMiscSP(f$sp, check())
+  withoutGlobalSimParam(check())
+})
