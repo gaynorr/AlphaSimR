@@ -270,8 +270,9 @@ memory close to the size of the genotypes however many traits are fitted, but
 the variance components are still estimated by the default mode's REML on the
 `nSubsample` records, and that fit grows with the number of traits just as the
 default mode does. For several traits on a large training population it
-dominates both the time and the memory. Supplying `Vu` and `Ve`, or a smaller
-`nSubsample`, avoids it, as described next.
+dominates both the time and the memory. Passing an earlier fit as `varComp`,
+supplying `Vu` and `Ve`, or a smaller `nSubsample` avoids it, as described
+next.
 
 ### Fitting the same model more cheaply
 
@@ -301,23 +302,45 @@ depends on how far the population drifts over the simulation, and that
 is a question only the simulation can answer - check against a full
 re-fit before relying on it.
 
-The unnumbered models take supplied variance components too, in fast mode.
-Giving `Vu` and `Ve` with `fastMode=TRUE` always uses fast mode, because the
-default mode cannot use them, and skips the REML fit, leaving only the solve
-for the marker effects. Unlike `RRBLUP2`, this works for several traits and
-for the dominance and hybrid models, and a fit's own `Vu` and `Ve` slots can
-be passed back as they are, including the block diagonal `Vu` of the
-dominance and hybrid models. Refitting the multiple trait dominance model
-from above with its own variance components gives the same predictions:
+The unnumbered models take supplied variance components too, in fast mode,
+and the simplest way to supply them is to pass an earlier fit of the same
+model as `varComp`. With `fastMode=TRUE`, `varComp` skips the REML fit,
+leaving only the solve for the marker effects, and always uses fast mode,
+because the default mode cannot use supplied variance components. Unlike
+`RRBLUP2`, this works for several traits and for the dominance and hybrid
+models. Refitting the multiple trait dominance model from above with its own
+variance components gives the same predictions:
 
 ```{r}
 mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
-                  Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
+                  varComp = mvModel, simParam = SP2)
 candidatesFast = setEBV(candidates2, mvFast, simParam = SP2)
 
 # The default mode's predictions and fast mode's agree
 diag(cor(ebv(candidatesFast), ebv(candidates2)))
 ```
+
+Every fit records the model it came from, and `varComp` checks it, so a fit
+can only be passed to the model that produced it, or to the unnumbered
+version of a numbered model, which fits the same model: an `RRBLUP2` fit can
+be passed to `RRBLUP`, but an `RRBLUP_GCA` fit cannot be passed to
+`RRBLUP_D`, although both have two variance components for one trait. The
+fit must also be for the same number of traits and on the same markers,
+because `Vu` is the variance of an effect of those markers.
+
+`Vu` and `Ve` can still be given directly, which is the way to use values
+that did not come from a fit, or that have been changed. A fit's own `Vu`
+and `Ve` slots can be passed as they are, including the block diagonal `Vu`
+of the dominance and hybrid models, so this call is the same as the one
+above:
+
+```{r eval=FALSE}
+mvFast = RRBLUP_D(trainPop2, traits = 1:2, fastMode = TRUE,
+                  Vu = mvModel@Vu, Ve = mvModel@Ve, simParam = SP2)
+```
+
+Fits saved before `varComp` was added do not record their model, and are
+passed as `Vu` and `Ve` in this way.
 
 If you let the numbered models estimate the variance components
 themselves they use an EM algorithm, which is slower and less reliable
@@ -428,13 +451,25 @@ they give up:
 
 - Refit every cycle with `RRBLUP2` and fixed `Vu` and `Ve`, taken from
   one full `RRBLUP` fit at the start.
-- Refit every cycle with `fastMode=TRUE` and fixed `Vu` and `Ve`, which
-  leaves only the solve for the marker effects, whose cost grows far more
-  slowly with the number of records than a full fit's. This also works for
-  several traits and for the dominance and hybrid models. Without supplied
-  variance components, fast mode is used only when it is expected to be
-  faster, and most of its time goes on estimating them from the subset of
-  records.
+- Refit every cycle with `fastMode=TRUE`, passing an earlier fit as
+  `varComp`, which leaves only the solve for the marker effects, whose cost
+  grows far more slowly with the number of records than a full fit's. This
+  also works for several traits and for the dominance and hybrid models.
+  Without supplied variance components, fast mode is used only when it is
+  expected to be faster, and most of its time goes on estimating them from
+  the subset of records, so re-estimating them only every few cycles saves
+  most of the time:
+
+  ```{r eval=FALSE}
+  if (cycle %% 5 == 1) {
+    # Estimate the variance components afresh
+    gsModel = RRBLUP(trainPop, fastMode = TRUE, simParam = SP)
+  } else {
+    # Reuse the last estimates
+    gsModel = RRBLUP(trainPop, fastMode = TRUE, varComp = gsModel,
+                     simParam = SP)
+  }
+  ```
 - Refit every *k* cycles and reuse the solution in between. A solution
   is an ordinary object; nothing stops you applying it to several
   generations of candidates.
@@ -711,11 +746,12 @@ matrix decomposition costing the square of the number of records in
 memory and their cube in time, which is exactly what the fast mode exists
 to avoid, so it estimates the variance components from a random subset
 of the records. `nSubsample` sets the size of that subset and defaults
-to 5000. Variance components are nuisance parameters here, estimated far
+to 3000. Variance components are nuisance parameters here, estimated far
 more precisely than a breeding program needs, so a few thousand records
 give values good enough to shrink with - and the marker effects
-themselves are always solved for using every record. Supplying `Vu` and
-`Ve` skips the estimation entirely. Fitted to several traits, it estimates
+themselves are always solved for using every record. Passing an earlier
+fit as `varComp`, or supplying `Vu` and `Ve`, skips the estimation
+entirely. Fitted to several traits, it estimates
 covariance matrices by the multiple trait REML of `RRBLUP`'s default mode on the same
 subset, separates the traits with a canonical transformation, and solves
 them together by conjugate gradient, which takes about as long as solving

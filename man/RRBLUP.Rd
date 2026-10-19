@@ -17,7 +17,8 @@ RRBLUP(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 5000L
+  nSubsample = 3000L,
+  varComp = NULL
 )
 }
 \arguments{
@@ -75,6 +76,12 @@ components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
 advisable for small training populations, because the memory needed grows
 with the square of this value.}
+
+\item{varComp}{an earlier fit of this model, from which Vu and Ve are
+taken in place of supplying them, so that only the marker effects are
+solved for. Only used when fastMode is TRUE, and not together with Vu and
+Ve. The fit must be of RRBLUP or RRBLUP2, to the same number of traits,
+on the same markers. See the genomic selection vignette.}
 }
 \description{
 Fits an additive ridge regression BLUP (RR-BLUP) model for genomic
@@ -180,6 +187,9 @@ cor(gv(pop), ebv(pop))
 
 #Run GS model in fast mode
 ans = RRBLUP(pop, fastMode=TRUE, simParam=SP)
+
+#Refit in fast mode, taking the variance components from that fit
+ans = RRBLUP(pop, fastMode=TRUE, varComp=ans, simParam=SP)
 
 }
 \references{

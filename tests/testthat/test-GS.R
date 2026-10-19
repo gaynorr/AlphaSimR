@@ -1039,6 +1039,121 @@ test_that("fast mode multikernel models take back their own variance components"
   }
 })
 
+test_that("the REML fit on a subset is the same from cross products as from codes", {
+  # With at least as many markers as records in the subset, fast mode gives
+  # the REML fit each term's cross product in place of its codes
+  d = mvPop(nInd=80, nSnp=30)
+  nSub = 50L
+  for(model in names(mkModels)){
+    nTerm = if(model=="RRBLUP_SCA") 3L else 2L
+    codes = mkCodes(model, d$pop, d$SP)
+    X = mkFixed(model, d$pop, codes)
+    for(traits in list(1L, 1:2)){
+      info = paste(model, length(traits))
+      set.seed(1)
+      ans = forceFast(mkModels[[model]](d$pop, traits=traits, fastMode=TRUE,
+                                        nSubsample=nSub, simParam=d$SP))
+      set.seed(1)
+      s = AlphaSimR:::fastSubset(nSub, d$pop@nInd)
+      ref = solveRRBLUPMK(pheno(d$pop)[s, traits, drop=FALSE],
+                          X[s, , drop=FALSE],
+                          lapply(codes, function(M) M[s, , drop=FALSE]))
+      got = AlphaSimR:::fastMKVarComp(ans@Vu, ans@Ve, nTerm, length(traits))
+      expect_equal(got$Vu, lapply(ref$Vu, function(v) unname(as.matrix(v))),
+                   tolerance=1e-6, info=info)
+      expect_equal(got$Ve, unname(as.matrix(ref$Ve)), tolerance=1e-6,
+                   info=info)
+    }
+  }
+})
+
+test_that("each model records its name in the fit", {
+  d = mvPop(nInd=40, nSnp=10)
+  expect_identical(RRBLUP(d$pop, simParam=d$SP)@model, "RRBLUP")
+  expect_identical(forceFast(RRBLUP(d$pop, fastMode=TRUE,
+                                    simParam=d$SP))@model, "RRBLUP")
+  # The numbered models fit the same models, so they record the same names.
+  # They are given their variance components, so that EM is not run.
+  expect_identical(RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE,
+                           simParam=d$SP)@model, "RRBLUP")
+  numbered = list(
+    RRBLUP_D=RRBLUP_D2(d$pop, Va=0.01, Vd=0.01, Ve=1, useEM=FALSE,
+                       simParam=d$SP),
+    RRBLUP_GCA=RRBLUP_GCA2(d$pop, VuF=0.01, VuM=0.01, Ve=1, useEM=FALSE,
+                           simParam=d$SP),
+    RRBLUP_SCA=RRBLUP_SCA2(d$pop, VuF=0.01, VuM=0.01, VuD=0.01, Ve=1,
+                           useEM=FALSE, simParam=d$SP))
+  for(model in names(mkModels)){
+    expect_identical(mkModels[[model]](d$pop, simParam=d$SP)@model, model)
+    expect_identical(forceFast(mkModels[[model]](d$pop, fastMode=TRUE,
+                                                 simParam=d$SP))@model,
+                     model)
+    expect_identical(numbered[[model]]@model, model, info=model)
+  }
+  expect_identical(new("RRsol")@model, "")
+})
+
+test_that("fast mode takes the variance components of an earlier fit", {
+  d = mvPop(nInd=60, nSnp=12)
+  for(traits in list(1L, 1:2)){
+    fit = RRBLUP(d$pop, traits=traits, simParam=d$SP)
+    expect_identical(RRBLUP(d$pop, traits=traits, fastMode=TRUE,
+                            varComp=fit, simParam=d$SP),
+                     RRBLUP(d$pop, traits=traits, fastMode=TRUE,
+                            Vu=fit@Vu, Ve=fit@Ve, simParam=d$SP),
+                     info=length(traits))
+  }
+  # A fit of the numbered model is a fit of the same model
+  fit2 = RRBLUP2(d$pop, Vu=0.01, Ve=1, useEM=FALSE, simParam=d$SP)
+  expect_identical(RRBLUP(d$pop, fastMode=TRUE, varComp=fit2, simParam=d$SP),
+                   RRBLUP(d$pop, fastMode=TRUE, Vu=fit2@Vu, Ve=fit2@Ve,
+                          simParam=d$SP))
+  for(model in names(mkModels)){
+    for(traits in list(1L, 1:2)){
+      fit = mkModels[[model]](d$pop, traits=traits, simParam=d$SP)
+      expect_identical(mkModels[[model]](d$pop, traits=traits,
+                                         fastMode=TRUE, varComp=fit,
+                                         simParam=d$SP),
+                       mkModels[[model]](d$pop, traits=traits,
+                                         fastMode=TRUE, Vu=fit@Vu,
+                                         Ve=fit@Ve, simParam=d$SP),
+                       info=paste(model, length(traits)))
+    }
+  }
+})
+
+test_that("an earlier fit is refused when it does not match the model", {
+  d = mvPop(nInd=40, nSnp=10)
+  fitA = RRBLUP(d$pop, simParam=d$SP)
+  fitD = RRBLUP_D(d$pop, simParam=d$SP)
+  expect_error(RRBLUP(d$pop, varComp=fitA, simParam=d$SP), "fastMode")
+  expect_error(RRBLUP_D(d$pop, varComp=fitD, simParam=d$SP), "fastMode")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=fitA, Vu=0.01,
+                      simParam=d$SP), "not both")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=fitD, simParam=d$SP),
+               "fitted with RRBLUP_D, not RRBLUP")
+  # Two models with two terms each, which the values alone cannot tell apart
+  expect_error(RRBLUP_GCA(d$pop, fastMode=TRUE, varComp=fitD,
+                          simParam=d$SP),
+               "fitted with RRBLUP_D, not RRBLUP_GCA")
+  expect_error(RRBLUP(d$pop, traits=1:2, fastMode=TRUE, varComp=fitA,
+                      simParam=d$SP), "fitted to 1 trait")
+  # The first trait's QTL, as many as the markers but at other loci
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=fitA, useQtl=TRUE,
+                      snpChip=1, simParam=d$SP), "different markers")
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=list(), simParam=d$SP),
+               "class RRsol")
+  noModel = fitA
+  noModel@model = ""
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=noModel, simParam=d$SP),
+               "does not record")
+  # A fit saved before the slot existed has no model attribute at all
+  old = fitA
+  attr(old, "model") = NULL
+  expect_error(RRBLUP(d$pop, fastMode=TRUE, varComp=old, simParam=d$SP),
+               "does not record")
+})
+
 test_that("a term with no variance has no effects in fast mode", {
   d = mvPop(nInd=60, nSnp=12)
   ans = RRBLUP_D(d$pop, fastMode=TRUE, Vu=c(0.02, 0), Ve=1, simParam=d$SP)

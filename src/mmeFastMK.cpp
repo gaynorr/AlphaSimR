@@ -43,6 +43,10 @@
 Rcpp::List solveRRBLUPMK(const arma::mat& y, const arma::mat& X,
                          const arma::field<arma::mat>& Mlist,
                          int maxIter);
+Rcpp::List remlMultiKernelGram(const arma::mat& Y, const arma::mat& X,
+                               arma::field<arma::mat>& Glist,
+                               const arma::vec& rank, int maxIter,
+                               const char* name);
 
 namespace {
 
@@ -501,10 +505,9 @@ MarkerStats markerStats(const arma::Mat<unsigned char>& planes,
 
 // A term's codes for a subset of records, as a dense matrix, for the REML
 // fit of the variance components. With fewer markers than records in the
-// subset these are the codes themselves. Otherwise the cross product of the
-// codes, M*M', is built a panel of markers at a time and replaced by a
-// factor F with F*F' = M*M' over its positive eigenvalues, which has no more
-// columns than there are records. The model depends on a term only through
+// subset these are the codes themselves. Otherwise it is the cross product of
+// the codes, M*M', built a panel of markers at a time, which is all the
+// record side of the REML fit uses. The model depends on a term only through
 // M*M', so the variance components are the same either way and on the same
 // scale, the variance of a marker effect.
 arma::mat subsetCodes(const arma::Mat<unsigned char>& planes,
@@ -552,15 +555,7 @@ arma::mat subsetCodes(const arma::Mat<unsigned char>& planes,
   if(useCodes){
     return out;
   }
-  // eigen2 writes into outputs of the right size, as in remlFromGram
-  arma::vec eigval(nSub);
-  arma::mat U(nSub,nSub);
-  eigen2(eigval, U, K);
-  K.reset();
-  arma::uvec keep = find(eigval>rankCutoff(eigval.max(), nSub));
-  out = U.cols(keep);
-  out.each_row() %= sqrt(eigval(keep)).t();
-  return out;
+  return K;
 }
 
 // The result of a fast multikernel fit. U holds each term's marker effects,
@@ -631,7 +626,19 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     }
     arma::mat ySub = Y.rows(subset);
     arma::mat XSub = X.rows(subset);
-    Rcpp::List varComp = solveRRBLUPMK(ySub, XSub, Mlist, fastMKRemlIter);
+    // With at least as many markers as records, subsetCodes gives each
+    // term's cross product, which goes to the record side directly. That is
+    // the side the codes would be fitted on anyway, as each term then has at
+    // least as many columns as there are records.
+    Rcpp::List varComp;
+    if(nLoci<subset.n_elem){
+      varComp = solveRRBLUPMK(ySub, XSub, Mlist, fastMKRemlIter);
+    }else{
+      arma::vec rank(nTerm);
+      rank.fill(double(subset.n_elem));
+      varComp = remlMultiKernelGram(ySub, XSub, Mlist, rank, fastMKRemlIter,
+                                    name.c_str());
+    }
     if(nT==1){
       arma::mat Vu = varComp["Vu"];
       for(arma::uword t=0; t<nTerm; ++t){

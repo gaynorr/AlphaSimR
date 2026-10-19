@@ -17,7 +17,8 @@ RRBLUP_SCA(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 5000L
+  nSubsample = 3000L,
+  varComp = NULL
 )
 }
 \arguments{
@@ -76,6 +77,13 @@ REML. See details.}
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
 advisable for small training populations.}
+
+\item{varComp}{an earlier fit of this model, from which Vu and Ve are
+taken in place of supplying them, so that only the marker effects are
+solved for. Only used when fastMode is TRUE, and not together with Vu and
+Ve. The fit must be of this model or of its counterpart ending in 2, to
+the same number of traits, on the same markers. See the genomic selection
+vignette.}
 }
 \description{
 An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
