@@ -558,6 +558,42 @@ arma::mat subsetCodes(const arma::Mat<unsigned char>& planes,
   return K;
 }
 
+// An upper bound for the rank of a term's cross product K = M*M' on the
+// subset, which the EM step of the REML fit divides each update by. The
+// number of records is always a bound, but far too loose for a kernel of low
+// rank, as from many copies of a few genotypes, whose EM steps would then be
+// too short to reach the optimum in the iterations allowed. The numerical
+// rank comes from a pivoted Cholesky factorization of a copy of K, which
+// costs about a third of a cube of the number of records, against the four
+// or more of a decomposition with eigenvectors. Its tolerance is that of
+// rankCutoff, taken against the largest diagonal element, which is no larger
+// than the largest eigenvalue, so the rank found is at least the number of
+// eigenvalues that rankCutoff keeps. The number of records is returned if
+// the factorization is not available or fails.
+double gramRank(const arma::mat& K){
+  arma::uword n = K.n_rows;
+  if(n==0){
+    return 0.0;
+  }
+#if ARMA_VERSION_MAJOR >= 10
+  arma::mat A = K;
+  char uplo = 'L';
+  arma::blas_int bn = arma::blas_int(n);
+  arma::blas_int rank = 0;
+  arma::blas_int info = 0;
+  double tol = rankCutoff(A.diag().max(), n);
+  std::vector<arma::blas_int> piv(n);
+  std::vector<double> work(2*n);
+  arma::lapack::pstrf(&uplo, &bn, A.memptr(), &bn, piv.data(), &rank, &tol,
+                      work.data(), &info);
+  // info is 1 when K is rank deficient, which is when the rank is wanted
+  if( (info==0) || (info==1) ){
+    return double(std::max<arma::blas_int>(rank, 1));
+  }
+#endif
+  return double(n);
+}
+
 // The result of a fast multikernel fit. U holds each term's marker effects,
 // one column per trait, and beta the fixed effects for the uncentered codes,
 // as the direct form returns them.
@@ -635,7 +671,9 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       varComp = solveRRBLUPMK(ySub, XSub, Mlist, fastMKRemlIter);
     }else{
       arma::vec rank(nTerm);
-      rank.fill(double(subset.n_elem));
+      for(arma::uword t=0; t<nTerm; ++t){
+        rank(t) = gramRank(Mlist(t));
+      }
       varComp = remlMultiKernelGram(ySub, XSub, Mlist, rank, fastMKRemlIter,
                                     name.c_str());
     }

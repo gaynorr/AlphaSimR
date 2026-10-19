@@ -1067,6 +1067,50 @@ test_that("the REML fit on a subset is the same from cross products as from code
   }
 })
 
+test_that("the REML fit on a subset bounds the rank of a low rank cross product", {
+  # Many copies of two doubled haploid genotypes give the female and male
+  # terms identical cross products of rank two, whose average information is
+  # singular, so the REML fit leans on EM, which divides each update by a
+  # bound for the rank of the cross product. The fit has to match the one
+  # given a factor of each cross product with as many columns as its rank.
+  # With identical cross products only the sum of the two variances is
+  # identified, so that is what is compared.
+  set.seed(8601)
+  founderPop = quickHaplo(nInd=20, nChr=2, segSites=40)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=30, overlap=FALSE)
+  SP$addTraitA(nQtlPerChr=10)
+  SP$addSnpChip(nSnpPerChr=30)
+  SP$setVarE(h2=0.5)
+  dh = makeDH(newPop(founderPop, simParam=SP)[1:2], nDH=1, simParam=SP)
+  pop = setPheno(dh[rep(1:2, 40)], simParam=SP)
+  nSub = 50L
+  for(model in c("RRBLUP_GCA", "RRBLUP_SCA")){
+    set.seed(1)
+    ans = forceFast(mkModels[[model]](pop, fastMode=TRUE, nSubsample=nSub,
+                                      simParam=SP))
+    set.seed(1)
+    s = AlphaSimR:::fastSubset(nSub, pop@nInd)
+    codes = mkCodes(model, pop, SP)
+    # One fixed effect level, so the intercept, and for RRBLUP_SCA the
+    # summed dominance codes, which mkFixed would add
+    X = matrix(1, nSub, 1)
+    if(model=="RRBLUP_SCA"){
+      X = cbind(X, rowSums(codes[[3]][s, , drop=FALSE]))
+    }
+    factors = lapply(codes, function(M){
+      e = eigen(tcrossprod(M[s, , drop=FALSE]), symmetric=TRUE)
+      keep = e$values > nSub*.Machine$double.eps*max(e$values)
+      e$vectors[, keep, drop=FALSE] %*% diag(sqrt(e$values[keep]), sum(keep))
+    })
+    ref = solveRRBLUPMK(matrix(pheno(pop)[s, 1]), X, factors, maxIter=100)
+    expect_equal(sum(ans@Vu[1:2, 1]), sum(ref$Vu[1:2]), tolerance=1e-6,
+                 info=model)
+    expect_equal(c(ans@Ve), c(ref$Ve), tolerance=1e-6, info=model)
+  }
+})
+
 test_that("each model records its name in the fit", {
   d = mvPop(nInd=40, nSnp=10)
   expect_identical(RRBLUP(d$pop, simParam=d$SP)@model, "RRBLUP")
