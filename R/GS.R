@@ -450,49 +450,90 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' @title RR-BLUP Model
 #'
 #' @description
-#' Fits an RR-BLUP model for genomic predictions. Fixed effects are fit
-#' using the levels of the population's fixEff slot.
+#' Fits an additive ridge regression BLUP (RR-BLUP) model for genomic
+#' prediction. One trait is fitted with a single trait model and several
+#' traits with a multiple trait model; see details for both.
 #'
-#' By default, the model is solved directly, through an eigendecomposition
-#' of whichever of the marker and record cross products is smaller, after
-#' the variance components are estimated by REML. Several traits are fitted
-#' together as a multiple trait model with unstructured covariance matrices
-#' among the traits for the marker effects and for the errors.
+#' @details
+#' \subsection{The model}{
+#' The model is the ridge regression model of
+#' \insertCite{whittaker2000Marker;textual}{AlphaSimR}, applied to
+#' genome-wide markers by
+#' \insertCite{meuwissen2001Prediction;textual}{AlphaSimR},
+#' \deqn{y = X\beta + Mu + e,}
+#' where y holds the records, X is the design matrix of the fixed effects,
+#' formed from the levels of the population's fixEff slot, M holds the
+#' marker dosages, u the marker effects and e the errors. The marker effects
+#' are the BLUPs \insertCite{henderson1975Best}{AlphaSimR} given variance
+#' components estimated by REML
+#' \insertCite{patterson1971Recovery}{AlphaSimR}. The estimated breeding
+#' values and genetic values use the same marker effects and differ only in
+#' their intercepts.
+#' }
 #'
+#' \subsection{One trait}{
+#' When traits gives a single trait, or is a function returning a single
+#' value, \eqn{u \sim N(0, I\sigma^2_u)} and \eqn{e \sim N(0, I\sigma^2_e)}.
+#' REML is reduced to a one dimensional search over the ratio of the two
+#' variances using the spectral approach of FaST-LMM
+#' \insertCite{lippert2011FaST}{AlphaSimR}. One eigendecomposition, of
+#' whichever of the marker and record cross products is smaller, supplies
+#' the likelihood, the fixed effects and the marker effects, so the model is
+#' fitted without iteration and maxIter is not used.
+#' }
+#'
+#' \subsection{Several traits}{
+#' When traits gives more than one trait, the traits are fitted together as a
+#' multiple trait model. The effects of each marker on the traits have an
+#' unstructured covariance matrix \eqn{V_u}, the errors of each record have an
+#' unstructured covariance matrix \eqn{V_e}, and markers and records are
+#' independent of each other. These matrices are estimated by REML using the
+#' algorithm of \insertCite{zhou2014Efficient;textual}{AlphaSimR}, which
+#' rotates the records by an eigendecomposition of the markers and the traits
+#' by a transformation that diagonalizes \eqn{V_u} and \eqn{V_e} together, so
+#' that each evaluation of the likelihood costs time linear in the number of
+#' records. Starting values come from single trait fits, and the estimates
+#' are refined by EM steps followed by Newton steps using the average
+#' information matrix \insertCite{gilmour1995Average}{AlphaSimR}, for at most
+#' maxIter iterations. The Vu and Ve slots of the result hold the two
+#' covariance matrices.
+#' }
+#'
+#' \subsection{Fast mode}{
 #' Setting fastMode to TRUE gives a fast and low memory alternative for
-#' training populations too large to fit directly. It is used only where it
-#' is expected to be faster, see fastMode. The mixed model equations
-#' are then solved by preconditioned conjugate gradient, iterating over the
-#' genotypes rather than over a stored coefficient matrix
+#' training populations too large to fit directly. It fits the same model and
+#' is used only where it is expected to be faster, see fastMode. The mixed
+#' model equations are then solved by preconditioned conjugate gradient,
+#' iterating over the genotypes rather than over a stored coefficient matrix
 #' \insertCite{stranden1999Solving}{AlphaSimR}. Neither the coefficient
 #' matrix nor a numeric copy of the genotypes is formed, so memory use stays
 #' close to the size of the genotypes, and the iteration is shared across
 #' nThreads.
 #'
-#' In fast mode, several traits are fitted together as a multiple trait
-#' model, in which the traits' marker effects are correlated through Vu and
-#' their errors through Ve. Every trait must then be recorded on every
-#' individual. The traits are separated by a canonical transformation, which
-#' is exact when every trait is recorded and they share their fixed effects,
-#' and the transformed traits are solved together by conjugate gradient, each
-#' with its own recurrence and test of convergence. Each iteration costs about
-#' as much as one iteration for each trait on its own, so a fit to several
+#' For several traits, every trait must be recorded on every individual. The
+#' traits are separated by a canonical transformation, which is exact when
+#' every trait is recorded and they share their fixed effects, and the
+#' transformed traits are solved together by conjugate gradient, each with
+#' its own recurrence and test of convergence. Each iteration costs about as
+#' much as one iteration for each trait on its own, so a fit to several
 #' traits takes about as long as fitting them one at a time, while the memory
 #' used stays close to the size of the genotypes.
 #'
-#' In fast mode, variance components are estimated by REML when they are not
-#' supplied. REML needs a matrix decomposition whose cost is the square of the
-#' number of records in memory and their cube in time, which is what fast mode
-#' is built to avoid, so the estimate is taken from a random subset of the
-#' records set by nSubsample. Variance components are nuisance parameters
-#' for genomic prediction and are estimated far more precisely than a
-#' breeding program needs, so a few thousand records give values good
-#' enough to shrink with. The marker effects are always solved for using
-#' every record.
+#' Variance components are estimated by REML when they are not supplied,
+#' with the same method as outside fast mode. REML needs a matrix
+#' decomposition whose cost is the square of the number of records in memory
+#' and their cube in time, which is what fast mode is built to avoid, so the
+#' estimate is taken from a random subset of the records set by nSubsample.
+#' Variance components are nuisance parameters for genomic prediction and are
+#' estimated far more precisely than a breeding program needs, so a few
+#' thousand records give values good enough to shrink with. The marker
+#' effects are always solved for using every record.
+#' }
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector of trait names,
-#' or a function of the traits returning a single value.
+#' or a function of the traits returning a single value. More than one trait
+#' gives a multiple trait model. See details.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param snpChip an integer indicating which SNP chip genotype
@@ -503,7 +544,7 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' @param maxIter maximum number of iterations. In fast mode, it limits the
 #' iterations of the conjugate gradient solver. Otherwise it is only used
 #' when the number of traits is greater than 1, and limits the iterations of
-#' the REML fit.
+#' the REML fit of the multiple trait model.
 #' @param fastMode should the model be solved by preconditioned conjugate
 #' gradient where that is expected to be faster, as it is for large training
 #' populations. The cost of both ways of fitting the model is estimated from
@@ -659,11 +700,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model for genomic predictions. This implementation is
-#' meant for situations where \code{\link{RRBLUP}} is too slow. Note that
-#' RRBLUP2 is only faster in certain situations, see details below. Most
-#' users should use \code{\link{RRBLUP}}.
-#'
+#' Fits the single trait model of \code{\link{RRBLUP}} with variance
+#' components estimated by the EM algorithm, or taken as given. It is meant
+#' for retraining a model cheaply when the variance components are known;
+#' most users should use \code{\link{RRBLUP}}. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -693,6 +733,25 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
+#' \subsection{The model}{
+#' The model is the single trait ridge regression model of
+#' \insertCite{whittaker2000Marker;textual}{AlphaSimR}, applied to
+#' genome-wide markers by
+#' \insertCite{meuwissen2001Prediction;textual}{AlphaSimR},
+#' \deqn{y = X\beta + Mu + e,}
+#' where y holds the records, X is the design matrix of the fixed effects,
+#' formed from the levels of the population's fixEff slot, M holds the
+#' marker dosages, \eqn{u \sim N(0, I\sigma^2_u)} the marker effects and
+#' \eqn{e \sim N(0, I\sigma^2_e)} the errors. The marker effects are the BLUPs
+#' \insertCite{henderson1975Best}{AlphaSimR} given the variance components.
+#' When useEM is TRUE, the variance components are estimated by EM-REML
+#' \insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+#' starting from Vu and Ve and iterating until the change is below tol or
+#' maxIter is reached. When useEM is FALSE, Vu and Ve are taken as the true
+#' values. Only one trait can be modeled.
+#' }
+#'
+#' \subsection{When to use it}{
 #' What RRBLUP2 is for is retraining a model cheaply when the variance
 #' components are already known. Supply Vu and Ve, set useEM to false, and it
 #' solves the mixed model equations directly. A common pattern is to fit
@@ -702,15 +761,16 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' approach, only that it is much faster.
 #'
 #' Do not use RRBLUP2 when the variance components are unknown. It estimates
-#' them with the EM algorithm, which is generally far slower than the EMMA
-#' approach \code{\link{RRBLUP}} uses. The number of iterations is set by
+#' them with the EM algorithm, which is generally far slower than the
+#' spectral REML approach \code{\link{RRBLUP}} uses. The number of iterations is set by
 #' maxIter, whose default is typically too small for convergence. When the
 #' algorithm fails to converge a warning is displayed and the last iteration
 #' is returned. Those results may be good enough, but again we can make no
 #' claim to this effect, because we can not generalize to all possible use
 #' cases.
+#' }
 #'
-#' @section How the model is solved:
+#' \subsection{How the model is solved}{
 #' There are two ways to solve this model and RRBLUP2 uses whichever is
 #' cheaper, so how it behaves as a simulation grows depends on which one it
 #' picks.
@@ -732,6 +792,10 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
 #' cheaper method is taken, so more markers than records is no longer a
 #' problem. \code{\link{RRBLUPMemUse}} takes a useEM argument for this reason
 #' and will tell you what either choice costs.
+#' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -848,8 +912,9 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP Model with Dominance
 #'
 #' @description
-#' Fits an RR-BLUP model for genomic predictions that includes
-#' dominance effects.
+#' Fits an RR-BLUP model for genomic prediction that includes dominance
+#' effects. One trait is fitted with a single trait model and several traits
+#' with a multiple trait model; see details for both.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector
@@ -896,12 +961,53 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' A multiple trait model gives each of the additive and dominance effects,
-#' and the errors, an unstructured covariance matrix among the traits. The
-#' Vu slot of the result then holds the two covariance matrices of the
-#' marker effects as a block diagonal matrix, additive first, with rows and
-#' columns named "a:trait" and "d:trait".
+#' \subsection{The model}{
+#' The model is
+#' \deqn{y = X\beta + hb + M_au_a + M_du_d + e,}
+#' where y holds the records, X is the design matrix of the fixed effects,
+#' formed from the levels of the population's fixEff slot, \eqn{M_a} holds
+#' the additive marker codings and \eqn{M_d} the dominance codings, with
+#' \eqn{u_a} and \eqn{u_d} their effects, and e the errors. h is each
+#' individual's sum of dominance codings, a measure of its genome-wide
+#' heterozygosity, and its fixed regression b captures directional dominance
+#' such as inbreeding depression \insertCite{xiang2016Genomic}{AlphaSimR}.
+#' The marker effects are the BLUPs \insertCite{henderson1975Best}{AlphaSimR}
+#' given variance components estimated by REML
+#' \insertCite{patterson1971Recovery}{AlphaSimR}. The estimated genetic
+#' values use the additive and dominance effects. The estimated breeding
+#' values use the average effects of allele substitution
+#' \insertCite{falconer1996Introduction}{AlphaSimR}, which are worked out
+#' from those effects and the genotype frequencies in the training
+#' population.
+#' }
 #'
+#' \subsection{One trait}{
+#' When traits gives a single trait, or is a function returning a single
+#' value, \eqn{u_a \sim N(0, I\sigma^2_a)}, \eqn{u_d \sim N(0, I\sigma^2_d)}
+#' and \eqn{e \sim N(0, I\sigma^2_e)}. The three variances are estimated by
+#' average information REML
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, with
+#' EM-REML steps taken where an average information step fails to increase
+#' the likelihood, for at most maxIter iterations. The model is fitted in
+#' whichever of two equivalent forms is cheaper: on the variance matrix of the
+#' records when there are fewer records than marker effects, and on
+#' Henderson's mixed model equations otherwise.
+#' }
+#'
+#' \subsection{Several traits}{
+#' When traits gives more than one trait, the traits are fitted together as a
+#' multiple trait model, which needs every trait recorded on every
+#' individual. The additive effects of each marker, its dominance effects and
+#' the errors of each record each have an unstructured covariance matrix
+#' among the traits. These are estimated by REML, with EM steps followed by
+#' Newton steps using the average information matrix
+#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+#' iterations. The Vu slot of the result holds the two covariance matrices
+#' of the marker effects as a block diagonal matrix, additive first, with rows
+#' and columns named "a:trait" and "d:trait".
+#' }
+#'
+#' \subsection{Fast mode}{
 #' Setting fastMode to TRUE gives a fast and low memory alternative for
 #' training populations too large to fit directly. It is used only where it
 #' is expected to be faster, see fastMode. The mixed model equations
@@ -910,9 +1016,11 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
 #' use stays close to the size of the genotypes. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
-#' unless Vu and Ve are supplied, and the marker effects are always solved for
-#' using every record. Given the variance components, the result is the BLUP
-#' of the same model that is fitted when fastMode is FALSE.
+#' with the same method as outside fast mode, unless Vu and Ve are supplied,
+#' and the marker effects are always solved for using every record. Given the
+#' variance components, the result is the BLUP of the same model that is
+#' fitted when fastMode is FALSE.
+#' }
 #'
 #' @references
 #' \insertAllCited{}
@@ -1049,11 +1157,11 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP with Dominance Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model for genomic predictions that includes
-#' dominance effects. This implementation is meant for situations where
-#' \code{\link{RRBLUP_D}} is too slow. Note that RRBLUP_D2
-#' is only faster in certain situations. Most users should use
-#' \code{\link{RRBLUP_D}}.
+#' Fits the single trait model of \code{\link{RRBLUP_D}} with variance
+#' components estimated by the EM algorithm, or taken as given. It is meant
+#' for situations where \code{\link{RRBLUP_D}} is too slow, and is only
+#' faster in certain situations; most users should use
+#' \code{\link{RRBLUP_D}}. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -1065,8 +1173,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param useQtl should QTL genotypes be used instead of a SNP chip.
 #' If TRUE, snpChip specifies which trait's QTL to use, and thus these
 #' QTL may not match the QTL underlying the phenotype supplied in traits.
-#' @param maxIter maximum number of iterations. Only used
-#' when number of traits is greater than 1.
+#' @param maxIter maximum number of iterations of the EM algorithm.
 #' @param Va marker effect variance for additive effects. If value is NULL,
 #' a reasonable starting point is chosen automatically.
 #' @param Vd marker effect variance for dominance effects. If value is NULL,
@@ -1083,6 +1190,37 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #' @param ... additional arguments if using a function for
 #' traits
+#'
+#' @details
+#' \subsection{The model}{
+#' The model is the single trait model of \code{\link{RRBLUP_D}},
+#' \deqn{y = X\beta + hb + M_au_a + M_du_d + e,}
+#' with \eqn{u_a \sim N(0, I\sigma^2_a)}, \eqn{u_d \sim N(0, I\sigma^2_d)}
+#' and \eqn{e \sim N(0, I\sigma^2_e)}, where h is each individual's sum of
+#' dominance codings, fitted as a covariate for inbreeding depression
+#' \insertCite{xiang2016Genomic}{AlphaSimR}. The marker effects are the BLUPs
+#' \insertCite{henderson1975Best}{AlphaSimR} given the variance components.
+#' When useEM is TRUE, the variance components are estimated by EM-REML
+#' \insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+#' starting from Va, Vd and Ve and iterating until the change is below tol or
+#' maxIter is reached. When useEM is FALSE, Va, Vd and Ve are taken as the
+#' true values. Only one trait can be modeled. The estimated breeding values
+#' use average effects of allele substitution, as described for
+#' \code{\link{RRBLUP_D}}.
+#' }
+#'
+#' \subsection{When to use it}{
+#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
+#' model cheaply when the variance components are already known, for
+#' example from an earlier fit of \code{\link{RRBLUP_D}}: supply them and set
+#' useEM to FALSE. The EM algorithm is generally far slower than the average
+#' information REML used by \code{\link{RRBLUP_D}}, and the default maxIter
+#' is typically too small for convergence. When the algorithm fails to
+#' converge a warning is displayed and the last iteration is returned.
+#' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1212,9 +1350,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @description
 #' Fits an RR-BLUP model that estimates separate marker effects for
-#' females and males. Useful for predicting GCA of parents
-#' in single cross hybrids. Can also predict performance of specific
-#' single cross hybrids.
+#' females and males, for predicting the GCA of parents of single cross
+#' hybrids. One trait is fitted with a single trait model and several traits
+#' with a multiple trait model; see details for both.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector
@@ -1261,18 +1399,56 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' The model uses separate maternal and paternal marker dosages from
-#' the training population.
-#' A multiple trait model gives each of the female and male effects, and the
-#' errors, an unstructured covariance matrix among the traits. The Vu slot of
-#' the result then holds those covariance matrices of the marker effects as
-#' a block diagonal matrix, with rows and columns named "female:trait" and "male:trait".
+#' \subsection{The model}{
+#' The model is
+#' \deqn{y = X\beta + M_fu_f + M_mu_m + e,}
+#' where y holds the records, X is the design matrix of the fixed effects,
+#' formed from the levels of the population's fixEff slot, \eqn{M_f} and
+#' \eqn{M_m} hold the marker dosages an individual inherited from its female
+#' and male parents, \eqn{u_f} and \eqn{u_m} their effects, and e the errors.
+#' Fitting separate effects for each parent lets an allele be worth something
+#' different depending on the heterotic pool it came from
+#' \insertCite{massman2013Genomewide,dejong2023Comparison}{AlphaSimR}. The
+#' marker effects are the BLUPs \insertCite{henderson1975Best}{AlphaSimR}
+#' given variance components estimated by REML
+#' \insertCite{patterson1971Recovery}{AlphaSimR}.
+#' }
+#'
+#' \subsection{One trait}{
+#' When traits gives a single trait, or is a function returning a single
+#' value, \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)}
+#' and \eqn{e \sim N(0, I\sigma^2_e)}. The three variances are estimated by
+#' average information REML
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, with
+#' EM-REML steps taken where an average information step fails to increase
+#' the likelihood, for at most maxIter iterations. The model is fitted in
+#' whichever of two equivalent forms is cheaper: on the variance matrix of the
+#' records when there are fewer records than marker effects, and on
+#' Henderson's mixed model equations otherwise.
+#' }
+#'
+#' \subsection{Several traits}{
+#' When traits gives more than one trait, the traits are fitted together as a
+#' multiple trait model, which needs every trait recorded on every
+#' individual. The female effects of each marker, its male effects and the
+#' errors of each record each have an unstructured covariance matrix among
+#' the traits. These are estimated by REML, with EM steps followed by Newton
+#' steps using the average information matrix
+#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+#' iterations. The Vu slot of the result holds the covariance matrices of the
+#' marker effects as a block diagonal matrix, with rows and columns named
+#' "female:trait" and "male:trait".
+#' }
+#'
+#' \subsection{Using the solution}{
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
 #' These model predictions obviously differ from the observed cross means
 #' returned by \code{\link{calcGCA}}.
+#' }
 #'
+#' \subsection{Fast mode}{
 #' Setting fastMode to TRUE gives a fast and low memory alternative for
 #' training populations too large to fit directly. It is used only where it
 #' is expected to be faster, see fastMode. The mixed model equations
@@ -1281,9 +1457,11 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
 #' use stays close to the size of the genotypes. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
-#' unless Vu and Ve are supplied, and the marker effects are always solved for
-#' using every record. Given the variance components, the result is the BLUP
-#' of the same model that is fitted when fastMode is FALSE.
+#' with the same method as outside fast mode, unless Vu and Ve are supplied,
+#' and the marker effects are always solved for using every record. Given the
+#' variance components, the result is the BLUP of the same model that is
+#' fitted when fastMode is FALSE.
+#' }
 #'
 #' @references
 #' \insertAllCited{}
@@ -1427,11 +1605,11 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP GCA Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model that estimates separate marker effects for
-#' females and males. This implementation is meant for situations where
-#' \code{\link{RRBLUP_GCA}} is too slow. Note that RRBLUP_GCA2
-#' is only faster in certain situations. Most users should use
-#' \code{\link{RRBLUP_GCA}}.
+#' Fits the single trait model of \code{\link{RRBLUP_GCA}} with variance
+#' components estimated by the EM algorithm, or taken as given. It is meant
+#' for situations where \code{\link{RRBLUP_GCA}} is too slow, and is only
+#' faster in certain situations; most users should use
+#' \code{\link{RRBLUP_GCA}}. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -1462,13 +1640,41 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' The model uses separate maternal and paternal marker dosages from
-#' the training population.
+#' \subsection{The model}{
+#' The model is the single trait model of \code{\link{RRBLUP_GCA}},
+#' \deqn{y = X\beta + M_fu_f + M_mu_m + e,}
+#' with \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)}
+#' and \eqn{e \sim N(0, I\sigma^2_e)}, where \eqn{M_f} and \eqn{M_m} hold
+#' the marker dosages an individual inherited from its female and male
+#' parents. The marker effects are the BLUPs
+#' \insertCite{henderson1975Best}{AlphaSimR} given the variance components.
+#' When useEM is TRUE, the variance components are estimated by EM-REML
+#' \insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+#' starting from VuF, VuM and Ve and iterating until the change is below tol
+#' or maxIter is reached. When useEM is FALSE, VuF, VuM and Ve are taken as
+#' the true values. Only one trait can be modeled.
+#' }
+#'
+#' \subsection{When to use it}{
+#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
+#' model cheaply when the variance components are already known, for
+#' example from an earlier fit of \code{\link{RRBLUP_GCA}}: supply them and
+#' set useEM to FALSE. The EM algorithm is generally far slower than the
+#' average information REML used by \code{\link{RRBLUP_GCA}}, and the default
+#' maxIter is typically too small for convergence. When the algorithm fails
+#' to converge a warning is displayed and the last iteration is returned.
+#' }
+#'
+#' \subsection{Using the solution}{
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
 #' These model predictions obviously differ from the observed cross means
 #' returned by \code{\link{calcGCA}}.
+#' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1608,8 +1814,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #'
 #' @description
 #' An extension of \code{\link{RRBLUP_GCA}} that adds dominance effects.
-#' Note that we have not seen any consistent benefit of this model over
-#' \code{\link{RRBLUP_GCA}}.
+#' One trait is fitted with a single trait model and several traits with a
+#' multiple trait model; see details for both. Note that we have not seen any
+#' consistent benefit of this model over \code{\link{RRBLUP_GCA}}.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait or traits to model, a vector
@@ -1656,20 +1863,58 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' The model uses separate maternal and paternal marker dosages from
-#' the training population.
-#' A multiple trait model gives each of the female, male and dominance effects, and the
-#' errors, an unstructured covariance matrix among the traits. The Vu slot of
-#' the result then holds those covariance matrices of the marker effects as
-#' a block diagonal matrix, with rows and columns named "female:trait", "male:trait" and "d:trait".
+#' \subsection{The model}{
+#' The model is
+#' \deqn{y = X\beta + hb + M_fu_f + M_mu_m + M_du_d + e,}
+#' where y holds the records, X is the design matrix of the fixed effects,
+#' formed from the levels of the population's fixEff slot, \eqn{M_f} and
+#' \eqn{M_m} hold the marker dosages an individual inherited from its female
+#' and male parents, \eqn{M_d} holds the dominance codings, \eqn{u_f},
+#' \eqn{u_m} and \eqn{u_d} are their effects, and e the errors. h is each
+#' individual's sum of dominance codings, and its fixed regression b
+#' captures directional dominance, as in \code{\link{RRBLUP_D}}. The
+#' dominance effects allow cross-specific deviations from the parents'
+#' GCA \insertCite{massman2013Genomewide}{AlphaSimR}. The marker effects are
+#' the BLUPs \insertCite{henderson1975Best}{AlphaSimR} given variance
+#' components estimated by REML \insertCite{patterson1971Recovery}{AlphaSimR}.
+#' }
+#'
+#' \subsection{One trait}{
+#' When traits gives a single trait, or is a function returning a single
+#' value, \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)},
+#' \eqn{u_d \sim N(0, I\sigma^2_d)} and \eqn{e \sim N(0, I\sigma^2_e)}. The
+#' four variances are estimated by average information REML
+#' \insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, with
+#' EM-REML steps taken where an average information step fails to increase
+#' the likelihood, for at most maxIter iterations. The model is fitted in
+#' whichever of two equivalent forms is cheaper: on the variance matrix of the
+#' records when there are fewer records than marker effects, and on
+#' Henderson's mixed model equations otherwise.
+#' }
+#'
+#' \subsection{Several traits}{
+#' When traits gives more than one trait, the traits are fitted together as a
+#' multiple trait model, which needs every trait recorded on every
+#' individual. The female, male and dominance effects of each marker and the
+#' errors of each record each have an unstructured covariance matrix among
+#' the traits. These are estimated by REML, with EM steps followed by Newton
+#' steps using the average information matrix
+#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+#' iterations. The Vu slot of the result holds the covariance matrices of the
+#' marker effects as a block diagonal matrix, with rows and columns named
+#' "female:trait", "male:trait" and "d:trait".
+#' }
+#'
+#' \subsection{Using the solution}{
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
 #' These model predictions obviously differ from the observed cross means
-#' returned by \code{\link{calcGCA}}.
-#' The dominance terms allow cross-specific deviations,
-#' but SCA's are not returned.
+#' returned by \code{\link{calcGCA}}. The dominance effects contribute to
+#' the predicted genetic value, but SCA's are not returned.
+#' }
 #'
+#' \subsection{Fast mode}{
 #' Setting fastMode to TRUE gives a fast and low memory alternative for
 #' training populations too large to fit directly. It is used only where it
 #' is expected to be faster, see fastMode. The mixed model equations
@@ -1678,10 +1923,11 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
 #' use stays close to the size of the genotypes. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
-#' unless Vu and Ve are supplied, and the marker effects are always solved for
-#' using every record. Given the variance components, the result is the BLUP
-#' of the same model that is fitted when fastMode is FALSE.
-#' Fast mode supports only diploids.
+#' with the same method as outside fast mode, unless Vu and Ve are supplied,
+#' and the marker effects are always solved for using every record. Given the
+#' variance components, the result is the BLUP of the same model that is
+#' fitted when fastMode is FALSE. Fast mode supports only diploids.
+#' }
 #'
 #' @references
 #' \insertAllCited{}
@@ -1829,11 +2075,11 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title RR-BLUP SCA Model 2
 #'
 #' @description
-#' Fits an RR-BLUP model that estimates separate additive effects for
-#' females and males and a dominance effect. This implementation is meant
-#' for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that
-#' RRBLUP_SCA2 is only faster in certain situations. Most users should use
-#' \code{\link{RRBLUP_SCA}}.
+#' Fits the single trait model of \code{\link{RRBLUP_SCA}} with variance
+#' components estimated by the EM algorithm, or taken as given. It is meant
+#' for situations where \code{\link{RRBLUP_SCA}} is too slow, and is only
+#' faster in certain situations; most users should use
+#' \code{\link{RRBLUP_SCA}}. See details.
 #'
 #' @param pop a \code{\link{Pop-class}} to serve as the training population
 #' @param traits an integer indicating the trait to model, a trait name, or a
@@ -1866,15 +2112,43 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
 #' traits
 #'
 #' @details
-#' The model uses separate maternal and paternal marker dosages from
-#' the training population.
+#' \subsection{The model}{
+#' The model is the single trait model of \code{\link{RRBLUP_SCA}},
+#' \deqn{y = X\beta + hb + M_fu_f + M_mu_m + M_du_d + e,}
+#' with \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)},
+#' \eqn{u_d \sim N(0, I\sigma^2_d)} and \eqn{e \sim N(0, I\sigma^2_e)}, where
+#' \eqn{M_f} and \eqn{M_m} hold the marker dosages an individual inherited
+#' from its female and male parents, \eqn{M_d} the dominance codings, and h
+#' is each individual's sum of dominance codings. The marker effects are the
+#' BLUPs \insertCite{henderson1975Best}{AlphaSimR} given the variance
+#' components. When useEM is TRUE, the variance components are estimated by
+#' EM-REML \insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+#' starting from VuF, VuM, VuD and Ve and iterating until the change is below
+#' tol or maxIter is reached. When useEM is FALSE, VuF, VuM, VuD and Ve are
+#' taken as the true values. Only one trait can be modeled.
+#' }
+#'
+#' \subsection{When to use it}{
+#' As with \code{\link{RRBLUP2}}, the use for this function is retraining a
+#' model cheaply when the variance components are already known, for
+#' example from an earlier fit of \code{\link{RRBLUP_SCA}}: supply them and
+#' set useEM to FALSE. The EM algorithm is generally far slower than the
+#' average information REML used by \code{\link{RRBLUP_SCA}}, and the default
+#' maxIter is typically too small for convergence. When the algorithm fails
+#' to converge a warning is displayed and the last iteration is returned.
+#' }
+#'
+#' \subsection{Using the solution}{
 #' The solution can be applied with \code{\link{setEBV}}:
 #' \code{value="female"} or \code{value="male"} gives parental
 #' predictions, while \code{value="gv"} predicts total hybrid genetic value.
 #' These model predictions obviously differ from the observed cross means
-#' returned by \code{\link{calcGCA}}.
-#' The dominance terms allow cross-specific deviations,
-#' but SCA's are not returned.
+#' returned by \code{\link{calcGCA}}. The dominance effects contribute to
+#' the predicted genetic value, but SCA's are not returned.
+#' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
