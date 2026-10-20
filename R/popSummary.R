@@ -306,7 +306,7 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #' populations.
 #'
 #' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
-#' @param level Integer scalar \code{>= 0} indicating the requested aggregation
+#' @param level Integer scalar \eqn{\ge 0} indicating the requested aggregation
 #'   level (see Details).
 #'
 #' @details
@@ -319,8 +319,7 @@ meanEBV = function(pop, simplify = FALSE, level = 1L){
 #'   and values indicating the name or index of the population at each
 #'   nesting level.  \cr
 #' - When \code{level=0}, the function returns a numeric vector giving the
-#'   overall mean-of-means across all branches for each trait. Any
-#'   \code{level<0} is treated as \code{level=0}.
+#'   overall mean-of-means across all branches for each trait.
 #'
 #' @seealso
 #' \code{\link{meanG}}, \code{\link{gv}}, \code{\link{calcPopSummary}}
@@ -371,7 +370,7 @@ meanGPop = function(x, level = 0) {
 #' populations.
 #'
 #' @param x A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.
-#' @param level Integer scalar \code{>= 0} indicating the requested aggregation
+#' @param level Integer scalar \eqn{\ge 0} indicating the requested aggregation
 #'   level (see Details).
 #'
 #' @details
@@ -384,8 +383,7 @@ meanGPop = function(x, level = 0) {
 #'   and values indicating the name or index of the population at each
 #'   nesting level.  \cr
 #' - When \code{level=0}, the function returns a numeric vector giving the
-#'   overall mean-of-means across all branches for each trait. Any
-#'   \code{level<0} is treated as \code{level=0}.
+#'   overall mean-of-means across all branches for each trait.
 #' 
 #' @seealso
 #' \code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}},
@@ -720,6 +718,7 @@ varGPop = function(x, level = 1L) {
 #' founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(10)
+#' SP$setVarE(h2 = 0.5)
 #' \dontshow{SP$nThreads = 1L}
 #' pop = newPop(founderPop, simParam = SP)
 #'

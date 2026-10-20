@@ -40,6 +40,7 @@ returns a variance-covariance matrix of zeros and issues a warning.
 founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
+SP$setVarE(h2 = 0.5)
 \dontshow{SP$nThreads = 1L}
 pop = newPop(founderPop, simParam = SP)
 
