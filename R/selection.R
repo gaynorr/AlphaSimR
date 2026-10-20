@@ -1642,7 +1642,7 @@ selectMultiPop = function(
 
   # Candidates tied at the selection boundary are retained or removed
   # according to their existing order in the MultiPop hierarchy.
-  drop = ranking[-seq_len(nMulti)]
+  drop = sort(ranking[-seq_len(nMulti)], decreasing = TRUE)
   for (i in drop) {
     x = .stripPop(x, src[i, , drop = TRUE])
   }
@@ -1780,6 +1780,9 @@ selectMultiPop = function(
         "` must return a non-empty numeric vector or one-row matrix ",
         "without missing values."
       )
+    }
+    if (is.matrix(value)) {
+      value = setNames(as.vector(value), colnames(value))
     }
     return(value)
   }
