@@ -1532,3 +1532,41 @@ test_that("selectMultiPop propagates getResponse errors", {
   )
 })
 
+test_that("selectMultiPop uses positional paths for partially named objects", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = splitPop(
+    pop,
+    by = data.frame(
+      rep(c("A", "B"), each = 8),
+      rep(c("R1", "R2"), length.out = 16),
+      row.names = pop@id
+    )
+  )
+
+  # Remove one name to create a partially named hierarchy
+  names(mp)[2] = NA
+
+  useID = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 1,
+    level = 2,
+    use = useID,
+    selectTop = FALSE,
+    simParam = SP
+  )
+
+  expect_true(isMultiPop(selected))
+  expect_equal(
+    sum(vapply(selected@pops, length, integer(1))),
+    1L
+  )
+})

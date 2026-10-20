@@ -1607,7 +1607,9 @@ selectMultiPop = function(
   }
 
   candidateScores = calcPopSummary(
-    x,
+    # Remove names so that source paths contain positional indices.
+    # These paths are later used to prune the original MultiPop object.
+    x = unnameMultiPop(x),
     withinPopFUN = summarizeResponse,
     acrossPopFUN = acrossPopFUN,
     acrossPopArgs = acrossPopArgs,
