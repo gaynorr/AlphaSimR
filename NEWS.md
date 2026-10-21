@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9022
+# AlphaSimR 2.1.0.9023
 
 * Added an article on storing individual and population metadata in `misc` and `miscPop`, and their behavior under subsetting and merging.
 
