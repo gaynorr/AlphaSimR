@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9022
 
+* Added an article on storing individual and population metadata in `misc` and `miscPop`, and their behavior under subsetting and merging.
+
 * Split the `SimParam` help page into one page per method. The `SimParam` page now describes the object and how to create it, lists its methods grouped by task with a link to each method's page, and has an example that sets up a simulation step by step. Each method's page, such as `?"SimParam$addTraitA"`, gives its usage, arguments and examples. Links between pages work in every help viewer, where links within one page did not. The description and most arguments of `addTraitAD` were missing from its help because of a formatting error, and are now shown. The methods `addToRec`, `ibdHaplo`, `updateLastId` and `addToPed` are for AlphaSimR's own use and are no longer documented; they still work as before.
 
 * Moved the "Quantitative Genetics in AlphaSimR", "Genetic Recombination in AlphaSimR" and "General and Specific Combining Ability in AlphaSimR" vignettes out of the package and onto the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, so that the package keeps the vignettes most useful when starting out. They can no longer be opened with `vignette()`, and the help pages and remaining vignettes that referred to them now link to the website. The help pages of `runMacs`, `runMacs2` and `gv` linked to articles that were already only on the website, and the package help page named a vignette that does not exist; these now point to the right place.
@@ -20,6 +22,8 @@
   * `RRBLUPMemUse` takes `fastMode` for `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`. For 100,000 records and 10,000 markers it estimates 3 GB for the fast mode of `RRBLUP_D` or `RRBLUP_GCA` against 49 GB for the default mode, and on 8 threads fast mode took 136 seconds for `RRBLUP_D` and 102 seconds for `RRBLUP_GCA`.
 
 * Fixed `RRBLUP` failing with "argument is of length zero" when `traits` is a function returning a plain vector, which it now treats as one column as the other models do.
+
+* Fixed `mergePops` failing with 'invalid class "Pop" object' when given a named list of populations whose `misc` slot holds a `Pop`.
 
 * Removed `fastRRBLUP`, which is now the fast mode of `RRBLUP`. Call `RRBLUP` with `fastMode=TRUE` in its place; its arguments `Vu`, `Ve` and `nSubsample` are now arguments of `RRBLUP`, and `maxIter` limits the conjugate gradient iterations in fast mode. When fast mode is used, results, including results from a seed, are exactly the same as from `fastRRBLUP`, but `fastMode=TRUE` now uses fast mode only where it is expected to be faster, as described below. With the default `fastMode=FALSE`, `RRBLUP` behaves as before, and gives an error if `Vu` or `Ve` is supplied, because it always estimates them. `RRBLUPMemUse` takes `fastMode` for the fast mode of `RRBLUP`, and still accepts `model="fastRRBLUP"`, which it reads as `model="RRBLUP"` with `fastMode=TRUE`. Error messages from the fast mode now begin with "RRBLUP fastMode:" rather than "fastRRBLUP:".
 

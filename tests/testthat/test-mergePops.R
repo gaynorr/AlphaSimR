@@ -259,6 +259,41 @@ test_that("Merging preserves GxE values in population order", {
   expect_equal(withEmpty@nInd,pop@nInd)
 })
 
+test_that("MERGE a Pop held in misc from a named popList preserves vector names", {
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  pop@misc$p = pop
+  pop@misc$m = matrix(1:8, nrow=4)
+  pop@misc$value = 1:4
+  pop@misc$valueNamed = setNames(1:4, letters[1:4])
+  # Names on the list became argument names to c(), which then dispatched
+  # to the default method and returned a list in place of a Pop.
+  outPop = mergePops(list(pop[1:2], pop[3:4]))
+  outPopNamed = mergePops(list(a=pop[1:2], b=pop[3:4]))
+  expect_true(validObject(outPop))
+  expect_true(validObject(outPopNamed))
+  expect_identical(outPop@misc$p, pop@misc$p)
+  expect_identical(outPopNamed@misc$p, pop@misc$p)
+  expect_identical(outPop@misc$m, pop@misc$m)
+  expect_identical(outPopNamed@misc$m, pop@misc$m)
+  # Ordinary vectors retain source prefixes; while matrices and S4 call arguments are unnamed
+  expect_identical(outPop@misc$value, c(1L, 2L, 3L, 4L))
+  expect_identical(outPopNamed@misc$value, c(a1=1L, a2=2L, b1=3L, b2=4L))
+  expect_identical(outPop@misc$valueNamed, c(a=1L, b=2L, c=3L, d=4L))
+  expect_identical(outPopNamed@misc$valueNamed, c(a.a=1L, a.b=2L, b.c=3L, b.d=4L))
+  # The same but with c() rather than mergePops().
+  # Not testing c(a=pop[1:2], b=pop[3:4]) because that returns a list,
+  # which we test above with mergePops(list(a=pop[1:2], b=pop[3:4])).
+  outPop = c(pop[1:2], pop[3:4])
+  expect_true(validObject(outPop))
+  expect_identical(outPop@misc$p, pop@misc$p)
+  expect_identical(outPop@misc$m, pop@misc$m)
+  expect_identical(outPop@misc$value, c(1L, 2L, 3L, 4L))
+  expect_identical(outPop@misc$valueNamed, c(a=1L, b=2L, c=3L, d=4L))
+})
+
 test_that("AGREE merged genotypes with arrays bound together in R", {
   set.seed(6029)
   # 13 sites leave the last byte of each haplotype part full, and a

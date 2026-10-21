@@ -674,14 +674,14 @@ local({
 
   # ---- Imprinting genotypic effect contributions to genetic values ----
 
-  test_that("genParam: Imprinting genotypic effect contributions to genetic values", {
-    skip("TODO: add tests for this section")
-  })
+  # test_that("genParam: Imprinting genotypic effect contributions to genetic values", {
+  #   skip("TODO: add tests for genParam: Imprinting genotypic effect contributions to genetic values")
+  # })
 
   # ---- Genotype-by-environment effect contributions to genetic values ----
 
   test_that("genParam: Genotype-by-environment effect contributions to genetic values", {
-    skip("TODO: add tests for this section")
+    skip("TODO: add tests for genParam: Genotype-by-environment effect contributions to genetic values")
   })
 
   # ---- Genetic value decomposition with breeding value parameterization ----
@@ -1344,15 +1344,15 @@ local({
 
   # ---- Imprinting deviation (idealized population) ----
 
-  test_that("genParam: Imprinting deviation (idealized population)", {
-    skip("Imprinting traits and a genParam imprinting output are not implemented")
-  })
+  # test_that("genParam: Imprinting deviation (idealized population)", {
+  #   skip("TODO: add tests for genParam: Imprinting deviation (idealized population)")
+  # })
 
   # ---- Imprinting deviation (observed population) ----
 
-  test_that("genParam: Imprinting deviation (observed population)", {
-    skip("Imprinting traits and a genParam imprinting output are not implemented")
-  })
+  # test_that("genParam: Imprinting deviation (observed population)", {
+  #   skip("TODO: add tests for genParam: Imprinting deviation (observed population)")
+  # })
 
   # ---- Non-additive deviation (idealized population) ----
 
@@ -1985,21 +1985,21 @@ local({
 
   # ---- Imprinting genetic variance (observed population) ----
 
-  test_that("genParam: Imprinting genetic variance (observed population)", {
-    skip("TODO: add tests for this section")
-  })
+  # test_that("genParam: Imprinting genetic variance (observed population)", {
+  #   skip("TODO: add tests for Imprinting genetic variance (observed population)")
+  # })
 
   # ---- Imprinting genetic variance (linkage-equilibrium population) ----
 
-  test_that("genParam: Imprinting genetic variance (linkage-equilibrium population)", {
-    skip("TODO: add tests for this section")
-  })
+  # test_that("genParam: Imprinting genetic variance (linkage-equilibrium population)", {
+  #   skip("TODO: add tests for Imprinting genetic variance (linkage-equilibrium population)")
+  # })
 
   # ---- Imprinting genetic variance (idealized population) ----
 
-  test_that("genParam: Imprinting genetic variance (idealized population)", {
-    skip("TODO: add tests for this section")
-  })
+  # test_that("genParam: Imprinting genetic variance (idealized population)", {
+  #   skip("TODO: add tests for Imprinting genetic variance (idealized population)")
+  # })
 
   # ---- Non-additive genetic variance (observed population) ----
 

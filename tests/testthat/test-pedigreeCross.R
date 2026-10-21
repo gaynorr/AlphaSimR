@@ -490,27 +490,42 @@ test_that("MATCHID needs no founder budget", {
 # ---------------------------------------------------------------------------
 
 test_that("MAP a MapPop means no simulation has been set up yet", {
-  d = pedSP(nInd=4, seed=14001)
-  p = biparentalPed()
-  expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
+  # Isolate the no-simulation case from an interactive session's global SP.
+  checkWithoutSP = function(){
+    hadSP = exists("SP", envir=globalenv(), inherits=FALSE)
+    oldSP = get0("SP", envir=globalenv(), inherits=FALSE)
+    on.exit({
+      if(hadSP){
+        assign("SP", oldSP, envir=globalenv())
+      }else if(exists("SP", envir=globalenv(), inherits=FALSE)){
+        rm("SP", envir=globalenv())
+      }
+    })
+    if(hadSP) rm("SP", envir=globalenv())
 
-  set.seed(505)
-  out = pedigreeCross(d$map, p$id, p$mother, p$father)
+    d = pedSP(nInd=4, seed=14001)
+    p = biparentalPed()
+    expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
 
-  expect_true(isNamedMapPop(out))
-  expect_false(isPop(out))
-  expect_equal(nInd(out), 10L)
-  expect_equal(out@id, p$id)
-  expect_equal(out@genMap, d$map@genMap)
-  expect_true(isTRUE(validObject(out, test=TRUE)))
-  expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
+    set.seed(505)
+    out = pedigreeCross(d$map, p$id, p$mother, p$father)
 
-  geno = pullSegSiteGeno(out)
-  for(i in 3:10){
-    m = match(p$mother[i], p$id)
-    f = match(p$father[i], p$id)
-    expect_mendelian(geno[i,], geno[m,], geno[f,], label=paste("individual", i))
+    expect_true(isNamedMapPop(out))
+    expect_false(isPop(out))
+    expect_equal(nInd(out), 10L)
+    expect_equal(out@id, p$id)
+    expect_equal(out@genMap, d$map@genMap)
+    expect_true(isTRUE(validObject(out, test=TRUE)))
+    expect_false(exists("SP", envir=globalenv(), inherits=FALSE))
+
+    geno = pullSegSiteGeno(out)
+    for(i in 3:10){
+      m = match(p$mother[i], p$id)
+      f = match(p$father[i], p$id)
+      expect_mendelian(geno[i,], geno[m,], geno[f,], label=paste("individual", i))
+    }
   }
+  checkWithoutSP()
 })
 
 test_that("MAP the returned map population starts a simulation", {

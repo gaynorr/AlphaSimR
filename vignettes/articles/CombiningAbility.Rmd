@@ -1,5 +1,6 @@
 ---
 title: "General and Specific Combining Ability in AlphaSimR"
+author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
@@ -66,8 +67,8 @@ s_{ij} &= M_{ij} - \mu - g_{F_i} - g_{M_j}.
 \end{aligned}
 $$
 
-The centered GCA effects are $g_{F_i}$ and $g_{M_j}$, and the SCA
-deviation is $s_{ij}$.
+The centered GCA effects are $g_{F_i}$ and $g_{M_j}$,
+and the SCA deviation is $s_{ij}$.
 Thus:
 
 $$M_{ij} = \mu + g_{F_i} + g_{M_j} + s_{ij}.$$
@@ -101,7 +102,6 @@ genotype, so its genetic value also represents its family mean.
 set.seed(1942)
 founders = quickHaplo(nInd=12, nChr=2, segSites=40, inbred=TRUE)
 SPgca = SimParam$new(founders)
-SPgca$nThreads = 1L
 SPgca$addTraitAD(nQtlPerChr=20, mean=10, meanDD=0.8, varDD=0.2)
 parents = newPop(founders, simParam=SPgca)
 females = parents[1:6]
