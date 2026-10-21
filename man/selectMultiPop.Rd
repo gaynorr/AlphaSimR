@@ -47,17 +47,21 @@ at \code{level}. The function must work on each \code{pop} at
 Selects lowest values if \code{FALSE}.}
 
 \item{withinPopFUN}{a function used to summarize individual responses
-within each \code{Pop} object. The function is applied to the vector of
-selection criterion values per population and returns one summary value.
-Default is \code{\link{mean}}.}
+within each \code{Pop} object. It receives the selection criterion
+values of one population, with one element per individual. These come
+as a one-column matrix when \code{trait} is a trait number or name, or
+when \code{use = "rand"}, and as whatever the function returns when
+\code{trait} is a function, usually a vector. It must return one
+summary value. Default is \code{\link{mean}}.}
 
 \item{withinPopArgs}{a list of additional arguments passed to
 \code{withinPopFUN}}
 
 \item{acrossPopFUN}{a function used to aggregate population summaries
-across the immediate children of each \code{MultiPop} object. The
-function is applied to a vector of population summary values and returns
-one aggregated value. Default is \code{\link{mean}}.}
+across the immediate children of each \code{MultiPop} object. It
+receives a one-column numeric matrix with one row per child, holding
+the children's summary values, and must return one aggregated value.
+Default is \code{\link{mean}}.}
 
 \item{acrossPopArgs}{a list of additional arguments passed to
 \code{acrossPopFUN}}
