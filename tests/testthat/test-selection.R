@@ -1279,7 +1279,11 @@ test_that("selectMultiPop passes summary arguments", {
   SP$addTraitA(10)
 
   pop = newPop(founderPop, simParam = SP)
-  mp = splitPop(pop, by = rep(LETTERS[1:4], each = 4))
+  mp = splitPop(pop, by = data.frame(
+    level1 = rep(LETTERS[1:4], each = 4),
+    level2 = rep(c('R1', 'R2'), length.out = pop@nInd),
+    row.names = pop@id
+  ))
 
   idResponse = function(pop, trait = NULL) {
     as.numeric(pop@id)
@@ -1620,4 +1624,38 @@ test_that("selectMultiPop uses positional paths for partially named objects", {
     sum(vapply(selected@pops, length, integer(1))),
     1L
   )
+})
+
+test_that("selectMultiPop removes nested siblings without index shifting", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    newMultiPop(
+      pop[1:4],
+      pop[5:8],
+      pop[9:12],
+      pop[13:16]
+    )
+  )
+
+  idResponse = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 2,
+    level = 2,
+    use = idResponse,
+    selectTop = TRUE,
+    simParam = SP
+  )
+
+  expect_equal(length(selected[[1]]), 2L)
+  expect_equal(selected[[1]][[1]]@id, pop[9:12]@id)
+  expect_equal(selected[[1]][[2]]@id, pop[13:16]@id)
 })
