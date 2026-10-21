@@ -266,6 +266,15 @@
 #' in the training population, so its best linear unbiased prediction is
 #' the average of its parents', which is what \code{\link{setEBV}} uses.
 #'
+#' A fit is tied to the pedigree it was fitted to. Once
+#' \code{\link[=SimParam-resetPed]{resetPed}} discards any of its
+#' individuals, new individuals can take their internal IDs, so
+#' \code{\link{setEBV}} refuses the fit and the model must be fitted again.
+#' A reset that keeps every fitted individual does not affect it. For the
+#' same reason, \code{pedBLUP} and \code{\link{setEBV}} with its output
+#' need a \code{\link{SimParam}} created by this version of AlphaSimR or
+#' later, which records resets, and refuse one saved by an older version.
+#'
 #' @return Returns an object of \code{\link{PedSol-class}}
 #'
 #' @references

@@ -2599,7 +2599,11 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' the training population, or on targetPop when it is supplied. Values
 #' "female" and "male" are not available. Individuals that were not in
 #' the fitted pedigree get the average of their parents' estimates, which
-#' is their best linear unbiased prediction.
+#' is their best linear unbiased prediction. Such a fit is refused once
+#' \code{\link[=SimParam-resetPed]{resetPed}} has discarded any of its
+#' individuals, whose internal IDs can then belong to others, and with a
+#' \code{\link{SimParam}} saved by an older version of AlphaSimR, which
+#' does not record resets.
 #'
 #' @return Returns an object of \code{\link{Pop-class}} if
 #' onlyValues=FALSE, if onlyValues=TRUE a matrix is returned
