@@ -212,6 +212,13 @@ reference:
   - getQtlMap
   - getSnpMap
 
+- title: Pedigree relationships
+  desc: >
+    Relationships and inbreeding calculated from the recorded pedigree.
+  contents:
+  - pedigreeA
+  - pedigreeInbreeding
+
 - title: Records and export
   contents:
   - getPed
