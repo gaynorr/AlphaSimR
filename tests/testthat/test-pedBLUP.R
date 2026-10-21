@@ -283,6 +283,59 @@ test_that("GIVEN variance components need no residual degrees of freedom", {
                "no records")
 })
 
+test_that("CONSTANT records need given variance components", {
+  # Records that do not vary within the levels of the fixed effects leave
+  # nothing for REML to estimate, but fit with given components
+  set.seed(9208)
+  founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  expect_error(AlphaSimR:::.fitPedBLUP(c(5, 5), pop@iid, c(1L, 1L), 2L,
+                                       simParam=SP),
+               "do not vary")
+  ans = AlphaSimR:::.fitPedBLUP(c(5, 5), pop@iid, c(1L, 1L), 2L, Vu=1,
+                                Ve=1, simParam=SP)
+  expect_equal(ans$ebv, c(0, 0))
+  expect_equal(unname(ans$fixEff), 5)
+})
+
+test_that("INBRED highly inbred selfed siblings keep their own breeding values", {
+  # After 33 generations of selfing, a selfed offspring's Mendelian
+  # sampling variance is 2^-34, which is genuine and must not be taken for
+  # rounding error
+  set.seed(9209)
+  founderPop = quickHaplo(nInd=1, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  for(g in 1:33){
+    pop = self(pop, simParam=SP)
+  }
+  sibs = self(pop, nProgeny=2, simParam=SP)
+  ped = SP$pedigree
+  ans = AlphaSimR:::calcPedAinvTriplet(ped[,1], ped[,2], ped[,3])
+  expect_true(all(sibs@iid %in% ans$basis))
+  expect_equal(ans$D[sibs@iid], rep(2^-34, 2))
+  # With the variance treated as zero, the siblings' breeding values were
+  # forced to be equal, whatever Ve. With Ve comparable to it, each takes
+  # about D/(D+Ve) of its deviation from their mean.
+  y = c(1, -1)
+  fitted = AlphaSimR:::.fitPedBLUP(y, sibs@iid, c(1L, 1L), 2L, Vu=1,
+                                   Ve=1e-10, simParam=SP)
+  pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
+  A = AlphaSimR:::calcPedA(pp$mother, pp$father, pp$isDH)
+  Z = matrix(0, 2, length(pp$iid))
+  Z[cbind(1:2, pp$row)] = 1
+  ref = denseBLUP(y, matrix(1, 2, 1), Z, A, 1, 1e-10)
+  u = fitted$ebv[pp$row]
+  expect_equal(u, ref$u[pp$row], tolerance=1e-6)
+  expect_equal(u[1], 2^-34/(2^-34+1e-10), tolerance=1e-4)
+  expect_equal(u[1], -u[2], tolerance=1e-6)
+})
+
 # 6. Errors ----
 
 test_that("ERROR inputs are checked", {

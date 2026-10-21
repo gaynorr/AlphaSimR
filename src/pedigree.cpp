@@ -2,6 +2,7 @@
 #include "pedigree.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 // Numerator relationships from a pedigree: inbreeding coefficients and
@@ -30,14 +31,18 @@
 
 namespace {
 
-// Mendelian sampling variances at or below this are treated as zero. Exact
-// zeros arise from fully inbred parents, whose inbreeding coefficient of 1
-// is set rather than computed, but an inbreeding coefficient that comes out
-// of the computation a rounding error short of 1, as for a self of a
-// doubled haploid, leaves a variance of the order of 1e-16. Taken as a
-// genuine variance, its reciprocal would put a coefficient of 1e16 into the
-// inverse.
-const double minVarD = 1e-10;
+// Mendelian sampling variances at or below this are treated as zero. Zeros
+// arise from fully inbred parents, whose inbreeding coefficient of 1 is
+// set, or computed exactly, but an inbreeding coefficient that comes out a
+// rounding error short of 1 leaves a variance of a few units in the last
+// place, as inbreeding coefficients are at most 1. Taken as a genuine
+// variance, its reciprocal would put a coefficient of the order of 1e16
+// into the inverse. Genuine variances can be small but are far larger
+// than that: selfing halves an individual's distance from full inbreeding
+// each generation, so it takes about 46 generations of selfing from an
+// outbred individual to reach this cutoff, by which time the individual
+// is a clone of its parent to the precision of a double.
+const double minVarD = 64.0*std::numeric_limits<double>::epsilon();
 
 // A sparse row as (column, value) pairs
 typedef std::vector<std::pair<arma::uword,double> > SpRow;

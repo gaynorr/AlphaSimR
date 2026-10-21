@@ -60,6 +60,15 @@
   # share a large offset.
   levelMean = as.vector(tapply(y, fix, mean))
   yc = y - levelMean[as.integer(fix)]
+  # Records that do not vary within the levels leave nothing to divide
+  # between the two variances, and the likelihood takes the logarithm of
+  # zero. Centering such records leaves at most a few units in the last
+  # place of the records' size.
+  if(is.null(Vu) &&
+     (max(abs(yc)) <= 8*.Machine$double.eps*max(1, abs(y)))){
+    stop("the records do not vary within the levels of the fixed effects, so the variance components cannot be estimated; supply Vu and Ve",
+         call.=FALSE)
+  }
 
   mme = calcPedMME(ped$mother, ped$father, ped$isDH, ped$row,
                    as.integer(fix), yc, .pedF(ped, simParam), ped$ploidy)
