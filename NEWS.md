@@ -153,7 +153,9 @@
 
 * Added `flattenMultiPop()` function to reduce the depth of a nested MultiPop object up to a defined `level`.
 
-* Added `selectMultiPop()` function to select a subset of MultiPops from a nested MultiPop. This function uses the new internal `calcPopSummary()` function to calculate an aggregated summary value in the hierarchical structure, which is then used for selection.
+* Added `calcPopSummary()` function to calculate summaries within the Pops of a nested MultiPop and aggregate them across the hierarchy up to a defined `level`.
+
+* Added `selectMultiPop()` function to select a subset of MultiPops from a nested MultiPop. This function uses `calcPopSummary()` to calculate an aggregated summary value in the hierarchical structure, which is then used for selection.
 
 * Added `selectPop()` function to select a subset of populations from a MultiPop. This function uses the new internal `calcPopValue()` function to calculate a summary value for each population, which is then used for selection.
 

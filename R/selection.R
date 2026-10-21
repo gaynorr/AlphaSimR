@@ -379,6 +379,7 @@ calcPopValue = function(
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(nQtlPerChr = 10)
 #' SP$setVarE(h2 = 0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' pop = newPop(founderPop, simParam = SP)
 #'
@@ -1495,6 +1496,7 @@ selectPop = function(
 #' SP = SimParam$new(founderPop)
 #' SP$addTraitA(nQtlPerChr = 20)
 #' SP$setVarE(h2 = 0.5)
+#' \dontshow{SP$nThreads = 1L}
 #'
 #' pop = newPop(founderPop, simParam = SP)
 #'
@@ -1781,6 +1783,12 @@ selectMultiPop = function(
         "without missing values."
       )
     }
+    # A one-row matrix becomes a named vector, so that every summary is
+    # compared and returned in the same form regardless of which shape the
+    # user-supplied function chose.
+    if (is.matrix(value)) {
+      value = setNames(as.vector(value), colnames(value))
+    }
     return(value)
   }
 
@@ -1842,7 +1850,7 @@ selectMultiPop = function(
     )
     
     aggregated = normalizeSummary(aggregated, "acrossPopFUN")
-    
+
     # Aggregation must preserve the summary columns. This is important
     # for unbalanced hierarchies, where aggregated MultiPop summaries
     # may later be combined with terminal Pop summaries.
@@ -1852,9 +1860,32 @@ selectMultiPop = function(
         "produced by `withinPopFUN`."
       )
     }
-    
-    # Preserve column names after aggregation
-    names(aggregated) = colnames(childSummaryMatrix)
+
+    # Names returned by acrossPopFUN say which column each value belongs
+    # to, so they are checked rather than overwritten. A permutation of the
+    # columns is put back in order by name. Unnamed results, such as those
+    # from mean(), are assumed to follow the column order and take the
+    # column names.
+    columnNames = colnames(childSummaryMatrix)
+    aggregatedNames = names(aggregated)
+    if (
+      !is.null(columnNames) &&
+        !is.null(aggregatedNames) &&
+        !identical(aggregatedNames, columnNames)
+    ) {
+      if (
+        anyDuplicated(columnNames) ||
+          anyDuplicated(aggregatedNames) ||
+          !setequal(aggregatedNames, columnNames)
+      ) {
+        stop(
+          "`acrossPopFUN` returned names that do not match the columns ",
+          "produced by `withinPopFUN`."
+        )
+      }
+      aggregated = aggregated[columnNames]
+    }
+    names(aggregated) = columnNames
     return(aggregated)
   }
   return(childSummaryMatrix)

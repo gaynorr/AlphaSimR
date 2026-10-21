@@ -1003,7 +1003,7 @@ test_that("calcPopSummary rejects empty MultiPop objects", {
   )
 })
 
-test_that("calcPopSummary rejects empty MultiPop objects", {
+test_that("selectMultiPop rejects empty Pop and MultiPop members", {
   founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
   SP = SimParam$new(founderPop)
   SP$addTraitA(10)
@@ -1059,6 +1059,74 @@ test_that("calcPopSummary preserves scalar summary names after aggregation", {
   )
 
   expect_equal(names(result), "90%")
+})
+
+test_that("calcPopSummary checks names returned by acrossPopFUN", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  # The nested branch is aggregated and then combined with a terminal Pop,
+  # so a mislabeled aggregate would reach the overall summary.
+  mp = newMultiPop(
+    newMultiPop(pop[1:4], pop[5:8]),
+    pop[9:16]
+  )
+  within = function(x) {
+    c(first = nInd(x), second = mean(x@iid))
+  }
+  expected = calcPopSummary(
+    mp,
+    withinPopFUN = within,
+    acrossPopFUN = colMeans,
+    level = 0
+  )
+  expect_equal(expected, c(first = 6, second = 8.5))
+
+  # Reordered named output is matched to the columns by name.
+  reversed = calcPopSummary(
+    mp,
+    withinPopFUN = within,
+    acrossPopFUN = function(x) rev(colMeans(x)),
+    level = 0
+  )
+  expect_equal(reversed, expected)
+
+  # A one-row matrix without column names takes the column names and is
+  # returned as a vector.
+  unnamedMatrix = calcPopSummary(
+    mp,
+    withinPopFUN = within,
+    acrossPopFUN = function(x) matrix(colMeans(x), nrow = 1),
+    level = 0
+  )
+  expect_null(dim(unnamedMatrix))
+  expect_equal(unnamedMatrix, expected)
+
+  # A one-row matrix from withinPopFUN is returned as a named vector.
+  popSummary = calcPopSummary(
+    pop,
+    withinPopFUN = function(x) t(within(x)),
+    acrossPopFUN = colMeans
+  )
+  expect_null(dim(popSummary))
+  expect_equal(popSummary, within(pop))
+
+  expect_error(
+    calcPopSummary(
+      mp,
+      withinPopFUN = within,
+      acrossPopFUN = function(x) c(a = 1, b = 2),
+      level = 0
+    ),
+    paste0(
+      "`acrossPopFUN` returned names that do not match the columns ",
+      "produced by `withinPopFUN`."
+    ),
+    fixed = TRUE
+  )
 })
 
 test_that("selectMultiPop selects populations at different levels", {
@@ -1736,7 +1804,7 @@ test_that(".stripPops removes multiple paths and prunes empty parents", {
     )
   )
 
-  result = .stripPops(
+  result = AlphaSimR:::.stripPops(
     mp,
     paths = rbind(
       c(1L, 1L),
@@ -1787,7 +1855,7 @@ test_that(".stripPops handles paths ending at different levels", {
     third = pop[13:16]
   )
 
-  result = .stripPops(
+  result = AlphaSimR:::.stripPops(
     mp,
     paths = rbind(
       c(1L, 2L),
