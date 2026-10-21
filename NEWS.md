@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9022
 
+* Added an article on storing individual and population metadata in `misc` and `miscPop`, and their behavior under subsetting and merging.
+
 * Shortened the `SimParam` help page. It now opens with a list of its methods grouped by task, linked to each method's section, and a single example that sets up a simulation step by step. That example replaces the separate examples of 17 methods, each of which repeated the same setup. The methods with examples that show something particular to them, `resetPed`, `altAddTraitAD`, `importTrait`, `setCorE` and `rescaleTraits`, keep their own.
 
 * Moved the "Quantitative Genetics in AlphaSimR", "Genetic Recombination in AlphaSimR" and "General and Specific Combining Ability in AlphaSimR" vignettes out of the package and onto the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, so that the package keeps the vignettes most useful when starting out. They can no longer be opened with `vignette()`, and the help pages and remaining vignettes that referred to them now link to the website. The help pages of `runMacs`, `runMacs2` and `gv` linked to articles that were already only on the website, and the package help page named a vignette that does not exist; these now point to the right place.
