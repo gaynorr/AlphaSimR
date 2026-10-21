@@ -1886,7 +1886,7 @@ selectMultiPop = function(
           "produced by `withinPopFUN`."
         )
       }
-      aggregated = aggregated[columnNames]
+      aggregated = aggregated[match(columnNames, aggregatedNames)]
     }
     names(aggregated) = columnNames
     return(aggregated)
