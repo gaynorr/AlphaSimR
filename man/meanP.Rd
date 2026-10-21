@@ -45,7 +45,7 @@ follows the same nesting as \code{pop}.
 
 When \code{simplify=TRUE}, the result is simplified to the requested
 \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
-structure is returned unchanged. If \code{level} \eqn{\lt 1}, the function 
+structure is returned unchanged. If \code{level} \eqn{< 1}, the function
 sets \code{level=1} issuing a warning.
 
 Simplified output includes a \code{"source"} attribute. This is a data frame
