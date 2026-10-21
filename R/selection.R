@@ -1781,9 +1781,6 @@ selectMultiPop = function(
         "without missing values."
       )
     }
-    if (is.matrix(value)) {
-      value = setNames(as.vector(value), colnames(value))
-    }
     return(value)
   }
 
@@ -1886,7 +1883,6 @@ selectMultiPop = function(
 #'   are also removed.
 #'
 #' @keywords internal
-#' @noRd
 .stripPops = function(x, paths) {
   paths = as.matrix(paths)
 
