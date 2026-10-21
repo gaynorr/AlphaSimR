@@ -1111,6 +1111,33 @@ test_that("calcPopSummary checks names returned by acrossPopFUN", {
     ),
     fixed = TRUE
   )
+
+  # Empty and NA names cannot be matched by indexing with names, so
+  # reordered output must still keep their values rather than give NA.
+  for (secondName in c("", NA_character_)) {
+    partlyNamed = function(x) {
+      setNames(within(x), c("first", secondName))
+    }
+    expectedPartly = setNames(expected, c("first", secondName))
+    expect_equal(
+      calcPopSummary(
+        mp,
+        withinPopFUN = partlyNamed,
+        acrossPopFUN = colMeans,
+        level = 0
+      ),
+      expectedPartly
+    )
+    expect_equal(
+      calcPopSummary(
+        mp,
+        withinPopFUN = partlyNamed,
+        acrossPopFUN = function(x) rev(colMeans(x)),
+        level = 0
+      ),
+      expectedPartly
+    )
+  }
 })
 
 test_that("selectMultiPop selects populations at different levels", {
