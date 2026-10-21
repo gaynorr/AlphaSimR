@@ -860,6 +860,62 @@ test_that("calcPopSummary validates within-population summaries", {
     "`withinPopFUN` must return a vector or a one-row matrix.",
     fixed = TRUE
   )
+
+  # A 3-D array is numeric but not one row of values, for a Pop on its own
+  # as well as inside a MultiPop.
+  for (target in list(pop, mp)) {
+    expect_error(
+      calcPopSummary(
+        target,
+        withinPopFUN = function(x) array(1:4, c(2, 2, 1)),
+        acrossPopFUN = colSums
+      ),
+      "`withinPopFUN` must return a vector or a one-row matrix.",
+      fixed = TRUE
+    )
+  }
+})
+
+test_that("calcPopSummary accepts 1-D arrays as named vectors", {
+  founderPop = quickHaplo(nInd = 8, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  # tapply() returns a 1-D array, whose names colnames() cannot read
+  oneD = function(x) {
+    tapply(c(nInd(x), 1), c("a", "b"), sum)
+  }
+
+  popSummary = calcPopSummary(pop, withinPopFUN = oneD, acrossPopFUN = colMeans)
+  expect_null(dim(popSummary))
+  expect_equal(popSummary, c(a = 8, b = 1))
+
+  mp = newMultiPop(newMultiPop(pop[1:4], pop[5:8]), pop[1:4])
+  overall = calcPopSummary(mp, withinPopFUN = oneD, acrossPopFUN = colMeans)
+  expect_null(dim(overall))
+  expect_equal(overall, c(a = 4, b = 1))
+
+  byBranch = calcPopSummary(
+    mp,
+    withinPopFUN = oneD,
+    acrossPopFUN = colMeans,
+    level = 1
+  )
+  expect_equal(dim(byBranch), c(2L, 2L))
+  expect_equal(colnames(byBranch), c("a", "b"))
+
+  # A 1-D array from acrossPopFUN is accepted in the same way
+  expect_equal(
+    calcPopSummary(
+      mp,
+      withinPopFUN = oneD,
+      acrossPopFUN = function(x) as.array(colMeans(x))
+    ),
+    c(a = 4, b = 1)
+  )
 })
 
 test_that("calcPopSummary requires consistent summary columns", {
@@ -954,6 +1010,17 @@ test_that("calcPopSummary validates across-population summaries", {
       mp,
       withinPopFUN = within,
       acrossPopFUN = function(x) matrix(1:4, nrow = 2),
+      level = 0
+    ),
+    "`acrossPopFUN` must return a vector or a one-row matrix.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    calcPopSummary(
+      mp,
+      withinPopFUN = within,
+      acrossPopFUN = function(x) array(colMeans(x), c(1, 2, 1)),
       level = 0
     ),
     "`acrossPopFUN` must return a vector or a one-row matrix.",

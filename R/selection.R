@@ -1770,7 +1770,12 @@ selectMultiPop = function(
     if (is.data.frame(value)) {
       value = as.matrix(value)
     }
-    if (is.matrix(value) && nrow(value) != 1L) {
+    # Arrays with more than two dimensions are numeric but are not a single
+    # row of summary values, and would otherwise be flattened silently.
+    if (
+      length(dim(value)) > 2L ||
+        (is.matrix(value) && nrow(value) != 1L)
+    ) {
       stop("`", functionName, "` must return a vector or a one-row matrix.")
     }
     # Missing values are allowed, so that a summary such as colMeans() can
@@ -1786,11 +1791,13 @@ selectMultiPop = function(
         "` must return a numeric vector or one-row matrix."
       )
     }
-    # A one-row matrix becomes a named vector, so that every summary is
-    # compared and returned in the same form regardless of which shape the
-    # user-supplied function chose.
+    # A one-row matrix or a 1-D array, such as tapply() returns, becomes a
+    # named vector, so that every summary is compared and returned in the
+    # same form regardless of which shape the user-supplied function chose.
     if (is.matrix(value)) {
       value = setNames(as.vector(value), colnames(value))
+    } else if (length(dim(value)) == 1L) {
+      value = setNames(as.vector(value), names(value))
     }
     return(value)
   }
