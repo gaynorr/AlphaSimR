@@ -37,10 +37,14 @@ the founders were inbred, as with \code{runMacs(inbred=TRUE)}, in which
 case they are taken to be unrelated and fully inbred.
 
 Doubled haploids, made with \code{\link{makeDH}}, are fully inbred and
-are related to every other individual exactly as their parent is,
-because a doubled haploid's genome is two copies of a single gamete from
-that parent. A selfed individual has the same relationships to others as
-its parent, but is only partly inbred.
+are related to every individual that is not their descendant exactly as
+their parent is, because a doubled haploid's genome is two copies of a
+single gamete from that parent. A selfed individual likewise has its
+parent's relationships to everyone but its own descendants, and is
+partly inbred, or fully inbred when its parent is. A descendant is
+closer to the individual it descends from than to that individual's
+parent: a self of a doubled haploid has a relationship of 2 with the
+doubled haploid but 1 with an outbred parent of it.
 
 For a ploidy level above 2, inheritance is taken to be autopolyploid,
 without double reduction, following
