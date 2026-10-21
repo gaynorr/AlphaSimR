@@ -4,16 +4,13 @@
 \alias{meanPPop}
 \title{Mean phenotype values between \code{Pops} in a \code{MultiPop}}
 \usage{
-meanPPop(x, level = 0, .req_level)
+meanPPop(x, level = 0)
 }
 \arguments{
 \item{x}{A \code{\link{Pop-class}} or \code{\link{MultiPop-class}} object.}
 
-\item{level}{Integer scalar \code{>= 0} indicating the requested aggregation
+\item{level}{Integer scalar \eqn{\ge 0} indicating the requested aggregation
 level (see Details).}
-
-\item{.req_level}{Internal argument used during recursion. Do not set
-manually.}
 }
 \value{
 If \code{x} is a \code{\link{Pop-class}} object, or if \code{level=0}, a
@@ -41,13 +38,13 @@ The \code{level} argument controls the nesting level in a
   and values indicating the name or index of the population at each
   nesting level.  \cr
 - When \code{level=0}, the function returns a numeric vector giving the
-  overall mean-of-means across all branches for each trait. Any
-  \code{level<0} is treated as \code{level=0}.
+  overall mean-of-means across all branches for each trait.
 }
 \examples{
 founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
 SP = SimParam$new(founderPop)
 SP$addTraitA(10)
+SP$setVarE(h2 = 0.5)
 \dontshow{SP$nThreads = 1L}
 pop = newPop(founderPop, simParam = SP)
 
@@ -64,5 +61,6 @@ meanPPop(mp, level = 0)
 
 }
 \seealso{
-\code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}}
+\code{\link{meanP}}, \code{\link{pheno}}, \code{\link{setPheno}},
+  \code{\link{calcPopSummary}}
 }

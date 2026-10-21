@@ -153,6 +153,10 @@
 
 * Added `flattenMultiPop()` function to reduce the depth of a nested MultiPop object up to a defined `level`.
 
+* Added `calcPopSummary()` function to calculate summaries within the Pops of a nested MultiPop and aggregate them across the hierarchy up to a defined `level`.
+
+* Added `selectMultiPop()` function to select a subset of MultiPops from a nested MultiPop. This function uses `calcPopSummary()` to calculate an aggregated summary value in the hierarchical structure, which is then used for selection.
+
 * Added `selectPop()` function to select a subset of populations from a MultiPop. This function uses the new internal `calcPopValue()` function to calculate a summary value for each population, which is then used for selection.
 
 * Added `unnameMultiPop()` function to remove names from a MultiPop at specific `level`(s).
@@ -205,7 +209,7 @@
 
 * Update `meanG()`, `meanP()` and `meanEBV()` to support MultiPop objects. The output can be simplified via `simplify` and `level` arguments, which are passed to `calcPopValue()`. These functions calculate mean values within Pop objects.
 
-* Add `meanGPop()` and `meanPPop()` to calculate mean genetic and phenotype values between Pops in a MultiPop.
+* Add `meanGPop()` and `meanPPop()` to calculate mean genetic and phenotype values between Pops in a MultiPop. These functions internally call the new `calcPopSummary()` function.
 
 * Update `varG()`, `varP()` and `varEBV()` to support MultiPop objects.
 

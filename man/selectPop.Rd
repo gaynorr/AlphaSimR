@@ -34,8 +34,8 @@ at \code{level}. The function must work on a vector or matrix of
 \code{use} is. See the examples and \code{\link{selIndex}}.}
 
 \item{use}{the selection criterion. Either a character
-(genetic values "gv", estimated breeding values "ebv", 
-phenotypes "pheno", or random values "rand") or a function 
+(genetic values \code{"gv"}, estimated breeding values \code{"ebv"}, 
+phenotypes \code{"pheno"}, or random values \code{"rand"}) or a function 
 returning a vector of length \code{nInd(pop)} for each population 
 at \code{level}. The function must work on each \code{pop} at 
 \code{level} in \code{x} as \code{use(pop, trait, ...)} or as 
