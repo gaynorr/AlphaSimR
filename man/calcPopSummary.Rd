@@ -79,7 +79,10 @@ levels greater than the maximum depth return one summary for every terminal
 
 The outputs of \code{withinPopFUN} must have consistent lengths and names.
 The output of \code{acrossPopFUN} must preserve the number and names of
-these summary values.
+these summary values. Missing values are passed through unchanged, so
+how they propagate is decided by the supplied functions. For example,
+\code{colMeans} returns \code{NA} for a column containing a missing
+value and leaves the other columns unaffected.
 }
 \examples{
 founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 20)
