@@ -1191,9 +1191,7 @@ varPPop = function(x, level = 1L) {
 #'
 #' @export
 genParam = function(pop,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2310,9 +2308,7 @@ ebv = function(pop, simplify = FALSE, level = 1L){
 #' @export
 parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
                          use = "gv", simParam = NULL, nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2401,9 +2397,7 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #' @export
 mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
                              use = "gv", simParam = NULL, nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

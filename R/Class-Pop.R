@@ -769,9 +769,7 @@ setMethod("length",
 #' emptyPop = newPop(ploidy=2L, simParam=SP)
 #' @export
 newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -819,9 +817,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
                    iMother=NULL, iFather=NULL, isDH=NULL,
                    femaleParentPop=NULL, maleParentPop=NULL,
                    hist=NULL, simParam=NULL, nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -999,9 +995,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
 #'
 #' @export
 resetPop = function(pop,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1106,9 +1100,7 @@ isPop = function(x) {
 #'
 #' @export
 newEmptyPop = function(ploidy=2L, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP", envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
 
   # Create 0 x nTrait matrix with trait names
   # For pheno and gv slots

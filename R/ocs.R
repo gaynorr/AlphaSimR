@@ -405,9 +405,7 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                      returnPop=TRUE, simParam=NULL, nThreads=NULL,
                      onShortfall="warning", ...){
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

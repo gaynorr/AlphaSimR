@@ -1,5 +1,7 @@
 # AlphaSimR 2.1.0.9023
 
+* Functions that take `simParam` now give a clear error when it is not supplied and there is no `SimParam` called `SP` in the global environment, in place of R's "object 'SP' not found", and when `simParam` is supplied but is not a `SimParam`, in place of an unrelated error later in the call. `SP` is now looked for only in the global environment, not in environments attached to the search path. Results, including results from a seed, are unchanged.
+
 * Added an article on storing individual and population metadata in `misc` and `miscPop`, and their behavior under subsetting and merging.
 
 * Split the `SimParam` help page into one page per method. The `SimParam` page now describes the object and how to create it, lists its methods grouped by task with a link to each method's page, and has an example that sets up a simulation step by step. Each method's page, such as `?"SimParam$addTraitA"`, gives its usage, arguments and examples. Links between pages work in every help viewer, where links within one page did not. The description and most arguments of `addTraitAD` were missing from its help because of a formatting error, and are now shown. The methods `addToRec`, `ibdHaplo`, `updateLastId` and `addToPed` are for AlphaSimR's own use and are no longer documented; they still work as before.

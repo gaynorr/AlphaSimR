@@ -140,9 +140,7 @@ hybridCross = function(females, males,
       stop(paste("v, p and quadProb can only be set when females and males",
                  "are map populations. Set them on the SimParam instead"))
     }
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     if(is.null(nThreads)){
       nThreads = simParam$nThreads
     }else{
@@ -496,9 +494,7 @@ setPhenoGCA = function(pop, testers, use="pheno", h2=NULL, H2=NULL,
                        varE=NULL, corE=NULL, reps=1, fixEff=1L, p=NULL,
                        inbred=FALSE, onlyPheno=FALSE, simParam=NULL,
                        nThreads=NULL, ...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -626,9 +622,7 @@ setPhenoProgTest = function(pop, testPop, nMatePerInd=1L, use="pheno",
                             h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                             reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
                             simParam=NULL,nThreads=NULL, ...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

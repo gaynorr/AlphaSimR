@@ -13,9 +13,7 @@
 #'
 #' @keywords internal
 getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -346,9 +344,7 @@ getCandidates = function(pop, candidates){
 #'
 #' @keywords internal
 checkSexes = function(pop,sex,simParam=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   sex = toupper(sex)
   eligible = 1:pop@nInd
   if(simParam$sexes=="no"){
@@ -557,9 +553,7 @@ selectInd = function(pop,nInd,trait=1,use="pheno",sex="B",
                      onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -683,9 +677,7 @@ selectFam = function(pop,nFam,trait=1,use="pheno",sex="B",
                      onShortfall="warning",...){
   if(nFam<0) stop("nFam must be >= 0")
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -829,9 +821,7 @@ selectWithinFam = function(pop,nInd,trait=1,use="pheno",sex="B",
                            onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -964,9 +954,7 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
                     onShortfall="warning",...){
   if(nInd<0) stop("nInd must be >= 0")
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1138,9 +1126,7 @@ selectPop = function(
 ) {
 
   stopifnot("nPop must be >= 0" = nPop >= 0)
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
 
   if (isPop(x)) {
     return(x)

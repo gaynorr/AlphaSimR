@@ -44,9 +44,7 @@
 #' @export
 makeCross = function(pop, crossPlan, nProgeny=1,
                      simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -177,9 +175,7 @@ randCross = function(pop, nCrosses, nProgeny=1,
                      balance=TRUE, parents=NULL,
                      ignoreSexes=FALSE,
                      simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -364,9 +360,7 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
                        inbrType="relative", snpChip=1, useQtl=FALSE,
                        onShortfall="warning"){
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -466,9 +460,7 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
 #' @export
 makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
                       nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -606,9 +598,7 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
                       balance=TRUE, femaleParents=NULL,
                       maleParents=NULL, ignoreSexes=FALSE,
                       simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -721,9 +711,7 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
 self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
                 simParam=NULL, nThreads=NULL){
   
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -871,9 +859,7 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
 #' @export
 makeDH = function(pop, nDH=1, useFemale=TRUE, keepParents=TRUE,
                   simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -1567,9 +1553,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                  "population. Set them on the SimParam instead"))
     }
     
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     
     if(is.null(nThreads)){
       nThreads = simParam$nThreads

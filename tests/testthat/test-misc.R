@@ -181,3 +181,41 @@ test_that("NamedMapPop subsetting by id", {
   # A MapPop carries no ids, so it stays index only
   expect_error(mapPop["a"])
 })
+
+test_that("getSimParam returns a supplied SimParam and refuses anything else", {
+  founderPop = quickHaplo(nInd = 2, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+
+  # The same object, not a clone, so changes made through it reach the caller
+  expect_identical(AlphaSimR:::getSimParam(SP), SP)
+
+  expect_error(AlphaSimR:::getSimParam(list()),
+               "simParam must be a SimParam object or NULL")
+  expect_error(newPop(founderPop, simParam = "SP"),
+               "simParam must be a SimParam object or NULL")
+})
+
+test_that("getSimParam falls back to a SimParam called SP in the global environment", {
+  founderPop = quickHaplo(nInd = 2, nChr = 1, segSites = 10)
+  globalSP = SimParam$new(founderPop)
+  globalSP$nThreads = 1L
+
+  hadSP = exists("SP", envir = .GlobalEnv, inherits = FALSE)
+  if(hadSP) oldSP = get("SP", envir = .GlobalEnv)
+  on.exit({if(hadSP) assign("SP", oldSP, envir = .GlobalEnv)
+           else if(exists("SP", envir = .GlobalEnv, inherits = FALSE))
+             rm("SP", envir = .GlobalEnv)}, add = TRUE)
+
+  if(hadSP) rm("SP", envir = .GlobalEnv)
+  expect_error(AlphaSimR:::getSimParam(), "there is no SimParam called SP")
+  expect_error(newPop(founderPop), "there is no SimParam called SP")
+
+  # An object called SP that is not a SimParam is not used
+  assign("SP", "not a SimParam", envir = .GlobalEnv)
+  expect_error(AlphaSimR:::getSimParam(NULL), "there is no SimParam called SP")
+
+  assign("SP", globalSP, envir = .GlobalEnv)
+  expect_identical(AlphaSimR:::getSimParam(), globalSP)
+  expect_equal(newPop(founderPop)@nInd, 2L)
+})

@@ -12,9 +12,7 @@
 #' 
 #' @keywords internal
 convertTraitsToNames = function(traits, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.character(traits)){
     # Suspect trait is a name
     take = match(traits, simParam$traitNames)
@@ -44,9 +42,7 @@ convertTraitsToNames = function(traits, simParam=NULL){
 #'
 #' @keywords internal
 convertTraitsToIndex = function(traits, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.function(traits)){
     return(NULL)
   }
@@ -752,9 +748,7 @@ RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                   simParam=NULL, nThreads=NULL, ...,
                   fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
                   varComp=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -981,9 +975,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
                    useEM=TRUE, tol=1e-6, simParam=NULL,
                    nThreads=NULL, ...){
   .Deprecated(msg=numberedDeprecation("RRBLUP2", "RRBLUP", "Vu"))
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1233,9 +1225,7 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                     simParam=NULL, nThreads=NULL, ...,
                     fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
                     varComp=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1444,9 +1434,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
                      Ve=NULL, useEM=TRUE, tol=1e-6,
                      simParam=NULL, nThreads=NULL, ...){
   .Deprecated(msg=numberedDeprecation("RRBLUP_D2", "RRBLUP_D", "c(Va, Vd)"))
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1712,9 +1700,7 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                       simParam=NULL, nThreads=NULL, ...,
                       fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
                       varComp=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1937,9 +1923,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
                        simParam=NULL, nThreads=NULL, ...){
   .Deprecated(msg=numberedDeprecation("RRBLUP_GCA2", "RRBLUP_GCA",
                                       "c(VuF, VuM)"))
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2218,9 +2202,7 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                       simParam=NULL, nThreads=NULL, ...,
                       fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
                       varComp=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2462,9 +2444,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
   if(pop@ploidy!=2L){
     stop("RRBLUP_SCA2: only diploids are supported")
   }
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2642,9 +2622,7 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 setEBV = function(pop, solution, value="gv", targetPop=NULL,
                   append=FALSE, simParam=NULL, nThreads=NULL,
                   onlyValues=FALSE){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

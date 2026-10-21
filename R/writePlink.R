@@ -55,9 +55,7 @@ writePlink = function(pop, baseName, traits=1, use="pheno",
   if(pop@ploidy!=2L){
     stop("writePlink() only supports ploidy=2")
   } 
-  if(is.null(simParam)){ 
-    simParam = get("SP", envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
