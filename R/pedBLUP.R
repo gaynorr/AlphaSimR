@@ -162,7 +162,7 @@
 #' repeated records.
 #' @param traits an integer indicating the trait to model, a trait name, or
 #' a function of the traits returning a single value. Only one trait can be
-#' modelled.
+#' modeled.
 #' @param use train model using phenotypes "pheno", genetic values "gv",
 #' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
 #' @param Vu the additive genetic variance. If supplied with Ve, the
