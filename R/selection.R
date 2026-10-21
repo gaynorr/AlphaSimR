@@ -1644,6 +1644,9 @@ selectMultiPop = function(
 
   # Candidates tied at the selection boundary are retained or removed
   # according to their existing order in the MultiPop hierarchy.
+  # Source paths are stored in ascending lexicographic order. Remove them in
+  # reverse row order so that higher positional indices are removed first and
+  # earlier removals do not invalidate the remaining paths.
   drop = sort(ranking[-seq_len(nMulti)], decreasing = TRUE)
   for (i in drop) {
     x = .stripPop(x, src[i, , drop = TRUE])
@@ -1845,9 +1848,9 @@ selectMultiPop = function(
       acrossPopFUN,
       c(list(childSummaryMatrix), acrossPopArgs)
     )
-
+    
     aggregated = normalizeSummary(aggregated, "acrossPopFUN")
-
+    
     # Aggregation must preserve the summary columns. This is important
     # for unbalanced hierarchies, where aggregated MultiPop summaries
     # may later be combined with terminal Pop summaries.
@@ -1857,16 +1860,9 @@ selectMultiPop = function(
         "produced by `withinPopFUN`."
       )
     }
-
-    expectedNames = colnames(childSummaryMatrix)
-    observedNames = names(aggregated)
-
-    if (!identical(observedNames, expectedNames)) {
-      stop(
-        "`acrossPopFUN` must preserve the names of the values ",
-        "produced by `withinPopFUN`."
-      )
-    }
+    
+    # Preserve column names after aggregation
+    names(aggregated) = colnames(childSummaryMatrix)
     return(aggregated)
   }
   return(childSummaryMatrix)

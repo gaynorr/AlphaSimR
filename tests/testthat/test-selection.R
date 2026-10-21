@@ -989,25 +989,6 @@ test_that("calcPopSummary validates across-population summaries", {
     ),
     fixed = TRUE
   )
-
-  expect_error(
-    calcPopSummary(
-      mp,
-      withinPopFUN = within,
-      acrossPopFUN = function(x) {
-        c(
-          renamed1 = mean(x[, 1]),
-          renamed2 = mean(x[, 2])
-        )
-      },
-      level = 0
-    ),
-    paste0(
-      "`acrossPopFUN` must preserve the names of the values ",
-      "produced by `withinPopFUN`."
-    ),
-    fixed = TRUE
-  )
 })
 
 test_that("calcPopSummary rejects empty MultiPop objects", {
@@ -1040,6 +1021,76 @@ test_that("calcPopSummary rejects empty MultiPop objects", {
     selectMultiPop(mp, nMulti = 2, simParam = SP),
     "`x` contains an empty Pop object."
   )
+})
+
+test_that("calcPopSummary returns source paths in structural order", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    newMultiPop(
+      pop[1:4],
+      pop[5:8],
+      pop[9:12],
+      pop[13:16]
+    )
+  )
+  scores = calcPopSummary(
+    unnameMultiPop(mp),
+    withinPopFUN = function(x) c(nInd = nInd(x)),
+    acrossPopFUN = colSums,
+    level = 10
+  )
+
+  src = attr(scores, "source")
+
+  observedOrder = do.call(
+    order,
+    as.data.frame(src)
+  )
+
+  expect_equal(observedOrder, seq_len(nrow(src)))
+})
+
+test_that("calcPopSummary preserves scalar summary names after aggregation", {
+  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    newMultiPop(
+      pop[1:4],
+      pop[5:8],
+      pop[9:12],
+      pop[13:16]
+    )
+  )
+  result = calcPopSummary(
+    mp,
+    withinPopFUN = function(x) {
+      quantile(x@iid, probs = 0.9)
+    },
+    acrossPopFUN = mean,
+    level = 1
+  )
+
+  expect_equal(colnames(result), "90%")
+
+  result = calcPopSummary(
+    mp,
+    withinPopFUN = function(x) {
+      quantile(x@iid, probs = 0.9)
+    },
+    acrossPopFUN = mean,
+    level = 0
+  )
+
+  expect_equal(names(result), "90%")
 })
 
 test_that("selectMultiPop selects populations at different levels", {
