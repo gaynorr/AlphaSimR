@@ -150,8 +150,11 @@
     nGrid = length(grid)
     gridVal = vapply(grid, m2ll, numeric(1))
     k = which.min(gridVal)
+    # A tolerance of 1e-3 on log(lambda) is 0.1% on the ratio, which
+    # changes the breeding values negligibly, and needs about half the
+    # factorizations of a tight one
     opt = optimize(m2ll, interval=c(grid[max(k-1L, 1L)],
-                                    grid[min(k+1L, nGrid)]), tol=1e-6)
+                                    grid[min(k+1L, nGrid)]), tol=1e-3)
     candidate = c(grid, opt$minimum)
     candidateVal = c(gridVal, opt$objective)
     if(min(candidateVal)==.Machine$double.xmax){
