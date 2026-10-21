@@ -361,7 +361,10 @@ calcPopValue = function(
 #'
 #' The outputs of \code{withinPopFUN} must have consistent lengths and names.
 #' The output of \code{acrossPopFUN} must preserve the number and names of
-#' these summary values.
+#' these summary values. Missing values are passed through unchanged, so
+#' how they propagate is decided by the supplied functions. For example,
+#' \code{colMeans} returns \code{NA} for a column containing a missing
+#' value and leaves the other columns unaffected.
 #'
 #' @return If \code{x} is a \code{Pop} object, a numeric vector containing its
 #'   summary.
@@ -1770,17 +1773,14 @@ selectMultiPop = function(
     if (is.matrix(value) && nrow(value) != 1L) {
       stop("`", functionName, "` must return a vector or a one-row matrix.")
     }
-    if (
-      !is.numeric(value) ||
-        is.null(value) ||
-        length(value) == 0L ||
-        anyNA(value)
-    ) {
+    # Missing values are allowed, so that a summary such as colMeans() can
+    # report NA for one trait without losing the others. Callers that need
+    # complete values, such as selectMultiPop(), check for them themselves.
+    if (!is.numeric(value) || is.null(value) || length(value) == 0L) {
       stop(
         "`",
         functionName,
-        "` must return a non-empty numeric vector or one-row matrix ",
-        "without missing values."
+        "` must return a non-empty numeric vector or one-row matrix."
       )
     }
     # A one-row matrix becomes a named vector, so that every summary is
@@ -1925,11 +1925,13 @@ selectMultiPop = function(
     children = node@pops
     keep = rep(TRUE, length(children))
 
-    childIndices = unique(paths[, 1L])
+    # Group the rows by child once, rather than scanning every row for each
+    # child, which would be quadratic in the number of removed siblings.
+    rowsByChild = split(seq_len(nrow(paths)), paths[, 1L])
 
-    for (idx in childIndices) {
-      rows = paths[, 1L] == idx
-      childPaths = paths[rows, , drop = FALSE]
+    for (child in names(rowsByChild)) {
+      idx = as.integer(child)
+      childPaths = paths[rowsByChild[[child]], , drop = FALSE]
 
       # Remove the complete child if the path ends at this level.
       pathEnds = ncol(childPaths) == 1L || all(is.na(childPaths[, 2L]))

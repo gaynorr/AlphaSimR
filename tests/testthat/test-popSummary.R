@@ -491,3 +491,31 @@ test_that("HYBRIDPOP summaries accept a HybridPop", {
   expect_equivalent(varG(hybrid), popVar(hybrid@gv))
   expect_equivalent(varP(hybrid), popVar(hybrid@pheno))
 })
+
+test_that("MISSING phenotypes give NA for their trait in meanPPop", {
+  founderPop = quickHaplo(nInd=16, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitA(5, mean=c(0, 0), var=c(1, 1))
+
+  # Without varE no phenotypes are set, so every trait mean is missing
+  pop = newPop(founderPop, simParam=SP)
+  mp = newMultiPop(newMultiPop(pop[1:4], pop[5:8]), pop[9:16])
+  expect_equal(meanPPop(mp), c(Trait1=NA_real_, Trait2=NA_real_))
+
+  # One missing value loses only the mean of its own trait
+  pop = setPheno(pop, varE=c(1, 1), simParam=SP)
+  pop@pheno[1, 2] = NA
+  mp = newMultiPop(newMultiPop(pop[1:4], pop[5:8]), pop[9:16])
+  nested = (colMeans(pop@pheno[1:4, ]) + colMeans(pop@pheno[5:8, ])) / 2
+  expected = (nested + colMeans(pop@pheno[9:16, ])) / 2
+
+  overall = meanPPop(mp)
+  expect_equal(overall, expected)
+  expect_true(is.na(overall[["Trait2"]]))
+  expect_false(is.na(overall[["Trait1"]]))
+
+  byBranch = meanPPop(mp, level=1)
+  expect_equivalent(byBranch[1, ], nested)
+  expect_equivalent(byBranch[2, ], colMeans(pop@pheno[9:16, ]))
+})

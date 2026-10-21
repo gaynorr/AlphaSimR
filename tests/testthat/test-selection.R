@@ -827,10 +827,7 @@ test_that("calcPopSummary validates within-population summaries", {
       withinPopFUN = function(x) character(),
       acrossPopFUN = colSums
     ),
-    paste0(
-      "`withinPopFUN` must return a non-empty numeric vector or ",
-      "one-row matrix without missing values."
-    ),
+    "`withinPopFUN` must return a non-empty numeric vector or one-row matrix.",
     fixed = TRUE
   )
 
@@ -840,24 +837,18 @@ test_that("calcPopSummary validates within-population summaries", {
       withinPopFUN = function(x) "value",
       acrossPopFUN = colSums
     ),
-    paste0(
-      "`withinPopFUN` must return a non-empty numeric vector or ",
-      "one-row matrix without missing values."
-    ),
+    "`withinPopFUN` must return a non-empty numeric vector or one-row matrix.",
     fixed = TRUE
   )
 
-  expect_error(
+  # Missing values are passed through rather than rejected.
+  expect_equal(
     calcPopSummary(
       mp,
-      withinPopFUN = function(x) NA_real_,
+      withinPopFUN = function(x) c(a = NA_real_, b = 1),
       acrossPopFUN = colSums
     ),
-    paste0(
-      "`withinPopFUN` must return a non-empty numeric vector or ",
-      "one-row matrix without missing values."
-    ),
-    fixed = TRUE
+    c(a = NA_real_, b = 2)
   )
 
   expect_error(
@@ -944,25 +935,18 @@ test_that("calcPopSummary validates across-population summaries", {
       acrossPopFUN = function(x) "value",
       level = 0
     ),
-    paste0(
-      "`acrossPopFUN` must return a non-empty numeric vector or ",
-      "one-row matrix without missing values."
-    ),
+    "`acrossPopFUN` must return a non-empty numeric vector or one-row matrix.",
     fixed = TRUE
   )
 
-  expect_error(
+  expect_equal(
     calcPopSummary(
       mp,
       withinPopFUN = within,
       acrossPopFUN = function(x) c(first = NA_real_, second = 1),
       level = 0
     ),
-    paste0(
-      "`acrossPopFUN` must return a non-empty numeric vector or ",
-      "one-row matrix without missing values."
-    ),
-    fixed = TRUE
+    c(first = NA_real_, second = 1)
   )
 
   expect_error(
