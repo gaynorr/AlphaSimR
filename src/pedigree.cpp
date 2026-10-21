@@ -553,3 +553,123 @@ arma::mat calcPedASub(const Rcpp::IntegerVector& mother,
   output = 0.5*(output+output.t());
   return output;
 }
+
+// The parts of the mixed model equations for pedigree BLUP of one trait,
+// as triplets for Matrix's sparse Cholesky in R. The model is
+// y = X*b + Z*W*u + e, where X has one column per level of the fixed
+// effects, Z maps each record to its row of the pedigree, and W maps the
+// pedigree onto the basis of PedAinv, so that u ~ N(0, Ainv^-1*Vu) over the
+// basis. The coefficient matrix is C0 + lambda*A0 with lambda = Ve/Vu,
+// where C0 holds X'X, X'ZW and W'Z'ZW, and A0 the inverse relationship
+// matrix, each as an upper triangle with the fixed effects first and
+// repeated entries to be summed. rec and fix are 1-based and given for
+// each record, and the levels of fix must run from 1 with none missing.
+// [[Rcpp::export]]
+Rcpp::List calcPedMME(const Rcpp::IntegerVector& mother,
+                      const Rcpp::IntegerVector& father,
+                      const Rcpp::IntegerVector& isDH,
+                      const Rcpp::IntegerVector& rec,
+                      const Rcpp::IntegerVector& fix,
+                      const Rcpp::NumericVector& y,
+                      const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create(),
+                      int ploidy=2){
+  Ped ped = readPed(mother, father, isDH, ploidy);
+  arma::uword N = y.size();
+  if((arma::uword(rec.size())!=N) || (arma::uword(fix.size())!=N)){
+    Rcpp::stop("rec, fix and y must have the same length");
+  }
+  int nFix = 0;
+  for(arma::uword r=0; r<N; ++r){
+    if((rec[r]<1) || (rec[r]>int(ped.n))){
+      Rcpp::stop("Every record must belong to a row of the pedigree");
+    }
+    if(fix[r]<1){
+      Rcpp::stop("Fixed effect levels must start from 1");
+    }
+    if(!std::isfinite(y[r])){
+      Rcpp::stop("Records must be finite");
+    }
+    nFix = std::max(nFix, int(fix[r]));
+  }
+  arma::vec F, D;
+  pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
+  PedAinv ans = buildPedAinv(ped, D);
+  arma::uword nB = ans.basis.n_elem;
+
+  // The rows of W, which Armadillo stores by column
+  std::vector<SpRow> w(ped.n);
+  for(arma::sp_mat::const_iterator it=ans.W.begin(); it!=ans.W.end(); ++it){
+    w[it.row()].push_back(std::make_pair(arma::uword(it.col()), double(*it)));
+  }
+
+  std::vector<int> ci, cj;
+  std::vector<double> cx;
+  std::vector<double> nRec(nFix, 0.0);
+  arma::vec rhs(nFix+nB, arma::fill::zeros);
+  double yy = 0.0;
+  for(arma::uword r=0; r<N; ++r){
+    arma::uword f = fix[r]-1;
+    const SpRow& row = w[rec[r]-1];
+    double yr = y[r];
+    nRec[f] += 1.0;
+    rhs(f) += yr;
+    yy += yr*yr;
+    // A record of a basis individual touches one random effect, and one of
+    // a clone or an F1 of inbred parents touches its basis ancestors
+    for(SpRow::const_iterator e1=row.begin(); e1!=row.end(); ++e1){
+      ci.push_back(int(f)+1);
+      cj.push_back(nFix+int(e1->first)+1);
+      cx.push_back(e1->second);
+      rhs(nFix+e1->first) += e1->second*yr;
+      for(SpRow::const_iterator e2=row.begin(); e2!=row.end(); ++e2){
+        if(e1->first<=e2->first){
+          ci.push_back(nFix+int(e1->first)+1);
+          cj.push_back(nFix+int(e2->first)+1);
+          cx.push_back(e1->second*e2->second);
+        }
+      }
+    }
+  }
+  for(int f=0; f<nFix; ++f){
+    ci.push_back(f+1);
+    cj.push_back(f+1);
+    cx.push_back(nRec[f]);
+  }
+
+  std::vector<int> ai, aj;
+  std::vector<double> ax;
+  for(arma::sp_mat::const_iterator it=ans.Ainv.begin(); it!=ans.Ainv.end(); ++it){
+    if(it.row()<=it.col()){
+      ai.push_back(nFix+int(it.row())+1);
+      aj.push_back(nFix+int(it.col())+1);
+      ax.push_back(*it);
+    }
+  }
+
+  // log|A| over the basis, the constant of the REML likelihood that comes
+  // from the relationships, is the sum of the Mendelian sampling variances'
+  // logarithms
+  double logDetA = 0.0;
+  for(arma::uword k=0; k<nB; ++k){
+    logDetA += std::log(D(ans.basis(k)));
+  }
+
+  Rcpp::IntegerVector basis(nB);
+  for(arma::uword k=0; k<nB; ++k){
+    basis[k] = int(ans.basis(k))+1;
+  }
+  return Rcpp::List::create(
+    Rcpp::Named("C")=Rcpp::List::create(Rcpp::Named("i")=ci,
+                                        Rcpp::Named("j")=cj,
+                                        Rcpp::Named("x")=cx),
+    Rcpp::Named("A")=Rcpp::List::create(Rcpp::Named("i")=ai,
+                                        Rcpp::Named("j")=aj,
+                                        Rcpp::Named("x")=ax),
+    Rcpp::Named("rhs")=rhs,
+    Rcpp::Named("yy")=yy,
+    Rcpp::Named("nFix")=nFix,
+    Rcpp::Named("nBasis")=int(nB),
+    Rcpp::Named("logDetA")=logDetA,
+    Rcpp::Named("W")=spTriplet(ans.W),
+    Rcpp::Named("basis")=basis);
+}

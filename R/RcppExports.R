@@ -686,6 +686,10 @@ calcPedASub <- function(mother, father, isDH, target, knownF = as.numeric( c()),
     .Call(`_AlphaSimR_calcPedASub`, mother, father, isDH, target, knownF, ploidy)
 }
 
+calcPedMME <- function(mother, father, isDH, rec, fix, y, knownF = as.numeric( c()), ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedMME`, mother, father, isDH, rec, fix, y, knownF, ploidy)
+}
+
 rngDiagnosticsSampleInt <- function(n, N, reps, seed) {
     .Call(`_AlphaSimR_rngDiagnosticsSampleInt`, n, N, reps, seed)
 }

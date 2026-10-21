@@ -14,10 +14,12 @@ and made, say plainly what has not been built or run and what the
 maintainer needs to do.
 
 **Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
-`Rcpp`, `Rdpack`, `methods` and `R6`; `LinkingTo` is `Rcpp`,
+`Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
-it needs discussing first.
+it needs discussing first. `Matrix` provides the sparse Cholesky
+factorization used by pedigree BLUP; it is a recommended package that
+ships with R.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
