@@ -86,23 +86,46 @@
   # when Vu and Ve are supplied, rather than at an arbitrary value, at
   # which very small Mendelian sampling variances can leave the matrix
   # indefinite in floating point.
+  #
+  # The equations are positive definite in exact arithmetic, but with
+  # Mendelian sampling variances many orders of magnitude apart, as after
+  # dozens of generations of selfing, they can be too badly conditioned
+  # for double precision and the factorization fails. solveAt then returns
+  # NULL and keeps the last factor, so that callers can say what happened
+  # rather than stop with CHOLMOD's message.
+  # CHOLMOD warns before it fails, and the failure is reported by the
+  # callers instead, once.
   L = NULL
   solveAt = function(lambda){
-    if(is.null(L)){
-      L <<- Matrix::Cholesky(C0+lambda*A0, perm=TRUE, LDL=FALSE,
-                             super=FALSE)
-    }else{
-      L <<- Matrix::update(L, C0+lambda*A0)
+    fac = tryCatch(suppressWarnings(
+      if(is.null(L)){
+        Matrix::Cholesky(C0+lambda*A0, perm=TRUE, LDL=FALSE, super=FALSE)
+      }else{
+        Matrix::update(L, C0+lambda*A0)
+      }),
+      error=function(e) NULL)
+    if(is.null(fac)){
+      return(NULL)
     }
+    L <<- fac
     as.vector(Matrix::solve(L, rhs, system="A"))
   }
+  notFactored = "the mixed model equations are too badly conditioned to factor in double precision"
 
   boundary = FALSE
   if(is.null(Vu)){
     # -2 times the REML log likelihood with Ve profiled out, less a
     # constant. y'Py is y'y less the solutions times the right-hand side.
+    # A ratio at which the equations cannot be factored is given the
+    # largest value there is, which leaves it out of the search, and is
+    # counted so that it can be reported.
+    nFailed = 0L
     m2ll = function(logLambda){
       sol = solveAt(exp(logLambda))
+      if(is.null(sol)){
+        nFailed <<- nFailed+1L
+        return(.Machine$double.xmax)
+      }
       ypy = mme$yy-sum(sol*rhs)
       (N-nFix)*log(ypy) - mme$nBasis*logLambda +
         as.numeric(Matrix::determinant(L, sqrt=FALSE)$modulus)
@@ -129,6 +152,13 @@
         candidateVal = c(candidateVal, opt$objective)
       }
     }
+    if(min(candidateVal)==.Machine$double.xmax){
+      stop(notFactored, " at any variance ratio searched", call.=FALSE)
+    }
+    if(nFailed>0L){
+      warning(notFactored, " at ", nFailed, " of the variance ratios tried, which were left out of the REML search; this happens when some Mendelian sampling variances are extremely small, as after many generations of selfing",
+              call.=FALSE)
+    }
     logLambda = candidate[which.min(candidateVal)]
     if(min(abs(logLambda-range))<1e-3){
       boundary = TRUE
@@ -137,10 +167,17 @@
     }
     lambda = exp(logLambda)
     sol = solveAt(lambda)
+    if(is.null(sol)){
+      stop(notFactored, " at the REML estimate", call.=FALSE)
+    }
     Ve = (mme$yy-sum(sol*rhs))/(N-nFix)
     Vu = Ve/lambda
   }else{
     sol = solveAt(Ve/Vu)
+    if(is.null(sol)){
+      stop(notFactored, " at the given variance components; this happens when some Mendelian sampling variances are extremely small next to Ve/Vu, as after many generations of selfing",
+           call.=FALSE)
+    }
   }
 
   W = Matrix::sparseMatrix(i=mme$W$i, j=mme$W$j, x=mme$W$x,
