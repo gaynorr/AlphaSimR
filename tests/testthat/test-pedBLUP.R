@@ -376,6 +376,24 @@ test_that("INBRED highly inbred selfed siblings keep their own breeding values",
                                    Ve=2^-53, simParam=SP)
   pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
   expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
+  # A cross of a parent selfed for 53 generations, F = 1-2^-53, with a
+  # fully inbred one has a variance of 2^-55, which the sum of their
+  # inbreeding coefficients, 2-2^-53, once rounded to zero
+  pop = self(pop, simParam=SP)
+  dh = makeDH(pop, simParam=SP)
+  sibs = makeCross(c(pop, dh), crossPlan=cbind(1L, 2L), nProgeny=2,
+                   simParam=SP)
+  ped = SP$pedigree
+  ans = AlphaSimR:::calcPedAinvTriplet(ped[,1], ped[,2], ped[,3])
+  # Exact comparisons, as the default tolerance cannot tell these from 1
+  # and 0
+  expect_identical(c(ans$F)[pop@iid], 1-2^-53)
+  expect_identical(c(ans$D)[sibs@iid], rep(2^-55, 2))
+  expect_true(all(sibs@iid %in% ans$basis))
+  fitted = AlphaSimR:::.fitPedBLUP(y, sibs@iid, c(1L, 1L), 2L, Vu=1,
+                                   Ve=2^-55, simParam=SP)
+  pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
+  expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
 })
 
 test_that("INBRED clones of inbred lines still have no Mendelian sampling", {

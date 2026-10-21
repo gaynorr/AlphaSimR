@@ -99,14 +99,18 @@ double mendelianVar(const Ped& ped, const arma::vec& F, arma::uword i){
     }
     return 1.0-F(s);
   }
+  // Written with each parent's distance from full inbreeding, 1-F, which
+  // is exact for an inbreeding coefficient however close to 1, rather
+  // than as 1/2-(F_s+F_d)/4, where the sum of two coefficients near 1
+  // rounds away a distance as small as 2^-53
   if((s>=0) && (d>=0)){
-    return 0.5-0.25*(F(s)+F(d));
+    return 0.25*((1.0-F(s))+(1.0-F(d)));
   }
   if(s>=0){
-    return 0.75-0.25*F(s);
+    return 0.5+0.25*(1.0-F(s));
   }
   if(d>=0){
-    return 0.75-0.25*F(d);
+    return 0.5+0.25*(1.0-F(d));
   }
   return 1.0;
 }
