@@ -519,3 +519,28 @@ test_that("MISSING phenotypes give NA for their trait in meanPPop", {
   expect_equivalent(byBranch[1, ], nested)
   expect_equivalent(byBranch[2, ], colMeans(pop@pheno[9:16, ]))
 })
+
+test_that("ZERO traits give zero-length means in meanGPop and meanPPop", {
+  founderPop = quickHaplo(nInd=16, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+
+  # A SimParam with no traits is legal, and meanG returns numeric(0) for it
+  pop = newPop(founderPop, simParam=SP)
+  expect_equal(meanG(pop), numeric(0))
+  expect_equal(meanGPop(pop), numeric(0))
+  expect_equal(meanPPop(pop), numeric(0))
+
+  mp = newMultiPop(newMultiPop(pop[1:4], pop[5:8]), pop[9:16])
+  expect_equal(meanGPop(mp), numeric(0))
+  expect_equal(meanPPop(mp), numeric(0))
+
+  # At positive levels each unit still gets a row, with no columns
+  byBranch = meanGPop(mp, level=1)
+  expect_equal(dim(byBranch), c(2L, 0L))
+  expect_equal(nrow(attr(byBranch, "source")), 2L)
+
+  byPop = meanPPop(mp, level=2)
+  expect_equal(dim(byPop), c(3L, 0L))
+  expect_equal(nrow(attr(byPop, "source")), 3L)
+})

@@ -827,7 +827,7 @@ test_that("calcPopSummary validates within-population summaries", {
       withinPopFUN = function(x) character(),
       acrossPopFUN = colSums
     ),
-    "`withinPopFUN` must return a non-empty numeric vector or one-row matrix.",
+    "`withinPopFUN` must return a numeric vector or one-row matrix.",
     fixed = TRUE
   )
 
@@ -837,7 +837,7 @@ test_that("calcPopSummary validates within-population summaries", {
       withinPopFUN = function(x) "value",
       acrossPopFUN = colSums
     ),
-    "`withinPopFUN` must return a non-empty numeric vector or one-row matrix.",
+    "`withinPopFUN` must return a numeric vector or one-row matrix.",
     fixed = TRUE
   )
 
@@ -935,7 +935,7 @@ test_that("calcPopSummary validates across-population summaries", {
       acrossPopFUN = function(x) "value",
       level = 0
     ),
-    "`acrossPopFUN` must return a non-empty numeric vector or one-row matrix.",
+    "`acrossPopFUN` must return a numeric vector or one-row matrix.",
     fixed = TRUE
   )
 

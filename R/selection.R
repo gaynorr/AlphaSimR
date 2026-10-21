@@ -1774,13 +1774,16 @@ selectMultiPop = function(
       stop("`", functionName, "` must return a vector or a one-row matrix.")
     }
     # Missing values are allowed, so that a summary such as colMeans() can
-    # report NA for one trait without losing the others. Callers that need
-    # complete values, such as selectMultiPop(), check for them themselves.
-    if (!is.numeric(value) || is.null(value) || length(value) == 0L) {
+    # report NA for one trait without losing the others. Zero-length
+    # summaries are allowed too, because a SimParam with no traits is legal
+    # and colMeans() of its zero-column gv or pheno is numeric(0). Callers
+    # that need one complete value, such as selectMultiPop(), check for it
+    # themselves.
+    if (!is.numeric(value)) {
       stop(
         "`",
         functionName,
-        "` must return a non-empty numeric vector or one-row matrix."
+        "` must return a numeric vector or one-row matrix."
       )
     }
     # A one-row matrix becomes a named vector, so that every summary is
