@@ -1,4 +1,4 @@
-# AlphaSimR 2.1.0.9021
+# AlphaSimR 2.1.0.9022
 
 * Shortened the `SimParam` help page. It now opens with a list of its methods grouped by task, linked to each method's section, and a single example that sets up a simulation step by step. That example replaces the separate examples of 17 methods, each of which repeated the same setup. The methods with examples that show something particular to them, `resetPed`, `altAddTraitAD`, `importTrait`, `setCorE` and `rescaleTraits`, keep their own.
 
