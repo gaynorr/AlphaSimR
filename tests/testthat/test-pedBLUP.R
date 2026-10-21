@@ -140,6 +140,54 @@ test_that("REML matches solveUVM's dense REML", {
   expect_equal(ans$ebv, den$u, tolerance=1e-8)
 })
 
+test_that("MULTIMODAL the REML search finds the best of several optima", {
+  # Two records of an unrelated doubled haploid and seven records from each
+  # of two unrelated full-sib families. With the intercept projected out,
+  # the relationships among the records have eigenvalues 0, 0.5 and 4, and
+  # responses with squared lengths 1e-6, 1 and 1e-6 in those eigenspaces
+  # give a likelihood with a local optimum near the upper end of the range
+  # and its best near the lower end, which a single search missed
+  set.seed(9210)
+  founderPop = quickHaplo(nInd=5, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  SP$setSexes("no")
+  pop = newPop(founderPop, simParam=SP)
+  dh = makeDH(pop[5], simParam=SP)
+  famA = makeCross(pop, cbind(1L, 2L), nProgeny=7, simParam=SP)
+  famB = makeCross(pop, cbind(3L, 4L), nProgeny=7, simParam=SP)
+  iid = c(dh@iid, dh@iid, famA@iid, famB@iid)
+  n = length(iid)
+  ped = AlphaSimR:::.prunePed(iid, 2L, SP)
+  A = AlphaSimR:::calcPedA(ped$mother, ped$father, ped$isDH)
+  K = A[ped$row, ped$row]
+  P = diag(n) - matrix(1/n, n, n)
+  e = eigen(P %*% K %*% P, symmetric=TRUE)
+  v4 = e$vectors[, which.min(abs(e$values-4))]
+  vHalf = c(0, 0, 1, -1, rep(0, n-4))/sqrt(2)
+  v0 = c(1, -1, rep(0, n-2))/sqrt(2)
+  y = sqrt(1e-6)*v0 + vHalf + sqrt(1e-6)*v4
+  ans = suppressWarnings(AlphaSimR:::.fitPedBLUP(y, iid, rep(1L, n), 2L,
+                                                 simParam=SP))
+  # -2 times the REML log likelihood, profiled and less a constant, from
+  # the dense covariance matrix of the records, K/lambda + I
+  X = matrix(1, n, 1)
+  m2ll = function(lambda){
+    Hi = solve(K/lambda + diag(n))
+    XHX = t(X) %*% Hi %*% X
+    Py = Hi %*% y - Hi %*% X %*% solve(XHX, t(X) %*% Hi %*% y)
+    (n-1)*log(sum(y*Py)) -
+      c(determinant(Hi)$modulus) + c(determinant(XHX)$modulus)
+  }
+  grid = exp(seq(log(1e-4), log(1e4), length.out=801))
+  best = min(vapply(grid, m2ll, numeric(1)))
+  lambda = ans$Ve/ans$Vu
+  expect_lte(m2ll(lambda), best + 1e-6)
+  expect_lt(lambda, 1e-3)
+  expect_gt(m2ll(1e4) - m2ll(lambda), 1)
+})
+
 test_that("BOUNDARY a variance ratio at the edge of the range warns", {
   # Pairs of full sibs whose records are exact opposites have a negative
   # correlation, so the REML estimate of Vu is at zero

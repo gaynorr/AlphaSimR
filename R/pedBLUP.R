@@ -108,13 +108,26 @@
         as.numeric(Matrix::determinant(L, sqrt=FALSE)$modulus)
     }
     range = log(c(1e-4, 1e4))
-    opt = optimize(m2ll, interval=range, tol=1e-6)
-    if(min(abs(opt$minimum-range))<1e-3){
+    # The likelihood need not have a single peak in lambda, and a single
+    # search over the whole range can settle on a local optimum far from
+    # the best. It is first evaluated on a grid of one point per factor of
+    # 10, which includes both ends of the range, and the search is then
+    # confined to the neighbors of the best grid point. Whichever of the
+    # two is lower is kept, as the search never evaluates the ends of its
+    # interval.
+    grid = seq(range[1], range[2], length.out=9L)
+    gridVal = vapply(grid, m2ll, numeric(1))
+    k = which.min(gridVal)
+    opt = optimize(m2ll, interval=c(grid[max(k-1L, 1L)],
+                                    grid[min(k+1L, length(grid))]),
+                   tol=1e-6)
+    logLambda = if(opt$objective<=gridVal[k]) opt$minimum else grid[k]
+    if(min(abs(logLambda-range))<1e-3){
       boundary = TRUE
       warning("the REML estimate of the variance ratio is at the edge of the range searched, so the variance components may not be reliable",
               call.=FALSE)
     }
-    lambda = exp(opt$minimum)
+    lambda = exp(logLambda)
     sol = solveAt(lambda)
     Ve = (mme$yy-sum(sol*rhs))/(N-nFix)
     Vu = Ve/lambda
