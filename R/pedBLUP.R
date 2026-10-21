@@ -111,17 +111,25 @@
     # The likelihood need not have a single peak in lambda, and a single
     # search over the whole range can settle on a local optimum far from
     # the best. It is first evaluated on a grid of one point per factor of
-    # 10, which includes both ends of the range, and the search is then
-    # confined to the neighbors of the best grid point. Whichever of the
-    # two is lower is kept, as the search never evaluates the ends of its
-    # interval.
+    # 10, which includes both ends of the range. Every local minimum of the
+    # grid, an end included, is then refined by a search confined to its
+    # neighbors, and the lowest of the grid points and the refined points
+    # is kept, as a search never evaluates the ends of its interval.
     grid = seq(range[1], range[2], length.out=9L)
+    nGrid = length(grid)
     gridVal = vapply(grid, m2ll, numeric(1))
-    k = which.min(gridVal)
-    opt = optimize(m2ll, interval=c(grid[max(k-1L, 1L)],
-                                    grid[min(k+1L, length(grid))]),
-                   tol=1e-6)
-    logLambda = if(opt$objective<=gridVal[k]) opt$minimum else grid[k]
+    candidate = grid
+    candidateVal = gridVal
+    for(k in seq_len(nGrid)){
+      lo = max(k-1L, 1L)
+      hi = min(k+1L, nGrid)
+      if(gridVal[k]<=min(gridVal[c(lo, hi)])){
+        opt = optimize(m2ll, interval=c(grid[lo], grid[hi]), tol=1e-6)
+        candidate = c(candidate, opt$minimum)
+        candidateVal = c(candidateVal, opt$objective)
+      }
+    }
+    logLambda = candidate[which.min(candidateVal)]
     if(min(abs(logLambda-range))<1e-3){
       boundary = TRUE
       warning("the REML estimate of the variance ratio is at the edge of the range searched, so the variance components may not be reliable",
@@ -276,11 +284,14 @@ pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
 }
 
 # The lastId of every reset of the pedigree, in order. A SimParam saved by
-# an older version of AlphaSimR has no record, and asking it for the method
-# gives NULL.
+# an older version of AlphaSimR keeps its old resetPed, which records
+# nothing, and asking it for the method gives NULL. Its history cannot be
+# known, so a fit could not tell whether its individuals' iids had passed
+# to others, and pedigree BLUP refuses it rather than assume no resets.
 .pedResets = function(simParam){
   if(is.null(simParam$pedResets)){
-    return(integer(0))
+    stop("this SimParam was created by an older version of AlphaSimR and does not record resets of the pedigree, which pedigree BLUP needs; create the SimParam with this version",
+         call.=FALSE)
   }
   return(simParam$pedResets())
 }

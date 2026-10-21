@@ -167,13 +167,10 @@ test_that("MULTIMODAL the REML search finds the best of several optima", {
   v4 = e$vectors[, which.min(abs(e$values-4))]
   vHalf = c(0, 0, 1, -1, rep(0, n-4))/sqrt(2)
   v0 = c(1, -1, rep(0, n-2))/sqrt(2)
-  y = sqrt(1e-6)*v0 + vHalf + sqrt(1e-6)*v4
-  ans = suppressWarnings(AlphaSimR:::.fitPedBLUP(y, iid, rep(1L, n), 2L,
-                                                 simParam=SP))
   # -2 times the REML log likelihood, profiled and less a constant, from
   # the dense covariance matrix of the records, K/lambda + I
   X = matrix(1, n, 1)
-  m2ll = function(lambda){
+  m2ll = function(lambda, y){
     Hi = solve(K/lambda + diag(n))
     XHX = t(X) %*% Hi %*% X
     Py = Hi %*% y - Hi %*% X %*% solve(XHX, t(X) %*% Hi %*% y)
@@ -181,11 +178,31 @@ test_that("MULTIMODAL the REML search finds the best of several optima", {
       c(determinant(Hi)$modulus) + c(determinant(XHX)$modulus)
   }
   grid = exp(seq(log(1e-4), log(1e4), length.out=801))
-  best = min(vapply(grid, m2ll, numeric(1)))
-  lambda = ans$Ve/ans$Vu
-  expect_lte(m2ll(lambda), best + 1e-6)
+  fitLambda = function(y){
+    ans = suppressWarnings(AlphaSimR:::.fitPedBLUP(y, iid, rep(1L, n), 2L,
+                                                   simParam=SP))
+    ans$Ve/ans$Vu
+  }
+  # The best fit is at the lower end of the range
+  y = sqrt(1e-6)*v0 + vHalf + sqrt(1e-6)*v4
+  lambda = fitLambda(y)
+  best = min(vapply(grid, m2ll, numeric(1), y=y))
+  expect_lte(m2ll(lambda, y), best + 1e-6)
   expect_lt(lambda, 1e-3)
-  expect_gt(m2ll(1e4) - m2ll(lambda), 1)
+  expect_gt(m2ll(1e4, y) - m2ll(lambda, y), 1)
+  # The best fit is inside the range, about lambda = 0.0021, while the
+  # best grid point is the upper end, so refining only that point missed it
+  y = sqrt(3e-4)*v0 + vHalf + sqrt(1e-6)*v4
+  lambda = fitLambda(y)
+  best = min(vapply(grid, m2ll, numeric(1), y=y))
+  expect_lte(m2ll(lambda, y), best + 1e-6)
+  expect_lt(lambda, 1e-2)
+})
+
+test_that("LEGACY a SimParam that does not record resets is refused", {
+  # A SimParam saved by an older version has no pedResets method, which
+  # asking for it reports as NULL, as it does for this stand-in
+  expect_error(AlphaSimR:::.pedResets(list()), "older version")
 })
 
 test_that("BOUNDARY a variance ratio at the edge of the range warns", {
