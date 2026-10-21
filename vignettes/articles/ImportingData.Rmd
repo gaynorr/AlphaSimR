@@ -1,9 +1,12 @@
 ---
-title: "Importing Data"
+title: "Importing Data into AlphaSimR"
+author: "Chris Gaynor"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
 vignette: >
-  %\VignetteIndexEntry{Importing Data}
+  %\VignetteIndexEntry{Importing Data into AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -290,7 +293,7 @@ pullSnpGeno(pop, snpChip = "Array", simParam = SP)
 # Further reading
 
 The [Demographic Models](DemographicModels.html) article shows how to
-import founder genomes simulated by msprime and stdpopsim, and the
-[Gene Drop Simulations](GeneDropSimulations.html) article shows how to
-simulate genomes through a known pedigree, starting from imported
-founders.
+simulate and import founder genomes simulated by `msprime` and `stdpopsim`,
+and the [Gene Drop Simulations](GeneDropSimulations.html) article shows
+how to simulate genomes through a known pedigree,
+starting from imported founders.
