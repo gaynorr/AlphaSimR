@@ -4,6 +4,7 @@
 ^\.github$
 ^\.git$
 ^_pkgdown\.yml$
+^docs$
 ^vignettes/articles$
 ^\.positai$
 ^\.claude$
