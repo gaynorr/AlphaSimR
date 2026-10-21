@@ -130,18 +130,20 @@ reference:
   - usefulness
   - calcPopValue
 
-- title: Genomic prediction
+- title: Genomic and pedigree prediction
   desc: >
-    Fit RR-BLUP models to a training population and use them to set
-    estimated breeding values.
+    Fit RR-BLUP or pedigree BLUP models to a training population and use
+    them to set estimated breeding values.
   contents:
   - RRBLUP
   - RRBLUP_D
   - RRBLUP_GCA
   - RRBLUP_SCA
   - RRBLUPMemUse
+  - pedBLUP
   - setEBV
   - RRsol-class
+  - PedSol-class
 
 - title: Mixed model solvers
   desc: >

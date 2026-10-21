@@ -96,3 +96,213 @@
   return(list(Vu=Vu, Ve=Ve, fixEff=fixEffEst, iid=ped$iid, ebv=ebv,
               boundary=boundary))
 }
+
+#' @title Pedigree BLUP
+#'
+#' @description
+#' Fits a single trait pedigree BLUP model, also known as an animal model,
+#' to a training population, using the pedigree recorded in the
+#' \code{\link{SimParam}}. The output is used with \code{\link{setEBV}} to
+#' set estimated breeding values or genetic values for any individual in
+#' the simulation, including individuals created after the model was
+#' fitted. The pedigree must have been tracked from the start of the
+#' simulation, see \code{\link[=SimParam-setTrackPed]{setTrackPed}}.
+#'
+#' @param pop a \code{\link{Pop-class}} to serve as the training
+#' population. Several generations can be combined with \code{c()}, and an
+#' individual that appears more than once has its records treated as
+#' repeated records.
+#' @param traits an integer indicating the trait to model, a trait name, or
+#' a function of the traits returning a single value. Only one trait can be
+#' modelled.
+#' @param use train model using phenotypes "pheno", genetic values "gv",
+#' estimated breeding values "ebv", breeding values "bv", or randomly "rand"
+#' @param Vu the additive genetic variance. If supplied with Ve, the
+#' variance components are not estimated.
+#' @param Ve the error variance. If supplied with Vu, the variance
+#' components are not estimated.
+#' @param varComp an earlier fit of \code{pedBLUP}, whose Vu and Ve are
+#' used in place of estimating the variance components. Supply either
+#' varComp or Vu and Ve, not both.
+#' @param simParam an object of class \code{\link{SimParam}}. If
+#' \code{NULL}, the function uses the object named \code{SP} from the
+#' global environment.
+#' @param ... additional arguments if using a function for traits
+#'
+#' @details
+#' The model is \eqn{y = Xb + Zu + e}, where \eqn{X} has one column for
+#' each level of the population's fixEff slot, \eqn{u \sim N(0, A
+#' \sigma^2_u)} with \eqn{A} the numerator relationship matrix of the
+#' phenotyped individuals and all of their ancestors, and \eqn{e \sim N(0,
+#' I \sigma^2_e)}. The relationships are those of \code{\link{pedigreeA}},
+#' including its treatment of doubled haploids, inbred founders and
+#' polyploids. An individual with several records has a single breeding
+#' value, and no permanent environmental effect is fitted, so any
+#' non-additive genetic variance among repeated records is not separated
+#' from the additive variance.
+#'
+#' The mixed model equations are built from the inverse of \eqn{A}, which
+#' is sparse, and solved with the sparse Cholesky factorization of the
+#' \pkg{Matrix} package. Individuals with no Mendelian sampling variance,
+#' such as doubled haploids of inbred parents and F1s of two inbred
+#' parents, make \eqn{A} singular, and are written as exact functions of
+#' their parents rather than fitted separately.
+#'
+#' Unless they are supplied, the variance components are estimated by
+#' restricted maximum likelihood (REML) with the derivative-free approach
+#' of \insertCite{graser1987Derivative;textual}{AlphaSimR} and
+#' \insertCite{meyer1989Restricted;textual}{AlphaSimR}: the error variance
+#' is profiled out of the likelihood, which is then maximized over the
+#' ratio of the error variance to the additive genetic variance. A warning
+#' is given if the estimate is at the edge of the range searched, which
+#' covers heritabilities from about 0.0001 to 0.9999.
+#'
+#' An individual outside the fitted pedigree has no phenotyped descendants
+#' in the training population, so its best linear unbiased prediction is
+#' the average of its parents', which is what \code{\link{setEBV}} uses.
+#'
+#' @return Returns an object of \code{\link{PedSol-class}}
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @examples
+#' #Create founder haplotypes
+#' founderPop = quickHaplo(nInd=20, nChr=1, segSites=20)
+#'
+#' #Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads = 1L}
+#' SP$setTrackPed(TRUE)
+#' SP$addTraitA(10)
+#' SP$setVarE(h2=0.5)
+#'
+#' #Train on two generations
+#' pop = newPop(founderPop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=20, nProgeny=5, simParam=SP)
+#' ans = pedBLUP(c(pop, pop2), simParam=SP)
+#'
+#' #Predict a generation that was not in the training population
+#' pop3 = randCross(pop2, nCrosses=20, simParam=SP)
+#' pop3 = setEBV(pop3, ans, value="bv", simParam=SP)
+#' cor(bv(pop3, simParam=SP), ebv(pop3))
+#'
+#' @export
+pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
+                   varComp=NULL, simParam=NULL, ...){
+  simParam = getSimParam(simParam)
+  .checkPedPop(pop)
+  if(length(traits)!=1L){
+    stop("pedBLUP models one trait at a time", call.=FALSE)
+  }
+  if(!is.null(varComp)){
+    if(!is.null(Vu) || !is.null(Ve)){
+      stop("supply either varComp or Vu and Ve, not both", call.=FALSE)
+    }
+    if(!is(varComp, "PedSol")){
+      stop("varComp must be an earlier fit of pedBLUP", call.=FALSE)
+    }
+    Vu = c(varComp@Vu)
+    Ve = c(varComp@Ve)
+  }
+  y = as.matrix(getResponse(pop=pop, trait=traits, use=use,
+                            simParam=simParam, ...))
+  if(ncol(y)!=1L){
+    stop("pedBLUP models one trait at a time", call.=FALSE)
+  }
+  ans = .fitPedBLUP(y[,1], pop@iid, pop@fixEff, pop@ploidy, Vu=Vu, Ve=Ve,
+                    simParam=simParam)
+  # The mean breeding value of the training records, which centers "bv"
+  # estimates on the training population as RRBLUP's do
+  center = mean(ans$ebv[match(pop@iid, ans$iid)])
+  return(new("PedSol",
+             iid=as.integer(ans$iid),
+             ebv=ans$ebv,
+             fixEff=ans$fixEff,
+             center=center,
+             trait=convertTraitsToNames(traits, simParam),
+             Vu=as.matrix(ans$Vu),
+             Ve=as.matrix(ans$Ve),
+             model="pedBLUP"))
+}
+
+# Estimated breeding values of individuals, by iid, from a PedSol. Those in
+# the fitted pedigree take their solution. Everyone else has no phenotyped
+# descendants in the training population, so their BLUP is the average of
+# their parents', a doubled haploid's being its parent's, with 0 for an
+# unknown parent. Parents have smaller iids than their progeny, so a single
+# pass in iid order fills in every parent before it is used.
+.pedPredict = function(solution, iid, simParam){
+  iid = as.integer(iid)
+  take = match(iid, solution@iid)
+  if(!anyNA(take)){
+    return(solution@ebv[take])
+  }
+  if(!simParam$isTrackPed){
+    stop("predicting individuals outside the training pedigree needs the trackPed option, see setTrackPed in ?SimParam",
+         call.=FALSE)
+  }
+  ped = simParam$pedigree
+  if((nrow(ped)!=simParam$lastId) || (max(solution@iid)>nrow(ped)) ||
+     any(is.na(iid) | iid<1L | iid>nrow(ped))){
+    stop("the recorded pedigree does not cover these individuals or the fit, which happens when it was tracked late or reset after the fit",
+         call.=FALSE)
+  }
+  have = logical(nrow(ped))
+  have[solution@iid] = TRUE
+  u = numeric(nrow(ped))
+  u[solution@iid] = solution@ebv
+  need = logical(nrow(ped))
+  cur = unique(iid[is.na(take)])
+  while(length(cur)>0L){
+    cur = cur[cur>0L]
+    cur = cur[!need[cur] & !have[cur]]
+    need[cur] = TRUE
+    cur = unique(c(ped[cur,1:2]))
+  }
+  for(i in which(need)){
+    s = ped[i,1]
+    d = ped[i,2]
+    u[i] = 0.5*(if(s>0L) u[s] else 0) + 0.5*(if(d>0L) u[d] else 0)
+  }
+  return(u[iid])
+}
+
+# setEBV for a PedSol, with value "gv" or "bv" read as for an RRsol: "gv"
+# adds the estimate for the first level of the fixed effects, and "bv" is
+# centered on the training population, or on targetPop when it is given
+.setEBVPed = function(pop, solution, value, targetPop, append, simParam,
+                      onlyValues){
+  if(!is(pop, "Pop")){
+    stop("pedigree BLUP estimates can only be set for an object of class Pop",
+         call.=FALSE)
+  }
+  value = tolower(value)
+  u = .pedPredict(solution, pop@iid, simParam)
+  if(value=="gv"){
+    ebv = u + solution@fixEff[1]
+    name = paste0("est_GV_", solution@trait)
+  }else if(value=="bv"){
+    if(is.null(targetPop)){
+      center = solution@center
+    }else{
+      center = mean(.pedPredict(solution, targetPop@iid, simParam))
+    }
+    ebv = u - center
+    name = paste0("est_BV_", solution@trait)
+  }else if(value %in% c("female", "male")){
+    stop("This pedigree model does not produce GCA estimates.")
+  }else{
+    stop(paste0("value=", value, " is not a valid option"))
+  }
+  ebv = matrix(unname(ebv), ncol=1L, dimnames=list(NULL, name))
+  if(onlyValues){
+    return(ebv)
+  }
+  if(append){
+    pop@ebv = cbind(pop@ebv, ebv)
+  }else{
+    pop@ebv = ebv
+  }
+  return(pop)
+}

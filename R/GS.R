@@ -2563,14 +2563,16 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @title Set estimated breeding values (EBV)
 #'
 #' @description
-#' Adds genomic estimated values to a population's EBV
-#' slot using output from a genomic selection function.
-#' The genomic estimated values can be either estimated
+#' Adds estimated values to a population's EBV slot using
+#' output from a genomic selection model or from
+#' \code{\link{pedBLUP}}.
+#' The estimated values can be either estimated
 #' breeding values, estimated genetic values, or
 #' estimated general combining values.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
-#' @param solution an object of \code{\link{RRsol-class}}
+#' @param solution an object of \code{\link{RRsol-class}} or
+#' \code{\link{PedSol-class}}
 #' @param value the genomic value to be estimated. Can be
 #' either "gv", "bv", "female", or "male".
 #' @param targetPop an optional target population that can
@@ -2590,6 +2592,14 @@ RRBLUP_SCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' see return. When TRUE, append is ignored and the population is
 #' not changed.
 #'
+#' @details
+#' For output from \code{\link{pedBLUP}}, value "gv" gives the estimated
+#' breeding value plus the estimate for the first level of the fixed
+#' effects, and value "bv" gives the estimated breeding value centered on
+#' the training population, or on targetPop when it is supplied. Values
+#' "female" and "male" are not available. Individuals that were not in
+#' the fitted pedigree get the average of their parents' estimates, which
+#' is their best linear unbiased prediction.
 #'
 #' @return Returns an object of \code{\link{Pop-class}} if
 #' onlyValues=FALSE, if onlyValues=TRUE a matrix is returned
@@ -2627,6 +2637,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
     nThreads = simParam$nThreads
   }else{
     nThreads = as.integer(nThreads)
+  }
+
+  if(is(solution, "PedSol")){
+    return(.setEBVPed(pop=pop, solution=solution, value=value,
+                      targetPop=targetPop, append=append,
+                      simParam=simParam, onlyValues=onlyValues))
   }
 
   nTraits = length(solution@gv)

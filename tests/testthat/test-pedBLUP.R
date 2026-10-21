@@ -160,7 +160,79 @@ test_that("BOUNDARY a variance ratio at the edge of the range warns", {
   expect_true(ans$boundary)
 })
 
-# 4. Errors ----
+# 5. pedBLUP and setEBV ----
+
+test_that("EXPORT pedBLUP returns the internal fit as a PedSol", {
+  sim = blupSim(9201)
+  tr = sim$train
+  sol = pedBLUP(tr, simParam=sim$SP)
+  ref = fit(sim)
+  expect_s4_class(sol, "PedSol")
+  expect_equal(c(sol@Vu), ref$Vu)
+  expect_equal(c(sol@Ve), ref$Ve)
+  expect_equal(sol@ebv, ref$ebv)
+  expect_identical(sol@iid, as.integer(ref$iid))
+  expect_equal(sol@center, mean(ref$ebv[match(tr@iid, ref$iid)]))
+  expect_identical(sol@trait, sim$SP$traitNames[1])
+})
+
+test_that("SETEBV gv adds the first fixed effect and bv centers", {
+  sim = blupSim(9202)
+  tr = sim$train
+  sol = pedBLUP(tr, simParam=sim$SP)
+  u = sol@ebv[match(tr@iid, sol@iid)]
+  gv = setEBV(tr, sol, value="gv", onlyValues=TRUE, simParam=sim$SP)
+  bv = setEBV(tr, sol, value="bv", onlyValues=TRUE, simParam=sim$SP)
+  expect_equal(c(gv), u + sol@fixEff[[1]])
+  expect_equal(c(bv), u - sol@center)
+  expect_equal(mean(bv), 0)
+  expect_identical(colnames(gv), paste0("est_GV_", sol@trait))
+  expect_identical(colnames(bv), paste0("est_BV_", sol@trait))
+  # targetPop centers bv on its own mean
+  last = tr[tr@fixEff==4L]
+  bvT = setEBV(last, sol, value="bv", targetPop=last, onlyValues=TRUE,
+               simParam=sim$SP)
+  expect_equal(mean(bvT), 0)
+  # The slot is replaced or appended as for an RRsol
+  pop = setEBV(tr, sol, simParam=sim$SP)
+  pop = setEBV(pop, sol, value="bv", append=TRUE, simParam=sim$SP)
+  expect_identical(ncol(pop@ebv), 2L)
+})
+
+test_that("PREDICT new individuals get their BLUP from parent averages", {
+  # Individuals created after the fit, including doubled haploids, crosses
+  # of crosses and their progeny, against Henderson's BLUP with A extended
+  # to them and no records of their own
+  sim = blupSim(9203)
+  tr = sim$train
+  sol = pedBLUP(tr, Vu=0.7, Ve=1.3, simParam=sim$SP)
+  last = tr[tr@fixEff==4L]
+  new1 = makeDH(last[1:5], simParam=sim$SP)
+  new2 = randCross(last, nCrosses=10, simParam=sim$SP)
+  new3 = randCross(c(new1, new2), nCrosses=10, simParam=sim$SP)
+  newPop = c(new1, new2, new3)
+  pred = setEBV(newPop, sol, value="bv", onlyValues=TRUE, simParam=sim$SP)
+  all = c(tr, newPop)
+  ped = AlphaSimR:::.prunePed(all@iid, 2L, sim$SP)
+  A = AlphaSimR:::calcPedA(ped$mother, ped$father, ped$isDH)
+  X = fixedDesign(tr@fixEff)
+  Z = matrix(0, tr@nInd, length(ped$iid))
+  Z[cbind(seq_len(tr@nInd), ped$row[seq_len(tr@nInd)])] = 1
+  ref = denseBLUP(tr@pheno[,1], X, Z, A, 0.7, 1.3)
+  uNew = ref$u[ped$row[tr@nInd + seq_len(newPop@nInd)]]
+  expect_equal(c(pred), uNew - sol@center, tolerance=1e-8)
+})
+
+test_that("VARCOMP an earlier fit's variance components are reused", {
+  sim = blupSim(9204)
+  tr = sim$train
+  sol = pedBLUP(tr, simParam=sim$SP)
+  sol2 = pedBLUP(tr, varComp=sol, simParam=sim$SP)
+  expect_equal(c(sol2@Vu, sol2@Ve), c(sol@Vu, sol@Ve))
+  expect_equal(sol2@ebv, sol@ebv, tolerance=1e-8)
+})
+
+# 6. Errors ----
 
 test_that("ERROR inputs are checked", {
   sim = blupSim(9107)
@@ -175,4 +247,9 @@ test_that("ERROR inputs are checked", {
                "single positive value")
   expect_error(f(y[1:3], tr@iid[1:3], 1:3, 2L), "more records")
   expect_error(f(y, tr@iid[-1], tr@fixEff, 2L), "same length")
+  sol = pedBLUP(tr, simParam=sim$SP)
+  expect_error(pedBLUP(tr, traits=1:2, simParam=sim$SP), "one trait")
+  expect_error(pedBLUP(tr, Vu=1, varComp=sol, simParam=sim$SP), "not both")
+  expect_error(pedBLUP(tr, varComp=list(), simParam=sim$SP), "earlier fit")
+  expect_error(setEBV(tr, sol, value="female", simParam=sim$SP), "GCA")
 })
