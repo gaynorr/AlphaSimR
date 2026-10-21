@@ -384,11 +384,18 @@ test_that("CACHE known inbreeding coefficients are used and the rest computed", 
                                                ped$isDH, known)), F)
   expect_equal(c(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
                                                ped$isDH, rep(NA_real_, length(F)))), F)
-  # A value given as known is taken as it is
+  # A value given as known is taken as it is, except for a fully inbred
+  # individual, whose inbreeding coefficient of 1 follows from the pedigree
+  k = which(F<1)[1]
   known = rep(NA_real_, length(F))
-  known[1] = 0.25
+  known[k] = 0.25
   expect_equal(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
-                                             ped$isDH, known)[1], 0.25)
+                                             ped$isDH, known)[k], 0.25)
+  known[] = NA
+  known[1] = 0.25
+  expect_equal(ped$isDH[1], 1L)
+  expect_equal(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
+                                             ped$isDH, known)[1], 1)
 })
 
 test_that("CACHE pedigreeInbreeding fills the SimParam's cache and reuses it", {

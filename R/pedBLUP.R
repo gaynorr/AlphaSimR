@@ -60,12 +60,13 @@
   # share a large offset.
   levelMean = as.vector(tapply(y, fix, mean))
   yc = y - levelMean[as.integer(fix)]
-  # Records that do not vary within the levels leave nothing to divide
+  # Records that are equal within every level leave nothing to divide
   # between the two variances, and the likelihood takes the logarithm of
-  # zero. Centering such records leaves at most a few units in the last
-  # place of the records' size.
+  # zero. They are tested for equality as given, because centering can
+  # leave rounding error, and any difference between two records, however
+  # small next to their size, is variation that REML can use.
   if(is.null(Vu) &&
-     (max(abs(yc)) <= 8*.Machine$double.eps*max(1, abs(y)))){
+     all(tapply(y, fix, function(v) all(v==v[1])))){
     stop("the records do not vary within the levels of the fixed effects, so the variance components cannot be estimated; supply Vu and Ve",
          call.=FALSE)
   }

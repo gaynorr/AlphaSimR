@@ -2,7 +2,6 @@
 #include "pedigree.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <utility>
 
 // Numerator relationships from a pedigree: inbreeding coefficients and
@@ -30,19 +29,6 @@
 // so that is the one place where doubled haploids are treated separately.
 
 namespace {
-
-// Mendelian sampling variances at or below this are treated as zero. Zeros
-// arise from fully inbred parents, whose inbreeding coefficient of 1 is
-// set, or computed exactly, but an inbreeding coefficient that comes out a
-// rounding error short of 1 leaves a variance of a few units in the last
-// place, as inbreeding coefficients are at most 1. Taken as a genuine
-// variance, its reciprocal would put a coefficient of the order of 1e16
-// into the inverse. Genuine variances can be small but are far larger
-// than that: selfing halves an individual's distance from full inbreeding
-// each generation, so it takes about 46 generations of selfing from an
-// outbred individual to reach this cutoff, by which time the individual
-// is a clone of its parent to the precision of a double.
-const double minVarD = 64.0*std::numeric_limits<double>::epsilon();
 
 // A sparse row as (column, value) pairs
 typedef std::vector<std::pair<arma::uword,double> > SpRow;
@@ -280,6 +266,19 @@ void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
   // between its parents, and every relationship among earlier individuals
   // can be found by Colleau's passes once their variances are known. A
   // batch closes at the first individual with a parent inside it.
+  //
+  // Which individuals have no Mendelian sampling is decided from the
+  // pedigree rather than from the size of the variance, because a genuine
+  // variance can be as small as 2^-k after k generations of selfing. An
+  // individual is fully inbred if it is a doubled haploid or an inbred
+  // founder, or a copy of a fully inbred line: a self of one, or a cross
+  // of two copies of it. line[i] names the individual a copy is of. A
+  // doubled haploid of a fully inbred parent, and any progeny of two fully
+  // inbred parents, have no Mendelian sampling, and their variance is set
+  // to exactly zero, which buildPedAinv relies on.
+  std::vector<bool> full(n, false);
+  std::vector<bool> noSampling(n, false);
+  std::vector<arma::uword> line(n);
   std::vector<arma::uword> pend;
   arma::vec x;
   arma::uword b = 0;
@@ -291,7 +290,7 @@ void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
           pend.clear();
         }
         for(arma::uword j=b; j<i; ++j){
-          D(j) = mendelianVar(ped, F, j);
+          D(j) = noSampling[j] ? 0.0 : mendelianVar(ped, F, j);
         }
       }
       b = i;
@@ -301,10 +300,24 @@ void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
     }
     int s = ped.mother[i];
     int d = ped.father[i];
-    if(useKnown && !std::isnan(knownF(i))){
-      F(i) = knownF(i);
-    }else if(ped.isDH[i]){
+    line[i] = i;
+    if(ped.isDH[i]){
+      full[i] = true;
+      if((s>=0) && full[s]){
+        noSampling[i] = true;
+        line[i] = line[s];
+      }
+    }else if((s>=0) && (d>=0) && full[s] && full[d]){
+      noSampling[i] = true;
+      if(line[s]==line[d]){
+        full[i] = true;
+        line[i] = line[s];
+      }
+    }
+    if(full[i]){
       F(i) = 1.0;
+    }else if(useKnown && !std::isnan(knownF(i))){
+      F(i) = knownF(i);
     }else if((s<0) || (d<0)){
       // The unknown parent's gamete comes from the unrelated, non-inbred
       // base, so only the known parent's gamete can carry inbreeding,
@@ -344,7 +357,10 @@ PedAinv buildPedAinv(const Ped& ped, const arma::vec& D){
     if(d>=0){
       addScaledRow(c, w[d], 0.5);
     }
-    if(D(i)>minVarD){
+    // pedInbreeding sets the variance of every individual without
+    // Mendelian sampling to exactly zero, and every other variance is
+    // genuine, however small
+    if(D(i)>0.0){
       arma::uword k = basis.size();
       basis.push_back(i);
       w[i].assign(1, std::make_pair(k, 1.0));

@@ -246,6 +246,11 @@ test_that("SHIFT a large offset in the records changes only the fixed effects", 
   expect_equal(b$Ve, a$Ve, tolerance=1e-5)
   expect_equal(b$ebv, a$ebv, tolerance=1e-5)
   expect_equal(unname(b$fixEff - 2^30), unname(a$fixEff), tolerance=1e-5)
+  # Rescaling the records rescales the estimates and nothing else
+  s = f(y*1e-8)
+  expect_equal(s$Vu, a$Vu*1e-16, tolerance=1e-5)
+  expect_equal(s$Ve, a$Ve*1e-16, tolerance=1e-5)
+  expect_equal(s$ebv, a$ebv*1e-8, tolerance=1e-5)
 })
 
 test_that("RESET a fit is refused once a reset discards its individuals", {
@@ -287,18 +292,26 @@ test_that("CONSTANT records need given variance components", {
   # Records that do not vary within the levels of the fixed effects leave
   # nothing for REML to estimate, but fit with given components
   set.seed(9208)
-  founderPop = quickHaplo(nInd=2, nChr=1, segSites=10)
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop, simParam=SP)
-  expect_error(AlphaSimR:::.fitPedBLUP(c(5, 5), pop@iid, c(1L, 1L), 2L,
+  two = pop@iid[1:2]
+  expect_error(AlphaSimR:::.fitPedBLUP(c(5, 5), two, c(1L, 1L), 2L,
                                        simParam=SP),
                "do not vary")
-  ans = AlphaSimR:::.fitPedBLUP(c(5, 5), pop@iid, c(1L, 1L), 2L, Vu=1,
+  ans = AlphaSimR:::.fitPedBLUP(c(5, 5), two, c(1L, 1L), 2L, Vu=1,
                                 Ve=1, simParam=SP)
   expect_equal(ans$ebv, c(0, 0))
   expect_equal(unname(ans$fixEff), 5)
+  # Records that differ by far less than their size, or that are all far
+  # below 1, still vary. With unrelated individuals the variance ratio is
+  # not identified, so a warning about the range searched is expected.
+  f = function(y) suppressWarnings(
+    AlphaSimR:::.fitPedBLUP(y, pop@iid, rep(1L, 4), 2L, simParam=SP))
+  expect_error(f(1e16 + c(-4, -2, 2, 4)), NA)
+  expect_error(f(1e-16*c(-4, -2, 2, 4)), NA)
 })
 
 test_that("INBRED highly inbred selfed siblings keep their own breeding values", {
@@ -334,6 +347,35 @@ test_that("INBRED highly inbred selfed siblings keep their own breeding values",
   expect_equal(u, ref$u[pp$row], tolerance=1e-6)
   expect_equal(u[1], 2^-34/(2^-34+1e-10), tolerance=1e-4)
   expect_equal(u[1], -u[2], tolerance=1e-6)
+  # Twelve more generations bring the variance to 2^-46, still genuine.
+  # With Ve equal to it, each sibling takes half of its deviation from
+  # their mean. A dense reference cannot resolve differences this small.
+  for(g in 1:12){
+    pop = self(pop, simParam=SP)
+  }
+  sibs = self(pop, nProgeny=2, simParam=SP)
+  ped = SP$pedigree
+  ans = AlphaSimR:::calcPedAinvTriplet(ped[,1], ped[,2], ped[,3])
+  expect_true(all(sibs@iid %in% ans$basis))
+  expect_equal(ans$D[sibs@iid], rep(2^-46, 2))
+  fitted = AlphaSimR:::.fitPedBLUP(y, sibs@iid, c(1L, 1L), 2L, Vu=1,
+                                   Ve=2^-46, simParam=SP)
+  pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
+  expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
+})
+
+test_that("INBRED clones of inbred lines still have no Mendelian sampling", {
+  # Selfs and doubled haploids of an inbred founder are copies of it, and
+  # an F1 of two inbred founders is their average, whatever the depth
+  mother = c(0L, 0L, 1L, 3L, 1L, 4L, 6L)
+  father = c(0L, 0L, 1L, 3L, 2L, 4L, 5L)
+  isDH =   c(1L, 1L, 0L, 1L, 0L, 0L, 0L)
+  ans = AlphaSimR:::calcPedAinvTriplet(mother, father, isDH)
+  # 3 is a self of 1, 4 a doubled haploid of 3 and 6 a self of 4, all
+  # copies of 1; 5 is the F1 of 1 and 2; 7 crosses a copy of 1 with 5
+  expect_equal(ans$basis, c(1L, 2L, 7L))
+  expect_equal(c(ans$D)[3:6], c(0, 0, 0, 0))
+  expect_equal(c(ans$F)[3:6], c(1, 1, 0, 1))
 })
 
 # 6. Errors ----
