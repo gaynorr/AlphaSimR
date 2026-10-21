@@ -140,13 +140,15 @@ test_that("REML matches solveUVM's dense REML", {
   expect_equal(ans$ebv, den$u, tolerance=1e-8)
 })
 
-test_that("MULTIMODAL the REML search finds the best of several optima", {
+test_that("MULTIMODAL the REML search keeps the best it finds in its range", {
   # Two records of an unrelated doubled haploid and seven records from each
   # of two unrelated full-sib families. With the intercept projected out,
   # the relationships among the records have eigenvalues 0, 0.5 and 4, and
-  # responses with squared lengths 1e-6, 1 and 1e-6 in those eigenspaces
-  # give a likelihood with a local optimum near the upper end of the range
-  # and its best near the lower end, which a single search missed
+  # responses built from those eigenspaces give a likelihood with more
+  # than one optimum. The search covers two orders of magnitude either
+  # side of its starting value and is not meant to find a global optimum,
+  # but it must stay in that range and do at least as well as the best of
+  # its grid points.
   set.seed(9210)
   founderPop = quickHaplo(nInd=5, nChr=1, segSites=10)
   SP = SimParam$new(founderPop)
@@ -177,26 +179,37 @@ test_that("MULTIMODAL the REML search finds the best of several optima", {
     (n-1)*log(sum(y*Py)) -
       c(determinant(Hi)$modulus) + c(determinant(XHX)$modulus)
   }
-  grid = exp(seq(log(1e-4), log(1e4), length.out=801))
-  fitLambda = function(y){
+  check = function(y, guess){
     ans = suppressWarnings(AlphaSimR:::.fitPedBLUP(y, iid, rep(1L, n), 2L,
-                                                   simParam=SP))
-    ans$Ve/ans$Vu
+                                                   simParam=SP,
+                                                   lambdaGuess=guess))
+    lambda = ans$Ve/ans$Vu
+    grid = guess*10^seq(-2, 2, length.out=9)
+    expect_gte(lambda, guess/100*(1-1e-6))
+    expect_lte(lambda, guess*100*(1+1e-6))
+    expect_lte(m2ll(lambda, y), min(vapply(grid, m2ll, numeric(1), y=y)) +
+                 1e-6)
   }
-  # The best fit is at the lower end of the range
-  y = sqrt(1e-6)*v0 + vHalf + sqrt(1e-6)*v4
-  lambda = fitLambda(y)
-  best = min(vapply(grid, m2ll, numeric(1), y=y))
-  expect_lte(m2ll(lambda, y), best + 1e-6)
-  expect_lt(lambda, 1e-3)
-  expect_gt(m2ll(1e4, y) - m2ll(lambda, y), 1)
-  # The best fit is inside the range, about lambda = 0.0021, while the
-  # best grid point is the upper end, so refining only that point missed it
-  y = sqrt(3e-4)*v0 + vHalf + sqrt(1e-6)*v4
-  lambda = fitLambda(y)
-  best = min(vapply(grid, m2ll, numeric(1), y=y))
-  expect_lte(m2ll(lambda, y), best + 1e-6)
-  expect_lt(lambda, 1e-2)
+  for(guess in c(1e-3, 1, 1e3)){
+    check(sqrt(1e-6)*v0 + vHalf + sqrt(1e-6)*v4, guess)
+    check(sqrt(3e-4)*v0 + vHalf + sqrt(1e-6)*v4, guess)
+  }
+})
+
+test_that("GUESS the REML search is centered on the simulation's variance ratio", {
+  sim = blupSim(9211)
+  SP = sim$SP
+  guess = AlphaSimR:::.lambdaGuess(1, "pheno", SP)
+  expect_equal(guess, SP$varE[1]/SP$varA[1])
+  expect_equal(guess, 0.6/0.4)
+  expect_equal(AlphaSimR:::.lambdaGuess(SP$traitNames[1], "pheno", SP),
+               guess)
+  # Records that the trait's variances do not describe start from 1
+  expect_equal(AlphaSimR:::.lambdaGuess(1, "gv", SP), 1)
+  expect_equal(AlphaSimR:::.lambdaGuess(function(x) x[,1], "pheno", SP), 1)
+  sol = pedBLUP(sim$train, simParam=SP)
+  lambda = c(sol@Ve/sol@Vu)
+  expect_true(lambda>=guess/100 && lambda<=guess*100)
 })
 
 test_that("LEGACY a SimParam that does not record resets is refused", {
@@ -231,7 +244,8 @@ test_that("EXPORT pedBLUP returns the internal fit as a PedSol", {
   sim = blupSim(9201)
   tr = sim$train
   sol = pedBLUP(tr, simParam=sim$SP)
-  ref = fit(sim)
+  # pedBLUP starts the REML search from the simulation's variance ratio
+  ref = fit(sim, lambdaGuess=AlphaSimR:::.lambdaGuess(1, "pheno", sim$SP))
   expect_s4_class(sol, "PedSol")
   expect_equal(c(sol@Vu), ref$Vu)
   expect_equal(c(sol@Ve), ref$Ve)

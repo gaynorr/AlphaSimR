@@ -18,8 +18,11 @@
 # estimated breeding values of every individual in the pruned pedigree with
 # their iids. Individuals outside the pruned pedigree have no phenotyped
 # descendants, so their BLUP is the average of their parents'.
+#
+# lambdaGuess centers the REML search, which covers two orders of
+# magnitude either side of it; see .lambdaGuess.
 .fitPedBLUP = function(y, iid, fixEff, ploidy, Vu=NULL, Ve=NULL,
-                       simParam){
+                       simParam, lambdaGuess=1){
   y = as.numeric(y)
   if((length(iid)!=length(y)) || (length(fixEff)!=length(y))){
     stop("y, iid and fixEff must have the same length", call.=FALSE)
@@ -130,28 +133,27 @@
       (N-nFix)*log(ypy) - mme$nBasis*logLambda +
         as.numeric(Matrix::determinant(L, sqrt=FALSE)$modulus)
     }
-    range = log(c(1e-4, 1e4))
-    # The likelihood need not have a single peak in lambda, and a single
-    # search over the whole range can settle on a local optimum far from
-    # the best. It is first evaluated on a grid of one point per factor of
-    # 10, which includes both ends of the range. Every local minimum of the
-    # grid, an end included, is then refined by a search confined to its
-    # neighbors, and the lowest of the grid points and the refined points
-    # is kept, as a search never evaluates the ends of its interval.
+    # The search covers two orders of magnitude either side of a starting
+    # value taken from the simulation, which keeps it near a sensible
+    # heritability. The likelihood need not have a single peak in lambda,
+    # so it is first evaluated on a grid of 9 points, one per factor of
+    # about 3, including both ends, and the best grid point is then
+    # refined within its neighbors. The result is the best found, not a
+    # guaranteed global optimum, which matters little for the breeding
+    # values when the ratio is near its best.
+    if((length(lambdaGuess)!=1L) || !is.finite(lambdaGuess) ||
+       (lambdaGuess<=0)){
+      lambdaGuess = 1
+    }
+    range = log(lambdaGuess) + log(c(1e-2, 1e2))
     grid = seq(range[1], range[2], length.out=9L)
     nGrid = length(grid)
     gridVal = vapply(grid, m2ll, numeric(1))
-    candidate = grid
-    candidateVal = gridVal
-    for(k in seq_len(nGrid)){
-      lo = max(k-1L, 1L)
-      hi = min(k+1L, nGrid)
-      if(gridVal[k]<=min(gridVal[c(lo, hi)])){
-        opt = optimize(m2ll, interval=c(grid[lo], grid[hi]), tol=1e-6)
-        candidate = c(candidate, opt$minimum)
-        candidateVal = c(candidateVal, opt$objective)
-      }
-    }
+    k = which.min(gridVal)
+    opt = optimize(m2ll, interval=c(grid[max(k-1L, 1L)],
+                                    grid[min(k+1L, nGrid)]), tol=1e-6)
+    candidate = c(grid, opt$minimum)
+    candidateVal = c(gridVal, opt$objective)
     if(min(candidateVal)==.Machine$double.xmax){
       stop(notFactored, " at any variance ratio searched", call.=FALSE)
     }
@@ -162,7 +164,7 @@
     logLambda = candidate[which.min(candidateVal)]
     if(min(abs(logLambda-range))<1e-3){
       boundary = TRUE
-      warning("the REML estimate of the variance ratio is at the edge of the range searched, so the variance components may not be reliable",
+      warning("the REML estimate of the variance ratio is at the edge of the range searched, two orders of magnitude either side of the ratio set for the trait in the simulation, so the variance components may not be reliable",
               call.=FALSE)
     }
     lambda = exp(logLambda)
@@ -246,9 +248,16 @@
 #' of \insertCite{graser1987Derivative;textual}{AlphaSimR} and
 #' \insertCite{meyer1989Restricted;textual}{AlphaSimR}: the error variance
 #' is profiled out of the likelihood, which is then maximized over the
-#' ratio of the error variance to the additive genetic variance. A warning
-#' is given if the estimate is at the edge of the range searched, which
-#' covers heritabilities from about 0.0001 to 0.9999.
+#' ratio of the error variance to the additive genetic variance. The search
+#' covers two orders of magnitude either side of the ratio of the trait's
+#' default error variance to its additive genetic variance in the founder
+#' population, as set in the \code{\link{SimParam}}, or of 1 when traits
+#' is a function, use is not "pheno" or the trait has no default error
+#' variance. The likelihood is evaluated on a grid of points across that
+#' range and then maximized near the best of them, so the estimate is the
+#' best found rather than a guaranteed global maximum, which makes little
+#' difference to the breeding values near the best ratio. A warning is
+#' given if the estimate is at the edge of the range.
 #'
 #' An individual outside the fitted pedigree has no phenotyped descendants
 #' in the training population, so its best linear unbiased prediction is
@@ -304,7 +313,8 @@ pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
     stop("pedBLUP models one trait at a time", call.=FALSE)
   }
   ans = .fitPedBLUP(y[,1], pop@iid, pop@fixEff, pop@ploidy, Vu=Vu, Ve=Ve,
-                    simParam=simParam)
+                    simParam=simParam,
+                    lambdaGuess=.lambdaGuess(traits, use, simParam))
   # The mean breeding value of the training records, which centers "bv"
   # estimates on the training population as RRBLUP's do
   center = mean(ans$ebv[match(pop@iid, ans$iid)])
@@ -318,6 +328,32 @@ pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
              Ve=as.matrix(ans$Ve),
              model="pedBLUP",
              nPedResets=length(.pedResets(simParam))))
+}
+
+# A starting value for the variance ratio Ve/Vu, from the trait's default
+# error variance and its additive variance in the founder population, as
+# set in the SimParam, or 1 when those don't describe the records: for a
+# function of the traits, a response other than phenotypes, or a trait
+# with no default error variance.
+.lambdaGuess = function(traits, use, simParam){
+  if(!is.character(use) || (tolower(use)!="pheno") ||
+     !(is.numeric(traits) || is.character(traits))){
+    return(1)
+  }
+  t = convertTraitsToIndex(traits, simParam)
+  varE = simParam$varE
+  if(is.matrix(varE)){
+    varE = diag(varE)
+  }
+  varA = simParam$varA
+  if((length(varE)<t) || (length(varA)<t)){
+    return(1)
+  }
+  guess = varE[t]/varA[t]
+  if(!is.finite(guess) || (guess<=0)){
+    return(1)
+  }
+  return(guess)
 }
 
 # The lastId of every reset of the pedigree, in order. A SimParam saved by

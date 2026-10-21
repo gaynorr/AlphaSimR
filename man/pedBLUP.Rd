@@ -80,9 +80,16 @@ restricted maximum likelihood (REML) with the derivative-free approach
 of \insertCite{graser1987Derivative;textual}{AlphaSimR} and
 \insertCite{meyer1989Restricted;textual}{AlphaSimR}: the error variance
 is profiled out of the likelihood, which is then maximized over the
-ratio of the error variance to the additive genetic variance. A warning
-is given if the estimate is at the edge of the range searched, which
-covers heritabilities from about 0.0001 to 0.9999.
+ratio of the error variance to the additive genetic variance. The search
+covers two orders of magnitude either side of the ratio of the trait's
+default error variance to its additive genetic variance in the founder
+population, as set in the \code{\link{SimParam}}, or of 1 when traits
+is a function, use is not "pheno" or the trait has no default error
+variance. The likelihood is evaluated on a grid of points across that
+range and then maximized near the best of them, so the estimate is the
+best found rather than a guaranteed global maximum, which makes little
+difference to the breeding values near the best ratio. A warning is
+given if the estimate is at the edge of the range.
 
 An individual outside the fitted pedigree has no phenotyped descendants
 in the training population, so its best linear unbiased prediction is
