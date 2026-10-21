@@ -4,54 +4,66 @@
 #' Container for global simulation parameters. Saving this object
 #' as SP will allow it to be accessed by function defaults.
 #'
+#' A simulation starts by creating a new \code{SimParam} object with
+#' \code{SimParam$new()} and a founder population. It is recommended
+#' that you save the object with the name \code{SP}, because subsequent
+#' functions will check your global environment for an object of this
+#' name if their \code{simParam} arguments are \code{NULL}. This allows
+#' you to call these functions without explicitly supplying a
+#' \code{simParam} argument with every call.
+#'
+#' The object is then changed through its methods, such as
+#' \code{SP$addTraitA()}, each of which has its own help page.
+#'
+#' @evalRd .simParamUsage("initialize", call="SimParam$new")
+#'
+#' @param founderPop an object of \code{\link{MapPop-class}}
+#'
 #' @details
 #' \subsection{Methods by task}{
 #' \describe{
 #'   \item{Starting a simulation}{
-#'     \href{#method-SimParam-initialize}{\code{new()}},
-#'     \href{#method-SimParam-setSexes}{\code{setSexes()}},
-#'     \href{#method-SimParam-setTrackPed}{\code{setTrackPed()}},
-#'     \href{#method-SimParam-setTrackRec}{\code{setTrackRec()}},
-#'     \href{#method-SimParam-resetPed}{\code{resetPed()}}}
+#'     \code{\link[=SimParam-setSexes]{setSexes()}},
+#'     \code{\link[=SimParam-setTrackPed]{setTrackPed()}},
+#'     \code{\link[=SimParam-setTrackRec]{setTrackRec()}},
+#'     \code{\link[=SimParam-resetPed]{resetPed()}}}
 #'   \item{Adding traits}{
-#'     \href{#method-SimParam-addTraitA}{\code{addTraitA()}},
-#'     \href{#method-SimParam-addTraitAD}{\code{addTraitAD()}},
-#'     \href{#method-SimParam-addTraitAE}{\code{addTraitAE()}},
-#'     \href{#method-SimParam-addTraitADE}{\code{addTraitADE()}},
-#'     \href{#method-SimParam-addTraitAG}{\code{addTraitAG()}},
-#'     \href{#method-SimParam-addTraitADG}{\code{addTraitADG()}},
-#'     \href{#method-SimParam-addTraitAEG}{\code{addTraitAEG()}},
-#'     \href{#method-SimParam-addTraitADEG}{\code{addTraitADEG()}},
-#'     \href{#method-SimParam-altAddTraitAD}{\code{altAddTraitAD()}},
-#'     \href{#method-SimParam-manAddTrait}{\code{manAddTrait()}},
-#'     \href{#method-SimParam-importTrait}{\code{importTrait()}}.
+#'     \code{\link[=SimParam-addTraitA]{addTraitA()}},
+#'     \code{\link[=SimParam-addTraitAD]{addTraitAD()}},
+#'     \code{\link[=SimParam-addTraitAE]{addTraitAE()}},
+#'     \code{\link[=SimParam-addTraitADE]{addTraitADE()}},
+#'     \code{\link[=SimParam-addTraitAG]{addTraitAG()}},
+#'     \code{\link[=SimParam-addTraitADG]{addTraitADG()}},
+#'     \code{\link[=SimParam-addTraitAEG]{addTraitAEG()}},
+#'     \code{\link[=SimParam-addTraitADEG]{addTraitADEG()}},
+#'     \code{\link[=SimParam-altAddTraitAD]{altAddTraitAD()}},
+#'     \code{\link[=SimParam-manAddTrait]{manAddTrait()}},
+#'     \code{\link[=SimParam-importTrait]{importTrait()}}.
 #'     Each \code{addTrait} method models additive effects plus the
 #'     effects named in its suffix: D for dominance, E for epistasis and
 #'     G for genotype-by-environment interaction.}
 #'   \item{Phenotypes}{
-#'     \href{#method-SimParam-setVarE}{\code{setVarE()}},
-#'     \href{#method-SimParam-setCorE}{\code{setCorE()}} (deprecated)}
+#'     \code{\link[=SimParam-setVarE]{setVarE()}},
+#'     \code{\link[=SimParam-setCorE]{setCorE()}} (deprecated)}
 #'   \item{Choosing loci and SNP chips}{
-#'     \href{#method-SimParam-restrSegSites}{\code{restrSegSites()}},
-#'     \href{#method-SimParam-addSnpChip}{\code{addSnpChip()}},
-#'     \href{#method-SimParam-addSnpChipByName}{\code{addSnpChipByName()}},
-#'     \href{#method-SimParam-addStructuredSnpChip}{\code{addStructuredSnpChip()}},
-#'     \href{#method-SimParam-setFounderHap}{\code{setFounderHap()}}}
+#'     \code{\link[=SimParam-restrSegSites]{restrSegSites()}},
+#'     \code{\link[=SimParam-addSnpChip]{addSnpChip()}},
+#'     \code{\link[=SimParam-addSnpChipByName]{addSnpChipByName()}},
+#'     \code{\link[=SimParam-addStructuredSnpChip]{addStructuredSnpChip()}},
+#'     \code{\link[=SimParam-setFounderHap]{setFounderHap()}}}
 #'   \item{Genetic maps and recombination}{
-#'     \href{#method-SimParam-setRecombRatio}{\code{setRecombRatio()}},
-#'     \href{#method-SimParam-switchGenMap}{\code{switchGenMap()}},
-#'     \href{#method-SimParam-switchFemaleMap}{\code{switchFemaleMap()}},
-#'     \href{#method-SimParam-switchMaleMap}{\code{switchMaleMap()}}}
+#'     \code{\link[=SimParam-setRecombRatio]{setRecombRatio()}},
+#'     \code{\link[=SimParam-switchGenMap]{switchGenMap()}},
+#'     \code{\link[=SimParam-switchFemaleMap]{switchFemaleMap()}},
+#'     \code{\link[=SimParam-switchMaleMap]{switchMaleMap()}}}
 #'   \item{Changing traits}{
-#'     \href{#method-SimParam-switchTrait}{\code{switchTrait()}},
-#'     \href{#method-SimParam-removeTrait}{\code{removeTrait()}},
-#'     \href{#method-SimParam-rescaleTraits}{\code{rescaleTraits()}}}
-#'   \item{For internal use}{
-#'     \href{#method-SimParam-addToRec}{\code{addToRec()}},
-#'     \href{#method-SimParam-ibdHaplo}{\code{ibdHaplo()}},
-#'     \href{#method-SimParam-updateLastId}{\code{updateLastId()}},
-#'     \href{#method-SimParam-addToPed}{\code{addToPed()}}}
+#'     \code{\link[=SimParam-switchTrait]{switchTrait()}},
+#'     \code{\link[=SimParam-removeTrait]{removeTrait()}},
+#'     \code{\link[=SimParam-rescaleTraits]{rescaleTraits()}}}
 #' }
+#' The methods \code{addToRec()}, \code{ibdHaplo()},
+#' \code{updateLastId()} and \code{addToPed()} are for use by
+#' AlphaSimR itself and are not documented.
 #' }
 #'
 #' @examples
@@ -151,16 +163,6 @@ SimParam = R6Class(
     #' See \code{\link{asCategorical}} for an example.
     finalizePheno = "function",
 
-    #' @description Starts the process of building a new simulation
-    #' by creating a new \code{SimParam} object and assigning a founder
-    #' population to the class. It is recommended that you save the
-    #' object with the name \code{SP}, because subsequent functions will
-    #' check your global environment for an object of this name if
-    #' their \code{simParam} arguments are \code{NULL}. This allows you
-    #' to call these functions without explicitly supplying a \code{simParam}
-    #' argument with every call.
-    #'
-    #' @param founderPop an object of \code{\link{MapPop-class}}
     initialize = function(founderPop){
       stopifnot("founderPop must be a MapPop, such as one made by runMacs, quickHaplo or importHaplo"=
                   is(founderPop, "MapPop"))
@@ -210,16 +212,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Sets pedigree tracking for the simulation.
-    #' By default pedigree tracking is turned off. When turned on,
-    #' the pedigree of all individuals created will be tracked,
-    #' except those created by \code{\link{hybridCross}}. Turning
-    #' off pedigree tracking will turn off recombination tracking
-    #' if it is turned on.
-    #'
-    #' @param isTrackPed should pedigree tracking be on.
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
     setTrackPed = function(isTrackPed, force=FALSE){
       stopifnot("isTrackPed must be TRUE or FALSE"=is.logical(isTrackPed))
       if(!force){
@@ -232,16 +224,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Sets recombination tracking for the simulation.
-    #' By default recombination tracking is turned off. When turned
-    #' on recombination tracking will also turn on pedigree tracking.
-    #' Recombination tracking keeps records of all individuals created,
-    #' except those created by \code{\link{hybridCross}}, because their
-    #' pedigree is not tracked.
-    #'
-    #' @param isTrackRec should recombination tracking be on.
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
     setTrackRec = function(isTrackRec, force=FALSE){
       stopifnot("isTrackRec must be TRUE or FALSE"=is.logical(isTrackRec))
       if(!force){
@@ -254,30 +236,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Resets the internal lastId, the pedigree
-    #' and recombination tracking (if in use) to the
-    #' supplied lastId. Be careful using this function because
-    #' it may introduce a bug if you use individuals from
-    #' the deleted portion of the pedigree.
-    #'
-    #' @param lastId last ID to include in pedigree
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #'
-    #' #Create population
-    #' pop = newPop(founderPop, simParam=SP)
-    #' pop@id # 1:10
-    #'
-    #' #Create another population after reseting pedigree
-    #' SP$resetPed()
-    #' pop2 = newPop(founderPop, simParam=SP)
-    #' pop2@id # 1:10
     resetPed =function(lastId=0L){
       private$.lastId = lastId
       private$.pedigree = private$.pedigree[0:lastId,,drop=FALSE]
@@ -298,38 +256,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Sets restrictions on which segregating sites can
-    #' serve as a SNP and/or QTL. The default behavior of AlphaSimR is
-    #' to randomly sample QTL or SNP from all eligible sites and then
-    #' mark the sampled sites ineligible to be sampled as the other
-    #' type (e.g. if a site is sampled as a QTL it will be marked as
-    #' ineligible to be sampled as a SNP). This behavior is designed
-    #' to produce the most challenging scenario for genomic selection
-    #' when the markers used for prediction are not causal.
-    #'
-    #' Setting overlap=TRUE will prevent the addition of loci to the
-    #' ineligible list, but it won't remove sites already added to these
-    #' lists. Thus, timing of when restrSegSites is called matters. It
-    #' should be called before any addTrait or addSnpChip functions with
-    #' the overlap=TRUE argument to freely allow loci to overlap.
-    #'
-    #' The minQtlPerChr and minSnpPerChr arguments can be used with
-    #' overlap=FALSE to preallocate sites as QTL and SNP respectively. This
-    #' option is useful when simulating multiple traits and/or SNP chips,
-    #' because it can be used to guarantee that enough eligible sites are
-    #' available when running addTrait and or addSnpChip functions.
-    #'
-    #' @param minQtlPerChr the minimum number of segregating sites for
-    #' QTLs. Can be a single value or a vector of values for each chromosome.
-    #' @param minSnpPerChr the minimum number of segregating sites for SNPs.
-    #' Can be a single value or a vector of values for each chromosome.
-    #' @param excludeQtl an optional vector of segregating site names to
-    #' exclude from consideration as a viable QTL.
-    #' @param excludeSnp an optional vector of segregating site names to
-    #' exclude from consideration as a viable SNP.
-    #' @param overlap should SNP and QTL sites be allowed to overlap.
-    #' @param minSnpFreq minimum allowable frequency for SNP loci.
-    #' No minimum SNP frequency is used if value is NULL.
     restrSegSites = function(minQtlPerChr=NULL, minSnpPerChr=NULL, excludeQtl=NULL,
                              excludeSnp=NULL, overlap=FALSE, minSnpFreq=NULL){
       # Handle any named QTL exclusions
@@ -404,19 +330,6 @@ SimParam = R6Class(
       }
     },
 
-    #' @description Changes how sexes are determined in the simulation.
-    #' The default value is "no", indicating all individuals are hermaphrodites.
-    #' To add sexes to the simulation, run this function with "yes_sys" or
-    #' "yes_rand". The value "yes_sys" will systematically assign
-    #' sexes to newly created individuals as first male and then female.
-    #' Populations with an odd number of individuals will have one more male than
-    #' female. The value "yes_rand" will randomly assign a sex to each
-    #' individual.
-    #'
-    #' @param sexes acceptable values are "no", "yes_sys", or
-    #' "yes_rand"
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
     setSexes = function(sexes, force=FALSE){
       if(!force){
         private$.isRunning()
@@ -434,12 +347,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Allows for the manual setting of founder haplotypes. This functionality
-    #' is not fully documented, because it is still experimental.
-    #'
-    #' @param hapMap a list of founder haplotypes, one per individual in
-    #' the order of their internal IDs, or named by internal ID
     setFounderHap = function(hapMap){
       n = length(hapMap)
       if(is.null(names(hapMap))){
@@ -459,16 +366,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible SNPs to a SNP chip
-    #'
-    #' @param nSnpPerChr number of SNPs per chromosome.
-    #' Can be a single value or nChr values.
-    #' @param minSnpFreq minimum allowable frequency for SNP loci.
-    #' If NULL, no minimum frequency is used.
-    #' @param refPop reference population for calculating SNP
-    #' frequency. If NULL, the founder population is used.
-    #' @param name optional name for chip
     addSnpChip = function(nSnpPerChr, minSnpFreq=NULL, refPop=NULL, name=NULL){
       if(length(nSnpPerChr)==1){
         nSnpPerChr = rep(nSnpPerChr,self$nChr)
@@ -483,15 +380,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Assigns SNPs to a SNP chip by supplying marker names. This function does
-    #' check against excluded SNPs and will not add the SNPs to the list of
-    #' excluded QTL for the purpose of avoiding overlap between SNPs and QTL.
-    #' Excluding these SNPs from being used as QTL can be accomplished using
-    #' the excludeQtl argument in SimParam's restrSegSites function.
-    #'
-    #' @param markers a vector of names for the markers
-    #' @param name optional name for chip
     addSnpChipByName = function(markers, name=NULL){
       genMap = private$.femaleMap
 
@@ -538,16 +426,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly selects the number of snps in structure and then
-    #' assigns them to chips based on structure
-    #'
-    #' @param nSnpPerChr number of SNPs per chromosome.
-    #' Can be a single value or nChr values.
-    #' @param structure a matrix.  Rows are snp chips, columns are chips.
-    #' If value is true then that snp is on that chip.
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
     addStructuredSnpChip = function(nSnpPerChr,structure,force=FALSE){
       if(!force){
         private$.isRunning()
@@ -592,25 +470,6 @@ SimParam = R6Class(
 
     ### Traits (public) ----
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more additive traits.
-    #' If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive genotypic effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitA = function(nQtlPerChr,mean=0,var=1,corA=NULL,
                          gamma=FALSE,shape=1,force=FALSE,name=NULL,
                          nThreads=NULL){
@@ -655,32 +514,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more traits with dominance.
-    #' If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param meanDD mean dominance degree
-    #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corDD a matrix of correlations between dominance degrees
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #    If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitAD = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                           varDD=0,corA=NULL,corDD=NULL,useVarA=TRUE,
                           gamma=FALSE,shape=1,force=FALSE,name=NULL,
@@ -742,70 +575,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' An alternative method for adding a trait with additive and dominance genotypic effects
-    #' to an AlphaSimR simulation. The function attempts to create a trait matching
-    #' user defined values for number of QTL, inbreeding depression, additive genetic
-    #' variance and dominance genetic variance.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome.
-    #' Can be a single value or nChr values.
-    #' @param mean requested founder mean (mean genetic value) of the trait
-    #' @param varA desired additive variance
-    #' @param varD desired dominance variance
-    #' @param inbrDepr desired inbreeding depression, see details
-    #' @param limMeanDD limits for meanDD, see details
-    #' @param limVarDD limits for varDD, see details
-    #' @param silent should summary details be printed to the console
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @details
-    #' This function will always add a trait to 'SimParam', unless an error occurs
-    #' with picking QTLs. The resulting trait will always have the requested founder mean and
-    #' additive genetic variance. However, it may not have the desired values for
-    #' inbreeding depression and dominance variance. Thus, it is strongly recommended
-    #' to check the output printed to the console to determine how close the trait's
-    #' parameters came to these desired values.
-    #'
-    #' The mean and additive genetic variance will always be achieved exactly. The
-    #' function attempts to achieve the desired dominance variance and inbreeding
-    #' depression while staying within the user supplied constraints for the
-    #' acceptable range of dominance degree mean and variance. If the desired values
-    #' are not being achieved, the acceptable range needs to be increased and/or the
-    #' number of QTL may need to be increased. There are no limits to setting the
-    #' range for dominance degree mean and variance, but care should be taken
-    #' with regard to the biological feasibility of the limits that are supplied.
-    #' The default limits were somewhat arbitrarily set, so I make no claim as to
-    #' how reasonable these limits are for routine use.
-    #'
-    #' Inbreeding depression in this function is defined as the difference in mean
-    #' genetic value between a population with the same allele frequency as the
-    #' reference population (population used to initialize SimParam) in
-    #' Hardy-Weinberg equilibrium compared to a population with the same allele
-    #' frequency that is fully inbred. This is equivalent to the amount the mean of
-    #' a population increases when going from an inbreeding coefficient of 1 (fully
-    #' inbred) to a population with an inbreeding coefficient of 0 (Hardy-Weinberg
-    #' equilibrium). Note that the sign of the value should (usually) be positive.
-    #' This corresponds to a detrimental effect of inbreeding when higher values of
-    #' the trait are considered biologically beneficial.
-    #'
-    #' Summary information on this trait is printed to the console when silent=FALSE.
-    #' The summary information reports the inbreeding depression and dominance
-    #' variance for the population as well as the dominance degree mean and variance
-    #' applied to the trait.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$altAddTraitAD(nQtlPerChr=10, mean=0, varA=1, varD=0.05, inbrDepr=0.2)
     altAddTraitAD = function(nQtlPerChr,mean=0,varA=1,varD=0,inbrDepr=0,
                              limMeanDD=c(0,1.5),limVarDD=c(0,0.5),
                              silent=FALSE,force=FALSE,name=NULL,
@@ -869,28 +638,6 @@ SimParam = R6Class(
     },
 
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more additive GxE traits.
-    #' If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param varGxE a vector of total genotype-by-environment variances for the traits
-    #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitAG = function(nQtlPerChr,mean=0,var=1,varGxE=1e-6,varEnv=0,
                           corA=NULL,corGxE=NULL,gamma=FALSE,shape=1,
                           force=FALSE,name=NULL,nThreads=NULL){
@@ -967,34 +714,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for a trait with dominance and GxE.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
-    #' value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param varGxE a vector of total genotype-by-environment variances for the traits
-    #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param meanDD mean dominance degree
-    #' @param varDD variance of dominance degree
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitADG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                            varGxE=1e-6,meanDD=0,varDD=0,corA=NULL,
                            corDD=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
@@ -1088,35 +807,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' traits. If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated additive genotypic effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param relAA ratio of additive-by-additive epistatic genetic variance
-    #'   to additive genetic variance used to sample epistatic genotypic effects,
-    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
-    #'   with allele frequencies of 0.5.
-    #'   The realized variance ratio in the founder population can differ.
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitAE = function(nQtlPerChr,mean=0,var=1,relAA=0,corA=NULL,
                           corAA=NULL,useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
                           name=NULL,nThreads=NULL){
@@ -1183,38 +873,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more traits with dominance and
-    #' epistasis. If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param meanDD mean dominance degree
-    #' @param varDD variance of dominance degree
-    #' @param relAA ratio of additive-by-additive epistatic genetic variance
-    #'   to additive genetic variance used to sample epistatic genotypic effects,
-    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
-    #'   with allele frequencies of 0.5.
-    #'   The realized variance ratio in the founder population can differ.
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitADE = function(nQtlPerChr,mean=0,var=1,meanDD=0,
                            varDD=0,relAA=0,corA=NULL,corDD=NULL,corAA=NULL,
                            useVarA=TRUE,gamma=FALSE,shape=1,force=FALSE,
@@ -1290,38 +948,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for one or more additive and epistasis
-    #' GxE traits. If simulating more than one trait, all traits will be pleiotropic
-    #' with correlated effects.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param relAA ratio of additive-by-additive epistatic genetic variance
-    #'   to additive genetic variance used to sample epistatic genotypic effects,
-    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
-    #'   with allele frequencies of 0.5.
-    #'   The realized variance ratio in the founder population can differ.
-    #' @param varGxE a vector of total genotype-by-environment variances for the traits
-    #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
-    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitAEG = function(nQtlPerChr,mean=0,var=1,relAA=0,varGxE=1e-6,varEnv=0,
                            corA=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,gamma=FALSE,
                            shape=1,force=FALSE,name=NULL,nThreads=NULL){
@@ -1420,41 +1046,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Randomly assigns eligible QTLs for a trait with dominance,
-    #' epistasis and GxE.
-    #'
-    #' @param nQtlPerChr number of QTLs per chromosome. Can be a single
-    #' value or nChr values.
-    #' @param mean a vector of requested founder means (mean genetic values) for one or more traits
-    #' @param var a vector of desired genetic variances in the founder
-    #'   population for one or more traits
-    #' @param varGxE a vector of total genotype-by-environment variances for the traits
-    #' @param varEnv a vector of environmental variances for one or more traits
-    #' @param meanDD mean dominance degree
-    #' @param varDD variance of dominance degree
-    #' @param relAA ratio of additive-by-additive epistatic genetic variance
-    #'   to additive genetic variance used to sample epistatic genotypic effects,
-    #'   assuming a diploid population in Hardy-Weinberg and linkage equilibrium
-    #'   with allele frequencies of 0.5.
-    #'   The realized variance ratio in the founder population can differ.
-    #' @param corA a matrix of correlations between additive genotypic effects
-    #' @param corDD a matrix of correlations between dominance degrees
-    #' @param corAA a matrix of correlations between additive-by-additive epistatic genotypic effects
-    #' @param corGxE a matrix of correlations between genotype-by-environment genotypic effects
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param gamma should a gamma distribution be used instead of normal
-    #' @param shape the shape parameter for the gamma distribution
-    #'   (the rate/scale parameter of the gamma distribution is accounted
-    #'   for via the desired level of genetic variance, the var argument)
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing.
-    #' @param name optional name for trait(s)
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     addTraitADEG = function(nQtlPerChr,mean=0,var=1,varEnv=0,
                             varGxE=1e-6,meanDD=0,varDD=0,relAA=0,corA=NULL,
                             corDD=NULL,corAA=NULL,corGxE=NULL,useVarA=TRUE,
@@ -1563,18 +1154,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Manually add a new trait to the simulation. Trait must
-    #' be formatted as a \code{\link{LociMap-class}}. If the
-    #' trait is not already formatted, consider using importTrait.
-    #'
-    #' @param lociMap a new object descended from
-    #' \code{\link{LociMap-class}}
-    #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     manAddTrait = function(lociMap,varE=NA_real_,force=FALSE,nThreads=NULL){
       if(!force){
         private$.isRunning()
@@ -1593,73 +1172,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Manually add a new trait(s) to the simulation. Unlike the
-    #' manAddTrait function, this function does not require
-    #' formatting the trait as a \code{\link{LociMap-class}}.
-    #' The formatting is performed automatically for the user,
-    #' with more user friendly data.frames or matrices taken as
-    #' inputs. This function works for A, AD, AE and ADE trait types.
-    #'
-    #' @param markerNames a vector of unique names for the QTL
-    #' @param addEff a matrix of additive genotypic effects (nLoci x nTraits).
-    #' Alternatively, a vector of length nLoci can be supplied for
-    #' a single trait.
-    #' @param domEff optional dominance genotypic effects for each locus
-    #' (nLoci x nTraits, or a vector of length nLoci for a single trait)
-    #' @param intercept optional trait intercepts in the genotypic parameterization
-    #' @param name optional name(s) for the trait(s)
-    #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #' @param epiPairs optional two-column matrix or data.frame of marker
-    #' names, with one row for each pair of loci that interact through
-    #' additive-by-additive epistasis. Must be supplied with \code{epiEff}.
-    #' @param epiEff optional additive-by-additive epistatic genotypic
-    #' effects, a matrix with one row for each row of \code{epiPairs} and
-    #' one column for each trait. Alternatively, a vector of length
-    #' \code{nrow(epiPairs)} can be supplied for a single trait.
-    #'
-    #' @details See \code{vignette("traits", package = "AlphaSimR")} for the
-    #' implemented trait model and genotypic effects.
-    #'
-    #' Supplying \code{epiPairs} and \code{epiEff} creates an AE trait,
-    #' or an ADE trait when \code{domEff} is also supplied. The epistatic
-    #' model only allows interactions between pairs of loci, and every
-    #' marker in \code{markerNames} must appear in exactly one pair, so
-    #' \code{nrow(epiPairs)} is half of \code{length(markerNames)}. The two
-    #' markers in a pair may be on different chromosomes. All traits
-    #' imported in one call share the same pairs, with effects taken from
-    #' the corresponding column of \code{epiEff}. Markers do not need to be
-    #' given in map order; the pairs are matched to the loci by name after
-    #' the loci are put in map order.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=2, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #'
-    #' #Import an AE trait, with one pair spanning both chromosomes
-    #' SP$importTrait(markerNames=c("1_1","1_5","2_3","2_8"),
-    #'                addEff=c(1,-1,0.5,0.5),
-    #'                epiPairs=rbind(c("1_1","1_5"),
-    #'                               c("2_3","2_8")),
-    #'                epiEff=c(0.2,-0.4),
-    #'                name="AE")
-    #'
-    #' #Import an ADE trait
-    #' SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
-    #'                addEff=c(1,-1,0.5,0.5),
-    #'                domEff=c(0.3,0.1,0,0.2),
-    #'                epiPairs=rbind(c("1_2","2_6"),
-    #'                               c("1_4","2_1")),
-    #'                epiEff=c(0.5,0.1),
-    #'                name="ADE")
     importTrait = function(markerNames,
                            addEff,
                            domEff=NULL,
@@ -1880,18 +1392,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Switch a trait in the simulation.
-    #'
-    #' @param traitPos an integer or a trait name indicating which trait
-    #' to switch
-    #' @param lociMap a new object descended from
-    #' \code{\link{LociMap-class}}
-    #' @param varE default error variance for phenotype, optional
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
     switchTrait = function(traitPos,lociMap,varE=NA_real_,force=FALSE,
                            nThreads=NULL){
       if(!force){
@@ -1925,13 +1425,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Remove a trait from the simulation
-    #'
-    #' @param traits an integer vector or a character vector of trait
-    #' names indicating which traits to remove
-    #' @param force should the check for a running simulation be
-    #' ignored. Only set to TRUE if you know what you are doing
     removeTrait = function(traits,force=FALSE){
       if(!force){
         private$.isRunning()
@@ -1955,17 +1448,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Defines default values for error
-    #' variances used in \code{\link{setPheno}}. These defaults
-    #' will be used to automatically generate phenotypes when new
-    #' populations are created. See the details section of \code{\link{setPheno}}
-    #' for more information about each argument and how they
-    #' should be used.
-    #'
-    #' @param h2 a vector of desired narrow-sense heritabilities
-    #' @param H2 a vector of desired broad-sense heritabilities
-    #' @param varE a vector or matrix of error variances
-    #' @param corE an optional matrix of error correlations
     setVarE = function(h2=NULL, H2=NULL, varE=NULL, corE=NULL){
       # Check validity of corE, if supplied
       if(!is.null(corE)){
@@ -2028,23 +1510,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description Defines a correlation structure for default
-    #' error variances. You must call \code{setVarE} first to define
-    #' the default error variances.
-    #'
-    #' @param corE a correlation matrix for the error variances
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitA(10, mean=c(0,0), var=c(1,1), corA=diag(2))
-    #' SP$setVarE(varE=c(1,1))
-    #' E = 0.5*diag(2)+0.5 #Positively correlated error
-    #' SP$setCorE(E)
     setCorE = function(corE){
       warning("This function has been deprecated. Use simParam$setVarE instead.")
       checkCorMat(corE, self$nTraits)
@@ -2063,46 +1528,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Linearly scales all traits to achieve desired
-    #' values of means and variances in the founder population.
-    #'
-    #' @param mean a vector of requested mean genetic values in the founder population
-    #' @param var a vector of requested genetic variances in the founder population
-    #' @param varEnv a vector of new environmental variances
-    #' @param varGxE a vector of new GxE variances
-    #' @param useVarA if \code{TRUE}, scale genotypic effects to achieve
-    #'   the requested additive genetic variance (variance of breeding values)
-    #'   in the founder population.
-    #'   If \code{FALSE}, use total genetic variance (variance of genetic values).
-    #' @param nThreads number of threads to use if OpenMP is available.
-    #' If \code{NULL}, the number is obtained from \code{self$nThreads}.
-    #'
-    #' @note
-    #' By default the founder population is the population used to
-    #' initialize the SimParam object. This population can be changed by
-    #' replacing the population in the founderPop slot. You must run
-    #' \code{\link{resetPop}} on any existing populations to obtain the
-    #' new trait values.
-    #'
-    #' @examples
-    #' #Create founder haplotypes
-    #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=10)
-    #'
-    #' #Set simulation parameters
-    #' SP = SimParam$new(founderPop)
-    #' \dontshow{SP$nThreads = 1L}
-    #' SP$addTraitA(10)
-    #'
-    #' #Create population
-    #' pop = newPop(founderPop, simParam=SP)
-    #' meanG(pop)
-    #'
-    #' #Change mean to 1
-    #' SP$rescaleTraits(mean=1)
-    #' #Run resetPop for change to take effect
-    #' pop = resetPop(pop, simParam=SP)
-    #' meanG(pop)
     rescaleTraits = function(mean=0,var=1,varEnv=0,
                              varGxE=1e-6,useVarA=TRUE,nThreads=NULL){
       if(is.null(nThreads)){
@@ -2191,13 +1616,6 @@ SimParam = R6Class(
     #' autopolyploid. (default is 0)
     quadProb = "numeric",
 
-    #' @description Set the relative recombination rates between males
-    #' and females. This allows for sex-specific recombination rates,
-    #' under the assumption of equivalent recombination landscapes.
-    #'
-    #' @param femaleRatio relative ratio of recombination in females compared to
-    #' males. A value of 2 indicates twice as much recombination in females. The
-    #' value must be greater than 0. (default is 1)
     setRecombRatio = function(femaleRatio){
       stopifnot("femaleRatio must be greater than 0"=femaleRatio>0)
       # Both must be read before .sepMap is set, because the accessors
@@ -2223,20 +1641,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Replaces existing genetic map.
-    #'
-    #' @param genMap a list of length nChr containing
-    #' numeric vectors for the absolute position of each segregating
-    #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric, sitting at half of each chromosome's
-    #' genetic length.
-    #' @param genLen an optional vector of chromosome genetic
-    #' lengths in Morgans, either one value or one per chromosome.
-    #' Each must be at least the position of the chromosome's
-    #' last locus. If NULL, each chromosome ends at its last locus.
     switchGenMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
@@ -2269,20 +1673,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Replaces existing female genetic map.
-    #'
-    #' @param genMap a list of length nChr containing
-    #' numeric vectors for the absolute position of each segregating
-    #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric, sitting at half of each chromosome's
-    #' genetic length.
-    #' @param genLen an optional vector of chromosome genetic
-    #' lengths in Morgans, either one value or one per chromosome.
-    #' Each must be at least the position of the chromosome's
-    #' last locus. If NULL, each chromosome ends at its last locus.
     switchFemaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
@@ -2321,20 +1711,6 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Replaces existing male genetic map.
-    #'
-    #' @param genMap a list of length nChr containing
-    #' numeric vectors for the absolute position of each segregating
-    #' site on a chromosome.
-    #' @param centromere a numeric vector of centromere
-    #' positions. If NULL, the centromeres are assumed to
-    #' be metacentric, sitting at half of each chromosome's
-    #' genetic length.
-    #' @param genLen an optional vector of chromosome genetic
-    #' lengths in Morgans, either one value or one per chromosome.
-    #' Each must be at least the position of the chromosome's
-    #' last locus. If NULL, each chromosome ends at its last locus.
     switchMaleMap = function(genMap, centromere=NULL, genLen=NULL){
       if(is.data.frame(genMap)){
         genMap = importGenMap(genMap)
@@ -2366,15 +1742,8 @@ SimParam = R6Class(
 
     #### Internal (public) ----
 
-    #' @description For internal use only.
-    #'
-    #' @param lastId ID of last individual
-    #' @param id the name of each individual
-    #' @param mother vector of mother iids
-    #' @param father vector of father iids
-    #' @param isDH indicator for DH lines
-    #' @param hist new recombination history
-    #' @param ploidy ploidy level
+    # For internal use only. Records new individuals and their
+    # recombination history; called by .newPop.
     addToRec = function(lastId,id,mother,father,isDH,
                         hist,ploidy){
       nNewInd = lastId-private$.lastId
@@ -2426,9 +1795,8 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description For internal use only.
-    #'
-    #' @param iid internal ID
+    # For internal use only. Returns IBD haplotypes by iid; called by
+    # pullIbdHaplo.
     ibdHaplo = function(iid){
       # The cache is a list indexed by iid. It was once keyed by name, and
       # every lookup and insertion then searched or copied the whole list,
@@ -2467,9 +1835,8 @@ SimParam = R6Class(
       return(private$.hap[iid])
     },
 
-    #' @description For internal use only.
-    #'
-    #' @param lastId last ID assigned
+    # For internal use only. Moves the ID counter on when the pedigree
+    # is not tracked; called by .newPop.
     updateLastId = function(lastId){
       lastId = as.integer(lastId)
       stopifnot(lastId>=private$.lastId)
@@ -2477,13 +1844,8 @@ SimParam = R6Class(
       invisible(self)
     },
 
-    #' @description For internal use only.
-    #'
-    #' @param lastId ID of last individual
-    #' @param id the name of each individual
-    #' @param mother vector of mother iids
-    #' @param father vector of father iids
-    #' @param isDH indicator for DH lines
+    # For internal use only. Records new individuals in the pedigree;
+    # called by .newPop.
     addToPed = function(lastId,id,mother,father,isDH){
       nNewInd = lastId-private$.lastId
       stopifnot(nNewInd>0)

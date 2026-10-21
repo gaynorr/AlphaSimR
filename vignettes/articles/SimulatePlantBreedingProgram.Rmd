@@ -1,0 +1,352 @@
+---
+title: "Simulating a Plant Breeding Program"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simulating a Plant Breeding Program}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This article will briefly outline a strategy for writing plant breeding
+program simulations in AlphaSimR using a very simple clonal breeding
+program as an example. This example will model the breeding program for
+20 years. The example will also generate plots to show the change in
+mean genetic value and genetic variance over time for the first stage of
+the breeding program.
+
+Complete code for the simulation is provided at the end. The steps
+in-between demonstrate the process used to write this code. Note that
+some intermediate steps provide invalid code, so you shouldn't run code
+for the intermediate steps. Only run the final, complete code.
+
+## 1. Translate program description to code
+
+Begin by translating a description of the breeding program directly into
+AlphaSimR code. Don't worry about whether or not the code runs just yet
+and instead focus on making sure that the code is faithful
+representation of the breeding program's description. This code will be
+used later when you write code that will actually run.
+
+### Breeding program description by year
+
+#### Year 1 (Crossing)
+
+Make 100 bi-parental crosses at random using all clones from Stage 2 and
+Stage 3 yield trials as parents. The total number of parents will be 60.
+
+#### Year 2 (Seedlings)
+
+Grow out 10 seeds per bi-parental family for a total of 1000 F1
+seedlings.
+
+#### Year 3 (Stage 1)
+
+Clonally propagate all seedlings for Stage 1 testing. Stage 1 testing is
+performed using a single plot per clone and has a residual error
+variance of 4.
+
+#### Year 4 (Stage 2)
+
+Select the best 50 clones from Stage 1 yield trial to advance to Stage
+2. Stage 2 is performed using four replicate plots and has a residual
+error variance of 4.
+
+#### Year 5 (Stage 3)
+
+Select the best 10 clones from Stage 2 to advance to Stage 3. Stage 3 is
+performed using eight replicate plots and has a residual error variance
+of 4.
+
+### Description as code
+
+```{r eval=FALSE}
+# Year 1 (Crossing)
+Parents = c(Stage2, Stage3)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+
+# Year 2 (Seedlings)
+Seedlings = F1
+
+# Year 3 (Stage 1)
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+
+# Year 4 (Stage 2)
+Stage2 = selectInd(Stage1, nInd=50)
+Stage2 = setPheno(Stage2, reps=4, varE=4)
+
+# Year 5 (Stage 3)
+Stage3 = selectInd(Stage2, nInd=10)
+Stage3 = setPheno(Stage3, reps=8, varE=4)
+```
+
+## 2. Create founder haplotypes
+
+This will be your first piece of executable code. I suggest using the
+founder haplotypes to represent your initial parents, so you will need
+60 individuals.
+
+```{r eval=FALSE}
+founderPop = runMacs(nInd=60, nChr=4, segSites=1000)
+```
+
+## 3. Set simulation parameters
+
+We will only add a single trait to this simulation. The mean and
+variance of this trait will represent the mean and variance of the
+initial parents. Since there is no selection between crossing the
+parents and growing Stage 1 clones, these values will also approximately
+equal the mean and variance of the initial Stage 1 clones.
+
+```{r eval=FALSE}
+SP = SimParam$
+  new(founderPop)$
+  addTraitA(1000)
+```
+
+## 4. Fill breeding program pipeline
+
+The purpose of this stage is to place unique individuals in every stage
+of the breeding program. We don't want the exact same individuals to be
+in multiple stages of the breeding program at the same time. We will
+generate all individuals from the initial parents, so they won't have
+the generational differences we'd expect in a real breeding program.
+This generational difference will be created later in the simulation as
+future years are simulated.
+
+```{r eval=FALSE}
+Parents = newPop(founderPop)
+
+# Year 5 (Stage 3)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+Stage2 = selectInd(Stage1, nInd=50)
+Stage2 = setPheno(Stage2, reps=4, varE=4)
+Stage3 = selectInd(Stage2, nInd=10)
+Stage3 = setPheno(Stage3, reps=8, varE=4)
+
+# Year 4 (Stage 2)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+Stage2 = selectInd(Stage1, nInd=50)
+Stage2 = setPheno(Stage2, reps=4, varE=4)
+
+# Year 3 (Stage 1)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+
+# Year 2 (Seedlings)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+
+# Year 1 (Crossing)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+```
+
+## 5. Simulate 20 years of breeding
+
+This part of the script will model the breeding program in action. Thus,
+you need to advance material as it would be advanced in a real breeding
+program. This means you need to be careful not to delete or overwrite a
+population you need later. The most efficient way of doing this is
+usually to start at the final stage of the breeding program and work
+your way towards earlier stages, because this often lets you avoid
+making copies of populations.
+
+```{r eval=FALSE}
+for(year in 1:20){
+  # Year 5 (Stage 3)
+  Stage3 = selectInd(Stage2, nInd=10)
+  Stage3 = setPheno(Stage3, reps=8, varE=4)
+  
+  # Year 4 (Stage 2)
+  Stage2 = selectInd(Stage1, nInd=50)
+  Stage2 = setPheno(Stage2, reps=4, varE=4)
+  
+  # Year 3 (Stage 1)
+  Stage1 = setPheno(Seedlings, varE=4)
+  
+  # Year 2 (Seedlings)
+  Seedlings = F1
+  
+  # Year 1 (Crossing)
+  Parents = c(Stage3, Stage2)
+  F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+}
+```
+
+## 6. Report results
+
+I like to write code for reporting results at the end, but the code
+itself often needs to occur within code you've already written. This is
+the case in this simulation, because we are overwriting populations in
+each new year. Thus, we must save summary data in each year.
+
+First, we need create a couple of vectors for storing the summary data.
+This code needs to occur before simulating the 20 years of breeding.
+
+```{r eval=FALSE}
+meanStage1 = numeric(20)
+varStage1 = numeric(20)
+```
+
+Then, the code for reporting the results needs to occur inside the loop
+for simulating 20 years of breeding.
+
+```{r eval=FALSE}
+for(year in 1:20){
+  # Code for advancing one year
+  
+  # Report mean and variance
+  meanStage1[year] = meanG(Stage1)
+  varStage1[year] = varG(Stage1)
+}
+```
+
+Finally, here is the code for generating plots of the summary data. This
+code occurs after the simulation is complete.
+
+```{r eval=FALSE}
+plot(1:20, meanStage1, type="l", xlab="Year", ylab="Mean", main="Mean Stage 1")
+plot(1:20, varStage1, type="l", xlab="Year", ylab="Variance", main="Variance Stage 1")
+```
+
+## Full Code
+
+```{r}
+library(AlphaSimR)
+
+## Create founder haplotypes
+founderPop = runMacs(nInd=60, nChr=4, segSites=1000)
+
+## Set simulation parameters
+SP = SimParam$
+  new(founderPop)$
+  addTraitA(1000)
+
+## Fill breeding program pipeline
+Parents = newPop(founderPop)
+
+# Year 5 (Stage 3)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+Stage2 = selectInd(Stage1, nInd=50)
+Stage2 = setPheno(Stage2, reps=4, varE=4)
+Stage3 = selectInd(Stage2, nInd=10)
+Stage3 = setPheno(Stage3, reps=8, varE=4)
+
+# Year 4 (Stage 2)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+Stage2 = selectInd(Stage1, nInd=50)
+Stage2 = setPheno(Stage2, reps=4, varE=4)
+
+# Year 3 (Stage 1)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+Stage1 = setPheno(Seedlings, reps=1, varE=4)
+
+# Year 2 (Seedlings)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+Seedlings = F1
+
+# Year 1 (Crossing)
+F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+
+## Create vectors for output
+meanStage1 = numeric(20)
+varStage1 = numeric(20)
+
+## Simulate 20 years of breeding
+for(year in 1:20){
+  # Year 5 (Stage 3)
+  Stage3 = selectInd(Stage2, nInd=10)
+  Stage3 = setPheno(Stage3, reps=8, varE=4)
+  
+  # Year 4 (Stage 2)
+  Stage2 = selectInd(Stage1, nInd=50)
+  Stage2 = setPheno(Stage2, reps=4, varE=4)
+  
+  # Year 3 (Stage 1)
+  Stage1 = setPheno(Seedlings, reps=1, varE=4)
+  
+  # Year 2 (Seedlings)
+  Seedlings = F1
+  
+  # Year 1 (Crossing)
+  Parents = c(Stage3, Stage2)
+  F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+  
+  # Report mean and variance
+  meanStage1[year] = meanG(Stage1)
+  varStage1[year] = varG(Stage1)
+}
+
+## Plot mean and variance
+plot(1:20, meanStage1, type="l", xlab="Year", ylab="Mean", main="Mean Stage 1")
+plot(1:20, varStage1, type="l", xlab="Year", ylab="Variance", main="Variance Stage 1")
+
+```
+
+## Miscellaneous comments
+
+You can write chunks of code as R scripts and call one script from
+another using the `source` function. I typically do this to modularize
+my code. I rarely write a simulation as single script, as shown in this
+example.
+
+You may also consider defining your own functions to produce tidier
+code. See this help document for an example of how to write a function:
+
+```{r eval=FALSE}
+?`function`
+```
+
+A convenient way to avoid overwriting populations is saving them to a
+list. This requires more memory and makes coding a bit more complicated,
+so I rarely use this approach. However, it does let you save all data
+from your simulation which can come in handy when you forget to measure
+something that you realize you need later. Below is a brief
+demonstration:
+
+```{r}
+library(AlphaSimR)
+
+founderPop = quickHaplo(nInd=50, nChr=4, segSites=1000, inbred=TRUE)
+
+SP = SimParam$
+  new(founderPop)$
+  addTraitA(1000)
+
+Parents = newPop(founderPop)
+
+# Create list for generations F1 through F10
+Pop = vector("list", 10) 
+
+# Produce F1s from a random biparental cross
+Pop[[1]] = randCross(Parents, nCrosses=1, nProgeny=1000) 
+
+# Produce F2 through F10 generations using selfing
+for(i in 2:10){
+  Pop[[i]] = self(Pop[[i-1]]) 
+}
+
+# Calculate genetic variance by generation
+lapply(Pop, varG) 
+```

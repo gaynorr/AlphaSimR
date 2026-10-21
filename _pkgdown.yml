@@ -12,6 +12,41 @@ reference:
   - getNumThreads
   - isOpenMPAvailable
 
+- title: SimParam methods
+  desc: >
+    Methods called on a SimParam object, as in `SP$addTraitA()`, in the
+    order of the overview on the SimParam page.
+  contents:
+  - SimParam-setSexes
+  - SimParam-setTrackPed
+  - SimParam-setTrackRec
+  - SimParam-resetPed
+  - SimParam-addTraitA
+  - SimParam-addTraitAD
+  - SimParam-addTraitAE
+  - SimParam-addTraitADE
+  - SimParam-addTraitAG
+  - SimParam-addTraitADG
+  - SimParam-addTraitAEG
+  - SimParam-addTraitADEG
+  - SimParam-altAddTraitAD
+  - SimParam-manAddTrait
+  - SimParam-importTrait
+  - SimParam-setVarE
+  - SimParam-setCorE
+  - SimParam-restrSegSites
+  - SimParam-addSnpChip
+  - SimParam-addSnpChipByName
+  - SimParam-addStructuredSnpChip
+  - SimParam-setFounderHap
+  - SimParam-setRecombRatio
+  - SimParam-switchGenMap
+  - SimParam-switchFemaleMap
+  - SimParam-switchMaleMap
+  - SimParam-switchTrait
+  - SimParam-removeTrait
+  - SimParam-rescaleTraits
+
 - title: Founder genomes
   desc: >
     Create or import the founder haplotypes and genetic map that start a
