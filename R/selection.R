@@ -486,14 +486,14 @@ calcPopSummary = function(
   sourceDepth = min(level, maxDepth)
 
   leafPaths = .collectLeafPaths(x)
+  summaryPaths = unique(lapply(leafPaths, function(path) {
+    path[seq_len(min(length(path), sourceDepth))]
+  }))
   src = .formatPopSource(
-    paths = leafPaths,
-    nRows = rep(1L, length(leafPaths)),
+    paths = summaryPaths,
+    nRows = rep(1L, length(summaryPaths)),
     level_offset = 0L
   )
-
-  src = src[, seq_len(sourceDepth), drop = FALSE]
-  src = unique(src)
   rownames(src) = NULL
 
   if (nrow(src) != nrow(result)) {
