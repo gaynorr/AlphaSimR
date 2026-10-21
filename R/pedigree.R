@@ -143,9 +143,7 @@
 #'
 #' @export
 pedigreeA = function(pop, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   .checkPedPop(pop)
   ped = .prunePed(pop@iid, simParam)
   # Each distinct individual costs a pass over the pedigree, so repeats in
@@ -207,9 +205,7 @@ pedigreeA = function(pop, simParam=NULL){
 #'
 #' @export
 pedigreeInbreeding = function(pop, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   .checkPedPop(pop)
   ped = .prunePed(pop@iid, simParam)
   F = .pedF(ped, simParam)[ped$row]
