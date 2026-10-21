@@ -1642,15 +1642,10 @@ selectMultiPop = function(
 
   ranking = order(candidateScores, decreasing = selectTop)
 
-  # Candidates tied at the selection boundary are retained or removed
-  # according to their existing order in the MultiPop hierarchy.
-  # Source paths are stored in ascending lexicographic order. Remove them in
-  # reverse row order so that higher positional indices are removed first and
-  # earlier removals do not invalidate the remaining paths.
-  drop = sort(ranking[-seq_len(nMulti)], decreasing = TRUE)
-  for (i in drop) {
-    x = .stripPop(x, src[i, , drop = TRUE])
-  }
+  drop = ranking[-seq_len(nMulti)]
+  dropPaths = src[drop, , drop = FALSE]
+
+  x = .stripPops(x, dropPaths)
 
   return(x)
 }
@@ -1868,33 +1863,75 @@ selectMultiPop = function(
   return(childSummaryMatrix)
 }
 
-#' @title Remove a population from a nested MultiPop
+#' Remove nested populations from a MultiPop
 #'
-#' @description Recursively removes a \code{\link{Pop-class}} or
-#' \code{\link{MultiPop-class}} object identified by a path through a nested
-#' \code{MultiPop} object. Empty \code{MultiPop} objects created by the 
-#' removal are also removed.
+#' Recursively removes one or more \code{\link{Pop-class}} or
+#' \code{\link{MultiPop-class}} objects identified by positional paths through
+#' a nested \code{MultiPop} object. Empty \code{MultiPop} objects created by
+#' the removal are also removed.
 #'
 #' @param x a \code{\link{MultiPop-class}} object
-#' @param path a vector containing the names or indices that identify the
-#'   object to remove at each nesting level. Trailing \code{NA} values are
-#'   ignored.
+#' @param paths an integer matrix containing one positional path per row.
+#'   Columns correspond to successive nesting levels. Trailing \code{NA}
+#'   values indicate that a path ends at an earlier level.
 #'
-#' @return A \code{\link{MultiPop-class}} object with the specified object
-#'   removed.
+#' @details
+#' Population paths are interpreted relative to the original structure of
+#' \code{x}. All requested objects are removed in one recursive traversal,
+#' avoiding changes to positional indices while pruning is in progress.
+#' The order and names of retained objects are preserved.
+#'
+#' @return A \code{\link{MultiPop-class}} object with the specified objects
+#'   removed. Intermediate \code{MultiPop} objects left empty by the removal
+#'   are also removed.
 #'
 #' @keywords internal
-.stripPop = function(x, path) {
-  idx = path[[1]]
-  if (length(path) == 1L || is.na(path[[2]])) {
-    x[[idx]] = NULL
+#' @noRd
+.stripPops = function(x, paths) {
+  paths = as.matrix(paths)
+
+  if (nrow(paths) == 0L) {
     return(x)
   }
-  x[[idx]] = .stripPop(x[[idx]], path[-1])
 
-  if (length(x[[idx]]) == 0) {
-    x[[idx]] = NULL
+  prune = function(node, paths) {
+    children = node@pops
+    keep = rep(TRUE, length(children))
+
+    childIndices = unique(paths[, 1L])
+
+    for (idx in childIndices) {
+      rows = paths[, 1L] == idx
+      childPaths = paths[rows, , drop = FALSE]
+
+      # Remove the complete child if the path ends at this level.
+      pathEnds = ncol(childPaths) == 1L || all(is.na(childPaths[, 2L]))
+
+      if (pathEnds) {
+        keep[idx] = FALSE
+        next
+      }
+
+      remainingPaths = childPaths[, -1L, drop = FALSE]
+      children[[idx]] = prune(children[[idx]], remainingPaths)
+
+      # Remove parents left empty by recursive pruning.
+      if (length(children[[idx]]) == 0L) {
+        keep[idx] = FALSE
+      }
+    }
+
+    # Subsetting a list preserves the order and names of retained children.
+    children = children[keep]
+
+    # Defer validation until the complete hierarchy has been pruned.
+    slot(node, "pops", check = FALSE) = children
+
+    return(node)
   }
+
+  x = prune(x, paths)
+  validObject(x)
+
   return(x)
 }
-

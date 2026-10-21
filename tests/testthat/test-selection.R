@@ -1023,38 +1023,6 @@ test_that("calcPopSummary rejects empty MultiPop objects", {
   )
 })
 
-test_that("calcPopSummary returns source paths in structural order", {
-  founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
-  SP = SimParam$new(founderPop)
-  SP$addTraitA(10)
-
-  pop = newPop(founderPop, simParam = SP)
-
-  mp = newMultiPop(
-    newMultiPop(
-      pop[1:4],
-      pop[5:8],
-      pop[9:12],
-      pop[13:16]
-    )
-  )
-  scores = calcPopSummary(
-    unnameMultiPop(mp),
-    withinPopFUN = function(x) c(nInd = nInd(x)),
-    acrossPopFUN = colSums,
-    level = 10
-  )
-
-  src = attr(scores, "source")
-
-  observedOrder = do.call(
-    order,
-    as.data.frame(src)
-  )
-
-  expect_equal(observedOrder, seq_len(nrow(src)))
-})
-
 test_that("calcPopSummary preserves scalar summary names after aggregation", {
   founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
   SP = SimParam$new(founderPop)
@@ -1626,7 +1594,7 @@ test_that("selectMultiPop uses positional paths for partially named objects", {
   )
 })
 
-test_that("selectMultiPop removes nested siblings without index shifting", {
+test_that("selectMultiPop removes multiple sibling candidates", {
   founderPop = quickHaplo(nInd = 16, nChr = 1, segSites = 10)
   SP = SimParam$new(founderPop)
   SP$addTraitA(10)
@@ -1658,4 +1626,181 @@ test_that("selectMultiPop removes nested siblings without index shifting", {
   expect_equal(length(selected[[1]]), 2L)
   expect_equal(selected[[1]][[1]]@id, pop[9:12]@id)
   expect_equal(selected[[1]][[2]]@id, pop[13:16]@id)
+})
+
+test_that("selectMultiPop prunes a flat hierarchy in one traversal", {
+  founderPop = quickHaplo(
+    nInd = 40,
+    nChr = 1,
+    segSites = 10
+  )
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    A = pop[1:4],
+    B = pop[5:8],
+    C = pop[9:12],
+    D = pop[13:16],
+    E = pop[17:20],
+    F = pop[21:24],
+    G = pop[25:28],
+    H = pop[29:32],
+    I = pop[33:36],
+    J = pop[37:40]
+  )
+
+  useID = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 1,
+    level = 1,
+    use = useID,
+    simParam = SP
+  )
+
+  expect_equal(length(selected), 1L)
+  expect_equal(names(selected), "J")
+  expect_equal(selected[[1]]@id, pop[37:40]@id)
+})
+
+test_that("selectMultiPop prunes nested paths in one traversal", {
+  founderPop = quickHaplo(
+    nInd = 32,
+    nChr = 1,
+    segSites = 10
+  )
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = splitPop(
+    pop,
+    by = data.frame(
+      level1 = rep(c("G1", "G2"), each = 16),
+      level2 = rep(LETTERS[1:4], each = 8),
+      level3 = rep(c("R1", "R2"), length.out = 32),
+      row.names = pop@id
+    )
+  )
+
+  useID = function(pop, trait = NULL) {
+    as.numeric(pop@id)
+  }
+
+  selected = selectMultiPop(
+    mp,
+    nMulti = 2,
+    level = 3,
+    use = useID,
+    simParam = SP
+  )
+
+  expect_equal(names(selected), "G2")
+  expect_equal(names(selected[["G2"]]), "D")
+  expect_equal(
+    names(selected[["G2"]][["D"]]),
+    c("R1", "R2")
+  )
+})
+
+test_that(".stripPops removes multiple paths and prunes empty parents", {
+  founderPop = quickHaplo(
+    nInd = 24,
+    nChr = 1,
+    segSites = 10
+  )
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    first = newMultiPop(
+      A = pop[1:4],
+      B = pop[5:8]
+    ),
+    second = newMultiPop(
+      C = pop[9:12],
+      D = pop[13:16]
+    ),
+    third = newMultiPop(
+      E = pop[17:20],
+      F = pop[21:24]
+    )
+  )
+
+  result = .stripPops(
+    mp,
+    paths = rbind(
+      c(1L, 1L),
+      c(1L, 2L),
+      c(2L, 1L)
+    )
+  )
+
+  # The first parent becomes empty and is removed.
+  expect_equal(
+    names(result),
+    c("second", "third")
+  )
+
+  # The remaining children retain their original names and order.
+  expect_equal(
+    names(result[["second"]]),
+    "D"
+  )
+  expect_equal(
+    names(result[["third"]]),
+    c("E", "F")
+  )
+
+  expect_equal(
+    result[["second"]][["D"]]@id,
+    pop[13:16]@id
+  )
+})
+
+test_that(".stripPops handles paths ending at different levels", {
+  founderPop = quickHaplo(
+    nInd = 16,
+    nChr = 1,
+    segSites = 10
+  )
+  SP = SimParam$new(founderPop)
+  SP$addTraitA(10)
+
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    first = newMultiPop(
+      A = pop[1:4],
+      B = pop[5:8]
+    ),
+    second = pop[9:12],
+    third = pop[13:16]
+  )
+
+  result = .stripPops(
+    mp,
+    paths = rbind(
+      c(1L, 2L),
+      c(2L, NA_integer_)
+    )
+  )
+
+  expect_equal(
+    names(result),
+    c("first", "third")
+  )
+  expect_equal(
+    names(result[["first"]]),
+    "A"
+  )
 })
