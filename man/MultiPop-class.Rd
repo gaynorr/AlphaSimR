@@ -5,10 +5,12 @@
 \alias{MultiPop-class}
 \alias{show,MultiPop-method}
 \alias{[,MultiPop,ANY,ANY,ANY-method}
+\alias{[,MultiPop-method}
 \alias{[[,MultiPop-method}
 \alias{$,MultiPop-method}
 \alias{names,MultiPop-method}
 \alias{[<-,MultiPop,ANY,ANY,ANY-method}
+\alias{[<-,MultiPop-method}
 \alias{[[<-,MultiPop-method}
 \alias{$<-,MultiPop-method}
 \alias{names<-,MultiPop-method}

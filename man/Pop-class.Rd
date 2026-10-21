@@ -4,6 +4,7 @@
 \name{Pop-class}
 \alias{Pop-class}
 \alias{[,Pop,ANY,ANY,ANY-method}
+\alias{[,Pop-method}
 \alias{c,Pop-method}
 \alias{show,Pop-method}
 \alias{length,Pop-method}

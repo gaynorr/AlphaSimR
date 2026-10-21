@@ -4,6 +4,7 @@
 \name{RawPop-class}
 \alias{RawPop-class}
 \alias{[,RawPop,ANY,ANY,ANY-method}
+\alias{[,RawPop-method}
 \alias{c,RawPop-method}
 \alias{show,RawPop-method}
 \alias{isRawPop}

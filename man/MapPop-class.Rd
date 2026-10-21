@@ -4,6 +4,7 @@
 \name{MapPop-class}
 \alias{MapPop-class}
 \alias{[,MapPop,ANY,ANY,ANY-method}
+\alias{[,MapPop-method}
 \alias{c,MapPop-method}
 \alias{isMapPop}
 \title{Raw population with genetic map}

@@ -4,6 +4,7 @@
 \name{HybridPop-class}
 \alias{HybridPop-class}
 \alias{[,HybridPop,ANY,ANY,ANY-method}
+\alias{[,HybridPop-method}
 \alias{c,HybridPop-method}
 \alias{isHybridPop}
 \title{Hybrid population}
