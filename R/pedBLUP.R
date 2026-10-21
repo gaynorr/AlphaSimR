@@ -80,10 +80,20 @@
                             dims=c(n, n), symmetric=TRUE)
   rhs = c(mme$rhs)
 
-  # The pattern of C0+lambda*A0 is the same for every positive lambda
-  L = Matrix::Cholesky(C0+A0, perm=TRUE, LDL=FALSE, super=FALSE)
+  # The pattern of C0+lambda*A0 is the same for every positive lambda, so
+  # it is analyzed once and later steps only refactor. The first
+  # factorization is made at the first lambda asked for, the given one
+  # when Vu and Ve are supplied, rather than at an arbitrary value, at
+  # which very small Mendelian sampling variances can leave the matrix
+  # indefinite in floating point.
+  L = NULL
   solveAt = function(lambda){
-    L <<- Matrix::update(L, C0+lambda*A0)
+    if(is.null(L)){
+      L <<- Matrix::Cholesky(C0+lambda*A0, perm=TRUE, LDL=FALSE,
+                             super=FALSE)
+    }else{
+      L <<- Matrix::update(L, C0+lambda*A0)
+    }
     as.vector(Matrix::solve(L, rhs, system="A"))
   }
 

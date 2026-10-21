@@ -362,6 +362,20 @@ test_that("INBRED highly inbred selfed siblings keep their own breeding values",
                                    Ve=2^-46, simParam=SP)
   pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
   expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
+  # At 2^-53 the equations formed at a variance ratio of 1, where they were
+  # once first factored, round the records away and are indefinite. The
+  # first factorization is at the given ratio.
+  for(g in 1:7){
+    pop = self(pop, simParam=SP)
+  }
+  sibs = self(pop, nProgeny=2, simParam=SP)
+  ped = SP$pedigree
+  ans = AlphaSimR:::calcPedAinvTriplet(ped[,1], ped[,2], ped[,3])
+  expect_equal(ans$D[sibs@iid], rep(2^-53, 2))
+  fitted = AlphaSimR:::.fitPedBLUP(y, sibs@iid, c(1L, 1L), 2L, Vu=1,
+                                   Ve=2^-53, simParam=SP)
+  pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
+  expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
 })
 
 test_that("INBRED clones of inbred lines still have no Mendelian sampling", {
