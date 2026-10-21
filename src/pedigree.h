@@ -8,19 +8,21 @@
 // order where every parent comes before its progeny, 0-based, with -1 for
 // an unknown parent. A doubled haploid has its one parent as both mother
 // and father. An inbred founder is marked as a doubled haploid with no
-// parents.
+// parents. All individuals have the same ploidy, an even number.
 struct Ped{
   arma::uword n;
   std::vector<int> mother;
   std::vector<int> father;
   std::vector<bool> isDH;
+  int ploidy;
 };
 
 // Builds a Ped from the 1-based vectors that R passes, with 0 for an
 // unknown parent, and checks that it is in a usable order.
 Ped readPed(const Rcpp::IntegerVector& mother,
             const Rcpp::IntegerVector& father,
-            const Rcpp::IntegerVector& isDH);
+            const Rcpp::IntegerVector& isDH,
+            int ploidy);
 
 // Inbreeding coefficients (F) and Mendelian sampling variances (D) of every
 // individual in the pedigree. knownF is empty, or holds the F already

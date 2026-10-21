@@ -16,7 +16,7 @@ global environment.}
 \value{
 Returns a symmetric matrix with a row and column for each
 individual, named by their IDs. The diagonal is one plus the inbreeding
-coefficient.
+coefficient times one less than the ploidy.
 }
 \description{
 Calculates the numerator relationship matrix of a population from the
@@ -42,10 +42,21 @@ because a doubled haploid's genome is two copies of a single gamete from
 that parent. A selfed individual has the same relationships to others as
 its parent, but is only partly inbred.
 
-The relationships assume a diploid pedigree. An error is given for a
-population that is not diploid, but a diploid population descended from
-polyploids, as through \code{\link{reduceGenome}}, cannot be detected,
-and its relationships will be wrong.
+For a ploidy level above 2, inheritance is taken to be autopolyploid,
+without double reduction, following
+\insertCite{kerr2012Use;textual}{AlphaSimR} and
+\insertCite{hamilton2018Computation;textual}{AlphaSimR}. The matrix is
+scaled so that the relationships of an individual's progeny are the
+average of its parents', and its diagonal is \eqn{1+(v-1)F} for ploidy
+\eqn{v}, where the inbreeding coefficient \eqn{F} is the probability
+that two distinct alleles of the individual are identical by descent.
+Allopolyploids that pair like diploids should be simulated as diploids.
+
+The ploidy level must stay the same throughout the simulation. An error
+is given for an odd ploidy, but individuals made by
+\code{\link{reduceGenome}}, \code{\link{doubleGenome}} or
+\code{\link{mergeGenome}}, or descended from them, cannot be detected,
+and their relationships will be wrong.
 
 Memory use grows with the square of the number of individuals in the
 population, and the time taken with that number times the size of its

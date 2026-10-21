@@ -7,8 +7,9 @@
 # require. Individuals that are not ancestors of the requested ones are
 # left out, because they cannot change the relationships among them.
 # Returns the pedigree and, in row, where each requested individual is in
-# it.
-.prunePed = function(iid, simParam){
+# it. The ploidy is carried with the pedigree, which is taken to have the
+# same ploidy throughout.
+.prunePed = function(iid, ploidy, simParam){
   if(!simParam$isTrackPed){
     stop("Pedigree relationships can only be calculated with the trackPed option, see setTrackPed in ?SimParam",
          call.=FALSE)
@@ -50,6 +51,7 @@
               mother=as.integer(mother),
               father=as.integer(father),
               isDH=as.integer(ped[keep,3]),
+              ploidy=as.integer(ploidy),
               row=newRow[iid]))
 }
 
@@ -58,8 +60,8 @@
   if(!is(pop, "Pop")){
     stop("pop must be an object of class Pop", call.=FALSE)
   }
-  if(pop@ploidy!=2L){
-    stop("Pedigree relationships are only available for diploids",
+  if((pop@ploidy%%2L)!=0L){
+    stop("Pedigree relationships are only available for even ploidy levels",
          call.=FALSE)
   }
   invisible(NULL)
@@ -70,7 +72,8 @@
 # no cache, and asking it for the method gives NULL.
 .pedF = function(ped, simParam){
   if(is.null(simParam$pedInbreeding)){
-    return(c(calcPedInbreeding(ped$mother, ped$father, ped$isDH)))
+    return(c(calcPedInbreeding(ped$mother, ped$father, ped$isDH,
+                               ploidy=ped$ploidy)))
   }
   return(simParam$pedInbreeding(ped))
 }
@@ -106,10 +109,21 @@
 #' that parent. A selfed individual has the same relationships to others as
 #' its parent, but is only partly inbred.
 #'
-#' The relationships assume a diploid pedigree. An error is given for a
-#' population that is not diploid, but a diploid population descended from
-#' polyploids, as through \code{\link{reduceGenome}}, cannot be detected,
-#' and its relationships will be wrong.
+#' For a ploidy level above 2, inheritance is taken to be autopolyploid,
+#' without double reduction, following
+#' \insertCite{kerr2012Use;textual}{AlphaSimR} and
+#' \insertCite{hamilton2018Computation;textual}{AlphaSimR}. The matrix is
+#' scaled so that the relationships of an individual's progeny are the
+#' average of its parents', and its diagonal is \eqn{1+(v-1)F} for ploidy
+#' \eqn{v}, where the inbreeding coefficient \eqn{F} is the probability
+#' that two distinct alleles of the individual are identical by descent.
+#' Allopolyploids that pair like diploids should be simulated as diploids.
+#'
+#' The ploidy level must stay the same throughout the simulation. An error
+#' is given for an odd ploidy, but individuals made by
+#' \code{\link{reduceGenome}}, \code{\link{doubleGenome}} or
+#' \code{\link{mergeGenome}}, or descended from them, cannot be detected,
+#' and their relationships will be wrong.
 #'
 #' Memory use grows with the square of the number of individuals in the
 #' population, and the time taken with that number times the size of its
@@ -117,7 +131,7 @@
 #'
 #' @return Returns a symmetric matrix with a row and column for each
 #' individual, named by their IDs. The diagonal is one plus the inbreeding
-#' coefficient.
+#' coefficient times one less than the ploidy.
 #'
 #' @references
 #' \insertAllCited{}
@@ -145,11 +159,12 @@
 pedigreeA = function(pop, simParam=NULL){
   simParam = getSimParam(simParam)
   .checkPedPop(pop)
-  ped = .prunePed(pop@iid, simParam)
+  ped = .prunePed(pop@iid, pop@ploidy, simParam)
   # Each distinct individual costs a pass over the pedigree, so repeats in
   # the population are computed once
   u = unique(ped$row)
-  A = calcPedASub(ped$mother, ped$father, ped$isDH, u, .pedF(ped, simParam))
+  A = calcPedASub(ped$mother, ped$father, ped$isDH, u, .pedF(ped, simParam),
+                  ped$ploidy)
   take = match(ped$row, u)
   A = A[take, take, drop=FALSE]
   dimnames(A) = list(pop@id, pop@id)
@@ -170,15 +185,16 @@ pedigreeA = function(pop, simParam=NULL){
 #' global environment.
 #'
 #' @details
-#' The inbreeding coefficients are calculated a generation at a time, as
-#' half the relationship between each individual's parents, which is found
+#' The inbreeding coefficient is the probability that two distinct alleles
+#' of an individual are identical by descent. The coefficients are
+#' calculated a generation at a time from the relationship between each
+#' individual's parents, which is found
 #' by the indirect method of \insertCite{colleau2002Indirect;textual}{AlphaSimR}
 #' without forming the relationship matrix. They are kept in the
 #' \code{\link{SimParam}} once calculated, so later calls only calculate
 #' them for individuals created since. Doubled haploids and inbred founders have an
-#' inbreeding coefficient of 1, and other founders of 0. The assumptions are
-#' those described in \code{\link{pedigreeA}}, whose diagonal is one plus
-#' these values.
+#' inbreeding coefficient of 1, and other founders of 0. The assumptions,
+#' including those for polyploids, are described in \code{\link{pedigreeA}}.
 #'
 #' @return Returns a numeric vector named by the individuals' IDs.
 #'
@@ -207,7 +223,7 @@ pedigreeA = function(pop, simParam=NULL){
 pedigreeInbreeding = function(pop, simParam=NULL){
   simParam = getSimParam(simParam)
   .checkPedPop(pop)
-  ped = .prunePed(pop@iid, simParam)
+  ped = .prunePed(pop@iid, pop@ploidy, simParam)
   F = .pedF(ped, simParam)[ped$row]
   names(F) = pop@id
   return(F)

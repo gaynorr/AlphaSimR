@@ -1879,7 +1879,8 @@ SimParam = R6Class(
       }
       F = private$.pedF[ped$iid]
       if(anyNA(F)){
-        F = c(calcPedInbreeding(ped$mother, ped$father, ped$isDH, F))
+        F = c(calcPedInbreeding(ped$mother, ped$father, ped$isDH, F,
+                                ped$ploidy))
         private$.pedF[ped$iid] = F
       }
       return(F)

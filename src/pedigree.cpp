@@ -11,6 +11,14 @@
 // doi:10.2307/2529339) and Quaas (1976, doi:10.2307/2529279), and the
 // relationship matrix itself by Henderson's tabular method.
 //
+// For a ploidy level above 2, inheritance is taken to be autopolyploid
+// without double reduction, following Kerr et al. (2012,
+// doi:10.1007/s00122-012-1785-y) and Hamilton and Kerr (2018,
+// doi:10.1007/s00122-017-3041-y), with relationships scaled so that an
+// individual's diagonal is 1+(v-1)F for ploidy v. Off-diagonals are then
+// the average of the parents' at every ploidy, so only the inbreeding
+// recursion depends on it.
+//
 // All three are written for the decomposition A = T*diag(D)*T', in which
 // each individual's breeding value is the average of its parents' plus a
 // Mendelian sampling term of variance D. A doubled haploid fits this with
@@ -69,17 +77,34 @@ void tidyRow(SpRow& row){
   row.swap(kept);
 }
 
+// An individual's inbreeding coefficient from its parents' and the
+// relationship between them, for ploidy v. Of the C(v,2) pairs of
+// distinct alleles in the individual, C(v/2,2) lie within each parent's
+// gamete and are identical by descent with that parent's inbreeding
+// coefficient, and (v/2)^2 pair an allele from each gamete, identical with
+// probability asd/v. For a diploid this is asd/2. An unknown parent is
+// given F=0 and asd=0, as a gamete from the unrelated, non-inbred base.
+double offspringF(int v, double Fs, double Fd, double asd){
+  double h = 0.5*v;
+  double within = 0.5*h*(h-1.0);
+  double pairs = 0.5*v*(v-1.0);
+  return (within*(Fs+Fd) + h*h*asd/v)/pairs;
+}
+
 // The variance of individual i's Mendelian sampling term, given the
-// inbreeding coefficients of its parents
+// inbreeding coefficients of its parents. The variances below hold at
+// every ploidy: writing the diagonal as 1+(v-1)F with F from offspringF,
+// everything that depends on v cancels.
 double mendelianVar(const Ped& ped, const arma::vec& F, arma::uword i){
   int s = ped.mother[i];
   int d = ped.father[i];
   if(ped.isDH[i]){
-    // A doubled haploid is fully inbred, so its total variance is 2. Its
-    // parent's breeding value accounts for 1+F of that, and the rest is its
-    // own. An inbred founder has no parent and all of the 2 is its own.
+    // A doubled haploid is fully inbred, so its total variance is the
+    // ploidy, 2. Its parent's breeding value accounts for 1+F of that, and
+    // the rest is its own. An inbred founder has no parent and all of its
+    // total variance is its own.
     if(s<0){
-      return 2.0;
+      return double(ped.ploidy);
     }
     return 1.0-F(s);
   }
@@ -158,7 +183,8 @@ void resolveBatch(const Ped& ped, std::vector<arma::uword>& pend,
     }
     colleauColumn(ped, D, p, lim, x);
     for(arma::uword k=g; k<h; ++k){
-      F(pend[k]) = 0.5*x(partner[pend[k]]);
+      F(pend[k]) = offspringF(ped.ploidy, F(key[pend[k]]),
+                              F(partner[pend[k]]), x(partner[pend[k]]));
     }
     g = h;
   }
@@ -197,13 +223,18 @@ Rcpp::List spTriplet(const arma::sp_mat& X){
 
 Ped readPed(const Rcpp::IntegerVector& mother,
             const Rcpp::IntegerVector& father,
-            const Rcpp::IntegerVector& isDH){
+            const Rcpp::IntegerVector& isDH,
+            int ploidy){
   arma::uword n = mother.size();
   if((arma::uword(father.size())!=n) || (arma::uword(isDH.size())!=n)){
     Rcpp::stop("mother, father and isDH must have the same length");
   }
+  if((ploidy<2) || ((ploidy%2)!=0)){
+    Rcpp::stop("Pedigree relationships need an even ploidy level");
+  }
   Ped ped;
   ped.n = n;
+  ped.ploidy = ploidy;
   ped.mother.resize(n);
   ped.father.resize(n);
   ped.isDH.resize(n);
@@ -221,6 +252,9 @@ Ped readPed(const Rcpp::IntegerVector& mother,
     }
     if((dh==1) && (m!=f)){
       Rcpp::stop("A doubled haploid must have the same mother and father");
+    }
+    if((dh==1) && (m>0) && (ploidy!=2)){
+      Rcpp::stop("Doubled haploids are only supported for diploids");
     }
     ped.mother[i] = m-1;
     ped.father[i] = f-1;
@@ -267,12 +301,18 @@ void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
     }else if(ped.isDH[i]){
       F(i) = 1.0;
     }else if((s<0) || (d<0)){
-      // With at most one known parent, no two alleles can be traced back
-      // to a common ancestor
-      F(i) = 0.0;
+      // The unknown parent's gamete comes from the unrelated, non-inbred
+      // base, so only the known parent's gamete can carry inbreeding,
+      // which needs a ploidy above 2
+      if((s<0) && (d<0)){
+        F(i) = 0.0;
+      }else{
+        F(i) = offspringF(ped.ploidy, (s>=0) ? F(s) : F(d), 0.0, 0.0);
+      }
     }else if(s==d){
-      // A self needs only its parent's own relationship, 1+F
-      F(i) = 0.5*(1.0+F(s));
+      // A self needs only its parent's own relationship, 1+(v-1)F
+      F(i) = offspringF(ped.ploidy, F(s), F(s),
+                        1.0+(ped.ploidy-1.0)*F(s));
     }else{
       pend.push_back(i);
     }
@@ -369,8 +409,9 @@ PedAinv buildPedAinv(const Ped& ped, const arma::vec& D){
 arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother,
                             const Rcpp::IntegerVector& father,
                             const Rcpp::IntegerVector& isDH,
-                            const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
-  Ped ped = readPed(mother, father, isDH);
+                            const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create(),
+                            int ploidy=2){
+  Ped ped = readPed(mother, father, isDH, ploidy);
   arma::vec F, D;
   pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
   return F;
@@ -383,8 +424,9 @@ arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother,
 Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother,
                               const Rcpp::IntegerVector& father,
                               const Rcpp::IntegerVector& isDH,
-                              const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
-  Ped ped = readPed(mother, father, isDH);
+                              const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create(),
+                              int ploidy=2){
+  Ped ped = readPed(mother, father, isDH, ploidy);
   arma::vec F, D;
   pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
   PedAinv ans = buildPedAinv(ped, D);
@@ -407,8 +449,9 @@ Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother,
 // [[Rcpp::export]]
 arma::mat calcPedA(const Rcpp::IntegerVector& mother,
                    const Rcpp::IntegerVector& father,
-                   const Rcpp::IntegerVector& isDH){
-  Ped ped = readPed(mother, father, isDH);
+                   const Rcpp::IntegerVector& isDH,
+                   int ploidy=2){
+  Ped ped = readPed(mother, father, isDH, ploidy);
   arma::uword n = ped.n;
   arma::mat A(n, n, arma::fill::zeros);
   for(arma::uword i=0; i<n; ++i){
@@ -425,10 +468,15 @@ arma::mat calcPedA(const Rcpp::IntegerVector& mother,
       A(j,i) = a;
       A(i,j) = a;
     }
+    double v = ped.ploidy;
     if(ped.isDH[i]){
-      A(i,i) = 2.0;
-    }else if((s>=0) && (d>=0)){
-      A(i,i) = 1.0+0.5*A(s,d);
+      // An inbred founder, or a diploid's doubled haploid
+      A(i,i) = v;
+    }else if((s>=0) || (d>=0)){
+      double Fs = (s>=0) ? (A(s,s)-1.0)/(v-1.0) : 0.0;
+      double Fd = (d>=0) ? (A(d,d)-1.0)/(v-1.0) : 0.0;
+      double asd = ((s>=0) && (d>=0)) ? A(s,d) : 0.0;
+      A(i,i) = 1.0+(v-1.0)*offspringF(ped.ploidy, Fs, Fd, asd);
     }else{
       A(i,i) = 1.0;
     }
@@ -455,8 +503,9 @@ arma::mat calcPedASub(const Rcpp::IntegerVector& mother,
                       const Rcpp::IntegerVector& father,
                       const Rcpp::IntegerVector& isDH,
                       const Rcpp::IntegerVector& target,
-                      const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
-  Ped ped = readPed(mother, father, isDH);
+                      const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create(),
+                      int ploidy=2){
+  Ped ped = readPed(mother, father, isDH, ploidy);
   arma::uword n = ped.n;
   arma::uword k = target.size();
   std::vector<arma::uword> take(k);

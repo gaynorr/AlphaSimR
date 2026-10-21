@@ -23,15 +23,16 @@ must have been tracked from the start of the simulation, see
 \code{\link[=SimParam-setTrackPed]{setTrackPed}}.
 }
 \details{
-The inbreeding coefficients are calculated a generation at a time, as
-half the relationship between each individual's parents, which is found
+The inbreeding coefficient is the probability that two distinct alleles
+of an individual are identical by descent. The coefficients are
+calculated a generation at a time from the relationship between each
+individual's parents, which is found
 by the indirect method of \insertCite{colleau2002Indirect;textual}{AlphaSimR}
 without forming the relationship matrix. They are kept in the
 \code{\link{SimParam}} once calculated, so later calls only calculate
 them for individuals created since. Doubled haploids and inbred founders have an
-inbreeding coefficient of 1, and other founders of 0. The assumptions are
-those described in \code{\link{pedigreeA}}, whose diagonal is one plus
-these values.
+inbreeding coefficient of 1, and other founders of 0. The assumptions,
+including those for polyploids, are described in \code{\link{pedigreeA}}.
 }
 \examples{
 #Create founder haplotypes

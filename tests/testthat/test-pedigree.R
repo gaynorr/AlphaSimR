@@ -69,6 +69,35 @@ tripToMat = function(trip){
   M
 }
 
+# The tabular method for ploidy v, written from the pairs of alleles: of
+# the choose(v,2) pairs in an individual, choose(v/2,2) lie within each
+# parent's gamete and v^2/4 pair one allele from each gamete
+refPedAPloidy = function(mother, father, inbred, v){
+  n = length(mother)
+  A = matrix(0, n, n)
+  Fv = numeric(n)
+  for(i in seq_len(n)){
+    s = mother[i]
+    d = father[i]
+    for(j in seq_len(i-1L)){
+      a = 0
+      if(s>0) a = a + A[j,s]/2
+      if(d>0) a = a + A[j,d]/2
+      A[i,j] = A[j,i] = a
+    }
+    if(s==0 && d==0){
+      Fv[i] = if(inbred[i]==1L) 1 else 0
+    }else{
+      Fs = if(s>0) Fv[s] else 0
+      Fd = if(d>0) Fv[d] else 0
+      asd = if(s>0 && d>0) A[s,d] else 0
+      Fv[i] = (choose(v/2,2)*(Fs+Fd) + (v/2)^2*asd/v)/choose(v,2)
+    }
+    A[i,i] = 1 + (v-1)*Fv[i]
+  }
+  A
+}
+
 # The relationship matrix implied by the inverse and its basis, W*A_b*W'
 ainvToA = function(ans){
   W = tripToMat(ans$W)
@@ -77,7 +106,7 @@ ainvToA = function(ans){
 
 # A random pedigree with crosses, selfs, doubled haploids and, optionally,
 # inbred founders
-randPed = function(nFounder, nInd, pDH, pSelf, pInbred=0, seed){
+randPed = function(nFounder, nInd, pDH=0, pSelf, pInbred=0, seed){
   set.seed(seed)
   n = nFounder + nInd
   mother = father = isDH = integer(n)
@@ -154,6 +183,26 @@ test_that("VALUE inbred founders are fully inbred and unrelated", {
   expect_equal(c(F), c(1, 1, 0))
 })
 
+test_that("VALUE polyploid selfs and crosses match hand calculation", {
+  # 1 and 2 are founders, 3 their cross, 4 a self of 3, 5 a cross of 3 and 4
+  mother = c(0L, 0L, 1L, 3L, 3L)
+  father = c(0L, 0L, 2L, 3L, 4L)
+  isDH = integer(5)
+  # Tetraploid: a self of a non-inbred parent has F of 1/6, and the cross
+  # of 3 and 4 has F of (1/6 + 1)/6. AGHmatrix gives 1.583333 for it.
+  A4 = AlphaSimR:::calcPedA(mother, father, isDH, ploidy=4L)
+  expect_equal(diag(A4), c(1, 1, 1, 1.5, 1+3*7/36))
+  expect_equal(c(AlphaSimR:::calcPedInbreeding(mother, father, isDH,
+                                               ploidy=4L)),
+               c(0, 0, 0, 1/6, 7/36))
+  # Hexaploid: F of 0.1 for the self and 0.12 for the cross
+  A6 = AlphaSimR:::calcPedA(mother, father, isDH, ploidy=6L)
+  expect_equal(diag(A6), c(1, 1, 1, 1.5, 1.6))
+  # Off-diagonals are the same at every ploidy
+  A2 = AlphaSimR:::calcPedA(mother, father, isDH)
+  expect_equal(A4[upper.tri(A4)], A2[upper.tri(A2)])
+})
+
 # 3. Against the reference ----
 
 test_that("REFERENCE relationships match the tabular method with DH as selfing", {
@@ -185,6 +234,28 @@ test_that("REFERENCE Colleau's method gives the block of the tabular matrix", {
     B = AlphaSimR:::calcPedASub(ped$mother, ped$father, ped$isDH, take)
     expect_equal(B, A[take, take], tolerance=1e-12)
     expect_true(isSymmetric(B, tol=0))
+  }
+})
+
+test_that("REFERENCE polyploid relationships, inbreeding and blocks", {
+  for(v in c(4L, 6L)){
+    for(seed in 1:3){
+      ped = randPed(nFounder=5, nInd=60, pDH=0, pSelf=0.3, pInbred=0.4,
+                    seed=8900+10*v+seed)
+      A = AlphaSimR:::calcPedA(ped$mother, ped$father, ped$isDH, ploidy=v)
+      expect_equal(A, refPedAPloidy(ped$mother, ped$father, ped$isDH, v),
+                   tolerance=1e-12)
+      F = AlphaSimR:::calcPedInbreeding(ped$mother, ped$father, ped$isDH,
+                                        ploidy=v)
+      expect_equal(c(F), (diag(A)-1)/(v-1), tolerance=1e-12)
+      take = sample.int(length(ped$mother), 20L)
+      expect_equal(AlphaSimR:::calcPedASub(ped$mother, ped$father, ped$isDH,
+                                           take, ploidy=v),
+                   A[take, take], tolerance=1e-12)
+      ans = AlphaSimR:::calcPedAinvTriplet(ped$mother, ped$father, ped$isDH,
+                                           ploidy=v)
+      expect_equal(ainvToA(ans), A, tolerance=1e-9)
+    }
   }
 })
 
@@ -281,6 +352,26 @@ test_that("PRUNE resetPed keeps the pedigree usable", {
   expect_equal(unname(A[n+1:n, 1:n]), unname(A[1:n, 1:n]))
 })
 
+test_that("SIMULATION tetraploid pedigreeA matches the reference", {
+  set.seed(8510)
+  founderPop = quickHaplo(nInd=6, nChr=1, segSites=10, ploidy=4L)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  pop1 = newPop(founderPop, simParam=SP)
+  pop2 = randCross(pop1, nCrosses=4, nProgeny=2, simParam=SP)
+  pop3 = self(pop2, simParam=SP)
+  pop4 = randCross(c(pop2, pop3), nCrosses=6, simParam=SP)
+  ped = SP$pedigree
+  ref = refPedAPloidy(ped[,1], ped[,2], ped[,3], 4L)
+  for(pop in list(pop2, pop3, pop4)){
+    expect_equal(unname(pedigreeA(pop, simParam=SP)), ref[pop@iid, pop@iid],
+                 tolerance=1e-12)
+    expect_equal(unname(pedigreeInbreeding(pop, simParam=SP)),
+                 (diag(ref)[pop@iid]-1)/3, tolerance=1e-12)
+  }
+})
+
 # 6. Cache ----
 
 test_that("CACHE known inbreeding coefficients are used and the rest computed", {
@@ -343,15 +434,15 @@ test_that("ERROR tracking turned on late is refused", {
   expect_error(pedigreeA(pop2, simParam=SP), "does not cover")
 })
 
-test_that("ERROR non-diploid populations are refused", {
+test_that("ERROR odd ploidy levels are refused", {
   set.seed(8603)
-  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10, ploidy=4L)
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10, ploidy=3L)
   SP = SimParam$new(founderPop)
   SP$nThreads = 1L
   SP$setTrackPed(TRUE)
   pop = newPop(founderPop, simParam=SP)
-  expect_error(pedigreeA(pop, simParam=SP), "diploid")
-  expect_error(pedigreeInbreeding(pop, simParam=SP), "diploid")
+  expect_error(pedigreeA(pop, simParam=SP), "even ploidy")
+  expect_error(pedigreeInbreeding(pop, simParam=SP), "even ploidy")
 })
 
 test_that("ERROR malformed pedigrees are refused", {
@@ -370,4 +461,8 @@ test_that("ERROR malformed pedigrees are refused", {
   expect_error(AlphaSimR:::calcPedInbreeding(c(0L, 0L), c(0L, 0L),
                                              c(0L, 0L), c(0, 0, 0)),
                "one value per individual")
+  expect_error(AlphaSimR:::calcPedA(c(0L, 1L), c(0L, 1L), c(0L, 1L),
+                                    ploidy=4L),
+               "only supported for diploids")
+  expect_error(AlphaSimR:::calcPedA(0L, 0L, 0L, ploidy=3L), "even ploidy")
 })
