@@ -1,12 +1,13 @@
 #include "alphasimr.h"
 #include "pedigree.h"
 #include <algorithm>
-#include <queue>
+#include <cmath>
 #include <utility>
 
-// Numerator relationships from a pedigree: inbreeding coefficients by the
-// method of Meuwissen and Luo (1992, doi:10.1186/1297-9686-24-4-305), the
-// inverse of the relationship matrix by the rules of Henderson (1976,
+// Numerator relationships from a pedigree: inbreeding coefficients and
+// blocks of the relationship matrix by the indirect method of Colleau
+// (2002, doi:10.1186/1297-9686-34-4-409), the inverse of the relationship
+// matrix by the rules of Henderson (1976,
 // doi:10.2307/2529339) and Quaas (1976, doi:10.2307/2529279), and the
 // relationship matrix itself by Henderson's tabular method.
 //
@@ -94,6 +95,84 @@ double mendelianVar(const Ped& ped, const arma::vec& F, arma::uword i){
   return 1.0;
 }
 
+// The column of the relationship matrix for individual p, over rows 0 to
+// lim-1, by the two passes of Colleau's method; see calcPedASub. Every
+// individual before lim must have its Mendelian sampling variance in D,
+// and p must be before lim.
+void colleauColumn(const Ped& ped, const arma::vec& D, arma::uword p,
+                   arma::uword lim, arma::vec& x){
+  x.zeros(lim);
+  x(p) = 1.0;
+  // Only p and its ancestors are nonzero on the way back
+  for(arma::uword i=p+1; i-->0;){
+    if(x(i)!=0.0){
+      if(ped.mother[i]>=0){
+        x(ped.mother[i]) += 0.5*x(i);
+      }
+      if(ped.father[i]>=0){
+        x(ped.father[i]) += 0.5*x(i);
+      }
+    }
+  }
+  for(arma::uword i=0; i<lim; ++i){
+    x(i) *= D(i);
+    if(ped.mother[i]>=0){
+      x(i) += 0.5*x(ped.mother[i]);
+    }
+    if(ped.father[i]>=0){
+      x(i) += 0.5*x(ped.father[i]);
+    }
+  }
+}
+
+// Fills in F for the individuals in pend, all in one batch whose parents
+// all come before the batch. Each needs half the relationship between its
+// parents. The parents on whichever side has fewer distinct individuals
+// each get one column of the relationship matrix, which gives the
+// relationship to every partner at once.
+void resolveBatch(const Ped& ped, std::vector<arma::uword>& pend,
+                  const arma::vec& D, arma::vec& F, arma::vec& x){
+  std::vector<int> mothers, fathers;
+  for(std::vector<arma::uword>::const_iterator it=pend.begin();
+      it!=pend.end(); ++it){
+    mothers.push_back(ped.mother[*it]);
+    fathers.push_back(ped.father[*it]);
+  }
+  std::sort(mothers.begin(), mothers.end());
+  std::sort(fathers.begin(), fathers.end());
+  arma::uword nMother = std::unique(mothers.begin(), mothers.end())-mothers.begin();
+  arma::uword nFather = std::unique(fathers.begin(), fathers.end())-fathers.begin();
+  const std::vector<int>& key = (nMother<=nFather) ? ped.mother : ped.father;
+  const std::vector<int>& partner = (nMother<=nFather) ? ped.father : ped.mother;
+  // Group the batch by the parent that gets the column
+  std::sort(pend.begin(), pend.end(),
+            [&key](arma::uword a, arma::uword c){ return key[a]<key[c]; });
+  arma::uword g = 0;
+  while(g<pend.size()){
+    arma::uword p = key[pend[g]];
+    arma::uword h = g;
+    arma::uword lim = p+1;
+    while((h<pend.size()) && (arma::uword(key[pend[h]])==p)){
+      lim = std::max(lim, arma::uword(partner[pend[h]])+1);
+      ++h;
+    }
+    colleauColumn(ped, D, p, lim, x);
+    for(arma::uword k=g; k<h; ++k){
+      F(pend[k]) = 0.5*x(partner[pend[k]]);
+    }
+    g = h;
+  }
+}
+
+// Inbreeding coefficients already known, with NA for those that are not.
+// An empty vector means that none are known.
+arma::vec readKnownF(const Rcpp::NumericVector& knownF, arma::uword n){
+  if((knownF.size()!=0) && (arma::uword(knownF.size())!=n)){
+    Rcpp::stop("knownF must be empty or have one value per individual");
+  }
+  return Rcpp::as<arma::vec>(knownF);
+}
+
 // Returns a sparse matrix as 1-based triplets for R, which has no sparse
 // matrix class without the Matrix package
 Rcpp::List spTriplet(const arma::sp_mat& X){
@@ -150,62 +229,52 @@ Ped readPed(const Rcpp::IntegerVector& mother,
   return ped;
 }
 
-void pedInbreeding(const Ped& ped, arma::vec& F, arma::vec& D){
+void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
+                   arma::vec& D){
   arma::uword n = ped.n;
+  bool useKnown = (knownF.n_elem>0);
   F.zeros(n);
   D.zeros(n);
-  // Row i of T holds the share of each ancestor's Mendelian sampling term
-  // in individual i, and A(i,i) is the sum of those shares squared times
-  // the variances. The row is filled from i back toward the founders,
-  // always taking the latest ancestor next, so that every contribution to
-  // an ancestor's share has arrived before it is used. Parents come before
-  // their progeny, so an ancestor that has been taken is never reached
-  // again.
-  std::vector<double> T(n, 0.0);
-  std::priority_queue<arma::uword> next;
-  for(arma::uword i=0; i<n; ++i){
+  // The pedigree is taken in batches whose parents all come before the
+  // batch, which is how AlphaSimR records the individuals made by one call.
+  // Within a batch, an individual's inbreeding needs only the relationship
+  // between its parents, and every relationship among earlier individuals
+  // can be found by Colleau's passes once their variances are known. A
+  // batch closes at the first individual with a parent inside it.
+  std::vector<arma::uword> pend;
+  arma::vec x;
+  arma::uword b = 0;
+  for(arma::uword i=0; i<=n; ++i){
+    if((i==n) || (ped.mother[i]>=int(b)) || (ped.father[i]>=int(b))){
+      if(i>b){
+        if(!pend.empty()){
+          resolveBatch(ped, pend, D, F, x);
+          pend.clear();
+        }
+        for(arma::uword j=b; j<i; ++j){
+          D(j) = mendelianVar(ped, F, j);
+        }
+      }
+      b = i;
+    }
+    if(i==n){
+      break;
+    }
     int s = ped.mother[i];
     int d = ped.father[i];
-    D(i) = mendelianVar(ped, F, i);
-    if(ped.isDH[i]){
+    if(useKnown && !std::isnan(knownF(i))){
+      F(i) = knownF(i);
+    }else if(ped.isDH[i]){
       F(i) = 1.0;
     }else if((s<0) || (d<0)){
       // With at most one known parent, no two alleles can be traced back
       // to a common ancestor
       F(i) = 0.0;
-    }else if((i>0) && (s==ped.mother[i-1]) && (d==ped.father[i-1]) &&
-             !ped.isDH[i-1]){
-      // Full sibs have the same inbreeding coefficient, and AlphaSimR
-      // records the progeny of a cross together
-      F(i) = F(i-1);
+    }else if(s==d){
+      // A self needs only its parent's own relationship, 1+F
+      F(i) = 0.5*(1.0+F(s));
     }else{
-      double aii = 0.0;
-      T[i] = 1.0;
-      next.push(i);
-      while(!next.empty()){
-        arma::uword j = next.top();
-        next.pop();
-        double t = T[j];
-        T[j] = 0.0;
-        aii += t*t*D(j);
-        int sj = ped.mother[j];
-        int dj = ped.father[j];
-        // Shares are always positive, so a share of zero means that the
-        // ancestor has not been queued yet
-        if(sj>=0){
-          if(T[sj]==0.0){
-            next.push(sj);
-          }
-          T[sj] += 0.5*t;
-        }
-        if(dj>=0){
-          if(T[dj]==0.0){
-            next.push(dj);
-          }
-          T[dj] += 0.5*t;
-        }
-      }
-      F(i) = aii-1.0;
+      pend.push_back(i);
     }
   }
 }
@@ -294,14 +363,16 @@ PedAinv buildPedAinv(const Ped& ped, const arma::vec& D){
   return output;
 }
 
-// Inbreeding coefficients of a pedigree, see readPed for its form
+// Inbreeding coefficients of a pedigree, see readPed for its form. knownF
+// holds values already computed, with NA for the rest.
 // [[Rcpp::export]]
 arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother,
                             const Rcpp::IntegerVector& father,
-                            const Rcpp::IntegerVector& isDH){
+                            const Rcpp::IntegerVector& isDH,
+                            const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
   Ped ped = readPed(mother, father, isDH);
   arma::vec F, D;
-  pedInbreeding(ped, F, D);
+  pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
   return F;
 }
 
@@ -311,10 +382,11 @@ arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother,
 // [[Rcpp::export]]
 Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother,
                               const Rcpp::IntegerVector& father,
-                              const Rcpp::IntegerVector& isDH){
+                              const Rcpp::IntegerVector& isDH,
+                              const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
   Ped ped = readPed(mother, father, isDH);
   arma::vec F, D;
-  pedInbreeding(ped, F, D);
+  pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
   PedAinv ans = buildPedAinv(ped, D);
   Rcpp::IntegerVector basis(ans.basis.n_elem);
   for(arma::uword k=0; k<ans.basis.n_elem; ++k){
@@ -362,4 +434,73 @@ arma::mat calcPedA(const Rcpp::IntegerVector& mother,
     }
   }
   return A;
+}
+
+// The block of the relationship matrix among the target individuals, by
+// the indirect method of Colleau (2002, doi:10.1186/1297-9686-34-4-409).
+// A = T*diag(D)*T', and T's inverse is the identity less half of each
+// parent, so the column of A for one individual is found with two passes
+// over the pedigree: one from the latest individual back to the founders,
+// which passes half of each individual's value to each of its parents and
+// gives T'*x, and one forward from the founders, after scaling by D, which
+// adds half of each parent's value to its progeny and gives T*(D*(T'*x)).
+// A doubled haploid's parent receives both halves, as everywhere else in
+// this file. D is only multiplied, never inverted, so individuals with no
+// Mendelian sampling need no special handling here. Memory use is that of
+// the block plus one vector over the pedigree, and the time that of one
+// pass over the pedigree per target, once the inbreeding coefficients are
+// known. knownF holds those already computed, with NA for the rest.
+// [[Rcpp::export]]
+arma::mat calcPedASub(const Rcpp::IntegerVector& mother,
+                      const Rcpp::IntegerVector& father,
+                      const Rcpp::IntegerVector& isDH,
+                      const Rcpp::IntegerVector& target,
+                      const Rcpp::NumericVector& knownF=Rcpp::NumericVector::create()){
+  Ped ped = readPed(mother, father, isDH);
+  arma::uword n = ped.n;
+  arma::uword k = target.size();
+  std::vector<arma::uword> take(k);
+  for(arma::uword c=0; c<k; ++c){
+    int t = target[c];
+    // NA_INTEGER is the most negative int, so it fails this test too
+    if((t<1) || (t>int(n))){
+      Rcpp::stop("Every target must be a row of the pedigree");
+    }
+    take[c] = arma::uword(t-1);
+  }
+  arma::vec F, D;
+  pedInbreeding(ped, readKnownF(knownF, ped.n), F, D);
+  arma::mat output(k, k);
+  arma::vec x(n);
+  for(arma::uword c=0; c<k; ++c){
+    x.zeros();
+    x(take[c]) = 1.0;
+    // Only the target and its ancestors are nonzero on the way back
+    for(arma::uword i=n; i-->0;){
+      if(x(i)!=0.0){
+        if(ped.mother[i]>=0){
+          x(ped.mother[i]) += 0.5*x(i);
+        }
+        if(ped.father[i]>=0){
+          x(ped.father[i]) += 0.5*x(i);
+        }
+      }
+    }
+    x %= D;
+    for(arma::uword i=0; i<n; ++i){
+      if(ped.mother[i]>=0){
+        x(i) += 0.5*x(ped.mother[i]);
+      }
+      if(ped.father[i]>=0){
+        x(i) += 0.5*x(ped.father[i]);
+      }
+    }
+    for(arma::uword r=0; r<k; ++r){
+      output(r,c) = x(take[r]);
+    }
+  }
+  // Each column is computed separately, so rounding can leave the two
+  // halves a few units in the last place apart
+  output = 0.5*(output+output.t());
+  return output;
 }

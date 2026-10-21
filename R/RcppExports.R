@@ -670,16 +670,20 @@ packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
 }
 
-calcPedInbreeding <- function(mother, father, isDH) {
-    .Call(`_AlphaSimR_calcPedInbreeding`, mother, father, isDH)
+calcPedInbreeding <- function(mother, father, isDH, knownF = as.numeric( c())) {
+    .Call(`_AlphaSimR_calcPedInbreeding`, mother, father, isDH, knownF)
 }
 
-calcPedAinvTriplet <- function(mother, father, isDH) {
-    .Call(`_AlphaSimR_calcPedAinvTriplet`, mother, father, isDH)
+calcPedAinvTriplet <- function(mother, father, isDH, knownF = as.numeric( c())) {
+    .Call(`_AlphaSimR_calcPedAinvTriplet`, mother, father, isDH, knownF)
 }
 
 calcPedA <- function(mother, father, isDH) {
     .Call(`_AlphaSimR_calcPedA`, mother, father, isDH)
+}
+
+calcPedASub <- function(mother, father, isDH, target, knownF = as.numeric( c())) {
+    .Call(`_AlphaSimR_calcPedASub`, mother, father, isDH, target, knownF)
 }
 
 rngDiagnosticsSampleInt <- function(n, N, reps, seed) {

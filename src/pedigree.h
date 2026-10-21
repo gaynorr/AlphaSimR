@@ -23,8 +23,10 @@ Ped readPed(const Rcpp::IntegerVector& mother,
             const Rcpp::IntegerVector& isDH);
 
 // Inbreeding coefficients (F) and Mendelian sampling variances (D) of every
-// individual in the pedigree.
-void pedInbreeding(const Ped& ped, arma::vec& F, arma::vec& D);
+// individual in the pedigree. knownF is empty, or holds the F already
+// known with NaN for the rest, as from the SimParam's cache.
+void pedInbreeding(const Ped& ped, const arma::vec& knownF, arma::vec& F,
+                   arma::vec& D);
 
 // The inverse of the numerator relationship matrix, written so that it
 // exists even when the matrix itself is singular.

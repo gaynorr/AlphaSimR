@@ -984,28 +984,30 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcPedInbreeding
-arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH);
-RcppExport SEXP _AlphaSimR_calcPedInbreeding(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP) {
+arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::NumericVector& knownF);
+RcppExport SEXP _AlphaSimR_calcPedInbreeding(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP knownFSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcPedInbreeding(mother, father, isDH));
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedInbreeding(mother, father, isDH, knownF));
     return rcpp_result_gen;
 END_RCPP
 }
 // calcPedAinvTriplet
-Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH);
-RcppExport SEXP _AlphaSimR_calcPedAinvTriplet(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP) {
+Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::NumericVector& knownF);
+RcppExport SEXP _AlphaSimR_calcPedAinvTriplet(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP knownFSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcPedAinvTriplet(mother, father, isDH));
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedAinvTriplet(mother, father, isDH, knownF));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1019,6 +1021,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
     rcpp_result_gen = Rcpp::wrap(calcPedA(mother, father, isDH));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcPedASub
+arma::mat calcPedASub(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::IntegerVector& target, const Rcpp::NumericVector& knownF);
+RcppExport SEXP _AlphaSimR_calcPedASub(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP targetSEXP, SEXP knownFSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type target(targetSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedASub(mother, father, isDH, target, knownF));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1141,9 +1158,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveMVM", (DL_FUNC) &_AlphaSimR_solveMVM, 6},
     {"_AlphaSimR_solveUVM", (DL_FUNC) &_AlphaSimR_solveUVM, 4},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
-    {"_AlphaSimR_calcPedInbreeding", (DL_FUNC) &_AlphaSimR_calcPedInbreeding, 3},
-    {"_AlphaSimR_calcPedAinvTriplet", (DL_FUNC) &_AlphaSimR_calcPedAinvTriplet, 3},
+    {"_AlphaSimR_calcPedInbreeding", (DL_FUNC) &_AlphaSimR_calcPedInbreeding, 4},
+    {"_AlphaSimR_calcPedAinvTriplet", (DL_FUNC) &_AlphaSimR_calcPedAinvTriplet, 4},
     {"_AlphaSimR_calcPedA", (DL_FUNC) &_AlphaSimR_calcPedA, 3},
+    {"_AlphaSimR_calcPedASub", (DL_FUNC) &_AlphaSimR_calcPedASub, 5},
     {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
     {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
     {"_AlphaSimR_segSitesTreeMoments", (DL_FUNC) &_AlphaSimR_segSitesTreeMoments, 4},

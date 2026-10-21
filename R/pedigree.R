@@ -65,6 +65,16 @@
   invisible(NULL)
 }
 
+# Inbreeding coefficients of a pedigree collected by .prunePed, through the
+# SimParam's cache. A SimParam saved by an older version of AlphaSimR has
+# no cache, and asking it for the method gives NULL.
+.pedF = function(ped, simParam){
+  if(is.null(simParam$pedInbreeding)){
+    return(c(calcPedInbreeding(ped$mother, ped$father, ped$isDH)))
+  }
+  return(simParam$pedInbreeding(ped))
+}
+
 #' @title Pedigree relationship matrix
 #'
 #' @description
@@ -79,8 +89,12 @@
 #' global environment.
 #'
 #' @details
-#' The relationship matrix is calculated by the tabular method from the
-#' pedigree of the population's individuals and all of their ancestors.
+#' The relationship matrix is calculated from the pedigree of the
+#' population's individuals and all of their ancestors by the indirect
+#' method of \insertCite{colleau2002Indirect;textual}{AlphaSimR}, which
+#' gives the values of the tabular method of
+#' \insertCite{henderson1976Simple;textual}{AlphaSimR} without forming the
+#' relationship matrix of the whole pedigree.
 #' Individuals in the base population, those created by
 #' \code{\link{newPop}}, are taken to be unrelated and not inbred, unless
 #' the founders were inbred, as with \code{runMacs(inbred=TRUE)}, in which
@@ -97,8 +111,8 @@
 #' polyploids, as through \code{\link{reduceGenome}}, cannot be detected,
 #' and its relationships will be wrong.
 #'
-#' The matrix is dense and holds every ancestor of the population while it
-#' is built, so its memory use grows with the square of the size of the
+#' Memory use grows with the square of the number of individuals in the
+#' population, and the time taken with that number times the size of its
 #' pedigree.
 #'
 #' @return Returns a symmetric matrix with a row and column for each
@@ -106,7 +120,7 @@
 #' coefficient.
 #'
 #' @references
-#' \insertRef{henderson1976Simple}{AlphaSimR}
+#' \insertAllCited{}
 #'
 #' @seealso \code{\link{pedigreeInbreeding}}
 #'
@@ -134,8 +148,12 @@ pedigreeA = function(pop, simParam=NULL){
   }
   .checkPedPop(pop)
   ped = .prunePed(pop@iid, simParam)
-  A = calcPedA(ped$mother, ped$father, ped$isDH)
-  A = A[ped$row, ped$row, drop=FALSE]
+  # Each distinct individual costs a pass over the pedigree, so repeats in
+  # the population are computed once
+  u = unique(ped$row)
+  A = calcPedASub(ped$mother, ped$father, ped$isDH, u, .pedF(ped, simParam))
+  take = match(ped$row, u)
+  A = A[take, take, drop=FALSE]
   dimnames(A) = list(pop@id, pop@id)
   return(A)
 }
@@ -154,10 +172,12 @@ pedigreeA = function(pop, simParam=NULL){
 #' global environment.
 #'
 #' @details
-#' The inbreeding coefficients are calculated by the method of
-#' \insertCite{meuwissen1992Computing;textual}{AlphaSimR}, which works from
-#' the pedigree without building the relationship matrix, so it can be used
-#' on large pedigrees. Doubled haploids and inbred founders have an
+#' The inbreeding coefficients are calculated a generation at a time, as
+#' half the relationship between each individual's parents, which is found
+#' by the indirect method of \insertCite{colleau2002Indirect;textual}{AlphaSimR}
+#' without forming the relationship matrix. They are kept in the
+#' \code{\link{SimParam}} once calculated, so later calls only calculate
+#' them for individuals created since. Doubled haploids and inbred founders have an
 #' inbreeding coefficient of 1, and other founders of 0. The assumptions are
 #' those described in \code{\link{pedigreeA}}, whose diagonal is one plus
 #' these values.
@@ -192,8 +212,7 @@ pedigreeInbreeding = function(pop, simParam=NULL){
   }
   .checkPedPop(pop)
   ped = .prunePed(pop@iid, simParam)
-  F = calcPedInbreeding(ped$mother, ped$father, ped$isDH)
-  F = F[ped$row]
+  F = .pedF(ped, simParam)[ped$row]
   names(F) = pop@id
   return(F)
 }

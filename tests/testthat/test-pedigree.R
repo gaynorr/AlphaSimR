@@ -176,6 +176,18 @@ test_that("REFERENCE inbreeding coefficients are the diagonal of A less one", {
   }
 })
 
+test_that("REFERENCE Colleau's method gives the block of the tabular matrix", {
+  for(seed in 1:5){
+    ped = randPed(nFounder=5, nInd=60, pDH=0.25, pSelf=0.2, pInbred=0.4,
+                  seed=8700+seed)
+    A = AlphaSimR:::calcPedA(ped$mother, ped$father, ped$isDH)
+    take = sample.int(length(ped$mother), 20L)
+    B = AlphaSimR:::calcPedASub(ped$mother, ped$father, ped$isDH, take)
+    expect_equal(B, A[take, take], tolerance=1e-12)
+    expect_true(isSymmetric(B, tol=0))
+  }
+})
+
 # 4. Inverse ----
 
 test_that("INVERSE is the inverse of A when there are no clones", {
@@ -215,6 +227,8 @@ test_that("INVERSE leaves clones and F1s of inbred parents out of the basis", {
   expect_equal(W[4,], c(1, 0, 0))
   expect_equal(W[5,], c(1, 0, 0))
   expect_equal(ainvToA(ans), AlphaSimR:::calcPedA(mother, father, isDH))
+  expect_equal(AlphaSimR:::calcPedASub(mother, father, isDH, 6:1),
+               AlphaSimR:::calcPedA(mother, father, isDH)[6:1, 6:1])
 })
 
 # 5. From a simulation ----
@@ -267,7 +281,46 @@ test_that("PRUNE resetPed keeps the pedigree usable", {
   expect_equal(unname(A[n+1:n, 1:n]), unname(A[1:n, 1:n]))
 })
 
-# 6. Errors ----
+# 6. Cache ----
+
+test_that("CACHE known inbreeding coefficients are used and the rest computed", {
+  ped = randPed(nFounder=5, nInd=80, pDH=0.2, pSelf=0.2, pInbred=0.3,
+                seed=8801)
+  F = c(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father, ped$isDH))
+  known = F
+  known[sample.int(length(F), 40L)] = NA
+  expect_equal(c(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
+                                               ped$isDH, known)), F)
+  expect_equal(c(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
+                                               ped$isDH, rep(NA_real_, length(F)))), F)
+  # A value given as known is taken as it is
+  known = rep(NA_real_, length(F))
+  known[1] = 0.25
+  expect_equal(AlphaSimR:::calcPedInbreeding(ped$mother, ped$father,
+                                             ped$isDH, known)[1], 0.25)
+})
+
+test_that("CACHE pedigreeInbreeding fills the SimParam's cache and reuses it", {
+  sim = pedSim(seed=8802)
+  cache = function() sim$SP$.__enclos_env__$private$.pedF
+  F3 = pedigreeInbreeding(sim$pop3, simParam=sim$SP)
+  # pop3 and its ancestors are cached, and later individuals are not
+  expect_equal(cache()[sim$pop3@iid], unname(F3))
+  expect_true(all(is.na(cache()[sim$pop6@iid])))
+  # A cached value is reused rather than recomputed
+  sim$SP$.__enclos_env__$private$.pedF[sim$pop3@iid[1]] = 0.123
+  expect_equal(unname(pedigreeInbreeding(sim$pop3, simParam=sim$SP)[1]), 0.123)
+})
+
+test_that("CACHE resetPed cuts the cache back with the pedigree", {
+  sim = pedSim(seed=8803)
+  pedigreeInbreeding(sim$pop6, simParam=sim$SP)
+  lastId = sim$pop2@iid[sim$pop2@nInd]
+  sim$SP$resetPed(lastId)
+  expect_true(length(sim$SP$.__enclos_env__$private$.pedF)<=lastId)
+})
+
+# 7. Errors ----
 
 test_that("ERROR pedigree relationships need the pedigree tracked", {
   set.seed(8601)
@@ -312,4 +365,9 @@ test_that("ERROR malformed pedigrees are refused", {
                "before its progeny")
   expect_error(AlphaSimR:::calcPedAinvTriplet(c(0L, 1L), c(0L), c(0L, 0L)),
                "same length")
+  expect_error(AlphaSimR:::calcPedASub(c(0L, 0L), c(0L, 0L), c(0L, 0L), 3L),
+               "row of the pedigree")
+  expect_error(AlphaSimR:::calcPedInbreeding(c(0L, 0L), c(0L, 0L),
+                                             c(0L, 0L), c(0, 0, 0)),
+               "one value per individual")
 })

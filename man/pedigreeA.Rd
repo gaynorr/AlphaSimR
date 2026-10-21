@@ -25,8 +25,12 @@ been tracked from the start of the simulation, see
 \code{\link[=SimParam-setTrackPed]{setTrackPed}}.
 }
 \details{
-The relationship matrix is calculated by the tabular method from the
-pedigree of the population's individuals and all of their ancestors.
+The relationship matrix is calculated from the pedigree of the
+population's individuals and all of their ancestors by the indirect
+method of \insertCite{colleau2002Indirect;textual}{AlphaSimR}, which
+gives the values of the tabular method of
+\insertCite{henderson1976Simple;textual}{AlphaSimR} without forming the
+relationship matrix of the whole pedigree.
 Individuals in the base population, those created by
 \code{\link{newPop}}, are taken to be unrelated and not inbred, unless
 the founders were inbred, as with \code{runMacs(inbred=TRUE)}, in which
@@ -43,8 +47,8 @@ population that is not diploid, but a diploid population descended from
 polyploids, as through \code{\link{reduceGenome}}, cannot be detected,
 and its relationships will be wrong.
 
-The matrix is dense and holds every ancestor of the population while it
-is built, so its memory use grows with the square of the size of the
+Memory use grows with the square of the number of individuals in the
+population, and the time taken with that number times the size of its
 pedigree.
 }
 \examples{
@@ -66,7 +70,7 @@ pedigreeA(pop3, simParam=SP)
 
 }
 \references{
-\insertRef{henderson1976Simple}{AlphaSimR}
+\insertAllCited{}
 }
 \seealso{
 \code{\link{pedigreeInbreeding}}

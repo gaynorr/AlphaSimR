@@ -206,6 +206,7 @@ SimParam = R6Class(
       private$.hasHap = logical()
       private$.hap = list()
       private$.isFounder = logical()
+      private$.pedF = numeric()
       private$.activeQtl = NULL
       private$.qtlIndex = list()
 
@@ -249,6 +250,9 @@ SimParam = R6Class(
       private$.isFounder = private$.isFounder[seq_len(lastId)]
       if(length(private$.hap)>lastId){
         private$.hap = private$.hap[seq_len(lastId)]
+      }
+      if(length(private$.pedF)>lastId){
+        private$.pedF = private$.pedF[seq_len(lastId)]
       }
       if(lastId==0L){
         private$.lastHaplo = 0L
@@ -1861,6 +1865,24 @@ SimParam = R6Class(
       private$.pedigree = rbind(private$.pedigree,tmp)
       private$.lastId = lastId
       invisible(self)
+    },
+
+    # For internal use only. Returns the inbreeding coefficients of a
+    # pedigree collected by .prunePed, computing those not known yet and
+    # keeping them by iid for later calls. An individual's inbreeding
+    # coefficient never changes once it exists, because the pedigree only
+    # grows, and resetPed cuts the cache back with the pedigree. Missing
+    # values are NA, which pads the cache when it is lengthened.
+    pedInbreeding = function(ped){
+      if(length(private$.pedF)<private$.lastId){
+        length(private$.pedF) = private$.lastId
+      }
+      F = private$.pedF[ped$iid]
+      if(anyNA(F)){
+        F = c(calcPedInbreeding(ped$mother, ped$father, ped$isDH, F))
+        private$.pedF[ped$iid] = F
+      }
+      return(F)
     }
 
   ),
@@ -1892,6 +1914,7 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
+    .pedF="numeric",
     .activeQtl = "LociMap",
     .qtlIndex = "list",
 
