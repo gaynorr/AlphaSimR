@@ -4,7 +4,7 @@
 \name{MultiPop-class}
 \alias{MultiPop-class}
 \alias{show,MultiPop-method}
-\alias{[,MultiPop-method}
+\alias{[,MultiPop,ANY,ANY,ANY-method}
 \alias{[[,MultiPop-method}
 \alias{$,MultiPop-method}
 \alias{names,MultiPop-method}
@@ -19,7 +19,7 @@
 \usage{
 \S4method{show}{MultiPop}(object)
 
-\S4method{[}{MultiPop}(x, i)
+\S4method{[}{MultiPop,ANY,ANY,ANY}(x, i)
 
 \S4method{[[}{MultiPop}(x, i)
 
@@ -63,7 +63,7 @@ and can hence have a nested structure - see examples in \code{\link{newMultiPop}
 \itemize{
 \item \code{show(MultiPop)}: Show MultiPop object summary
 
-\item \code{MultiPop[]}: Subset MultiPop by index
+\item \code{x = MultiPop[i = ANY, j = ANY, drop = ANY]}: Subset MultiPop by index
 
 \item \code{MultiPop[[]]}: Extract a population by index
 
