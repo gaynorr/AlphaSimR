@@ -24,6 +24,9 @@
   if((length(iid)!=length(y)) || (length(fixEff)!=length(y))){
     stop("y, iid and fixEff must have the same length", call.=FALSE)
   }
+  if(length(y)==0L){
+    stop("the training population has no records", call.=FALSE)
+  }
   if(anyNA(y)){
     stop("pedigree BLUP needs a record for every individual in the training population, but the responses contain missing values",
          call.=FALSE)
@@ -41,13 +44,25 @@
   fix = factor(fixEff)
   N = length(y)
   nFix = nlevels(fix)
-  if(N<=nFix){
+  # REML needs residual degrees of freedom. A fit with given variance
+  # components only needs a record in every level of the fixed effects,
+  # which the levels have by construction.
+  if(is.null(Vu) && (N<=nFix)){
     stop("there must be more records than levels of the fixed effects",
          call.=FALSE)
   }
 
+  # Centering the records within each level of the fixed effects changes
+  # only the fixed effects, which absorb the level means, and leaves the
+  # breeding values and variance components as they are. It keeps y'Py,
+  # computed below as y'y less the solutions times the right-hand side,
+  # from losing the variation in the records to cancellation when they
+  # share a large offset.
+  levelMean = as.vector(tapply(y, fix, mean))
+  yc = y - levelMean[as.integer(fix)]
+
   mme = calcPedMME(ped$mother, ped$father, ped$isDH, ped$row,
-                   as.integer(fix), y, .pedF(ped, simParam), ped$ploidy)
+                   as.integer(fix), yc, .pedF(ped, simParam), ped$ploidy)
   n = mme$nFix + mme$nBasis
   C0 = Matrix::sparseMatrix(i=mme$C$i, j=mme$C$j, x=mme$C$x,
                             dims=c(n, n), symmetric=TRUE)
@@ -90,7 +105,7 @@
   W = Matrix::sparseMatrix(i=mme$W$i, j=mme$W$j, x=mme$W$x,
                            dims=c(mme$W$nrow, mme$W$ncol))
   ebv = as.vector(W %*% sol[-seq_len(nFix)])
-  fixEffEst = sol[seq_len(nFix)]
+  fixEffEst = sol[seq_len(nFix)] + levelMean
   names(fixEffEst) = levels(fix)
 
   return(list(Vu=Vu, Ve=Ve, fixEff=fixEffEst, iid=ped$iid, ebv=ebv,
@@ -223,7 +238,18 @@ pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
              trait=convertTraitsToNames(traits, simParam),
              Vu=as.matrix(ans$Vu),
              Ve=as.matrix(ans$Ve),
-             model="pedBLUP"))
+             model="pedBLUP",
+             nPedResets=length(.pedResets(simParam))))
+}
+
+# The lastId of every reset of the pedigree, in order. A SimParam saved by
+# an older version of AlphaSimR has no record, and asking it for the method
+# gives NULL.
+.pedResets = function(simParam){
+  if(is.null(simParam$pedResets)){
+    return(integer(0))
+  }
+  return(simParam$pedResets())
 }
 
 # Estimated breeding values of individuals, by iid, from a PedSol. Those in
@@ -233,6 +259,17 @@ pedBLUP = function(pop, traits=1, use="pheno", Vu=NULL, Ve=NULL,
 # unknown parent. Parents have smaller iids than their progeny, so a single
 # pass in iid order fills in every parent before it is used.
 .pedPredict = function(solution, iid, simParam){
+  # A reset after the fit that cut the pedigree back below one of its
+  # individuals lets new individuals take that iid, and a match by iid
+  # would then give them the old individual's estimate
+  resets = .pedResets(simParam)
+  if(length(resets)>solution@nPedResets){
+    since = resets[(solution@nPedResets+1L):length(resets)]
+    if(any(since<max(solution@iid))){
+      stop("the pedigree has been reset since this model was fitted, discarding some of its individuals, whose iids may now belong to others; fit the model again",
+           call.=FALSE)
+    }
+  }
   iid = as.integer(iid)
   take = match(iid, solution@iid)
   if(!anyNA(take)){

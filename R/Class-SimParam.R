@@ -207,6 +207,7 @@ SimParam = R6Class(
       private$.hap = list()
       private$.isFounder = logical()
       private$.pedF = numeric()
+      private$.pedResets = integer()
       private$.activeQtl = NULL
       private$.qtlIndex = list()
 
@@ -239,6 +240,9 @@ SimParam = R6Class(
 
     resetPed =function(lastId=0L){
       private$.lastId = lastId
+      # Kept for pedigree BLUP fits, which must not match individuals that
+      # take the iids of discarded ones; see pedResets
+      private$.pedResets = c(private$.pedResets, as.integer(lastId))
       private$.pedigree = private$.pedigree[0:lastId,,drop=FALSE]
       if(private$.isTrackRec){
         private$.recHist = private$.recHist[0:lastId]
@@ -1884,6 +1888,14 @@ SimParam = R6Class(
         private$.pedF[ped$iid] = F
       }
       return(F)
+    },
+
+    # For internal use only. Returns the lastId of every call to resetPed,
+    # in order. A reset that discards individuals lets new ones take their
+    # iids, so a pedigree BLUP fit uses this to tell whether the individuals
+    # it was fitted to still exist.
+    pedResets = function(){
+      private$.pedResets
     }
 
   ),
@@ -1916,6 +1928,7 @@ SimParam = R6Class(
     .hap="list",
     .isFounder="logical",
     .pedF="numeric",
+    .pedResets="integer",
     .activeQtl = "LociMap",
     .qtlIndex = "list",
 

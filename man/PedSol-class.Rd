@@ -31,5 +31,10 @@ training population, which setEBV removes when value is "bv"}
 \item{\code{Ve}}{the estimated error variance, as a 1 by 1 matrix}
 
 \item{\code{model}}{the model that was fitted, "pedBLUP"}
+
+\item{\code{nPedResets}}{the number of times the pedigree had been reset with
+\code{\link[=SimParam-resetPed]{resetPed}} when the model was fitted.
+A fit is refused by setEBV once a later reset has discarded any of its
+individuals, whose iids new individuals can then take.}
 }}
 

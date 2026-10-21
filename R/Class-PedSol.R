@@ -17,6 +17,10 @@
 #' @slot Vu the estimated additive genetic variance, as a 1 by 1 matrix
 #' @slot Ve the estimated error variance, as a 1 by 1 matrix
 #' @slot model the model that was fitted, "pedBLUP"
+#' @slot nPedResets the number of times the pedigree had been reset with
+#' \code{\link[=SimParam-resetPed]{resetPed}} when the model was fitted.
+#' A fit is refused by setEBV once a later reset has discarded any of its
+#' individuals, whose iids new individuals can then take.
 #'
 #' @export
 setClass("PedSol",
@@ -27,5 +31,6 @@ setClass("PedSol",
                  trait="character",
                  Vu="matrix",
                  Ve="matrix",
-                 model="character"),
-         prototype=prototype(model="pedBLUP"))
+                 model="character",
+                 nPedResets="integer"),
+         prototype=prototype(model="pedBLUP", nPedResets=0L))

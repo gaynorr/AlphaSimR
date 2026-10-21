@@ -232,6 +232,57 @@ test_that("VARCOMP an earlier fit's variance components are reused", {
   expect_equal(sol2@ebv, sol@ebv, tolerance=1e-8)
 })
 
+test_that("SHIFT a large offset in the records changes only the fixed effects", {
+  # Uncentered records sharing an offset of 2^30 lost their variation to
+  # cancellation in y'Py
+  sim = blupSim(9205)
+  tr = sim$train
+  y = tr@pheno[,1]
+  f = function(y) AlphaSimR:::.fitPedBLUP(y, tr@iid, tr@fixEff, 2L,
+                                          simParam=sim$SP)
+  a = f(y)
+  b = f(y + 2^30)
+  expect_equal(b$Vu, a$Vu, tolerance=1e-5)
+  expect_equal(b$Ve, a$Ve, tolerance=1e-5)
+  expect_equal(b$ebv, a$ebv, tolerance=1e-5)
+  expect_equal(unname(b$fixEff - 2^30), unname(a$fixEff), tolerance=1e-5)
+})
+
+test_that("RESET a fit is refused once a reset discards its individuals", {
+  sim = blupSim(9206)
+  tr = sim$train
+  sol = pedBLUP(tr, Vu=1, Ve=1, simParam=sim$SP)
+  # A reset that keeps every fitted individual leaves the fit usable
+  sim$SP$resetPed(sim$SP$lastId)
+  expect_silent(setEBV(tr, sol, simParam=sim$SP))
+  # A reset below them lets new individuals take their iids
+  founders = tr[tr@fixEff==1L][1:40]
+  sim$SP$resetPed(max(founders@iid))
+  newPop = randCross(founders, nCrosses=10, simParam=sim$SP)
+  expect_true(all(newPop@iid %in% sol@iid))
+  expect_error(setEBV(newPop, sol, simParam=sim$SP), "reset")
+})
+
+test_that("GIVEN variance components need no residual degrees of freedom", {
+  # One unrelated individual with one record and an intercept: the
+  # equations [1 1; 1 2] are nonsingular, giving u = 0 and b = y
+  set.seed(9207)
+  founderPop = quickHaplo(nInd=1, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$setTrackPed(TRUE)
+  pop = newPop(founderPop, simParam=SP)
+  ans = AlphaSimR:::.fitPedBLUP(5, pop@iid, 1L, 2L, Vu=1, Ve=1,
+                                simParam=SP)
+  expect_equal(ans$ebv, 0)
+  expect_equal(unname(ans$fixEff), 5)
+  expect_error(AlphaSimR:::.fitPedBLUP(5, pop@iid, 1L, 2L, simParam=SP),
+               "more records")
+  expect_error(AlphaSimR:::.fitPedBLUP(numeric(0), integer(0), integer(0),
+                                       2L, simParam=SP),
+               "no records")
+})
+
 # 6. Errors ----
 
 test_that("ERROR inputs are checked", {
