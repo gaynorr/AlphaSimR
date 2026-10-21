@@ -259,6 +259,22 @@ test_that("Merging preserves GxE values in population order", {
   expect_equal(withEmpty@nInd,pop@nInd)
 })
 
+test_that("MERGE a Pop held in misc from a named popList", {
+  founderPop = quickHaplo(nInd=4, nChr=1, segSites=10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam=SP)
+  pop@misc$p = pop
+  pop@misc$m = matrix(1:8, nrow=4)
+  # Names on the list became argument names to c(), which then dispatched
+  # to the default method and returned a list in place of a Pop.
+  out = mergePops(list(a=pop[1:2], b=pop[3:4]))
+  expect_true(validObject(out))
+  expect_identical(out@misc$p, pop@misc$p)
+  expect_identical(out@misc$m, pop@misc$m)
+  expect_identical(out@misc, mergePops(list(pop[1:2], pop[3:4]))@misc)
+})
+
 test_that("AGREE merged genotypes with arrays bound together in R", {
   set.seed(6029)
   # 13 sites leave the last byte of each haplotype part full, and a
