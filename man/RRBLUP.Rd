@@ -146,6 +146,16 @@ matrix nor a numeric copy of the genotypes is formed, so memory use stays
 close to the size of the genotypes, and the iteration is shared across
 nThreads.
 
+For one trait, the preconditioner also deflates the largest eigenvalues of
+the equations. Relationships between individuals, above all the family
+structure of a breeding program, give the equations a few hundred to a few
+thousand eigenvalues far above the rest, and those set how many iterations
+conjugate gradient takes. Their eigenvectors are estimated from the
+genotypes of a subset of the records, evenly spaced through the population
+so that no random numbers are drawn, and the preconditioner moves the
+eigenvalues down to the level of the rest. This changes how quickly the
+iteration converges, not the solution it converges to.
+
 For several traits, every trait must be recorded on every individual. The
 traits are separated by a canonical transformation, which is exact when
 every trait is recorded and they share their fixed effects, and the

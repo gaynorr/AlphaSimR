@@ -20,6 +20,7 @@
   nThreads,
   onShortfall = "warning",
   call = sys.call(-1),
+  usePed = FALSE,
   ...
 )
 }
@@ -53,6 +54,9 @@
 \item{onShortfall}{"warning", "error" or "none"}
 
 \item{call}{the call of selectOCS, for messages}
+
+\item{usePed}{use the pedigree relationship matrix instead of
+genotypes}
 
 \item{...}{additional arguments if using a function for trait}
 }
