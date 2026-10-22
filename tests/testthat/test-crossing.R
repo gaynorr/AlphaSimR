@@ -626,6 +626,69 @@ test_that("Meiosis kernels validate dimensions and normalize thread requests", {
   }
 })
 
+test_that("Meiosis kernels check maps, centromeres and ploidy before the parallel region", {
+  # Everything below is read on worker threads through raw pointers, where a
+  # length that does not match would be read out of bounds rather than
+  # reported
+  set.seed(6023)
+  f = quickHaplo(2,1,10)
+  sp = SimParam$new(f)
+  crossArgs = list(motherGeno=f@geno,mother=1L,fatherGeno=f@geno,father=2L,
+    femaleMap=sp$femaleMap,maleMap=sp$maleMap,
+    femaleGenLen=sp$femaleGenLen,maleGenLen=sp$maleGenLen,
+    trackRec=FALSE,motherPloidy=2L,fatherPloidy=2L,v=sp$v,p=sp$p,
+    motherCentromere=sp$femaleCentromere,fatherCentromere=sp$maleCentromere,
+    quadProb=sp$quadProb,nThreads=1L)
+  dhArgs = list(geno=f@geno,nDH=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,nThreads=1L)
+  rgArgs = list(geno=f@geno,nProgeny=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,ploidy=2L,
+                centromere=f@centromere,quadProb=sp$quadProb,nThreads=1L)
+  # Replaces arguments whole. modifyList would merge a list argument, such
+  # as a map or genotypes, into the one already there.
+  setArgs = function(args, new){
+    args[names(new)] = new
+    return(args)
+  }
+  twoMaps = c(f@genMap,f@genMap)
+  longMap = list(seq(0,1,length.out=100))
+
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(maleMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(femaleMap=longMap))),
+               "more loci")
+  # 20 loci take three bytes, 10 take two
+  g = quickHaplo(2,1,20)
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(fatherGeno=g@geno))),
+               "same loci")
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(motherPloidy=4L))),
+               "ploidy does not match")
+  expect_error(do.call(AlphaSimR:::createDH2,setArgs(dhArgs,list(genMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::createDH2,setArgs(dhArgs,list(genMap=longMap))),
+               "more loci")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs,list(genMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs,list(ploidy=4L))),
+               "ploidy does not match")
+  # A diploid never reads its centromeres, so they need not be given
+  expect_silent(do.call(AlphaSimR:::cross,
+                        setArgs(crossArgs,list(motherCentromere=numeric(),
+                                                  fatherCentromere=numeric()))))
+
+  # A tetraploid can form quadrivalents, which read them
+  f4 = quickHaplo(2,1,10,ploidy=4)
+  sp4 = SimParam$new(f4)
+  crossArgs4 = setArgs(crossArgs,list(motherGeno=f4@geno,fatherGeno=f4@geno,
+    motherPloidy=4L,fatherPloidy=4L,quadProb=1))
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs4,list(fatherCentromere=numeric()))),
+               "centromere must")
+  rgArgs4 = setArgs(rgArgs,list(geno=f4@geno,ploidy=4L,quadProb=1))
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs4,list(centromere=numeric()))),
+               "centromere must")
+  expect_silent(do.call(AlphaSimR:::cross,crossArgs4))
+})
+
 # Meiosis reads the parents' genotypes in place, from the same memory as the
 # population passed in, and writes the progeny into arrays that are returned
 # to R as they are. The blocks below check both ends of that.
