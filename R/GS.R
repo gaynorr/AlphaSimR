@@ -210,9 +210,11 @@ fitFastRRBLUP = function(pop, y, traits, snpChip, useQtl, maxIter,
                             estVarComp,as.integer(subset),
                             nThreads)
   }else{
+    precond = fastDeflation(nSubsample, nrow(y))
     ans = callFastRRBLUP(y,fixEff,pop,lociPerChr,
                          lociLoc,Vu,Ve,maxIter,
                          estVarComp,as.integer(subset),
+                         precond$nRecords,precond$maxRank,
                          nThreads)
   }
   alpha = as.matrix(ans$alpha)
@@ -274,6 +276,45 @@ fastSubset = function(nSubsample, nRecords){
     return(sort(sample.int(nRecords, nSubsample)))
   }
   return(seq_len(nRecords))
+}
+
+#' @title Size of the fast mode deflation preconditioner
+#'
+#' @description The number of records the deflation preconditioner of the
+#' fast mode of \code{\link{RRBLUP}} is estimated from, and the most
+#' eigenvalues it deflates. The preconditioner costs about the square of the
+#' number of records it is estimated from times the number of markers, and a
+#' cube of the number of records for its eigendecomposition, while each
+#' iteration it saves costs the number of records times the number of
+#' markers, so it is estimated from five times the square root of the number
+#' of records. On a breeding population of 50,000 records and 20,000 markers
+#' that was the fastest choice, and anywhere between 1,000 and 1,500 records
+#' was within five percent of it. Never more records are used than nSubsample,
+#' the number the variance components are estimated from, or 3000 when
+#' nSubsample is zero. The records are evenly spaced through the population
+#' rather than sampled, so that the preconditioner draws no random numbers
+#' and supplying Vu and Ve leaves the random number stream where it was.
+#'
+#' The option AlphaSimR.fastModeDeflation set to FALSE turns the deflation
+#' off, leaving plain Jacobi preconditioning, and the option
+#' AlphaSimR.fastModeMaxRank changes the most eigenvalues deflated. Both are
+#' for testing and benchmarking.
+#'
+#' @param nSubsample the nSubsample argument of the model
+#' @param nRecords the number of records
+#'
+#' @keywords internal
+fastDeflation = function(nSubsample, nRecords){
+  maxRank = getOption("AlphaSimR.fastModeMaxRank", 1000L)
+  if(isFALSE(getOption("AlphaSimR.fastModeDeflation"))){
+    maxRank = 0L
+  }
+  nSubsample = as.integer(nSubsample)
+  if(nSubsample<=0L){
+    nSubsample = 3000L
+  }
+  nPrecond = min(nSubsample, nRecords, round(5*sqrt(nRecords)))
+  return(list(nRecords=as.integer(nPrecond), maxRank=as.integer(maxRank)))
 }
 
 #' @title Variance components from an earlier fit
@@ -626,6 +667,16 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' matrix nor a numeric copy of the genotypes is formed, so memory use stays
 #' close to the size of the genotypes, and the iteration is shared across
 #' nThreads.
+#'
+#' For one trait, the preconditioner also deflates the largest eigenvalues of
+#' the equations. Relationships between individuals, above all the family
+#' structure of a breeding program, give the equations a few hundred to a few
+#' thousand eigenvalues far above the rest, and those set how many iterations
+#' conjugate gradient takes. Their eigenvectors are estimated from the
+#' genotypes of a subset of the records, evenly spaced through the population
+#' so that no random numbers are drawn, and the preconditioner moves the
+#' eigenvalues down to the level of the rest. This changes how quickly the
+#' iteration converges, not the solution it converges to.
 #'
 #' For several traits, every trait must be recorded on every individual. The
 #' traits are separated by a canonical transformation, which is exact when
@@ -2897,9 +2948,12 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #'
 #' \code{\link{RRBLUP}} with fastMode TRUE reads the genotypes as one byte
 #' per locus, then frees them and iterates over a copy packed to one bit per
-#' allele, so it holds no square matrix at all. Its estimate is
+#' allele, so it holds no square matrix of all the records or all the
+#' markers. Its estimate is
 #' dominated by the genotypes themselves and by the subset of records used
-#' for the variance components. Fitted to several traits, it holds a few
+#' for the variance components. Fitted to one trait, it also holds the
+#' eigenvectors its preconditioner deflates, up to 1,000 of them, each with
+#' one value per marker. Fitted to several traits, it holds a few
 #' vectors of markers and of records per trait, and the variance components
 #' are estimated as for several traits in \code{\link{RRBLUP}}, on the
 #' subset of records.
@@ -3028,10 +3082,20 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # Variance components come from a subset of the records. Whichever
       # cross product is smaller is the one decomposed.
       if(m<nSub){
-        doubles = doubles+nSub*m+5*m^2
+        vcDoubles = nSub*m+5*m^2
       }else{
-        doubles = doubles+3*nSub^2
+        vcDoubles = 3*nSub^2
       }
+      # The deflation of the preconditioner is built once the variance
+      # components are known, from the cross product of its own records and
+      # its eigenvectors, a panel of their genotypes and the eigenvectors of
+      # the markers it keeps for the iteration, at most maxRank of them
+      precond = fastDeflation(nSubsample, n)
+      s = as.double(precond$nRecords)
+      k = min(as.double(precond$maxRank), max(s-1, 0))
+      panel = s*min(m, max(256, floor(8388608/max(s, 1))))
+      deflDoubles = if(k>0) 2*s^2+panel else 0
+      doubles = doubles+m*k+max(vcDoubles, deflDoubles)
     }
   }else if((model=="RRBLUP") & !fixedVc){
     if(nT>1){
