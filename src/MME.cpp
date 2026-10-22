@@ -1193,18 +1193,227 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   Ve = delta*Vu;
 }
 
+// A deflation preconditioner for the conjugate gradient solve of RR-BLUP.
+//
+// With Jacobi preconditioning the iteration works, in effect, on
+// B = D^-1/2*A*D^-1/2, where A = Mc'*S*Mc+lambda*I and D is the diagonal of
+// A. B has a mean eigenvalue of one, but the relationships between
+// individuals give it a few hundred to a few thousand eigenvalues far above
+// that, and they set its condition number and so the number of iterations.
+// If W holds orthonormal approximations to the eigenvectors of the largest
+// eigenvalues theta, the preconditioner
+//   P^-1 = D^-1/2*(I+W*diag(sigma/theta-1)*W')*D^-1/2
+// moves those eigenvalues down to about sigma and leaves the rest of the
+// spectrum alone, so the condition number falls to about sigma over the
+// smallest eigenvalue. P^-1 is positive definite for any orthonormal W and
+// positive theta and sigma, so a rough W only costs iterations, never the
+// solution, which the iteration still converges to.
+//
+// W is estimated from nSub records, evenly spaced through the population
+// rather than sampled, so that building it draws no random numbers. With
+// Ms holding their genotypes, centered on the subset and scaled by D^-1/2,
+// n/nSub*Ms'*Ms+lambda*D^-1 approximates B. The fixed effects other than the
+// mean are left out of the approximation, which only has to be close. When
+// there are fewer markers than records in the subset, the approximation is
+// formed and decomposed as it is, a square matrix of the markers. Otherwise
+// its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U)
+// of the record cross product Ms*Ms', the smaller matrix, with lambda*D^-1
+// taken as its mean, lambda times the mean of D^-1, on every eigenvalue.
+//
+// Eigenvalues above twice the mean are deflated, at most maxRank of them and
+// fewer than the size of the matrix decomposed, and sigma is the largest one
+// left, but never less than the mean of one. With rank deficient genotypes
+// and a tiny ratio of the variances, the largest one left can be as small as
+// lambda*D^-1, and sigma/theta would then round to zero in
+// I+W*diag(sigma/theta-1)*W', leaving a preconditioner that is singular
+// rather than positive definite. With sigma at least one, and theta no more
+// than about the number of markers, the trace of B, sigma/theta stays near
+// or above the reciprocal of the number of markers. W is left empty when
+// none qualify. Each matrix is moved into eigen2,
+// which takes its argument by value, so that it is not copied. On the record
+// side the genotypes are read twice, a panel of markers at a time, once for
+// the cross product and once for W, so the only doubles held besides the
+// cross product and W are one panel. A panel holds about eight
+// million values rather than a fixed number of markers, because Armadillo
+// adds each panel's rank update to the cross product through a temporary
+// the size of the cross product, and with narrow panels those additions
+// took several times as long as the products themselves.
+void deflationBasis(arma::mat& W, arma::vec& shrink,
+                    const arma::Mat<unsigned char>& M,
+                    const arma::vec& diagA, double lambda,
+                    arma::uword nSub, arma::uword maxRank,
+                    const double* xaPtr){
+  arma::uword nInd = M.n_rows;
+  arma::uword nLoci = M.n_cols;
+  if(nSub>nInd){
+    nSub = nInd;
+  }
+  bool markerSide = nLoci<nSub;
+  arma::uword nDecomp = markerSide ? nLoci : nSub;
+  W.reset();
+  shrink.reset();
+  if(nDecomp<2){
+    return;
+  }
+  if(maxRank>=nDecomp){
+    maxRank = nDecomp-1;
+  }
+  if(maxRank==0){
+    return;
+  }
+  arma::uvec sub(nSub);
+  for(arma::uword i=0; i<nSub; ++i){
+    sub(i) = ((2*i+1)*nInd)/(2*nSub);
+  }
+  arma::vec w = 1.0/arma::sqrt(diagA);
+  const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
+  // One panel of the scaled, centered subset genotypes
+  auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
+    for(arma::uword j=start; j<stop; ++j){
+      const unsigned char* Mcol = M.colptr(j);
+      double* panelCol = panel.colptr(j-start);
+      double sum = 0.0;
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = xaPtr[Mcol[sub(i)]];
+        sum += panelCol[i];
+      }
+      double mean = sum/double(nSub);
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = (panelCol[i]-mean)*w(j);
+      }
+    }
+  };
+  double scale = double(nInd)/double(nSub);
+  if(markerSide){
+    arma::mat B;
+    {
+      arma::mat Ms(nSub,nLoci);
+      fillPanel(Ms, 0, nLoci);
+      B = scale*(Ms.t()*Ms);
+    }
+    B.diag() += lambda*arma::square(w);
+    arma::vec theta(nLoci);
+    arma::mat V(nLoci,nLoci);
+    if(eigen2(theta, V, std::move(B))!=0){
+      // Plain Jacobi preconditioning still converges
+      return;
+    }
+    // eigen2 returns the eigenvalues in ascending order
+    theta = arma::flipud(theta);
+    arma::uword k = 0;
+    while((k<maxRank) && (theta(k)>2.0)){
+      ++k;
+    }
+    if(k==0){
+      return;
+    }
+    W = arma::fliplr(V.tail_cols(k));
+    shrink = std::max(theta(k), 1.0)/theta.head(k)-1.0;
+    return;
+  }
+  arma::mat K(nSub,nSub,arma::fill::zeros);
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    arma::mat panel(nSub,stop-start);
+    fillPanel(panel, start, stop);
+    K += panel*panel.t();
+  }
+  arma::vec g(nSub);
+  arma::mat U(nSub,nSub);
+  if(eigen2(g, U, std::move(K))!=0){
+    // Plain Jacobi preconditioning still converges
+    return;
+  }
+  K.reset();
+  // eigen2 returns the eigenvalues in ascending order
+  double ridge = lambda*arma::mean(arma::square(w));
+  arma::vec theta = scale*arma::flipud(g)+ridge;
+  arma::uword k = 0;
+  while((k<maxRank) && (theta(k)>2.0)){
+    ++k;
+  }
+  if(k==0){
+    return;
+  }
+  double sigma = std::max(theta(k), 1.0);
+  arma::mat Uk = arma::fliplr(U.tail_cols(k));
+  U.reset();
+  arma::vec gk = arma::flipud(g.tail(k));
+  Uk.each_row() /= arma::sqrt(gk).t();
+  W.set_size(nLoci,k);
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    arma::mat panel(nSub,stop-start);
+    fillPanel(panel, start, stop);
+    W.rows(start,stop-1) = panel.t()*Uk;
+  }
+  shrink = sigma/theta.head(k)-1.0;
+}
+
+// Applies the deflation of the preconditioner, v += W*(shrink%(W'*v)).
+//
+// The products with W are written out rather than sent to BLAS. The
+// conjugate gradient iteration alternates them with the products with the
+// genotypes, which run on OpenMP threads, and BLAS threads left spinning
+// after a call slowed those products down. W'*v is one dot product per
+// column of W, each taken over every marker in order, and W*c is split over
+// blocks of markers, each of which adds the columns of W in order, so neither
+// result depends on the number of threads.
+void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
+                    int nThreads){
+  arma::uword nLoci = W.n_rows;
+  arma::uword k = W.n_cols;
+  arma::vec c(k);
+  const double* vPtr = v.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<k; ++j){
+    const double* Wcol = W.colptr(j);
+    double sum = 0.0;
+    for(arma::uword i=0; i<nLoci; ++i){
+      sum += Wcol[i]*vPtr[i];
+    }
+    c(j) = sum*shrink(j);
+  }
+  arma::uword nBlocks = countBlocks(nLoci);
+  int blockThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(blockThreads)){
+    blockThreads = static_cast<int>(nBlocks);
+  }
+  double* outPtr = v.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(blockThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword start = blockStart(nLoci, nBlocks, block);
+    arma::uword stop = blockStart(nLoci, nBlocks, block+1);
+    for(arma::uword j=0; j<k; ++j){
+      const double* Wcol = W.colptr(j);
+      double cj = c(j);
+      for(arma::uword i=start; i<stop; ++i){
+        outPtr[i] += Wcol[i]*cj;
+      }
+    }
+  }
+}
+
 // Called by RRBLUP with fastMode TRUE
 // Solves the mixed model equations of an RR-BLUP model by preconditioned
 // conjugate gradient, iterating on the genotypes rather than on a stored
 // coefficient matrix. See Stranden and Lidauer (1999),
 // doi:10.3168/jds.S0022-0302(99)75535-9.
-// x is an indicator vector for the fixed effect levels, as in callRRBLUP
+// x is an indicator vector for the fixed effect levels, as in callRRBLUP.
+// nPrecond and maxRank set the deflation of the preconditioner, see
+// deflationBasis; either of them zero leaves plain Jacobi preconditioning.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                           double Vu, double Ve, arma::uword maxIter,
-                          bool estVarComp, arma::uvec subset, int nThreads){
+                          bool estVarComp, arma::uvec subset,
+                          arma::uword nPrecond, arma::uword maxRank,
+                          int nThreads){
   // The marker dosages are decoded straight from the population's packed
   // genotypes. Taking the genotypes as an arma::field would first copy every
   // chromosome, including all the loci that are not markers.
@@ -1348,6 +1557,22 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
     }
   }
   
+  // The deflation of the preconditioner reads the subset's dosages from M
+  arma::mat W;
+  arma::vec shrink;
+  arma::vec w = 1.0/arma::sqrt(precond);
+  if((nPrecond>0) & (maxRank>0)){
+    deflationBasis(W, shrink, M, precond, lambda, nPrecond, maxRank, xaPtr);
+  }
+  auto applyPrecond = [&](const arma::vec& res){
+    if(W.n_cols==0){
+      return arma::vec(res/precond);
+    }
+    arma::vec v = res%w;
+    applyDeflation(v, W, shrink, nThreads);
+    return arma::vec(v%w);
+  };
+
   // The dosages have done their job. The iteration works from a copy of the
   // markers packed to one bit per allele, built only once M has been freed,
   // so the most memory held at once is still M's.
@@ -1361,14 +1586,16 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   // itself is never formed. The vectors below are the only working memory
   // the solver needs.
   arma::vec u(nLoci,arma::fill::zeros);
-  arma::vec z = r/precond;
+  arma::vec z = applyPrecond(r);
   arma::vec pDir = z;
   arma::vec Ap(nLoci);
   arma::vec t(nInd);
   double rNorm0 = norm(r,2);
   double rz = dot(r,z);
   bool converged = (rNorm0<=0.0);
+  arma::uword nIter = 0;
   for(arma::uword iter=0; (iter<maxIter)&&(!converged); ++iter){
+    nIter = iter+1;
     multMc(t, planes, ploidy, offset, pDir, tabs, nThreads);
     t -= Xfix*(XtXi*(Xfix.t()*t)); // S*t
     multMcT(Ap, planes, ploidy, offset, t, nThreads);
@@ -1387,7 +1614,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
       converged = true;
       break;
     }
-    z = r/precond;
+    z = applyPrecond(r);
     double rzNew = dot(r,z);
     pDir = z+(rzNew/rz)*pDir;
     rz = rzNew;
@@ -1407,7 +1634,9 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                             Rcpp::Named("beta")=-shift,
                             Rcpp::Named("mu")=beta(0)-shift,
                             Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve);
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("iter")=int(nIter),
+                            Rcpp::Named("rank")=int(W.n_cols));
 }
 
 // The marker dosages of a chip, one byte per marker, decoded straight from the

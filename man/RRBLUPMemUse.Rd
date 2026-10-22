@@ -70,9 +70,12 @@ are large enough to decide which one is usable.
 
 \code{\link{RRBLUP}} with fastMode TRUE reads the genotypes as one byte
 per locus, then frees them and iterates over a copy packed to one bit per
-allele, so it holds no square matrix at all. Its estimate is
+allele, so it holds no square matrix of all the records or all the
+markers. Its estimate is
 dominated by the genotypes themselves and by the subset of records used
-for the variance components. Fitted to several traits, it holds a few
+for the variance components. Fitted to one trait, it also holds the
+eigenvectors its preconditioner deflates, up to 1,000 of them, each with
+one value per marker. Fitted to several traits, it holds a few
 vectors of markers and of records per trait, and the variance components
 are estimated as for several traits in \code{\link{RRBLUP}}, on the
 subset of records.

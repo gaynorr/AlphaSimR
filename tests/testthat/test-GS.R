@@ -147,6 +147,141 @@ test_that("fast mode RRBLUP agrees with RRBLUP given the same variance component
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-4)
 })
 
+# Single trait fast mode deflates the largest eigenvalues of its Jacobi
+# preconditioned system, using eigenvectors estimated from a subset of the
+# records. The preconditioner changes how fast the iteration converges, never
+# what it converges to, so the solution has to be the same with deflation as
+# without it. The exported solver is called directly here, because it
+# reports how many eigenvalues it deflated and how many iterations it took.
+fastSolve = function(d, Vu, Ve, nPrecond, maxRank, nThreads=1L){
+  snp = d$SP$snpChips[[1]]
+  return(AlphaSimR:::callFastRRBLUP(d$pop@pheno, rep(1L, nInd(d$pop)), d$pop,
+                                    snp@lociPerChr, snp@lociLoc, Vu, Ve,
+                                    10000L, FALSE, 1L, nPrecond, maxRank,
+                                    nThreads))
+}
+
+# 200 records against 100 markers in ten full-sib families. Family structure
+# is what puts eigenvalues of the scaled equations well above twice their
+# mean, so that some are deflated; unrelated founders from quickHaplo have
+# hardly any.
+famPop = function(){
+  d = gsPop(nInd=40, nQtl=10, nSnp=50)
+  d$pop = randCross(d$pop, nCrosses=10, nProgeny=20, simParam=d$SP)
+  d$pop = setPheno(d$pop, simParam=d$SP)
+  return(d)
+}
+
+test_that("fast mode RRBLUP converges to the same solution with deflation", {
+  skip_on_cran()
+  d = famPop()
+  Vu = 0.1
+  Ve = 1
+  ref = RRBLUP(d$pop, Vu=Vu, Ve=Ve, simParam=d$SP)
+
+  jacobi = fastSolve(d, Vu, Ve, 0L, 0L)
+  expect_equal(jacobi$rank, 0L)
+  # The whole population, whose 200 records outnumber the 100 markers, so the
+  # approximation is decomposed as a square matrix of the markers, and a
+  # subset of 60 records, whose cross product is decomposed instead and
+  # estimates the eigenvectors less well
+  for(nPrecond in c(200L, 60L)){
+    deflated = fastSolve(d, Vu, Ve, nPrecond, 1000L)
+    expect_gt(deflated$rank, 0L)
+    expect_lt(deflated$rank, nPrecond)
+    expect_lte(deflated$iter, jacobi$iter)
+    expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6,
+                 info=paste("nPrecond", nPrecond))
+    expect_equal(c(deflated$alpha), addEff(ref), tolerance=1e-4,
+                 info=paste("nPrecond", nPrecond))
+  }
+
+  # The cap on the rank is respected
+  capped = fastSolve(d, Vu, Ve, 200L, 3L)
+  expect_equal(capped$rank, 3L)
+  expect_equal(c(capped$alpha), c(jacobi$alpha), tolerance=1e-6)
+})
+
+# Markers that are all the same balanced column, coded -1 and 1, with the
+# phenotype equal to it. The genotypes then have rank one, and with a tiny
+# error variance every eigenvalue of the scaled equations but one is close to
+# zero.
+dupMarkerPop = function(nInd, nLoci){
+  # Pairs of individuals alternate between the two homozygotes, so that an
+  # evenly spaced subset of every other record is balanced too
+  allele = rep(c(0L,0L,1L,1L), length.out=nInd)
+  haplo = matrix(rep(rep(allele, each=2), nLoci), ncol=nLoci)
+  founder = newMapPop(list(seq(0, 1, length.out=nLoci)), list(haplo))
+  SP = SimParam$new(founder)
+  SP$nThreads = 1L
+  SP$addSnpChip(nSnpPerChr=nLoci)
+  pop = newPop(founder, simParam=SP)
+  pop@pheno = matrix(2*allele-1)
+  return(list(pop=pop, SP=SP))
+}
+
+test_that("fast mode RRBLUP deflation stays positive definite with identical markers and a tiny error variance", {
+  # Mapping the deflated eigenvalue down to the largest one left, which is
+  # tiny here, rounded the preconditioner's scaling to zero, and the
+  # iteration stopped at once with no effects. The marker side is decomposed
+  # with 4 markers and 100 records, the record side with 64 markers and 50.
+  for(case in list(c(nLoci=4, nPrecond=100), c(nLoci=64, nPrecond=50))){
+    d = dupMarkerPop(100, case[["nLoci"]])
+    info = paste("nLoci", case[["nLoci"]])
+    jacobi = fastSolve(d, 1, 1e-18, 0L, 0L)
+    deflated = fastSolve(d, 1, 1e-18, as.integer(case[["nPrecond"]]), 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    # The effects are split evenly among the identical markers, and together
+    # they reproduce the phenotype
+    expect_equal(c(deflated$alpha), rep(1/case[["nLoci"]], case[["nLoci"]]),
+                 tolerance=1e-6, info=info)
+    expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6,
+                 info=info)
+    M = pullSnpGeno(d$pop, simParam=d$SP)-1
+    resid = c(d$pop@pheno)-deflated$mu-c(M%*%deflated$alpha)
+    expect_lt(max(abs(resid)), 1e-6, label=info)
+  }
+})
+
+test_that("fast mode RRBLUP options turn deflation off and cap its rank", {
+  # Both options are saved, so that neither is left set for later tests
+  old = options(AlphaSimR.fastModeDeflation=FALSE,
+                AlphaSimR.fastModeMaxRank=NULL)
+  on.exit(options(old))
+  expect_equal(AlphaSimR:::fastDeflation(3000L, 100L)$maxRank, 0L)
+  options(AlphaSimR.fastModeDeflation=NULL, AlphaSimR.fastModeMaxRank=7L)
+  expect_equal(AlphaSimR:::fastDeflation(3000L, 100L)$maxRank, 7L)
+  # Five times the square root of the number of records, but never more than
+  # nSubsample, or 3000 when it is zero
+  expect_equal(AlphaSimR:::fastDeflation(3000L, 100L)$nRecords, 50L)
+  expect_equal(AlphaSimR:::fastDeflation(3000L, 1e5L)$nRecords, 1581L)
+  expect_equal(AlphaSimR:::fastDeflation(0L, 1e6L)$nRecords, 3000L)
+  expect_equal(AlphaSimR:::fastDeflation(500L, 1e5L)$nRecords, 500L)
+})
+
+test_that("fast mode RRBLUP given its variance components draws no random numbers", {
+  # The records of the preconditioner are evenly spaced rather than sampled,
+  # so a fit with supplied components leaves the random number stream where
+  # it was
+  d = famPop()
+  set.seed(5)
+  before = .Random.seed
+  ans = RRBLUP(d$pop, fastMode=TRUE, Vu=0.01, Ve=1, simParam=d$SP)
+  expect_identical(.Random.seed, before)
+})
+
+test_that("fast mode RRBLUP with deflation is not affected by the number of threads", {
+  skip_on_cran()
+  nThreads = getNumThreads()
+  skip_if_not(nThreads > 1L, "only one thread available")
+  d = famPop()
+  one = fastSolve(d, 0.1, 1, 200L, 1000L, nThreads=1L)
+  many = fastSolve(d, 0.1, 1, 200L, 1000L, nThreads=nThreads)
+  expect_gt(one$rank, 0L)
+  expect_identical(one$alpha, many$alpha)
+  expect_identical(one$iter, many$iter)
+})
+
 test_that("RRBLUP outside fast mode takes both variance components or neither", {
   # Estimating the other one would ignore the one supplied without notice
   d = gsPop(nInd=30, nQtl=5, nSnp=5)
@@ -351,6 +486,17 @@ test_that("RRBLUPMemUse answers for every model it accepts", {
     large = RRBLUPMemUse(nInd=2000, nMarker=2000, model=m)
     expect_gt(large, small)
   }
+})
+
+test_that("RRBLUPMemUse counts the deflation of single trait fast mode", {
+  # The eigenvectors of the markers the deflation keeps are held through the
+  # whole iteration, 1,000 of them by default for 100,000 records, which at
+  # 50,000 markers is 0.4 GB
+  on = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE)
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE)
+  expect_equal(on-off, 5e4*1000*8/1e9, tolerance=1e-8)
 })
 
 test_that("RRBLUPMemUse counts the multiple trait optimizer", {
