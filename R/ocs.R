@@ -1,8 +1,9 @@
 # selectOCS and its helpers, which selectCross(restrInbr=TRUE) also
 # uses. They approximate optimal contribution selection with equal
 # contributions by truncating on a merit that is penalized for sharing
-# alleles with the selected parents. The derivation is given in the
-# details section of selectOCS.
+# alleles with the selected parents, or, with a pedigree, for being
+# related to them. The derivation is given in the details section of
+# selectOCS.
 
 #' @title Penalty kernel for restricted inbreeding selection
 #'
@@ -31,28 +32,72 @@
   # the same whatever BLAS performs them and however many threads it
   # uses, so they cannot depend on the machine.
   storage.mode(Y) = "double"
-  nInd = nrow(Y)
-  nLoci = ncol(Y)
   s = ploidy^2
   if(useK){
-    K = tcrossprod(Y)
-    rm(Y)
-    self = diag(K)/s
-    zu = function(take){
-      rowSums(K[,take,drop=FALSE])/(s*length(take))
-    }
-    cross = function(a, b){
-      sum(K[a,b,drop=FALSE])
-    }
-  }else{
-    self = rowSums(Y^2)/s
-    zu = function(take){
-      drop(Y%*%colSums(Y[take,,drop=FALSE]))/(s*length(take))
-    }
-    cross = function(a, b){
-      sum(colSums(Y[a,,drop=FALSE])*colSums(Y[b,,drop=FALSE]))
-    }
+    return(.ocsKernelK(tcrossprod(Y), s, ncol(Y)))
   }
+  self = rowSums(Y^2)/s
+  zu = function(take){
+    drop(Y%*%colSums(Y[take,,drop=FALSE]))/(s*length(take))
+  }
+  cross = function(a, b){
+    sum(colSums(Y[a,,drop=FALSE])*colSums(Y[b,,drop=FALSE]))
+  }
+  return(.ocsKernelList(nrow(Y), ncol(Y), s, self, zu, cross))
+}
+
+#' @title Penalty kernel from a relationship matrix
+#'
+#' @description
+#' Builds the kernel of \code{\link{.ocsKernel}} from a matrix
+#' \eqn{K} with \eqn{K/(s \cdot nLoci)}{K/(s*nLoci)} equal to the
+#' kinship matrix. For genotypes, \eqn{K = YY'}, \eqn{s = k^2} and
+#' \code{nLoci} is the number of loci. For a pedigree, \eqn{K} is the
+#' relationship matrix divided by the ploidy, with \eqn{s} and
+#' \code{nLoci} both 1.
+#'
+#' @param K a symmetric matrix for the candidates
+#' @param s the divisor that turns \eqn{K} into \eqn{ZZ'}
+#' @param nLoci the number of loci, or 1 for a kinship matrix
+#'
+#' @return a kernel, as returned by \code{\link{.ocsKernel}}, with a
+#' further function giving a column of \eqn{ZZ'}
+#'
+#' @keywords internal
+.ocsKernelK = function(K, s, nLoci){
+  self = diag(K)/s
+  zu = function(take){
+    rowSums(K[,take,drop=FALSE])/(s*length(take))
+  }
+  cross = function(a, b){
+    sum(K[a,b,drop=FALSE])
+  }
+  ker = .ocsKernelList(nrow(K), nLoci, s, self, zu, cross)
+  # Each candidate's z_i'z_j with candidate j, for .ocsGreedy
+  ker$col = function(j){
+    K[,j]/s
+  }
+  return(ker)
+}
+
+#' @title Assemble a penalty kernel
+#'
+#' @description
+#' Adds the expected fixation of a selected set to the functions
+#' supplied by \code{\link{.ocsKernel}} or \code{\link{.ocsKernelK}}.
+#'
+#' @param nInd the number of candidates
+#' @param nLoci the number of loci, or 1 for a kinship matrix
+#' @param s the divisor that turns the results of \code{cross} into
+#' sums of \eqn{z_i'z_j}
+#' @param self each candidate's \eqn{z_i'z_i}
+#' @param zu a function giving \eqn{Zu} for a selected set
+#' @param cross a function giving the sum of \eqn{K} over two sets
+#'
+#' @return a kernel, as returned by \code{\link{.ocsKernel}}
+#'
+#' @keywords internal
+.ocsKernelList = function(nInd, nLoci, s, self, zu, cross){
   # Expected fixation, mean(u^2), for equal contributions from take
   fix = function(take){
     cross(take,take)/(s*nLoci*length(take)^2)
@@ -162,6 +207,119 @@
   return(list(take=c(takeF, takeM), F=ker$fixPool(takeF, takeM)))
 }
 
+#' @title Greedy restricted inbreeding selection without sexes
+#'
+#' @description
+#' Selects \code{N} candidates for a fixed penalty \code{kappa} one at a
+#' time, each time taking the candidate with the highest
+#' \code{m - kappa*(r/N + self/(2*N))}, where \code{r} is the sum of its
+#' \eqn{z_i'z_j} with the candidates already taken. Used with a pedigree,
+#' where candidates with the same parents cannot be told apart by
+#' \code{.ocsTrunc}.
+#'
+#' @param kappa the penalty on relationship
+#' @param ker a kernel from \code{.ocsKernelK}
+#' @param m a merit vector, where larger values are better
+#' @param N the number of individuals to select
+#'
+#' @return a list with the selected individuals and their expected
+#' fixation
+#'
+#' @keywords internal
+.ocsGreedy = function(kappa, ker, m, N){
+  # .ocsTrunc ranks every candidate against the same u, so candidates
+  # with identical relationships, such as full sibs in a pedigree, are
+  # either all penalized enough to be passed over or none are, and at a
+  # large penalty whole families are taken or left. Taking one at a time
+  # brings in the term .ocsTrunc leaves out, the relationship with each
+  # candidate already taken, so the second sib of a family pays for the
+  # first. The penalty is the increase in fixation from adding a
+  # candidate to those taken, (2*r + self)/N^2, times N/2, which keeps
+  # kappa on the same scale as in .ocsTrunc.
+  r = numeric(length(m))
+  own = ker$self/(2*N)
+  free = rep(TRUE, length(m))
+  take = integer(N)
+  for(k in seq_len(N)){
+    score = m - kappa*(r/N + own)
+    # NA rather than -Inf, so that a free candidate with a merit of
+    # -Inf can still be taken and one already taken cannot
+    score[!free] = NA
+    i = which.max(score)
+    if(length(i)==0L){
+      # Every free candidate has a missing merit, which order() in
+      # .ocsTrunc would also leave to last
+      i = which(free)[1L]
+    }
+    take[k] = i
+    free[i] = FALSE
+    r = r + ker$col(i)
+  }
+  return(list(take=take, F=ker$fix(take)))
+}
+
+#' @title Greedy restricted inbreeding selection with sexes
+#'
+#' @description
+#' Selects \code{nFemale} females and \code{nMale} males for a fixed
+#' penalty \code{kappa} one at a time, as in \code{.ocsGreedy}. Each
+#' selected female contributes \eqn{1/(2N_f)} and each male
+#' \eqn{1/(2N_m)}, and each pick is taken from whichever sex has the
+#' smaller share of its selections made, ranking within that sex.
+#'
+#' @param kappa the penalty on relationship
+#' @param ker a kernel from \code{.ocsKernelK}
+#' @param m a merit vector, where larger values are better
+#' @param female individuals that are female
+#' @param male individuals that are male
+#' @param nFemale the number of females to select
+#' @param nMale the number of males to select
+#'
+#' @return a list with the selected individuals and their expected
+#' fixation
+#'
+#' @keywords internal
+.ocsGreedySex = function(kappa, ker, m, female, male, nFemale, nMale){
+  cF = 1/(2*nFemale)
+  cM = 1/(2*nMale)
+  # r holds each candidate's z_i'z_j with those taken, weighted by their
+  # contributions, as Zu does in .ocsTruncSex
+  r = numeric(length(m))
+  freeF = rep(TRUE, length(female))
+  freeM = rep(TRUE, length(male))
+  takeF = integer(nFemale)
+  takeM = integer(nMale)
+  kF = 0L
+  kM = 0L
+  while(kF<nFemale || kM<nMale){
+    # Alternating in proportion to the numbers wanted spreads each sex's
+    # picks through the sequence, so neither sex is chosen entirely
+    # before the other. Scores are compared only within a sex.
+    if(kM>=nMale || (kF<nFemale && kF/nFemale<=kM/nMale)){
+      score = m[female] - kappa*(r[female] + cF*ker$self[female]/2)
+      score[!freeF] = NA
+      j = which.max(score)
+      if(length(j)==0L) j = which(freeF)[1L]
+      freeF[j] = FALSE
+      i = female[j]
+      kF = kF + 1L
+      takeF[kF] = i
+      r = r + cF*ker$col(i)
+    }else{
+      score = m[male] - kappa*(r[male] + cM*ker$self[male]/2)
+      score[!freeM] = NA
+      j = which.max(score)
+      if(length(j)==0L) j = which(freeM)[1L]
+      freeM[j] = FALSE
+      i = male[j]
+      kM = kM + 1L
+      takeM[kM] = i
+      r = r + cM*ker$col(i)
+    }
+  }
+  return(list(take=c(takeF, takeM), F=ker$fixPool(takeF, takeM)))
+}
+
 #' @title Find the penalty that meets an expected fixation target
 #'
 #' @description
@@ -266,6 +424,12 @@
 #' from all of them, "error" stops, and "none" does so silently. When
 #' no candidates of a required sex are available, selection is not
 #' possible and an error is raised whatever the value.
+#' @param usePed should the pedigree relationship matrix of
+#' \code{\link{pedigreeA}} be used instead of genotypes to measure
+#' expected fixation. The pedigree must have been tracked from the
+#' start of the simulation, see
+#' \code{\link[=SimParam-setTrackPed]{setTrackPed}}. If TRUE,
+#' \code{snpChip} is ignored and \code{useQtl} must be FALSE.
 #' @param returnPop should results be returned as a
 #' \code{\link{Pop-class}}. If FALSE, only the index of selected
 #' individuals is returned.
@@ -299,6 +463,18 @@
 #' average coancestry \eqn{c'Gc/2} of the selected individuals, where
 #' \eqn{c} holds their equal contributions and \eqn{G = ZZ'/(m/2)} is a
 #' genomic relationship matrix scaled with allele frequencies of 0.5.
+#'
+#' At any ploidy, \eqn{z_i'z_j/m} estimates the kinship of individuals
+#' \eqn{i} and \eqn{j}, the probability that an allele drawn from each
+#' is identical by descent, relative to a base population with allele
+#' frequencies of 0.5. With \code{usePed=TRUE}, the kinship is instead
+#' taken from the pedigree as \eqn{A/k}, where \eqn{A} is the
+#' relationship matrix of \code{\link{pedigreeA}}, and \eqn{ZZ'/m} is
+#' replaced by \eqn{A/k} in what follows. \eqn{F} is then the average
+#' kinship of the selected individuals relative to the founders of the
+#' simulation, which the pedigree takes to be unrelated, rather than a
+#' measure of fixation at the markers. The individuals are also chosen
+#' differently, as described below.
 #'
 #' The target \eqn{F^*} is set by \code{inbrType}. With "relative",
 #' \eqn{F^* = F_t + \Delta F(1 - F_t)}, where \eqn{F_t} is the expected
@@ -340,16 +516,40 @@
 #' \eqn{\kappa} tried are returned. A message reports \eqn{\kappa}, the
 #' achieved \eqn{F}, the target and \eqn{F_t}.
 #'
+#' With \code{usePed=TRUE}, the individuals are instead selected one at
+#' a time for a given \eqn{\kappa}. Each time, the candidate taken is
+#' the one with the highest
+#' \deqn{s_i = m_i - \kappa\left(\sum_{j \in S} c\,\theta_{ij} + \frac{c}{2}\theta_{ii}\right),}{s_i = m_i - kappa (sum over j in S of c theta_ij + (c/2) theta_ii),}
+#' where \eqn{\theta_{ij} = A_{ij}/k} is the kinship and \eqn{S} holds
+#' the individuals already taken, so the penalty is proportional to the
+#' increase in \eqn{F} from adding the candidate to them. With
+#' \code{nFemale} and \code{nMale}, each pick is from the sex with the
+#' smaller share of its individuals taken, ranked within that sex. The
+#' search for \eqn{\kappa} is as above. Full sibs have identical
+#' relationships in a pedigree, so the score used with genotypes would
+#' penalize every sib in a family equally against the same \eqn{u} and
+#' take each family whole or not at all. Taking individuals one at a
+#' time instead penalizes each sib for the ones already taken.
+#'
 #' A random set of \eqn{N} individuals of ploidy \eqn{k}, contributing
 #' equally, increases expected fixation by about \eqn{(1 - F_t)/(kN)}.
 #' When using sexes, \eqn{N} is replaced by \eqn{4N_fN_m/(N_f + N_m)}
-#' for \eqn{N_f} females and \eqn{N_m} males. A selected set can do
-#' better than a random one by choosing individuals whose alleles
-#' balance each other, so the target can be met with fewer than
-#' \eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for a
-#' diploid with the default. Most of the restriction is then spent on
+#' for \eqn{N_f} females and \eqn{N_m} males. With genotypes, a
+#' selected set can do better than a random one by choosing individuals
+#' whose alleles balance each other, so the target can be met with fewer
+#' than \eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for
+#' a diploid with the default. Most of the restriction is then spent on
 #' keeping allele frequencies balanced, though, so much less gain in
 #' merit is made than with a larger number.
+#'
+#' A pedigree records whom each candidate descends from but not which
+#' alleles it carries, so it cannot balance allele frequencies. Full
+#' sibs, for example, are related alike to everyone else and are chosen
+#' between on merit, and every set of \eqn{N} founders that are neither
+#' related nor inbred has \eqn{F = 1/(kN)}, whichever are selected. The restriction instead
+#' works by spreading selection across families. Because markers also
+#' see the Mendelian sampling within families, they usually allow more
+#' gain in merit than the pedigree at the same target.
 #'
 #' The target holds only if the selected individuals are used as
 #' assumed: each contributes equally to the next generation and, with
@@ -367,7 +567,10 @@
 #' fixation through a second order term with three parts: two for the
 #' individuals on their own, which the score includes, and one for the
 #' relationship between them, which cannot be split between candidates
-#' and so is ignored.
+#' and so is ignored. The one at a time selection used with
+#' \code{usePed=TRUE} includes that relationship for the individuals
+#' already taken, but is greedy: it never revisits a choice, so it is
+#' also not an exact solution.
 #'
 #' @return Returns an object of \code{\link{Pop-class}}, or the indices
 #' of the selected individuals if \code{returnPop=FALSE}. With
@@ -398,12 +601,24 @@
 #' crossPlan = cbind(1:4, c(2:4, 1))
 #' pop2 = makeCross(parents, crossPlan, nProgeny=2, simParam=SP)
 #'
+#' #Restrict the average pedigree relationship instead, which needs the
+#' #pedigree to have been tracked from the start
+#' SP2 = SimParam$new(founderPop)
+#' \dontshow{SP2$nThreads = 1L}
+#' SP2$addTraitA(10)
+#' SP2$setVarE(h2=0.5)
+#' SP2$setTrackPed(TRUE)
+#' pop = newPop(founderPop, simParam=SP2)
+#' pop = randCross(pop, nCrosses=4, nProgeny=5, simParam=SP2)
+#' parents = selectOCS(pop, nInd=4, inbrTarget=0.1, usePed=TRUE,
+#'                     simParam=SP2)
+#'
 #' @export
 selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                      use="pheno", selectTop=TRUE, inbrTarget=0.01,
                      inbrType="relative", snpChip=1, useQtl=FALSE,
                      returnPop=TRUE, simParam=NULL, nThreads=NULL,
-                     onShortfall="warning", ...){
+                     onShortfall="warning", usePed=FALSE, ...){
   onShortfall = checkShortfall(onShortfall)
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -426,7 +641,7 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                            inbrType=inbrType, snpChip=snpChip,
                            useQtl=useQtl, simParam=simParam,
                            nThreads=nThreads, onShortfall=onShortfall,
-                           call=sys.call(), ...)
+                           call=sys.call(), usePed=usePed, ...)
   if(returnPop){
     return(pop[take])
   }else{
@@ -456,6 +671,8 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
 #' @param ... additional arguments if using a function for trait
 #' @param onShortfall "warning", "error" or "none"
 #' @param call the call of selectOCS, for messages
+#' @param usePed use the pedigree relationship matrix instead of
+#' genotypes
 #'
 #' @return indices of the selected individuals
 #'
@@ -464,7 +681,10 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                              selectTop, inbrTarget, inbrType, snpChip,
                              useQtl, simParam, nThreads,
                              onShortfall="warning", call=sys.call(-1),
-                             ...){
+                             usePed=FALSE, ...){
+  if(usePed && useQtl){
+    stop("useQtl and usePed cannot both be TRUE")
+  }
   inbrType = tolower(inbrType)
   if(length(inbrType)!=1 || !(inbrType%in%c("relative","absolute"))){
     stop("inbrType must be \"relative\" or \"absolute\"")
@@ -485,19 +705,29 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
     m = -m
   }
 
-  # Genotypes coded as 2x-k, so Z = Y/k runs from -1 to 1 and a column
-  # mean of Z is 2p-1 for allele frequency p at any ploidy. Y is kept
-  # in whole numbers so that .ocsKernel can work exactly.
-  if(useQtl){
-    Y = pullQtlGeno(pop, trait=snpChip, simParam=simParam,
-                    nThreads=nThreads)
+  if(usePed){
+    # The relationship matrix divided by the ploidy is the kinship
+    # matrix, which ZZ'/nLoci estimates from genotypes, so it takes the
+    # place of K with s and nLoci of 1
+    A = pedigreeA(pop, simParam=simParam)
+    dimnames(A) = NULL
+    ker = .ocsKernelK(A/pop@ploidy, 1, 1)
+    rm(A)
   }else{
-    Y = pullSnpGeno(pop, snpChip=snpChip, simParam=simParam,
-                    nThreads=nThreads)
+    # Genotypes coded as 2x-k, so Z = Y/k runs from -1 to 1 and a column
+    # mean of Z is 2p-1 for allele frequency p at any ploidy. Y is kept
+    # in whole numbers so that .ocsKernel can work exactly.
+    if(useQtl){
+      Y = pullQtlGeno(pop, trait=snpChip, simParam=simParam,
+                      nThreads=nThreads)
+    }else{
+      Y = pullSnpGeno(pop, snpChip=snpChip, simParam=simParam,
+                      nThreads=nThreads)
+    }
+    Y = 2*Y - pop@ploidy
+    ker = .ocsKernel(Y, pop@ploidy)
+    rm(Y)
   }
-  Y = 2*Y - pop@ploidy
-  ker = .ocsKernel(Y, pop@ploidy)
-  rm(Y)
 
   currentF = ker$fix(seq_len(pop@nInd))
   if(inbrType=="relative"){
@@ -526,8 +756,16 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                       call=call)
       nInd = pop@nInd
     }
-    f = function(kappa){
-      .ocsTrunc(kappa=kappa, ker=ker, m=m, N=nInd)
+    # A pedigree gives candidates with the same parents identical
+    # relationships, which .ocsTrunc cannot separate; see .ocsGreedy
+    if(usePed){
+      f = function(kappa){
+        .ocsGreedy(kappa=kappa, ker=ker, m=m, N=nInd)
+      }
+    }else{
+      f = function(kappa){
+        .ocsTrunc(kappa=kappa, ker=ker, m=m, N=nInd)
+      }
     }
   }else{
     if(simParam$sexes=="no")
@@ -569,9 +807,16 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
                       call=call)
       nMale = length(male)
     }
-    f = function(kappa){
-      .ocsTruncSex(kappa=kappa, ker=ker, m=m, female=female, male=male,
-                   nFemale=nFemale, nMale=nMale)
+    if(usePed){
+      f = function(kappa){
+        .ocsGreedySex(kappa=kappa, ker=ker, m=m, female=female,
+                      male=male, nFemale=nFemale, nMale=nMale)
+      }
+    }else{
+      f = function(kappa){
+        .ocsTruncSex(kappa=kappa, ker=ker, m=m, female=female,
+                     male=male, nFemale=nFemale, nMale=nMale)
+      }
     }
   }
 
