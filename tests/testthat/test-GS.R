@@ -181,8 +181,10 @@ test_that("fast mode RRBLUP converges to the same solution with deflation", {
 
   jacobi = fastSolve(d, Vu, Ve, 0L, 0L)
   expect_equal(jacobi$rank, 0L)
-  # The whole population and a subset of it, which estimates the
-  # eigenvectors less well
+  # The whole population, whose 200 records outnumber the 100 markers, so the
+  # approximation is decomposed as a square matrix of the markers, and a
+  # subset of 60 records, whose cross product is decomposed instead and
+  # estimates the eigenvectors less well
   for(nPrecond in c(200L, 60L)){
     deflated = fastSolve(d, Vu, Ve, nPrecond, 1000L)
     expect_gt(deflated$rank, 0L)

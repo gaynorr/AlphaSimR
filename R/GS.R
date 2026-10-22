@@ -3087,14 +3087,23 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
         vcDoubles = 3*nSub^2
       }
       # The deflation of the preconditioner is built once the variance
-      # components are known, from the cross product of its own records and
-      # its eigenvectors, a panel of their genotypes and the eigenvectors of
-      # the markers it keeps for the iteration, at most maxRank of them
+      # components are known, and keeps at most maxRank eigenvectors of the
+      # markers for the iteration. With fewer markers than its records it
+      # decomposes a square matrix of the markers, built from all of their
+      # genotypes; otherwise the cross product of its records, built and
+      # read a panel of genotypes at a time. Either is moved into the
+      # decomposition, which holds it and its eigenvectors.
       precond = fastDeflation(nSubsample, n)
       s = as.double(precond$nRecords)
-      k = min(as.double(precond$maxRank), max(s-1, 0))
-      panel = s*min(m, max(256, floor(8388608/max(s, 1))))
-      deflDoubles = if(k>0) 2*s^2+panel else 0
+      k = min(as.double(precond$maxRank), max(min(s, m)-1, 0))
+      if(k==0){
+        deflDoubles = 0
+      }else if(m<s){
+        deflDoubles = s*m+2*m^2
+      }else{
+        panel = s*min(m, max(256, floor(8388608/max(s, 1))))
+        deflDoubles = max(2*s^2, s^2+s*k+panel)
+      }
       doubles = doubles+m*k+max(vcDoubles, deflDoubles)
     }
   }else if((model=="RRBLUP") & !fixedVc){

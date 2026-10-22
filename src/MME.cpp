@@ -1212,17 +1212,21 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
 // W is estimated from nSub records, evenly spaced through the population
 // rather than sampled, so that building it draws no random numbers. With
 // Ms holding their genotypes, centered on the subset and scaled by D^-1/2,
-// n/nSub*Ms'*Ms+lambda*D^-1 approximates B, and its leading eigenvectors are
-// Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U) of the record cross product
-// Ms*Ms', which is the cheaper one to decompose when markers outnumber the
-// subset. The fixed effects other than the mean are left out of the
-// approximation, which only has to be close.
+// n/nSub*Ms'*Ms+lambda*D^-1 approximates B. The fixed effects other than the
+// mean are left out of the approximation, which only has to be close. When
+// there are fewer markers than records in the subset, the approximation is
+// formed and decomposed as it is, a square matrix of the markers. Otherwise
+// its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U)
+// of the record cross product Ms*Ms', the smaller matrix, with lambda*D^-1
+// taken as its mean, lambda times the mean of D^-1, on every eigenvalue.
 //
 // Eigenvalues above twice the mean are deflated, at most maxRank of them and
-// fewer than nSub, and sigma is the largest one left. W is left empty when
-// none qualify. The genotypes are read twice, a panel of markers at a time,
-// once for the cross product and once for W, so the only doubles held
-// besides the cross product and W are one panel. A panel holds about eight
+// fewer than the size of the matrix decomposed, and sigma is the largest one
+// left. W is left empty when none qualify. Each matrix is moved into eigen2,
+// which takes its argument by value, so that it is not copied. On the record
+// side the genotypes are read twice, a panel of markers at a time, once for
+// the cross product and once for W, so the only doubles held besides the
+// cross product and W are one panel. A panel holds about eight
 // million values rather than a fixed number of markers, because Armadillo
 // adds each panel's rank update to the cross product through a temporary
 // the size of the cross product, and with narrow panels those additions
@@ -1237,12 +1241,17 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   if(nSub>nInd){
     nSub = nInd;
   }
-  if(maxRank>=nSub){
-    maxRank = nSub-1;
-  }
+  bool markerSide = nLoci<nSub;
+  arma::uword nDecomp = markerSide ? nLoci : nSub;
   W.reset();
   shrink.reset();
-  if((nSub<2) | (maxRank==0)){
+  if(nDecomp<2){
+    return;
+  }
+  if(maxRank>=nDecomp){
+    maxRank = nDecomp-1;
+  }
+  if(maxRank==0){
     return;
   }
   arma::uvec sub(nSub);
@@ -1267,6 +1276,34 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       }
     }
   };
+  double scale = double(nInd)/double(nSub);
+  if(markerSide){
+    arma::mat B;
+    {
+      arma::mat Ms(nSub,nLoci);
+      fillPanel(Ms, 0, nLoci);
+      B = scale*(Ms.t()*Ms);
+    }
+    B.diag() += lambda*arma::square(w);
+    arma::vec theta(nLoci);
+    arma::mat V(nLoci,nLoci);
+    if(eigen2(theta, V, std::move(B))!=0){
+      // Plain Jacobi preconditioning still converges
+      return;
+    }
+    // eigen2 returns the eigenvalues in ascending order
+    theta = arma::flipud(theta);
+    arma::uword k = 0;
+    while((k<maxRank) && (theta(k)>2.0)){
+      ++k;
+    }
+    if(k==0){
+      return;
+    }
+    W = arma::fliplr(V.tail_cols(k));
+    shrink = theta(k)/theta.head(k)-1.0;
+    return;
+  }
   arma::mat K(nSub,nSub,arma::fill::zeros);
   for(arma::uword start=0; start<nLoci; start+=panelWidth){
     arma::uword stop = std::min(start+panelWidth, nLoci);
@@ -1276,13 +1313,12 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   }
   arma::vec g(nSub);
   arma::mat U(nSub,nSub);
-  if(eigen2(g, U, K)!=0){
+  if(eigen2(g, U, std::move(K))!=0){
     // Plain Jacobi preconditioning still converges
     return;
   }
   K.reset();
   // eigen2 returns the eigenvalues in ascending order
-  double scale = double(nInd)/double(nSub);
   double ridge = lambda*arma::mean(arma::square(w));
   arma::vec theta = scale*arma::flipud(g)+ridge;
   arma::uword k = 0;
