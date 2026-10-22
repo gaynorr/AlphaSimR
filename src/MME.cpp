@@ -1222,7 +1222,14 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
 //
 // Eigenvalues above twice the mean are deflated, at most maxRank of them and
 // fewer than the size of the matrix decomposed, and sigma is the largest one
-// left. W is left empty when none qualify. Each matrix is moved into eigen2,
+// left, but never less than the mean of one. With rank deficient genotypes
+// and a tiny ratio of the variances, the largest one left can be as small as
+// lambda*D^-1, and sigma/theta would then round to zero in
+// I+W*diag(sigma/theta-1)*W', leaving a preconditioner that is singular
+// rather than positive definite. With sigma at least one, and theta no more
+// than about the number of markers, the trace of B, sigma/theta stays near
+// or above the reciprocal of the number of markers. W is left empty when
+// none qualify. Each matrix is moved into eigen2,
 // which takes its argument by value, so that it is not copied. On the record
 // side the genotypes are read twice, a panel of markers at a time, once for
 // the cross product and once for W, so the only doubles held besides the
@@ -1301,7 +1308,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       return;
     }
     W = arma::fliplr(V.tail_cols(k));
-    shrink = theta(k)/theta.head(k)-1.0;
+    shrink = std::max(theta(k), 1.0)/theta.head(k)-1.0;
     return;
   }
   arma::mat K(nSub,nSub,arma::fill::zeros);
@@ -1328,7 +1335,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   if(k==0){
     return;
   }
-  double sigma = theta(k);
+  double sigma = std::max(theta(k), 1.0);
   arma::mat Uk = arma::fliplr(U.tail_cols(k));
   U.reset();
   arma::vec gk = arma::flipud(g.tail(k));

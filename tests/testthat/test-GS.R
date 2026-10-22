@@ -202,6 +202,47 @@ test_that("fast mode RRBLUP converges to the same solution with deflation", {
   expect_equal(c(capped$alpha), c(jacobi$alpha), tolerance=1e-6)
 })
 
+# Markers that are all the same balanced column, coded -1 and 1, with the
+# phenotype equal to it. The genotypes then have rank one, and with a tiny
+# error variance every eigenvalue of the scaled equations but one is close to
+# zero.
+dupMarkerPop = function(nInd, nLoci){
+  # Pairs of individuals alternate between the two homozygotes, so that an
+  # evenly spaced subset of every other record is balanced too
+  allele = rep(c(0L,0L,1L,1L), length.out=nInd)
+  haplo = matrix(rep(rep(allele, each=2), nLoci), ncol=nLoci)
+  founder = newMapPop(list(seq(0, 1, length.out=nLoci)), list(haplo))
+  SP = SimParam$new(founder)
+  SP$nThreads = 1L
+  SP$addSnpChip(nSnpPerChr=nLoci)
+  pop = newPop(founder, simParam=SP)
+  pop@pheno = matrix(2*allele-1)
+  return(list(pop=pop, SP=SP))
+}
+
+test_that("fast mode RRBLUP deflation stays positive definite with identical markers and a tiny error variance", {
+  # Mapping the deflated eigenvalue down to the largest one left, which is
+  # tiny here, rounded the preconditioner's scaling to zero, and the
+  # iteration stopped at once with no effects. The marker side is decomposed
+  # with 4 markers and 100 records, the record side with 64 markers and 50.
+  for(case in list(c(nLoci=4, nPrecond=100), c(nLoci=64, nPrecond=50))){
+    d = dupMarkerPop(100, case[["nLoci"]])
+    info = paste("nLoci", case[["nLoci"]])
+    jacobi = fastSolve(d, 1, 1e-18, 0L, 0L)
+    deflated = fastSolve(d, 1, 1e-18, as.integer(case[["nPrecond"]]), 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    # The effects are split evenly among the identical markers, and together
+    # they reproduce the phenotype
+    expect_equal(c(deflated$alpha), rep(1/case[["nLoci"]], case[["nLoci"]]),
+                 tolerance=1e-6, info=info)
+    expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6,
+                 info=info)
+    M = pullSnpGeno(d$pop, simParam=d$SP)-1
+    resid = c(d$pop@pheno)-deflated$mu-c(M%*%deflated$alpha)
+    expect_lt(max(abs(resid)), 1e-6, label=info)
+  }
+})
+
 test_that("fast mode RRBLUP options turn deflation off and cap its rank", {
   # Both options are saved, so that neither is left set for later tests
   old = options(AlphaSimR.fastModeDeflation=FALSE,
