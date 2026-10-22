@@ -206,6 +206,8 @@ SimParam = R6Class(
       private$.hasHap = logical()
       private$.hap = list()
       private$.isFounder = logical()
+      private$.pedF = numeric()
+      private$.pedResets = integer()
       private$.activeQtl = NULL
       private$.qtlIndex = list()
 
@@ -238,6 +240,9 @@ SimParam = R6Class(
 
     resetPed =function(lastId=0L){
       private$.lastId = lastId
+      # Kept for pedigree BLUP fits, which must not match individuals that
+      # take the iids of discarded ones; see pedResets
+      private$.pedResets = c(private$.pedResets, as.integer(lastId))
       private$.pedigree = private$.pedigree[0:lastId,,drop=FALSE]
       if(private$.isTrackRec){
         private$.recHist = private$.recHist[0:lastId]
@@ -249,6 +254,9 @@ SimParam = R6Class(
       private$.isFounder = private$.isFounder[seq_len(lastId)]
       if(length(private$.hap)>lastId){
         private$.hap = private$.hap[seq_len(lastId)]
+      }
+      if(length(private$.pedF)>lastId){
+        private$.pedF = private$.pedF[seq_len(lastId)]
       }
       if(lastId==0L){
         private$.lastHaplo = 0L
@@ -1861,6 +1869,33 @@ SimParam = R6Class(
       private$.pedigree = rbind(private$.pedigree,tmp)
       private$.lastId = lastId
       invisible(self)
+    },
+
+    # For internal use only. Returns the inbreeding coefficients of a
+    # pedigree collected by .prunePed, computing those not known yet and
+    # keeping them by iid for later calls. An individual's inbreeding
+    # coefficient never changes once it exists, because the pedigree only
+    # grows, and resetPed cuts the cache back with the pedigree. Missing
+    # values are NA, which pads the cache when it is lengthened.
+    pedInbreeding = function(ped){
+      if(length(private$.pedF)<private$.lastId){
+        length(private$.pedF) = private$.lastId
+      }
+      F = private$.pedF[ped$iid]
+      if(anyNA(F)){
+        F = c(calcPedInbreeding(ped$mother, ped$father, ped$isDH, F,
+                                ped$ploidy))
+        private$.pedF[ped$iid] = F
+      }
+      return(F)
+    },
+
+    # For internal use only. Returns the lastId of every call to resetPed,
+    # in order. A reset that discards individuals lets new ones take their
+    # iids, so a pedigree BLUP fit uses this to tell whether the individuals
+    # it was fitted to still exist.
+    pedResets = function(){
+      private$.pedResets
     }
 
   ),
@@ -1892,6 +1927,8 @@ SimParam = R6Class(
     .hasHap="logical",
     .hap="list",
     .isFounder="logical",
+    .pedF="numeric",
+    .pedResets="integer",
     .activeQtl = "LociMap",
     .qtlIndex = "list",
 

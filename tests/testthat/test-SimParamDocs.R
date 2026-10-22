@@ -9,6 +9,7 @@ context("SimParamDocs")
 # Methods for AlphaSimR's own use, which are deliberately undocumented,
 # and the constructor, which is documented on the SimParam page itself
 undocumented = c("addToRec", "ibdHaplo", "updateLastId", "addToPed",
+                 "pedInbreeding", "pedResets",
                  "clone", "initialize")
 
 # Read the help pages from the source tree when the tests run from one,

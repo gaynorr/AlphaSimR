@@ -77,6 +77,7 @@ setValidity("HybridPop",function(object){
 })
 
 #' @describeIn HybridPop Extract HybridPop using index or id
+#' @aliases [,HybridPop-method
 setMethod("[",
           signature(x = "HybridPop"),
           function(x, i){

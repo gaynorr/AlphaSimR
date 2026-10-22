@@ -14,10 +14,12 @@ and made, say plainly what has not been built or run and what the
 maintainer needs to do.
 
 **Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
-`Rcpp`, `Rdpack`, `methods` and `R6`; `LinkingTo` is `Rcpp`,
+`Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
-it needs discussing first.
+it needs discussing first. `Matrix` provides the sparse Cholesky
+factorization used by pedigree BLUP; it is a recommended package that
+ships with R.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
@@ -217,6 +219,18 @@ installs whatever roxygen is current, so it can rewrite the
 `Config/roxygen2/version` pin in `DESCRIPTION` even though nothing else
 should edit that file. If you document locally, use the pinned version; a
 different one rewrites every `.Rd` and buries the real change in the diff.
+
+The `[` and `[<-` methods of the population classes in `R/Class-Pop.R`
+and `R/Class-HybridPop.R` carry an explicit `@aliases` in the short form,
+such as `[,Pop-method`. Do not remove them as redundant. `pkgload`, and so
+roxygen and the document workflow, loads every package in `Imports`,
+including Matrix, and once Matrix is loaded new `[` methods are stored
+with all four arguments of its signature, so roxygen names their aliases
+`[,Pop,ANY,ANY,ANY-method`. An installed AlphaSimR does not load Matrix,
+because `NAMESPACE` imports nothing from it, so its methods keep the short
+signature, and without the short alias R CMD check reports them as
+undocumented. `tools::codoc` does not catch this; `tools::undoc` against
+an installed copy does, so run it after changing documentation.
 
 `src/RcppExports.cpp` and `R/RcppExports.R` come from
 `Rcpp::compileAttributes()`, which no workflow runs. Changing a

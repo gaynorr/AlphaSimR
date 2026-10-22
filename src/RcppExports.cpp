@@ -983,6 +983,84 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcPedInbreeding
+arma::vec calcPedInbreeding(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::NumericVector& knownF, int ploidy);
+RcppExport SEXP _AlphaSimR_calcPedInbreeding(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP knownFSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedInbreeding(mother, father, isDH, knownF, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcPedAinvTriplet
+Rcpp::List calcPedAinvTriplet(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::NumericVector& knownF, int ploidy);
+RcppExport SEXP _AlphaSimR_calcPedAinvTriplet(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP knownFSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedAinvTriplet(mother, father, isDH, knownF, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcPedA
+arma::mat calcPedA(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, int ploidy);
+RcppExport SEXP _AlphaSimR_calcPedA(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedA(mother, father, isDH, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcPedASub
+arma::mat calcPedASub(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::IntegerVector& target, const Rcpp::NumericVector& knownF, int ploidy);
+RcppExport SEXP _AlphaSimR_calcPedASub(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP targetSEXP, SEXP knownFSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type target(targetSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedASub(mother, father, isDH, target, knownF, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcPedMME
+Rcpp::List calcPedMME(const Rcpp::IntegerVector& mother, const Rcpp::IntegerVector& father, const Rcpp::IntegerVector& isDH, const Rcpp::IntegerVector& rec, const Rcpp::IntegerVector& fix, const Rcpp::NumericVector& y, const Rcpp::NumericVector& knownF, int ploidy);
+RcppExport SEXP _AlphaSimR_calcPedMME(SEXP motherSEXP, SEXP fatherSEXP, SEXP isDHSEXP, SEXP recSEXP, SEXP fixSEXP, SEXP ySEXP, SEXP knownFSEXP, SEXP ploidySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type mother(motherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type father(fatherSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type isDH(isDHSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type rec(recSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type fix(fixSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type knownF(knownFSEXP);
+    Rcpp::traits::input_parameter< int >::type ploidy(ploidySEXP);
+    rcpp_result_gen = Rcpp::wrap(calcPedMME(mother, father, isDH, rec, fix, y, knownF, ploidy));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rngDiagnosticsSampleInt
 arma::imat rngDiagnosticsSampleInt(arma::uword n, arma::uword N, arma::uword reps, uint64_t seed);
 RcppExport SEXP _AlphaSimR_rngDiagnosticsSampleInt(SEXP nSEXP, SEXP NSEXP, SEXP repsSEXP, SEXP seedSEXP) {
@@ -1102,6 +1180,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveMVM", (DL_FUNC) &_AlphaSimR_solveMVM, 6},
     {"_AlphaSimR_solveUVM", (DL_FUNC) &_AlphaSimR_solveUVM, 4},
     {"_AlphaSimR_packHaplo", (DL_FUNC) &_AlphaSimR_packHaplo, 3},
+    {"_AlphaSimR_calcPedInbreeding", (DL_FUNC) &_AlphaSimR_calcPedInbreeding, 5},
+    {"_AlphaSimR_calcPedAinvTriplet", (DL_FUNC) &_AlphaSimR_calcPedAinvTriplet, 5},
+    {"_AlphaSimR_calcPedA", (DL_FUNC) &_AlphaSimR_calcPedA, 4},
+    {"_AlphaSimR_calcPedASub", (DL_FUNC) &_AlphaSimR_calcPedASub, 6},
+    {"_AlphaSimR_calcPedMME", (DL_FUNC) &_AlphaSimR_calcPedMME, 8},
     {"_AlphaSimR_rngDiagnosticsSampleInt", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSampleInt, 4},
     {"_AlphaSimR_rngDiagnosticsSamplePoisson", (DL_FUNC) &_AlphaSimR_rngDiagnosticsSamplePoisson, 3},
     {"_AlphaSimR_segSitesTreeMoments", (DL_FUNC) &_AlphaSimR_segSitesTreeMoments, 4},

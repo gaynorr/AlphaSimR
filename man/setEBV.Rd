@@ -18,7 +18,8 @@ setEBV(
 \arguments{
 \item{pop}{an object of \code{\link{Pop-class}}}
 
-\item{solution}{an object of \code{\link{RRsol-class}}}
+\item{solution}{an object of \code{\link{RRsol-class}} or
+\code{\link{PedSol-class}}}
 
 \item{value}{the genomic value to be estimated. Can be
 either "gv", "bv", "female", or "male".}
@@ -49,11 +50,25 @@ Returns an object of \code{\link{Pop-class}} if
 onlyValues=FALSE, if onlyValues=TRUE a matrix is returned
 }
 \description{
-Adds genomic estimated values to a population's EBV
-slot using output from a genomic selection function.
-The genomic estimated values can be either estimated
+Adds estimated values to a population's EBV slot using
+output from a genomic selection model or from
+\code{\link{pedBLUP}}.
+The estimated values can be either estimated
 breeding values, estimated genetic values, or
 estimated general combining values.
+}
+\details{
+For output from \code{\link{pedBLUP}}, value "gv" gives the estimated
+breeding value plus the estimate for the first level of the fixed
+effects, and value "bv" gives the estimated breeding value centered on
+the training population, or on targetPop when it is supplied. Values
+"female" and "male" are not available. Individuals that were not in
+the fitted pedigree get the average of their parents' estimates, which
+is their best linear unbiased prediction. Such a fit is refused once
+\code{\link[=SimParam-resetPed]{resetPed}} has discarded any of its
+individuals, whose internal IDs can then belong to others, and with a
+\code{\link{SimParam}} saved by an older version of AlphaSimR, which
+does not record resets.
 }
 \examples{
 #Create founder haplotypes

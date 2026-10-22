@@ -3,12 +3,13 @@
 \docType{class}
 \name{NamedMapPop-class}
 \alias{NamedMapPop-class}
+\alias{[,NamedMapPop,ANY,ANY,ANY-method}
 \alias{[,NamedMapPop-method}
 \alias{c,NamedMapPop-method}
 \alias{isNamedMapPop}
 \title{Raw population with genetic map and id}
 \usage{
-\S4method{[}{NamedMapPop}(x, i)
+\S4method{[}{NamedMapPop,ANY,ANY,ANY}(x, i)
 
 \S4method{c}{NamedMapPop}(x, ...)
 
@@ -26,7 +27,7 @@ Extends \code{\link{MapPop-class}} with id, mother and father.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{NamedMapPop[]}: Extract NamedMapPop by index or id
+\item \code{x = NamedMapPop[i = ANY, j = ANY, drop = ANY]}: Extract NamedMapPop by index or id
 
 \item \code{c(NamedMapPop)}: Combine multiple NamedMapPops
 
