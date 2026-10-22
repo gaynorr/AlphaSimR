@@ -23,6 +23,7 @@ selectCross(
   inbrType = "relative",
   snpChip = 1,
   useQtl = FALSE,
+  usePed = FALSE,
   onShortfall = "warning"
 )
 }
@@ -99,6 +100,15 @@ to measure expected fixation. If TRUE, snpChip specifies which
 trait's QTL to use. This argument occurs after ..., so the argument
 name must be matched exactly.}
 
+\item{usePed}{should the pedigree relationship matrix of
+\code{\link{pedigreeA}} be used instead of genotypes to measure
+expected fixation when \code{restrInbr=TRUE}. The pedigree must have
+been tracked from the start of the simulation, see
+\code{\link[=SimParam-setTrackPed]{setTrackPed}}. If TRUE,
+\code{snpChip} is ignored and \code{useQtl} must be FALSE. This
+argument occurs after ..., so the argument name must be matched
+exactly.}
+
 \item{onShortfall}{what to do when fewer suitable candidates are
 available than requested. "warning" (the default) warns and uses all
 of them, "error" stops, and "none" uses them silently. This argument
@@ -122,8 +132,9 @@ When \code{restrInbr=TRUE}, parents are selected with
 selection that maximizes merit while restricting the expected
 increase in fixation. They are then crossed at random, exactly as
 when \code{restrInbr=FALSE}. See \code{\link{selectOCS}} for the
-method and for how \code{inbrTarget} and \code{inbrType} set the
-target.
+method, for how \code{inbrTarget} and \code{inbrType} set the
+target, and for how the restriction differs with
+\code{usePed=TRUE}.
 
 The method assumes every selected parent contributes equally to the
 next generation. Setting \code{nInd} when the simulation uses sexes
