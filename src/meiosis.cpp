@@ -993,6 +993,36 @@ void quadrivalent(const unsigned char* chr1,
   resolveQuadGamete(chr, nBins, hist2, output2);
 }
 
+// Checks one parent's genetic map against its genotypes before a parallel
+// region reads them. Meiosis reads and writes haplotypes through raw
+// pointers, so a map or centromere vector of the wrong length would be read
+// out of bounds on a worker thread rather than reported. Every chromosome
+// needs a map and a genetic length, and its map can have no more loci than
+// its packed genotypes hold, because a crossover is placed at a locus of the
+// map and copied from that locus's byte. Centromeres are read only when
+// quadrivalents can form, so they are only checked then.
+void checkMeiosisMap(const ConstGenoView& geno,
+                     const arma::field<arma::vec>& genMap,
+                     const arma::vec& genLen,
+                     const arma::vec& centromere,
+                     bool useCentromere){
+  arma::uword nChr = geno.n_elem;
+  if(genMap.n_elem != nChr){
+    Rcpp::stop("genMap must have one map per chromosome");
+  }
+  if(genLen.n_elem != nChr){
+    Rcpp::stop("genLen must have one value per chromosome");
+  }
+  if(useCentromere && (centromere.n_elem != nChr)){
+    Rcpp::stop("centromere must have one value per chromosome");
+  }
+  for(arma::uword chr=0; chr<nChr; ++chr){
+    if(genMap(chr).n_elem > 8*geno(chr).n_rows){
+      Rcpp::stop("genMap has more loci than the genotypes on a chromosome");
+    }
+  }
+}
+
 // Makes crosses between diploid individuals.
 // motherGeno: female genotypes
 // mother: female parents
@@ -1045,6 +1075,22 @@ Rcpp::List cross(
   if((femaleGenLen.n_elem!=motherGeno.n_elem) ||
      (maleGenLen.n_elem!=motherGeno.n_elem)){
     Rcpp::stop("genLen must have one value per chromosome");
+  }
+  // So are its map and centromere, and the father's gametes are copied with
+  // the mother's number of bytes per chromosome into progeny laid out like
+  // the mother, so the parents must match chromosome by chromosome
+  checkMeiosisMap(motherGeno, femaleMap, femaleGenLen, motherCentromere,
+                  motherPloidy>2);
+  checkMeiosisMap(fatherGeno, maleMap, maleGenLen, fatherCentromere,
+                  fatherPloidy>2);
+  for(arma::uword chr=0; chr<motherGeno.n_elem; ++chr){
+    if(fatherGeno(chr).n_rows!=motherGeno(chr).n_rows){
+      Rcpp::stop("mother and father genotypes must have the same loci");
+    }
+  }
+  if((motherGeno(0).n_cols!=motherPloidy) ||
+     (fatherGeno(0).n_cols!=fatherPloidy)){
+    Rcpp::stop("ploidy does not match the parents' genotypes");
   }
   if(mother.n_elem>0){
     if((mother.min()<1) || (mother.max()>motherGeno(0).n_slices) ||
@@ -1324,6 +1370,11 @@ Rcpp::List createDH2(
   if(genLen.n_elem != nChr){
     Rcpp::stop("genLen must have one value per chromosome");
   }
+  // So is its map, and both of the first two haplotypes are read
+  checkMeiosisMap(geno, genMap, genLen, arma::vec(), false);
+  if(geno(0).n_cols < 2){
+    Rcpp::stop("doubled haploids need at least two haplotypes");
+  }
   // nDH holds one value per individual, so an individual's output slices
   // no longer sit at a fixed stride. They start at the running total of
   // the individuals before it. The offsets are built once, before the
@@ -1419,6 +1470,11 @@ Rcpp::List createReducedGenome(
   // Each chromosome's genetic length is read inside the parallel region
   if(genLen.n_elem != nChr){
     Rcpp::stop("genLen must have one value per chromosome");
+  }
+  // So are its map and, with quadrivalents, its centromeres
+  checkMeiosisMap(geno, genMap, genLen, centromere, ploidy>2);
+  if(geno(0).n_cols != ploidy){
+    Rcpp::stop("ploidy does not match the genotypes");
   }
   // nProgeny holds one value per individual. Unlike createDH2 the work
   // loop below is partitioned over progeny rather than over individuals,

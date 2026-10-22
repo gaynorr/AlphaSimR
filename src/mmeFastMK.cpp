@@ -857,47 +857,57 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         FF[t*nTerm+t2] = F[t].t()*F[t2];
       }
     }
+    // An exception cannot leave the parallel region, see the unseen
+    // effects below
+    std::vector<int> failed(nBlocks, 0);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(precondThreads)
 #endif
     for(arma::uword block=0; block<nBlocks; ++block){
-      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-      arma::mat B(nR,nR), V;
-      arma::vec lambda;
-      for(arma::uword j=lociStart; j<lociEnd; ++j){
-        B.zeros();
-        for(arma::uword t=0; t<nTerm; ++t){
-          for(arma::uword t2=0; t2<nTerm; ++t2){
-            if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
-              continue;
-            }
-            B.submat(off[t], off[t2], off[t+1]-1, off[t2+1]-1) +=
-              fit.stats.Dkl(t*nTerm+t2,j)*FF[t*nTerm+t2];
-          }
-        }
-        B = 0.5*(B+B.t());
-        arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
-                                                arma::datum::inf));
-        Bds.col(j) = ds;
-        B.each_col() %= ds;
-        B.each_row() %= ds.t();
-        B.diag() += square(ds);
-        if(arma::eig_sym(lambda, V, B)){
-          double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
-          Bvec.slice(j) = V;
-          arma::vec dInv(nR, arma::fill::ones);
-          for(arma::uword c=0; c<nR; ++c){
-            if(lambda(c)>cut){
-              dInv(c) = 1.0/lambda(c);
+      try{
+        arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+        arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+        arma::mat B(nR,nR), V;
+        arma::vec lambda;
+        for(arma::uword j=lociStart; j<lociEnd; ++j){
+          B.zeros();
+          for(arma::uword t=0; t<nTerm; ++t){
+            for(arma::uword t2=0; t2<nTerm; ++t2){
+              if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
+                continue;
+              }
+              B.submat(off[t], off[t2], off[t+1]-1, off[t2+1]-1) +=
+                fit.stats.Dkl(t*nTerm+t2,j)*FF[t*nTerm+t2];
             }
           }
-          Bdinv.col(j) = dInv;
-        }else{
-          Bvec.slice(j).eye();
-          Bdinv.col(j).ones();
+          B = 0.5*(B+B.t());
+          arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
+                                                  arma::datum::inf));
+          Bds.col(j) = ds;
+          B.each_col() %= ds;
+          B.each_row() %= ds.t();
+          B.diag() += square(ds);
+          if(arma::eig_sym(lambda, V, B)){
+            double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
+            Bvec.slice(j) = V;
+            arma::vec dInv(nR, arma::fill::ones);
+            for(arma::uword c=0; c<nR; ++c){
+              if(lambda(c)>cut){
+                dInv(c) = 1.0/lambda(c);
+              }
+            }
+            Bdinv.col(j) = dInv;
+          }else{
+            Bvec.slice(j).eye();
+            Bdinv.col(j).ones();
+          }
         }
+      }catch(...){
+        failed[block] = 1;
       }
+    }
+    if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
+      Rcpp::stop("fast mode: building the preconditioner failed");
     }
   }
 
@@ -954,90 +964,106 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       nullThreads = static_cast<int>(nBlocks);
     }
     std::vector<int> found(nBlocks, 0);
+    // Anything else that throws inside the parallel region, such as an
+    // allocation that fails, would end the R session, so it is caught and
+    // reported after the region instead
+    std::vector<int> failed(nBlocks, 0);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nullThreads)
 #endif
     for(arma::uword block=0; block<nBlocks; ++block){
-      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-      arma::mat D(nA,nA), C, N;
-      arma::vec dl;
-      for(arma::uword j=lociStart; (j<lociEnd)&&(nA>0); ++j){
-        for(arma::uword a=0; a<nA; ++a){
-          for(arma::uword b=0; b<nA; ++b){
-            D(a,b) = fit.stats.Dkl(active[a]*nTerm+active[b],j);
-          }
-        }
-        if(!arma::eig_sym(dl, C, D)){
-          continue;
-        }
-        arma::uvec nul = find(dl<=rankCutoff(dl.max(), nInd));
-        if(nul.n_elem==0){
-          continue;
-        }
-        std::vector<arma::vec> cols;
-        arma::mat Cn = C.cols(nul);
-        arma::uword nq = nul.n_elem;
-        double cMax = arma::abs(Cn).max();
-        std::vector<arma::uword> involved;
-        bool allFull = true;
-        for(arma::uword a=0; a<nA; ++a){
-          if(arma::abs(Cn.row(a)).max()>1.0e-8*cMax){
-            involved.push_back(a);
-            if(off[active[a]+1]-off[active[a]]!=nT){
-              allFull = false;
+      try{
+        arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+        arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+        arma::mat D(nA,nA), C, N;
+        arma::vec dl;
+        for(arma::uword j=lociStart; (j<lociEnd)&&(nA>0); ++j){
+          for(arma::uword a=0; a<nA; ++a){
+            for(arma::uword b=0; b<nA; ++b){
+              D(a,b) = fit.stats.Dkl(active[a]*nTerm+active[b],j);
             }
           }
-        }
-        // A basis for the weights vec(W), the trait values of every null
-        // vector stacked
-        arma::mat Wb;
-        if(allFull){
-          Wb.eye(nT*nq,nT*nq);
-        }else{
-          arma::mat E(0,nT*nq);
-          for(arma::uword a : involved){
-            arma::uword t = active[a];
-            if(off[t+1]-off[t]==nT){
+          if(!arma::eig_sym(dl, C, D)){
+            continue;
+          }
+          arma::uvec nul = find(dl<=rankCutoff(dl.max(), nInd));
+          if(nul.n_elem==0){
+            continue;
+          }
+          std::vector<arma::vec> cols;
+          arma::mat Cn = C.cols(nul);
+          arma::uword nq = nul.n_elem;
+          double cMax = arma::abs(Cn).max();
+          std::vector<arma::uword> involved;
+          bool allFull = true;
+          for(arma::uword a=0; a<nA; ++a){
+            if(arma::abs(Cn.row(a)).max()>1.0e-8*cMax){
+              involved.push_back(a);
+              if(off[active[a]+1]-off[active[a]]!=nT){
+                allFull = false;
+              }
+            }
+          }
+          // A basis for the weights vec(W), the trait values of every null
+          // vector stacked
+          arma::mat Wb;
+          if(allFull){
+            Wb.eye(nT*nq,nT*nq);
+          }else{
+            arma::mat E(0,nT*nq);
+            for(arma::uword a : involved){
+              arma::uword t = active[a];
+              if(off[t+1]-off[t]==nT){
+                continue;
+              }
+              arma::mat P = arma::eye(nT,nT)-Fdir[t]*Fdir[t].t();
+              E = join_cols(E, arma::kron(Cn.row(a), P));
+            }
+            // The form that reports failure rather than throwing, because
+            // an exception cannot leave a parallel region. The marker is
+            // then left without a null basis, as when eig_sym fails.
+            if(!arma::null(Wb, E)){
               continue;
             }
-            arma::mat P = arma::eye(nT,nT)-Fdir[t]*Fdir[t].t();
-            E = join_cols(E, arma::kron(Cn.row(a), P));
           }
-          Wb = arma::null(E);
-        }
-        for(arma::uword i=0; i<Wb.n_cols; ++i){
-          arma::mat W = arma::reshape(Wb.col(i), nT, nq);
-          arma::vec col(nR, arma::fill::zeros);
-          for(arma::uword a : involved){
-            arma::uword t = active[a];
-            col.subvec(off[t], off[t+1]-1) = Finv[t]*(W*Cn.row(a).t());
+          for(arma::uword i=0; i<Wb.n_cols; ++i){
+            arma::mat W = arma::reshape(Wb.col(i), nT, nq);
+            arma::vec col(nR, arma::fill::zeros);
+            for(arma::uword a : involved){
+              arma::uword t = active[a];
+              col.subvec(off[t], off[t+1]-1) = Finv[t]*(W*Cn.row(a).t());
+            }
+            if(arma::norm(col)>0.0){
+              cols.push_back(col);
+            }
           }
-          if(arma::norm(col)>0.0){
-            cols.push_back(col);
-          }
-        }
-        if(!cols.empty()){
-          N.set_size(nR, cols.size());
-          for(arma::uword i=0; i<cols.size(); ++i){
-            N.col(i) = cols[i];
-          }
-          // The columns can differ in length by many orders of magnitude, as
-          // F_k^-1 does, and an orthonormal basis taken through the singular
-          // value decomposition would find the short ones' directions only to
-          // the ratio of the lengths times the precision, mixing in part of
-          // the directions the records do see. Each column is normalized
-          // first, and the basis then taken by QR.
-          for(arma::uword c=0; c<N.n_cols; ++c){
-            N.col(c) /= arma::norm(N.col(c));
-          }
-          arma::mat Qn, Rn;
-          if(arma::qr_econ(Qn, Rn, N)){
-            nullBasis[j] = Qn;
-            found[block] = 1;
+          if(!cols.empty()){
+            N.set_size(nR, cols.size());
+            for(arma::uword i=0; i<cols.size(); ++i){
+              N.col(i) = cols[i];
+            }
+            // The columns can differ in length by many orders of magnitude, as
+            // F_k^-1 does, and an orthonormal basis taken through the singular
+            // value decomposition would find the short ones' directions only to
+            // the ratio of the lengths times the precision, mixing in part of
+            // the directions the records do see. Each column is normalized
+            // first, and the basis then taken by QR.
+            for(arma::uword c=0; c<N.n_cols; ++c){
+              N.col(c) /= arma::norm(N.col(c));
+            }
+            arma::mat Qn, Rn;
+            if(arma::qr_econ(Qn, Rn, N)){
+              nullBasis[j] = Qn;
+              found[block] = 1;
+            }
           }
         }
+      }catch(...){
+        failed[block] = 1;
       }
+    }
+    if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
+      Rcpp::stop("fast mode: finding the unseen effects of a marker failed");
     }
     anyNull = std::find(found.begin(), found.end(), 1)!=found.end();
   }
