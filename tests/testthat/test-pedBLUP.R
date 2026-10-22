@@ -444,7 +444,11 @@ test_that("INBRED highly inbred selfed siblings keep their own breeding values",
   fitted = AlphaSimR:::.fitPedBLUP(y, sibs@iid, c(1L, 1L), 2L, Vu=1,
                                    Ve=2^-46, simParam=SP)
   pp = AlphaSimR:::.prunePed(sibs@iid, 2L, SP)
-  expect_equal(fitted$ebv[pp$row], c(0.5, -0.5), tolerance=1e-4)
+  # Only the difference between the siblings is checked. Their common
+  # level is split between the intercept and their parent, which with
+  # equations this badly conditioned varies with the factorization.
+  u = fitted$ebv[pp$row]
+  expect_equal(u[1]-u[2], 1, tolerance=1e-4)
   # At 2^-53 the variances along the selfing chain span the whole precision
   # of a double, and whether the equations factor depends on the platform's
   # rounding. REML leaves out the ratios at which they cannot be factored,

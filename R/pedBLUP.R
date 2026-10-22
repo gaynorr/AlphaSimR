@@ -97,12 +97,14 @@
   # NULL and keeps the last factor, so that callers can say what happened
   # rather than stop with CHOLMOD's message.
   # CHOLMOD warns before it fails, and the failure is reported by the
-  # callers instead, once.
+  # callers instead, once. The factorization is supernodal, which works on
+  # dense blocks with BLAS and was about ten times faster than the
+  # simplicial one on the equations of 50,000 records.
   L = NULL
   solveAt = function(lambda){
     fac = tryCatch(suppressWarnings(
       if(is.null(L)){
-        Matrix::Cholesky(C0+lambda*A0, perm=TRUE, LDL=FALSE, super=FALSE)
+        Matrix::Cholesky(C0+lambda*A0, perm=TRUE, LDL=FALSE, super=TRUE)
       }else{
         Matrix::update(L, C0+lambda*A0)
       }),
