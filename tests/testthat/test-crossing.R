@@ -258,10 +258,21 @@ test_that("USE the pedigree to measure fixation",{
     expect_length(take, 40L)
     expect_false(anyDuplicated(take) > 0)
     expect_lte(ocsPedFix(K, take), target)
-    # Truncation alone misses the target, so the penalty was needed
     trunc = selectInd(s$pop, nInd=40, use="gv", returnPop=FALSE,
                       simParam=s$SP)
-    expect_gt(ocsPedFix(K, trunc), target)
+    # Whenever truncation misses the target, the penalty has to change the
+    # selection
+    if(ocsPedFix(K, trunc) > target){
+      expect_false(setequal(take, trunc))
+    }
+    # For the diploid, truncation misses the target by a wide margin, so the
+    # penalty is known to be exercised. For the tetraploid the margin is
+    # thin, and the genotypes, and so which individuals truncation picks,
+    # are not identical across platforms: macOS put truncation under the
+    # target where Linux and Windows put it over.
+    if(ploidy==2L){
+      expect_gt(ocsPedFix(K, trunc), target)
+    }
   }
 })
 
