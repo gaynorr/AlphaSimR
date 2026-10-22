@@ -13,6 +13,12 @@ toolchain nothing you write can be verified: once a change has been agreed
 and made, say plainly what has not been built or run and what the
 maintainer needs to do.
 
+**Develop new features on a feature branch.** `devel` is the development
+branch and `master` the release branch. Start a feature from an up-to-date
+`devel` on a branch of its own, named for the feature, and bring it back
+into `devel` through a pull request. Do not commit feature work directly
+to `devel` or `master`.
+
 **Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
 `Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
