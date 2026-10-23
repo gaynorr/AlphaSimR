@@ -186,7 +186,7 @@ calcPopValue = function(
     stop("`FUN` must be a function.")
   }
 
-  if (isPop(x) || isHybridPop(x)) {
+  if (isRawPop(x) || isHybridPop(x)) {
     FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
