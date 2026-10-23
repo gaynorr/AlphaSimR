@@ -519,10 +519,10 @@ pullSegSiteGeno = function(
     x = pop,
     FUN = function(
       pop,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (is(pop, "MapPop")) {
         allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
@@ -564,12 +564,12 @@ pullSegSiteGeno = function(
 
       return(output)
     },
-    simplify = simplify,
-    level = level,
     chr = chr,
     asRaw = asRaw,
     simParam = simParam,
-    nThreads = nThreads
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
   )
 }
 
@@ -589,13 +589,11 @@ pullQtlGeno = function(
     x = pop,
     FUN = function(
       pop,
-      trait = trait,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads,
-      simplify = simplify,
-      level = level
+      trait = 1,
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       simParam = getSimParam(simParam)
       if (is.null(nThreads)) {
@@ -640,13 +638,13 @@ pullQtlGeno = function(
 
       return(output)
     },
-    simplify = simplify,
-    level = level,
     trait = trait,
     chr = chr,
     asRaw = asRaw,
     simParam = simParam,
-    nThreads = nThreads
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
   )
 }
 
@@ -666,11 +664,11 @@ pullSnpGeno = function(
     x = pop,
     FUN = function(
       pop,
-      snpChip = snpChip,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      snpChip = 1,
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       simParam = getSimParam(simParam)
       if (is.null(nThreads)) {
@@ -741,9 +739,9 @@ pullMarkerGeno = function(
     FUN = function(
       pop,
       markers,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       # Get genetic map and nThreads
       if (is(pop, "MapPop")) {
@@ -959,11 +957,11 @@ pullSegSiteHaplo = function(
     x = pop,
     FUN = function(
       pop,
-      haplo = haplo,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (is(pop, "MapPop")) {
         allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
@@ -1057,12 +1055,12 @@ pullQtlHaplo = function(
     x = pop,
     FUN = function(
       pop,
-      trait = trait,
-      haplo = haplo,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      trait = 1,
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       simParam = getSimParam(simParam)
       if (is.null(nThreads)) {
@@ -1162,12 +1160,12 @@ pullSnpHaplo = function(
     x = pop,
     FUN = function(
       pop,
-      snpChip = snpChip,
-      haplo = haplo,
-      chr = chr,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      snpChip = 1,
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       simParam = getSimParam(simParam)
       if (is.null(nThreads)) {
@@ -1266,10 +1264,10 @@ pullMarkerHaplo = function(
     FUN = function(
       pop,
       markers,
-      haplo = haplo,
-      asRaw = asRaw,
-      simParam = simParam,
-      nThreads = nThreads
+      haplo = "all",
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
     ) {
       # Get genetic map and nThreads
       if (is(pop, "MapPop")) {
