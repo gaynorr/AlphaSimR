@@ -390,17 +390,17 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' - SNP chip markers (\code{\link{pullSnpGeno}})    \cr
 #' - a user-defined set of markers by name (\code{\link{pullMarkerGeno}})    \cr
 #'
-#' Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
-#' \code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
-#' optionally be simplified to a chosen nesting level.
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
 #'
 #' \code{\link{MapPop-class}} objects are supported by
 #' \code{\link{pullSegSiteGeno}} and \code{\link{pullMarkerGeno}}.
 #'
-#' @param pop An object of \code{\link{Pop-class}},
-#'   \code{\link{HybridPop-class}}, or \code{\link{MultiPop-class}}.
-#'   \code{\link{MapPop-class}} objects are also supported by
-#'   \code{\link{pullSegSiteGeno}} and \code{\link{pullMarkerGeno}}.
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteGeno}} and 
+#'   \code{\link{pullMarkerGeno}}.
 #' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
 #'   all chromosomes are retrieved.
 #' @param trait An integer or a trait name. Indicates which trait's
@@ -810,17 +810,17 @@ pullMarkerGeno = function(
 #' - identity-by-descent (IBD) recombination tracking
 #'   (\code{\link{pullIbdHaplo}})
 #'
-#' Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
-#' \code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
-#' optionally be simplified to a chosen nesting level.
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
 #'
 #' \code{\link{MapPop-class}} objects are supported by
 #' \code{\link{pullSegSiteHaplo}} and \code{\link{pullMarkerHaplo}}.
 #'
-#' @param pop An object of \code{\link{Pop-class}},
-#'   \code{\link{HybridPop-class}}, or \code{\link{MultiPop-class}}.
-#'   \code{\link{MapPop-class}} objects are also supported by
-#'   \code{\link{pullSegSiteHaplo}} and \code{\link{pullMarkerHaplo}}.
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteHaplo}} and
+#'   \code{\link{pullMarkerHaplo}}.
 #' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
 #'   all chromosomes are retrieved.
 #' @param trait An integer or a trait name. Indicates which trait's

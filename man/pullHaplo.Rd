@@ -66,10 +66,10 @@ pullIbdHaplo(
 )
 }
 \arguments{
-\item{pop}{An object of \code{\link{Pop-class}},
-\code{\link{HybridPop-class}}, or \code{\link{MultiPop-class}}.
-\code{\link{MapPop-class}} objects are also supported by
-\code{\link{pullSegSiteHaplo}} and \code{\link{pullMarkerHaplo}}.}
+\item{pop}{An object of \code{\link{Pop-class}} or
+\code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+only supported by \code{\link{pullSegSiteHaplo}} and
+\code{\link{pullMarkerHaplo}}.}
 
 \item{haplo}{Either \code{"all"} for all haplotypes, or an integer selecting
 one haplotype set. In diploids, use \code{haplo=1} for female-derived
@@ -134,9 +134,9 @@ Retrieve haplotype data from:    \cr
 - identity-by-descent (IBD) recombination tracking
   (\code{\link{pullIbdHaplo}})
 
-Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
-\code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
-optionally be simplified to a chosen nesting level.
+Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+For \code{MultiPop} objects, output can optionally be simplified to a
+chosen nesting level.
 
 \code{\link{MapPop-class}} objects are supported by
 \code{\link{pullSegSiteHaplo}} and \code{\link{pullMarkerHaplo}}.

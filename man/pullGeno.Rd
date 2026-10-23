@@ -51,10 +51,10 @@ pullMarkerGeno(
 )
 }
 \arguments{
-\item{pop}{An object of \code{\link{Pop-class}},
-\code{\link{HybridPop-class}}, or \code{\link{MultiPop-class}}.
-\code{\link{MapPop-class}} objects are also supported by
-\code{\link{pullSegSiteGeno}} and \code{\link{pullMarkerGeno}}.}
+\item{pop}{An object of \code{\link{Pop-class}} or
+\code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+only supported by \code{\link{pullSegSiteGeno}} and 
+\code{\link{pullMarkerGeno}}.}
 
 \item{chr}{Integer vector of chromosomes to retrieve. If \code{NULL},
 all chromosomes are retrieved.}
@@ -109,9 +109,9 @@ Retrieves genotype data from:    \cr
 - SNP chip markers (\code{\link{pullSnpGeno}})    \cr
 - a user-defined set of markers by name (\code{\link{pullMarkerGeno}})    \cr
 
-Supports \code{\link{Pop-class}}, \code{\link{HybridPop-class}}, and
-\code{\link{MultiPop-class}} inputs. For \code{MultiPop} objects, output can
-optionally be simplified to a chosen nesting level.
+Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+For \code{MultiPop} objects, output can optionally be simplified to a
+chosen nesting level.
 
 \code{\link{MapPop-class}} objects are supported by
 \code{\link{pullSegSiteGeno}} and \code{\link{pullMarkerGeno}}.
