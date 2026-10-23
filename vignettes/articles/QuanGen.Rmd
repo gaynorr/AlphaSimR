@@ -25,7 +25,7 @@ library(AlphaSimR)
 
 ## Introduction and reading guide
 
-This vignette explains how `AlphaSimR` constructs genetic values from genotypic effects,
+This article explains how `AlphaSimR` constructs genetic values from genotypic effects,
 decomposes them into population-specific components, and calculates their variances.
 It is expected that the reader is familiar with the background theory
 [@falconer1996Introduction; @lynch1998Genetics].
@@ -79,7 +79,7 @@ to enable mathematical analysis.
 The *breeding value parameterization* decomposes genetic values into
 a population mean, additive genetic (breeding) values, and
 non-additive deviations.
-The non-additive effects considered in this vignette are dominance and epistasis.
+The non-additive effects considered in this article are dominance and epistasis.
 These components depend on allele and genotype frequencies in a population.
 The same individual can therefore have
 different breeding values and non-additive deviations in different populations,
@@ -572,7 +572,7 @@ Under LD,
 additive-by-additive effects can induce a marginal dominance component,
 which a parameterization built on the joint two-locus genotype frequencies
 reports as dominance variance [@alvarezcastro2019Orthogonal].
-`AlphaSimR`'s implementation can not accommodate this.
+`AlphaSimR`'s implementation cannot accommodate this.
 Because the marginalization makes the epistatic contribution exactly linear
 in a locus's own dosage,
 a trait with no dominance effects has
@@ -782,8 +782,11 @@ linkage-equilibrium and idealized populations,
 it compares the variance at observed genotype frequencies with
 that at Hardy-Weinberg genotype frequencies,
 using the corresponding substitution effects in each case.
-Inbreeding generally makes this term positive
-because homozygotes are over-represented.
+Inbreeding generally makes this term positive for additive and total genetic variance,
+because homozygotes are over-represented,
+but negative for dominance variance,
+because the heterozygotes that carry dominance deviations become rarer.
+The example below shows both.
 
 ### Worked example: equal allele frequencies, different inbreeding
 
@@ -916,7 +919,7 @@ For `ans = genParam(pop)`, we have:
 | Linkage equilibrium | Observed | Independent | `ans$genicVarG + ans$covG_HW` |
 | Idealized | HWE at current allele frequencies | Independent | `ans$genicVarG` |
 
-Thus, to retain departures from Hardy-Weinberg equilibrium but removing LD,
+Thus, to retain departures from Hardy-Weinberg equilibrium but remove LD,
 use `ans$genicVarG + ans$covG_HW`.
 This is generally **not** the variance of genetic values in the observed population:
 recovering that variance also requires `ans$covG_L`.

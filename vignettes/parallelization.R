@@ -19,5 +19,5 @@ pullSegSiteGeno(pop, nThreads = 1L)
 
 ## -----------------------------------------------------------------------------
 system.time(runMacs(nInd = 50, nChr = 10, nThreads = 1L))
-system.time(runMacs(nInd = 50, nChr = 10, nThreads = getNumThreads()))
+system.time(runMacs(nInd = 50, nChr = 10, nThreads = min(2L, getNumThreads())))
 

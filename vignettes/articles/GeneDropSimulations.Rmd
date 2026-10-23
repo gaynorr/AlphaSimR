@@ -369,11 +369,9 @@ the matched individuals and what descends from them are simulated. This is
 the setting to use when the founder genotypes are real data for named
 individuals.
 
-Because ancestry above a match is skipped, the returned population can be
-shorter than the extended pedigree. Our imported population contains `C1`
-and `C2` as well as `F1` to `F4`, so matching on ID uses the observed
-genotypes of the single crosses and does not simulate the four founders at
-all:
+Our imported population contains `C1` and `C2` as well as `F1` to `F4`, so
+all six are matched and take their observed genotypes, and only their
+descendants are simulated:
 
 ```{r}
 matched = pedigreeCross(founderPop = founderPop,
@@ -387,7 +385,9 @@ All six matched individuals are returned, plus `C3` and the three doubled
 haploids that descend from them. Nothing was dropped through `F1` to `F4`,
 because their genotypes were observed rather than inferred.
 
-The more common case is that only part of the pedigree is genotyped.
+The more common case is that only part of the pedigree is genotyped, and
+then the returned population can be shorter than the extended pedigree,
+because ancestry above a match is skipped.
 Suppose only the two single crosses, `C1` and `C2`, were genotyped.
 Because `founderPop` was imported with `ped`, it is a `NamedMapPop` and
 can be subset by ID. A plain `MapPop` can only be subset by position.

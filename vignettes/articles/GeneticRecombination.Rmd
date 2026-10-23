@@ -26,8 +26,8 @@ knitr::opts_chunk$set(
 library(AlphaSimR)
 ```
 
-This vignette provides an overview of the biology of genetic
-recombination and how it is modeled within `AlphaSimR` I will first
+This article provides an overview of the biology of genetic
+recombination and how it is modeled within `AlphaSimR`. I will first
 provide a brief review of meiosis with special emphasis on how the
 process differs between diploid and autopolyploid species. I will then
 discuss genetic maps before concluding with an overview of the specific
@@ -101,8 +101,9 @@ coexist in the same nucleus but different enough that each chromosome has
 only one true homolog. Pairing is therefore *disomic*: chromosomes form
 ordinary bivalents and meiosis proceeds essentially as it does in a
 diploid. From a modeling standpoint an allopolyploid can be treated as a
-collection of independent diploid genomes, and `AlphaSimR` handles it that
-way.
+collection of independent diploid genomes. `AlphaSimR` has no separate
+allopolyploid mode: an allopolyploid is simulated as a diploid whose
+subgenomes are represented as additional chromosomes.
 
 Autopolyploids, such as cultivated potato or alfalfa, carry multiple
 copies of the *same* genome. Every chromosome has more than one equally

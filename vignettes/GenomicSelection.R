@@ -17,7 +17,7 @@ SP = SimParam$new(founderPop)
 SP$nThreads = 1L
 
 ## -----------------------------------------------------------------------------
-# Keep the QTL and the SNP chip on separate segregating sites
+# Reserve enough segregating sites for both the QTL and the SNP chip
 SP$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 50, overlap = FALSE)
 
 SP$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)

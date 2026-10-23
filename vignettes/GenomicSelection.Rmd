@@ -44,7 +44,7 @@ model each one fits is described later, in a section you can skip on a
 first reading.
 
 Two earlier documents are assumed.
-The `vignette("Genome")` explains how
+`vignette("Genome")` explains how
 QTL and SNP chips are defined and how genotypes are stored and pulled.
 The [Quantitative Genetics in AlphaSimR](https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html) article on the AlphaSimR website explains
 the distinction between a genetic value and a breeding value,
@@ -67,7 +67,7 @@ SP = SimParam$new(founderPop)
 SP$nThreads = 1L
 ```
 ```{r}
-# Keep the QTL and the SNP chip on separate segregating sites
+# Reserve enough segregating sites for both the QTL and the SNP chip
 SP$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 50, overlap = FALSE)
 
 SP$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)
@@ -84,16 +84,17 @@ markers are in linkage disequilibrium with QTL, and `quickHaplo` samples
 haplotypes at linkage equilibrium. A simulation built on `quickHaplo`
 will show almost no predictive ability in the founder population unless the QTL
 themselves are used as markers, which makes it a poor choice for demonstrating
-or benchmarking genomic selection. Simulations built using `quickHaplo` will
-show predictive ability in later generations as linkage disequilibrium is
-accumulated through the effects of selection and mating.
-
+or benchmarking genomic selection. Selection and mating in a finite
+population do create some linkage disequilibrium, but it builds up slowly:
+a generation or two of crossing does little to change the picture.
 
 In `AlphaSimR`, QTL and SNP chip sites are kept separate by default, in order to avoid inflating
 accuracy. Once a site is designated for use as a QTL, it cannot be selected
 for the SNP chip, and vice versa. This separation occurs automatically without
 invoking the `restrSegSites` function. Overlapping of these sites is permitted
-only if specifically requested with `restrSegSites(overlap = TRUE)`.
+only if specifically requested with `restrSegSites(overlap = TRUE)`. The call
+above is there for a different reason: it sets aside enough segregating sites
+on each chromosome for both the QTL and the SNP chip before either is chosen.
 
 
 ## The three steps
@@ -160,11 +161,11 @@ matter of memory and speed.
 | You want to predict | Use | Ask `setEBV` for |
 |---|---|---|
 | Merit of a parent, additive trait | `RRBLUP` | `"bv"` or `"gv"` |
-| Several correlated traits at once | Any of the above with `traits=1:n` | as for one trait |
 | Performance of an individual with dominance | `RRBLUP_D` | `"gv"` |
 | GCA of inbreds in a two-pool hybrid program | `RRBLUP_GCA` | `"female"`, `"male"` |
 | Performance of a specific single cross | `RRBLUP_SCA` | `"gv"` |
-| Training population too large to fit | The model above with `fastMode=TRUE` | as for that model |
+| Several correlated traits at once | Any of the above with `traits=1:n` | as for one trait |
+| Training population too large to fit | Any of the above with `fastMode=TRUE` | as for that model |
 
 **`RRBLUP`** is the default choice. It fits additive marker effects. If
 you are unsure, start here. Every model in this table can also fit
@@ -624,8 +625,9 @@ The estimate covers the matrices the solvers hold at their peak, not the
 population object or the rest of the session, so it is a lower bound on
 what the simulation needs. With `fastMode = TRUE` it estimates fast mode
 itself. A model given `fastMode=TRUE` uses fast mode only when it is
-expected to be faster, and otherwise needs the memory estimated without it. It is most useful for spotting the point at
-which a training population outgrows the machine.
+expected to be faster, and otherwise needs the memory estimated without it.
+`RRBLUPMemUse` is most useful for spotting the point at which a training
+population outgrows the machine.
 
 ## What the models fit
 
@@ -642,11 +644,13 @@ components have to be estimated before the effects can be.
 Markers are coded on the same scale `AlphaSimR` uses for trait effects:
 for a diploid, the additive covariate takes the values -1, 0 and 1 for
 the three genotypes, and the dominance covariate takes the value 1 for
-the heterozygote and 0 otherwise. Estimated effects are therefore
-directly comparable with the true QTL effects in `SP$traits`, which is
-convenient for checking a model against the truth.
+the heterozygote and 0 otherwise. A model fitted with `useQtl=TRUE`
+therefore estimates effects that are directly comparable with the true QTL
+effects in `SP$traits`, which is convenient for checking a model against
+the truth. Effects estimated on a SNP chip belong to markers that are not
+the QTL, so they have no true counterpart to compare with.
 
-A fitted model is returned as an `RRsol-class` object with six slots:
+A fitted model is returned as an `RRsol-class` object with seven slots:
 
 ```{r}
 class(ans)
@@ -655,8 +659,9 @@ ans@Vu
 ans@Ve
 ```
 
-`Vu` and `Ve` hold the estimated marker and residual variances. The
-remaining four - `gv`, `bv`, `female` and `male` - hold *trait objects*,
+`Vu` and `Ve` hold the estimated marker and residual variances, and
+`model` names the function that fitted them, which is what `varComp`
+checks. The remaining four - `gv`, `bv`, `female` and `male` - hold *trait objects*,
 the same kind of object `SimParam` uses to define a real trait. This is
 what makes a solution portable: a fitted model is stored as an estimated
 trait, so applying it to a new population is the same operation as
@@ -677,7 +682,8 @@ length(ans@female)
 
 ### How the equations are solved
 
-The three implementations differ only in arithmetic, not in the model.
+The ways of fitting described below differ only in arithmetic, not in the
+model.
 
 For a single trait, `RRBLUP` uses the approach of FaST-LMM
 [@lippert2011FaST]: the problem is transformed by an eigendecomposition,
@@ -714,8 +720,9 @@ estimate nothing. They evaluate the same model the REML of `RRBLUP_D`,
 `RRBLUP_GCA` and `RRBLUP_SCA` fits, with a single term for `RRBLUP`, once at
 the supplied values, on whichever of the variance matrix of the records and
 Henderson's equations is cheaper, and a term whose variance is zero is left
-out. `RRBLUPMemUse` with `useEM=FALSE` reports what it costs, and reports
-what each model and choice costs in general.
+out. `RRBLUPMemUse` with `useEM=FALSE` reports the memory this needs; without
+it, `RRBLUPMemUse` reports the memory of the full fit for each model and
+choice of mode.
 
 **`RRBLUP` with `fastMode=TRUE`** forms no square matrix to solve the model. It solves the mixed
 model equations by preconditioned conjugate gradient, iterating over the
@@ -754,7 +761,7 @@ correlated. The variance components come from the default mode's REML on the
 subset of records. An iteration costs about as much as one product with the
 genotypes for each term and trait, so the time taken grows with the number
 of terms times the number of traits, while the memory stays close to the
-size of the genotypes. `RRBLUP_SCA` supports fast mode for diploids only.
+size of the genotypes.
 
 Some combinations of effects cannot be told apart by the records at all.
 For inbred lines, whose two haplotypes are the same, the maternal and
@@ -772,6 +779,9 @@ the accuracy of the solution, giving how much the effects still change
 between restarts, or that the iteration stalled. Those warnings mean the
 problem is beyond what the arithmetic can resolve, not that the model is
 wrong, and they do not arise for heritabilities a simulation would use.
+
+`RRBLUP_SCA` fits diploids only, in either mode, because its model splits
+each genome into one maternal and one paternal haplotype.
 
 ## Fixed effects
 
@@ -873,8 +883,10 @@ exactly as it would after `setEBV`, and every selection function with
 `use="ebv"` will work.
 
 Two R packages worth mentioning here are `rrBLUP` and `sommer`
-[@covarrubiaspazaran2016Genome], both of which fit mixed models with arbitrary covariance
-structures and accept the matrices produced above without modification.
+[@covarrubiaspazaran2016Genome]. Both accept the matrices produced above
+without modification: `rrBLUP` fits a mixed model with a single marker or
+relationship kernel, and `sommer` fits mixed models with arbitrary
+covariance structures.
 `EMMREML` [@akdemir2015EMMREML] is another option for models with known covariance
 structures.
 

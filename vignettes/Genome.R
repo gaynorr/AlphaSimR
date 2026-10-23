@@ -38,24 +38,24 @@ pullSegSiteGeno(mutatedBasePop)
 ## -----------------------------------------------------------------------------
 secondGenPop = randCross(pop = basePop, nCrosses = 1, nProgeny = 2, simParam = SP)
 
-str(secondGenPop)
+secondGenPop
 
-# Collect the iid for mother and father
-mother = as.integer(secondGenPop@mother[1])
-father = as.integer(secondGenPop@father[1])
-
-## -----------------------------------------------------------------------------
-pullSegSiteHaplo(basePop[basePop@iid == mother,])
+# Collect the IDs of the mother and father
+mother = secondGenPop@mother[1]
+father = secondGenPop@father[1]
 
 ## -----------------------------------------------------------------------------
-pullSegSiteHaplo(basePop[basePop@iid == father,])
+pullSegSiteHaplo(basePop[mother])
+
+## -----------------------------------------------------------------------------
+pullSegSiteHaplo(basePop[father])
 
 ## -----------------------------------------------------------------------------
 pullSegSiteHaplo(secondGenPop)
 
 ## -----------------------------------------------------------------------------
-pullIbdHaplo(basePop[basePop@iid == mother,])
-pullIbdHaplo(basePop[basePop@iid == father,])
+pullIbdHaplo(basePop[mother])
+pullIbdHaplo(basePop[father])
 pullIbdHaplo(secondGenPop)
 
 ## -----------------------------------------------------------------------------

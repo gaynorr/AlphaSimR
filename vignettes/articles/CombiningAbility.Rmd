@@ -31,7 +31,7 @@ departs from the performance predicted by the two parents' GCA effects
 [@sprague1942General].
 Both depend on the parents and crossing design used to define them.
 
-This vignette uses a small, complete factorial crossing design between
+This article uses a small, complete factorial crossing design between
 two sets of inbred diploid parents.
 It distinguishes the cross means returned by `AlphaSimR` from centered GCA
 effects and SCA deviations.

@@ -129,7 +129,8 @@ all(pullSegSiteHaplo(founderPop) == haplo)
 ```
 
 For large data sets the haplotype matrix can be stored as `raw`, which
-uses one byte per allele instead of eight. `pullSegSiteHaplo`,
+uses one byte per allele instead of the four of an integer matrix or the
+eight of a numeric one. `pullSegSiteHaplo`,
 `pullSnpHaplo` and `pullMarkerHaplo` return this format with
 `asRaw = TRUE`, which makes it easy to keep a subset of a population's
 markers, as when a sequence is thinned to the density of a SNP array:
@@ -147,8 +148,10 @@ thinnedPop
 Genotyping usually gives unphased genotypes rather than haplotypes. For
 fully inbred lines that loses nothing, because both haplotypes are the
 same. `importInbredGeno` takes genotypes with one row per individual,
-coded either 0, 1, 2 or -1, 0, 1; it detects which. Heterozygous or
-fractional values are rounded to the nearest homozygote.
+coded either 0, 1, 2 or -1, 0, 1; it detects which. Fractional values are
+rounded to the nearest homozygote. A heterozygote is equally far from both,
+and R rounds a half to the even number, so it becomes homozygous for the
+"0" allele.
 
 ```{r importInbredGeno}
 geno = 2 * matrix(rbinom(nInd * nrow(genMap), size = 1, prob = 0.5),

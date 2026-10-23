@@ -2010,9 +2010,6 @@ genicVarN = function(pop,simParam=NULL,nThreads=NULL){
 #' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
-#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/GxE.html}{Genotype-by-Environment article} for
-#' the genotype-by-environment model
-#'
 #' @return
 #' If \code{pop} is a \code{\link{Pop-class}} or
 #' \code{\link{HybridPop-class}}, returns a numeric matrix of genetic
