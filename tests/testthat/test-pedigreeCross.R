@@ -355,7 +355,7 @@ test_that("EXTEND several unknown codes can be given at once", {
   expect_equal(out@father, c(NA,"a"))
 })
 
-test_that("EXTEND added founders count towards the founder budget", {
+test_that("EXTEND added founders count toward the founder budget", {
   # "1" and "2" are each used twice, so both are added, and the two added
   # rows need two founder genomes where only one is on offer
   d = pedSP(nInd=1, seed=12041)
@@ -932,7 +932,7 @@ test_that("RESOLVE every half founder gets a genome of its own", {
   expect_equal(anyDuplicated(taken), 0L)
 })
 
-test_that("RESOLVE half founders count towards the founder budget", {
+test_that("RESOLVE half founders count toward the founder budget", {
   expect_error(resolve(id=c("1","2","A","B"),
                        mother=c(NA,NA,NA,NA),
                        father=c(NA,NA,"1","1"),

@@ -162,7 +162,7 @@ way: `pedigreeCross` refuses the recombination settings `v`, `p` and
 `quadProb` when it is given a `Pop` for exactly this reason. Some fields
 are plain entries in the R6 `public` list, including those three, and
 others are active bindings over `private` ones with validation attached.
-Check which kind a neighbouring field is before adding one.
+Check which kind a neighboring field is before adding one.
 
 **Build new individuals with `.newPop`, not with `new("Pop", ...)`.**
 `.newPop` derives each individual's `iid` from `simParam$lastId` and then

@@ -164,7 +164,7 @@ you need to advance material as it would be advanced in a real breeding
 program. This means you need to be careful not to delete or overwrite a
 population you need later. The most efficient way of doing this is
 usually to start at the final stage of the breeding program and work
-your way towards earlier stages, because this often lets you avoid
+your way toward earlier stages, because this often lets you avoid
 making copies of populations.
 
 ```{r eval=FALSE}

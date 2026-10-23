@@ -270,7 +270,7 @@ test_that("ID letter codes follow z with aa", {
 })
 
 # ---------------------------------------------------------------------------
-# 3. Arguments that cannot be honoured
+# 3. Arguments that cannot be honored
 # ---------------------------------------------------------------------------
 
 test_that("ARGS returnHybridPop=TRUE is refused for map populations", {

@@ -2634,7 +2634,7 @@ gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
     take = gamma & shape==s
     coef[,take] = gammaHermCoef(s, nCoef)
   }
-  # Normalising by the variance the truncated series captures, rather than
+  # Normalizing by the variance the truncated series captures, rather than
   # the exact variance, makes two traits with the same shape reach exactly
   # one at rho=1. A requested correlation of one then stays attainable.
   coef = sweep(coef, 2, sqrt(colSums(coef^2)), "/")
@@ -2685,7 +2685,7 @@ gammaLatentCorr = function(R, gamma, shape, nCoef=51L){
 #'
 #' @keywords internal
 sampAddEff = function(qtlLoci,nTraits,corr,gamma,shape){
-  # The gamma transform is nonlinear, which pulls correlations towards zero.
+  # The gamma transform is nonlinear, which pulls correlations toward zero.
   # Sampling the normal deviates at an adjusted correlation undoes this, so
   # the transformed effects have the requested correlation.
   if(any(gamma)){
