@@ -19,8 +19,8 @@
 # their iids. Individuals outside the pruned pedigree have no phenotyped
 # descendants, so their BLUP is the average of their parents'.
 #
-# lambdaGuess centers the REML search, which covers two orders of
-# magnitude either side of it; see .lambdaGuess.
+# lambdaGuess, a finite positive number, centers the REML search, which
+# covers two orders of magnitude either side of it; see .lambdaGuess.
 .fitPedBLUP = function(y, iid, fixEff, ploidy, Vu=NULL, Ve=NULL,
                        simParam, lambdaGuess=1){
   y = as.numeric(y)
@@ -85,21 +85,18 @@
 
   # The pattern of C0+lambda*A0 is the same for every positive lambda, so
   # it is analyzed once and later steps only refactor. The first
-  # factorization is made at the first lambda asked for, the given one
-  # when Vu and Ve are supplied, rather than at an arbitrary value, at
-  # which very small Mendelian sampling variances can leave the matrix
-  # indefinite in floating point.
+  # factorization is made at the first lambda asked for rather than at an
+  # arbitrary value, at which very small Mendelian sampling variances can
+  # leave the matrix indefinite in floating point. It is supernodal, which
+  # works on dense blocks with BLAS and is much faster than the simplicial
+  # factorization on large pedigrees.
   #
   # The equations are positive definite in exact arithmetic, but with
   # Mendelian sampling variances many orders of magnitude apart, as after
   # dozens of generations of selfing, they can be too badly conditioned
-  # for double precision and the factorization fails. solveAt then returns
-  # NULL and keeps the last factor, so that callers can say what happened
-  # rather than stop with CHOLMOD's message.
-  # CHOLMOD warns before it fails, and the failure is reported by the
-  # callers instead, once. The factorization is supernodal, which works on
-  # dense blocks with BLAS and was about ten times faster than the
-  # simplicial one on the equations of 50,000 records.
+  # for double precision. solveAt then returns NULL and keeps the last
+  # factor, and CHOLMOD's own warnings are suppressed, so that the callers
+  # can report the failure once and say what caused it.
   L = NULL
   solveAt = function(lambda){
     fac = tryCatch(suppressWarnings(
@@ -143,10 +140,6 @@
     # refined within its neighbors. The result is the best found, not a
     # guaranteed global optimum, which matters little for the breeding
     # values when the ratio is near its best.
-    if((length(lambdaGuess)!=1L) || !is.finite(lambdaGuess) ||
-       (lambdaGuess<=0)){
-      lambdaGuess = 1
-    }
     range = log(lambdaGuess) + log(c(1e-2, 1e2))
     grid = seq(range[1], range[2], length.out=9L)
     nGrid = length(grid)

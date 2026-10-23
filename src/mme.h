@@ -394,7 +394,8 @@ double fastLMMDelta(Rcpp::List args);
 // mmeMultiTrait.cpp
 void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& F, const arma::mat& Kn, bool useFactor,
-                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve);
+                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve,
+                    const char* name);
 
 // Pieces of the RR-BLUP models shared with the fast mode of the multikernel
 // models in mmeFastMK.cpp, defined in MME.cpp

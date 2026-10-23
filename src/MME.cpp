@@ -1920,10 +1920,12 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
           MSubCol[i] = xaPtr[Mcol[subset(i)]];
         }
       }
-      remlMultiTrait(ySub, XSub, MSub, none, true, 1000, 1e-6, Vu, Ve);
+      remlMultiTrait(ySub, XSub, MSub, none, true, 1000, 1e-6, Vu, Ve,
+                     "RRBLUP fastMode");
     }else{
       arma::mat K = gramFromGeno(M, subset, xaPtr);
-      remlMultiTrait(ySub, XSub, none, K, false, 1000, 1e-6, Vu, Ve);
+      remlMultiTrait(ySub, XSub, none, K, false, 1000, 1e-6, Vu, Ve,
+                     "RRBLUP fastMode");
     }
   }else{
     Vu = 0.5*(VuIn+VuIn.t());
