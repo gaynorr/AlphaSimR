@@ -68,22 +68,52 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 traits}
 }
 \description{
-Fits an RR-BLUP model that estimates separate additive effects for
-females and males and a dominance effect. This implementation is meant
-for situations where \code{\link{RRBLUP_SCA}} is too slow. Note that
-RRBLUP_SCA2 is only faster in certain situations. Most users should use
-\code{\link{RRBLUP_SCA}}.
+This function is deprecated. Use \code{\link{RRBLUP_SCA}}, which takes
+known variance components as Vu and Ve or as an earlier fit in varComp.
+
+Fits the single trait model of \code{\link{RRBLUP_SCA}} with variance
+components estimated by the EM algorithm, or taken as given. Only
+diploids are supported. See details.
 }
 \details{
-The model uses separate maternal and paternal marker dosages from
-the training population.
+\subsection{The model}{
+The model is the single trait model of \code{\link{RRBLUP_SCA}},
+\deqn{y = X\beta + hb + M_fu_f + M_mu_m + M_du_d + e,}
+with \eqn{u_f \sim N(0, I\sigma^2_f)}, \eqn{u_m \sim N(0, I\sigma^2_m)},
+\eqn{u_d \sim N(0, I\sigma^2_d)} and \eqn{e \sim N(0, I\sigma^2_e)}, where
+\eqn{M_f} and \eqn{M_m} hold the marker dosages an individual inherited
+from its female and male parents, \eqn{M_d} the dominance codings, and h
+is each individual's sum of dominance codings. The marker effects are the
+BLUPs \insertCite{henderson1975Best}{AlphaSimR} given the variance
+components. When useEM is TRUE, the variance components are estimated by
+EM-REML \insertCite{dempster1977Maximum,patterson1971Recovery}{AlphaSimR},
+starting from VuF, VuM, VuD and Ve and iterating until the change is below
+tol or maxIter is reached. When useEM is FALSE, VuF, VuM, VuD and Ve are
+taken as the true values. Only one trait can be modeled.
+}
+
+\subsection{Replacing it}{
+This function was for retraining a model cheaply when the variance
+components are already known. \code{\link{RRBLUP_SCA}} now does the same:
+called with an earlier fit as varComp, or with Vu=c(VuF, VuM, VuD) and Ve,
+and fastMode FALSE, it solves the mixed model equations directly with
+the solver of its own REML fit and gives the same result, to rounding,
+as this function with useEM FALSE. With fastMode TRUE it does so for
+several traits as well. When the variance components are unknown,
+use \code{\link{RRBLUP_SCA}} without them: the EM algorithm here is
+generally far slower than its average information REML, and the default
+maxIter is typically too small for convergence. When the algorithm fails
+to converge a warning is displayed and the last iteration is returned.
+}
+
+\subsection{Using the solution}{
 The solution can be applied with \code{\link{setEBV}}:
 \code{value="female"} or \code{value="male"} gives parental
 predictions, while \code{value="gv"} predicts total hybrid genetic value.
 These model predictions obviously differ from the observed cross means
-returned by \code{\link{calcGCA}}.
-The dominance terms allow cross-specific deviations,
-but SCA's are not returned.
+returned by \code{\link{calcGCA}}. The dominance effects contribute to
+the predicted genetic value, but SCA's are not returned.
+}
 }
 \examples{
 #Create founder haplotypes
@@ -99,11 +129,16 @@ SP$addSnpChip(10)
 #Create population
 pop = newPop(founderPop, simParam=SP)
 
-#Run GS model and set EBV
-ans = RRBLUP_SCA2(pop, simParam=SP)
+#Run GS model, then refit with its variance components held fixed,
+#which replaces RRBLUP_SCA2 with useEM=FALSE
+ans = RRBLUP_SCA(pop, simParam=SP)
+ans = RRBLUP_SCA(pop, varComp=ans, simParam=SP)
 pop = setEBV(pop, ans, simParam=SP)
 
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+}
+\references{
+\insertAllCited{}
 }

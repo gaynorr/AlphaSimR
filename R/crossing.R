@@ -44,9 +44,7 @@
 #' @export
 makeCross = function(pop, crossPlan, nProgeny=1,
                      simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -177,9 +175,7 @@ randCross = function(pop, nCrosses, nProgeny=1,
                      balance=TRUE, parents=NULL,
                      ignoreSexes=FALSE,
                      simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -311,6 +307,14 @@ randCross = function(pop, nCrosses, nProgeny=1,
 #' to measure expected fixation. If TRUE, snpChip specifies which
 #' trait's QTL to use. This argument occurs after ..., so the argument
 #' name must be matched exactly.
+#' @param usePed should the pedigree relationship matrix of
+#' \code{\link{pedigreeA}} be used instead of genotypes to measure
+#' expected fixation when \code{restrInbr=TRUE}. The pedigree must have
+#' been tracked from the start of the simulation, see
+#' \code{\link[=SimParam-setTrackPed]{setTrackPed}}. If TRUE,
+#' \code{snpChip} is ignored and \code{useQtl} must be FALSE. This
+#' argument occurs after ..., so the argument name must be matched
+#' exactly.
 #' @param onShortfall what to do when fewer suitable candidates are
 #' available than requested. "warning" (the default) warns and uses all
 #' of them, "error" stops, and "none" uses them silently. This argument
@@ -322,8 +326,9 @@ randCross = function(pop, nCrosses, nProgeny=1,
 #' selection that maximizes merit while restricting the expected
 #' increase in fixation. They are then crossed at random, exactly as
 #' when \code{restrInbr=FALSE}. See \code{\link{selectOCS}} for the
-#' method and for how \code{inbrTarget} and \code{inbrType} set the
-#' target.
+#' method, for how \code{inbrTarget} and \code{inbrType} set the
+#' target, and for how the restriction differs with
+#' \code{usePed=TRUE}.
 #'
 #' The method assumes every selected parent contributes equally to the
 #' next generation. Setting \code{nInd} when the simulation uses sexes
@@ -362,11 +367,9 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
                        simParam=NULL, nThreads=NULL, ..., balance=TRUE,
                        restrInbr=FALSE, inbrTarget=0.01,
                        inbrType="relative", snpChip=1, useQtl=FALSE,
-                       onShortfall="warning"){
+                       usePed=FALSE, onShortfall="warning"){
   onShortfall = checkShortfall(onShortfall)
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -389,7 +392,7 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
                         inbrType=inbrType, snpChip=snpChip,
                         useQtl=useQtl, returnPop=FALSE,
                         simParam=simParam, nThreads=nThreads,
-                        onShortfall=onShortfall, ...)
+                        onShortfall=onShortfall, usePed=usePed, ...)
   }else if(!is.null(nInd)){
     parents = selectInd(pop=pop, nInd=nInd, trait=trait, use=use,
                         sex="B", selectTop=selectTop,
@@ -466,9 +469,7 @@ selectCross = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, nCrosses,
 #' @export
 makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
                       nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -606,9 +607,7 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
                       balance=TRUE, femaleParents=NULL,
                       maleParents=NULL, ignoreSexes=FALSE,
                       simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -721,9 +720,7 @@ randCross2 = function(females, males, nCrosses, nProgeny=1,
 self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
                 simParam=NULL, nThreads=NULL){
   
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -871,9 +868,7 @@ self = function(pop, nProgeny=1, parents=NULL, keepParents=TRUE,
 #' @export
 makeDH = function(pop, nDH=1, useFemale=TRUE, keepParents=TRUE,
                   simParam=NULL, nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
@@ -1567,9 +1562,7 @@ pedigreeCross = function(founderPop, id, mother, father, matchID=FALSE,
                  "population. Set them on the SimParam instead"))
     }
     
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     
     if(is.null(nThreads)){
       nThreads = simParam$nThreads

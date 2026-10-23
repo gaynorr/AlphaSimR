@@ -1,12 +1,13 @@
 ---
 title: "General and Specific Combining Ability in AlphaSimR"
+author: "Chris Gaynor"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
 # Pandoc reads the path as Markdown, which would turn -- into a dash, so its
 # punctuation is escaped, with any quote doubled for YAML.
-bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{General and Specific Combining Ability in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -35,8 +36,8 @@ two sets of inbred diploid parents.
 It distinguishes the cross means returned by `AlphaSimR` from centered GCA
 effects and SCA deviations.
 The companion `vignette("traits")` introduces trait specification,
-`vignette("QuanGen")` explains genetic values and their variances, and
-`vignette("GeneticRecombination")` explains inheritance during crossing.
+the [Quantitative Genetics](QuanGen.html) article explains genetic values and their variances, and
+the [Genetic Recombination](GeneticRecombination.html) article explains inheritance during crossing.
 
 | If you want to understand... | Start with... |
 |:--|:--|
@@ -66,8 +67,8 @@ s_{ij} &= M_{ij} - \mu - g_{F_i} - g_{M_j}.
 \end{aligned}
 $$
 
-The centered GCA effects are $g_{F_i}$ and $g_{M_j}$, and the SCA
-deviation is $s_{ij}$.
+The centered GCA effects are $g_{F_i}$ and $g_{M_j}$,
+and the SCA deviation is $s_{ij}$.
 Thus:
 
 $$M_{ij} = \mu + g_{F_i} + g_{M_j} + s_{ij}.$$
@@ -101,7 +102,6 @@ genotype, so its genetic value also represents its family mean.
 set.seed(1942)
 founders = quickHaplo(nInd=12, nChr=2, segSites=40, inbred=TRUE)
 SPgca = SimParam$new(founders)
-SPgca$nThreads = 1L
 SPgca$addTraitAD(nQtlPerChr=20, mean=10, meanDD=0.8, varDD=0.2)
 parents = newPop(founders, simParam=SPgca)
 females = parents[1:6]
@@ -254,7 +254,7 @@ $$\operatorname{Var}(M_{ij}) =
 \operatorname{Var}(s_{ij}).$$
 
 We use population variances, dividing by the number of values, as in
-`vignette("QuanGen")`.
+the [Quantitative Genetics](QuanGen.html) article.
 
 ```{r combining-variances}
 populationVariance = function(x) mean((x - mean(x))^2)

@@ -239,9 +239,7 @@ getGenMap = function(object=NULL, sex="A"){
 #' @export
 getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
   
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   #Extract genetic map and SNP positions
   if(sex=="A"){
@@ -330,9 +328,7 @@ getSnpMap = function(snpChip=1, sex="A", simParam=NULL){
 #' @export
 getQtlMap = function(trait=1, sex="A", simParam=NULL){
   
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   
   if(is.character(trait)){
     # Suspect trait is a name
@@ -417,9 +413,7 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
 #' @export
 pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
                        nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -492,9 +486,7 @@ pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
 #' @export
 pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL,
                        nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -580,9 +572,7 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
     }
     map = pop@genMap
   }else{
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     
     allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
@@ -652,9 +642,7 @@ pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
 pullSnpHaplo = function(pop, snpChip=1, haplo="all",
                         chr=NULL, asRaw=FALSE, simParam=NULL,
                         nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -752,9 +740,7 @@ pullSnpHaplo = function(pop, snpChip=1, haplo="all",
 pullQtlHaplo = function(pop, trait=1, haplo="all",
                         chr=NULL, asRaw=FALSE, simParam=NULL,
                         nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -866,9 +852,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
     }
     map = pop@genMap
   }else{
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
     lociTot = simParam$segSites
     if(is.null(nThreads)){
@@ -962,9 +946,7 @@ pullSegSiteHaplo = function(pop, haplo="all",
 #' @export
 pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL,
                         nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1076,9 +1058,7 @@ pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL,
     }
     genMap = pop@genMap
   }else{
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     if(is.null(nThreads)){
       nThreads = simParam$nThreads
     }else{
@@ -1167,9 +1147,7 @@ pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
     }
     genMap = pop@genMap
   }else{
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     if(is.null(nThreads)){
       nThreads = simParam$nThreads
     }else{
@@ -1281,9 +1259,7 @@ setMarkerHaplo = function(pop, haplo, simParam=NULL, nThreads=NULL){
       nThreads = as.integer(nThreads)
     }
   }else{
-    if(is.null(simParam)){
-      simParam = get("SP",envir=.GlobalEnv)
-    }
+    simParam = getSimParam(simParam)
     genMap = simParam$genMap
     if(is.null(nThreads)){
       nThreads = simParam$nThreads

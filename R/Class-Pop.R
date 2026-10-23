@@ -62,8 +62,15 @@ setValidity("RawPop",function(object){
   }
 })
 
-
+# The [ and [<- methods of the population classes carry an explicit alias
+# in the short form, such as [,RawPop-method. Matrix defines [ methods over
+# all four of its arguments, and once its namespace is loaded, as pkgload
+# loads it for roxygen, new [ methods are stored with the full signature and
+# roxygen names their aliases [,RawPop,ANY,ANY,ANY-method. An installed
+# AlphaSimR does not load Matrix, so its methods keep the short signature,
+# and R CMD check reports them as undocumented without the short alias.
 #' @describeIn RawPop Extract RawPop by index
+#' @aliases [,RawPop-method
 setMethod("[",
           signature(x = "RawPop"),
           function(x, i){
@@ -202,6 +209,7 @@ setValidity("MapPop",function(object){
 })
 
 #' @describeIn MapPop Extract MapPop by index
+#' @aliases [,MapPop-method
 setMethod("[",
           signature(x = "MapPop"),
           function(x, i){
@@ -335,6 +343,7 @@ setValidity("NamedMapPop",function(object){
 })
 
 #' @describeIn NamedMapPop Extract NamedMapPop by index or id
+#' @aliases [,NamedMapPop-method
 setMethod("[",
           signature(x = "NamedMapPop"),
           function(x, i){
@@ -620,6 +629,7 @@ validPopContent = function(object){
 }
 
 #' @describeIn Pop Extract Pop by index or id
+#' @aliases [,Pop-method
 setMethod("[",
           signature(x = "Pop"),
           function(x, i){
@@ -769,9 +779,7 @@ setMethod("length",
 #' emptyPop = newPop(ploidy=2L, simParam=SP)
 #' @export
 newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -819,9 +827,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
                    iMother=NULL, iFather=NULL, isDH=NULL,
                    femaleParentPop=NULL, maleParentPop=NULL,
                    hist=NULL, simParam=NULL, nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -999,9 +1005,7 @@ newPop = function(rawPop,ploidy=NULL,simParam=NULL,nThreads=NULL,...){
 #'
 #' @export
 resetPop = function(pop,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1106,9 +1110,7 @@ isPop = function(x) {
 #'
 #' @export
 newEmptyPop = function(ploidy=2L, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP", envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
 
   # Create 0 x nTrait matrix with trait names
   # For pheno and gv slots
@@ -1299,6 +1301,7 @@ setMethod("show",
 )
 
 #' @describeIn MultiPop Subset MultiPop by index
+#' @aliases [,MultiPop-method
 setMethod("[",
           signature(x = "MultiPop"),
           function(x, i){
@@ -1335,6 +1338,7 @@ setMethod("names", signature(x = "MultiPop"), function(x) {
 })
 
 #' @describeIn MultiPop Replace contents of a subset of elements in MultiPop
+#' @aliases [<-,MultiPop-method
 setReplaceMethod("[", signature(x = "MultiPop"), function(x, i, value) {
   # Deletion
   if (is.null(value)) {

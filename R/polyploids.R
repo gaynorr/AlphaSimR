@@ -42,9 +42,7 @@
 #' @export
 reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
                         simRecomb=TRUE,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -182,9 +180,7 @@ reduceGenome = function(pop,nProgeny=1,useFemale=TRUE,keepParents=TRUE,
 #' @export
 doubleGenome = function(pop, keepParents=TRUE,
                         simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -284,9 +280,7 @@ doubleGenome = function(pop, keepParents=TRUE,
 #'
 #' @export
 mergeGenome = function(females,males,crossPlan,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

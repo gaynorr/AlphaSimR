@@ -82,7 +82,7 @@ offered by this argument. The default demographic model matches
 \code{species="GENERIC"} in \code{\link{runMacs}}.
 }
 \details{
-See \code{vignette("DemographicModels", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 further information on \code{runMacs2} and demographic models.
 }
 \examples{

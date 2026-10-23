@@ -3,7 +3,7 @@
 #' @description
 #' Writes a Pop-class to PLINK PED and MAP files. The arguments 
 #' for this function were chosen for consistency with 
-#' \code{\link{RRBLUP2}}. The base pair coordinate will be the locus
+#' \code{\link{RRBLUP}}. The base pair coordinate will be the locus
 #' position as stored in AlphaSimR and not an actual base pair 
 #' position. This is because AlphaSimR doesn't track base pair 
 #' positions, only relative positions for the loci used in the 
@@ -55,9 +55,7 @@ writePlink = function(pop, baseName, traits=1, use="pheno",
   if(pop@ploidy!=2L){
     stop("writePlink() only supports ploidy=2")
   } 
-  if(is.null(simParam)){ 
-    simParam = get("SP", envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

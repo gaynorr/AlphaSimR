@@ -16,6 +16,11 @@
 #' matrix per term, with rows and columns named "term:trait".
 #' @slot Ve Estimated error variance, or for several traits the covariance
 #' matrix of the errors among traits
+#' @slot model The model that was fitted, named by the function that fits it
+#' without a trailing 2, so that \code{\link{RRBLUP}} and
+#' \code{\link{RRBLUP2}} both give "RRBLUP". It lets a fit be passed back as
+#' varComp to the same model only. Empty when no model is recorded, as for an
+#' object created directly.
 #'
 #' @export
 setClass("RRsol",
@@ -24,7 +29,9 @@ setClass("RRsol",
                  female="list",
                  male="list",
                  Vu="matrix",
-                 Ve="matrix"))
+                 Ve="matrix",
+                 model="character"),
+         prototype=prototype(model=""))
 
 # Test if object is of a RRsol class
 isRRsol = function(x) {

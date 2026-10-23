@@ -118,6 +118,12 @@ mergePops = function(popList){
         misc = vector("list", length=nMisc[1])
         for(i in seq_len(nMisc[1])){
           miscTmp = lapply(popList, function(x) x@misc[[i]])
+          # A named popList would pass its names to do.call as argument
+          # names, and an S4 c() method such as the one for Pop then gets
+          # no x, so R's default c() returns a list instead.
+          if(isS4(miscTmp[[1]])){
+            miscTmp = unname(miscTmp)
+          }
           if (is.matrix(miscTmp[[1]])) {
             misc[[i]] = do.call("rbind", miscTmp)
           } else {

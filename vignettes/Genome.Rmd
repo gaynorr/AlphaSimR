@@ -72,7 +72,7 @@ pullSegSiteHaplo(founderGenomes)
 ```
 
 # How are genomes inherited?
-Genetic code is inherited from an individual's mother and father. This involves cells known as gametes, for example, eggs (from mother) and sperm (from father). These cells have half the number of chromosomes as other cells in the species. For example, in diploid species like humans gametes are haploid cells. These have been developed through interphase (DNA replication) and meiosis (cell division). The mechanisms of interphase and meiosis are outside the scope of this vignette, however they are important due to their contribution to genetic variation. See `vignette("GeneticRecombination")` for more details.
+Genetic code is inherited from an individual's mother and father. This involves cells known as gametes, for example, eggs (from mother) and sperm (from father). These cells have half the number of chromosomes as other cells in the species. For example, in diploid species like humans gametes are haploid cells. These have been developed through interphase (DNA replication) and meiosis (cell division). The mechanisms of interphase and meiosis are outside the scope of this vignette, however they are important due to their contribution to genetic variation. See the [Genetic Recombination in AlphaSimR](https://gaynorr.github.io/AlphaSimR/articles/GeneticRecombination.html) article on the AlphaSimR website for more details.
 
 ## Genetic Variation: the DNA lottery
 
@@ -126,7 +126,7 @@ pullSegSiteHaplo(basePop[basePop@iid == father,])
 pullSegSiteHaplo(secondGenPop)
 ```
 
-In the above, independent assortment will usually be observed. This is clear since despite being full siblings they usually inherit a different arrangement of haplotypes from the mother and the father, although by chance two siblings can inherit the same one. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the `vignette("GeneticRecombination")`.
+In the above, independent assortment will usually be observed. This is clear since despite being full siblings they usually inherit a different arrangement of haplotypes from the mother and the father, although by chance two siblings can inherit the same one. We may observe changes to the haplotypes via recombination between the four sites across a chromosome (either chromosome one, two, and/or three). However, this depends on the rate of recombination. Nevertheless, even if present it can be hard or even impossible to observe through the haplotypes alone, even in this small sample size. Instead we can use the `pullIbdHaplo` to observe this. For further details on recombination, please see the [Genetic Recombination in AlphaSimR](https://gaynorr.github.io/AlphaSimR/articles/GeneticRecombination.html) article.
 
 ```{r}
 pullIbdHaplo(basePop[basePop@iid == mother,])
@@ -195,7 +195,7 @@ getQtlMap(trait = 1, simParam = SP)
 
 ## What is a genetic map?
 
-A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. **AlphaSimR** stores and reports genetic maps only, in Morgans, for segregating sites, QTLs, SNPs, and all defined loci. The map is the one supplied with the founder population, by `runMacs`, `quickHaplo` or an import, and meiosis uses it to place crossovers, so it determines how genetic information is shuffled in chromosomes and how markers are inherited. See `vignette("GeneticRecombination")` for more details.
+A genetic map (also known as linkage map) provides the genetic distance in Morgans between genetic markers, QTLs, and/or segregating sites on a chromosome. This differs from a physical map which gives the physical distance in the DNA sequence by the number of nucleotides. Thus, it is based on the actual structure of the genetic material. **AlphaSimR** stores and reports genetic maps only, in Morgans, for segregating sites, QTLs, SNPs, and all defined loci. The map is the one supplied with the founder population, by `runMacs`, `quickHaplo` or an import, and meiosis uses it to place crossovers, so it determines how genetic information is shuffled in chromosomes and how markers are inherited. See the [Genetic Recombination in AlphaSimR](https://gaynorr.github.io/AlphaSimR/articles/GeneticRecombination.html) article for more details.
 
 For a genetic map of all defined loci (or segregating sites), `getGenMap` is used. `getSnpMap` can be used for the genetic map of the SNP(s) on each chromosome. As hinted previously, `getQtlMap` can be used for the genetic map of the QTL(s).
 

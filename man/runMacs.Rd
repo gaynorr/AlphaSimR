@@ -43,7 +43,7 @@ does not rescale the demographic model's effective population sizes
 when ploidy changes.}
 
 \item{manualCommand}{user provided `MaCS` options. For advanced users only.
-See the \code{vignette("DemographicModels", package = "AlphaSimR")} for details.}
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for details.}
 
 \item{manualGenLen}{user provided genetic length. This must be supplied if using
 \code{manualCommand}. If not using \code{manualCommand},
@@ -97,7 +97,7 @@ The number of sites remains random, so allow a margin above \code{segSites}
 when choosing a rate. Consider whether reduced diversity suits the
 simulation's goals and report the mutation rate used.
 
-See the \code{vignette("DemographicModels", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 further information on \code{runMacs} and demographic models.
 
 Segregating sites are placed at absolute genetic map positions, scaled

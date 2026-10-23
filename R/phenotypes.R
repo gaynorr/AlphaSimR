@@ -52,9 +52,7 @@ addError = function(gv, varE, reps){
 #'
 #' @keywords internal
 calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   nTraits = length(traits)
 
   if(nTraits==0L){
@@ -169,9 +167,7 @@ calcPheno = function(pop, varE, reps, p, traits, simParam=NULL){
 setPheno = function(pop, h2=NULL, H2=NULL, varE=NULL, corE=NULL,
                     reps=1, fixEff=1L, p=NULL, onlyPheno=FALSE,
                     traits=NULL, simParam=NULL, ...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
 
   # Determine which traits are selected
   if(is.null(traits)){

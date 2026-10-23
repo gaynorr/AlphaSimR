@@ -28,5 +28,11 @@ matrix per term, with rows and columns named "term:trait".}
 
 \item{\code{Ve}}{Estimated error variance, or for several traits the covariance
 matrix of the errors among traits}
+
+\item{\code{model}}{The model that was fitted, named by the function that fits it
+without a trailing 2, so that \code{\link{RRBLUP}} and
+\code{\link{RRBLUP2}} both give "RRBLUP". It lets a fit be passed back as
+varComp to the same model only. Empty when no model is recorded, as for an
+object created directly.}
 }}
 

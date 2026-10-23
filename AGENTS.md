@@ -13,11 +13,19 @@ toolchain nothing you write can be verified: once a change has been agreed
 and made, say plainly what has not been built or run and what the
 maintainer needs to do.
 
+**Develop new features on a feature branch.** `devel` is the development
+branch and `master` the release branch. Start a feature from an up-to-date
+`devel` on a branch of its own, named for the feature, and bring it back
+into `devel` through a pull request. Do not commit feature work directly
+to `devel` or `master`.
+
 **Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
-`Rcpp`, `Rdpack`, `methods` and `R6`; `LinkingTo` is `Rcpp`,
+`Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
-it needs discussing first.
+it needs discussing first. `Matrix` provides the sparse Cholesky
+factorization used by pedigree BLUP; it is a recommended package that
+ships with R.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
@@ -82,6 +90,20 @@ Comments explain *why*, in full prose sentences, in `src/` as well as `R/`.
 Use American English spelling in code, comments, documentation, tests
 and `NEWS.md`: "penalize", "behavior", "toward", not "penalise",
 "behaviour", "towards".
+
+## Editing files
+
+Roxygen comments are Rd markup, full of backslashes, quotes and braces, as
+in `\code{vignette("traits", package = "AlphaSimR")}`. Passed through a
+shell to `sed` or `perl`, the backslashes are eaten by the quoting or read
+as escapes, so a pattern can quietly match nothing and a replacement can
+lose its backslash or turn `\c` into a control character. Make these edits
+with an exact-string file edit, or from a script file whose patterns are
+literal, not inline on the command line. Do not address edits by line
+number taken from earlier output, and do not assume a string occurs once
+on a line: the `bibliography:` field of every vignette names the same path
+twice. Afterward, read the `git diff` and check that every intended line
+changed and nothing else did.
 
 ## Changes that break things silently
 
@@ -204,6 +226,18 @@ installs whatever roxygen is current, so it can rewrite the
 should edit that file. If you document locally, use the pinned version; a
 different one rewrites every `.Rd` and buries the real change in the diff.
 
+The `[` and `[<-` methods of the population classes in `R/Class-Pop.R`
+and `R/Class-HybridPop.R` carry an explicit `@aliases` in the short form,
+such as `[,Pop-method`. Do not remove them as redundant. `pkgload`, and so
+roxygen and the document workflow, loads every package in `Imports`,
+including Matrix, and once Matrix is loaded new `[` methods are stored
+with all four arguments of its signature, so roxygen names their aliases
+`[,Pop,ANY,ANY,ANY-method`. An installed AlphaSimR does not load Matrix,
+because `NAMESPACE` imports nothing from it, so its methods keep the short
+signature, and without the short alias R CMD check reports them as
+undocumented. `tools::codoc` does not catch this; `tools::undoc` against
+an installed copy does, so run it after changing documentation.
+
 `src/RcppExports.cpp` and `R/RcppExports.R` come from
 `Rcpp::compileAttributes()`, which no workflow runs. Changing a
 `// [[Rcpp::export]]` signature means regenerating them and rebuilding.
@@ -251,6 +285,19 @@ map first; otherwise the genetic map comes out wrong without any error.
   that happened to come out. The Mendelian bound holds for a direct cross;
   it does not survive selfing or doubled haploid production, where only the
   weaker "a locus fixed in both ancestors stays fixed" bound does.
+- `quickHaplo` samples every allele independently, so its founders have no
+  linkage disequilibrium: every locus has an allele frequency of one half and
+  is independent of every other, and a generation or two of crossing does
+  little to change that. Markers then carry no information about QTL they do
+  not overlap, so genomic selection fitted to them predicts candidates with an
+  accuracy near zero, and variance components estimated from them can come out
+  at or near zero. That makes it the wrong founder for anything that depends
+  on markers tracking QTL, such as genomic selection accuracy, comparisons of
+  models' predictions, or benchmarks of the solvers on realistic data. Use
+  `runMacs` or `runMacs2` founders for that, followed by `randCross` to reach
+  the size needed. `quickHaplo` remains the right choice where linkage does
+  not matter, as in tests that compare a solver with Henderson's equations
+  written out in R.
 - Roxygen examples that build a `SimParam` nearly always include
   `\dontshow{SP$nThreads = 1L}` so that checks run single threaded. New
   examples need it too.
@@ -277,6 +324,16 @@ notice. Do not edit `Version` or `Date` in `DESCRIPTION`; the maintainer
 sets those. `Version` in `DESCRIPTION` and the top heading of `NEWS.md` are
 kept in step for releases and may drift apart on the development branch, so
 a difference between those two is not a bug to fix.
+
+A new help topic needs a place in the `reference:` index of
+`_pkgdown.yml`, which groups the website's function reference by topic
+rather than alphabetically. Add the topic's name, the `\name{}` of its
+`.Rd` file, to the section it belongs in, or start a section if none
+fits. pkgdown fails the site build when a public topic is missing from
+the index, so a forgotten entry breaks `pkgdown.yaml` rather than being
+skipped. Topics marked `@keywords internal` are exempt and should not be
+listed. When a function is deprecated, move its entry to the
+`Deprecated` section; when one is removed, delete its entry.
 
 A new file at the top level of the package needs an entry in
 `.Rbuildignore` unless it is meant to ship. This file has such an entry and

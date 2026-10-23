@@ -10,7 +10,8 @@ RRBLUPMemUse(
   model = "RRBLUP",
   nTraits = 1L,
   nFixEff = 1L,
-  nSubsample = 5000L,
+  fastMode = FALSE,
+  nSubsample = 3000L,
   useEM = TRUE
 )
 }
@@ -20,27 +21,35 @@ RRBLUPMemUse(
 \item{nMarker}{the number of markers per individual}
 
 \item{model}{the model being fitted, given as the name of the function
-that fits it. One of "fastRRBLUP", "RRBLUP", "RRBLUP2", "RRBLUP_D",
-"RRBLUP_D2", "RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
+that fits it. One of "RRBLUP", "RRBLUP2", "RRBLUP_D", "RRBLUP_D2",
+"RRBLUP_GCA", "RRBLUP_GCA2", "RRBLUP_SCA" or "RRBLUP_SCA2".
 The older values "REG", "GCA" and "SCA" are still accepted and are read as
-"RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA".}
+"RRBLUP", "RRBLUP_GCA" and "RRBLUP_SCA", and "fastRRBLUP" is read as
+"RRBLUP" with fastMode TRUE.}
 
 \item{nTraits}{the number of traits fitted at once.
-\code{\link{fastRRBLUP}}, \code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
+\code{\link{RRBLUP}}, \code{\link{RRBLUP_D}},
 \code{\link{RRBLUP_GCA}} and \code{\link{RRBLUP_SCA}} fit more than one;
 the numbered models fit one.}
 
 \item{nFixEff}{the number of fixed effect levels, which is the number of
 distinct values in the population's fixEff slot.}
 
-\item{nSubsample}{the number of records \code{\link{fastRRBLUP}} uses to
-estimate variance components. Ignored by every other model, and by
-fastRRBLUP itself when Vu and Ve are supplied.}
+\item{fastMode}{whether to estimate the memory of the fast mode of
+\code{\link{RRBLUP}}, \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}}
+or \code{\link{RRBLUP_SCA}}. Ignored by every other model. A model given
+fastMode TRUE uses fast mode only where it is expected to be faster, and
+otherwise needs the memory estimated with fastMode FALSE.}
 
-\item{useEM}{whether the numbered models will estimate their variance
-components. Estimating them holds one more square matrix, and for
-\code{\link{RRBLUP2}} it also decides which of its two solving methods is
-used. Ignored by the models that do not take a useEM argument.}
+\item{nSubsample}{the number of records used to estimate variance
+components in fast mode. Ignored when fastMode is FALSE, by the models
+without a fast mode, and in fast mode when Vu and Ve are supplied.}
+
+\item{useEM}{whether the variance components will be estimated. FALSE is
+for a numbered model with useEM FALSE, or for an unnumbered model given Vu
+and Ve, or varComp, with fastMode FALSE, which solves one trait without
+estimating them. Ignored in fast mode, where nSubsample and supplying Vu
+and Ve decide it.}
 }
 \value{
 Returns an estimate for the required gigabytes of RAM
@@ -59,11 +68,14 @@ the genotypes of the loci that are not markers.
 The models differ in what they have to hold in memory, and the differences
 are large enough to decide which one is usable.
 
-\code{\link{fastRRBLUP}} reads the genotypes as one byte per locus, then
-frees them and iterates over a copy packed to one bit per allele, so it
-holds no square matrix at all. Its estimate is
+\code{\link{RRBLUP}} with fastMode TRUE reads the genotypes as one byte
+per locus, then frees them and iterates over a copy packed to one bit per
+allele, so it holds no square matrix of all the records or all the
+markers. Its estimate is
 dominated by the genotypes themselves and by the subset of records used
-for the variance components. Fitted to several traits, it holds a few
+for the variance components. Fitted to one trait, it also holds the
+eigenvectors its preconditioner deflates, up to 1,000 of them, each with
+one value per marker. Fitted to several traits, it holds a few
 vectors of markers and of records per trait, and the variance components
 are estimated as for several traits in \code{\link{RRBLUP}}, on the
 subset of records.
@@ -74,20 +86,33 @@ matrix and its transpose share their nonzero eigenvalues. Fitted to several
 traits, it does the same with a thin singular value decomposition of the
 markers when they are fewer than the records.
 
-The numbered models set up Henderson's mixed model equations, whose
-coefficient matrix is square with dimensions equal to the number of fixed
-effects plus the number of random effects, so they grow with the number of
-markers rather than the number of records. Estimating variance components
-needs the trace of part of the inverse of that matrix, which is reached
-through the inverse of its Cholesky factor, so useEM costs one more matrix
-of the same size.
+The numbered models estimate variance components with Henderson's mixed
+model equations, whose coefficient matrix is square with dimensions equal
+to the number of fixed effects plus the number of random effects, so they
+grow with the number of markers rather than the number of records.
+Estimating variance components needs the trace of part of the inverse of
+that matrix, which is reached through the inverse of its Cholesky factor,
+so it costs one more matrix of the same size.
 
-\code{\link{RRBLUP2}} is the exception among them. It only sets up
-Henderson's equations when it has to, which is when it is estimating
-variance components, and otherwise takes whichever of its two solving
-methods holds the smaller square matrix. Its estimate therefore depends on
-useEM, and with useEM false it grows with the number of records once the
-markers outnumber them.
+With the variance components fixed, which is useEM false, the numbered
+models write the model on the records instead when there are fewer
+records than marker effects, so their estimate depends on useEM, and with
+useEM false it grows with the number of records once the marker effects
+outnumber them. The unnumbered models given Vu and Ve with fastMode FALSE
+use the solver of the REML fit of the GCA, SCA and dominance models,
+with a single term for \code{\link{RRBLUP}}, and are estimated as that
+fit is, which is an upper bound.
+
+The GCA, SCA and dominance models with fastMode TRUE hold the markers
+packed to one bit per allele, assumed here to be a diploid's two bits per
+marker, and no square matrix of the markers or the records. Their
+iteration holds a few matrices of markers by terms and traits, and a block
+of the preconditioner for every marker, whose size is the square of the
+number of terms times the number of traits. Before that, the variance
+components are estimated by the same model on the subset of records,
+given each term's markers or, with more markers than records in the
+subset, a factor of their cross product, which holds a square matrix of
+the subset for each term.
 
 The GCA, SCA and dominance models fit more than one random effect. They
 work with whichever of two forms is cheaper: a square matrix of the
@@ -103,14 +128,15 @@ needed grows with the square of the number of traits.
 \examples{
 RRBLUPMemUse(nInd=1000, nMarker=5000)
 
-# The same training data, fitted three ways
-RRBLUPMemUse(nInd=5000, nMarker=2000, model="fastRRBLUP")
+# The same training data, fitted several ways
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP", fastMode=TRUE)
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP")
 RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA")
+RRBLUPMemUse(nInd=5000, nMarker=2000, model="RRBLUP_SCA", fastMode=TRUE)
 
-# RRBLUP2 with more markers than records, with and without estimating
-# variance components. The two use different methods and different memory.
-RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=TRUE)
-RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP2", useEM=FALSE)
+# RRBLUP with more markers than records, estimating the variance
+# components and given them
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP")
+RRBLUPMemUse(nInd=1000, nMarker=10000, model="RRBLUP", useEM=FALSE)
 
 }

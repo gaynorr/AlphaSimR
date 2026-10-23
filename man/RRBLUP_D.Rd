@@ -10,10 +10,15 @@ RRBLUP_D(
   use = "pheno",
   snpChip = 1,
   useQtl = FALSE,
-  maxIter = 100L,
+  maxIter = NULL,
   simParam = NULL,
   nThreads = NULL,
-  ...
+  ...,
+  fastMode = FALSE,
+  Vu = NULL,
+  Ve = NULL,
+  nSubsample = 3000L,
+  varComp = NULL
 )
 }
 \arguments{
@@ -34,7 +39,9 @@ to use}
 If TRUE, snpChip specifies which trait's QTL to use, and thus these
 QTL may not match the QTL underlying the phenotype supplied in traits.}
 
-\item{maxIter}{maximum number of iterations for convergence.}
+\item{maxIter}{maximum number of iterations. In fast mode, it limits the
+iterations of the conjugate gradient solver, and NULL gives 1000.
+Otherwise it limits the iterations of the REML fit, and NULL gives 100.}
 
 \item{simParam}{an object of class \code{\link{SimParam}}. If
 \code{NULL}, the function uses the object named \code{SP} from the
@@ -45,17 +52,118 @@ If \code{NULL}, the number is obtained from \code{simParam$nThreads}.}
 
 \item{...}{additional arguments if using a function for
 traits}
+
+\item{fastMode}{should the model be solved by preconditioned conjugate
+gradient where that is expected to be faster, as it is for large training
+populations. The cost of both ways of fitting the model is estimated from
+the numbers of records, markers, traits and nSubsample, and fast mode is
+used only when its cost is less than half that of the default, and never
+when nSubsample covers every record. Otherwise the model is fitted as it
+is when fastMode is FALSE, with the same result. Supplying Vu and Ve
+with fastMode TRUE always uses fast mode. See details.}
+
+\item{Vu}{the variances of the marker effects, one per random term. For
+one trait, a vector, and for several traits, a list of covariance
+matrices among the traits, one per term, or the block diagonal matrix held
+in the Vu slot of a fit. If value is NULL, this and Ve are estimated by
+REML. When supplied with Ve, the marker effects are solved for with the
+variance components held fixed: by fast mode when fastMode is TRUE, and
+directly otherwise, which is for one trait only. See details.}
+
+\item{Ve}{the error variance, or for several traits the covariance matrix
+of the errors among traits, which must be positive definite. If value is
+NULL, this and Vu are estimated by REML. See Vu and details.}
+
+\item{nSubsample}{the number of records used to estimate the variance
+components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
+when fastMode is FALSE. A value of zero uses every record, which is only
+advisable for small training populations.}
+
+\item{varComp}{an earlier fit of this model, from which Vu and Ve are
+taken in place of supplying them, so that only the marker effects are
+solved for. Not used together with Vu and Ve. The fit must be of this
+model or of its counterpart ending in 2, to the same number of traits, on
+the same markers. See Vu and the genomic selection vignette.}
 }
 \description{
-Fits an RR-BLUP model for genomic predictions that includes
-dominance effects.
+Fits an RR-BLUP model for genomic prediction that includes dominance
+effects. One trait is fitted with a single trait model and several traits
+with a multiple trait model; see details for both.
 }
 \details{
-A multiple trait model gives each of the additive and dominance effects,
-and the errors, an unstructured covariance matrix among the traits. The
-Vu slot of the result then holds the two covariance matrices of the
-marker effects as a block diagonal matrix, additive first, with rows and
-columns named "a:trait" and "d:trait".
+\subsection{The model}{
+The model is
+\deqn{y = X\beta + hb + M_au_a + M_du_d + e,}
+where y holds the records, X is the design matrix of the fixed effects,
+formed from the levels of the population's fixEff slot, \eqn{M_a} holds
+the additive marker codings and \eqn{M_d} the dominance codings, with
+\eqn{u_a} and \eqn{u_d} their effects, and e the errors. h is each
+individual's sum of dominance codings, a measure of its genome-wide
+heterozygosity, and its fixed regression b captures directional dominance
+such as inbreeding depression \insertCite{xiang2016Genomic}{AlphaSimR}.
+The marker effects are the BLUPs \insertCite{henderson1975Best}{AlphaSimR}
+given variance components estimated by REML
+\insertCite{patterson1971Recovery}{AlphaSimR}. The estimated genetic
+values use the additive and dominance effects. The estimated breeding
+values use the average effects of allele substitution
+\insertCite{falconer1996Introduction}{AlphaSimR}, which are worked out
+from those effects and the genotype frequencies in the training
+population.
+}
+
+\subsection{One trait}{
+When traits gives a single trait, or is a function returning a single
+value, \eqn{u_a \sim N(0, I\sigma^2_a)}, \eqn{u_d \sim N(0, I\sigma^2_d)}
+and \eqn{e \sim N(0, I\sigma^2_e)}. The three variances are estimated by
+average information REML
+\insertCite{gilmour1995Average,johnson1995Restricted}{AlphaSimR}, with
+EM-REML steps taken where an average information step fails to increase
+the likelihood, for at most maxIter iterations. The model is fitted in
+whichever of two equivalent forms is cheaper: on the variance matrix of the
+records when there are fewer records than marker effects, and on
+Henderson's mixed model equations otherwise.
+}
+
+\subsection{Several traits}{
+When traits gives more than one trait, the traits are fitted together as a
+multiple trait model, which needs every trait recorded on every
+individual. The additive effects of each marker, its dominance effects and
+the errors of each record each have an unstructured covariance matrix
+among the traits. These are estimated by REML, with EM steps followed by
+Newton steps using the average information matrix
+\insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+iterations. The Vu slot of the result holds the two covariance matrices
+of the marker effects as a block diagonal matrix, additive first, with rows
+and columns named "a:trait" and "d:trait".
+}
+
+\subsection{Fast mode}{
+Setting fastMode to TRUE gives a fast and low memory alternative for
+training populations too large to fit directly. It is used only where it
+is expected to be faster, see fastMode. The mixed model equations
+of every random term and trait are then solved together by preconditioned
+conjugate gradient, iterating over the genotypes rather than over a stored
+coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
+use stays close to the size of the genotypes. The variance components are
+estimated by REML on a random subset of the records, set by nSubsample,
+with the same method as outside fast mode, unless Vu and Ve are supplied,
+and the marker effects are always solved for using every record. Given the
+variance components, the result is the BLUP of the same model that is
+fitted when fastMode is FALSE.
+}
+
+\subsection{Known variance components}{
+Retraining a model whose variance components are already known,
+for example from an earlier fit in the same simulation, needs only
+the solve for the marker effects. Pass the earlier fit as varComp, or
+give Vu and Ve. With fastMode TRUE the solve is by fast mode, for any
+number of traits. With fastMode FALSE the mixed model equations of one
+trait are solved directly, on whichever of the markers and the records
+is cheaper, with Vu holding one variance per term. A variance of zero,
+as REML often estimates for a dominance term, leaves its term out. This
+takes the place of \code{\link{RRBLUP_D2}} with useEM FALSE, which is
+deprecated, and Vu is its Va and Vd in that order.
+}
 }
 \examples{
 #Create founder haplotypes
@@ -78,4 +186,10 @@ pop = setEBV(pop, ans, simParam=SP)
 #Evaluate accuracy
 cor(gv(pop), ebv(pop))
 
+#Run GS model in fast mode
+ans = RRBLUP_D(pop, fastMode=TRUE, simParam=SP)
+
+}
+\references{
+\insertAllCited{}
 }

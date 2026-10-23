@@ -30,7 +30,7 @@ rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 Since \code{nd = dd + aa}, the variance includes twice the covariance
 between dominance and additive-by-additive epistatic deviations.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

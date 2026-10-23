@@ -2,3 +2,257 @@ url: https://gaynorr.github.io/AlphaSimR/
 template:
   bootstrap: 5
 
+reference:
+- title: Simulation parameters
+  desc: >
+    The global settings object that holds the genetic map, traits and
+    the simulation's bookkeeping.
+  contents:
+  - SimParam
+  - getNumThreads
+  - isOpenMPAvailable
+
+- title: SimParam methods
+  desc: >
+    Methods called on a SimParam object, as in `SP$addTraitA()`, in the
+    order of the overview on the SimParam page.
+  contents:
+  - SimParam-setSexes
+  - SimParam-setTrackPed
+  - SimParam-setTrackRec
+  - SimParam-resetPed
+  - SimParam-addTraitA
+  - SimParam-addTraitAD
+  - SimParam-addTraitAE
+  - SimParam-addTraitADE
+  - SimParam-addTraitAG
+  - SimParam-addTraitADG
+  - SimParam-addTraitAEG
+  - SimParam-addTraitADEG
+  - SimParam-altAddTraitAD
+  - SimParam-manAddTrait
+  - SimParam-importTrait
+  - SimParam-setVarE
+  - SimParam-setCorE
+  - SimParam-restrSegSites
+  - SimParam-addSnpChip
+  - SimParam-addSnpChipByName
+  - SimParam-addStructuredSnpChip
+  - SimParam-setFounderHap
+  - SimParam-setRecombRatio
+  - SimParam-switchGenMap
+  - SimParam-switchFemaleMap
+  - SimParam-switchMaleMap
+  - SimParam-switchTrait
+  - SimParam-removeTrait
+  - SimParam-rescaleTraits
+
+- title: Founder genomes
+  desc: >
+    Create or import the founder haplotypes and genetic map that start a
+    simulation.
+  contents:
+  - runMacs
+  - runMacs2
+  - quickHaplo
+  - newMapPop
+  - importHaplo
+  - importInbredGeno
+  - importGenMap
+  - sampleHaplo
+  - addSegSite
+  - cChr
+  - predictSegSitesMoments
+
+- title: Creating and managing populations
+  desc: >
+    Build populations, combine and split them, and query their size and
+    composition.
+  contents:
+  - newPop
+  - newEmptyPop
+  - newMultiPop
+  - newEmptyMultiPop
+  - mergePops
+  - mergeMultiPops
+  - splitPop
+  - flattenMultiPop
+  - unnameMultiPop
+  - resetPop
+  - attrition
+  - isPop
+  - nInd
+  - nPop
+  - isFemale
+
+- title: Crossing and reproduction
+  contents:
+  - makeCross
+  - makeCross2
+  - randCross
+  - randCross2
+  - selectCross
+  - pedigreeCross
+  - self
+  - makeDH
+  - hybridCross
+
+- title: Ploidy, mutation and genome editing
+  contents:
+  - reduceGenome
+  - doubleGenome
+  - mergeGenome
+  - mutate
+  - editGenome
+  - editGenomeTopQtl
+
+- title: Phenotypes
+  contents:
+  - setPheno
+  - asCategorical
+  - asLogNormal
+  - asPoisson
+  - setPhenoGCA
+  - setPhenoProgTest
+  - calcGCA
+
+- title: Selection
+  contents:
+  - selectInd
+  - selectFam
+  - selectWithinFam
+  - selectOP
+  - selectPop
+  - selectOCS
+  - selIndex
+  - smithHazel
+  - selInt
+  - usefulness
+  - calcPopValue
+
+- title: Genomic and pedigree prediction
+  desc: >
+    Fit RR-BLUP or pedigree BLUP models to a training population and use
+    them to set estimated breeding values.
+  contents:
+  - RRBLUP
+  - RRBLUP_D
+  - RRBLUP_GCA
+  - RRBLUP_SCA
+  - RRBLUPMemUse
+  - pedBLUP
+  - setEBV
+  - RRsol-class
+  - PedSol-class
+
+- title: Mixed model solvers
+  desc: >
+    Lower-level solvers that work on matrices rather than populations.
+  contents:
+  - solveUVM
+  - solveMVM
+  - solveMKM
+  - solveRRBLUP
+  - solveRRBLUPMV
+  - solveRRBLUPMK
+  - solveRRBLUP_EM
+  - solveRRBLUP_EM2
+  - solveRRBLUP_EM3
+
+- title: Values of individuals
+  desc: >
+    Genetic values, phenotypes, estimated breeding values and their
+    decomposition for each individual.
+  contents:
+  - gv
+  - pheno
+  - ebv
+  - bv
+  - dd
+  - aa
+  - nd
+  - genParam
+  - mendelianSampling
+  - parentAverage
+
+- title: Population means and variances
+  contents:
+  - meanG
+  - meanP
+  - meanEBV
+  - meanGPop
+  - meanPPop
+  - varG
+  - varP
+  - varA
+  - varD
+  - varAA
+  - varN
+  - varEBV
+  - varGPop
+  - varPPop
+  - genicVarG
+  - genicVarA
+  - genicVarD
+  - genicVarAA
+  - genicVarN
+  - popVar
+
+- title: Genotypes, haplotypes and maps
+  contents:
+  - pullSegSiteGeno
+  - pullSegSiteHaplo
+  - pullQtlGeno
+  - pullQtlHaplo
+  - pullSnpGeno
+  - pullSnpHaplo
+  - pullMarkerGeno
+  - pullMarkerHaplo
+  - pullIbdHaplo
+  - setMarkerHaplo
+  - getGenMap
+  - getQtlMap
+  - getSnpMap
+
+- title: Pedigree relationships
+  desc: >
+    Relationships and inbreeding calculated from the recorded pedigree.
+  contents:
+  - pedigreeA
+  - pedigreeInbreeding
+
+- title: Records and export
+  contents:
+  - getPed
+  - writeRecords
+  - writePlink
+
+- title: Population classes
+  contents:
+  - RawPop-class
+  - MapPop-class
+  - NamedMapPop-class
+  - Pop-class
+  - MultiPop-class
+  - HybridPop-class
+
+- title: Trait classes
+  contents:
+  - LociMap-class
+  - TraitA-class
+  - TraitAD-class
+  - TraitAE-class
+  - TraitADE-class
+  - TraitAG-class
+  - TraitADG-class
+  - TraitAEG-class
+  - TraitADEG-class
+  - TraitA2-class
+  - TraitA2D-class
+
+- title: Deprecated
+  contents:
+  - RRBLUP2
+  - RRBLUP_D2
+  - RRBLUP_GCA2
+  - RRBLUP_SCA2

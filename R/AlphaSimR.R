@@ -6,7 +6,7 @@
 #' @importFrom methods show classLabel
 #' @importFrom stats aggregate var cov2cor lm coef model.matrix
 #' @importFrom stats rnorm dnorm qnorm pnorm qgamma rbinom runif rpois
-#' @importFrom stats na.omit setNames integrate uniroot sd
+#' @importFrom stats na.omit setNames integrate uniroot sd optimize
 #' @importFrom utils combn read.table write.table packageDescription
 #' @importFrom R6 R6Class
 #' @importFrom Rdpack reprompt
@@ -27,6 +27,6 @@
 #'
 #' Please see the introductory vignette for instructions for using this package.
 #' The vignette can be viewed using the following command:
-#' \code{vignette("intro",package="AlphaSimR")}
+#' \code{vignette("AlphaSimR",package="AlphaSimR")}
 #' @keywords internal
 "_PACKAGE"

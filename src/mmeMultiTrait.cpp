@@ -611,10 +611,10 @@ FixedDesign fixedEffectDesign(const arma::mat& X){
 
 // Variance components of the multiple trait model on a kernel among the
 // records, for callers that need only those and not the effects, such as
-// fastRRBLUP, which estimates them on a subset of its records and solves for
-// the marker effects on all of them afterward. The kernel is F*F' when
-// useFactor is true and Kn otherwise, as in rotateData. Vu is returned on the
-// scale of the kernel and Ve and Vu in the units of the traits.
+// RRBLUP's fast mode, which estimates them on a subset of its records and
+// solves for the marker effects on all of them afterward. The kernel is F*F'
+// when useFactor is true and Kn otherwise, as in rotateData. Vu is returned on
+// the scale of the kernel and Ve and Vu in the units of the traits.
 void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& F, const arma::mat& Kn, bool useFactor,
                     int maxIter, double tol, arma::mat& Vu, arma::mat& Ve){

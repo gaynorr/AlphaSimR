@@ -396,6 +396,23 @@ void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& F, const arma::mat& Kn, bool useFactor,
                     int maxIter, double tol, arma::mat& Vu, arma::mat& Ve);
 
+// Pieces of the RR-BLUP models shared with the fast mode of the multikernel
+// models in mmeFastMK.cpp, defined in MME.cpp
+arma::mat makeX(arma::uvec& x);
+arma::Mat<unsigned char> packChipPlanes(const PackedGeno& g, const LociPos& pos,
+                                        int nThreads);
+arma::rowvec negMeanProduct(const arma::rowvec& Mmean, const arma::mat& U);
+void domAverageEffects(const arma::mat& freqMat, const arma::uvec& fixed,
+                       const arma::mat& ua, const arma::mat& ud,
+                       const arma::rowvec& meanDAll, arma::uword ploidy,
+                       int nThreads, arma::mat& alpha, arma::mat& d);
+void scaAverageEffects(const arma::rowvec& Mmean1, const arma::rowvec& Mmean2,
+                       const arma::rowvec& p12, const arma::uvec& fixed,
+                       const arma::mat& u0, const arma::mat& u1,
+                       const arma::mat& u2, const arma::rowvec& meanDAll,
+                       int nThreads, arma::mat& alpha1, arma::mat& alpha2,
+                       arma::mat& d);
+
 // Single trait RR-BLUP by FaST-LMM, defined in MME.cpp
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M);

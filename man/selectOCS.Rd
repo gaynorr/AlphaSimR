@@ -20,6 +20,7 @@ selectOCS(
   simParam = NULL,
   nThreads = NULL,
   onShortfall = "warning",
+  usePed = FALSE,
   ...
 )
 }
@@ -83,6 +84,13 @@ from all of them, "error" stops, and "none" does so silently. When
 no candidates of a required sex are available, selection is not
 possible and an error is raised whatever the value.}
 
+\item{usePed}{should the pedigree relationship matrix of
+\code{\link{pedigreeA}} be used instead of genotypes to measure
+expected fixation. The pedigree must have been tracked from the
+start of the simulation, see
+\code{\link[=SimParam-setTrackPed]{setTrackPed}}. If TRUE,
+\code{snpChip} is ignored and \code{useQtl} must be FALSE.}
+
 \item{...}{additional arguments if using a function for
 \code{trait} or \code{use}}
 }
@@ -122,6 +130,18 @@ at an allele frequency of 0.5. For diploids, \eqn{F} equals the
 average coancestry \eqn{c'Gc/2} of the selected individuals, where
 \eqn{c} holds their equal contributions and \eqn{G = ZZ'/(m/2)} is a
 genomic relationship matrix scaled with allele frequencies of 0.5.
+
+At any ploidy, \eqn{z_i'z_j/m} estimates the kinship of individuals
+\eqn{i} and \eqn{j}, the probability that an allele drawn from each
+is identical by descent, relative to a base population with allele
+frequencies of 0.5. With \code{usePed=TRUE}, the kinship is instead
+taken from the pedigree as \eqn{A/k}, where \eqn{A} is the
+relationship matrix of \code{\link{pedigreeA}}, and \eqn{ZZ'/m} is
+replaced by \eqn{A/k} in what follows. \eqn{F} is then the average
+kinship of the selected individuals relative to the founders of the
+simulation, which the pedigree takes to be unrelated, rather than a
+measure of fixation at the markers. The individuals are also chosen
+differently, as described below.
 
 The target \eqn{F^*} is set by \code{inbrType}. With "relative",
 \eqn{F^* = F_t + \Delta F(1 - F_t)}, where \eqn{F_t} is the expected
@@ -163,16 +183,40 @@ warning is given and the individuals selected with the largest
 \eqn{\kappa} tried are returned. A message reports \eqn{\kappa}, the
 achieved \eqn{F}, the target and \eqn{F_t}.
 
+With \code{usePed=TRUE}, the individuals are instead selected one at
+a time for a given \eqn{\kappa}. Each time, the candidate taken is
+the one with the highest
+\deqn{s_i = m_i - \kappa\left(\sum_{j \in S} c\,\theta_{ij} + \frac{c}{2}\theta_{ii}\right),}{s_i = m_i - kappa (sum over j in S of c theta_ij + (c/2) theta_ii),}
+where \eqn{\theta_{ij} = A_{ij}/k} is the kinship and \eqn{S} holds
+the individuals already taken, so the penalty is proportional to the
+increase in \eqn{F} from adding the candidate to them. With
+\code{nFemale} and \code{nMale}, each pick is from the sex with the
+smaller share of its individuals taken, ranked within that sex. The
+search for \eqn{\kappa} is as above. Full sibs have identical
+relationships in a pedigree, so the score used with genotypes would
+penalize every sib in a family equally against the same \eqn{u} and
+take each family whole or not at all. Taking individuals one at a
+time instead penalizes each sib for the ones already taken.
+
 A random set of \eqn{N} individuals of ploidy \eqn{k}, contributing
 equally, increases expected fixation by about \eqn{(1 - F_t)/(kN)}.
 When using sexes, \eqn{N} is replaced by \eqn{4N_fN_m/(N_f + N_m)}
-for \eqn{N_f} females and \eqn{N_m} males. A selected set can do
-better than a random one by choosing individuals whose alleles
-balance each other, so the target can be met with fewer than
-\eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for a
-diploid with the default. Most of the restriction is then spent on
+for \eqn{N_f} females and \eqn{N_m} males. With genotypes, a
+selected set can do better than a random one by choosing individuals
+whose alleles balance each other, so the target can be met with fewer
+than \eqn{1/(k\Delta F)}{1/(k Delta F)} individuals, which is 50 for
+a diploid with the default. Most of the restriction is then spent on
 keeping allele frequencies balanced, though, so much less gain in
 merit is made than with a larger number.
+
+A pedigree records whom each candidate descends from but not which
+alleles it carries, so it cannot balance allele frequencies. Full
+sibs, for example, are related alike to everyone else and are chosen
+between on merit, and every set of \eqn{N} founders that are neither
+related nor inbred has \eqn{F = 1/(kN)}, whichever are selected. The restriction instead
+works by spreading selection across families. Because markers also
+see the Mendelian sampling within families, they usually allow more
+gain in merit than the pedigree at the same target.
 
 The target holds only if the selected individuals are used as
 assumed: each contributes equally to the next generation and, with
@@ -190,7 +234,10 @@ selection. Swapping one selected individual for another changes
 fixation through a second order term with three parts: two for the
 individuals on their own, which the score includes, and one for the
 relationship between them, which cannot be split between candidates
-and so is ignored.
+and so is ignored. The one at a time selection used with
+\code{usePed=TRUE} includes that relationship for the individuals
+already taken, but is greedy: it never revisits a choice, so it is
+also not an exact solution.
 }
 \examples{
 #Create founder haplotypes
@@ -213,6 +260,18 @@ parents = selectOCS(pop, nInd=4, inbrTarget=0.5, simParam=SP)
 #Cross them in a circle, so each parent is used equally
 crossPlan = cbind(1:4, c(2:4, 1))
 pop2 = makeCross(parents, crossPlan, nProgeny=2, simParam=SP)
+
+#Restrict the average pedigree relationship instead, which needs the
+#pedigree to have been tracked from the start
+SP2 = SimParam$new(founderPop)
+\dontshow{SP2$nThreads = 1L}
+SP2$addTraitA(10)
+SP2$setVarE(h2=0.5)
+SP2$setTrackPed(TRUE)
+pop = newPop(founderPop, simParam=SP2)
+pop = randCross(pop, nCrosses=4, nProgeny=5, simParam=SP2)
+parents = selectOCS(pop, nInd=4, inbrTarget=0.1, usePed=TRUE,
+                    simParam=SP2)
 
 }
 \seealso{

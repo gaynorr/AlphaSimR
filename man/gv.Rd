@@ -65,10 +65,10 @@ refer to the target environment, where the environmental covariate is zero.
 
 See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 
-See \code{vignette("GxE", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/GxE.html}{Genotype-by-Environment article} for
 the genotype-by-environment model
 }
 \examples{

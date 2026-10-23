@@ -3,12 +3,13 @@
 \docType{class}
 \name{HybridPop-class}
 \alias{HybridPop-class}
+\alias{[,HybridPop,ANY,ANY,ANY-method}
 \alias{[,HybridPop-method}
 \alias{c,HybridPop-method}
 \alias{isHybridPop}
 \title{Hybrid population}
 \usage{
-\S4method{[}{HybridPop}(x, i)
+\S4method{[}{HybridPop,ANY,ANY,ANY}(x, i)
 
 \S4method{c}{HybridPop}(x, ...)
 
@@ -27,7 +28,7 @@ Memory is saved by not storing genotypic data.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{HybridPop[]}: Extract HybridPop using index or id
+\item \code{x = HybridPop[i = ANY, j = ANY, drop = ANY]}: Extract HybridPop using index or id
 
 \item \code{c(HybridPop)}: Combine multiple HybridPops
 

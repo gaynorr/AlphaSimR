@@ -124,24 +124,24 @@ solveRRBLUP_EM3 <- function(Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, u
     .Call(`_AlphaSimR_solveRRBLUP_EM3`, Y, X, M1, M2, M3, Vu1, Vu2, Vu3, Ve, tol, maxIter, useEM)
 }
 
-callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
 callFastRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads) {
     .Call(`_AlphaSimR_callFastRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads)
 }
 
-callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads)
+callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP`, y, x, pop, lociPerChr, lociLoc, nThreads, theta)
 }
 
 callRRBLUP2 <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP2`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, tol, maxIter, useEM, nThreads)
 }
 
-callRRBLUP_D <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_D <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_D`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_D2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Va, Vd, Ve, tol, useEM, nThreads) {
@@ -152,16 +152,16 @@ callRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
 }
 
-callRRBLUP_GCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_GCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_GCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_GCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads) {
     .Call(`_AlphaSimR_callRRBLUP_GCA2`, y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Ve, tol, useEM, nThreads)
 }
 
-callRRBLUP_SCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads) {
-    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads)
+callRRBLUP_SCA <- function(y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta) {
+    .Call(`_AlphaSimR_callRRBLUP_SCA`, y, x, pop, lociPerChr, lociLoc, maxIter, nThreads, theta)
 }
 
 callRRBLUP_SCA2 <- function(y, x, pop, lociPerChr, lociLoc, maxIter, Vu1, Vu2, Vu3, Ve, tol, useEM, nThreads) {
@@ -353,6 +353,18 @@ isOpenMPAvailable <- function() {
 #' @export
 getNumThreads <- function() {
     .Call(`_AlphaSimR_getNumThreads`)
+}
+
+callFastRRBLUP_D <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_D`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+}
+
+callFastRRBLUP_GCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_GCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+}
+
+callFastRRBLUP_SCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_SCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
 }
 
 .solveMultiKernel <- function(y, X, Zlist, Klist, rrForm, maxIter, tol, side) {
@@ -656,6 +668,26 @@ solveUVM <- function(y, X, Z, K) {
 
 packHaplo <- function(haplo, ploidy, inbred) {
     .Call(`_AlphaSimR_packHaplo`, haplo, ploidy, inbred)
+}
+
+calcPedInbreeding <- function(mother, father, isDH, knownF = as.numeric( c()), ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedInbreeding`, mother, father, isDH, knownF, ploidy)
+}
+
+calcPedAinvTriplet <- function(mother, father, isDH, knownF = as.numeric( c()), ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedAinvTriplet`, mother, father, isDH, knownF, ploidy)
+}
+
+calcPedA <- function(mother, father, isDH, ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedA`, mother, father, isDH, ploidy)
+}
+
+calcPedASub <- function(mother, father, isDH, target, knownF = as.numeric( c()), ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedASub`, mother, father, isDH, target, knownF, ploidy)
+}
+
+calcPedMME <- function(mother, father, isDH, rec, fix, y, knownF = as.numeric( c()), ploidy = 2L) {
+    .Call(`_AlphaSimR_calcPedMME`, mother, father, isDH, rec, fix, y, knownF, ploidy)
 }
 
 rngDiagnosticsSampleInt <- function(n, N, reps, seed) {

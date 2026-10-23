@@ -46,7 +46,10 @@ the argument is ignored.}
 
 \item{famType}{which type of family to select. Use "B" for
 full-sib families, "F" for half-sib families on female side and "M"
-for half-sib families on the male side.}
+for half-sib families on the male side. An individual whose family
+is not known, because a parent defining it is unknown ("0" or
+\code{NA}), is treated as a family of its own. For "B", that is
+either parent.}
 
 \item{selectTop}{selects highest values if true.
 Selects lowest values if false.}

@@ -25,6 +25,21 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveRRBLUPMK(const arma::mat& y, const arma::mat& X,
                          const arma::field<arma::mat>& Mlist,
                          int maxIter=40);
+Rcpp::List solveRRBLUPMKFixed(const arma::mat& y, const arma::mat& X,
+                              const arma::field<arma::mat>& Mlist,
+                              const arma::vec& theta);
+
+// The multikernel fit used by the callRRBLUP functions below. theta holds
+// supplied variance components, Vu_1..Vu_k and then Ve, which are then held
+// fixed, and is empty when they are to be estimated by REML.
+Rcpp::List fitRRBLUPMK(const arma::mat& y, const arma::mat& X,
+                       const arma::field<arma::mat>& Mlist, int maxIter,
+                       const arma::vec& theta){
+  if(theta.n_elem>0){
+    return solveRRBLUPMKFixed(y, X, Mlist, theta);
+  }
+  return solveRRBLUPMK(y, X, Mlist, maxIter);
+}
 
 // Factorization of a mixed model coefficient matrix.
 //
@@ -1172,24 +1187,233 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   double delta = fastLMMDelta(args);
   FastLMMFit fit = fastLMMFit(delta, yt, Xt, eigval, yy0, Xy0, XX0, nNull);
   if(!fit.ok){
-    Rcpp::stop("fastRRBLUP: could not estimate the variance components");
+    Rcpp::stop("RRBLUP fastMode: could not estimate the variance components");
   }
   Vu = fit.r/df;
   Ve = delta*Vu;
 }
 
-// Called by fastRRBLUP function
+// A deflation preconditioner for the conjugate gradient solve of RR-BLUP.
+//
+// With Jacobi preconditioning the iteration works, in effect, on
+// B = D^-1/2*A*D^-1/2, where A = Mc'*S*Mc+lambda*I and D is the diagonal of
+// A. B has a mean eigenvalue of one, but the relationships between
+// individuals give it a few hundred to a few thousand eigenvalues far above
+// that, and they set its condition number and so the number of iterations.
+// If W holds orthonormal approximations to the eigenvectors of the largest
+// eigenvalues theta, the preconditioner
+//   P^-1 = D^-1/2*(I+W*diag(sigma/theta-1)*W')*D^-1/2
+// moves those eigenvalues down to about sigma and leaves the rest of the
+// spectrum alone, so the condition number falls to about sigma over the
+// smallest eigenvalue. P^-1 is positive definite for any orthonormal W and
+// positive theta and sigma, so a rough W only costs iterations, never the
+// solution, which the iteration still converges to.
+//
+// W is estimated from nSub records, evenly spaced through the population
+// rather than sampled, so that building it draws no random numbers. With
+// Ms holding their genotypes, centered on the subset and scaled by D^-1/2,
+// n/nSub*Ms'*Ms+lambda*D^-1 approximates B. The fixed effects other than the
+// mean are left out of the approximation, which only has to be close. When
+// there are fewer markers than records in the subset, the approximation is
+// formed and decomposed as it is, a square matrix of the markers. Otherwise
+// its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U)
+// of the record cross product Ms*Ms', the smaller matrix, with lambda*D^-1
+// taken as its mean, lambda times the mean of D^-1, on every eigenvalue.
+//
+// Eigenvalues above twice the mean are deflated, at most maxRank of them and
+// fewer than the size of the matrix decomposed, and sigma is the largest one
+// left, but never less than the mean of one. With rank deficient genotypes
+// and a tiny ratio of the variances, the largest one left can be as small as
+// lambda*D^-1, and sigma/theta would then round to zero in
+// I+W*diag(sigma/theta-1)*W', leaving a preconditioner that is singular
+// rather than positive definite. With sigma at least one, and theta no more
+// than about the number of markers, the trace of B, sigma/theta stays near
+// or above the reciprocal of the number of markers. W is left empty when
+// none qualify. Each matrix is moved into eigen2,
+// which takes its argument by value, so that it is not copied. On the record
+// side the genotypes are read twice, a panel of markers at a time, once for
+// the cross product and once for W, so the only doubles held besides the
+// cross product and W are one panel. A panel holds about eight
+// million values rather than a fixed number of markers, because Armadillo
+// adds each panel's rank update to the cross product through a temporary
+// the size of the cross product, and with narrow panels those additions
+// took several times as long as the products themselves.
+void deflationBasis(arma::mat& W, arma::vec& shrink,
+                    const arma::Mat<unsigned char>& M,
+                    const arma::vec& diagA, double lambda,
+                    arma::uword nSub, arma::uword maxRank,
+                    const double* xaPtr){
+  arma::uword nInd = M.n_rows;
+  arma::uword nLoci = M.n_cols;
+  if(nSub>nInd){
+    nSub = nInd;
+  }
+  bool markerSide = nLoci<nSub;
+  arma::uword nDecomp = markerSide ? nLoci : nSub;
+  W.reset();
+  shrink.reset();
+  if(nDecomp<2){
+    return;
+  }
+  if(maxRank>=nDecomp){
+    maxRank = nDecomp-1;
+  }
+  if(maxRank==0){
+    return;
+  }
+  arma::uvec sub(nSub);
+  for(arma::uword i=0; i<nSub; ++i){
+    sub(i) = ((2*i+1)*nInd)/(2*nSub);
+  }
+  arma::vec w = 1.0/arma::sqrt(diagA);
+  const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
+  // One panel of the scaled, centered subset genotypes
+  auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
+    for(arma::uword j=start; j<stop; ++j){
+      const unsigned char* Mcol = M.colptr(j);
+      double* panelCol = panel.colptr(j-start);
+      double sum = 0.0;
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = xaPtr[Mcol[sub(i)]];
+        sum += panelCol[i];
+      }
+      double mean = sum/double(nSub);
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = (panelCol[i]-mean)*w(j);
+      }
+    }
+  };
+  double scale = double(nInd)/double(nSub);
+  if(markerSide){
+    arma::mat B;
+    {
+      arma::mat Ms(nSub,nLoci);
+      fillPanel(Ms, 0, nLoci);
+      B = scale*(Ms.t()*Ms);
+    }
+    B.diag() += lambda*arma::square(w);
+    arma::vec theta(nLoci);
+    arma::mat V(nLoci,nLoci);
+    if(eigen2(theta, V, std::move(B))!=0){
+      // Plain Jacobi preconditioning still converges
+      return;
+    }
+    // eigen2 returns the eigenvalues in ascending order
+    theta = arma::flipud(theta);
+    arma::uword k = 0;
+    while((k<maxRank) && (theta(k)>2.0)){
+      ++k;
+    }
+    if(k==0){
+      return;
+    }
+    W = arma::fliplr(V.tail_cols(k));
+    shrink = std::max(theta(k), 1.0)/theta.head(k)-1.0;
+    return;
+  }
+  arma::mat K(nSub,nSub,arma::fill::zeros);
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    arma::mat panel(nSub,stop-start);
+    fillPanel(panel, start, stop);
+    K += panel*panel.t();
+  }
+  arma::vec g(nSub);
+  arma::mat U(nSub,nSub);
+  if(eigen2(g, U, std::move(K))!=0){
+    // Plain Jacobi preconditioning still converges
+    return;
+  }
+  K.reset();
+  // eigen2 returns the eigenvalues in ascending order
+  double ridge = lambda*arma::mean(arma::square(w));
+  arma::vec theta = scale*arma::flipud(g)+ridge;
+  arma::uword k = 0;
+  while((k<maxRank) && (theta(k)>2.0)){
+    ++k;
+  }
+  if(k==0){
+    return;
+  }
+  double sigma = std::max(theta(k), 1.0);
+  arma::mat Uk = arma::fliplr(U.tail_cols(k));
+  U.reset();
+  arma::vec gk = arma::flipud(g.tail(k));
+  Uk.each_row() /= arma::sqrt(gk).t();
+  W.set_size(nLoci,k);
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    arma::mat panel(nSub,stop-start);
+    fillPanel(panel, start, stop);
+    W.rows(start,stop-1) = panel.t()*Uk;
+  }
+  shrink = sigma/theta.head(k)-1.0;
+}
+
+// Applies the deflation of the preconditioner, v += W*(shrink%(W'*v)).
+//
+// The products with W are written out rather than sent to BLAS. The
+// conjugate gradient iteration alternates them with the products with the
+// genotypes, which run on OpenMP threads, and BLAS threads left spinning
+// after a call slowed those products down. W'*v is one dot product per
+// column of W, each taken over every marker in order, and W*c is split over
+// blocks of markers, each of which adds the columns of W in order, so neither
+// result depends on the number of threads.
+void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
+                    int nThreads){
+  arma::uword nLoci = W.n_rows;
+  arma::uword k = W.n_cols;
+  arma::vec c(k);
+  const double* vPtr = v.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<k; ++j){
+    const double* Wcol = W.colptr(j);
+    double sum = 0.0;
+    for(arma::uword i=0; i<nLoci; ++i){
+      sum += Wcol[i]*vPtr[i];
+    }
+    c(j) = sum*shrink(j);
+  }
+  arma::uword nBlocks = countBlocks(nLoci);
+  int blockThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(blockThreads)){
+    blockThreads = static_cast<int>(nBlocks);
+  }
+  double* outPtr = v.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(blockThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword start = blockStart(nLoci, nBlocks, block);
+    arma::uword stop = blockStart(nLoci, nBlocks, block+1);
+    for(arma::uword j=0; j<k; ++j){
+      const double* Wcol = W.colptr(j);
+      double cj = c(j);
+      for(arma::uword i=start; i<stop; ++i){
+        outPtr[i] += Wcol[i]*cj;
+      }
+    }
+  }
+}
+
+// Called by RRBLUP with fastMode TRUE
 // Solves the mixed model equations of an RR-BLUP model by preconditioned
 // conjugate gradient, iterating on the genotypes rather than on a stored
 // coefficient matrix. See Stranden and Lidauer (1999),
 // doi:10.3168/jds.S0022-0302(99)75535-9.
-// x is an indicator vector for the fixed effect levels, as in callRRBLUP
+// x is an indicator vector for the fixed effect levels, as in callRRBLUP.
+// nPrecond and maxRank set the deflation of the preconditioner, see
+// deflationBasis; either of them zero leaves plain Jacobi preconditioning.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                           double Vu, double Ve, arma::uword maxIter,
-                          bool estVarComp, arma::uvec subset, int nThreads){
+                          bool estVarComp, arma::uvec subset,
+                          arma::uword nPrecond, arma::uword maxRank,
+                          int nThreads){
   // The marker dosages are decoded straight from the population's packed
   // genotypes. Taking the genotypes as an arma::field would first copy every
   // chromosome, including all the loci that are not markers.
@@ -1274,7 +1498,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
       remlFromGram(Vu, Ve, ySub, XSub, K);
     }
     if(!(Vu>0.0)){
-      Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
+      Rcpp::stop("RRBLUP fastMode: estimated marker variance is not positive");
     }
   }
   double lambda = Ve/Vu;
@@ -1333,6 +1557,22 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
     }
   }
   
+  // The deflation of the preconditioner reads the subset's dosages from M
+  arma::mat W;
+  arma::vec shrink;
+  arma::vec w = 1.0/arma::sqrt(precond);
+  if((nPrecond>0) & (maxRank>0)){
+    deflationBasis(W, shrink, M, precond, lambda, nPrecond, maxRank, xaPtr);
+  }
+  auto applyPrecond = [&](const arma::vec& res){
+    if(W.n_cols==0){
+      return arma::vec(res/precond);
+    }
+    arma::vec v = res%w;
+    applyDeflation(v, W, shrink, nThreads);
+    return arma::vec(v%w);
+  };
+
   // The dosages have done their job. The iteration works from a copy of the
   // markers packed to one bit per allele, built only once M has been freed,
   // so the most memory held at once is still M's.
@@ -1346,14 +1586,16 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   // itself is never formed. The vectors below are the only working memory
   // the solver needs.
   arma::vec u(nLoci,arma::fill::zeros);
-  arma::vec z = r/precond;
+  arma::vec z = applyPrecond(r);
   arma::vec pDir = z;
   arma::vec Ap(nLoci);
   arma::vec t(nInd);
   double rNorm0 = norm(r,2);
   double rz = dot(r,z);
   bool converged = (rNorm0<=0.0);
+  arma::uword nIter = 0;
   for(arma::uword iter=0; (iter<maxIter)&&(!converged); ++iter){
+    nIter = iter+1;
     multMc(t, planes, ploidy, offset, pDir, tabs, nThreads);
     t -= Xfix*(XtXi*(Xfix.t()*t)); // S*t
     multMcT(Ap, planes, ploidy, offset, t, nThreads);
@@ -1372,7 +1614,7 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
       converged = true;
       break;
     }
-    z = r/precond;
+    z = applyPrecond(r);
     double rzNew = dot(r,z);
     pDir = z+(rzNew/rz)*pDir;
     rz = rzNew;
@@ -1392,7 +1634,9 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                             Rcpp::Named("beta")=-shift,
                             Rcpp::Named("mu")=beta(0)-shift,
                             Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve);
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("iter")=int(nIter),
+                            Rcpp::Named("rank")=int(W.n_cols));
 }
 
 // The marker dosages of a chip, one byte per marker, decoded straight from the
@@ -1596,7 +1840,7 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
   }
 }
 
-// Called by fastRRBLUP function for more than one trait
+// Called by RRBLUP with fastMode TRUE for more than one trait
 //
 // The model is the multiple trait RR-BLUP model, with the marker effects of
 // the traits correlated through Vu and the errors through Ve, and every trait
@@ -1632,7 +1876,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                              arma::uvec subset, int nThreads){
   const arma::uword nT = Y.n_cols;
   if(!Y.is_finite()){
-    Rcpp::stop("fastRRBLUP: every trait must be recorded on every individual");
+    Rcpp::stop("RRBLUP fastMode: every trait must be recorded on every individual");
   }
   PackedGeno g(pop);
   LociPos pos = findLoci(g, lociPerChr, lociLoc);
@@ -1640,7 +1884,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   arma::uword nInd = g.nInd;
   arma::uword nLoci = pos.base.size();
   if(Y.n_rows!=nInd){
-    Rcpp::stop("fastRRBLUP: the responses must have one row per individual");
+    Rcpp::stop("RRBLUP fastMode: the responses must have one row per individual");
   }
   arma::Mat<unsigned char> M = decodeChipDosage(g, pos, nThreads);
   double dP = double(ploidy);
@@ -1687,30 +1931,30 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   }
   if( (Vu.n_rows!=nT) || (Vu.n_cols!=nT) ||
       (Ve.n_rows!=nT) || (Ve.n_cols!=nT) ){
-    Rcpp::stop("fastRRBLUP: Vu and Ve must be square with one row per trait");
+    Rcpp::stop("RRBLUP fastMode: Vu and Ve must be square with one row per trait");
   }
   // Vu is checked on its own scale. After the transformation below its
   // eigenvalues are measured against those of Ve^-1, so an error variance
   // close to zero for one trait could make a clearly negative variance of
   // another look like rounding. A negative eigenvalue at rounding level is
   // set to zero, and the Vu returned is the one fitted.
-  Vu = psdKernel(Vu, "fastRRBLUP: Vu must be positive semidefinite");
+  Vu = psdKernel(Vu, "RRBLUP fastMode: Vu must be positive semidefinite");
 
   // The canonical transformation
   arma::mat Le;
   if(!arma::chol(Le, Ve, "lower")){
-    Rcpp::stop("fastRRBLUP: Ve must be positive definite");
+    Rcpp::stop("RRBLUP fastMode: Ve must be positive definite");
   }
   arma::mat Linv;
   if(!arma::inv(Linv, arma::trimatl(Le))){
-    Rcpp::stop("fastRRBLUP: Ve must be positive definite");
+    Rcpp::stop("RRBLUP fastMode: Ve must be positive definite");
   }
   arma::mat A = Linv*Vu*Linv.t();
   A = 0.5*(A+A.t());
   arma::vec lam;
   arma::mat Qv;
   if(!arma::eig_sym(lam, Qv, A)){
-    Rcpp::stop("fastRRBLUP: decomposition of Vu failed");
+    Rcpp::stop("RRBLUP fastMode: decomposition of Vu failed");
   }
   // These are the eigenvalues of a covariance matrix among traits, not of a
   // cross product of records, so rankCutoff does not apply. Vu has been
@@ -1721,7 +1965,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   // comparable: an error variance close to zero for one trait makes its ratio
   // huge without making any other trait's ratio negligible.
   if(!(lam.max()>0.0)){
-    Rcpp::stop("fastRRBLUP: estimated marker variance is not positive");
+    Rcpp::stop("RRBLUP fastMode: estimated marker variance is not positive");
   }
   lam.elem(find(lam<0.0)).zeros();
   arma::vec sqrtLam = sqrt(lam);
@@ -1884,18 +2128,35 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
 
 // Called by RRBLUP function
 // The markers of this function and of the other callRRBLUP functions below
-// are read straight from the population's packed genotypes, see PackedGeno
+// are read straight from the population's packed genotypes, see PackedGeno.
+// theta holds supplied variance components, Vu and then Ve, and is empty
+// when they are to be estimated. Supplied ones are held fixed by the
+// multikernel solver with a single term, which is the same model, because
+// the spectral solver below only estimates them.
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP(arma::mat y, arma::uvec x,
                       const Rcpp::S4& pop,
                       arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                      int nThreads){
+                      int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::mat X = makeX(x);
   arma::mat M = genoToGenoA(genoDosage(g,lociPerChr,lociLoc,0,ploidy,nThreads),
                             ploidy,nThreads);
   arma::rowvec Mmean = mean(M);
+  if(theta.n_elem>0){
+    arma::field<arma::mat> Mlist(1);
+    Mlist(0) = std::move(M);
+    Rcpp::List ans = solveRRBLUPMKFixed(y, X, Mlist, theta);
+    arma::field<arma::mat> uf = ans["u"];
+    arma::vec u = uf(0).col(0);
+    arma::mat beta = ans["beta"];
+    return Rcpp::List::create(Rcpp::Named("alpha")=u,
+                              Rcpp::Named("beta")=-as_scalar(Mmean*u),
+                              Rcpp::Named("mu")=beta(0),
+                              Rcpp::Named("Vu")=ans["Vu"],
+                              Rcpp::Named("Ve")=ans["Ve"]);
+  }
   Rcpp::List ans = solveRRBLUP(y, X, M);
   arma::vec u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -1941,12 +2202,121 @@ arma::rowvec negMeanProduct(const arma::rowvec& Mmean, const arma::mat& U){
   return out;
 }
 
+// Average effects and dominance effects of a dominance model, trait by trait,
+// from the fitted additive effects ua and dominance deviations ud. freqMat
+// holds the genotype frequencies of each marker that is not fixed, and meanD
+// the fitted effect of the summed dominance codes for each trait. Shared by
+// callRRBLUP_D and the fast mode of RRBLUP_D.
+void domAverageEffects(const arma::mat& freqMat, const arma::uvec& fixed,
+                       const arma::mat& ua, const arma::mat& ud,
+                       const arma::rowvec& meanDAll, arma::uword ploidy,
+                       int nThreads, arma::mat& alpha, arma::mat& d){
+  //Scaled genotypes
+  double dP = double(ploidy);
+  arma::vec xx(ploidy+1);
+  for(arma::uword i=0; i<xx.n_elem; ++i)
+    xx(i) = double(i);
+  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
+  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
+
+  arma::uword m = ua.n_rows;
+  arma::uword nT = ua.n_cols;
+  alpha.set_size(m,nT);
+  d.set_size(m,nT);
+  for(arma::uword k=0; k<nT; ++k){
+    double meanD = meanDAll(k);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for(arma::uword j=0; j<m; ++j){
+      double genoMu, gvMu;
+      arma::vec gv(ploidy+1);
+      if(fixed(j) == 1){
+        d(j,k) = 0;
+        alpha(j,k) = 0;
+      }else{
+        d(j,k) = ud(j,k) + meanD;
+        gv = xa*ua(j,k) + xd*d(j,k);
+        genoMu = accu(freqMat.col(j)%xa);
+        gvMu = accu(freqMat.col(j)%gv);
+        alpha(j,k) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
+          accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
+      }
+    }
+  }
+}
+
+// Average effects of each parent in an SCA model, trait by trait, from the
+// fitted maternal, paternal and dominance effects. Mmean1 and Mmean2 are the
+// mean maternal and paternal codes, p12 the frequency of records carrying the
+// allele on both haplotypes, and meanD the fitted effect of the summed
+// dominance codes for each trait. Shared by callRRBLUP_SCA and the fast mode
+// of RRBLUP_SCA.
+void scaAverageEffects(const arma::rowvec& Mmean1, const arma::rowvec& Mmean2,
+                       const arma::rowvec& p12, const arma::uvec& fixed,
+                       const arma::mat& u0, const arma::mat& u1,
+                       const arma::mat& u2, const arma::rowvec& meanDAll,
+                       int nThreads, arma::mat& alpha1, arma::mat& alpha2,
+                       arma::mat& d){
+  arma::rowvec p1 = (Mmean1+1)/2;
+  arma::rowvec p2 = (Mmean2+1)/2;
+  arma::rowvec intraD = p12-p1%p2;
+  arma::uword m = u0.n_rows;
+  arma::uword nT = u0.n_cols;
+  alpha1.set_size(m,nT);
+  alpha2.set_size(m,nT);
+  d.set_size(m,nT);
+  for(arma::uword k=0; k<nT; ++k){
+    double meanD = meanDAll(k);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for(arma::uword i=0; i<Mmean1.n_cols; ++i){
+      double gv1, gv0, gvMu, alpha, numer, denom;
+      if(fixed(i)==0){
+        d(i,k) = u2(i,k) + meanD;
+        //alpha1
+        gv1 = (p2(i)+intraD(i)/p1(i))*(u0(i,k)+u1(i,k)) +
+          ((1-p2(i))-intraD(i)/p1(i))*d(i,k);
+        gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i,k) +
+          ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u0(i,k)-u1(i,k));
+        gvMu = p1(i)*gv1+(1-p1(i))*gv0;
+        numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) +
+          (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
+        denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) +
+          (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
+        alpha = numer/denom;
+        if(!std::isfinite(alpha)) alpha=0;
+        alpha1(i,k) = alpha;
+        //alpha2
+        gv1 = (p1(i)+intraD(i)/p2(i))*(u0(i,k)+u1(i,k)) +
+          ((1-p1(i))-intraD(i)/p2(i))*d(i,k);
+        gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i,k) +
+          ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u0(i,k)-u1(i,k));
+        gvMu = p2(i)*gv1+(1-p2(i))*gv0;
+        numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) +
+          (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
+        denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) +
+          (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
+        alpha = numer/denom;
+        if(!std::isfinite(alpha)) alpha=0;
+        alpha2(i,k) = alpha;
+      }else{
+        alpha1(i,k) = 0;
+        alpha2(i,k) = 0;
+        d(i,k) = 0;
+      }
+    }
+  }
+}
+
 // Called by RRBLUP_D function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
                         const Rcpp::S4& pop,
                         arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                        int maxIter, int nThreads){
+                        int maxIter, int nThreads, arma::vec theta){
   // Fit GS model
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
@@ -1957,14 +2327,6 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
   Mlist(1) = genoToGenoD(M,ploidy,nThreads);
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(1),1));
-
-  //Scaled genotypes
-  double dP = double(ploidy);
-  arma::vec xx(ploidy+1);
-  for(arma::uword i=0; i<xx.n_elem; ++i)
-    xx(i) = double(i);
-  arma::vec xa = (xx-dP/2.0)*(2.0/dP);
-  arma::vec xd = xx%(dP-xx)*(2.0/dP)*(2.0/dP);
   
   // Calculate genotype frequencies
   arma::mat freqMat(ploidy+1,M.n_cols);
@@ -1989,9 +2351,8 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
 
   // The genotypes are only needed for the frequencies above, so they are
   // freed before the model is fitted rather than held through it
-  arma::uword m = M.n_cols;
   M.reset();
-  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y, X, Mlist, maxIter, theta);
 
   // Clear memory
   y.reset();
@@ -2002,30 +2363,10 @@ Rcpp::List callRRBLUP_D(arma::mat y, arma::uvec x,
   // same for every trait, and a multiple trait fit has one column of fixed
   // effects and of marker effects per trait.
   arma::mat beta = ans["beta"];
-  arma::uword nT = beta.n_cols;
-  arma::mat alpha(m,nT), d(m,nT);
   arma::field<arma::mat> u = ans["u"];
-  for(arma::uword k=0; k<nT; ++k){
-    double meanD = beta(beta.n_rows-1,k);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-    for(arma::uword j=0; j<m; ++j){
-      double genoMu, gvMu;
-      arma::vec gv(ploidy+1);
-      if(fixed(j) == 1){
-        d(j,k) = 0;
-        alpha(j,k) = 0;
-      }else{
-        d(j,k) = u(1)(j,k) + meanD;
-        gv = xa*u(0)(j,k) + xd*d(j,k);
-        genoMu = accu(freqMat.col(j)%xa);
-        gvMu = accu(freqMat.col(j)%gv);
-        alpha(j,k) = accu(freqMat.col(j)%(gv-gvMu)%(xa-genoMu))/
-          accu(freqMat.col(j)%(xa-genoMu)%(xa-genoMu));
-      }
-    }
-  }
+  arma::mat alpha, d;
+  domAverageEffects(freqMat, fixed, u(0), u(1), beta.row(beta.n_rows-1),
+                    ploidy, nThreads, alpha, d);
 
   return Rcpp::List::create(
     Rcpp::Named("alpha")=alpha,
@@ -2153,11 +2494,12 @@ Rcpp::List callRRBLUP_MV(arma::mat Y, arma::uvec x,
 }
 
 // Called by RRBLUP_GCA function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                          int maxIter, int nThreads){
+                          int maxIter, int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(2);
@@ -2168,7 +2510,7 @@ Rcpp::List callRRBLUP_GCA(arma::mat y, arma::uvec x,
   arma::rowvec Mmean1 = mean(Mlist(0));
   arma::rowvec Mmean2 = mean(Mlist(1));
   arma::mat X = makeX(x);
-  Rcpp::List ans = solveRRBLUPMK(y,X,Mlist,maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y,X,Mlist,maxIter,theta);
   // A multiple trait fit has one column of effects per trait
   arma::field<arma::mat> u = ans["u"];
   arma::mat beta = ans["beta"];
@@ -2210,12 +2552,13 @@ Rcpp::List callRRBLUP_GCA2(arma::mat y, arma::uvec x,
 }
 
 // Called by RRBLUP_SCA function
+// theta holds supplied variance components, as in callRRBLUP, or is empty
 // Only works with diploids
 // [[Rcpp::export]]
 Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
                           const Rcpp::S4& pop,
                           arma::Col<int>& lociPerChr, arma::uvec lociLoc,
-                          int maxIter, int nThreads){
+                          int maxIter, int nThreads, arma::vec theta){
   PackedGeno g(pop);
   arma::uword ploidy = g.ploidy;
   arma::field<arma::mat> Mlist(3);
@@ -2258,7 +2601,7 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
   arma::mat X;
   X = join_rows(makeX(x),sum(Mlist(2),1));
   
-  Rcpp::List ans = solveRRBLUPMK(y, X, Mlist, maxIter);
+  Rcpp::List ans = fitRRBLUPMK(y, X, Mlist, maxIter, theta);
   
   // Clear memory
   y.reset();
@@ -2268,56 +2611,11 @@ Rcpp::List callRRBLUP_SCA(arma::mat y, arma::uvec x,
   // Solve for average effect, trait by trait. The frequencies above are the
   // same for every trait, and a multiple trait fit has one column of fixed
   // effects and of marker effects per trait.
-
-  arma::rowvec p1 = (Mmean1+1)/2;
-  arma::rowvec p2 = (Mmean2+1)/2;
-  arma::rowvec intraD = p12-p1%p2;
   arma::mat beta = ans["beta"];
-  arma::uword nT = beta.n_cols;
-  arma::mat alpha1(m,nT), alpha2(m,nT), d(m,nT);
   arma::field<arma::mat> u = ans["u"];
-  for(arma::uword k=0; k<nT; ++k){
-    double meanD = beta(beta.n_rows-1,k);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(nThreads)
-#endif
-    for(arma::uword i=0; i<Mmean1.n_cols; ++i){
-      double gv1, gv0, gvMu, alpha, numer, denom;
-      if(fixed(i)==0){
-        d(i,k) = u(2)(i,k) + meanD;
-        //alpha1
-        gv1 = (p2(i)+intraD(i)/p1(i))*(u(0)(i,k)+u(1)(i,k)) +
-          ((1-p2(i))-intraD(i)/p1(i))*d(i,k);
-        gv0 = (p2(i)-intraD(i)/(1-p1(i)))*d(i,k) +
-          ((1-p2(i))+intraD(i)/(1-p1(i)))*(-u(0)(i,k)-u(1)(i,k));
-        gvMu = p1(i)*gv1+(1-p1(i))*gv0;
-        numer = p1(i)*(gv1-gvMu)*(1.0-Mmean1(i)) +
-          (1-p1(i))*(gv0-gvMu)*(-1.0-Mmean1(i));
-        denom = p1(i)*(1.0-Mmean1(i))*(1.0-Mmean1(i)) +
-          (1-p1(i))*(-1.0-Mmean1(i))*(-1.0-Mmean1(i));
-        alpha = numer/denom;
-        if(!std::isfinite(alpha)) alpha=0;
-        alpha1(i,k) = alpha;
-        //alpha2
-        gv1 = (p1(i)+intraD(i)/p2(i))*(u(0)(i,k)+u(1)(i,k)) +
-          ((1-p1(i))-intraD(i)/p2(i))*d(i,k);
-        gv0 = (p1(i)-intraD(i)/(1-p2(i)))*d(i,k) +
-          ((1-p1(i))+intraD(i)/(1-p2(i)))*(-u(0)(i,k)-u(1)(i,k));
-        gvMu = p2(i)*gv1+(1-p2(i))*gv0;
-        numer = p2(i)*(gv1-gvMu)*(1.0-Mmean2(i)) +
-          (1-p2(i))*(gv0-gvMu)*(-1.0-Mmean2(i));
-        denom = p2(i)*(1.0-Mmean2(i))*(1.0-Mmean2(i)) +
-          (1-p2(i))*(-1.0-Mmean2(i))*(-1.0-Mmean2(i));
-        alpha = numer/denom;
-        if(!std::isfinite(alpha)) alpha=0;
-        alpha2(i,k) = alpha;
-      }else{
-        alpha1(i,k) = 0;
-        alpha2(i,k) = 0;
-        d(i,k) = 0;
-      }
-    }
-  }
+  arma::mat alpha1, alpha2, d;
+  scaAverageEffects(Mmean1, Mmean2, p12, fixed, u(0), u(1), u(2),
+                    beta.row(beta.n_rows-1), nThreads, alpha1, alpha2, d);
 
   return Rcpp::List::create(
     Rcpp::Named("alpha1")=alpha1,

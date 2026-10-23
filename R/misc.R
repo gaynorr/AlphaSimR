@@ -4,6 +4,27 @@ convToImat = function(X){
   return(matrix(as.integer(X), nrow=nrow(X) ,ncol=ncol(X)))
 }
 
+# Returns the SimParam a function should use: the one supplied, or the object
+# called SP in the global environment when none is. Every function that takes
+# simParam calls this rather than looking up SP itself, so that a missing or
+# invalid SimParam gives the same clear error everywhere instead of failing
+# later with an unrelated message. The object is returned without cloning it,
+# so it keeps the reference semantics of R6. Only the global environment is
+# searched, not environments attached to the search path.
+getSimParam = function(simParam=NULL){
+  if(is.null(simParam)){
+    simParam = get0("SP", envir=.GlobalEnv, inherits=FALSE)
+    if(!inherits(simParam, "SimParam")){
+      stop(paste("simParam was not supplied and there is no SimParam called",
+                 "SP in the global environment. Supply simParam or create SP",
+                 "with SimParam$new()"))
+    }
+  }else if(!inherits(simParam, "SimParam")){
+    stop("simParam must be a SimParam object or NULL")
+  }
+  return(simParam)
+}
+
 #' @rdname isFemale
 #' @title Test if individuals of a population are female or male
 #'
@@ -131,9 +152,7 @@ getPed = function(pop, nGen=1, simParam=NULL){
     return(df)
   }
 
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(!.hasSlot(pop, "iid")){
     stop("nGen > 1 needs internal IDs, which this population lacks")
   }
@@ -303,9 +322,7 @@ selIndex = function(Y,b,scale=FALSE){
 #' @export
 editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
                        nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -388,9 +405,7 @@ editGenome = function (pop, ind, chr, segSites, allele, simParam = NULL,
 #' @export
 editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
                             simParam = NULL, nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -534,9 +549,7 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
 #' @export
 usefulness = function(pop,trait=1,use="gv",p=0.1,
                       selectTop=TRUE,simParam=NULL,nThreads=NULL,...){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -696,9 +709,7 @@ setMethod("mutate",
           signature(pop = "Pop"),
           function(pop, mutRate=2.5e-8, returnPos=FALSE, simParam=NULL,
                    nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

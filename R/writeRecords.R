@@ -25,9 +25,7 @@
 writeRecords = function(pop,dir,snpChip=1,useQtl=FALSE,
                         includeHaplo=FALSE,append=TRUE,simParam=NULL,
                         nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

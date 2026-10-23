@@ -26,7 +26,6 @@ export(doubleGenome)
 export(ebv)
 export(editGenome)
 export(editGenomeTopQtl)
-export(fastRRBLUP)
 export(flattenMultiPop)
 export(genParam)
 export(genicVarA)
@@ -75,7 +74,10 @@ export(newMapPop)
 export(newMultiPop)
 export(newPop)
 export(parentAverage)
+export(pedBLUP)
+export(pedigreeA)
 export(pedigreeCross)
+export(pedigreeInbreeding)
 export(pheno)
 export(popVar)
 export(predictSegSitesMoments)
@@ -141,6 +143,7 @@ exportClasses(LociMap)
 exportClasses(MapPop)
 exportClasses(MultiPop)
 exportClasses(NamedMapPop)
+exportClasses(PedSol)
 exportClasses(Pop)
 exportClasses(RRsol)
 exportClasses(RawPop)
@@ -176,6 +179,7 @@ importFrom(stats,
   lm,
   model.matrix,
   na.omit,
+  optimize,
   pnorm,
   qgamma,
   qnorm,

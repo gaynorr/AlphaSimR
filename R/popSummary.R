@@ -26,7 +26,7 @@
 #'
 #' When \code{simplify=TRUE}, the result is simplified to the requested
 #' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
-#' structure is returned unchanged. If \code{level} \eqn{\lt 1}, the function 
+#' structure is returned unchanged. If \code{level} \eqn{< 1}, the function
 #' sets \code{level=1} issuing a warning.
 #'
 #' Simplified output includes a \code{"source"} attribute. This is a data frame
@@ -37,7 +37,7 @@
 #' It includes the trait intercept and can differ from both the intercept
 #' and the requested founder mean.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @seealso
@@ -124,7 +124,7 @@ meanG = function(pop, simplify = FALSE, level = 1L){
 #'
 #' When \code{simplify=TRUE}, the result is simplified to the requested
 #' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
-#' structure is returned unchanged. If \code{level} \eqn{\lt 1}, the function 
+#' structure is returned unchanged. If \code{level} \eqn{< 1}, the function
 #' sets \code{level=1} issuing a warning.
 #'
 #' Simplified output includes a \code{"source"} attribute. This is a data frame
@@ -446,7 +446,7 @@ meanPPop = function(x, level = 0) {
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @seealso \code{\link{varGPop}}
@@ -904,7 +904,7 @@ varPPop = function(x, level = 1L) {
 #' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
 #'
 #' @details See \code{vignette("traits", package = "AlphaSimR")} and
-#' \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory on trait and quantitative genetics implementation in AlphaSimR.
 #' The text below is a very short summary of the theory.
 #'
@@ -1090,9 +1090,7 @@ varPPop = function(x, level = 1L) {
 #'
 #' @export
 genParam = function(pop,simParam=NULL,nThreads=NULL){
-  if(is.null(simParam)){
-    simParam = get("SP",envir=.GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -1307,7 +1305,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nTraits by nTraits matrix of variances and covariances between traits.
@@ -1346,7 +1344,7 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nTraits by nTraits matrix of variances and covariances between traits.
@@ -1386,7 +1384,7 @@ varD = function(pop,simParam=NULL,nThreads=NULL){
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nTraits by nTraits matrix of variances and covariances between traits.
@@ -1428,7 +1426,7 @@ varAA = function(pop,simParam=NULL,nThreads=NULL){
 #' Since \code{nd = dd + aa}, the variance includes twice the covariance
 #' between dominance and additive-by-additive epistatic deviations.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nTraits by nTraits matrix of variances and covariances between traits.
@@ -1483,7 +1481,7 @@ varN = function(pop,simParam=NULL,nThreads=NULL){
 #' Evaluating the same individual in a different population can therefore
 #' change its returned values.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nInd by nTraits matrix.
@@ -1524,7 +1522,7 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' Evaluating the same individual in a different population can therefore
 #' change returned values.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nInd by nTraits matrix.
@@ -1566,7 +1564,7 @@ dd = function(pop,simParam=NULL,nThreads=NULL){
 #' Evaluating the same individual in a different population can therefore
 #' change its returned values.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nInd by nTraits matrix.
@@ -1609,7 +1607,7 @@ aa = function(pop,simParam=NULL,nThreads=NULL){
 #' change its returned values.
 #' The total non-additive deviation is \code{nd = dd + aa}.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return An nInd by nTraits matrix.
@@ -1654,7 +1652,7 @@ nd = function(pop,simParam=NULL,nThreads=NULL){
 #' See \code{\link{genParam}} for the corresponding genetic variances
 #' and contributions from departures from equilibrium.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return A vector of length nTraits.
@@ -1697,7 +1695,7 @@ genicVarG = function(pop,simParam=NULL,nThreads=NULL){
 #' See \code{\link{genParam}} for the corresponding genetic variances
 #' and contributions from departures from equilibrium.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return A vector of length nTraits.
@@ -1740,7 +1738,7 @@ genicVarA = function(pop,simParam=NULL,nThreads=NULL){
 #' See \code{\link{genParam}} for the corresponding genetic variances
 #' and contributions from departures from equilibrium.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return A vector of length nTraits.
@@ -1784,7 +1782,7 @@ genicVarD = function(pop,simParam=NULL,nThreads=NULL){
 #' See \code{\link{genParam}} for the corresponding genetic variances
 #' and contributions from departures from equilibrium.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return A vector of length nTraits.
@@ -1827,7 +1825,7 @@ genicVarAA = function(pop,simParam=NULL,nThreads=NULL){
 #' See \code{\link{genParam}} for the corresponding genetic variances
 #' and contributions from departures from equilibrium.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
 #' @return A vector of length nTraits.
@@ -1908,10 +1906,10 @@ genicVarN = function(pop,simParam=NULL,nThreads=NULL){
 #'
 #' See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
 #'
-#' See \code{vignette("QuanGen", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
 #'
-#' See \code{vignette("GxE", package = "AlphaSimR")} for
+#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/GxE.html}{Genotype-by-Environment article} for
 #' the genotype-by-environment model
 #'
 #' @return
@@ -2209,9 +2207,7 @@ ebv = function(pop, simplify = FALSE, level = 1L){
 #' @export
 parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
                          use = "gv", simParam = NULL, nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{
@@ -2300,9 +2296,7 @@ parentAverage = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
 #' @export
 mendelianSampling = function(pop, parents = NULL, mothers = NULL, fathers = NULL,
                              use = "gv", simParam = NULL, nThreads=NULL) {
-  if (is.null(simParam)) {
-    simParam = get("SP", envir = .GlobalEnv)
-  }
+  simParam = getSimParam(simParam)
   if(is.null(nThreads)){
     nThreads = simParam$nThreads
   }else{

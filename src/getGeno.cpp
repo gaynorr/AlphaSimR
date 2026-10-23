@@ -549,7 +549,7 @@ arma::rowvec calcGenoFreq(const Rcpp::List& geno,
   return freqFromCounts(count, g.nInd, g.ploidy);
 }
 
-// Calculates allele frequency on a single chromsome
+// Calculates allele frequency on a single chromosome
 // [[Rcpp::export]]
 arma::rowvec calcChrFreq(const Rcpp::RawVector& geno){
   // A list holding the one chromosome lets it be read in place like any

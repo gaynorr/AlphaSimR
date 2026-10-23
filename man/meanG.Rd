@@ -45,7 +45,7 @@ follows the same nesting as \code{pop}.
 
 When \code{simplify=TRUE}, the result is simplified to the requested
 \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
-structure is returned unchanged. If \code{level} \eqn{\lt 1}, the function 
+structure is returned unchanged. If \code{level} \eqn{< 1}, the function
 sets \code{level=1} issuing a warning.
 
 Simplified output includes a \code{"source"} attribute. This is a data frame
@@ -56,7 +56,7 @@ The mean is calculated from the genetic values in \code{pop}.
 It includes the trait intercept and can differ from both the intercept
 and the requested founder mean.
 
-See \code{vignette("QuanGen", package = "AlphaSimR")} for
+See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
 }
 \examples{

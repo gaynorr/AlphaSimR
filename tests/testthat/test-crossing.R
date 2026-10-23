@@ -128,13 +128,14 @@ test_that("selectCross",{
 
 # A few large families of full sibs, so truncation on genetic value
 # concentrates on the best families and the restriction binds
-ocsSetup = function(sexes="no", nProgeny=20, ploidy=2L){
+ocsSetup = function(sexes="no", nProgeny=20, ploidy=2L, trackPed=FALSE){
   founder = quickHaplo(nInd=40, nChr=2, segSites=100, ploidy=ploidy)
   SP = SimParam$new(founder)
   SP$nThreads = 1L
   SP$addTraitA(nQtlPerChr=20)
   SP$addSnpChip(nSnpPerChr=50)
   if(sexes!="no") SP$setSexes(sexes)
+  if(trackPed) SP$setTrackPed(TRUE)
   pop = newPop(founder, simParam=SP)
   pop = randCross(pop, nCrosses=10, nProgeny=nProgeny, simParam=SP)
   list(SP=SP, pop=pop)
@@ -236,6 +237,177 @@ test_that("USE QTL genotypes to measure fixation",{
     selectOCS(s$pop, nInd=100, use="gv", useQtl=TRUE, returnPop=FALSE,
               simParam=s$SP))
   expect_lte(ocsFix(Z, take), Ft + 0.01*(1-Ft))
+})
+
+# Expected fixation measured by the pedigree: the average kinship of a set
+# of parents contributing equally
+ocsPedFix = function(K, take){
+  mean(K[take,take,drop=FALSE])
+}
+
+test_that("USE the pedigree to measure fixation",{
+  set.seed(10)
+  for(ploidy in c(2L, 4L)){
+    s = ocsSetup(ploidy=ploidy, trackPed=TRUE)
+    K = pedigreeA(s$pop, simParam=s$SP)/ploidy
+    Ft = ocsPedFix(K, seq_len(s$pop@nInd))
+    target = Ft + 0.01*(1-Ft)
+    take = suppressMessages(
+      selectOCS(s$pop, nInd=40, use="gv", usePed=TRUE, returnPop=FALSE,
+                simParam=s$SP))
+    expect_length(take, 40L)
+    expect_false(anyDuplicated(take) > 0)
+    expect_lte(ocsPedFix(K, take), target)
+    trunc = selectInd(s$pop, nInd=40, use="gv", returnPop=FALSE,
+                      simParam=s$SP)
+    # Whenever truncation misses the target, the penalty has to change the
+    # selection
+    if(ocsPedFix(K, trunc) > target){
+      expect_false(setequal(take, trunc))
+    }
+    # For the diploid, truncation misses the target by a wide margin, so the
+    # penalty is known to be exercised. For the tetraploid the margin is
+    # thin, and the genotypes, and so which individuals truncation picks,
+    # are not identical across platforms: macOS put truncation under the
+    # target where Linux and Windows put it over.
+    if(ploidy==2L){
+      expect_gt(ocsPedFix(K, trunc), target)
+    }
+  }
+})
+
+test_that("USE the pedigree with sexes, pooling the sexes",{
+  set.seed(11)
+  s = ocsSetup("yes_sys", nProgeny=30, trackPed=TRUE)
+  K = pedigreeA(s$pop, simParam=s$SP)/2
+  Ft = ocsPedFix(K, seq_len(s$pop@nInd))
+  target = Ft + 0.01*(1-Ft)
+  # Each sex supplies half of the gametes
+  poolFix = function(female, male){
+    c = c(rep(1/(2*length(female)), length(female)),
+          rep(1/(2*length(male)), length(male)))
+    take = c(female, male)
+    drop(crossprod(c, K[take,take]%*%c))
+  }
+  take = suppressMessages(
+    selectOCS(s$pop, nFemale=30, nMale=30, use="gv", usePed=TRUE,
+              returnPop=FALSE, simParam=s$SP))
+  female = take[1:30]
+  male = take[31:60]
+  expect_true(all(s$pop@sex[female]=="F"))
+  expect_true(all(s$pop@sex[male]=="M"))
+  expect_lte(poolFix(female, male), target)
+  truncF = selectInd(s$pop, nInd=30, use="gv", sex="F",
+                     returnPop=FALSE, simParam=s$SP)
+  truncM = selectInd(s$pop, nInd=30, use="gv", sex="M",
+                     returnPop=FALSE, simParam=s$SP)
+  expect_gt(poolFix(truncF, truncM), target)
+
+  # selectCross passes usePed on and crosses the same individuals
+  pop2 = suppressMessages(
+    selectCross(s$pop, nFemale=30, nMale=30, nCrosses=30, use="gv",
+                restrInbr=TRUE, usePed=TRUE, simParam=s$SP))
+  expect_setequal(pop2@mother, s$pop@id[female])
+  expect_setequal(pop2@father, s$pop@id[male])
+})
+
+test_that("MEASURE every set of unrelated founders alike by the pedigree",{
+  set.seed(12)
+  founder = quickHaplo(nInd=10, nChr=1, segSites=20)
+  SP = SimParam$new(founder)
+  SP$nThreads = 1L
+  SP$addTraitA(10)
+  SP$setTrackPed(TRUE)
+  pop = newPop(founder, simParam=SP)
+  # Five unrelated, outbred diploids always have an average kinship of
+  # 1/(2*5), so that target is met by truncation and a lower one is not
+  # met by any set
+  take = suppressMessages(
+    selectOCS(pop, nInd=5, use="gv", inbrTarget=0.1,
+              inbrType="absolute", usePed=TRUE, returnPop=FALSE,
+              simParam=SP))
+  expect_setequal(take, selectInd(pop, nInd=5, use="gv",
+                                  returnPop=FALSE, simParam=SP))
+  expect_warning(suppressMessages(
+    selectOCS(pop, nInd=5, use="gv", inbrTarget=0.09,
+              inbrType="absolute", usePed=TRUE, simParam=SP)),
+    regexp="target was not met")
+})
+
+test_that("SPREAD greedy pedigree selection across full-sib families",{
+  # Three families of four outbred diploid full sibs from unrelated
+  # parents, with the best merit in family 1 and the worst in family 3
+  fam = rep(1:3, each=4)
+  K = ifelse(outer(fam, fam, "=="), 1/4, 0)
+  diag(K) = 1/2
+  m = c(10:7, 6:3, 2:-1)
+  ker = AlphaSimR:::.ocsKernelK(K, 1, 1)
+  # Without a penalty the selection is truncation
+  ans = AlphaSimR:::.ocsGreedy(0, ker, m, 3L)
+  expect_identical(ans$take, 1:3)
+  expect_equal(ans$F, mean(K[1:3,1:3]))
+  # With a large penalty each family gives one, its best, which is the
+  # least related set of three
+  ans = AlphaSimR:::.ocsGreedy(1e6, ker, m, 3L)
+  expect_identical(sort(ans$take), c(1L, 5L, 9L))
+  expect_equal(ans$F, 1/6)
+
+  # With sexes, females are odd and males even within each family, so
+  # one of each sex is taken from different families
+  female = which(seq_along(m)%%2L==1L)
+  male = which(seq_along(m)%%2L==0L)
+  ans = AlphaSimR:::.ocsGreedySex(1e6, ker, m, female, male, 1L, 1L)
+  expect_identical(ans$take[1], 1L)
+  expect_true(ans$take[2] %in% male[fam[male]!=1L])
+  expect_equal(ans$F, ker$fixPool(ans$take[1], ans$take[2]))
+  # A free candidate with a missing merit is still taken when no other
+  # candidate is free
+  ans = AlphaSimR:::.ocsGreedy(0, ker, c(m[-12], NA), 12L)
+  expect_setequal(ans$take, 1:12)
+})
+
+test_that("REFUSE the pedigree without tracking or with useQtl",{
+  set.seed(13)
+  s = ocsSetup()
+  expect_error(selectOCS(s$pop, nInd=10, use="gv", usePed=TRUE,
+                         simParam=s$SP),
+               regexp="trackPed")
+  expect_error(selectCross(s$pop, nInd=10, nCrosses=5, use="gv",
+                           restrInbr=TRUE, usePed=TRUE, simParam=s$SP),
+               regexp="trackPed")
+  s = ocsSetup(trackPed=TRUE)
+  expect_error(selectOCS(s$pop, nInd=10, use="gv", usePed=TRUE,
+                         useQtl=TRUE, simParam=s$SP),
+               regexp="cannot both be TRUE")
+})
+
+test_that("AGREE between the genotype kernel and a kinship kernel",{
+  set.seed(14)
+  for(ploidy in c(2L, 4L)){
+    s = ocsSetup(ploidy=ploidy)
+    Y = 2*pullSnpGeno(s$pop, simParam=s$SP) - ploidy
+    Z = Y/ploidy
+    nLoci = ncol(Z)
+    kerY = AlphaSimR:::.ocsKernel(Y, ploidy)
+    # The kinship that the genotypes estimate, given as a pedigree's
+    # would be
+    kerA = AlphaSimR:::.ocsKernelK(tcrossprod(Z)/nLoci, 1, 1)
+    take = c(3, 17, 40, 41, 150)
+    takeM = c(5, 60, 199)
+    # The penalties are per locus rather than summed over loci
+    expect_equal(kerA$nLoci, 1)
+    expect_equal(kerA$zu0*nLoci, kerY$zu0)
+    expect_equal(kerA$self*nLoci, kerY$self)
+    expect_equal(kerA$zu(take)*nLoci, kerY$zu(take))
+    expect_equal(kerA$fix(take), kerY$fix(take))
+    expect_equal(kerA$fixPool(take, takeM), kerY$fixPool(take, takeM))
+    # so the same selection needs a penalty nLoci times larger
+    m = gv(s$pop)[,1]
+    ansY = AlphaSimR:::.ocsTrunc(0.05, kerY, m, 50)
+    ansA = AlphaSimR:::.ocsTrunc(0.05*nLoci, kerA, m, 50)
+    expect_identical(ansA$take, ansY$take)
+    expect_equal(ansA$F, ansY$F)
+  }
 })
 
 test_that("AGREE between the precomputed and direct penalty kernels",{
@@ -452,6 +624,69 @@ test_that("Meiosis kernels validate dimensions and normalize thread requests", {
       expect_identical(do.call(case$fun,modifyList(case$args,list(nThreads=threads))),ref)
     }
   }
+})
+
+test_that("Meiosis kernels check maps, centromeres and ploidy before the parallel region", {
+  # Everything below is read on worker threads through raw pointers, where a
+  # length that does not match would be read out of bounds rather than
+  # reported
+  set.seed(6023)
+  f = quickHaplo(2,1,10)
+  sp = SimParam$new(f)
+  crossArgs = list(motherGeno=f@geno,mother=1L,fatherGeno=f@geno,father=2L,
+    femaleMap=sp$femaleMap,maleMap=sp$maleMap,
+    femaleGenLen=sp$femaleGenLen,maleGenLen=sp$maleGenLen,
+    trackRec=FALSE,motherPloidy=2L,fatherPloidy=2L,v=sp$v,p=sp$p,
+    motherCentromere=sp$femaleCentromere,fatherCentromere=sp$maleCentromere,
+    quadProb=sp$quadProb,nThreads=1L)
+  dhArgs = list(geno=f@geno,nDH=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,nThreads=1L)
+  rgArgs = list(geno=f@geno,nProgeny=c(1L,1L),genMap=f@genMap,genLen=f@genLen,
+                v=sp$v,p=sp$p,trackRec=FALSE,ploidy=2L,
+                centromere=f@centromere,quadProb=sp$quadProb,nThreads=1L)
+  # Replaces arguments whole. modifyList would merge a list argument, such
+  # as a map or genotypes, into the one already there.
+  setArgs = function(args, new){
+    args[names(new)] = new
+    return(args)
+  }
+  twoMaps = c(f@genMap,f@genMap)
+  longMap = list(seq(0,1,length.out=100))
+
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(maleMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(femaleMap=longMap))),
+               "more loci")
+  # 20 loci take three bytes, 10 take two
+  g = quickHaplo(2,1,20)
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(fatherGeno=g@geno))),
+               "same loci")
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs,list(motherPloidy=4L))),
+               "ploidy does not match")
+  expect_error(do.call(AlphaSimR:::createDH2,setArgs(dhArgs,list(genMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::createDH2,setArgs(dhArgs,list(genMap=longMap))),
+               "more loci")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs,list(genMap=twoMaps))),
+               "genMap must")
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs,list(ploidy=4L))),
+               "ploidy does not match")
+  # A diploid never reads its centromeres, so they need not be given
+  expect_silent(do.call(AlphaSimR:::cross,
+                        setArgs(crossArgs,list(motherCentromere=numeric(),
+                                                  fatherCentromere=numeric()))))
+
+  # A tetraploid can form quadrivalents, which read them
+  f4 = quickHaplo(2,1,10,ploidy=4)
+  sp4 = SimParam$new(f4)
+  crossArgs4 = setArgs(crossArgs,list(motherGeno=f4@geno,fatherGeno=f4@geno,
+    motherPloidy=4L,fatherPloidy=4L,quadProb=1))
+  expect_error(do.call(AlphaSimR:::cross,setArgs(crossArgs4,list(fatherCentromere=numeric()))),
+               "centromere must")
+  rgArgs4 = setArgs(rgArgs,list(geno=f4@geno,ploidy=4L,quadProb=1))
+  expect_error(do.call(AlphaSimR:::createReducedGenome,setArgs(rgArgs4,list(centromere=numeric()))),
+               "centromere must")
+  expect_silent(do.call(AlphaSimR:::cross,crossArgs4))
 })
 
 # Meiosis reads the parents' genotypes in place, from the same memory as the
