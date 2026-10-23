@@ -585,6 +585,22 @@ pullQtlGeno = function(
   simplify = FALSE,
   level = 1L
 ) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(trait)) {
+    # Suspect trait is a name
+    traitNames = simParam$traitNames
+    take = match(trait, traitNames)
+    if (is.na(take)) {
+      stop("'", trait, "' did not match any trait names")
+    }
+    trait = take
+  }
+
   calcPopValue(
     x = pop,
     FUN = function(
@@ -595,23 +611,6 @@ pullQtlGeno = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      simParam = getSimParam(simParam)
-      if (is.null(nThreads)) {
-        nThreads = simParam$nThreads
-      } else {
-        nThreads = as.integer(nThreads)
-      }
-
-      if (is.character(trait)) {
-        # Suspect trait is a name
-        traitNames = simParam$traitNames
-        take = match(trait, traitNames)
-        if (is.na(take)) {
-          stop("'", trait, "' did not match any trait names")
-        }
-        trait = take
-      }
-
       tmp = selectLoci(
         chr,
         simParam$traits[[trait]]@lociPerChr,
@@ -660,6 +659,22 @@ pullSnpGeno = function(
   simplify = FALSE,
   level = 1L
 ) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(snpChip)) {
+    # Suspect snpChip is a name
+    chipNames = simParam$snpChipNames
+    take = match(snpChip, chipNames)
+    if (is.na(take)) {
+      stop("'", snpChip, "' did not match any SNP chip names")
+    }
+    snpChip = take
+  }
+
   calcPopValue(
     x = pop,
     FUN = function(
@@ -670,23 +685,6 @@ pullSnpGeno = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      simParam = getSimParam(simParam)
-      if (is.null(nThreads)) {
-        nThreads = simParam$nThreads
-      } else {
-        nThreads = as.integer(nThreads)
-      }
-
-      if (is.character(snpChip)) {
-        # Suspect snpChip is a name
-        chipNames = simParam$snpChipNames
-        take = match(snpChip, chipNames)
-        if (is.na(take)) {
-          stop("'", snpChip, "' did not match any SNP chip names")
-        }
-        snpChip = take
-      }
-
       tmp = selectLoci(
         chr,
         simParam$snpChips[[snpChip]]@lociPerChr,
@@ -1051,6 +1049,22 @@ pullQtlHaplo = function(
   simplify = FALSE,
   level = 1L
 ) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(trait)) {
+    # Suspect trait is a name
+    traitNames = simParam$traitNames
+    take = match(trait, traitNames)
+    if (is.na(take)) {
+      stop("'", trait, "' did not match any trait names")
+    }
+    trait = take
+  }
+
   calcPopValue(
     x = pop,
     FUN = function(
@@ -1062,31 +1076,12 @@ pullQtlHaplo = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      simParam = getSimParam(simParam)
-      if (is.null(nThreads)) {
-        nThreads = simParam$nThreads
-      } else {
-        nThreads = as.integer(nThreads)
-      }
-
-      if (is.character(trait)) {
-        # Suspect trait is a name
-        traitNames = simParam$traitNames
-        take = match(trait, traitNames)
-        if (is.na(take)) {
-          stop("'", trait, "' did not match any trait names")
-        }
-        trait = take
-      }
-
       tmp = selectLoci(
         chr,
         simParam$traits[[trait]]@lociPerChr,
         simParam$traits[[trait]]@lociLoc
       )
-
       lociPerChr = tmp$lociPerChr
-
       lociLoc = tmp$lociLoc
 
       haplo = checkHaplo(haplo, pop@ploidy)
@@ -1156,6 +1151,22 @@ pullSnpHaplo = function(
   simplify = FALSE,
   level = 1L
 ) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(snpChip)) {
+    # Suspect snpChip is a name
+    chipNames = simParam$snpChipNames
+    take = match(snpChip, chipNames)
+    if (is.na(take)) {
+      stop("'", snpChip, "' did not match any SNP chip names")
+    }
+    snpChip = take
+  }
+
   calcPopValue(
     x = pop,
     FUN = function(
@@ -1167,23 +1178,6 @@ pullSnpHaplo = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      simParam = getSimParam(simParam)
-      if (is.null(nThreads)) {
-        nThreads = simParam$nThreads
-      } else {
-        nThreads = as.integer(nThreads)
-      }
-
-      if (is.character(snpChip)) {
-        # Suspect snpChip is a name
-        chipNames = simParam$snpChipNames
-        take = match(snpChip, chipNames)
-        if (is.na(take)) {
-          stop("'", snpChip, "' did not match any SNP chip names")
-        }
-        snpChip = take
-      }
-
       tmp = selectLoci(
         chr,
         simParam$snpChips[[snpChip]]@lociPerChr,
@@ -1367,6 +1361,13 @@ pullIbdHaplo = function(
   simplify = FALSE,
   level = 1L
 ) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
   calcPopValue(
     x = pop,
     FUN = function(
@@ -1376,13 +1377,6 @@ pullIbdHaplo = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      simParam = getSimParam(simParam)
-      if (is.null(nThreads)) {
-        nThreads = simParam$nThreads
-      } else {
-        nThreads = as.integer(nThreads)
-      }
-
       if (is.character(snpChip)) {
         # Suspect snpChip is a name
         chipNames = simParam$snpChipNames
