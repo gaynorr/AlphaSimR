@@ -325,6 +325,18 @@ sets those. `Version` in `DESCRIPTION` and the top heading of `NEWS.md` are
 kept in step for releases and may drift apart on the development branch, so
 a difference between those two is not a bug to fix.
 
+The top section of `NEWS.md` describes the development version against the
+last release, which is `master`, not against earlier states of `devel`.
+Check `master` before writing or revising an entry. Something added on
+`devel` and then changed, fixed or moved there gets one entry describing it
+as new, and a bug that never reached `master` gets no entry at all. Before
+editing an existing entry, check that it too is still true against
+`master`. Write an entry in a sentence or two about what a user would
+notice, and leave implementation details and timings to the help pages and
+commit messages. The section is grouped under `##` headings; put a change
+in the one it belongs to, and list anything that makes a seeded simulation
+give different results under "Changes to results from a seed".
+
 A new help topic needs a place in the `reference:` index of
 `_pkgdown.yml`, which groups the website's function reference by topic
 rather than alphabetically. Add the topic's name, the `\name{}` of its
