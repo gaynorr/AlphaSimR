@@ -22,8 +22,10 @@ Authors@R: c(person("Chris", "Gaynor", email = "gaynor.robert@hotmail.com",
   comment = c(ORCID = "0009-0004-1578-1580")),
   person("Jana", "Obsteter", role = "ctb",
   comment = c(ORCID = "0000-0003-1511-3916")),
-  person("Masoud", "Ghaderi", role = "ctb"),
-  person("Daniel", "Ariza Suarez", role = "ctb"),
+  person("Masoud", "Ghaderi", role = "ctb",
+  comment = c(ORCID = "0000-0002-7656-2718")),
+  person("Daniel", "Ariza Suarez", role = "ctb",
+  comment = c(ORCID = "0000-0002-1871-3514")),
   person("Gary", "Chen", role = c("ctb", "cph"),
   comment = "Author of the bundled MaCS software, see LICENSE.note"))
 Description: The successor to the 'AlphaSim' software for breeding program
