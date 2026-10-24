@@ -260,6 +260,12 @@
 
 * Add `nPop()` to count the number of Pop-class objects in a MultiPop.
 
+* Update `pullSegSiteGeno()`, `pullQtlGeno()`, `pullSnpGeno()` and `pullMarkerGeno()` to support MultiPop objects via `calcPopValue()`. Their documentation was unified under the same `pullGeno` help page.
+
+* Update `pullSegSiteHaplo()`, `pullQtlHaplo()`, `pullSnpHaplo()`, `pullMarkerHaplo()` and `pullIbdHaplo()` to support MultiPop objects via `calcPopValue()`. Their documentation was unified under the same `pullHaplo` help page.
+
+* Add `pullSegSiteAf()`, `pullQtlAf()`, `pullSnpAf()` and `pullMarkerAf()` to calculate and retrieve allele frequency data from a Pop or MultiPop object.
+
 # AlphaSimR 2.1.0
 
 * Changed R6 and methods from Depends to Imports to match current best practices for R packages

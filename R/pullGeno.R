@@ -1446,6 +1446,409 @@ pullIbdHaplo = function(
   )
 }
 
+#' @name pullAf
+#' @rdname pullAf
+#'
+#' @title Pull allele frequencies
+#'
+#' @description
+#' Calculate and retrieve allele frequencies from:    \cr
+#' - all segregating sites (\code{\link{pullSegSiteAf}})    \cr
+#' - quantitative trait loci (QTL) for a trait (\code{\link{pullQtlAf}})    \cr
+#' - SNP chip markers (\code{\link{pullSnpAf}})    \cr
+#' - a user-defined set of markers by name (\code{\link{pullMarkerAf}})
+#'
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
+#'
+#' \code{\link{MapPop-class}} objects are supported by
+#' \code{\link{pullSegSiteAf}} and \code{\link{pullMarkerAf}}.
+#'
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteAf}} and
+#'   \code{\link{pullMarkerAf}}.
+#' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
+#'   all chromosomes are retrieved.
+#' @param sample Either \code{FALSE} to use all individuals, or a non-negative
+#'   integer giving the number of individuals to sample at random for allele
+#'   frequency calculation. Passed to \code{\link{sample}} as
+#'   \code{sample(seq_along(pop), size=sample)}.
+#' @param trait An integer or a trait name. Indicates which trait's
+#'   QTL genotypes to retrieve.
+#' @param snpChip SNP chip whose allele frequencies are calculated and 
+#'   retrieved. Either an integer index or a SNP chip name.
+#' @param markers Character vector of marker names to calculate and retrieve.
+#' @param simParam An object of class \code{\link{SimParam}} for non-
+#'   \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
+#'   \code{SP} in the global environment is used. Ignored when \code{pop} is a
+#'   \code{\link{MapPop-class}}.
+#' @param nThreads Number of threads to use if OpenMP is available. If
+#'   \code{NULL}, uses \code{\link{getNumThreads}} for
+#'   \code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.
+#' @param simplify Logical. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flattens \code{pop} to
+#'   \code{level} with \code{\link{flattenMultiPop}}, combines terminal results
+#'   with \code{\link{rbind}}, and attaches a \code{"source"} attribute
+#'   indicating row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' With \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' With \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' original structure is returned unchanged.
+#'
+#' Simplified output includes a \code{"source"} attribute: a data frame with
+#' columns \code{level1}, \code{level2}, etc., giving the source population
+#' name (or index) for each row at each retained level.
+#'
+#' @seealso \code{\link{pullHaplo}}, \code{\link{pullGeno}}
+#'
+#' @return
+#' For \code{\link{Pop-class}} or \code{\link{MapPop-class}} input, a
+#' one-row matrix of allele frequencies (\emph{\eqn{0}=all (sampled)
+#' individuals carry the ancestral allele and \eqn{1}=all (sampled)
+#' individuals carry the mutant allele}).
+#'
+#' For a \code{\link{MultiPop-class}} input:    \cr
+#' - if \code{simplify=FALSE}, a nested list matching the \code{MultiPop}
+#'   structure, with a one-row matrix of allele-frequencies per terminal
+#'   population.    \cr
+#' - if \code{simplify=TRUE}, a simplified object where terminal
+#'   allele-frequency matrices are combined (within each retained branch) using
+#'   \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, the result is a single allele-frequency matrix.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#'
+#' # Retrieve allele frequencies from all segregating
+#' # loci in founder haplotypes
+#' pullSegSiteAf(founderPop)
+#'
+#' # Retrieve allele frequencies from a specific
+#' # set of markers in founder haplotypes
+#' pullMarkerAf(founderPop, markers=c("1_1","1_2"))
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads=1L}
+#'
+#' # Add an additive trait with 10 QTL
+#' SP$addTraitA(10, name="Trait1")
+#'
+#' # Add a SNP chip
+#' SP$addSnpChip(nSnpPerChr=5, name="5SNPchip")
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#'
+#' # Retrieve allele frequencies from all segregating loci
+#' pullSegSiteAf(pop, simParam=SP)
+#'
+#' # Retrieve allele frequencies from QTL for a specific trait
+#' pullQtlAf(pop, trait="Trait1", simParam=SP)
+#'
+#' # Retrieve allele frequencies from a SNP chip
+#' pullSnpAf(pop, snpChip="5SNPchip", simParam=SP)
+#'
+#' # Retrieve allele frequencies from a specific set of markers
+#' pullMarkerAf(pop, markers=c("1_1","1_2"), simParam=SP)
+#'
+#' # Create a nested MultiPop
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=4)
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out=length(x)),
+#'     function(x) paste(x@mother, x@father, sep="_")
+#'   )
+#' )
+#'
+#' # Retrieve QTL allele frequencies at different simplification levels
+#' pullQtlAf(mp1, simplify=FALSE)
+#' pullQtlAf(mp1, simplify=TRUE, level=2)
+#' pullQtlAf(mp1, simplify=TRUE, level=1)
+NULL
+
+#' @rdname pullAf
+#' @export
+pullSegSiteAf = function(
+  pop,
+  chr = NULL,
+  sample = FALSE,
+  nThreads = NULL,
+  simParam = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      chr = NULL,
+      sample = FALSE,
+      nThreads = NULL,
+      simParam = NULL
+    ) {
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        if (sample) {
+          pop = pop[sample(seq_along(pop), size = sample)]
+        }
+        simParam = getSimParam(simParam)
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+
+      lociMap = selectLoci(chr, lociTot, allLoci)
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    chr = chr,
+    sample = sample,
+    nThreads = nThreads,
+    simParam = simParam,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullQtlAf = function(
+  pop,
+  trait = 1,
+  chr = NULL,
+  sample = FALSE,
+  nThreads = NULL,
+  simParam = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      trait = 1,
+      chr = NULL,
+      sample = FALSE,
+      nThreads = NULL,
+      simParam = NULL
+    ) {
+      if (sample) {
+        pop = pop[sample(seq_along(pop), size = sample)]
+      }
+
+      if (is.character(trait)) {
+        # Suspect trait is a name
+        traitNames = simParam$traitNames
+        take = match(trait, traitNames)
+        if (is.na(take)) {
+          stop("'", trait, "' did not match any trait names")
+        }
+        trait = take
+      }
+
+      lociMap = selectLoci(
+        chr,
+        simParam$traits[[trait]]@lociPerChr,
+        simParam$traits[[trait]]@lociLoc
+      )
+      map = simParam$genMap
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    trait = trait,
+    chr = chr,
+    sample = sample,
+    nThreads = nThreads,
+    simParam = simParam,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullSnpAf = function(
+  pop,
+  snpChip = 1,
+  chr = NULL,
+  sample = FALSE,
+  nThreads = NULL,
+  simParam = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      snpChip = 1,
+      chr = NULL,
+      sample = FALSE,
+      nThreads = NULL,
+      simParam = NULL
+    ) {
+      if (sample) {
+        pop = pop[sample(seq_along(pop), size = sample)]
+      }
+
+      if (is.character(snpChip)) {
+        # Suspect snpChip is a name
+        chipNames = simParam$snpChipNames
+        take = match(snpChip, chipNames)
+        if (is.na(take)) {
+          stop("'", snpChip, "' did not match any SNP chip names")
+        }
+        snpChip = take
+      }
+
+      lociMap = selectLoci(
+        chr,
+        simParam$snpChips[[snpChip]]@lociPerChr,
+        simParam$snpChips[[snpChip]]@lociLoc
+      )
+      map = simParam$genMap
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    snpChip = snpChip,
+    chr = chr,
+    sample = sample,
+    nThreads = nThreads,
+    simParam = simParam,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullMarkerAf = function(
+  pop,
+  markers,
+  sample = FALSE,
+  nThreads = NULL,
+  simParam = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      markers,
+      sample = FALSE,
+      nThreads = NULL,
+      simParam = NULL
+    ) {
+      if (sample) {
+        pop = pop[sample(seq_along(pop), size = sample)]
+      }
+
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+
+      # Map markers to genetic map
+      lociMap = mapLoci(markers, map)
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+
+      # Return markers in the requested order
+      output = output[, match(markers, colnames(output)), drop = FALSE]
+      return(output)
+    },
+    markers = markers,
+    sample = sample,
+    nThreads = nThreads,
+    simParam = simParam,
+    simplify = simplify,
+    level = level
+  )
+}
+
 #' @title Set marker haplotypes 
 #'
 #' @description Manually sets the haplotypes in a population 
