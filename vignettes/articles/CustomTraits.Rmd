@@ -1,0 +1,452 @@
+---
+title: "Custom Traits and Trait Distributions in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Custom Traits and Trait Distributions in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+## Introduction
+
+`vignette("traits")` describes the model `AlphaSimR` uses to turn
+genotypes into genetic values, and how the `addTrait` functions sample and
+scale the effects. This article is the practical companion. It shows how
+to inspect a trait once it exists, how to control the distribution of its
+effects, how to set effects by hand, how to ask for dominance in terms
+of variances rather than dominance degrees, and how to record traits
+that are not continuous, such as scores and counts.
+
+```{r}
+set.seed(1918)
+
+founderPop = quickHaplo(nInd = 500, nChr = 5, segSites = 200)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+
+## Inspecting a trait
+
+Every trait is stored in `SP$traits` as an object whose class names its
+type, holding the positions of its QTL, their effects and the trait's
+intercept:
+
+```{r}
+SP$addTraitA(nQtlPerChr = 100, name = "Normal")
+
+trait = SP$traits[[1]]
+class(trait)[1]
+trait@intercept
+head(trait@addEff)
+head(getQtlMap(trait = 1, simParam = SP))
+```
+
+The effects are on the scale of the scaled additive dosage, so for a
+diploid each copy of the "1" allele adds `addEff` to the genetic value.
+
+## The distribution of effects
+
+By default additive effects are sampled from a normal distribution. With
+`gamma = TRUE` they are sampled from a gamma distribution with the given
+`shape`, and given a random sign. A small shape gives a few loci with
+large effects and many with very small ones, which is closer to what
+mapping studies report for many traits.
+
+```{r}
+SP$addTraitA(nQtlPerChr = 100, gamma = TRUE, shape = 0.3,
+             name = "Gamma")
+
+pop = newPop(founderPop, simParam = SP)
+```
+
+Both traits were scaled to the same additive variance, but the variance
+is spread over the loci very differently. The genic variance a locus
+contributes is $2p(1-p)a^2$ for a diploid, so the share contributed by
+the largest loci can be calculated directly:
+
+```{r}
+topShare = function(t, top = 0.05){
+  a = SP$traits[[t]]@addEff
+  p = colMeans(pullQtlGeno(pop, trait = t, simParam = SP)) / 2
+  v = sort(2 * p * (1 - p) * a^2, decreasing = TRUE)
+  sum(v[seq_len(ceiling(top * length(v)))]) / sum(v)
+}
+
+round(c(Normal = topShare(1), Gamma = topShare(2)), 3)
+```
+
+```{r fig.width=7, fig.height=3.5}
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+hist(SP$traits[[1]]@addEff, breaks = 40, main = "Normal",
+     xlab = "Additive effect")
+hist(SP$traits[[2]]@addEff, breaks = 40, main = "Gamma, shape 0.3",
+     xlab = "Additive effect")
+```
+
+With normal effects, the largest 5% of QTL contribute about a quarter of
+the genic variance; with gamma effects of shape 0.3, about two thirds.
+The distinction matters for anything that depends on individual loci:
+genomic prediction, the speed at which selection fixes alleles, and how
+long variance lasts under selection. A trait with a few large QTL loses
+its variance in steps, as each one is fixed.
+
+## Setting effects yourself
+
+### From names and effects
+
+When the effects should come from somewhere else, such as a mapping
+study, `importTrait` adds a trait from the names of its QTL and their
+effects. The QTL must be segregating sites of the founder population.
+The example builds a mixture: five loci of large effect among many of
+small effect.
+
+```{r}
+SPmix = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SPmix$nThreads = 1L
+```
+```{r}
+siteNames = getGenMap(SPmix)$id
+qtl = sample(siteNames, 200)
+effects = c(rnorm(5, sd = 1), rnorm(195, sd = 0.05))
+
+SPmix$importTrait(markerNames = qtl, addEff = effects, name = "Mixture")
+```
+
+`importTrait` uses the effects exactly as given, so the founder variance
+is whatever they imply. `rescaleTraits` then rescales every trait to a
+requested mean and variance in the founder population, keeping the
+relative sizes of the effects:
+
+```{r}
+summarize = function(x, simParam){
+  round(c(mean = unname(meanG(x)[1]),
+          varA = varA(x, simParam = simParam)[1, 1],
+          genicVarA = unname(genicVarA(x, simParam = simParam)[1])), 3)
+}
+
+popMix = newPop(founderPop, simParam = SPmix)
+summarize(popMix, SPmix)
+
+SPmix$rescaleTraits(mean = 10, var = 2)
+popMix = resetPop(popMix, simParam = SPmix)
+summarize(popMix, SPmix)
+```
+
+Existing populations keep their old genetic values until `resetPop`
+recalculates them.
+
+### Rescaling to a later population
+
+`rescaleTraits` scales against `SP$founderPop`, which is the founder
+population the `SimParam` was created with. Replacing it makes the
+traits scale against another population instead, which is the intended
+way to put traits on a standard scale after a burn-in: for example, mean
+0 and additive variance 1 in the population where the comparison of
+breeding programs begins.
+
+This is for advanced use, because it breaks every existing population.
+Their genetic values, phenotypes and estimated breeding values were
+computed on the old scale. `resetPop` must be run on any population that
+is kept: it recalculates the genetic values, but it clears the
+phenotypes and estimated breeding values, so they have to be generated
+again. Anything else computed before the change, such as a fitted
+genomic or pedigree model, a stored summary or a selection index, is on
+the old scale and must be recomputed too. The residual variances are
+not rescaled with the traits, so they must be reset as well.
+
+```{r}
+# Five generations of selection on genetic values, since this trait has
+# no error variance and so no phenotypes
+burnIn = popMix
+for(i in 1:5){
+  burnIn = selectCross(burnIn, nInd = 50, nCrosses = 250, nProgeny = 2,
+                       use = "gv", simParam = SPmix)
+}
+summarize(burnIn, SPmix)
+
+# Frequencies of the five loci of largest effect, before and after
+largeQtl = order(abs(SPmix$traits[[1]]@addEff), decreasing = TRUE)[1:5]
+round(rbind(
+  founders = colMeans(pullQtlGeno(popMix, simParam = SPmix))[largeQtl] / 2,
+  burnIn = colMeans(pullQtlGeno(burnIn, simParam = SPmix))[largeQtl] / 2
+), 2)
+
+# Rescale against the burned-in population, reset the residual
+# variance, then recalculate genetic values and phenotypes
+SPmix$founderPop = burnIn
+SPmix$rescaleTraits(mean = 0, var = 1)
+SPmix$setVarE(h2 = 0.3)
+burnIn = resetPop(burnIn, simParam = SPmix)
+burnIn = setPheno(burnIn, simParam = SPmix)
+summarize(burnIn, SPmix)
+varP(burnIn)
+```
+
+Five generations of strong selection removed most of the additive
+variance, in two ways. Allele frequencies changed: four of the five loci
+of large effect were fixed and the fifth nearly so, which shows as the
+fall in genic variance, the variance the population would have at its
+allele frequencies in linkage equilibrium. Selection also created
+negative linkage disequilibrium between the loci that still segregate,
+which is the Bulmer effect [@bulmer1971Effect]: the additive variance is
+below the genic variance because favorable alleles at one locus have
+come to be paired with unfavorable alleles at others. The
+[Quantitative Genetics](QuanGen.html) article describes this
+partition in more detail.
+
+Rescaling sets the additive variance, disequilibrium included, to the
+requested value. The disequilibrium is not permanent: if selection
+stops, recombination breaks it down, fastest between unlinked loci, and
+the additive variance rises toward the genic variance, above the
+requested value. Three generations of random mating show it:
+
+```{r}
+relaxed = burnIn
+for(i in 1:3){
+  relaxed = randCross(relaxed, nCrosses = 500, simParam = SPmix)
+}
+summarize(relaxed, SPmix)
+```
+
+The additive variance rose from 1 to about 1.6, nearly the genic
+variance, while the genic variance itself hardly changed. Rescaling
+against a population still in strong disequilibrium therefore gives a
+scale whose additive variance will not stay at the requested value. Bear
+that in mind when choosing the reference population and the target
+variance; rescaling after a few generations of random mating, once the
+disequilibrium has largely decayed, avoids the drift.
+
+`setVarE(h2 = 0.3)` sets the residual variance from the rescaled
+additive variance, so that the heritability in the reference population
+is the requested 0.3. Without it, the residual variance would keep its
+old value on the old scale, or here, since this trait had none, there
+would be no phenotypes at all.
+
+`importTrait` also takes dominance effects with `domEff`, and
+additive-by-additive epistasis with `epiPairs` and `epiEff`; the
+[Importing Data](ImportingData.html) article has an example.
+
+### Editing an existing trait
+
+Because a trait is an ordinary S4 object, an existing trait can be
+copied, changed and added with `manAddTrait`. Here the five loci of
+largest effect in the normal trait are made ten times larger, and the
+result is added to a new `SimParam` built from the same founders. Traits
+can only be added before any population is created, which is why a new
+`SimParam` is used rather than `SP`:
+
+```{r}
+edited = SP$traits[[1]]
+largest = order(abs(edited@addEff), decreasing = TRUE)[1:5]
+edited@addEff[largest] = edited@addEff[largest] * 10
+edited@name = "Edited"
+
+SPedit = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SPedit$nThreads = 1L
+```
+```{r}
+SPedit$manAddTrait(edited)
+SPedit$traitNames
+```
+
+The edited trait is not rescaled, so its mean and variance in the founders
+are whatever the new effects imply. `manAddTrait` accepts any object
+descended from `LociMap`, so a trait can also be built from scratch with
+`new()`, but that requires knowing the slots of the trait classes, and
+`importTrait` is usually easier.
+
+## Dominance by variance
+
+`addTraitAD` describes dominance by the distribution of dominance degrees,
+which has a clear meaning at one locus but leaves the resulting dominance
+variance and inbreeding depression to be discovered. `altAddTraitAD`
+works the other way round: it takes the additive variance, the dominance
+variance `varD` and the inbreeding depression `inbrDepr` wanted in the
+founders, and searches for a mean and variance of dominance degrees that
+achieve them, within the limits `limMeanDD` and `limVarDD`.
+
+```{r}
+SPad = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SPad$nThreads = 1L
+```
+```{r}
+SPad$altAddTraitAD(nQtlPerChr = 100, mean = 0, varA = 1, varD = 0.2,
+                   inbrDepr = 1)
+```
+
+The summary reports what was achieved. The mean and additive variance
+are always exact; the dominance variance and inbreeding depression are
+met only as closely as the limits on the dominance degrees allow, so the
+summary is worth reading. Inbreeding depression here is the difference in
+mean between the founders and a fully inbred population with the same
+allele frequencies. Doubled haploids of the founders are such a
+population:
+
+```{r}
+popAD = newPop(founderPop, simParam = SPad)
+dhAD = makeDH(popAD, simParam = SPad)
+
+c(varD = varD(popAD, simParam = SPad)[1, 1],
+  inbreedingDepression = unname(meanG(popAD) - meanG(dhAD)))
+```
+
+The dominance variance matches the request, and the drop in mean from the
+founders to their doubled haploids is close to the requested inbreeding
+depression of 1. It is not exact, because one doubled haploid per founder
+is a finite sample whose allele frequencies differ slightly from the
+founders'.
+
+## Traits that are not continuous
+
+Phenotypes in `AlphaSimR` are continuous, but many traits are recorded as
+scores, categories or counts. The usual way to simulate them is a
+threshold or link model: the continuous phenotype is a latent value, and
+what is recorded is a function of it. Three functions apply such
+transformations to a matrix or vector of values:
+
+- `asCategorical` cuts the latent scale into ordered categories, either
+  at given `threshold`s or so that proportions `p` fall in each category;
+- `asLogNormal` returns `exp(x)`, optionally shifted on the log scale;
+- `asPoisson` draws counts with mean `exp(x)`, also optionally shifted.
+
+```{r}
+SPcat = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SPcat$nThreads = 1L
+```
+```{r}
+SPcat$addTraitA(nQtlPerChr = 100)
+SPcat$setVarE(h2 = 0.5)
+popCat = newPop(founderPop, simParam = SPcat)
+
+# Three categories in proportions 0.2, 0.5 and 0.3 of a normal latent
+# scale with the phenotypic mean and variance
+latent = pheno(popCat)[, 1]
+score = asCategorical(latent, p = c(0.2, 0.5, 0.3),
+                      mean = 0, var = varP(popCat)[1, 1])
+prop.table(table(score))
+```
+
+The thresholds come from a normal distribution with the given `mean`
+and `var`, so the realized proportions are close to `p` but not exact.
+
+### Recording the transformed trait automatically
+
+Applying the transformation by hand works for one population. To have
+every phenotype in the simulation recorded on the new scale, set
+`SP$finalizePheno`, a function applied to every new matrix of phenotypes,
+including those from later calls to `setPheno`:
+
+```{r}
+SPcat$finalizePheno = function(pheno, pop, simParam, ...){
+  pheno[, 1] = asCategorical(pheno[, 1], p = c(0.2, 0.5, 0.3),
+                             mean = 0, var = 2)
+  pheno
+}
+
+popScored = setPheno(popCat, simParam = SPcat)
+table(pheno(popScored)[, 1])
+```
+
+The function receives the phenotype matrix, the population and the
+`SimParam`, and must return a matrix with the same rows and columns. The
+latent variance is written as 2 here, the phenotypic variance in the
+founders for a trait with a genetic variance of 1 and a heritability of
+0.5. The thresholds then stay fixed as the population changes under
+selection, which is the right model for a fixed recording scale, such as
+a score from 1 to 3.
+
+### Selecting on a score
+
+A score carries less information than the latent value it was cut from,
+so selection on it achieves less. Many individuals share a score, and
+ties are broken by order, so a small random value is added to break them
+at random instead:
+
+```{r}
+nSel = 100
+byLatent = selectInd(popCat, nInd = nSel, simParam = SPcat)
+byScore = selectInd(popCat, nInd = nSel, simParam = SPcat,
+                    use = function(pop, trait){
+                      score + runif(length(score), 0, 1e-6)
+                    })
+
+round(c(latent = unname(meanG(byLatent) - meanG(popCat)),
+        score = unname(meanG(byScore) - meanG(popCat))), 3)
+```
+
+Selecting on the three-category score gave a little under 80% of the
+genetic superiority of selecting on the latent phenotype. In general,
+the fewer the categories, the more is lost.
+
+### Counts
+
+`asPoisson` models counts through a log link. Applied to genetic values,
+it gives counts whose expected value depends on the genotype; the shift
+`meanLogShift` sets the average count:
+
+```{r}
+counts = asPoisson(gv(popCat)[, 1], meanLogShift = log(2))
+c(mean = mean(counts), var = var(counts))
+table(counts)
+```
+
+The mean count is above 2 because the genetic values vary on the log
+scale: with a mean of 0 and a variance of 1, the average of
+$2e^{x}$ is $2e^{1/2} \approx 3.3$. For the same reason the counts are
+far more variable than Poisson counts with a single mean, which is the
+overdispersion seen in real count data. A smaller genetic variance on the
+log scale gives counts closer to Poisson.
+
+## Changing every population as it is made
+
+`SP$finalizePop` is the population-level counterpart of `finalizePheno`:
+a function applied as the last step of creating any new population, with
+the population as its first argument and the `SimParam` as its second. It
+is a convenient place to attach data to every population, such as the
+`misc` slots described in the [Misc](Misc.html) article. Because every
+population then carries the same `misc` elements, they also survive
+merging.
+
+```{r}
+SPcat$finalizePop = function(pop, simParam, ...){
+  pop@misc$family = paste(pop@mother, pop@father, sep = "_")
+  pop
+}
+
+progeny = randCross(popCat, nCrosses = 10, nProgeny = 3, simParam = SPcat)
+head(progeny@misc$family)
+```
+
+`finalizePop` runs on every population the package creates, including
+populations made inside other functions, so it should be quick and should
+not assume anything about the population beyond its class. Setting it
+back to `function(pop, ...) pop` turns it off.
+
+## References

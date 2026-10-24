@@ -1,0 +1,432 @@
+---
+title: "Selection in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Selection in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+## Introduction
+
+Selection is how a simulated breeding program makes progress. Every
+selection function in `AlphaSimR` answers the same three questions: which
+individuals are candidates, what value they are ranked on, and how many
+are kept. This article works through those questions, starting with
+selection of individuals, then the use of family structure, then
+selection on several traits at once, and ends with tools for predicting
+what selection will achieve.
+
+Two related topics have articles of their own. Selection on genomic
+predictions is covered in `vignette("GenomicSelection")`, and selection
+that limits the loss of genetic diversity is covered in the
+[Optimal Contribution Selection](OptimalContributionSelection.html)
+article.
+
+## Setting up an example
+
+The example population carries two traits with a negative genetic
+correlation, as is common between a yield trait and a quality trait.
+Phenotypes are generated automatically for every new population, because
+the error variances are set.
+
+```{r}
+set.seed(1936)
+
+founderPop = quickHaplo(nInd = 100, nChr = 10, segSites = 100)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+```{r}
+SP$addTraitA(nQtlPerChr = 50, mean = c(0, 0), var = c(1, 1),
+             corA = matrix(c(1, -0.3, -0.3, 1), nrow = 2))
+SP$setVarE(h2 = c(0.3, 0.5))
+
+basePop = newPop(founderPop, simParam = SP)
+pop = randCross(basePop, nCrosses = 100, nProgeny = 10, simParam = SP)
+nInd(pop)
+```
+
+`quickHaplo` is a reasonable choice here. Nothing in this article depends
+on markers tracking QTL, which is where `quickHaplo` founders fall short
+(see `vignette("GenomicSelection")`).
+
+## What to select on
+
+The `use` argument chooses the value that candidates are ranked on.
+
+| `use` | Ranks on | Realistic? |
+|:--|:--|:--|
+| `"pheno"` | phenotypes, the default | yes |
+| `"ebv"` | estimated breeding values in the `ebv` slot | yes |
+| `"gv"` | true genetic values | no, a diagnostic |
+| `"bv"` | true breeding values, computed in `pop` | no, a diagnostic |
+| `"rand"` | nothing; selection is at random | a control |
+
+Phenotypes and estimated breeding values are what a breeder actually
+sees. Genetic values and breeding values are known only in a simulation,
+which makes them useful for asking how well a scheme could do if
+evaluation were perfect. Random selection gives a baseline with no
+selection at all, so a gain that also appears under `"rand"` is not
+caused by selection.
+
+```{r}
+nSel = 100
+
+compare = sapply(c("pheno", "gv", "bv", "rand"), function(u){
+  selected = selectInd(pop, nInd = nSel, use = u, simParam = SP)
+  meanG(selected) - meanG(pop)
+})
+rownames(compare) = c("Trait1", "Trait2")
+round(compare, 3)
+```
+
+The columns are the genetic superiority of the selected individuals over
+the whole population for each trait, the selection differential measured
+on genetic values. Selection on trait 1 also moves trait 2, in the
+opposite direction, because the traits are negatively correlated.
+Selection on genetic values does best, phenotypic selection achieves
+about half as much at a heritability of 0.3, and random selection
+achieves nothing beyond sampling noise. The `"gv"` and `"bv"` columns are
+identical because the traits are purely additive; with dominance they
+would rank individuals differently.
+
+### A criterion of your own
+
+`use` can also be a function. It is called as `use(pop, trait, ...)` and
+must return one value per individual. As an example, stabilizing
+selection toward an intermediate optimum ranks individuals by how close
+their phenotype is to a target, so the most extreme individuals are
+discarded in both directions:
+
+```{r}
+nearTarget = function(pop, trait, target){
+  -abs(pheno(pop)[, trait] - target)
+}
+
+stabilized = selectInd(pop, nInd = nSel, use = nearTarget, target = 0,
+                       simParam = SP)
+range(pheno(pop)[, 1])
+range(pheno(stabilized)[, 1])
+```
+
+Arguments the function needs, such as `target` here, are passed through
+`...` of the selection function.
+
+## Selecting individuals
+
+`selectInd` ranks every candidate and keeps the best `nInd`. A few
+arguments change what "best" and "candidate" mean:
+
+- `selectTop = FALSE` keeps the lowest values instead, for traits where
+  smaller is better.
+- `candidates` restricts selection to a subset, given by position or by
+  ID, without having to subset the population first.
+- `sex` selects only females (`"F"`) or males (`"M"`) when the
+  simulation has separate sexes.
+- `returnPop = FALSE` returns the positions of the selected individuals
+  rather than a population, which is useful when the selected
+  individuals have to be found in other objects, as below.
+
+```{r}
+# The ten lowest, from the first 500 individuals only
+lowest = selectInd(pop, nInd = 10, selectTop = FALSE, candidates = 1:500,
+                   returnPop = FALSE, simParam = SP)
+lowest
+```
+
+When fewer candidates are available than requested, the default is to
+warn and return all of them. `onShortfall = "error"` stops instead, which
+is the safer choice inside a long simulation, and `onShortfall = "none"`
+returns them silently.
+
+```{r}
+small = selectInd(pop[1:5], nInd = 10, onShortfall = "none", simParam = SP)
+nInd(small)
+```
+
+`attrition` is the opposite of selection: it removes individuals at
+random, each with probability `p`, to model losses that have nothing to
+do with merit, such as plants that fail to establish.
+
+```{r}
+survivors = attrition(pop, p = 0.05)
+nInd(survivors)
+```
+
+## Using family structure
+
+Most breeding populations are made of families, and selection can take
+that structure into account. Full-sib families are identified by their
+mother and father.
+
+```{r}
+families = paste(pop@mother, pop@father)
+length(unique(families))
+```
+
+- `selectFam` ranks families by the mean value of their members and keeps
+  every member of the best `nFam` families.
+- `selectWithinFam` keeps the best `nInd` individuals from every family.
+
+```{r}
+topFamilies = selectFam(pop, nFam = 10, simParam = SP)
+nInd(topFamilies)
+
+bestOfEach = selectWithinFam(pop, nInd = 1, simParam = SP)
+nInd(bestOfEach)
+```
+
+`famType` chooses what counts as a family: `"B"` (the default) for full
+sibs, or `"F"` and `"M"` for half sibs sharing a mother or a father.
+An individual with an unknown parent is a family of its own.
+
+### Why family structure matters
+
+Truncation selection on phenotype favors whole families, because members
+of a good family share good alleles. Over several generations that
+concentrates the population on fewer families and erodes genetic
+variance faster. Selecting within families first, and then across them,
+caps how many individuals any one family contributes.
+
+The comparison below runs three strategies for 15 generations from the
+same population. Each keeps 20 parents a generation and makes 20 full-sib
+families of 10:
+
+- **truncation**: the best 20 individuals, regardless of family;
+- **within family**: the best individual from each of the 20 families;
+- **two-stage**: the best two from each family, then the best 20 of
+  those, so that no family supplies more than two parents.
+
+```{r}
+startPop = randCross(basePop, nCrosses = 20, nProgeny = 10, simParam = SP)
+
+runStrategy = function(strategy, nGen = 15){
+  pop = startPop
+  out = data.frame(generation = 0, meanG = meanG(pop)[1],
+                   genicVarA = genicVarA(pop, simParam = SP)[1],
+                   nFamilies = NA)
+  for(gen in seq_len(nGen)){
+    parents = switch(strategy,
+      truncation = selectInd(pop, nInd = 20, simParam = SP),
+      within = selectWithinFam(pop, nInd = 1, simParam = SP),
+      twoStage = selectInd(selectWithinFam(pop, nInd = 2, simParam = SP),
+                           nInd = 20, simParam = SP))
+    nFamilies = length(unique(paste(parents@mother, parents@father)))
+    pop = randCross(parents, nCrosses = 20, nProgeny = 10, simParam = SP)
+    out = rbind(out, data.frame(generation = gen, meanG = meanG(pop)[1],
+                                genicVarA = genicVarA(pop, simParam = SP)[1],
+                                nFamilies = nFamilies))
+  }
+  out
+}
+
+strategies = c("truncation", "within", "twoStage")
+results = lapply(strategies, runStrategy)
+names(results) = strategies
+```
+
+```{r fig.width=7, fig.height=3.5}
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+cols = c("black", "red", "blue")
+plot(NULL, xlim = c(0, 15), ylim = range(sapply(results, `[[`, "meanG")),
+     xlab = "Generation", ylab = "Mean genetic value")
+for(i in seq_along(results)){
+  lines(results[[i]]$generation, results[[i]]$meanG, col = cols[i], lwd = 2)
+}
+legend("topleft", legend = strategies, col = cols, lwd = 2, bty = "n")
+plot(NULL, xlim = c(0, 15), ylim = range(sapply(results, `[[`, "genicVarA")),
+     xlab = "Generation", ylab = "Genic additive variance")
+for(i in seq_along(results)){
+  lines(results[[i]]$generation, results[[i]]$genicVarA, col = cols[i], lwd = 2)
+}
+```
+
+```{r}
+# Families contributing parents, averaged over the generations,
+# and the state of the population after the last generation
+round(sapply(results, function(x){
+  c(nFamilies = mean(x$nFamilies, na.rm = TRUE),
+    meanG = x$meanG[nrow(x)],
+    genicVarA = x$genicVarA[nrow(x)])
+}), 3)
+```
+
+In this run truncation selection gave the most gain over 15 generations,
+but it drew its parents from about 12 of the 20 families on average and
+lost the most genic variance. Selecting the best individual of every
+family kept all 20 families and the most variance, at the cost of the
+least gain, because it ignores the information in family means
+altogether. The two-stage scheme falls between the two. Which balance is
+right depends on the time horizon: variance lost now is gain that cannot
+be made later, and over a longer horizon than this one the ranking of
+the strategies can change.
+
+Genic variance is used here rather than genetic variance because it
+depends only on allele frequencies, so it measures diversity that has
+been lost for good. Genetic variance also falls with the negative
+linkage disequilibrium that selection creates, and that part is
+recovered when selection stops (see the
+[Quantitative Genetics](QuanGen.html) article).
+
+A single simulation is one realization. A real comparison repeats each
+strategy many times and compares the averages.
+
+## Selecting and crossing in one step
+
+Two functions combine selection with mating.
+
+`selectCross` selects parents and crosses them at random. It is
+`selectInd` followed by `randCross`, and takes `nInd`, or `nFemale` and
+`nMale` when the simulation has separate sexes:
+
+```{r}
+progeny = selectCross(pop, nInd = 50, nCrosses = 100, nProgeny = 5,
+                      simParam = SP)
+nInd(progeny)
+```
+
+`selectOP` models open pollination: each selected plant produces
+`nSeeds` seeds, a proportion `probSelf` of them by selfing and the rest
+pollinated at random by the population. With `pollenControl = TRUE`,
+only the selected plants contribute pollen, as when selection happens
+before flowering.
+
+```{r}
+seeds = selectOP(pop, nInd = 50, nSeeds = 10, probSelf = 0.1,
+                 simParam = SP)
+nInd(seeds)
+```
+
+## Selecting on several traits
+
+The `trait` argument usually names one trait, by number or by name, but
+it can also be a function that combines the traits into a single value.
+`selIndex` is such a function: given a matrix of values with one column
+per trait and a vector of weights `b`, it returns the weighted sum.
+
+What weights to use is the question of index selection. The Smith-Hazel
+index [@smith1936Discriminant; @hazel1943Genetic] chooses the weights
+that maximize the response in an aggregate genotype, the sum of the
+genetic values weighted by their economic values. `smithHazel` computes
+them from the economic weights and the genetic and phenotypic
+covariance matrices:
+
+```{r}
+econWt = c(1, 1)
+b = smithHazel(econWt, varG(pop), varP(pop))
+b
+```
+
+The index puts less weight on the less heritable trait than the economic
+weights alone would. Selecting on it, and comparing with selection on
+each trait alone:
+
+```{r}
+superiority = function(selected){
+  delta = meanG(selected) - meanG(pop)
+  c(delta, aggregate = sum(econWt * delta))
+}
+
+round(rbind(
+  trait1 = superiority(selectInd(pop, nSel, trait = 1, simParam = SP)),
+  trait2 = superiority(selectInd(pop, nSel, trait = 2, simParam = SP)),
+  index = superiority(selectInd(pop, nSel, trait = selIndex, b = b,
+                                simParam = SP))
+), 3)
+```
+
+Selecting on either trait alone improves that trait at the expense of
+the other. The index gives up some of each trait's individual response
+and in exchange gives the largest improvement in the aggregate genotype,
+which is what it is designed to maximize.
+
+`selIndex` is applied to whatever `use` names, so the same weights can be
+applied to estimated breeding values with `use = "ebv"`. Weights for
+EBVs are not the Smith-Hazel weights for phenotypes; with EBVs from a
+multiple trait model, the economic weights themselves are the usual
+choice.
+
+## Predicting the response
+
+The breeder's equation predicts the response to truncation selection in
+one generation as $R = i h^2 \sigma_P$, where $i$ is the selection
+intensity, the mean of the selected individuals in standard deviations
+of the criterion [@falconer1996Introduction]. `selInt` gives $i$ for a
+proportion selected, assuming a normal distribution and an infinite
+population:
+
+```{r}
+p = nSel / nInd(pop)
+selInt(p)
+```
+
+The prediction can be checked against the simulation. The breeding
+values of the parents are computed in the population they were selected
+from, the reference population in which they are defined, so the
+selected individuals are found with `returnPop = FALSE`:
+
+```{r}
+h2 = varA(pop)[1, 1] / varP(pop)[1, 1]
+predicted = selInt(p) * h2 * sqrt(varP(pop)[1, 1])
+
+take = selectInd(pop, nInd = nSel, returnPop = FALSE, simParam = SP)
+bvPop = bv(pop, simParam = SP)[, 1]
+selectionResponse = mean(bvPop[take]) - mean(bvPop)
+
+offspring = randCross(pop[take], nCrosses = 500, nProgeny = 2,
+                      simParam = SP)
+realized = meanG(offspring)[1] - meanG(pop)[1]
+
+round(c(predicted = predicted, parentsBV = selectionResponse,
+        offspring = unname(realized)), 3)
+```
+
+The three values agree closely. The predicted response assumes an
+infinite population and normally distributed phenotypes, and the mean
+breeding value of the selected parents is what the prediction actually
+targets. The offspring mean differs from it only by Mendelian sampling
+in a finite number of offspring, since for an additive trait the
+expected value of an offspring is the mean of its parents' breeding
+values. The equation describes one generation; over several, selection
+reduces the genetic variance through the Bulmer effect and the response
+per generation falls.
+
+`usefulness` summarizes a population by the mean value of its best
+individuals, the top proportion `p`. It is a quick way to rank several
+candidate populations by what selection within each could deliver, using
+genetic values by default:
+
+```{r}
+usefulness(pop, p = 0.1, simParam = SP)
+```
+
+## Selecting among populations
+
+When a simulation holds several populations together in a `MultiPop`,
+such as one per family or per breeding program, `selectPop` keeps the
+best `nPop` of them, ranked on a summary (`mean` by default) of the
+values named by `use` and `trait`, and `calcPopValue` computes such a
+summary for every population. The other selection functions also accept
+a `MultiPop`, and select within each of its populations.
+
+## References

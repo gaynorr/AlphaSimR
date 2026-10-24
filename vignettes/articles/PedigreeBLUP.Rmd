@@ -1,0 +1,338 @@
+---
+title: "Pedigree BLUP in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Pedigree BLUP in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+## Introduction
+
+Before genomic selection, breeding values were predicted from phenotypes
+and pedigrees. Pedigree BLUP, also called the animal model
+[@henderson1975Best], combines an individual's own records with those of
+its relatives, weighting each relative by how closely related it is. It
+remains the standard method in many breeding programs, and in a
+simulation it is the natural baseline against which genomic selection is
+compared.
+
+`AlphaSimR` provides it through `pedBLUP`, which works like the genomic
+prediction functions described in `vignette("GenomicSelection")`: fit a
+model to a training population, then apply it to any population with
+`setEBV`. This article covers recording the pedigree, the relationships
+it implies, fitting the model, and what pedigree prediction can and
+cannot do.
+
+## Recording the pedigree
+
+`AlphaSimR` keeps a record of every individual's parents only when asked
+to. Pedigree tracking is turned on with `setTrackPed`, and it has to be
+turned on before the first population is created, because a pedigree
+that starts part way through a simulation is missing the relationships
+among its first individuals.
+
+```{r}
+set.seed(1975)
+
+founderPop = quickHaplo(nInd = 4, nChr = 1, segSites = 10)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+```{r}
+SP$setTrackPed(TRUE)
+
+founders = newPop(founderPop, simParam = SP)
+```
+
+## Relationships from a pedigree
+
+The relationships a pedigree implies are summarized by the numerator
+relationship matrix $A$, whose off-diagonal elements are twice the
+kinship between two individuals and whose diagonal is one plus the
+individual's inbreeding coefficient for a diploid. `pedigreeA` calculates
+it for a population, and `pedigreeInbreeding` the inbreeding coefficients
+alone.
+
+The small pedigree below has two full sibs, a half sib of them, a selfed
+individual and a doubled haploid, all descended from the four founders.
+
+```{r}
+fullSibs = makeCross(founders, crossPlan = matrix(c(1, 2), nrow = 2,
+                                                  ncol = 2, byrow = TRUE),
+                     simParam = SP)
+halfSib = makeCross(founders, crossPlan = matrix(c(1, 3), nrow = 1),
+                    simParam = SP)
+selfed = self(founders[1], simParam = SP)
+dh = makeDH(founders[1], simParam = SP)
+
+everyone = c(founders, fullSibs, halfSib, selfed, dh)
+getPed(everyone)
+```
+
+The selfed individual (8) and the doubled haploid (9) appear to have
+unknown parents. That is because `self` and `makeDH` default to
+`keepParents = TRUE`, which labels the new individual's `mother` and
+`father` slots with its parent's parents, here the unknown parents of a
+founder. The pedigree recorded in the `SimParam` always holds the real
+parent, with a column marking doubled haploids, and it is what the
+pedigree functions use:
+
+```{r}
+SP$pedigree
+```
+
+```{r}
+round(pedigreeA(everyone, simParam = SP), 3)
+pedigreeInbreeding(everyone, simParam = SP)
+```
+
+The matrix shows the familiar values. The founders are unrelated and not
+inbred. Full sibs have a relationship of 0.5 and each has 0.5 with each
+parent. The half sib has 0.25 with each full sib. Selfing an outbred
+founder gives an inbreeding coefficient of 0.5. A doubled haploid is
+fully inbred, so its diagonal is 2, and because its genome is two copies
+of one gamete from its parent, it is related to everyone else exactly as
+that parent is.
+
+Founders made by `runMacs` or `quickHaplo` with `inbred = TRUE` are taken
+to be fully inbred rather than outbred. For polyploids, inheritance is
+taken to be autopolyploid without double reduction, and the diagonal is
+$1 + (v - 1)F$ for ploidy $v$. The details are on the help page of
+`pedigreeA`.
+
+The calculation uses the method of @colleau2002Indirect, which never
+forms the relationship matrix of the whole pedigree, so it stays fast in
+long simulations. `pedigreeA` still returns a dense matrix, so its memory
+grows with the square of the number of individuals asked for.
+
+## Fitting the model
+
+The model is $y = Xb + Zu + e$, where $b$ holds the fixed effects, $u$
+the breeding values with covariance $A\sigma^2_u$, and $e$ the errors.
+`pedBLUP` builds the mixed model equations from the inverse of $A$,
+which is sparse, and solves them with a sparse Cholesky factorization.
+Unless they are given, the variance components are estimated by
+restricted maximum likelihood (REML), using the derivative-free approach
+of @graser1987Derivative and @meyer1989Restricted.
+
+The example simulates four generations of random mating in 40 full-sib
+families of five, and uses every phenotyped individual to train the
+model. A fifth generation, made from the fourth, is the set of selection
+candidates. `runMacs` founders are used so that the same population can
+later be used for genomic prediction.
+
+```{r}
+set.seed(2001)
+
+founderPop = runMacs(nInd = 200, nChr = 10, segSites = 200)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+```{r}
+SP$setTrackPed(TRUE)
+SP$restrSegSites(minQtlPerChr = 50, minSnpPerChr = 100)
+SP$addTraitA(nQtlPerChr = 50)
+SP$addSnpChip(nSnpPerChr = 100)
+SP$setVarE(h2 = 0.3)
+
+generations = vector("list", 5)
+generations[[1]] = newPop(founderPop, simParam = SP)
+for(i in 2:5){
+  generations[[i]] = randCross(generations[[i - 1]], nCrosses = 40,
+                               nProgeny = 5, simParam = SP)
+}
+
+trainPop = do.call(c, generations[1:4])
+candidates = generations[[5]]
+nInd(trainPop)
+```
+
+```{r}
+pedModel = pedBLUP(trainPop, simParam = SP)
+
+pedModel@Vu
+pedModel@Ve
+```
+
+The estimates can be compared with the variances the simulation was set
+up with, an additive genetic variance of 1 and an error variance of
+`r round(SP$varE[1], 3)` in the founders:
+
+```{r}
+SP$varA
+SP$varE
+```
+
+## Predicting with setEBV
+
+As with the genomic models, `setEBV` applies the fit to a population.
+`value = "bv"` gives estimated breeding values centered on the training
+population, or on `targetPop` when one is supplied, and `value = "gv"`
+gives the estimated breeding value plus the estimate for the first level
+of the fixed effects, which puts the estimate on the scale of the
+phenotypes. The two differ only by a constant, so they rank individuals
+identically. `"female"` and `"male"` are not available.
+
+```{r}
+candidates = setEBV(candidates, pedModel, value = "bv", simParam = SP)
+
+# Accuracy of the candidates' estimated breeding values
+cor(ebv(candidates)[, 1], bv(candidates, simParam = SP)[, 1])
+```
+
+The candidates were not in the training population, so they have no
+records of their own and no records from descendants. Their best linear
+unbiased prediction is then the average of their parents' estimates, and
+that is what `setEBV` uses for any individual outside the fit. The same
+holds for individuals created long after the model was fitted.
+
+### What a pedigree cannot see
+
+A consequence is that full sibs without records get identical estimates,
+because they have identical pedigrees:
+
+```{r}
+family = paste(candidates@mother, candidates@father)
+estimatesPerFamily = tapply(ebv(candidates)[, 1], family,
+                            function(x) length(unique(round(x, 10))))
+table(estimatesPerFamily)
+```
+
+Every family has a single estimate. The pedigree predicts the average of
+a family well, but it carries no information about which sib inherited
+the better half of each parent's genome, the Mendelian sampling term
+that makes up half of the additive variance in an outbred population.
+Markers do carry that information, which is a large part of the
+advantage of genomic selection. Fitting `RRBLUP` to the same training
+population shows the difference:
+
+```{r}
+gsModel = RRBLUP(trainPop, simParam = SP)
+gsCandidates = setEBV(candidates, gsModel, value = "bv", simParam = SP)
+
+accuracy = function(x){
+  cor(ebv(x)[, 1], bv(x, simParam = SP)[, 1])
+}
+
+withinFamily = function(x){
+  # The correlation within each family, averaged over families
+  df = data.frame(ebv = ebv(x)[, 1], bv = bv(x, simParam = SP)[, 1],
+                  family = paste(x@mother, x@father))
+  mean(sapply(split(df, df$family), function(f){
+    if(sd(f$ebv) == 0) return(0)
+    cor(f$ebv, f$bv)
+  }))
+}
+
+round(rbind(
+  pedigree = c(overall = accuracy(candidates),
+               withinFamily = withinFamily(candidates)),
+  markers = c(overall = accuracy(gsCandidates),
+              withinFamily = withinFamily(gsCandidates))
+), 3)
+```
+
+Overall, markers predict the candidates better than the pedigree does.
+The difference comes from within families: the pedigree's within-family
+accuracy is zero by construction, while markers rank sibs with an
+accuracy well above zero. A larger training population generally widens
+the gap, because it improves the estimates of the marker effects, while
+records on the candidates themselves would let the pedigree separate sibs
+too.
+
+## More than one record per individual
+
+An individual that appears in the training population more than once has
+its records treated as repeated records of a single breeding value. That
+is how several years of records on a long-lived parent are combined:
+
+```{r}
+repeated = c(trainPop, setPheno(generations[[4]], simParam = SP))
+nInd(repeated)
+length(unique(repeated@id))
+
+repeatModel = pedBLUP(repeated, simParam = SP)
+```
+
+No permanent environmental effect is fitted, so any non-additive genetic
+variance shared by an individual's repeated records is absorbed into the
+estimate of the additive genetic variance.
+
+The `fixEff` slot is fitted as a set of fixed effects, exactly as in the
+genomic models. Records from different environments or years should be
+labeled with their own `fixEff`, as described in
+`vignette("GenomicSelection")`:
+
+```{r}
+year1 = setPheno(generations[[3]], fixEff = 1L, simParam = SP)
+year2 = setPheno(generations[[4]], fixEff = 2L, simParam = SP)
+yearModel = pedBLUP(c(year1, year2), simParam = SP)
+yearModel@fixEff
+```
+
+## Fitting more cheaply
+
+Estimating the variance components is most of the cost of a fit. Within
+one simulation they change slowly, so a common pattern is to estimate
+them once and pass that fit as `varComp` in later fits, which then only
+solve the mixed model equations. `Vu` and `Ve` can also be given
+directly.
+
+```{r}
+refit = pedBLUP(trainPop, varComp = pedModel, simParam = SP)
+
+c(refit@Vu, refit@Ve)
+```
+
+## Things to know
+
+**The REML search is local.** The variance ratio is searched over two
+orders of magnitude either side of the ratio set for the trait in the
+`SimParam`, or of 1 when that is not available, first on a grid and then
+near its best point. The result is the best ratio found, not a
+guaranteed global maximum, and a warning is given if it falls at the
+edge of the range. Breeding values change little with the ratio near its
+best value.
+
+**No reliabilities are reported.** The output holds estimates, not their
+prediction error variances, as with the genomic models.
+
+**A fit belongs to its pedigree.** `resetPed` discards individuals from
+the recorded pedigree, and new individuals can then take their internal
+IDs. `setEBV` therefore refuses a fit once a reset has discarded any of
+the individuals it was fitted to.
+
+**Ploidy changes are not recorded.** A doubled haploid made by
+`reduceGenome` followed by `doubleGenome` is recorded as two generations
+of selfing, and individuals made by `reduceGenome`, `doubleGenome` or
+`mergeGenome` have the wrong relationships. Use `makeDH` for doubled
+haploids.
+
+**Only one trait.** `pedBLUP` fits a single trait. A function of several
+traits, such as an index, can be passed as `traits` to fit the index as
+one trait.
+
+## References

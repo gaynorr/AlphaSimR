@@ -1,0 +1,347 @@
+---
+title: "Optimal Contribution Selection in AlphaSimR"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Optimal Contribution Selection in AlphaSimR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+## Introduction
+
+Truncation selection takes the best individuals and nothing else into
+account. Relatives tend to be among the best together, so a population
+under truncation selection is soon descended from a few families, and
+the genetic variance that future gain depends on is lost quickly. The
+[Selection](Selection.html) article shows this happening.
+
+Optimal contribution selection [@meuwissen1997Maximizing] makes the
+trade-off explicit: it maximizes the merit of the selected individuals
+subject to a limit on the rate at which inbreeding, or equivalently
+fixation, increases. @woolliams2015Genetic review the theory. Full
+optimal contribution selection chooses how many offspring each
+candidate should have.
+
+`selectOCS` implements an approximation in which every selected
+individual contributes equally. It answers a narrower but common
+question, *which* individuals to keep, while leaving the crossing plan to
+you. This article explains what it restricts, shows it in a simulation,
+and covers measuring the restriction with markers or with the pedigree.
+
+## What is restricted
+
+`selectOCS` restricts the **expected fixation** of the gametes the
+selected individuals will supply. With genotypes at a SNP chip, the
+expected fixation of a set of individuals is
+$$F = \frac{1}{m}\sum_j (2\bar{p}_j - 1)^2 = 1 - \frac{H}{H_{max}},$$
+where $\bar{p}_j$ is the frequency of an allele at locus $j$ among their
+gametes, $H$ the mean expected heterozygosity and $H_{max} = 0.5$ its
+largest possible value. For diploids $F$ equals the average coancestry of
+the selected individuals, measured relative to a base population with
+allele frequencies of 0.5.
+
+The target is set by `inbrTarget` and `inbrType`. The default,
+`inbrType = "relative"` with `inbrTarget = 0.01`, allows the expected
+fixation to rise by 1% of the remaining heterozygosity each generation,
+$\Delta F = 0.01$. Because $\Delta F = 1/(kN_e)$ for ploidy $k$, this
+corresponds to an effective population size of 50 for a diploid. With
+`inbrType = "absolute"`, `inbrTarget` is instead the largest allowed
+value of $F$ itself, which is useful when the candidates were already
+preselected and their own fixation is not a sensible reference.
+
+## A first look
+
+The example uses `runMacs` founders, so that markers and QTL are in
+linkage disequilibrium as they would be in a real population, and tracks
+the pedigree from the start, which the pedigree version of the method
+needs.
+
+```{r}
+set.seed(1997)
+
+founderPop = runMacs(nInd = 200, nChr = 10, segSites = 300)
+
+SP = SimParam$new(founderPop)
+```
+```{r include=FALSE}
+SP$nThreads = 1L
+```
+```{r}
+SP$setTrackPed(TRUE)
+SP$restrSegSites(minQtlPerChr = 50, minSnpPerChr = 200)
+SP$addTraitA(nQtlPerChr = 50)
+SP$addSnpChip(nSnpPerChr = 200)
+SP$setVarE(h2 = 0.3)
+
+basePop = newPop(founderPop, simParam = SP)
+pop = randCross(basePop, nCrosses = 40, nProgeny = 5, simParam = SP)
+```
+
+Selecting 40 parents from 40 families of five, first by truncation and
+then by `selectOCS`:
+
+```{r}
+nParents = 40
+family = function(x) paste(x@mother, x@father)
+
+truncated = selectInd(pop, nInd = nParents, simParam = SP)
+restricted = selectOCS(pop, nInd = nParents, simParam = SP)
+```
+
+`selectOCS` reports the value of the Lagrange multiplier $\kappa$ it
+settled on, the expected fixation achieved, the target, and the
+expected fixation of the whole population. Here $\kappa$ is zero: the
+40 best phenotypes already come from enough families to meet the
+default target, and when that happens the result is ordinary truncation
+selection. A tighter target, half the default, makes the restriction
+bind:
+
+```{r}
+tighter = selectOCS(pop, nInd = nParents, inbrTarget = 0.005,
+                    simParam = SP)
+```
+
+Comparing the three sets:
+
+```{r}
+fixation = function(x){
+  p = colMeans(pullSnpGeno(x, simParam = SP)) / 2
+  mean((2 * p - 1)^2)
+}
+
+round(rbind(
+  truncation = c(meanG = unname(meanG(truncated)[1]), F = fixation(truncated),
+                 families = length(unique(family(truncated)))),
+  OCS = c(meanG = unname(meanG(restricted)[1]), F = fixation(restricted),
+          families = length(unique(family(restricted)))),
+  tighter = c(meanG = unname(meanG(tighter)[1]), F = fixation(tighter),
+              families = length(unique(family(tighter))))
+), 4)
+```
+
+At the default target the two sets are the same. With the tighter
+target, `selectOCS` gives up a little merit to draw its parents from more
+families and bring the expected fixation under the target. The fixation
+values are large, around 0.45, because they are measured relative to
+allele frequencies of 0.5, and few loci in a real or `runMacs` population
+are at 0.5. What the restriction controls is the change from one
+generation to the next.
+
+## Using the selected individuals
+
+The restriction holds only if the selected individuals are used as it
+assumes: each contributes equally to the next generation. `randCross`
+samples crosses at random, so parents get unequal numbers of progeny by
+chance. A crossing plan that uses every parent equally avoids that; a
+circle, in which each parent is crossed with the next, is the simplest:
+
+```{r}
+circle = function(n) cbind(1:n, c(2:n, 1))
+
+progeny = makeCross(restricted, crossPlan = circle(nParents),
+                    nProgeny = 5, simParam = SP)
+table(table(c(progeny@mother, progeny@father)))
+```
+
+Every parent appears in two crosses of five progeny, so each contributes
+ten gametes. `selectCross` with `restrInbr = TRUE` makes the same
+selection and then crosses at random, which is convenient but only
+approximately equal.
+
+## Over many generations
+
+The real test is what happens over many generations. The simulation
+below runs three strategies for 20 generations from the same population,
+each selecting 40 parents on phenotype and crossing them in a circle:
+
+- **truncation**: the best 40 phenotypes;
+- **OCS, markers**: `selectOCS` with the default target, measured at the
+  SNP chip;
+- **OCS, pedigree**: `selectOCS` with the same target, measured with the
+  pedigree (`usePed = TRUE`).
+
+The fixation at the SNP chip and the average pedigree inbreeding of each
+generation are recorded, along with the mean genetic value and the genic
+variance.
+
+```{r}
+runStrategy = function(strategy, nGen = 20){
+  x = pop
+  out = NULL
+  for(gen in 0:nGen){
+    out = rbind(out, data.frame(
+      generation = gen,
+      meanG = meanG(x)[1],
+      genicVarA = genicVarA(x, simParam = SP)[1],
+      fixation = fixation(x),
+      pedigreeF = mean(pedigreeInbreeding(x, simParam = SP))))
+    if(gen == nGen) break
+    parents = switch(strategy,
+      truncation = selectInd(x, nInd = nParents, simParam = SP),
+      markers = suppressMessages(
+        selectOCS(x, nInd = nParents, simParam = SP)),
+      pedigree = suppressMessages(
+        selectOCS(x, nInd = nParents, usePed = TRUE, simParam = SP)))
+    x = makeCross(parents, crossPlan = circle(nParents), nProgeny = 5,
+                  simParam = SP)
+  }
+  out
+}
+
+strategies = c("truncation", "markers", "pedigree")
+results = lapply(strategies, runStrategy)
+names(results) = strategies
+```
+
+```{r fig.width=7, fig.height=6}
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+cols = c("black", "red", "blue")
+panel = function(column, label){
+  plot(NULL, xlim = c(0, 20),
+       ylim = range(sapply(results, `[[`, column)),
+       xlab = "Generation", ylab = label)
+  for(i in seq_along(results)){
+    lines(results[[i]]$generation, results[[i]][[column]],
+          col = cols[i], lwd = 2)
+  }
+}
+panel("meanG", "Mean genetic value")
+legend("topleft", legend = strategies, col = cols, lwd = 2, bty = "n")
+panel("genicVarA", "Genic additive variance")
+panel("fixation", "Fixation at the SNP chip")
+panel("pedigreeF", "Pedigree inbreeding")
+```
+
+The rate of increase per generation, relative to what remains, can be
+compared with the target of 0.01:
+
+```{r}
+rate = function(f){
+  n = length(f)
+  mean((f[-1] - f[-n]) / (1 - f[-n]))
+}
+
+round(sapply(results, function(x){
+  c(meanG = x$meanG[nrow(x)],
+    genicVarA = x$genicVarA[nrow(x)],
+    rateFixation = rate(x$fixation),
+    ratePedigreeF = rate(x$pedigreeF))
+}), 4)
+```
+
+Each version of `selectOCS` holds the rate it measures close to the
+target of 0.01: the marker version for fixation at the SNP chip, and the
+pedigree version for pedigree inbreeding. Truncation exceeds the target
+on both measures. Neither restriction controls the other's measure
+exactly. The pedigree version let fixation at the SNP chip rise faster
+than truncation did, because the pedigree cannot see which alleles
+individuals carry, and the marker version let pedigree inbreeding rise
+somewhat above the target.
+
+Both restricted strategies also made more gain than truncation over 20
+generations in this run. That is not guaranteed: restricting inbreeding
+costs gain in the short term, and the return comes from the variance it
+preserves. Over the 20 generations here the genic variance differed
+little between the strategies, so the ranking of gains is not a robust
+result of this single run.
+
+A single run is one realization of a random process, and these
+strategies differ by amounts comparable to the variation between runs.
+A real comparison repeats each strategy many times.
+
+## Markers or pedigree
+
+The two ways of measuring the restriction behave differently.
+
+With **markers**, the kinship of two candidates is estimated from the
+genotypes they actually carry. The method can therefore balance allele
+frequencies, keeping candidates whose alleles are rare among the others
+selected, and it sees the Mendelian sampling that makes one sib differ
+from another.
+
+With the **pedigree**, kinship is taken from `pedigreeA`, relative to the
+founders of the simulation, and the pedigree knows only who descends
+from whom. Full sibs are related alike to everyone else, so the
+restriction works by spreading selection across families, and sibs are
+chosen between on merit. Because of this, the individuals are chosen one
+at a time with the pedigree, each penalized for its relationships to the
+ones already taken; the marker version penalizes each candidate against
+the allele frequencies of the whole selected set. The help page of
+`selectOCS` gives both methods in full.
+
+A few consequences:
+
+- The pedigree version needs the pedigree tracked from the start of the
+  simulation, with `SP$setTrackPed(TRUE)` before the first population.
+- Its measure is inbreeding relative to the founders, which is zero at
+  the start, while the marker measure is fixation relative to allele
+  frequencies of 0.5, which is not. The two targets are not
+  interchangeable, although both express a rate.
+- Markers usually allow more gain at the same target, because they
+  separate sibs. The run above is not a counterexample to that, since the
+  two versions met targets on different measures.
+- With markers, the target can sometimes be met with fewer selected
+  individuals than $1/(k\Delta F)$, by choosing individuals whose alleles
+  balance each other, but most of the restriction is then spent on that
+  balancing rather than on merit.
+
+## Separate sexes
+
+When the simulation has separate sexes, select females and males with
+`nFemale` and `nMale`. Each sex then supplies half of the gametes, and the
+two are ranked separately against a shared measure of fixation. The
+selected females come before the males in the returned population, so a
+balanced crossing plan can be built from their positions. `selectCross`
+accepts the same arguments together with `restrInbr = TRUE`; setting
+`nInd` instead in a simulation with sexes gives a warning, because
+crosses between sexes cannot then use every parent equally.
+
+```{r eval=FALSE}
+parents = selectOCS(pop, nFemale = 50, nMale = 10, simParam = SP)
+
+# Or select and cross at random in one step
+progeny = selectCross(pop, nFemale = 50, nMale = 10, nCrosses = 200,
+                      restrInbr = TRUE, simParam = SP)
+```
+
+## Choosing the target
+
+A target is easiest to choose as an effective population size,
+$\Delta F = 1/(kN_e)$. An $N_e$ of 50 to 100 is often quoted as the
+minimum for maintaining a population's fitness in the long term, which
+corresponds to $\Delta F$ between 0.01 and 0.005 for a diploid.
+
+The target interacts with the number selected. A random set of $N$
+diploids contributing equally raises the expected fixation by about
+$1/(2N)$ of the remaining heterozygosity, so selecting 40 individuals at
+random gives about 0.0125 on average, above the default target. A
+particular set can do better or worse than that average, as the first
+example showed, where the 40 best phenotypes met the default target. A
+target
+well below $1/(kN)$ forces the method to spend most of its effort
+balancing allele frequencies, and a target the candidates cannot meet
+gives a warning and returns the set found with the strongest restriction
+tried. When that happens, select more individuals or relax the target.
+
+`selectOCS` selects on whatever `trait` and `use` name, so the restriction
+combines with an index (see the [Selection](Selection.html) article) or
+with estimated breeding values from `vignette("GenomicSelection")` or the
+[Pedigree BLUP](PedigreeBLUP.html) article.
+
+## References

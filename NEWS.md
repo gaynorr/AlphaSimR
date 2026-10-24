@@ -114,7 +114,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Split the `SimParam` help page into one page per method, such as `?"SimParam$addTraitA"`.
 * Reorganized the help pages of the `RRBLUP` models around the model each fits.
 * Added vignettes on genomic selection and parallelization. The genome article is now a vignette.
-* Added articles to the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, on quantitative genetics, combining ability, demographic models, gene drop simulations, importing data, genotype-by-environment interactions, simulating a plant breeding program, and storing data in `misc` and `miscPop`, and revised the genetic recombination article.
+* Added articles to the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, on selection, pedigree BLUP, optimal contribution selection, custom traits and trait distributions, quantitative genetics, combining ability, demographic models, gene drop simulations, importing data, simulating a plant breeding program, and storing data in `misc` and `miscPop`, and revised the genetic recombination article.
 
 # AlphaSimR 2.1.0
 

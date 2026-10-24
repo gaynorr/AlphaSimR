@@ -120,7 +120,16 @@ SimParam = R6Class(
     #' @field invalidSnp list of segregating sites that aren't valid SNP
     invalidSnp = "list",
 
-    #' @field founderPop founder population used for variance scaling
+    #' @field founderPop reference population used for variance scaling.
+    #' It starts as the \code{\link{MapPop-class}} the SimParam was
+    #' created with, and new traits are scaled against it. It can be
+    #' replaced by a \code{\link{Pop-class}} from the same simulation,
+    #' such as the population at the end of a burn-in, and
+    #' \code{\link[=SimParam-rescaleTraits]{rescaleTraits}} then scales
+    #' the traits against that population. This is for advanced use: every
+    #' existing population must then be updated with \code{\link{resetPop}},
+    #' which clears phenotypes and EBVs, and the error variances must be
+    #' set again with \code{\link[=SimParam-setVarE]{setVarE}}.
     founderPop = "MapPop",
 
     #' @field finalizePop function applied to newly created populations.
