@@ -860,7 +860,7 @@ splitPop = function(x, by, level = Inf) {
 .splitAtLevels = function(obj, currentLevel, levels, by) {
   if (isPop(obj)) {
     # A Pop at the currentLevel: split only if currentLevel requested (or Inf)
-    if (any(is.infinite(levels)) || currentLevel %in% levels) {
+    if (currentLevel %in% levels || is.infinite(levels)) {
       return(.splitPop(obj, by))
     } else {
       return(obj)
@@ -929,7 +929,8 @@ splitPop = function(x, by, level = Inf) {
   popList = split(pop, groups)
   mp = newEmptyMultiPop()
   if (is.data.frame(by)){
-    groups = lapply(split(by, groups), `[`, -1)
+    # groups = lapply(split(by, groups), `[`, -1)
+    groups = split(by[, -1, drop = FALSE], groups)
     mp@pops = mapply(FUN = .splitPop, pop = popList, by = groups)
   } else {
     mp@pops = lapply(popList, .splitPop, by = by[-1])
