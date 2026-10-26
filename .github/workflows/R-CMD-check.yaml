@@ -26,7 +26,7 @@ jobs:
           - { os: ubuntu-latest, r: "oldrel-1" }
           # The oldest version allowed by Depends in DESCRIPTION; keep the two
           # in step, so that the stated minimum is actually tested
-          - { os: ubuntu-22.04, r: "4.0" }
+          - { os: ubuntu-22.04, r: "4.3.2" }
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

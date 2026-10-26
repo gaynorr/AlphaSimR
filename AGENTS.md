@@ -19,13 +19,16 @@ branch and `master` the release branch. Start a feature from an up-to-date
 into `devel` through a pull request. Do not commit feature work directly
 to `devel` or `master`.
 
-**Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
+**Do not add dependencies.** `Depends` is R (>= 4.3.2); `Imports` is
 `Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
 it needs discussing first. `Matrix` provides the sparse Cholesky
 factorization used by pedigree BLUP; it is a recommended package that
-ships with R.
+ships with R. `Imports` needs Matrix 1.6-0 or later, which R first ships
+in 4.3.2, and current CRAN Matrix needs R 4.4, so 4.3.2 is the oldest R
+on which the package installs without fetching an archived Matrix. That
+is why `Depends` names it.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
@@ -113,8 +116,8 @@ changed and nothing else did.
 
 None of these produces an error, and most will not fail an existing test.
 
-**Reproducibility depends on the order of operations, and no test defends
-it.** A simulation run from a fixed seed must give the same answer. Random
+**Reproducibility depends on the order of operations.** A simulation run
+from a fixed seed must give the same answer. Random
 numbers are consumed as individuals are made, so changing the order in
 which crosses happen, or how many individuals one call produces, changes
 every seeded result. A crossing call builds `nChr * countBlocks(n)` RNG
@@ -128,13 +131,22 @@ Separately, `.newPop` draws from R's own stream: `sample()` for sex when
 `sexes` is `"yes_rand"`, and whatever `setPheno` uses. So R's stream
 advances once per population built, on top of the C++ substreams.
 
-There is no stored expected output anywhere in the package: no
-`tests/testthat/_snaps`, no `expect_snapshot`, no fixtures.
 `tests/testthat/test-reproducibility.R` only compares one run against
 another run in the same build — the same seed twice, and one thread against
 two — and the thread comparisons skip themselves when only one thread is
-available. A change that moves the RNG stream therefore passes the entire
-suite. Review and a `NEWS.md` entry are the only defense.
+available. `tests/testthat/test-seededResults.R` is what catches a moved
+stream: it runs the seeded scenarios in `helper-seededResults.R` and
+compares them with stored values, exactly for genotype checksums,
+identifiers and sexes, and with a tolerance for effects, genetic values
+and phenotypes. If a change moves them on purpose, regenerate the stored
+values as the helper describes, never loosen the comparison, and list the
+change under "Changes to results from a seed" in `NEWS.md`. The scenarios
+cover `quickHaplo` founders, trait sampling, phenotypes, crossing,
+selection, doubled haploids, selfing, pedigree drops, mutation,
+recombination tracking and polyploid meiosis. They do not cover `runMacs`,
+whose output can differ in the last bits between platforms, or the
+genomic and pedigree prediction models, so a change there still needs
+review.
 
 **Results must not depend on `nThreads`.** The invariant is the constant in
 `src/misc.h`:

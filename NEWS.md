@@ -29,6 +29,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * A `SimParam` with recombination tracking that was saved by an earlier version can no longer track recombination or pull IBD haplotypes.
 * The methods `addToRec`, `ibdHaplo`, `updateLastId` and `addToPed` are no longer documented, as they are for internal use.
 * AlphaSimR now imports the Matrix package, a recommended package that ships with R.
+* AlphaSimR now requires R 4.3.2 or later, the first version to ship Matrix 1.6, which pedigree BLUP needs.
 
 ## Pedigree analysis
 
