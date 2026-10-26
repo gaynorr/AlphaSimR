@@ -1,5 +1,3 @@
-# fmt: skip file
-
 #' @useDynLib AlphaSimR, .registration = TRUE
 #' @import Rcpp
 #' @importFrom methods new validObject is .hasSlot slot

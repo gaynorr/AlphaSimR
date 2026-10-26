@@ -11,3 +11,4 @@
 ^codecov\.yml$
 ^AGENTS\.md$
 ^TODO\.txt$
+^\.gitattributes$

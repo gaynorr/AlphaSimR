@@ -1,10 +1,13 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# The site is built for devel too, without being deployed, because R CMD
+# build does not run the articles in vignettes/articles, so this is the only
+# check that they still build before they reach master.
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, devel]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, devel]
   release:
     types: [published]
   workflow_dispatch:
@@ -37,8 +40,10 @@ jobs:
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
 
+      # Only master and releases are published; any other build, including
+      # one started by hand on another branch, is only a check
       - name: Deploy to GitHub pages 🚀
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'release' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'))
         uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
           clean: false

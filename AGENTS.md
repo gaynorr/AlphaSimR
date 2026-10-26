@@ -64,8 +64,14 @@ and `HybridPop`, in `R/Class-HybridPop.R`, is separate from all of them.
   from R's state, and randomness inside a call comes from substreams of it
   rather than from R.
 - `.github/workflows/` holds `R-CMD-check.yaml`, `pkgdown.yaml`,
-  `test-coverage.yaml` and `document.yaml`. Only the last of these writes
-  to the repository; see Generated files.
+  `test-coverage.yaml`, `document.yaml` and `rhub.yaml`. `document.yaml`
+  commits to the branch it runs on; see Generated files. `pkgdown.yaml`
+  builds the site for pushes and pull requests to `devel` and `master`, but
+  deploys it to `gh-pages` only from `master` and releases. `R-CMD-check.yaml`
+  includes a job on the oldest R allowed by `Depends` in `DESCRIPTION`, so a
+  change to one needs the other. `rhub.yaml` runs only by hand and by
+  default runs the sanitizer and valgrind checks CRAN applies to compiled
+  code.
 - `vignettes/articles/` is built by pkgdown but not woven by `R CMD build`,
   because vignette subdirectories are not searched. Its code still has to
   run when the site is built.
@@ -80,10 +86,8 @@ old-style files; in `R/phenotypes.R` and `R/popSummary.R` the two styles
 are at about parity. Follow the function you are working in rather than the
 file as a whole.
 
-Six files carry `# fmt: skip file` on their first line: `R/AlphaSimR.R`,
-`R/Class-Pop.R`, `R/mergePops.R`, `R/popSummary.R`,
-`tests/testthat/test-mergePops.R` and `tests/testthat/test-popSummary.R`.
-Do not add or remove the marker.
+The package does not use an automatic formatter, so do not reformat code
+beyond the lines a change needs.
 
 Comments explain *why*, in full prose sentences, in `src/` as well as `R/`.
 

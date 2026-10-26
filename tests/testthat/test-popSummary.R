@@ -1,4 +1,3 @@
-# fmt: skip file
 context("popSummary")
 
 test_that("meanP, meanEBV, varP, and varEBV work", {

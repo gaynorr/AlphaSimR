@@ -1,5 +1,3 @@
-# fmt: skip file
-
 #' @title Mean genetic values
 #'
 #' @description

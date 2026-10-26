@@ -1,5 +1,3 @@
-# fmt: skip file
-
 #' @title Merge list of populations
 #'
 #' @description Rapidly merges a list of populations into a
