@@ -800,6 +800,9 @@ splitPop = function(x, by, level = Inf) {
               "Consider setting row names of `by` to match `x@id` for clarity.")
     }
     res = .splitPop(x, by)
+    if (isMultiPop(res)) {
+      validObject(res)
+    }
     return(res)
   }
 
@@ -838,6 +841,9 @@ splitPop = function(x, by, level = Inf) {
 
   # Recursively split at requested levels
   res = .splitAtLevels(x, currentLevel = 1L, levels = levels, by = by)
+  if (isMultiPop(res)) {
+    validObject(res)
+  }
   return(res)
 }
 
@@ -866,12 +872,21 @@ splitPop = function(x, by, level = Inf) {
     # if child is Pop, it sits at currentLevel.
     obj@pops = lapply(obj@pops, function(child) {
       if (isMultiPop(child)) {
-        .splitAtLevels(child, currentLevel = currentLevel + 1L, levels = levels, by = by)
+        .splitAtLevels(
+          child,
+          currentLevel = currentLevel + 1L,
+          levels = levels,
+          by = by
+        )
       } else {
-        .splitAtLevels(child, currentLevel = currentLevel, levels = levels, by = by)
+        .splitAtLevels(
+          child,
+          currentLevel = currentLevel,
+          levels = levels,
+          by = by
+        )
       }
     })
-    validObject(obj)
     return(obj)
   }
 }
