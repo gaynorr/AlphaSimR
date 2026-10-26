@@ -30,7 +30,9 @@ By default the founder population is the population used to
 initialize the SimParam object. This population can be changed by
 replacing the population in the founderPop slot. You must run
 \code{\link{resetPop}} on any existing populations to obtain the
-new trait values.
+new trait values. The error variances are not rescaled, so set them
+again with \code{\link[=SimParam-setVarE]{setVarE}} before generating
+phenotypes.
 }
 \examples{
 #Create founder haplotypes

@@ -28,6 +28,8 @@ They have mean zero in \code{pop},
 which supplies the reference quantities used by \code{\link{genParam}}.
 Evaluating the same individual in a different population can therefore
 change returned values.
+A trait with epistasis can have dominance deviations under linkage
+disequilibrium even without dominance effects (see \code{\link{genParam}}).
 
 See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.

@@ -67,9 +67,6 @@ See \code{vignette("traits", package = "AlphaSimR")} for the trait model.
 
 See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 background theory and its demonstration.
-
-See the \href{https://gaynorr.github.io/AlphaSimR/articles/GxE.html}{Genotype-by-Environment article} for
-the genotype-by-environment model
 }
 \examples{
 # Create founder haplotypes
