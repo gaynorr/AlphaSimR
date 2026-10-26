@@ -776,6 +776,69 @@ local({
     }
   })
 
+  # ---- Population mean genetic value (linkage-equilibrium population) ----
+
+  # Observed genotype frequencies at each locus, with loci independent
+  # At each locus, E(x-1) = p-q and Pr(x==1) = H, the observed heterozygosity
+  # Under LE, E((x1-1)*(x2-1)) = (p1-q1)*(p2-q2) for each epistatic pair,
+  # which depends only on allele frequencies, so departures from HWE change
+  # the mean only through dominance effects
+  epiPairsByTrait = list(`9` = list(c("f", "g")), `10` = list(c("h", "i")),
+                         `11` = list(c("j", "k")), `13` = list(c("a", "b")),
+                         `15` = list(c("b", "c")), `17` = list(c("b", "l")),
+                         `18` = list(c("f", "g"), c("h", "i")),
+                         `19` = list(c("m", "n"), c("o", "p")),
+                         `20` = list(c("l", "b")))
+  epiEffByTrait = list(`9` = aa[9], `10` = aa[10], `11` = aa[11], `13` = aa[13],
+                       `15` = aa[15], `17` = aa[17], `18` = c(aa[18], aa[18]),
+                       `19` = c(aa[19], 0), `20` = aa[20])
+  # The loci of each trait, as in the trait guide
+  traitLoci = list("a", "b", "c", "d", "e", c("f", "g"), c("h", "i"),
+                   c("j", "k"), c("f", "g"), c("h", "i"), c("j", "k"),
+                   c("a", "b"), c("a", "b"), c("b", "c"), c("b", "c"), "l",
+                   c("b", "l"), c("f", "g", "h", "i"), c("m", "n", "o", "p"),
+                   c("l", "b"))
+  myMeanLocus_LE = a*(p-q) + H*d
+  myMu_LE = myMuDomHW = myMuEpiLD = numeric(nTrt)
+  for (trait in 1:nTrt) {
+    loci = traitLoci[[trait]]
+    myMu_LE[trait] = intercept + sum(myMeanLocus_LE[loci])
+    # Change in the mean from departures from HWE: d*(H-2pq) at each locus
+    myMuDomHW[trait] = sum(d[loci]*(H[loci]-2*p[loci]*q[loci]))
+    pairs = epiPairsByTrait[[as.character(trait)]]
+    effs = epiEffByTrait[[as.character(trait)]]
+    for (k in seq_along(pairs)) {
+      l = pairs[[k]]
+      myMu_LE[trait] = myMu_LE[trait] + effs[k]*prod(p[l]-q[l])
+      # Change in the mean from LD: aa times the covariance of the dosages
+      myMuEpiLD[trait] = myMuEpiLD[trait] + effs[k]*
+        mean((geno[, l[1]]-2*p[l[1]])*(geno[, l[2]]-2*p[l[2]]))
+    }
+  }
+
+  test_that("genParam: Population mean genetic value (LE population)", {
+    for (trait in 1:nTrt) {
+      expect_equal(unname(gp$mu_LE[trait]), myMu_LE[trait], tolerance = 1e-6)
+      # The mean splits into its Hardy-Weinberg and LD parts
+      expect_equal(unname(gp$mu_LE[trait] - gp$mu_HW[trait]), myMuDomHW[trait], tolerance = 1e-6)
+      expect_equal(unname(gp$mu[trait] - gp$mu_LE[trait]), myMuEpiLD[trait], tolerance = 1e-6)
+    }
+    # Without epistasis LD cannot change the mean
+    noEpi = setdiff(1:nTrt, as.integer(names(epiPairsByTrait)))
+    expect_equal(unname(gp$mu_LE[noEpi]), unname(gp$mu[noEpi]), tolerance = 1e-10)
+    # Exact LE (trait 9) leaves no LD part; partial LD (trait 10) does
+    expect_equal(unname(gp$mu[9] - gp$mu_LE[9]), 0, tolerance = 1e-10)
+    expect_gt(abs(unname(gp$mu[10] - gp$mu_LE[10])), 0.01)
+  })
+
+  test_that("genParam: Population mean genetic value (LE population) - one individual", {
+    for (case in singleCases) {
+      # A single individual has no LD and no variation, so every mean but
+      # mu_HW is its genetic value
+      expect_equal(case$gp$mu_LE, case$gp$mu, tolerance = 1e-10)
+    }
+  })
+
   # ---- Population mean genetic value (observed population) ----
 
   # Falconer (1961), p. 114: frequency-weighted genotype means equal the
@@ -949,10 +1012,72 @@ local({
 
   myAlpha[[20]] = myAlpha[[17]]
 
+  # ---- Within-pair linkage disequilibrium ----
+
+  # The slopes above are the linkage-equilibrium (LE) reference: each locus's
+  # own effects are regressed on its own dosage, and the epistatic effect
+  # adds aa times the partner's mean additive coding, as if the partner were
+  # independent. genParam instead fits each pair's epistatic value,
+  # aa*xa1*xa2, to the pair's two dosages jointly under the observed joint
+  # genotype frequencies, and then to the dosages and dominance codings
+  # together. Under linkage disequilibrium (LD) the joint fit adds ldAlpha to
+  # each slope, and the further fit on the dominance codings adds ldDd to the
+  # dominance deviations; both are zero under exact LE (trait 9).
+  # Equal individual weights retain the observed joint frequencies.
+  # When the dosages do not identify separate slopes, genParam takes the
+  # minimum norm solution on dosages scaled to unit variance: with perfect LD
+  # (trait 11) the slope is split evenly between the two loci, and a fixed
+  # locus (traits 17 and 20) gets none.
+  minNormFit = function(Z, y) {
+    coef = numeric(ncol(Z))
+    ss = colMeans(Z^2)
+    keep = which(ss > 1e-14)
+    if (length(keep) == 0) return(coef)
+    Zs = sweep(Z[, keep, drop = FALSE], 2, sqrt(ss[keep]), "/")
+    e = eigen(crossprod(Zs)/nrow(Zs), symmetric = TRUE)
+    use = e$values > 1e-10*max(e$values)
+    b = e$vectors[, use, drop = FALSE] %*%
+      (crossprod(e$vectors[, use, drop = FALSE], colMeans(Zs*y))/e$values[use])
+    coef[keep] = as.vector(b)/sqrt(ss[keep])
+    coef
+  }
+  # epiPairsByTrait and epiEffByTrait are defined with the LE population mean
+  ldAlpha = lapply(myAlpha, function(alpha) alpha*0)
+  ldDd = matrix(0, nrow = nInd, ncol = nTrt)
+  xCentered = sweep(geno, MARGIN = 2, STATS = colMeans(geno), FUN = "-")
+  xdCentered = geno*(2-geno)
+  xdCentered = sweep(xdCentered, MARGIN = 2, STATS = colMeans(xdCentered), FUN = "-")
+  for (trait in as.integer(names(epiPairsByTrait))) {
+    pairs = epiPairsByTrait[[as.character(trait)]]
+    effs = epiEffByTrait[[as.character(trait)]]
+    for (k in seq_along(pairs)) {
+      loci = pairs[[k]]
+      y = effs[k]*(geno[, loci[1]]-1)*(geno[, loci[2]]-1)
+      y = y - mean(y)
+      Zx = xCentered[, loci, drop = FALSE]
+      Zd = xdCentered[, loci, drop = FALSE]
+      gamma = minNormFit(Zx, y)
+      beta = minNormFit(cbind(Zx, Zd), y)
+      # The LE reference slope from the epistatic effect, zero for a fixed locus
+      marginal = effs[k]*unname(p[rev(loci)]-q[rev(loci)])
+      marginal[apply(Zx, 2, function(z) all(z == 0))] = 0
+      ldAlpha[[trait]][loci] = ldAlpha[[trait]][loci] + gamma - marginal
+      ldDd[, trait] = ldDd[, trait] + as.vector(cbind(Zx, Zd) %*% beta - Zx %*% gamma)
+    }
+  }
+  myAlphaObs = Map(`+`, myAlpha, ldAlpha)
+
   test_that("genParam: Average effect of allele substitution (observed population)", {
     for (trait in 1:nTrt) {
-      expect_equal(as.vector(gp$alpha[[trait]]), unname(myAlpha[[trait]]), tolerance = 1e-6)
+      expect_equal(as.vector(gp$alpha[[trait]]), unname(myAlphaObs[[trait]]), tolerance = 1e-6)
     }
+    # Exact LE, a fixed partner and no epistatic effect leave the LE reference
+    for (trait in c(9, 17, 20)) {
+      expect_equal(unname(ldAlpha[[trait]]), rep(0, length(ldAlpha[[trait]])), tolerance = 1e-10)
+      expect_equal(ldDd[, trait], rep(0, nInd), tolerance = 1e-10)
+    }
+    # Perfect LD splits the joint slope evenly
+    expect_equal(unname(ldAlpha[[11]]["j"]), unname(ldAlpha[[11]]["k"]), tolerance = 1e-10)
     # Independent regression check for every single-locus trait, using input gv.
     for (trait in 1:5) {
       locus = singleLoci[trait]
@@ -979,15 +1104,15 @@ local({
 
   # ---- Average effects versus observed two-locus regressions ----
 
-  # There is a distinction between AlphaSimR's marginal-reference alpha and
-  # regression coefficients estimated from the observed joint genotype distribution.
-  # See vignettes/QuanGen.Rmd: "Interpretation under linkage disequilibrium"
-  # and "Relationship to classical theory" in vignette("QuanGen", package = "AlphaSimR").
-  # AlphaSimR averages over the partner locus using its marginal frequencies.
+  # AlphaSimR regresses each locus's own effects on its own dosage, and fits
+  # each pair's epistatic value to both dosages jointly. See
+  # vignettes/articles/QuanGen.Rmd, "Interpretation under linkage disequilibrium".
   # A separate regression of total GV on one dosage also captures associated
   # effects at the partner locus; those slopes cannot simply be added to form BV.
-  # Joint regression fits both dosages together and gives the observed additive
-  # least-squares projection, which need not equal AlphaSimR's parameterization.
+  # Joint regression of total GV fits both dosages together and gives the
+  # observed additive least-squares projection. It equals AlphaSimR's alpha
+  # when the loci's own dominance residuals are uncorrelated with both
+  # dosages, as they are in these fixtures.
 
   # Traits 7 and 10 share the same partial-LD genotypes, without and with AA
   # Trait 9 has the same effects as trait 10, but its loci are independent
@@ -1051,13 +1176,13 @@ local({
       expect_equal(referenceResidualCov[[case]], myReferenceResidualCov[[case]], tolerance = 1e-6)
       expect_equal(unname(jointResidualCov[[case]]), c(0, 0), tolerance = 1e-6)
     }
-    for (case in 1:2) {
+    for (case in seq_along(regressionTraits)) {
       trait = regressionTraits[case]
       expect_equal(as.vector(gp$alpha[[trait]]), unname(jointAlpha[[case]]), tolerance = 1e-6)
     }
-    # Trait 10 retains the marginal-reference alpha rather than the joint fit
-    expect_equal(as.vector(gp$alpha[[10]]) - unname(jointAlpha[[3]]),
-                 unname(myAlpha[[10]] - myJointAlpha[[3]]), tolerance = 1e-6)
+    # For trait 10 the joint fit differs from the LE reference by ldAlpha
+    expect_equal(unname(myJointAlpha[[3]] - myAlpha[[10]]), unname(ldAlpha[[10]]),
+                 tolerance = 1e-6)
   })
 
   # ---- Breeding value (idealized population) ----
@@ -1129,10 +1254,12 @@ local({
   # Falconer (1985), p. 341: additive value from regression on dosage
   # https://www.cambridge.org/core/services/aop-cambridge-core/content/view/26DFA92B3BA3EA92CD76847BFA21C5C8/S0016672300022825a.pdf#page=5
   # Under non-random mating this need not have the usual progeny interpretation
-  myBv = matrix(0, nrow = nInd, ncol = nTrt)
+  # ldBv is the part of the breeding values from within-pair LD
+  myBv = ldBv = matrix(0, nrow = nInd, ncol = nTrt)
   for (trait in 1:nTrt) {
     loci = names(myAlpha[[trait]])
-    myBv[, trait] = x[, loci, drop = FALSE] %*% myAlpha[[trait]]
+    myBv[, trait] = x[, loci, drop = FALSE] %*% myAlphaObs[[trait]]
+    ldBv[, trait] = x[, loci, drop = FALSE] %*% ldAlpha[[trait]]
   }
 
   test_that("genParam: Breeding value (observed population)", {
@@ -1186,8 +1313,11 @@ local({
   myIdl[, 19] = x[, c("m", "n", "o", "p")] %*%
     (-2*F[c("m", "n", "o", "p")]*d[c("m", "n", "o", "p")]*(q[c("m", "n", "o", "p")]-p[c("m", "n", "o", "p")])/(1+F[c("m", "n", "o", "p")]))
 
-  # Compute IDL from the returned alphas, using the same locus order as BV
-  alpha_diff = Map(`-`, gp$alpha, gp$alpha_HW)
+  # Compute IDL from the returned alphas, using the same locus order as BV.
+  # IDL compares genotype frequencies with HWE, so the part of alpha from
+  # within-pair LD is removed first, leaving the LE reference.
+  alpha_diff = Map(function(alpha, ld, alphaHW) alpha - ld - alphaHW,
+                   gp$alpha, ldAlpha, gp$alpha_HW)
   idl = matrix(0, nrow = nInd, ncol = nTrt)
   for (trait in 1:nTrt) {
     loci = names(myAlpha[[trait]])
@@ -1197,7 +1327,8 @@ local({
   test_that("genParam: Inbreeding depression load", {
     for (trait in 1:nTrt) {
       expect_equal(idl[, trait], myIdl[, trait], tolerance=1e-6)
-      expect_equal(unname(gp$bv[, trait]) - bv_HW[, trait], myIdl[, trait], tolerance=1e-6)
+      expect_equal(unname(gp$bv[, trait]) - ldBv[, trait] - bv_HW[, trait],
+                   myIdl[, trait], tolerance=1e-6)
       expect_equal(mean(idl[, trait]), 0, tolerance=1e-6)
     }
   })
@@ -1225,10 +1356,11 @@ local({
   # Remaining means are zero, including fixed-locus traits 16, 17&20
 
   # genParam does not return dd_HW
-  # Undo observed centering and the alpha correction in its returned dd
+  # Undo the within-pair LD part, observed centering and the alpha correction
+  # in its returned dd
   dd_HW = matrix(0, nrow = nInd, ncol = nTrt)
   for (trait in 1:nTrt) {
-    dd_HW[, trait] = gp$dd[, trait] + idl[, trait] + myMeanDd_HW[trait]
+    dd_HW[, trait] = gp$dd[, trait] - ldDd[, trait] + idl[, trait] + myMeanDd_HW[trait]
   }
 
   test_that("genParam: Dominance deviation (idealized population)", {
@@ -1247,11 +1379,12 @@ local({
   # ---- Dominance deviation (observed population) ----
 
   # Center the HWE-reference residuals on the observed population and remove
-  # the extra linear contribution already assigned to observed BV through IDL
-  # DD = DD_HW - mean_observed(DD_HW) - IDL
+  # the extra linear contribution already assigned to observed BV through IDL,
+  # then add the dominance deviations from within-pair LD
+  # DD = DD_HW - mean_observed(DD_HW) - IDL + ldDd
   myDd = matrix(0, nrow = nInd, ncol = nTrt)
   for (trait in 1:nTrt) {
-    myDd[, trait] = myDd_HW[, trait] - myMeanDd_HW[trait] - myIdl[, trait]
+    myDd[, trait] = myDd_HW[, trait] - myMeanDd_HW[trait] - myIdl[, trait] + ldDd[, trait]
   }
 
   test_that("genParam: Dominance deviation (observed population)", {
@@ -1317,9 +1450,11 @@ local({
 
   # Subtract the observed mean of the centered-dosage product
   # Changes in the dominance correction cancel between BV and DD
+  # The parts of the epistatic value that within-pair LD makes additive or
+  # dominance are no longer epistatic
   myAa = matrix(0, nrow = nInd, ncol = nTrt)
   for (trait in 1:nTrt) {
-    myAa[, trait] = myAa_HW[, trait] - myMeanAa_HW[trait]
+    myAa[, trait] = myAa_HW[, trait] - myMeanAa_HW[trait] - ldBv[, trait] - ldDd[, trait]
   }
 
   test_that("genParam: Additive-by-additive epistatic deviation (observed population)", {

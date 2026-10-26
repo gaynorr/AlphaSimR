@@ -1,6 +1,117 @@
 #include "alphasimr.h"
 #include "packedGv.h"
 
+// Eigen decomposition of a small symmetric matrix by cyclic Jacobi
+// rotations. It is used inside a parallel loop on matrices of at most four
+// rows, where calling LAPACK is unnecessary and its thread safety depends on
+// the BLAS the user has installed. The result is deterministic.
+static void jacobiEigen(arma::mat S, arma::vec& lambda, arma::mat& V){
+  const arma::uword n = S.n_rows;
+  V.eye(n, n);
+  for(int sweep=0; sweep<100; ++sweep){
+    double off = 0.0, total = 0.0;
+    for(arma::uword p=0; p<n; ++p){
+      for(arma::uword q=0; q<n; ++q){
+        total += S(p,q)*S(p,q);
+        if(p!=q) off += S(p,q)*S(p,q);
+      }
+    }
+    if(off<=1e-30*total){
+      break;
+    }
+    for(arma::uword p=0; p+1<n; ++p){
+      for(arma::uword q=p+1; q<n; ++q){
+        if(S(p,q)==0.0) continue;
+        double theta = (S(q,q)-S(p,p))/(2.0*S(p,q));
+        double t = (theta>=0.0 ? 1.0 : -1.0)/
+          (std::abs(theta)+std::sqrt(theta*theta+1.0));
+        double c = 1.0/std::sqrt(t*t+1.0);
+        double s = t*c;
+        for(arma::uword k=0; k<n; ++k){
+          double skp = S(k,p), skq = S(k,q);
+          S(k,p) = c*skp-s*skq;
+          S(k,q) = s*skp+c*skq;
+        }
+        for(arma::uword k=0; k<n; ++k){
+          double spk = S(p,k), sqk = S(q,k);
+          S(p,k) = c*spk-s*sqk;
+          S(q,k) = s*spk+c*sqk;
+        }
+        for(arma::uword k=0; k<n; ++k){
+          double vkp = V(k,p), vkq = V(k,q);
+          V(k,p) = c*vkp-s*vkq;
+          V(k,q) = s*vkp+c*vkq;
+        }
+      }
+    }
+  }
+  lambda = S.diag();
+}
+
+// Weighted least squares of y on the first nFit columns of Z, with weights
+// w, giving the minimum norm solution. The columns are first scaled to unit
+// weighted sum of squares, and a column whose sum of squares is negligible,
+// such as the dosage of a fixed locus, gets a coefficient of zero. The
+// scaled normal equations are solved through their eigen decomposition,
+// leaving out directions the data do not identify. The fitted values are
+// therefore the projection of y onto the span of the columns even when the
+// fit is singular, as it is when the two loci of a pair are in perfect
+// linkage disequilibrium. The coefficients are then not identified, and the
+// minimum norm solution splits them evenly between columns that carry the
+// same information, so the result does not depend on which locus of a pair
+// comes first. The systems are tiny and are solved inside a parallel loop,
+// which is why no library routine is called.
+static arma::vec wlsFit(const arma::mat& Z, const arma::vec& w,
+                        const arma::vec& y, arma::uword nFit){
+  const double tolAbs = 1e-14, tolRel = 1e-10;
+  arma::vec coef(nFit, arma::fill::zeros);
+  std::vector<arma::uword> keep;
+  arma::vec scale(nFit, arma::fill::zeros);
+  for(arma::uword c=0; c<nFit; ++c){
+    double ss = arma::accu(w%Z.col(c)%Z.col(c));
+    if(ss>tolAbs){
+      keep.push_back(c);
+      scale(c) = std::sqrt(ss);
+    }
+  }
+  arma::uword k = keep.size();
+  if(k==0){
+    return coef;
+  }
+  arma::mat S(k, k);
+  arma::vec r(k);
+  for(arma::uword p=0; p<k; ++p){
+    arma::vec zp = Z.col(keep[p])/scale(keep[p]);
+    r(p) = arma::accu(w%zp%y);
+    for(arma::uword q=0; q<=p; ++q){
+      arma::vec zq = Z.col(keep[q])/scale(keep[q]);
+      S(p,q) = arma::accu(w%zp%zq);
+      S(q,p) = S(p,q);
+    }
+  }
+  arma::vec lambda;
+  arma::mat V;
+  jacobiEigen(S, lambda, V);
+  double lambdaMax = lambda.max();
+  arma::vec b(k, arma::fill::zeros);
+  for(arma::uword m=0; m<k; ++m){
+    if(lambda(m)>tolRel*lambdaMax){
+      double proj = 0.0;
+      for(arma::uword p=0; p<k; ++p){
+        proj += V(p,m)*r(p);
+      }
+      proj /= lambda(m);
+      for(arma::uword p=0; p<k; ++p){
+        b(p) += V(p,m)*proj;
+      }
+    }
+  }
+  for(arma::uword p=0; p<k; ++p){
+    coef(keep[p]) = b(p)/scale(keep[p]);
+  }
+  return coef;
+}
+
 // Calculates genetic parameters for traits with epistasis
 //
 // Genotypes are not decoded into a matrix. One pass over tiles of
@@ -14,6 +125,19 @@
 // gvGroupEffects. The epistatic deviation is what is left of an
 // individual's genetic value: gv_a+gv_d+gv_aa-bv-dd less the sum of each
 // pair's mean genetic value.
+//
+// A locus's own additive and dominance effects are regressed on its own
+// dosage, as for a trait without epistasis, so linkage disequilibrium
+// between loci appears in the covariances between them. The epistatic value
+// of a pair is a function of both dosages, so it is fitted to the two
+// dosages jointly, under the pair's observed joint genotype frequencies, by
+// weighted least squares: the fit on the two dosages gives its part of the
+// breeding values, and the further fit on the two dominance codings gives
+// its part of the dominance deviations. Under linkage disequilibrium this is
+// what makes epistatic variance additive or dominance variance, and under
+// linkage equilibrium it reduces to averaging over the partner locus. The
+// genic variances, and the tables for genic covariances, are calculated
+// under linkage equilibrium and do not use the joint fit.
 //
 // With locusTables, the genotype frequencies and statistical values at each
 // locus, and the epistatic deviations of each pair, are also returned, so
@@ -141,14 +265,14 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   arma::vec genicAA2(nBlocks,arma::fill::zeros); // No LD and HWE
   arma::vec mu(nBlocks,arma::fill::zeros); // Observed mean
   arma::vec eMu(nBlocks,arma::fill::zeros); // Expected mean with HWE
+  arma::vec leMu(nBlocks,arma::fill::zeros); // Expected mean with no LD
   arma::vec alpha(a.n_elem);
   arma::vec alphaHW(a.n_elem);
-  // For each locus: its mean dosage, the mean of its marginal genetic value,
-  // and the mean additive coding and mean value of its partner's effects,
-  // which is what the partner adds to the locus's marginal genetic value.
-  // For each pair: its mean genetic value.
-  arma::vec locGenoMu(nLoci), locGvMu(nLoci), locPartnerXa(nLoci),
-    locPartnerVal(nLoci), locEpi(nLoci), pairGvMu(nPair);
+  // For each locus: its mean dosage, and the additive and dominance effects
+  // and constant that give its dominance deviation. For each pair: its mean
+  // genetic value.
+  arma::vec locGenoMu(nLoci), locDdAdd(nLoci), locDdDom(nLoci),
+    locDdConst(nLoci), pairGvMu(nPair);
   // Tables for genic covariances between traits: one column per locus, or
   // per pair for the epistatic deviations. Each column is written by the
   // one pair that owns it, so the writes need no synchronization, and none
@@ -257,26 +381,30 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
       gvEMu1 = accu(freqE1%gvE1);
       gvEMu2 = accu(freqE2%gvE2);
     
-      alpha(E(i,0)) = accu(freq1%(gv1-gvMu1)%(x-genoMu1))/
+      // Average effects with the partner averaged over its marginal
+      // frequencies, as under linkage equilibrium. These give the genic
+      // variances and tables; the observed average effects are worked out
+      // below from the joint frequencies.
+      double alphaLe1 = accu(freq1%(gv1-gvMu1)%(x-genoMu1))/
         accu(freq1%(x-genoMu1)%(x-genoMu1));
       alphaHW(E(i,0)) = accu(freqE1%(gvE1-gvEMu1)%(x-genoMu1))/
         accu(freqE1%(x-genoMu1)%(x-genoMu1));
-      alpha(E(i,1)) = accu(freq2%(gv2-gvMu2)%(x-genoMu2))/
+      double alphaLe2 = accu(freq2%(gv2-gvMu2)%(x-genoMu2))/
         accu(freq2%(x-genoMu2)%(x-genoMu2));
       alphaHW(E(i,1)) = accu(freqE2%(gvE2-gvEMu2)%(x-genoMu2))/
         accu(freqE2%(x-genoMu2)%(x-genoMu2));
-    
+
       //Check for divide by zero
-      if(!std::isfinite(alpha(E(i,0)))) alpha(E(i,0))=0;
+      if(!std::isfinite(alphaLe1)) alphaLe1=0;
       if(!std::isfinite(alphaHW(E(i,0)))) alphaHW(E(i,0))=0;
-      if(!std::isfinite(alpha(E(i,1)))) alpha(E(i,1))=0;
+      if(!std::isfinite(alphaLe2)) alphaLe2=0;
       if(!std::isfinite(alphaHW(E(i,1)))) alphaHW(E(i,1))=0;
-    
+
       //Breeding values
       arma::vec bv1, bv2, bvE1, bvE2;
-      bv1 = (x-genoMu1)*alpha(E(i,0)); //Breeding values
+      bv1 = (x-genoMu1)*alphaLe1; //Breeding values
       bvE1 = (x-genoMu1)*alphaHW(E(i,0)); //Random mating breeding value
-      bv2 = (x-genoMu2)*alpha(E(i,1)); //Breeding values
+      bv2 = (x-genoMu2)*alphaLe2; //Breeding values
       bvE2 = (x-genoMu2)*alphaHW(E(i,1)); //Random mating breeding value
       genicA(tid) += accu(freq1%bv1%bv1);
       genicA2(tid) += accu(freqE1%bvE1%bvE1);
@@ -329,6 +457,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
       gvEMu = accu(freqNoLDE%GV);
       mu(tid) += gvMu;
       eMu(tid) += gvEMu;
+      leMu(tid) += gvNoLDMu;
       if(hasD){
         AA = GV-BV-DD-gvMu;
         AANoLD = GV-BV-DD-gvNoLDMu;
@@ -363,33 +492,69 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
         tabAAE.col(i) = arma::vectorise(AAE);
       }
     
-      // Values needed for individuals
+      // Observed decomposition. Each locus's own effects are regressed on
+      // its own dosage under its marginal frequencies, as for a trait
+      // without epistasis.
       arma::uword l1 = loc1(i), l2 = loc2(i);
+      arma::vec own1 = hasD ? arma::vec(aEff1+dEff1) : aEff1;
+      arma::vec own2 = hasD ? arma::vec(aEff2+dEff2) : aEff2;
+      double ownMu1 = accu(freq1%own1), ownMu2 = accu(freq2%own2);
+      double alphaOwn1 = accu(freq1%(own1-ownMu1)%(x-genoMu1))/
+        accu(freq1%(x-genoMu1)%(x-genoMu1));
+      double alphaOwn2 = accu(freq2%(own2-ownMu2)%(x-genoMu2))/
+        accu(freq2%(x-genoMu2)%(x-genoMu2));
+      if(!std::isfinite(alphaOwn1)) alphaOwn1=0;
+      if(!std::isfinite(alphaOwn2)) alphaOwn2=0;
+      // The epistatic value of the pair is fitted to both dosages jointly
+      // under the joint frequencies: on the dosages alone for its part of
+      // the breeding values, and on the dosages and dominance codings for
+      // its part of the dominance deviations. Column major order, so the
+      // first locus's dosage varies fastest, as in freq.
+      double xdMu1 = accu(freq1%xd), xdMu2 = accu(freq2%xd);
+      arma::vec w = arma::vectorise(freq);
+      arma::mat Z(nCell, 4);
+      arma::vec yAA(nCell);
+      for(arma::uword k=0; k<nGeno; ++k){
+        for(arma::uword j=0; j<nGeno; ++j){
+          arma::uword c = j+k*nGeno;
+          Z(c,0) = x(j)-genoMu1;
+          Z(c,1) = x(k)-genoMu2;
+          Z(c,2) = xd(j)-xdMu1;
+          Z(c,3) = xd(k)-xdMu2;
+          yAA(c) = E(i,2)*xa(j)*xa(k);
+        }
+      }
+      yAA -= accu(w%yAA);
+      arma::vec gamma = wlsFit(Z, w, yAA, 2);
+      arma::vec beta = wlsFit(Z, w, yAA, 4);
+      alpha(l1) = alphaOwn1+gamma(0);
+      alpha(l2) = alphaOwn2+gamma(1);
+      // A locus's dominance deviation is its own effects less their
+      // regression on its dosage, plus the part of the epistatic value the
+      // dominance codings add to the joint fit, all written as effects on
+      // the additive and dominance codings plus a constant, using
+      // x = xa*P/2+P/2. Only the sum over the pair of the epistatic part is
+      // uncorrelated with both dosages.
+      double d1 = hasD ? d(l1) : 0.0, d2 = hasD ? d(l2) : 0.0;
+      double extra1 = beta(0)-gamma(0), extra2 = beta(1)-gamma(1);
+      locDdAdd(l1) = a(l1)+(extra1-alphaOwn1)*(dP/2.0);
+      locDdAdd(l2) = a(l2)+(extra2-alphaOwn2)*(dP/2.0);
+      locDdDom(l1) = d1+beta(2);
+      locDdDom(l2) = d2+beta(3);
+      locDdConst(l1) = -ownMu1+(extra1-alphaOwn1)*(dP/2.0-genoMu1)-
+        beta(2)*xdMu1;
+      locDdConst(l2) = -ownMu2+(extra2-alphaOwn2)*(dP/2.0-genoMu2)-
+        beta(3)*xdMu2;
       locGenoMu(l1) = genoMu1;
       locGenoMu(l2) = genoMu2;
-      locGvMu(l1) = gvMu1;
-      locGvMu(l2) = gvMu2;
-      locPartnerXa(l1) = accu(freq2%xa);
-      locPartnerXa(l2) = accu(freq1%xa);
-      if(hasD){
-        locPartnerVal(l1) = accu(freq2%(aEff2+dEff2));
-        locPartnerVal(l2) = accu(freq1%(aEff1+dEff1));
-      }else{
-        locPartnerVal(l1) = accu(freq2%aEff2);
-        locPartnerVal(l2) = accu(freq1%aEff1);
-      }
-      locEpi(l1) = E(i,2);
-      locEpi(l2) = E(i,2);
       pairGvMu(i) = gvMu;
     }
   }
 
-  // Values for individuals. A locus's marginal genetic value is
-  // xa*(a+e*m)+xd*d+c, where e is its pair's epistatic effect and m and c
-  // are its partner's mean additive coding and mean value. Its breeding
-  // value is alpha*(x-genoMu), an effect of alpha*P/2 on the additive coding
-  // plus the constant alpha*(P/2-genoMu), and its dominance deviation is the
-  // marginal genetic value less the breeding value and its mean.
+  // Values for individuals. A locus's breeding value is alpha*(x-genoMu),
+  // an effect of alpha*P/2 on the additive coding plus the constant
+  // alpha*(P/2-genoMu), and its dominance deviation is a set of additive
+  // and dominance effects plus a constant, worked out above.
   std::vector<GvEffects> effs;
   GvEffects eGvA, eBv, eGvD, eDd;
   eGvA.add = a;
@@ -402,9 +567,8 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   eBv.add = alpha*(dP/2.0);
   double bvConst = 0.0, ddConst = 0.0, pairMuSum = 0.0;
   for(arma::uword l=0; l<nLoci; ++l){
-    double c = alpha(l)*(dP/2.0-locGenoMu(l));
-    bvConst += c;
-    ddConst += locPartnerVal(l)-c-locGvMu(l);
+    bvConst += alpha(l)*(dP/2.0-locGenoMu(l));
+    ddConst += locDdConst(l);
   }
   for(arma::uword i=0; i<nPair; ++i){
     pairMuSum += pairGvMu(i);
@@ -412,23 +576,28 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   eBv.intercept = bvConst;
   effs.push_back(eGvA);
   effs.push_back(eBv);
+  // gv_d is a genotypic value, so it exists only with dominance effects,
+  // but under linkage disequilibrium the epistatic value can give dominance
+  // deviations to any trait, so dd is always worked out and comes last
   if(hasD){
     eGvD = eGvA;
     eGvD.add.reset();
     eGvD.hasA = false;
     eGvD.dom = d;
     eGvD.hasD = true;
-    eDd = eGvD;
-    eDd.hasA = true;
-    eDd.add = a+locEpi%locPartnerXa-alpha*(dP/2.0);
-    eDd.intercept = ddConst;
     effs.push_back(eGvD);
-    effs.push_back(eDd);
   }
+  eDd = eGvA;
+  eDd.add = locDdAdd;
+  eDd.dom = locDdDom;
+  eDd.hasD = true;
+  eDd.intercept = ddConst;
+  effs.push_back(eDd);
   std::vector<arma::field<arma::vec> > ind = gvGroupEffects(effs, g, pos,
                                                             nThreads);
   const arma::vec& gvA = ind[0](0);
   const arma::vec& bvInd = ind[1](0);
+  const arma::vec& ddInd = ind[effs.size()-1](0);
 
   // Left empty unless requested
   Rcpp::List tables;
@@ -459,7 +628,6 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
 
   if(hasD){
     const arma::vec& gvD = ind[2](0);
-    const arma::vec& ddInd = ind[3](0);
     return Rcpp::List::create(Rcpp::Named("gv")=gvA+gvD+gvAA+intercept,
                               Rcpp::Named("bv")=bvInd,
                               Rcpp::Named("dd")=ddInd,
@@ -472,6 +640,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
+                              Rcpp::Named("mu_LE")=accu(leMu)+intercept,
                               Rcpp::Named("gv_a")=gvA,
                               Rcpp::Named("gv_d")=gvD,
                               Rcpp::Named("gv_aa")=gvAA,
@@ -482,13 +651,15 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   }else{
     return Rcpp::List::create(Rcpp::Named("gv")=gvA+gvAA+intercept,
                               Rcpp::Named("bv")=bvInd,
-                              Rcpp::Named("aa")=gvA+gvAA-bvInd-pairMuSum,
+                              Rcpp::Named("dd")=ddInd,
+                              Rcpp::Named("aa")=gvA+gvAA-bvInd-ddInd-pairMuSum,
                               Rcpp::Named("genicVarA")=accu(genicA),
                               Rcpp::Named("genicVarAA")=accu(genicAA),
                               Rcpp::Named("genicVarA2")=accu(genicA2),
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
+                              Rcpp::Named("mu_LE")=accu(leMu)+intercept,
                               Rcpp::Named("gv_a")=gvA,
                               Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
@@ -883,6 +1054,9 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                     Rcpp::Named("bvE")=tabBvE[t]);
       }
     }
+    // Without epistasis the genetic value is a sum of functions of single
+    // loci, so its mean does not depend on linkage disequilibrium and the
+    // mean with no LD, mu_LE, is the observed mean
     if(hasD[t]){
       const arma::vec& gvD = ind[gvDIdx[t]](0);
       output[t] = Rcpp::List::create(Rcpp::Named("gv")=gvA+gvD+intercept[t],
@@ -894,6 +1068,7 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("genicVarD2")=accu(genicD2[t]),
                                      Rcpp::Named("mu")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("mu_HWE")=accu(eMu[t])+intercept[t],
+                                     Rcpp::Named("mu_LE")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("gv_a")=gvA,
                                      Rcpp::Named("gv_d")=gvD,
                                      Rcpp::Named("gv_mu")=intercept[t],
@@ -907,6 +1082,7 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("genicVarA2")=accu(genicA2[t]),
                                      Rcpp::Named("mu")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("mu_HWE")=accu(eMu[t])+intercept[t],
+                                     Rcpp::Named("mu_LE")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("gv_a")=gvA,
                                      Rcpp::Named("gv_mu")=intercept[t],
                                      Rcpp::Named("alpha")=alpha[t],

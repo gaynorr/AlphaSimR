@@ -1045,6 +1045,22 @@ varPPop = function(x, level = 1L) {
 #' This breeding value parameterization is also called the "statistical" model
 #' because it depends on statistical decomposition of genetic values.
 #'
+#' A locus's own additive and dominance effects are regressed on its own
+#' dosage, so linkage disequilibrium between loci appears in the covariances.
+#' For a trait with epistasis, the epistatic value of each pair of loci is
+#' fitted to the pair's two dosages jointly, under the observed joint
+#' genotype frequencies: its fit to the dosages is part of the breeding
+#' values, and what adding the dominance codings adds to that fit is part of
+#' the dominance deviations. Under linkage disequilibrium within a pair, some
+#' epistatic variance is therefore additive or dominance variance, and a
+#' trait with epistasis but no dominance effects can have dominance
+#' deviations. Under linkage equilibrium the fit reduces to averaging over
+#' the partner locus. When the two loci of a pair are in perfect linkage
+#' disequilibrium, only their combined breeding value is identified, and
+#' the average effect is split between them by a minimum norm solution.
+#' The average effects of the two loci of a pair in strong linkage
+#' disequilibrium are therefore not meaningful on their own.
+#'
 #' Note, the output \code{gv_mu} is the trait intercept \eqn{\mu_0},
 #' whereas \code{mu} is the population mean of genetic value \eqn{\bar{G}}.
 #' Despite its name, \code{gv_mu} is not the mean of \code{gv}.
@@ -1056,6 +1072,18 @@ varPPop = function(x, level = 1L) {
 #' the mean contribution of the genotypic effects in the founder population.
 #' With the trait definition held fixed,
 #' the intercept remains constant while the population mean can change.
+#'
+#' The population mean is split in the same way as the variances.
+#' \code{mu_HW} is the mean under Hardy-Weinberg and linkage equilibrium at
+#' the observed allele frequencies, \code{mu_LE} is the mean with the
+#' observed genotype frequencies at each locus but no linkage
+#' disequilibrium, and \code{mu} is the observed mean. So
+#' \code{mu_LE - mu_HW} is the change in the mean from departures from
+#' Hardy-Weinberg genotype frequencies, which comes from dominance effects,
+#' and \code{mu - mu_LE} is the change from linkage disequilibrium, which
+#' comes from epistatic effects: for a diploid it is the sum over epistatic
+#' pairs of each pair's epistatic effect times the covariance of its two
+#' dosages. Without epistasis, \code{mu_LE} equals \code{mu}.
 #'
 #' Each \code{covX_HW} is the difference between the corresponding genic
 #' variance calculated using observed and Hardy-Weinberg genotype frequencies.
@@ -1156,6 +1184,8 @@ varPPop = function(x, level = 1L) {
 #' \item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
 #' \item{mu_HW}{an nTraits vector of genetic value means expected under
 #'   Hardy-Weinberg and linkage equilibrium at the observed allele frequencies}
+#' \item{mu_LE}{an nTraits vector of genetic value means expected under
+#'   linkage equilibrium at the observed genotype frequencies of each locus}
 #' \item{bv}{an nInd by nTraits matrix of breeding values (breeding value parameterization)}
 #' \item{dd}{an nInd by nTraits matrix of dominance deviations (breeding value parameterization)}
 #' \item{aa}{an nInd by nTraits matrix of additive-by-additive epistatic deviations (breeding value parameterization)}
@@ -1170,7 +1200,9 @@ varPPop = function(x, level = 1L) {
 #' \item{gv_n}{an nInd by nTraits matrix of non-additive genotypic effects
 #'   contributions to genetic values (genotypic parameterization)}
 #' \item{alpha}{a list of average effects of allele substitution
-#'   calculated using observed marginal genotype frequencies, with length nTraits}
+#'   calculated using observed genotype frequencies, with length nTraits.
+#'   For a trait with epistasis, these include the joint fit of each pair's
+#'   epistatic value to the pair's observed joint genotype frequencies}
 #' \item{alpha_HW}{a list of average effects of allele substitution
 #'   calculated using Hardy-Weinberg genotype frequencies at the observed
 #'   allele frequencies, with length nTraits}
@@ -1213,7 +1245,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   genicVarD = genicVarAA = genicVarN =
     covG_HW = covA_HW = covD_HW = covAA_HW = covN_HW =
     covAD_L = covAAA_L = covDAA_L = covAN_L =
-    mu = mu_HW = gv_mu = genicVarA
+    mu = mu_HW = mu_LE = gv_mu = genicVarA
 
   # Average effect of an allele substitution
   alpha = vector("list", length=nTraits)
@@ -1237,6 +1269,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
     gv[,i] = tmp$gv
     mu[i] = tmp$mu # mean gv for the trait in the pop
     mu_HW[i] = tmp$mu_HWE
+    mu_LE[i] = tmp$mu_LE
     bv[,i] = tmp$bv
     nd[,i] = rep(0,pop@nInd)
     gv_mu[i] = tmp$gv_mu # trait gv intercept
@@ -1251,6 +1284,15 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
       nd[,i] = nd[,i] + dd[,i]
       gv_d[,i] = tmp$gv_d
       gv_n[,i] = gv_n[,i] + gv_d[,i]
+    }else if(.hasSlot(trait,"epiEff")){
+      # Under linkage disequilibrium, the epistatic value gives dominance
+      # deviations even without dominance effects. They are absent under
+      # linkage equilibrium, so all of their variance is in covD_L.
+      genicVarD[i] = 0
+      covD_HW[i] = 0
+      dd[,i] = tmp$dd
+      nd[,i] = nd[,i] + dd[,i]
+      gv_d[,i] = rep(0,pop@nInd)
     }else{
       genicVarD[i] = 0
       covD_HW[i] = 0
@@ -1376,6 +1418,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
                 gv=gv,
                 mu=mu, # mean gv for the trait in the pop
                 mu_HW=mu_HW,
+                mu_LE=mu_LE,
                 bv=bv,
                 dd=dd,
                 aa=aa,
@@ -1442,6 +1485,8 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #'
 #' @details
 #' This is the variance of dominance deviations in \code{pop}.
+#' A trait with epistasis can have dominance variance under linkage
+#' disequilibrium even without dominance effects (see \code{\link{genParam}}).
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
@@ -1622,6 +1667,8 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' which supplies the reference quantities used by \code{\link{genParam}}.
 #' Evaluating the same individual in a different population can therefore
 #' change returned values.
+#' A trait with epistasis can have dominance deviations under linkage
+#' disequilibrium even without dominance effects (see \code{\link{genParam}}).
 #'
 #' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.

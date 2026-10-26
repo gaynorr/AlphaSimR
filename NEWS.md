@@ -8,6 +8,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Genetic maps whose first locus is not at position 0 now give different crossovers, because maps are no longer shifted to start at 0.
 * `pedigreeCross` makes each generation's crosses in one call, which changes the order of random numbers.
 * `addTrait` functions with `gamma=TRUE` now sample effects at the requested correlation.
+* Traits with epistasis that are added, or rescaled by `SimParam$rescaleTraits`, with `useVarA=TRUE`, the default, are scaled to an additive variance that now accounts for linkage disequilibrium within epistatic pairs (see "Genome and traits"). Every founder population has some, so their effects, and error variances set from a heritability, differ from earlier versions.
 * Genetic values, `genParam` output and new traits' effects can differ in the last few digits (around 1e-13), which can change results that depend on exact ties.
 * The fast mode of `RRBLUP`, which replaces `fastRRBLUP`, estimates the variance components by REML unless they are supplied. With them supplied, it agrees with `fastRRBLUP` to about one part in a million.
 * The reimplemented mixed model solvers (see below) give estimates that differ from earlier versions, so `RRBLUP`, `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` can too.
@@ -65,6 +66,8 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Added `SimParam$finalizePheno`, a user-defined function applied to new phenotypes.
 * Trait names can be used to choose traits in `setPheno`, `editGenomeTopQtl`, `SimParam$removeTrait` and `SimParam$switchTrait`.
 * Added covariances between traits to the genic, Hardy-Weinberg and linkage disequilibrium parts of `genParam`, and the total non-additive deviations `nd`, `varN` and `gv_n`.
+* `genParam` now accounts for linkage disequilibrium between the two loci of an epistatic pair, fitting the pair's epistatic value to their observed joint genotype frequencies. Under such disequilibrium `varA` and `varD` can be larger and `varAA` smaller than before, and a trait with epistasis but no dominance effects can have nonzero `dd` and `varD`, all of it in `covD_L`. Results under linkage equilibrium are unchanged.
+* Added `mu_LE` to `genParam`, the mean genetic value with each locus's observed genotype frequencies but no linkage disequilibrium. With `mu_HW`, it splits the mean into the change from departures from Hardy-Weinberg genotype frequencies, `mu_LE - mu_HW`, and the change from linkage disequilibrium between epistatic loci, `mu - mu_LE`.
 * `addTrait` functions with `gamma=TRUE` now give the requested correlation, or warn and use the attainable limit.
 * Changed `mutate` into an S4 generic, so attaching AlphaSimR no longer masks `dplyr::mutate` for non-population arguments.
 
