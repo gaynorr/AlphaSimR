@@ -342,101 +342,152 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     validObject(x)
     return(x)
   }
-  flatPopList = .flattenMultiPop(x, preserveNames = preserveNames)
+
+  # A single-level MultiPop is already flat.
+  if (all(vapply(x@pops, isPop, logical(1)))) {
+    flatPopList = x@pops
+    if (preserveNames == "none") {
+      names(flatPopList) = NULL
+    }
+    multiPop = do.call(newMultiPop, flatPopList)
+    validObject(multiPop)
+    return(multiPop)
+  }
+
+  # Count leaf Pop objects before allocating the output vectors.
+  nPop = .flattenMultiPopCount(x)
+
+  # Use an environment so recursive calls update the same preallocated
+  # objects without repeatedly copying them under R's copy-on-modify rules.
+  state = new.env(parent = emptyenv())
+  state$pos = 0L
+  state$pops = vector("list", nPop)
+  state$names = rep(NA_character_, nPop)
+
+  info = .flattenMultiPopFill(
+    mp = x,
+    preserveNames = preserveNames,
+    state = state
+  )
+
+  flatPopList = state$pops
+
+  if (preserveNames == "none") {
+    names(flatPopList) = NULL
+  } else if (preserveNames == "force") {
+    names(flatPopList) = state$names
+  } else if (info$namesValid) {
+    names(flatPopList) = state$names
+  } else {
+    names(flatPopList) = NULL
+  }
+
   multiPop = do.call(newMultiPop, flatPopList)
   validObject(multiPop)
   return(multiPop)
 }
 
-#' Helper function to recursively extract Pop objects from a MultiPop
+#' Count the number of leaf Pop objects in a MultiPop hierarchy.
 #'
-#' @param mp \code{\link{MultiPop-class}} object
-#' @param preserveNames how names are handled when flattening; see
-#'   \code{\link{flattenMultiPop}}
-#'
+#' @param mp MultiPop object
+#' @return Integer number of leaf Pop objects
 #' @keywords internal
-.flattenMultiPop = function(mp, preserveNames = "auto") {
-  preserveNames = match.arg(
-    arg = preserveNames,
-    choices = c("auto", "concatenate", "force", "none")
-  )
-
-  if (.depthMultiPop(mp) == 1L) {
-    res = mp@pops
-    if (preserveNames == "none") {
-      names(res) = NULL
+.flattenMultiPopCount = function(mp) {
+  count = 0L
+  for (item in mp@pops) {
+    if (isPop(item)) {
+      count = count + 1L
+    } else {
+      count = count + .flattenMultiPopCount(item)
     }
-    return(res)
   }
+  return(count)
+}
 
+#' Fill a preallocated flattening result.
+#'
+#' The returned `namesValid` value describes whether this subtree has a complete
+#' and unique name vector under the requested naming mode. The value is needed
+#' because the existing "auto" behavior drops names for an invalid child
+#' subtree, while "concatenate" and "force" can synthesize names for it.
+#'
+#' @param mp MultiPop object
+#' @param preserveNames name preservation mode
+#' @param state environment containing preallocated output vectors
+#' @return A list containing the subtree name validity
+#' @keywords internal
+.flattenMultiPopFill = function(mp, preserveNames, state) {
+  start = state$pos + 1L
   nm = names(mp@pops)
-  popList = list()
-  nameVec = character()
 
   for (i in seq_along(mp@pops)) {
     item = mp@pops[[i]]
-    label = if (!is.null(nm) && nzchar(nm[i])) nm[i] else as.character(i)
+
+    label = if (!is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])) {
+      nm[i]
+    } else {
+      as.character(i)
+    }
 
     if (isPop(item)) {
-      popList = c(popList, list(item))
-      nameVec = c(nameVec, label)
-    } else if (isMultiPop(item)) {
-      child = .flattenMultiPop(item, preserveNames = preserveNames)
-      childNames = names(child)
+      state$pos = state$pos + 1L
+      state$pops[[state$pos]] = item
+      state$names[state$pos] = label
+    } else {
+      childStart = state$pos + 1L
+
+      childInfo = .flattenMultiPopFill(
+        mp = item,
+        preserveNames = preserveNames,
+        state = state
+      )
+
+      childEnd = state$pos
+      childNames = state$names[childStart:childEnd]
 
       if (preserveNames %in% c("concatenate", "force")) {
-        if (is.null(childNames)) {
-          childNames = as.character(seq_along(child))
+        if (!childInfo$namesValid) {
+          childNames = as.character(seq_along(childNames))
         }
         childNames = paste(label, childNames, sep = "_")
-        names(child) = childNames
+        state$names[childStart:childEnd] = childNames
+      } else if (preserveNames == "auto" && !childInfo$namesValid) {
+        state$names[childStart:childEnd] = NA_character_
       }
-
-      popList = c(popList, child)
-      nameVec = c(
-        nameVec,
-        if (is.null(names(child))) {
-          rep(NA_character_, length(child))
-        } else {
-          names(child)
-        }
-      )
     }
   }
 
-  if (preserveNames == "none") {
-    names(popList) = NULL
-    return(popList)
-  }
+  end = state$pos
+  nameVec = if (end >= start) state$names[start:end] else character()
 
-  # decide whether to keep/transform names
-  if (preserveNames == "force") {
-    # nm_final = nameVec
+  if (preserveNames == "none") {
+    namesValid = TRUE
+  } else if (preserveNames == "force") {
     nameVec[is.na(nameVec) | !nzchar(nameVec)] = as.character(which(
       is.na(nameVec) | !nzchar(nameVec)
     ))
+
     if (any(duplicated(nameVec))) {
       warning(
         "Duplicate names found in 'force' mode. Making names unique by appending suffixes.",
         call. = FALSE
       )
     }
-    names(popList) = make.unique(nameVec)
-    return(popList)
-  }
-
-  # auto or concatenate: keep only if no NA and no duplicates
-  if (length(nameVec) > 0L &&
-       !any(is.na(nameVec)) &&
-       !any(duplicated(nameVec))
-  ) {
-    names(popList) = nameVec
+    state$names[start:end] = make.unique(nameVec)
+    namesValid = TRUE
   } else {
-    names(popList) = NULL
+    namesValid = length(nameVec) > 0L &&
+      !any(is.na(nameVec)) &&
+      !any(duplicated(nameVec))
+
+    if (!namesValid && end >= start) {
+      state$names[start:end] = NA_character_
+    }
   }
 
-  popList
+  return(list(namesValid = namesValid))
 }
+
 #' @title Merge Pop and MultiPop objects
 #'
 #' @description
