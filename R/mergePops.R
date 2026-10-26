@@ -329,29 +329,47 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     stop("`level` must be a single non-NA integer value.")
   }
 
+  result = .flattenMultiPop(
+    x = x,
+    level = level,
+    preserveNames = preserveNames
+  )
+
+  # The recursive helper deliberately does not validate intermediate objects.
+  validObject(result)
+  return(result)
+}
+
+#' Recursively flatten a MultiPop to the requested level without validation.
+#'
+#' @description
+#' Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
+#' \code{MultiPop} containing only \code{\link{Pop-class}} objects
+#' down to a requested level without validation.
+#' 
+#' @keywords internal
+.flattenMultiPop = function(x, level, preserveNames) {
   if (level > 1L) {
     for (i in seq_along(x@pops)) {
       if (isMultiPop(x@pops[[i]])) {
-        x@pops[[i]] = flattenMultiPop(
-          x@pops[[i]],
+        x@pops[[i]] = .flattenMultiPop(
+          x = x@pops[[i]],
           level = level - 1L,
           preserveNames = preserveNames
         )
       }
     }
-    validObject(x)
     return(x)
   }
 
-  # A single-level MultiPop is already flat.
+  # A single-level MultiPop is already flat. Preserve the existing fast path
+  # and its name behavior.
   if (all(vapply(x@pops, isPop, logical(1)))) {
     flatPopList = x@pops
     if (preserveNames == "none") {
       names(flatPopList) = NULL
     }
-    multiPop = do.call(newMultiPop, flatPopList)
-    validObject(multiPop)
-    return(multiPop)
+    return(do.call(newMultiPop, flatPopList))
   }
 
   # Count leaf Pop objects before allocating the output vectors.
@@ -382,15 +400,15 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     names(flatPopList) = NULL
   }
 
-  multiPop = do.call(newMultiPop, flatPopList)
-  validObject(multiPop)
-  return(multiPop)
+  return(do.call(newMultiPop, flatPopList))
 }
 
 #' Count the number of leaf Pop objects in a MultiPop hierarchy.
 #'
 #' @param mp MultiPop object
+#' 
 #' @return Integer number of leaf Pop objects
+#' 
 #' @keywords internal
 .flattenMultiPopCount = function(mp) {
   count = 0L
@@ -414,7 +432,9 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' @param mp MultiPop object
 #' @param preserveNames name preservation mode
 #' @param state environment containing preallocated output vectors
+#' 
 #' @return A list containing the subtree name validity
+#' 
 #' @keywords internal
 .flattenMultiPopFill = function(mp, preserveNames, state) {
   start = state$pos + 1L
@@ -567,8 +587,7 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' mergeMultiPops(mp2, mp1[[1]], level=2)
 #'
 #' @export
-mergeMultiPops = function(..., level=0){
-
+mergeMultiPops = function(..., level = 0) {
   if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
       !is.finite(level) || level != trunc(level) ||
       abs(level) > .Machine$integer.max) {
@@ -578,19 +597,17 @@ mergeMultiPops = function(..., level=0){
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
 
-  if(any(classes == "NULL")){
+  if (any(classes == "NULL")) {
     remove = which(classes == "NULL")
     popList = popList[-remove]
     classes = classes[-remove]
   }
 
-  # If popList contains a single object
+  # If popList contains a single object.
   if (length(classes) == 1L) {
     if (classes == "Pop") {
-      # If the object is Pop, return it without the list wrapping
       return(popList[[1]])
     } else if (classes == "MultiPop") {
-      # Else, remove the list wrapping from the single multiPop object
       multiPop = popList[[1]]
       popList = multiPop@pops
     } else {
@@ -599,23 +616,67 @@ mergeMultiPops = function(..., level=0){
   } else if (all(classes == "Pop")) {
     stop("Use mergePops() to merge multiple Pop objects!")
   } else {
-    # Combine all arguments into a single MultiPop
-    multiPop = do.call('c', popList)
+    # Combine all arguments into a single MultiPop.
+    multiPop = do.call("c", popList)
     popList = multiPop@pops
   }
 
-  multi = which(sapply(popList, isMultiPop))
-  while (level > 0) {
-    level = level - 1
-    for (i in multi) {
-      popList[[i]] = mergeMultiPops(popList[[i]], level = level)
-    }
-    multiPop = do.call(newMultiPop, popList)
-    validObject(multiPop)
-    return(multiPop)
+  result = .mergeMultiPops(
+    popList = popList,
+    level = level
+  )
+
+  # The recursive merge helper does not validate intermediate MultiPops.
+  # mergePops() constructs the final Pop when level == 0.
+  if (isMultiPop(result)) {
+    validObject(result)
   }
 
-  flatMultiPop = flattenMultiPop(multiPop)
+  return(result)
+}
+
+
+#' Recursively merge MultiPops
+#' 
+#' Recursively merge MultiPops contents to the requested level without
+#' validating intermediate MultiPop objects.
+#' 
+#' @param popList List of Pop and MultiPop objects to merge
+#' @param level Nesting depth level where merging should stop
+#' 
+#' @keywords internal
+.mergeMultiPops = function(popList, level) {
+  if (level > 0L) {
+    multi = which(vapply(
+      popList,
+      isMultiPop,
+      logical(1)
+    ))
+
+    if (length(multi) > 0L) {
+      level = level - 1L
+
+      for (i in multi) {
+        popList[[i]] = .mergeMultiPops(
+          popList = popList[[i]]@pops,
+          level = level
+        )
+      }
+    }
+    return(do.call(newMultiPop, popList))
+  }
+
+  # Build an unvalidated MultiPop solely as the input representation expected
+  # by the flattening helper. The resulting flattened Pop is fully constructed
+  # by mergePops().
+  multiPop = do.call(newMultiPop, popList)
+
+  flatMultiPop = .flattenMultiPop(
+    x = multiPop,
+    level = 1L,
+    preserveNames = "auto"
+  )
+
   return(mergePops(flatMultiPop))
 }
 
