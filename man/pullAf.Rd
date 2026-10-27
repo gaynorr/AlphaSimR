@@ -11,7 +11,7 @@
 pullSegSiteAf(
   pop,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -22,7 +22,7 @@ pullQtlAf(
   pop,
   trait = 1,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -33,7 +33,7 @@ pullSnpAf(
   pop,
   snpChip = 1,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -43,7 +43,7 @@ pullSnpAf(
 pullMarkerAf(
   pop,
   markers,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -59,10 +59,11 @@ only supported by \code{\link{pullSegSiteAf}} and
 \item{chr}{Integer vector of chromosomes to retrieve. If \code{NULL},
 all chromosomes are retrieved.}
 
-\item{sample}{Either \code{FALSE} to use all individuals, or a non-negative
-integer giving the number of individuals to sample at random for allele
-frequency calculation. Passed to \code{\link{sample}} as
-\code{sample(seq_along(pop), size=sample)}.}
+\item{sample}{A non-negative integer giving the number of individuals to
+sample from \code{pop} at random for allele frequency calculation. Passed
+to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
+If \code{NULL}, no sampling is done and all individuals in \code{pop}
+are used.}
 
 \item{nThreads}{Number of threads to use if OpenMP is available. If
 \code{NULL}, uses \code{\link{getNumThreads}} for

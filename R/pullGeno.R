@@ -1471,10 +1471,11 @@ pullIbdHaplo = function(
 #'   \code{\link{pullMarkerAf}}.
 #' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
 #'   all chromosomes are retrieved.
-#' @param sample Either \code{FALSE} to use all individuals, or a non-negative
-#'   integer giving the number of individuals to sample at random for allele
-#'   frequency calculation. Passed to \code{\link{sample}} as
-#'   \code{sample(seq_along(pop), size=sample)}.
+#' @param sample A non-negative integer giving the number of individuals to
+#'   sample from \code{pop} at random for allele frequency calculation. Passed
+#'   to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
+#'   If \code{NULL}, no sampling is done and all individuals in \code{pop}
+#'   are used.
 #' @param trait An integer or a trait name. Indicates which trait's
 #'   QTL genotypes to retrieve.
 #' @param snpChip SNP chip whose allele frequencies are calculated and 
@@ -1584,7 +1585,7 @@ NULL
 pullSegSiteAf = function(
   pop,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -1595,12 +1596,25 @@ pullSegSiteAf = function(
     FUN = function(
       pop,
       chr = NULL,
-      sample = FALSE,
+      sample = NULL,
       nThreads = NULL,
       simParam = NULL
     ) {
-      if (sample) {
-        pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+      if (
+        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
+          is.finite(sample) && sample == trunc(sample) && 0 < sample
+      ) {
+        if (sample <= nInd(pop)) {
+          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+        } else {
+          stop(sprintf(
+            "`pop` has fewer individuals than `sample` (%d < %d)",
+            nInd(pop),
+            sample
+          ))
+        }
+      } else if (!is.null(sample)) {
+        stop("`sample` must be a positive non-NA integer value.")
       }
 
       if (is(pop, "MapPop")) {
@@ -1649,7 +1663,7 @@ pullQtlAf = function(
   pop,
   trait = 1,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -1668,12 +1682,25 @@ pullQtlAf = function(
       pop,
       trait = 1,
       chr = NULL,
-      sample = FALSE,
+      sample = NULL,
       nThreads = NULL,
       simParam = NULL
     ) {
-      if (sample) {
-        pop = pop[sample(seq_along(pop), size = sample)]
+      if (
+        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
+          is.finite(sample) && sample == trunc(sample) && 0 < sample
+      ) {
+        if (sample <= nInd(pop)) {
+          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+        } else {
+          stop(sprintf(
+            "`pop` has fewer individuals than `sample` (%d < %d)",
+            nInd(pop),
+            sample
+          ))
+        }
+      } else if (!is.null(sample)) {
+        stop("`sample` must be a positive non-NA integer value.")
       }
 
       if (is.character(trait)) {
@@ -1718,7 +1745,7 @@ pullSnpAf = function(
   pop,
   snpChip = 1,
   chr = NULL,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -1737,12 +1764,25 @@ pullSnpAf = function(
       pop,
       snpChip = 1,
       chr = NULL,
-      sample = FALSE,
+      sample = NULL,
       nThreads = NULL,
       simParam = NULL
     ) {
-      if (sample) {
-        pop = pop[sample(seq_along(pop), size = sample)]
+      if (
+        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
+          is.finite(sample) && sample == trunc(sample) && 0 < sample
+      ) {
+        if (sample <= nInd(pop)) {
+          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+        } else {
+          stop(sprintf(
+            "`pop` has fewer individuals than `sample` (%d < %d)",
+            nInd(pop),
+            sample
+          ))
+        }
+      } else if (!is.null(sample)) {
+        stop("`sample` must be a positive non-NA integer value.")
       }
 
       if (is.character(snpChip)) {
@@ -1786,7 +1826,7 @@ pullSnpAf = function(
 pullMarkerAf = function(
   pop,
   markers,
-  sample = FALSE,
+  sample = NULL,
   nThreads = NULL,
   simParam = NULL,
   simplify = FALSE,
@@ -1797,12 +1837,25 @@ pullMarkerAf = function(
     FUN = function(
       pop,
       markers,
-      sample = FALSE,
+      sample = NULL,
       nThreads = NULL,
       simParam = NULL
     ) {
-      if (sample) {
-        pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+      if (
+        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
+          is.finite(sample) && sample == trunc(sample) && 0 < sample
+      ) {
+        if (sample <= nInd(pop)) {
+          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+        } else {
+          stop(sprintf(
+            "`pop` has fewer individuals than `sample` (%d < %d)",
+            nInd(pop),
+            sample
+          ))
+        }
+      } else if (!is.null(sample)) {
+        stop("`sample` must be a positive non-NA integer value.")
       }
 
       if (is(pop, "MapPop")) {

@@ -633,3 +633,135 @@ test_that("pullMarker returns the same values as the full site set", {
                                       nThreads = 1L, simParam = x$SP))
   expect_true(all(markerAf == segAf[, markers, drop = FALSE]))
 })
+
+test_that("Sampling individuals for pullAf", {
+
+  set.seed(5004)
+  x = knownPop(nInd = 50L, nPerChr = c(170L, 130L))
+
+  # MapPop object in `pullSegSite`
+  expect_equal(
+    pullSegSiteAf(x$SP$founderPop, simParam = x$SP),
+    pullSegSiteAf(x$SP$founderPop, sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSegSiteAf(x$SP$founderPop, simParam = x$SP),
+    pullSegSiteAf(x$SP$founderPop, sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSegSiteAf(x$SP$founderPop, sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # MapPop object in `pullMarker`
+  expect_equal(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), simParam = x$SP),
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 50L,
+                 simParam = x$SP)
+  )
+  expect_equal(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), simParam = x$SP),
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 45L,
+                 simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 51L,
+                 simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullSegSite
+  expect_equal(
+    pullSegSiteAf(x$pop, simParam = x$SP),
+    pullSegSiteAf(x$pop, sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSegSiteAf(x$pop, simParam = x$SP),
+    pullSegSiteAf(x$pop, sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSegSiteAf(x$pop, sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullQtl
+  x$SP$resetPed()
+  x$SP$addTraitA(10, name="Trait1")
+  expect_equal(
+    pullQtlAf(x$pop, trait = "Trait1", simParam = x$SP),
+    pullQtlAf(x$pop, trait = "Trait1", sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullQtlAf(x$pop, trait = "Trait1", simParam = x$SP),
+    pullQtlAf(x$pop, trait = "Trait1", sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullQtlAf(x$pop, trait = "Trait1", sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullSnp
+  x$SP$addSnpChip(nSnpPerChr = c(90L, 70L), name = "160SNPchip")
+  expect_equal(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", simParam = x$SP),
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", simParam = x$SP),
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullMarker
+  expect_equal(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), simParam = x$SP),
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), simParam = x$SP),
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Wrong `sample`
+  for (bad in list(0, -1, NA_integer_, 1.5, c(1, 2), "1", TRUE, Inf)) {
+    expect_error(
+        pullSegSiteAf(x$SP$founderPop, sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = bad,
+                     simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullSegSiteAf(x$pop, sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullQtlAf(x$pop, trait = "Trait1", sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullSnpAf(x$pop, snpChip = "160SNPchip", sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullMarkerAf(x$pop, markers = c("M25","M1"), sample = bad,
+                     simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+  }
+})
