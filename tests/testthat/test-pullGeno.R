@@ -765,3 +765,93 @@ test_that("Sampling individuals for pullAf", {
       )
   }
 })
+
+test_that("MultiPop input for pullSegSite", {
+  set.seed(5004)
+
+  x = knownPop(nInd = 32L, nPerChr = c(130L, 170L))
+
+  df_split = data.frame(
+    level1 = rep(LETTERS[1:4], each = 8),
+    level2 = rep(c('R1', 'R2'), each = 4, times = 4),
+    row.names = x$pop@id
+  )
+  mp = splitPop(x$pop, by = df_split)
+
+  # Haplotypes
+  segSiteHaplo = pullSegSiteHaplo(x$pop, haplo = 1, simParam = x$SP)
+  segSiteHaplo_l1 = split(as.data.frame(segSiteHaplo), df_split$level1)
+  segSiteHaplo_l1 = lapply(segSiteHaplo_l1, as.matrix)
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l1, \(x) {
+    split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
+  })
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l2, \(x) lapply(x, as.matrix))
+
+  expect_equivalent(
+    pullSegSiteHaplo(mp, haplo = 1, simParam = x$SP, simplify = TRUE),
+    segSiteHaplo
+  )
+  expect_equivalent(
+    pullSegSiteHaplo(
+      mp,
+      haplo = 1,
+      simParam = x$SP,
+      simplify = TRUE,
+      level = 2
+    ),
+    segSiteHaplo_l1
+  )
+  expect_equivalent(
+    pullSegSiteHaplo(mp, haplo = 1, simParam = x$SP),
+    segSiteHaplo_l2
+  )
+
+  # Genotypes
+  segSiteGeno = pullSegSiteGeno(x$pop, simParam = x$SP)
+  segSiteGeno_l1 = split(as.data.frame(segSiteGeno), df_split$level1)
+  segSiteGeno_l1 = lapply(segSiteGeno_l1, as.matrix)
+  segSiteGeno_l2 = lapply(segSiteGeno_l1, \(x) {
+    split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
+  })
+  segSiteGeno_l2 = lapply(segSiteGeno_l2, \(x) lapply(x, as.matrix))
+
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP, simplify = TRUE),
+    segSiteGeno
+  )
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP, simplify = TRUE, level = 2),
+    segSiteGeno_l1
+  )
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP),
+    segSiteGeno_l2
+  )
+
+  # Allele frequencies
+  segSiteAf = do.call(
+    'rbind',
+    lapply(segSiteGeno_l2, \(x) {
+      do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+    })
+  )
+  segSiteAf_l1 = lapply(segSiteGeno_l2, \(x) {
+    do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+  })
+  segSiteAf_l2 = lapply(segSiteGeno_l2, \(x) {
+    lapply(x, \(y) as.matrix(colMeans(y) / 2))
+  })
+
+  expect_equivalent(
+    pullSegSiteAf(mp, simParam = x$SP, simplify = TRUE),
+    segSiteAf
+  )
+  expect_equivalent(
+    pullSegSiteAf(mp, simParam = x$SP, simplify = TRUE, level = 2),
+    segSiteAf_l1
+  )
+  expect_equivalent(
+    pullSegSiteAf(mp, simParam = x$SP),
+    segSiteAf_l2
+  )
+})
