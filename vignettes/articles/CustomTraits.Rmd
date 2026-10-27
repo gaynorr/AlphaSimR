@@ -69,7 +69,7 @@ By default additive effects are sampled from a normal distribution. With
 `gamma = TRUE` they are sampled from a gamma distribution with the given
 `shape`, and given a random sign. A small shape gives a few loci with
 large effects and many with very small ones, which is closer to what
-mapping studies report for many traits.
+mapping studies report for many traits [@hayes2001Distribution].
 
 ```{r}
 SP$addTraitA(nQtlPerChr = 100, gamma = TRUE, shape = 0.3,
@@ -326,7 +326,7 @@ founders'.
 Phenotypes in `AlphaSimR` are continuous, but many traits are recorded as
 scores, categories or counts. The usual way to simulate them is a
 threshold or link model: the continuous phenotype is a latent value, and
-what is recorded is a function of it. Three functions apply such
+what is recorded is a function of it [@dempster1950Heritability]. Three functions apply such
 transformations to a matrix or vector of values:
 
 - `asCategorical` cuts the latent scale into ordered categories, either

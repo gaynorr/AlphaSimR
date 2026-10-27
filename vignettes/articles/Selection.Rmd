@@ -205,7 +205,7 @@ An individual with an unknown parent is a family of its own.
 Truncation selection on phenotype favors whole families, because members
 of a good family share good alleles. Over several generations that
 concentrates the population on fewer families and erodes genetic
-variance faster. Selecting within families first, and then across them,
+variance faster [@robertson1961Inbreeding]. Selecting within families first, and then across them,
 caps how many individuals any one family contributes.
 
 The comparison below runs three strategies for 15 generations from the
@@ -408,11 +408,13 @@ targets. The offspring mean differs from it only by Mendelian sampling
 in a finite number of offspring, since for an additive trait the
 expected value of an offspring is the mean of its parents' breeding
 values. The equation describes one generation; over several, selection
-reduces the genetic variance through the Bulmer effect and the response
-per generation falls.
+reduces the genetic variance through the Bulmer effect
+[@bulmer1971Effect] and the response per generation falls.
 
 `usefulness` summarizes a population by the mean value of its best
-individuals, the top proportion `p`. It is a quick way to rank several
+individuals, the top proportion `p`, a measure used to choose among
+crosses by the expected value of their best progeny
+[@zhong2007Using]. It is a quick way to rank several
 candidate populations by what selection within each could deliver, using
 genetic values by default:
 

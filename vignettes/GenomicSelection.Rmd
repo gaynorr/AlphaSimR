@@ -29,7 +29,8 @@ library(AlphaSimR)
 ## Introduction
 
 Genomic selection is selection on a prediction of an individual's genetic
-merit made from its marker genotypes. `AlphaSimR` provides a family of
+merit made from its marker genotypes
+[@whittaker2000Marker; @meuwissen2001Prediction]. `AlphaSimR` provides a family of
 ridge regression BLUP (RR-BLUP) models for making these predictions.
 They are fitted in C++ and are meant to be
 re-fitted many times over the course of a simulation, so they are
@@ -547,8 +548,8 @@ An estimated breeding value depends on allele frequencies, because an
 average effect does. By default `setEBV` uses the frequencies implied by
 the fitted model, which are those of the training population. The
 `targetPop` argument overrides this, recomputing the average effects
-$\alpha = a + d(q - p)$ at the allele frequencies of the population you
-supply:
+$\alpha = a + d(q - p)$ [@falconer1996Introduction] at the allele
+frequencies of the population you supply:
 
 ```{r}
 candidates = setEBV(candidates, ans, value = "bv", targetPop = candidates,

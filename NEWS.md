@@ -119,6 +119,8 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Reorganized the help pages of the `RRBLUP` models around the model each fits.
 * Added vignettes on genomic selection and parallelization. The genome article is now a vignette.
 * Added articles to the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, on selection, pedigree BLUP, optimal contribution selection, custom traits and trait distributions, quantitative genetics, combining ability, demographic models, gene drop simulations, importing data, simulating a plant breeding program, and storing data in `misc` and `miscPop`, and revised the genetic recombination article.
+* Corrected `citation("AlphaSimR")`, which split the authors' names into separate authors and gave the wrong page number for the AlphaSimR paper.
+* Added references to the literature behind the claims in the vignettes and articles.
 
 # AlphaSimR 2.1.0
 

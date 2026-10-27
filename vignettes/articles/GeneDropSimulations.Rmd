@@ -5,6 +5,9 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{Gene Drop Simulations in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -26,7 +29,7 @@ set.seed(3453)
 A gene drop simulation takes a pedigree and a set of founder genomes and
 works forwards through the pedigree, sampling gametes according to
 Mendelian inheritance and recombination, until every individual has a
-genome. The pedigree supplies the structure and the founders supply the
+genome [@maccluer1986Pedigree]. The pedigree supplies the structure and the founders supply the
 genetic material. Nothing about the genomes of the non-founders is
 assumed; they are the outcome of the sampling.
 
@@ -615,3 +618,5 @@ genotyped individuals, with `matchID = TRUE`. Given a map population it
 builds and discards its own `SimParam` and returns a `NamedMapPop`, which
 makes the import, drop, simulate sequence the natural way to start a
 simulation from a real breeding population.
+
+# References

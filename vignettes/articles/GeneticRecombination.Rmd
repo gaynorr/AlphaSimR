@@ -261,7 +261,10 @@ is Poisson, and the model reduces to the count-location model with no
 interference. As $v$ increases the spacing distribution concentrates
 around its mean, short gaps become rare, and interference strengthens.
 The `AlphaSimR` default is $v = 2.6$, which is the value that makes the
-resulting map function closely approximate Kosambi's.
+resulting map function closely approximate Kosambi's. The map function of
+a stationary renewal process follows from the distribution of its
+spacings [@zhao1996Genetic], and with $v = 2.6$ it stays within 0.001 of
+Kosambi's function at every distance.
 
 ```{r}
 SP$v # Interference parameter, 2.6 approximates Kosambi

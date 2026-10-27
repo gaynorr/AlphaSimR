@@ -28,7 +28,8 @@ library(AlphaSimR)
 Truncation selection takes the best individuals and nothing else into
 account. Relatives tend to be among the best together, so a population
 under truncation selection is soon descended from a few families, and
-the genetic variance that future gain depends on is lost quickly. The
+the genetic variance that future gain depends on is lost quickly
+[@robertson1961Inbreeding]. The
 [Selection](Selection.html) article shows this happening.
 
 Optimal contribution selection [@meuwissen1997Maximizing] makes the
@@ -249,7 +250,7 @@ Each version of `selectOCS` holds the rate it measures close to the
 target of 0.01: the marker version for fixation at the SNP chip, and the
 pedigree version for pedigree inbreeding. Truncation exceeds the target
 on both measures. Neither restriction controls the other's measure
-exactly. The pedigree version let fixation at the SNP chip rise faster
+exactly, as @sonesson2012Genomic also found. The pedigree version let fixation at the SNP chip rise faster
 than truncation did, because the pedigree cannot see which alleles
 individuals carry, and the marker version let pedigree inbreeding rise
 somewhat above the target.
@@ -273,7 +274,7 @@ With **markers**, the kinship of two candidates is estimated from the
 genotypes they actually carry. The method can therefore balance allele
 frequencies, keeping candidates whose alleles are rare among the others
 selected, and it sees the Mendelian sampling that makes one sib differ
-from another.
+from another [@daetwyler2007Inbreeding].
 
 With the **pedigree**, kinship is taken from `pedigreeA`, relative to the
 founders of the simulation, and the pedigree knows only who descends
@@ -324,7 +325,8 @@ progeny = selectCross(pop, nFemale = 50, nMale = 10, nCrosses = 200,
 
 A target is easiest to choose as an effective population size,
 $\Delta F = 1/(kN_e)$. An $N_e$ of 50 to 100 is often quoted as the
-minimum for maintaining a population's fitness in the long term, which
+minimum for maintaining a population's fitness in the long term
+[@toro2011Assessing], which
 corresponds to $\Delta F$ between 0.01 and 0.005 for a diploid.
 
 The target interacts with the number selected. A random set of $N$

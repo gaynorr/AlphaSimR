@@ -487,7 +487,7 @@ For diploids the relevant conversions are:
 Here $\rho$ is the recombination rate per base pair per generation.
 All event times and size ratios use the same present reference size,
 not the size in the preceding interval.
-`MaCS` shares much of the demographic syntax of Hudson's ms,
+`MaCS` shares much of the demographic syntax of Hudson's ms [@hudson2002Generating],
 but its mutation and recombination arguments above are per-base quantities;
 do not substitute whole-region ms parameters. See the
 [MaCS documentation](https://github.com/gchen98/macs#readme) and the
@@ -783,7 +783,7 @@ To import these founders, set `treeSequences = list(tsCattle)`,
 
 ## Rice
 
-The rice model of [Caicedo et al. (2007)](https://doi.org/10.1371/journal.pgen.0030163)
+The rice model of @caicedo2007Genome
 describes domestication bottlenecks and migration among wild rice,
 indica, and tropical japonica (see the
 [stdpopsim catalog](https://popsim-consortium.github.io/stdpopsim-docs/stable/catalog.html#sec_catalog_OrySat)).

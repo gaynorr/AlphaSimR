@@ -117,7 +117,7 @@ that parent is.
 Founders made by `runMacs` or `quickHaplo` with `inbred = TRUE` are taken
 to be fully inbred rather than outbred. For polyploids, inheritance is
 taken to be autopolyploid without double reduction, and the diagonal is
-$1 + (v - 1)F$ for ploidy $v$. The details are on the help page of
+$1 + (v - 1)F$ for ploidy $v$ [@kerr2012Use]. The details are on the help page of
 `pedigreeA`.
 
 The calculation uses the method of @colleau2002Indirect, which never
@@ -130,7 +130,7 @@ grows with the square of the number of individuals asked for.
 The model is $y = Xb + Zu + e$, where $b$ holds the fixed effects, $u$
 the breeding values with covariance $A\sigma^2_u$, and $e$ the errors.
 `pedBLUP` builds the mixed model equations from the inverse of $A$,
-which is sparse, and solves them with a sparse Cholesky factorization.
+which is sparse [@henderson1976Simple], and solves them with a sparse Cholesky factorization.
 Unless they are given, the variance components are estimated by
 restricted maximum likelihood (REML), using the derivative-free approach
 of @graser1987Derivative and @meyer1989Restricted.
@@ -226,7 +226,7 @@ a family well, but it carries no information about which sib inherited
 the better half of each parent's genome, the Mendelian sampling term
 that makes up half of the additive variance in an outbred population.
 Markers do carry that information, which is a large part of the
-advantage of genomic selection. Fitting `RRBLUP` to the same training
+advantage of genomic selection [@daetwyler2007Inbreeding]. Fitting `RRBLUP` to the same training
 population shows the difference:
 
 ```{r}

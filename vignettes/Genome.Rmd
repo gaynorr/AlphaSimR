@@ -78,9 +78,9 @@ Genetic code is inherited from an individual's mother and father. This involves 
 
 Broadly speaking, there are three contributions to genetic variation: mutation, crossing over (recombination), and independent assortment (segregation).
 
-Mutation occurs during DNA replication in interphase. Although the rate is small (commonly on the order of 10^-8^ mutation per nucleotide), when considering the whole genome and the number of individuals in a population over a longer time period mutation is not negligible.
+Mutation occurs during DNA replication in interphase. Although the rate is small (commonly on the order of 10^-8^ mutations per nucleotide per generation [@kong2012Rate]), when considering the whole genome and the number of individuals in a population over a longer time period mutation is not negligible.
 
-Both crossing over and independent assortment occur in the first part of meiosis known as the reductional division. Crossing over refers to the swapping of genetic material at random between chromatids resulting in variation. Independent Assortment refers to the random orientation of homologous chromosome pairs resulting in gametes with many different assortments of chromosomes. (Recall there are 23 pairs in a human).
+Both crossing over and independent assortment occur in the first part of meiosis known as the reductional division. Crossing over refers to the swapping of genetic material at random between non-sister chromatids resulting in variation. Independent Assortment refers to the random orientation of homologous chromosome pairs resulting in gametes with many different assortments of chromosomes. (Recall there are 23 pairs in a human).
 
 Within genetics, whether quantitative or population, we are interested in how one individual's genome differs from the next. Thus, it is this variation we wish to capture to understand how genetics influences desired (or undesired) traits in crop and animal breeding.
 

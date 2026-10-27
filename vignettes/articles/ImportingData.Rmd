@@ -5,6 +5,9 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{Importing Data into AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -165,7 +168,7 @@ pullSegSiteGeno(inbredPop)
 
 # PLINK files
 
-PLINK's text format stores a pedigree and genotypes in a `.ped` file
+PLINK's [@purcell2007PLINK] text format stores a pedigree and genotypes in a `.ped` file
 and the map in a `.map` file. The `.ped` file has six columns describing
 each individual (family, ID, father, mother, sex and phenotype) followed
 by two allele columns per marker. The `.map` file has four columns:
@@ -300,3 +303,5 @@ simulate and import founder genomes simulated by `msprime` and `stdpopsim`,
 and the [Gene Drop Simulations](GeneDropSimulations.html) article shows
 how to simulate genomes through a known pedigree,
 starting from imported founders.
+
+# References
