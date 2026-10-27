@@ -1599,6 +1599,10 @@ pullSegSiteAf = function(
       nThreads = NULL,
       simParam = NULL
     ) {
+      if (sample) {
+        pop = pop[sample(seq_len(nInd(pop)), size = sample)]
+      }
+
       if (is(pop, "MapPop")) {
         allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
         lociTot = pop@nLoci
@@ -1609,9 +1613,6 @@ pullSegSiteAf = function(
         }
         map = pop@genMap
       } else {
-        if (sample) {
-          pop = pop[sample(seq_along(pop), size = sample)]
-        }
         simParam = getSimParam(simParam)
         allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
         lociTot = simParam$segSites
@@ -1801,7 +1802,7 @@ pullMarkerAf = function(
       simParam = NULL
     ) {
       if (sample) {
-        pop = pop[sample(seq_along(pop), size = sample)]
+        pop = pop[sample(seq_len(nInd(pop)), size = sample)]
       }
 
       if (is(pop, "MapPop")) {
