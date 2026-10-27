@@ -839,7 +839,7 @@ test_that("MultiPop input for pullSegSite", {
     do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
   })
   segSiteAf_l2 = lapply(segSiteGeno_l2, \(x) {
-    lapply(x, \(y) as.matrix(colMeans(y) / 2))
+    lapply(x, \(y) t(colMeans(y) / 2))
   })
 
   expect_equivalent(
@@ -850,8 +850,10 @@ test_that("MultiPop input for pullSegSite", {
     pullSegSiteAf(mp, simParam = x$SP, simplify = TRUE, level = 2),
     segSiteAf_l1
   )
-  expect_equivalent(
-    pullSegSiteAf(mp, simParam = x$SP),
-    segSiteAf_l2
-  )
+  segSiteAf_mp = pullSegSiteAf(mp, simParam = x$SP)
+  expect_equivalent(segSiteAf_mp, segSiteAf_l2)
+
+  # expect_equivalent() ignores dimensions, so the one-row shape of each
+  # terminal result is checked on its own
+  expect_identical(dim(segSiteAf_mp[[1]][[1]]), c(1L, ncol(segSiteGeno)))
 })

@@ -100,7 +100,8 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} or a
 #'   \code{MapPop} are only accepted on their own.
 #' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
-#'   (or \code{HybridPop}, when \code{x} is one) as its first argument.
+#'   (or a \code{RawPop} or \code{HybridPop}, when \code{x} is one) as its
+#'   first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
 #'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
@@ -193,7 +194,7 @@ calcPopValue = function(
   }
 
   if (!isMultiPop(x)) {
-    stop("`x` must be a Pop, HybridPop or MultiPop object.")
+    stop("`x` must be a RawPop, HybridPop or MultiPop object.")
   }
 
   if (is.null(.paths) && simplify) {

@@ -14,7 +14,8 @@ and \code{\link{Pop-class}}), \code{\link{HybridPop-class}} or
 \code{MapPop} are only accepted on their own.}
 
 \item{FUN}{Function to apply to each \code{Pop}. Must accept a \code{Pop}
-(or \code{HybridPop}, when \code{x} is one) as its first argument.}
+(or a \code{RawPop} or \code{HybridPop}, when \code{x} is one) as its
+first argument.}
 
 \item{simplify}{Logical. If \code{TRUE}, simplify the output by flattening
 the \code{MultiPop} in \code{x} to the requested \code{level} using

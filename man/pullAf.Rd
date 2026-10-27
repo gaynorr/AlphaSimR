@@ -59,7 +59,7 @@ only supported by \code{\link{pullSegSiteAf}} and
 \item{chr}{Integer vector of chromosomes to retrieve. If \code{NULL},
 all chromosomes are retrieved.}
 
-\item{sample}{A non-negative integer giving the number of individuals to
+\item{sample}{A positive integer giving the number of individuals to
 sample from \code{pop} at random for allele frequency calculation. Passed
 to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
 If \code{NULL}, no sampling is done and all individuals in \code{pop}

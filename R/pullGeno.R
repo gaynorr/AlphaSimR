@@ -67,6 +67,37 @@ checkHaplo = function(haplo, ploidy){
   return(haplo)
 }
 
+#' Sample individuals for the pull*Af functions
+#'
+#' Checks the sample argument of the pull*Af functions and draws that
+#' many individuals from the population at random. Each population in a
+#' MultiPop is checked on its own, so the error names the shortfall in
+#' the population that is too small.
+#'
+#' @param pop an object of \code{\link{RawPop-class}}
+#' @param sample either NULL for all individuals or a single whole number
+#' from 1 to nInd(pop)
+#'
+#' @return pop, or a random subset of sample individuals from it
+#'
+#' @keywords internal
+samplePop = function(pop, sample){
+  if(is.null(sample)){
+    return(pop)
+  }
+  if((length(sample)!=1L) || !is.numeric(sample) || !is.finite(sample) ||
+     (sample!=trunc(sample)) || (sample<1)){
+    stop("`sample` must be a positive non-NA integer value.")
+  }
+  if(sample>nInd(pop)){
+    stop(sprintf("`pop` has fewer individuals than `sample` (%d < %d)",
+                 nInd(pop), sample))
+  }
+  # sample() is still found as a function here, because R skips the
+  # numeric argument of the same name when it looks up a call
+  return(pop[sample(seq_len(nInd(pop)), size=sample)])
+}
+
 #' Retrieves marker names from genMap
 #'
 #' @param lociPerChr number of loci per chromosome
@@ -1476,7 +1507,7 @@ pullIbdHaplo = function(
 #' @param snpChip SNP chip whose allele frequencies are calculated and 
 #'   retrieved. Either an integer index or a SNP chip name.
 #' @param markers Character vector of marker names to calculate and retrieve.
-#' @param sample A non-negative integer giving the number of individuals to
+#' @param sample A positive integer giving the number of individuals to
 #'   sample from \code{pop} at random for allele frequency calculation. Passed
 #'   to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
 #'   If \code{NULL}, no sampling is done and all individuals in \code{pop}
@@ -1600,22 +1631,7 @@ pullSegSiteAf = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      if (
-        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
-          is.finite(sample) && sample == trunc(sample) && 0 < sample
-      ) {
-        if (sample <= nInd(pop)) {
-          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
-        } else {
-          stop(sprintf(
-            "`pop` has fewer individuals than `sample` (%d < %d)",
-            nInd(pop),
-            sample
-          ))
-        }
-      } else if (!is.null(sample)) {
-        stop("`sample` must be a positive non-NA integer value.")
-      }
+      pop = samplePop(pop, sample)
 
       if (is(pop, "MapPop")) {
         allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
@@ -1686,22 +1702,7 @@ pullQtlAf = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      if (
-        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
-          is.finite(sample) && sample == trunc(sample) && 0 < sample
-      ) {
-        if (sample <= nInd(pop)) {
-          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
-        } else {
-          stop(sprintf(
-            "`pop` has fewer individuals than `sample` (%d < %d)",
-            nInd(pop),
-            sample
-          ))
-        }
-      } else if (!is.null(sample)) {
-        stop("`sample` must be a positive non-NA integer value.")
-      }
+      pop = samplePop(pop, sample)
 
       if (is.character(trait)) {
         # Suspect trait is a name
@@ -1768,22 +1769,7 @@ pullSnpAf = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      if (
-        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
-          is.finite(sample) && sample == trunc(sample) && 0 < sample
-      ) {
-        if (sample <= nInd(pop)) {
-          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
-        } else {
-          stop(sprintf(
-            "`pop` has fewer individuals than `sample` (%d < %d)",
-            nInd(pop),
-            sample
-          ))
-        }
-      } else if (!is.null(sample)) {
-        stop("`sample` must be a positive non-NA integer value.")
-      }
+      pop = samplePop(pop, sample)
 
       if (is.character(snpChip)) {
         # Suspect snpChip is a name
@@ -1841,22 +1827,7 @@ pullMarkerAf = function(
       simParam = NULL,
       nThreads = NULL
     ) {
-      if (
-        length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
-          is.finite(sample) && sample == trunc(sample) && 0 < sample
-      ) {
-        if (sample <= nInd(pop)) {
-          pop = pop[sample(seq_len(nInd(pop)), size = sample)]
-        } else {
-          stop(sprintf(
-            "`pop` has fewer individuals than `sample` (%d < %d)",
-            nInd(pop),
-            sample
-          ))
-        }
-      } else if (!is.null(sample)) {
-        stop("`sample` must be a positive non-NA integer value.")
-      }
+      pop = samplePop(pop, sample)
 
       if (is(pop, "MapPop")) {
         allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
