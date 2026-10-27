@@ -260,9 +260,9 @@
 
 * Add `nPop()` to count the number of Pop-class objects in a MultiPop.
 
-* Update `pullSegSiteGeno()`, `pullQtlGeno()`, `pullSnpGeno()` and `pullMarkerGeno()` to support MultiPop objects via `calcPopValue()`. Their documentation was unified under the same `pullGeno` help page.
+* Update `pullSegSiteGeno()`, `pullQtlGeno()`, `pullSnpGeno()` and `pullMarkerGeno()`. These functions now accept MultiPop objects, with `simplify` and `level` arguments to combine the results. Their documentation was unified under the same `pullGeno` help page.
 
-* Update `pullSegSiteHaplo()`, `pullQtlHaplo()`, `pullSnpHaplo()`, `pullMarkerHaplo()` and `pullIbdHaplo()` to support MultiPop objects via `calcPopValue()`. Their documentation was unified under the same `pullHaplo` help page.
+* Update `pullSegSiteHaplo()`, `pullQtlHaplo()`, `pullSnpHaplo()`, `pullMarkerHaplo()` and `pullIbdHaplo()`. These functions now accept MultiPop objects, with `simplify` and `level` arguments to combine the results. Their documentation was unified under the same `pullHaplo` help page.
 
 * Add `pullSegSiteAf()`, `pullQtlAf()`, `pullSnpAf()` and `pullMarkerAf()` to calculate and retrieve allele frequency data from a Pop or MultiPop object.
 

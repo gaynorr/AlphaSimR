@@ -86,7 +86,7 @@ indicating row origins.}
 \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.}
 
 \item{trait}{An integer or a trait name. Indicates which trait's
-QTL genotypes to retrieve.}
+QTL allele frequencies to retrieve.}
 
 \item{snpChip}{SNP chip whose allele frequencies are calculated and 
 retrieved. Either an integer index or a SNP chip name.}

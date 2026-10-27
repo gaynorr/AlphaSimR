@@ -822,7 +822,7 @@ pullMarkerGeno = function(
 #' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
 #'   all chromosomes are retrieved.
 #' @param trait An integer or a trait name. Indicates which trait's
-#'   QTL genotypes to retrieve.
+#'   QTL haplotypes to retrieve.
 #' @param snpChip SNP chip whose haplotypes are retrieved. Either an integer
 #'   index or a SNP chip name.
 #' @param markers Character vector of marker names to retrieve.
@@ -1471,16 +1471,16 @@ pullIbdHaplo = function(
 #'   \code{\link{pullMarkerAf}}.
 #' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
 #'   all chromosomes are retrieved.
+#' @param trait An integer or a trait name. Indicates which trait's
+#'   QTL allele frequencies to retrieve.
+#' @param snpChip SNP chip whose allele frequencies are calculated and 
+#'   retrieved. Either an integer index or a SNP chip name.
+#' @param markers Character vector of marker names to calculate and retrieve.
 #' @param sample A non-negative integer giving the number of individuals to
 #'   sample from \code{pop} at random for allele frequency calculation. Passed
 #'   to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
 #'   If \code{NULL}, no sampling is done and all individuals in \code{pop}
 #'   are used.
-#' @param trait An integer or a trait name. Indicates which trait's
-#'   QTL genotypes to retrieve.
-#' @param snpChip SNP chip whose allele frequencies are calculated and 
-#'   retrieved. Either an integer index or a SNP chip name.
-#' @param markers Character vector of marker names to calculate and retrieve.
 #' @param simParam An object of class \code{\link{SimParam}} for non-
 #'   \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
 #'   \code{SP} in the global environment is used. Ignored when \code{pop} is a

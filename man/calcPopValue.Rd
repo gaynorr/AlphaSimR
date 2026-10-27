@@ -7,10 +7,11 @@
 calcPopValue(x, FUN, simplify = FALSE, level = 1, ...)
 }
 \arguments{
-\item{x}{A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+\item{x}{A \code{\link{RawPop-class}} (including \code{\link{MapPop-class}}
+and \code{\link{Pop-class}}), \code{\link{HybridPop-class}} or
 \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
-\code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
-accepted on its own.}
+\code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} or a
+\code{MapPop} are only accepted on their own.}
 
 \item{FUN}{Function to apply to each \code{Pop}. Must accept a \code{Pop}
 (or \code{HybridPop}, when \code{x} is one) as its first argument.}

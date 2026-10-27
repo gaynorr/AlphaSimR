@@ -120,14 +120,15 @@ by_df = data.frame(
 )
 mp2 = splitPop(pop, by = by_df)
 
-# Select best 2 populations at level 2
+# Select the best population at level 2
 selectPop(mp2, nPop=1, level=2, simParam=SP)
 
-# Select 2 populations at level 2 based on miscellaneous info with use function
+# Select the best population at level 2 based on
+# miscellaneous info with `use` function
 useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
 selectPop(mp2, nPop=1, level=2, simParam=SP, use=useFunc)
 
-# ... equivalent result with the use & trait function
+# ... equivalent result with the `use` & `trait` function
 useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
 trtFunc = function(x) rowSums(x)
 selectPop(mp2, nPop=1, level=2, use=useFunc2, trait=trtFunc, simParam=SP)

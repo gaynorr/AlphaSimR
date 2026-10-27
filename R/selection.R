@@ -94,10 +94,11 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' \code{\link{MultiPop-class}} and optionally simplify the output to a
 #' requested level of nesting.
 #'
-#' @param x A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+#' @param x A \code{\link{RawPop-class}} (including \code{\link{MapPop-class}}
+#'   and \code{\link{Pop-class}}), \code{\link{HybridPop-class}} or
 #'   \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
-#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
-#'   accepted on its own.
+#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} or a
+#'   \code{MapPop} are only accepted on their own.
 #' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
 #'   (or \code{HybridPop}, when \code{x} is one) as its first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
@@ -1305,14 +1306,15 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
 #' )
 #' mp2 = splitPop(pop, by = by_df)
 #' 
-#' # Select best 2 populations at level 2
+#' # Select the best population at level 2
 #' selectPop(mp2, nPop=1, level=2, simParam=SP)
 #' 
-#' # Select 2 populations at level 2 based on miscellaneous info with use function
+#' # Select the best population at level 2 based on
+#' # miscellaneous info with `use` function
 #' useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
 #' selectPop(mp2, nPop=1, level=2, simParam=SP, use=useFunc)
 #' 
-#' # ... equivalent result with the use & trait function
+#' # ... equivalent result with the `use` & `trait` function
 #' useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
 #' trtFunc = function(x) rowSums(x)
 #' selectPop(mp2, nPop=1, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
