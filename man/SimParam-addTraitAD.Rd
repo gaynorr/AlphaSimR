@@ -57,7 +57,7 @@ SP$addTraitAD(10, meanDD=0.5)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addTraitAD(
+\section{Usage}{\preformatted{SP$addTraitAD(
   nQtlPerChr,
   mean = 0,
   var = 1,

@@ -28,6 +28,6 @@ SP$setCorE(E)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setCorE(
+\section{Usage}{\preformatted{SP$setCorE(
   corE
 )}}

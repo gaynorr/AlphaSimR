@@ -71,7 +71,7 @@ SP$addTraitADEG(10, meanDD=0.5, varGxE=2)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addTraitADEG(
+\section{Usage}{\preformatted{SP$addTraitADEG(
   nQtlPerChr,
   mean = 0,
   var = 1,

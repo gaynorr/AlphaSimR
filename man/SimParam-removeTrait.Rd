@@ -17,7 +17,7 @@ Remove a trait from the simulation
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$removeTrait(
+\section{Usage}{\preformatted{SP$removeTrait(
   traits,
   force = FALSE
 )}}

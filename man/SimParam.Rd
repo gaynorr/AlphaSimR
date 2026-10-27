@@ -254,6 +254,6 @@ pop = newPop(founderPop, simParam=SP)
 meanP(pop)
 
 }
-\usage{\special{SimParam$new(
+\section{Usage}{\preformatted{SimParam$new(
   founderPop
 )}}

@@ -27,6 +27,6 @@ SP$setRecombRatio(2) #Twice as much recombination in females
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setRecombRatio(
+\section{Usage}{\preformatted{SP$setRecombRatio(
   femaleRatio
 )}}

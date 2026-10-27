@@ -12,8 +12,12 @@
 
 # Returns an Rd usage section for a SimParam method. A call such as
 # SP$addTraitA() is not one R CMD check can match to a function in the
-# package, so the usage is wrapped in \special, which the check leaves
-# alone. That keeps the usage in its usual place, ahead of the arguments.
+# package, and pkgdown cannot read it from a \usage section at all: it
+# fails on any usage whose function is itself a call, such as SP$addTraitA,
+# even inside \special, which stops the whole site build. The usage is
+# therefore a section of its own named Usage, which neither tool parses as
+# code, at the cost of appearing after the details rather than ahead of
+# the arguments.
 .simParamUsage = function(method, call=paste0("SP$", method)){
   args = formals(SimParam$public_methods[[method]])
   txt = vapply(names(args), function(n){
@@ -27,7 +31,7 @@
   }else{
     usage = paste0(call, "(\n  ", paste(txt, collapse=",\n  "), "\n)")
   }
-  paste0("\\usage{\\special{", usage, "}}")
+  paste0("\\section{Usage}{\\preformatted{", usage, "}}")
 }
 
 #' Set how sexes are assigned

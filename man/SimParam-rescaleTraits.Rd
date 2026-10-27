@@ -57,7 +57,7 @@ meanG(pop)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$rescaleTraits(
+\section{Usage}{\preformatted{SP$rescaleTraits(
   mean = 0,
   var = 1,
   varEnv = 0,

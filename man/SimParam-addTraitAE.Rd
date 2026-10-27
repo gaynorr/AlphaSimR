@@ -59,7 +59,7 @@ SP$addTraitAE(10, relAA=0.1)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addTraitAE(
+\section{Usage}{\preformatted{SP$addTraitAE(
   nQtlPerChr,
   mean = 0,
   var = 1,

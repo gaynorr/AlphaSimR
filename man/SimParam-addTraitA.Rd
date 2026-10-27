@@ -46,7 +46,7 @@ SP$addTraitA(10)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addTraitA(
+\section{Usage}{\preformatted{SP$addTraitA(
   nQtlPerChr,
   mean = 0,
   var = 1,

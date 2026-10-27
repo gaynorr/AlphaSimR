@@ -25,7 +25,7 @@ Switch a trait in the simulation.
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$switchTrait(
+\section{Usage}{\preformatted{SP$switchTrait(
   traitPos,
   lociMap,
   varE = NA_real_,

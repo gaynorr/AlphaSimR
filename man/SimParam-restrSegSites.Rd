@@ -57,7 +57,7 @@ SP$restrSegSites(minQtlPerChr=5, minSnpPerChr=5)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$restrSegSites(
+\section{Usage}{\preformatted{SP$restrSegSites(
   minQtlPerChr = NULL,
   minSnpPerChr = NULL,
   excludeQtl = NULL,

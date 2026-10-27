@@ -15,6 +15,6 @@ is not fully documented, because it is still experimental.
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setFounderHap(
+\section{Usage}{\preformatted{SP$setFounderHap(
   hapMap
 )}}

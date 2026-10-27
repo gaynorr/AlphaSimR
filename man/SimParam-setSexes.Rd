@@ -34,7 +34,7 @@ SP$setSexes("yes_sys")
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setSexes(
+\section{Usage}{\preformatted{SP$setSexes(
   sexes,
   force = FALSE
 )}}
