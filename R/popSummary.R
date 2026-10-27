@@ -1043,8 +1043,14 @@ varPPop = function(x, level = 1L) {
 #' This breeding value parameterization is also called the "statistical" model
 #' because it depends on statistical decomposition of genetic values.
 #'
-#' A locus's own additive and dominance effects are regressed on its own
-#' dosage, so linkage disequilibrium between loci appears in the covariances.
+#' Breeding values and deviations are defined in a reference population of
+#' infinite size that has the observed genotype frequencies at each locus
+#' and, for a trait with epistasis, the observed joint genotype frequencies
+#' of each epistatic pair, but no other linkage disequilibrium. A locus's own
+#' additive and dominance effects are regressed on its own dosage. Variances
+#' are then taken over the individuals in \code{pop}, so linkage
+#' disequilibrium between loci appears in the variances and covariances
+#' rather than in the effects.
 #' For a trait with epistasis, the epistatic value of each pair of loci is
 #' fitted to the pair's two dosages jointly, under the observed joint
 #' genotype frequencies: its fit to the dosages is part of the breeding
@@ -1092,7 +1098,9 @@ varPPop = function(x, level = 1L) {
 #' The cross-component terms \code{covAD_L}, \code{covAAA_L}, \code{covDAA_L}, and
 #' \code{covAN_L} are covariances.
 #' Variances and covariances use the population divisor \code{nInd},
-#' rather than sample divisor \code{nInd - 1}.
+#' rather than sample divisor \code{nInd - 1}, because the individuals in
+#' \code{pop} are treated as the whole population rather than as a sample
+#' from it.
 #'
 #' The same decomposition is also given between traits, as nTraits by
 #' nTraits matrices.

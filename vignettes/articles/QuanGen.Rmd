@@ -243,12 +243,17 @@ The breeding value of an individual is the part of its genetic value that
 it can transmit to offspring under random mating in the population
 [@falconer1996Introduction; @falconer1985Note].
 Formally,
-it is the least-squares projection of
+at each locus it is the least-squares projection of
 the genetic-value deviation from the population mean onto
-centered allele dosage in the population,
+the centered allele dosage at that locus,
 and the coefficient of that projection is
 the average effect of allele substitution in the population,
 usually denoted as $\alpha$.
+Apart from epistatic pairs, described below,
+each projection uses only the genotype frequencies at its own locus,
+so under linkage disequilibrium (LD) the sum over loci is not
+the least-squares projection onto all dosages at once
+(see [Three reference populations](#reference-populations)).
 
 `AlphaSimR` calculates these regression coefficients using the observed genotype frequencies,
 without requiring Hardy–Weinberg proportions.
@@ -714,13 +719,24 @@ popVar(gv(pop[1:nSmall]))
 var(gv(pop[1:nSmall]))
 ```
 
-### Three reference populations
+### Three reference populations {#reference-populations}
 
 Having access to breeding values and non-additive deviations,
 we can calculate their variances and covariances in the same way.
 `AlphaSimR` does this for three different "reference" populations
 (observed population, linkage-equilibrium population, and idealized population)
 and understanding these is the key to understanding the output of `genParam`.
+
+The breeding values and deviations themselves are defined in
+a reference population of infinite size,
+so that they are population parameters rather than estimates.
+That population has the observed genotype frequencies at each locus
+and, for each epistatic pair, the pair's observed joint genotype frequencies,
+but no other association between loci.
+The variances are then taken over the observed individuals,
+so LD between loci enters the variances,
+through `covX_L` and the covariances between components,
+rather than the effects.
 
 The **observed population** is
 the set of individuals in a population and uses their actual genotypes.
@@ -776,7 +792,7 @@ The **linkage-equilibrium population** has
 the same genotype frequencies at each locus as the observed population,
 but loci are treated as independent (non-correlated).
 Variances computed here are sums of single-locus
-(or single-pair for epistasis) contributions
+(or single-pair for epistasis, with the two loci of a pair also independent) contributions
 with no covariance (LD) between loci.
 We will demonstrate the linkage-equilibrium population variances below.
 
@@ -1179,6 +1195,16 @@ The exception is the epistatic value of each pair,
 which is refitted to the pair's observed joint genotype frequencies,
 as in the second convention but only within the pair;
 LD between pairs still appears as covariance.
+A locus's own additive and dominance effects are not refitted jointly with its partner's,
+because which loci are paired is a property of the epistatic effects alone.
+Refitting them would make the decomposition depend on the pairing
+even when every epistatic effect is zero;
+as it is, such a trait gives the same results as the same trait without epistasis.
+The second convention is not applied to all loci at once either.
+In a finite population much of the observed multilocus LD is between loosely linked loci
+or is chance association, which recombination breaks down in the offspring,
+so effects refitted to it describe the current individuals
+but transmit less faithfully to their progeny.
 
 One further point of interpretation, made forcefully by @hill2008Data,
 is worth keeping in mind when setting up a simulation with epistasis.
