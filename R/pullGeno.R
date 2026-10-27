@@ -1586,8 +1586,8 @@ pullSegSiteAf = function(
   pop,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 ) {
@@ -1597,8 +1597,8 @@ pullSegSiteAf = function(
       pop,
       chr = NULL,
       sample = NULL,
-      nThreads = NULL,
-      simParam = NULL
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (
         length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
@@ -1650,8 +1650,8 @@ pullSegSiteAf = function(
     },
     chr = chr,
     sample = sample,
-    nThreads = nThreads,
     simParam = simParam,
+    nThreads = nThreads,
     simplify = simplify,
     level = level
   )
@@ -1664,8 +1664,8 @@ pullQtlAf = function(
   trait = 1,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 ) {
@@ -1683,8 +1683,8 @@ pullQtlAf = function(
       trait = 1,
       chr = NULL,
       sample = NULL,
-      nThreads = NULL,
-      simParam = NULL
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (
         length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
@@ -1732,8 +1732,8 @@ pullQtlAf = function(
     trait = trait,
     chr = chr,
     sample = sample,
-    nThreads = nThreads,
     simParam = simParam,
+    nThreads = nThreads,
     simplify = simplify,
     level = level
   )
@@ -1746,8 +1746,8 @@ pullSnpAf = function(
   snpChip = 1,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 ) {
@@ -1765,8 +1765,8 @@ pullSnpAf = function(
       snpChip = 1,
       chr = NULL,
       sample = NULL,
-      nThreads = NULL,
-      simParam = NULL
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (
         length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
@@ -1814,8 +1814,8 @@ pullSnpAf = function(
     snpChip = snpChip,
     chr = chr,
     sample = sample,
-    nThreads = nThreads,
     simParam = simParam,
+    nThreads = nThreads,
     simplify = simplify,
     level = level
   )
@@ -1827,8 +1827,8 @@ pullMarkerAf = function(
   pop,
   markers,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 ) {
@@ -1838,8 +1838,8 @@ pullMarkerAf = function(
       pop,
       markers,
       sample = NULL,
-      nThreads = NULL,
-      simParam = NULL
+      simParam = NULL,
+      nThreads = NULL
     ) {
       if (
         length(sample) == 1L && is.numeric(sample) && !is.na(sample) &&
@@ -1896,8 +1896,8 @@ pullMarkerAf = function(
     },
     markers = markers,
     sample = sample,
-    nThreads = nThreads,
     simParam = simParam,
+    nThreads = nThreads,
     simplify = simplify,
     level = level
   )
