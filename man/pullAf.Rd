@@ -12,8 +12,8 @@ pullSegSiteAf(
   pop,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 )
@@ -23,8 +23,8 @@ pullQtlAf(
   trait = 1,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 )
@@ -34,8 +34,8 @@ pullSnpAf(
   snpChip = 1,
   chr = NULL,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 )
@@ -44,8 +44,8 @@ pullMarkerAf(
   pop,
   markers,
   sample = NULL,
-  nThreads = NULL,
   simParam = NULL,
+  nThreads = NULL,
   simplify = FALSE,
   level = 1L
 )
@@ -65,14 +65,14 @@ to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
 If \code{NULL}, no sampling is done and all individuals in \code{pop}
 are used.}
 
-\item{nThreads}{Number of threads to use if OpenMP is available. If
-\code{NULL}, uses \code{\link{getNumThreads}} for
-\code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.}
-
 \item{simParam}{An object of class \code{\link{SimParam}} for non-
 \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
 \code{SP} in the global environment is used. Ignored when \code{pop} is a
 \code{\link{MapPop-class}}.}
+
+\item{nThreads}{Number of threads to use if OpenMP is available. If
+\code{NULL}, uses \code{\link{getNumThreads}} for
+\code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.}
 
 \item{simplify}{Logical. Used only when \code{pop} is a
 \code{\link{MultiPop-class}}. If \code{TRUE}, flattens \code{pop} to
