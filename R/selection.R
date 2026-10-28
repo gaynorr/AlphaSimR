@@ -94,12 +94,14 @@ getResponse = function(pop,trait,use,simParam=NULL,nThreads=NULL,...){
 #' \code{\link{MultiPop-class}} and optionally simplify the output to a
 #' requested level of nesting.
 #'
-#' @param x A \code{\link{Pop-class}}, \code{\link{HybridPop-class}} or
+#' @param x A \code{\link{RawPop-class}} (including \code{\link{MapPop-class}}
+#'   and \code{\link{Pop-class}}), \code{\link{HybridPop-class}} or
 #'   \code{\link{MultiPop-class}} object. A \code{MultiPop} can only hold
-#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} is only
-#'   accepted on its own.
+#'   \code{Pop} and \code{MultiPop} objects, so a \code{HybridPop} or a
+#'   \code{MapPop} are only accepted on their own.
 #' @param FUN Function to apply to each \code{Pop}. Must accept a \code{Pop}
-#'   (or \code{HybridPop}, when \code{x} is one) as its first argument.
+#'   (or a \code{RawPop} or \code{HybridPop}, when \code{x} is one) as its
+#'   first argument.
 #' @param simplify Logical. If \code{TRUE}, simplify the output by flattening
 #'   the \code{MultiPop} in \code{x} to the requested \code{level} using
 #'   \code{\link{flattenMultiPop}}. The corresponding output matrices from
@@ -186,13 +188,13 @@ calcPopValue = function(
     stop("`FUN` must be a function.")
   }
 
-  if (isPop(x) || isHybridPop(x)) {
+  if (isRawPop(x) || isHybridPop(x)) {
     FUN.ARGS = c(list(x), dots)
     return(do.call(FUN, FUN.ARGS))
   }
 
   if (!isMultiPop(x)) {
-    stop("`x` must be a Pop, HybridPop or MultiPop object.")
+    stop("`x` must be a RawPop, HybridPop or MultiPop object.")
   }
 
   if (is.null(.paths) && simplify) {
@@ -1298,22 +1300,25 @@ selectOP = function(pop,nInd,nSeeds,probSelf=0,
 #' 
 #' # Create multi-population with two levels of nesting
 #' pop@misc = list(smth=rnorm(20), smth2=rnorm(20))
-#' mp2 = newMultiPop(
-#'   do.call(newMultiPop, split(pop[1:10], rep(1:5, 2))),
-#'   do.call(newMultiPop, split(pop[11:20], rep(1:5, 2)))
+#' by_df = data.frame(
+#'   level1 = rep(LETTERS[1:5], each = 4),
+#'   level2 = rep(c('X','Y'), length.out = nInd(pop)),
+#'   row.names = pop@id
 #' )
+#' mp2 = splitPop(pop, by = by_df)
 #' 
-#' # Select best 2 populations at level 2
-#' selectPop(mp2, nPop=2, level=2, simParam=SP)
+#' # Select the best population at level 2
+#' selectPop(mp2, nPop=1, level=2, simParam=SP)
 #' 
-#' # Select 2 populations at level 2 based on miscellaneous info with use function
+#' # Select the best population at level 2 based on
+#' # miscellaneous info with `use` function
 #' useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
-#' selectPop(mp2, nPop=2, level=2, simParam=SP, use=useFunc)
+#' selectPop(mp2, nPop=1, level=2, simParam=SP, use=useFunc)
 #' 
-#' # ... equivalent result with the use & trait function
+#' # ... equivalent result with the `use` & `trait` function
 #' useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
 #' trtFunc = function(x) rowSums(x)
-#' selectPop(mp2, nPop=2, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
+#' selectPop(mp2, nPop=1, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
 #'
 #' @export
 selectPop = function(

@@ -366,17 +366,17 @@ test_that("calcPopValue", {
   )
   expect_error(
     calcPopValue("not_a_pop", FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop, HybridPop or MultiPop object.",
+    "`x` must be a RawPop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
     calcPopValue(1:5, FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop, HybridPop or MultiPop object.",
+    "`x` must be a RawPop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
   expect_error(
     calcPopValue(list(pop), FUN = pheno, simplify = FALSE),
-    "`x` must be a Pop, HybridPop or MultiPop object.",
+    "`x` must be a RawPop, HybridPop or MultiPop object.",
     fixed = TRUE
   )
 })

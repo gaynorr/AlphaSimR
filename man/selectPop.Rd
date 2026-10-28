@@ -113,21 +113,24 @@ selectPop(mp1, nPop=2, trait=squaredDeviation, simParam=SP)
 
 # Create multi-population with two levels of nesting
 pop@misc = list(smth=rnorm(20), smth2=rnorm(20))
-mp2 = newMultiPop(
-  do.call(newMultiPop, split(pop[1:10], rep(1:5, 2))),
-  do.call(newMultiPop, split(pop[11:20], rep(1:5, 2)))
+by_df = data.frame(
+  level1 = rep(LETTERS[1:5], each = 4),
+  level2 = rep(c('X','Y'), length.out = nInd(pop)),
+  row.names = pop@id
 )
+mp2 = splitPop(pop, by = by_df)
 
-# Select best 2 populations at level 2
-selectPop(mp2, nPop=2, level=2, simParam=SP)
+# Select the best population at level 2
+selectPop(mp2, nPop=1, level=2, simParam=SP)
 
-# Select 2 populations at level 2 based on miscellaneous info with use function
+# Select the best population at level 2 based on
+# miscellaneous info with `use` function
 useFunc = function(pop, trait=NULL) pop@misc$smth + pop@misc$smth2
-selectPop(mp2, nPop=2, level=2, simParam=SP, use=useFunc)
+selectPop(mp2, nPop=1, level=2, simParam=SP, use=useFunc)
 
-# ... equivalent result with the use & trait function
+# ... equivalent result with the `use` & `trait` function
 useFunc2 = function(pop, trait=NULL) cbind(pop@misc$smth, pop@misc$smth2)
 trtFunc = function(x) rowSums(x)
-selectPop(mp2, nPop=2, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
+selectPop(mp2, nPop=1, level=2, use=useFunc2, trait=trtFunc, simParam=SP)
 
 }

@@ -198,17 +198,11 @@ reference:
   - genicVarN
   - popVar
 
-- title: Genotypes, haplotypes and maps
+- title: Genotypes, haplotypes, allele frequencies and maps
   contents:
-  - pullSegSiteGeno
-  - pullSegSiteHaplo
-  - pullQtlGeno
-  - pullQtlHaplo
-  - pullSnpGeno
-  - pullSnpHaplo
-  - pullMarkerGeno
-  - pullMarkerHaplo
-  - pullIbdHaplo
+  - pullGeno
+  - pullHaplo
+  - pullAf
   - setMarkerHaplo
   - getGenMap
   - getQtlMap

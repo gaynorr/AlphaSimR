@@ -33,7 +33,7 @@ knownPop = function(nInd, nPerChr, ploidy = 2L, prefix = "M") {
        nInd = nInd, ploidy = ploidy, nMarker = nMarker)
 }
 
-test_that("genotypes and haplotypes match a known haplotype matrix", {
+test_that("genotypes, haplotypes and allele frequencies match a known haplotype matrix", {
   set.seed(5001)
   x = knownPop(nInd = 70L, nPerChr = c(170L, 130L))
 
@@ -45,17 +45,22 @@ test_that("genotypes and haplotypes match a known haplotype matrix", {
   even = seq(2, nrow(x$haplo), by = 2)
 
   G = pullSegSiteGeno(x$pop, simParam = x$SP)
+  expectedG = x$haplo[odd, ] + x$haplo[even, ]
   expect_equal(dim(G), c(x$nInd, x$nMarker))
-  expect_true(all(G == x$haplo[odd, ] + x$haplo[even, ]))
+  expect_true(all(G == expectedG))
 
   # getMaternalGeno and getPaternalGeno
   expect_true(all(pullSegSiteHaplo(x$pop, haplo = 1, simParam = x$SP) ==
                     x$haplo[odd, ]))
   expect_true(all(pullSegSiteHaplo(x$pop, haplo = 2, simParam = x$SP) ==
                     x$haplo[even, ]))
+
+  Af = pullSegSiteAf(x$pop, simParam = x$SP)
+  expect_equal(dim(Af), c(1, x$nMarker))
+  expect_true(all(Af == colMeans(expectedG) / x$ploidy))
 })
 
-test_that("tetraploid genotypes and haplotypes match a known matrix", {
+test_that("tetraploid genotypes, haplotypes and allele frequencies match a known matrix", {
   set.seed(5002)
   x = knownPop(nInd = 20L, nPerChr = c(90L, 70L), ploidy = 4L, prefix = "T")
 
@@ -63,14 +68,18 @@ test_that("tetraploid genotypes and haplotypes match a known matrix", {
   expect_true(all(H == x$haplo))
 
   G = pullSegSiteGeno(x$pop, simParam = x$SP)
-  expected = t(sapply(seq_len(x$nInd), function(i)
+  expectedG = t(sapply(seq_len(x$nInd), function(i)
     colSums(x$haplo[((i - 1L) * 4L + 1L):(i * 4L), , drop = FALSE])))
-  expect_equal(dim(G), dim(expected))
-  expect_true(all(G == expected))
+  expect_equal(dim(G), dim(expectedG))
+  expect_true(all(G == expectedG))
 
   # A single haplotype of a polyploid
   expect_true(all(pullSegSiteHaplo(x$pop, haplo = 1, simParam = x$SP) ==
                     x$haplo[seq(1, nrow(x$haplo), by = 4L), ]))
+
+  Af = pullSegSiteAf(x$pop, simParam = x$SP)
+  expect_equal(dim(Af), c(1, x$nMarker))
+  expect_true(all(Af == colMeans(expectedG) / x$ploidy))
 })
 
 test_that("gathering is correct at the edges of a tile", {
@@ -83,32 +92,61 @@ test_that("gathering is correct at the edges of a tile", {
     rows = seq_len(n * 2L)
     G = pullSegSiteGeno(sub, simParam = x$SP)
     H = pullSegSiteHaplo(sub, simParam = x$SP)
+    expectedG = x$haplo[rows[c(TRUE, FALSE)], , drop = FALSE] +
+                 x$haplo[rows[c(FALSE, TRUE)], , drop = FALSE]
     expect_equal(dim(G), c(n, x$nMarker))
     expect_true(all(H == x$haplo[rows, , drop = FALSE]))
-    expect_true(all(G == x$haplo[rows[c(TRUE, FALSE)], , drop = FALSE] +
-                      x$haplo[rows[c(FALSE, TRUE)], , drop = FALSE]))
+    expect_true(all(G == expectedG))
+
+    Af = pullSegSiteAf(sub, simParam = x$SP)
+    expect_true(all(Af == colMeans(expectedG) / x$ploidy))
   }
 
   # A single locus
   one = pullMarkerHaplo(x$pop, markers = colnames(x$haplo)[7],
                         simParam = x$SP)
   expect_true(all(as.vector(one) == x$haplo[, 7]))
+
+  markerAf = pullMarkerAf(x$pop, markers = colnames(x$haplo)[7],
+                          simParam = x$SP)
+  expect_equal(as.numeric(markerAf), mean(x$haplo[, 7]))
 })
 
 test_that("a SNP chip returns the same values as the full site set", {
   set.seed(5004)
   x = knownPop(nInd = 70L, nPerChr = c(170L, 130L))
-  x$SP$addSnpChip(nSnpPerChr = c(90L, 70L))
+  x$SP$addSnpChip(nSnpPerChr = c(90L, 70L), name = "160SNPchip")
 
   G = pullSegSiteGeno(x$pop, simParam = x$SP)
   H = pullSegSiteHaplo(x$pop, simParam = x$SP)
   snpG = pullSnpGeno(x$pop, simParam = x$SP)
+  expect_equal(snpG, pullSnpGeno(x$pop, snpChip = "160SNPchip", simParam = x$SP))
   snpH = pullSnpHaplo(x$pop, simParam = x$SP)
+  expect_equal(snpH, pullSnpHaplo(x$pop, snpChip = "160SNPchip",
+                                  haplo = "all", simParam = x$SP))
 
   keep = match(colnames(snpG), colnames(G))
   expect_false(anyNA(keep))
   expect_true(all(snpG == G[, keep, drop = FALSE]))
   expect_true(all(snpH == H[, keep, drop = FALSE]))
+
+  segAf = pullSegSiteAf(x$pop, simParam = x$SP)
+  snpAf = pullSnpAf(x$pop, simParam = x$SP)
+  expect_equal(snpAf, pullSnpAf(x$pop, snpChip = "160SNPchip",
+                                nThreads = 1L, simParam = x$SP))
+  expect_true(all(snpAf == segAf[, keep, drop = FALSE]))
+  expect_error(
+    pullSnpGeno(x$pop, snpChip = "SNPchip", simParam = x$SP),
+    paste0("'SNPchip' did not match any SNP chip names")
+  )
+  expect_error(
+    pullSnpHaplo(x$pop, snpChip = "SNPchip", simParam = x$SP),
+    paste0("'SNPchip' did not match any SNP chip names")
+  )
+  expect_error(
+    pullSnpAf(x$pop, snpChip = "SNPchip", simParam = x$SP),
+    paste0("'SNPchip' did not match any SNP chip names")
+  )
 })
 
 test_that("the raw genotype path agrees with the integer path", {
@@ -126,6 +164,37 @@ test_that("gathering does not depend on the number of threads", {
 
   set.seed(5006)
   x = knownPop(nInd = 70L, nPerChr = c(170L, 130L))
+  x$SP$resetPed()
+  x$SP$addTraitA(10, name="Trait1")
+  x$SP$restrSegSites(10, 10, overlap = FALSE)
+  x$SP$addSnpChip(nSnpPerChr = 10, name = "20SNPchip")
+
+  expect_identical(
+    pullSegSiteGeno(x$SP$founderPop, nThreads = 1L, simParam = x$SP),
+    pullSegSiteGeno(x$SP$founderPop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullSegSiteHaplo(x$SP$founderPop, nThreads = 1L, simParam = x$SP),
+    pullSegSiteHaplo(x$SP$founderPop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullSegSiteHaplo(
+      x$SP$founderPop,
+      haplo = 1,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullSegSiteHaplo(
+      x$SP$founderPop,
+      haplo = 1,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullSegSiteAf(x$SP$founderPop, nThreads = 1L, simParam = x$SP),
+    pullSegSiteAf(x$SP$founderPop, nThreads = nThreads, simParam = x$SP)
+  )
 
   expect_identical(pullSegSiteGeno(x$pop, nThreads = 1L, simParam = x$SP),
                    pullSegSiteGeno(x$pop, nThreads = nThreads, simParam = x$SP))
@@ -135,6 +204,144 @@ test_that("gathering does not depend on the number of threads", {
                                     simParam = x$SP),
                    pullSegSiteHaplo(x$pop, haplo = 1, nThreads = nThreads,
                                     simParam = x$SP))
+  expect_identical(
+    pullSegSiteAf(x$pop, nThreads = 1L, simParam = x$SP),
+    pullSegSiteAf(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+
+  expect_identical(
+    pullQtlGeno(x$pop, nThreads = 1L, simParam = x$SP),
+    pullQtlGeno(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullQtlHaplo(x$pop, nThreads = 1L, simParam = x$SP),
+    pullQtlHaplo(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullQtlHaplo(x$pop, haplo = 1, nThreads = 1L, simParam = x$SP),
+    pullQtlHaplo(x$pop, haplo = 1, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullQtlAf(x$pop, nThreads = 1L, simParam = x$SP),
+    pullQtlAf(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+
+  expect_identical(
+    pullSnpGeno(x$pop, nThreads = 1L, simParam = x$SP),
+    pullSnpGeno(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullSnpHaplo(x$pop, nThreads = 1L, simParam = x$SP),
+    pullSnpHaplo(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullSnpHaplo(x$pop, haplo = 1, nThreads = 1L, simParam = x$SP),
+    pullSnpHaplo(x$pop, haplo = 1, nThreads = nThreads, simParam = x$SP)
+  )
+  expect_identical(
+    pullSnpAf(x$pop, nThreads = 1L, simParam = x$SP),
+    pullSnpAf(x$pop, nThreads = nThreads, simParam = x$SP)
+  )
+
+  markers <- paste0('M', sample(300, 10))
+
+  expect_identical(
+    pullMarkerGeno(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullMarkerGeno(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerHaplo(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullMarkerHaplo(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerHaplo(
+      x$SP$founderPop,
+      markers = markers,
+      haplo = 1,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullMarkerHaplo(
+      x$SP$founderPop,
+      markers = markers,
+      haplo = 1,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerAf(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullMarkerAf(
+      x$SP$founderPop,
+      markers = markers,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+
+  expect_identical(
+    pullMarkerGeno(x$pop, markers = markers, nThreads = 1L, simParam = x$SP),
+    pullMarkerGeno(
+      x$pop,
+      markers = markers,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerHaplo(x$pop, markers = markers, nThreads = 1L, simParam = x$SP),
+    pullMarkerHaplo(
+      x$pop,
+      markers = markers,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerHaplo(
+      x$pop,
+      markers = markers,
+      haplo = 1,
+      nThreads = 1L,
+      simParam = x$SP
+    ),
+    pullMarkerHaplo(
+      x$pop,
+      markers = markers,
+      haplo = 1,
+      nThreads = nThreads,
+      simParam = x$SP
+    )
+  )
+  expect_identical(
+    pullMarkerAf(x$pop, markers = markers, nThreads = 1L, simParam = x$SP),
+    pullMarkerAf(x$pop, markers = markers, nThreads = nThreads, simParam = x$SP)
+  )
 })
 
 test_that("genotypes of a crossed population equal the sum of its haplotypes", {
@@ -147,6 +354,9 @@ test_that("genotypes of a crossed population equal the sum of its haplotypes", {
   expect_true(all(G == H[seq(1, nrow(H), by = 2), ] +
                     H[seq(2, nrow(H), by = 2), ]))
   expect_true(all(G >= 0L) && all(G <= 2L))
+
+  Af = pullSegSiteAf(prog, simParam = x$SP)
+  expect_true(all(Af == colMeans(G) / x$ploidy))
 })
 
 # A single haplotype and the loci are read through raw pointers in C++, so a
@@ -247,9 +457,9 @@ test_that("REFUSE a manual trait with loci outside their chromosome", {
 })
 
 # The accessors read the genotypes in place rather than through a copy, so
-# nothing they do may write to the population. A deep copy taken first is
-# the only reference that would show such a write: an ordinary assignment in
-# R shares memory with the original until one of them is modified.
+# nothing they do may write to the population. A deep copy taken first is the
+# only reference that would show such a write: an ordinary assignment in R
+# shares memory with the original until one of them is modified.
 deepCopy = function(x) unserialize(serialize(x, NULL))
 
 test_that("KEEP the genotypes unchanged by every accessor", {
@@ -261,6 +471,7 @@ test_that("KEEP the genotypes unchanged by every accessor", {
   invisible(pullSegSiteGeno(x$pop, simParam = x$SP))
   invisible(pullSegSiteHaplo(x$pop, simParam = x$SP))
   invisible(pullSegSiteHaplo(x$pop, haplo = 3, simParam = x$SP))
+  invisible(pullSegSiteAf(x$pop, simParam = x$SP))
   invisible(AlphaSimR:::getMaternalGeno(x$pop@geno, lociPerChr, lociLoc, 2L))
   invisible(AlphaSimR:::getPaternalGeno(x$pop@geno, lociPerChr, lociLoc, 2L))
   invisible(AlphaSimR:::calcGenoFreq(x$pop@geno, lociPerChr, lociLoc, 2L))
@@ -295,6 +506,8 @@ test_that("COUNT allele frequencies exactly from the packed genotypes", {
     # The column sums are whole numbers, so dividing them in this order
     # gives the frequencies to the last bit
     expected = unname(colSums(G))/x$nInd/ploidy
+    public = pullSegSiteAf(x$pop, simParam = x$SP)
+    expect_identical(c(public), expected)
     for (nThreads in c(1L, 2L)) {
       p = AlphaSimR:::calcGenoFreq(x$pop@geno, lociPerChr, lociLoc, nThreads)
       expect_identical(c(p), expected)
@@ -355,4 +568,292 @@ test_that("KEEP the input population unchanged in setMarkerHaplo", {
   expect_equal(newHaplo[, -(1:3)], oldHaplo[, -(1:3)])
   # The second chromosome has no loci set, so it is the same as before
   expect_identical(edited@geno[[2L]], before[[2L]])
+})
+
+test_that("pullQtl returns the same values as the full site set", {
+  set.seed(5004)
+  x = knownPop(nInd = 70L, nPerChr = c(170L, 130L))
+  x$SP$resetPed()
+  x$SP$addTraitA(10, name="Trait1")
+
+  G = pullSegSiteGeno(x$pop, simParam = x$SP)
+  H = pullSegSiteHaplo(x$pop, simParam = x$SP)
+  qtlG = pullQtlGeno(x$pop, simParam = x$SP)
+  expect_equal(qtlG, pullQtlGeno(x$pop, trait = "Trait1", simParam = x$SP))
+  qtlH = pullQtlHaplo(x$pop, simParam = x$SP)
+  expect_equal(qtlH, pullQtlHaplo(x$pop, trait = "Trait1",
+                                  haplo = "all", simParam = x$SP))
+
+  keep = match(colnames(qtlG), colnames(G))
+  expect_false(anyNA(keep))
+  expect_true(all(qtlG == G[, keep, drop = FALSE]))
+  expect_true(all(qtlH == H[, keep, drop = FALSE]))
+
+  segAf = pullSegSiteAf(x$pop, simParam = x$SP)
+  qtlAf = pullQtlAf(x$pop, simParam = x$SP)
+  expect_equal(qtlAf, pullQtlAf(x$pop, trait = "Trait1", simParam = x$SP))
+  expect_true(all(qtlAf == segAf[, keep, drop = FALSE]))
+
+  expect_error(
+    pullQtlGeno(x$pop, trait = "noTrait", simParam = x$SP),
+    paste0("'noTrait' did not match any trait names")
+  )
+  expect_error(
+    pullQtlHaplo(x$pop, trait = "noTrait", simParam = x$SP),
+    paste0("'noTrait' did not match any trait names")
+  )
+  expect_error(
+    pullQtlAf(x$pop, trait = "noTrait", simParam = x$SP),
+    paste0("'noTrait' did not match any trait names")
+  )
+})
+
+test_that("pullMarker returns the same values as the full site set", {
+  set.seed(5004)
+  x = knownPop(nInd = 70L, nPerChr = c(170L, 130L))
+
+  G = pullSegSiteGeno(x$pop, simParam = x$SP)
+  H = pullSegSiteHaplo(x$pop, simParam = x$SP)
+
+  markers = paste0("M", sample(300, 10))
+  markerG = pullMarkerGeno(x$pop, markers = markers, simParam = x$SP)
+  expect_equal(markerG, pullMarkerGeno(x$pop, markers = markers,
+                                       nThreads = 1L, simParam = x$SP))
+  expect_identical(markers, colnames(markerG))
+  markerH = pullMarkerHaplo(x$pop, markers = markers, simParam = x$SP)
+  expect_equal(markerH, pullMarkerHaplo(x$pop, markers = markers, nThreads = 1L,
+                                        haplo = "all", simParam = x$SP))
+
+  expect_true(all(markerG == G[, markers, drop = FALSE]))
+  expect_true(all(markerH == H[, markers, drop = FALSE]))
+
+  segAf = pullSegSiteAf(x$pop, simParam = x$SP)
+  markerAf = pullMarkerAf(x$pop, markers = markers, simParam = x$SP)
+  expect_equal(markerAf, pullMarkerAf(x$pop, markers = markers,
+                                      nThreads = 1L, simParam = x$SP))
+  expect_true(all(markerAf == segAf[, markers, drop = FALSE]))
+})
+
+test_that("Sampling individuals for pullAf", {
+
+  set.seed(5004)
+  x = knownPop(nInd = 50L, nPerChr = c(170L, 130L))
+
+  # MapPop object in `pullSegSite`
+  expect_equal(
+    pullSegSiteAf(x$SP$founderPop, simParam = x$SP),
+    pullSegSiteAf(x$SP$founderPop, sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSegSiteAf(x$SP$founderPop, simParam = x$SP),
+    pullSegSiteAf(x$SP$founderPop, sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSegSiteAf(x$SP$founderPop, sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # MapPop object in `pullMarker`
+  expect_equal(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), simParam = x$SP),
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 50L,
+                 simParam = x$SP)
+  )
+  expect_equal(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), simParam = x$SP),
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 45L,
+                 simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = 51L,
+                 simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullSegSite
+  expect_equal(
+    pullSegSiteAf(x$pop, simParam = x$SP),
+    pullSegSiteAf(x$pop, sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSegSiteAf(x$pop, simParam = x$SP),
+    pullSegSiteAf(x$pop, sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSegSiteAf(x$pop, sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullQtl
+  x$SP$resetPed()
+  x$SP$addTraitA(10, name="Trait1")
+  expect_equal(
+    pullQtlAf(x$pop, trait = "Trait1", simParam = x$SP),
+    pullQtlAf(x$pop, trait = "Trait1", sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullQtlAf(x$pop, trait = "Trait1", simParam = x$SP),
+    pullQtlAf(x$pop, trait = "Trait1", sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullQtlAf(x$pop, trait = "Trait1", sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullSnp
+  x$SP$addSnpChip(nSnpPerChr = c(90L, 70L), name = "160SNPchip")
+  expect_equal(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", simParam = x$SP),
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", simParam = x$SP),
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullSnpAf(x$pop, snpChip = "160SNPchip", sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Pop object in pullMarker
+  expect_equal(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), simParam = x$SP),
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 50L, simParam = x$SP)
+  )
+  expect_equal(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), simParam = x$SP),
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 45L, simParam = x$SP),
+    tolerance = 0.1
+  )
+  expect_error(
+    pullMarkerAf(x$pop, markers = c("M25","M1"), sample = 51L, simParam = x$SP),
+    "`pop` has fewer individuals than `sample`"
+  )
+
+  # Wrong `sample`
+  for (bad in list(0, -1, NA_integer_, 1.5, c(1, 2), "1", TRUE, Inf)) {
+    expect_error(
+        pullSegSiteAf(x$SP$founderPop, sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullMarkerAf(x$SP$founderPop, markers = c('M10','M20'), sample = bad,
+                     simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullSegSiteAf(x$pop, sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullQtlAf(x$pop, trait = "Trait1", sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullSnpAf(x$pop, snpChip = "160SNPchip", sample = bad, simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+    expect_error(
+        pullMarkerAf(x$pop, markers = c("M25","M1"), sample = bad,
+                     simParam = x$SP),
+        "`sample` must be a positive non-NA integer value."
+      )
+  }
+})
+
+test_that("MultiPop input for pullSegSite", {
+  set.seed(5004)
+
+  x = knownPop(nInd = 32L, nPerChr = c(130L, 170L))
+
+  df_split = data.frame(
+    level1 = rep(LETTERS[1:4], each = 8),
+    level2 = rep(c('R1', 'R2'), each = 4, times = 4),
+    row.names = x$pop@id
+  )
+  mp = splitPop(x$pop, by = df_split)
+
+  # Haplotypes
+  segSiteHaplo = pullSegSiteHaplo(x$pop, haplo = 1, simParam = x$SP)
+  segSiteHaplo_l1 = split(as.data.frame(segSiteHaplo), df_split$level1)
+  segSiteHaplo_l1 = lapply(segSiteHaplo_l1, as.matrix)
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l1, \(x) {
+    split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
+  })
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l2, \(x) lapply(x, as.matrix))
+
+  expect_equivalent(
+    pullSegSiteHaplo(mp, haplo = 1, simParam = x$SP, simplify = TRUE),
+    segSiteHaplo
+  )
+  expect_equivalent(
+    pullSegSiteHaplo(
+      mp,
+      haplo = 1,
+      simParam = x$SP,
+      simplify = TRUE,
+      level = 2
+    ),
+    segSiteHaplo_l1
+  )
+  expect_equivalent(
+    pullSegSiteHaplo(mp, haplo = 1, simParam = x$SP),
+    segSiteHaplo_l2
+  )
+
+  # Genotypes
+  segSiteGeno = pullSegSiteGeno(x$pop, simParam = x$SP)
+  segSiteGeno_l1 = split(as.data.frame(segSiteGeno), df_split$level1)
+  segSiteGeno_l1 = lapply(segSiteGeno_l1, as.matrix)
+  segSiteGeno_l2 = lapply(segSiteGeno_l1, \(x) {
+    split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
+  })
+  segSiteGeno_l2 = lapply(segSiteGeno_l2, \(x) lapply(x, as.matrix))
+
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP, simplify = TRUE),
+    segSiteGeno
+  )
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP, simplify = TRUE, level = 2),
+    segSiteGeno_l1
+  )
+  expect_equivalent(
+    pullSegSiteGeno(mp, simParam = x$SP),
+    segSiteGeno_l2
+  )
+
+  # Allele frequencies
+  segSiteAf = do.call(
+    'rbind',
+    lapply(segSiteGeno_l2, \(x) {
+      do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+    })
+  )
+  segSiteAf_l1 = lapply(segSiteGeno_l2, \(x) {
+    do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+  })
+  segSiteAf_l2 = lapply(segSiteGeno_l2, \(x) {
+    lapply(x, \(y) t(colMeans(y) / 2))
+  })
+
+  expect_equivalent(
+    pullSegSiteAf(mp, simParam = x$SP, simplify = TRUE),
+    segSiteAf
+  )
+  expect_equivalent(
+    pullSegSiteAf(mp, simParam = x$SP, simplify = TRUE, level = 2),
+    segSiteAf_l1
+  )
+  segSiteAf_mp = pullSegSiteAf(mp, simParam = x$SP)
+  expect_equivalent(segSiteAf_mp, segSiteAf_l2)
+
+  # expect_equivalent() ignores dimensions, so the one-row shape of each
+  # terminal result is checked on its own
+  expect_identical(dim(segSiteAf_mp[[1]][[1]]), c(1L, ncol(segSiteGeno)))
 })
