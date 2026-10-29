@@ -329,114 +329,185 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     stop("`level` must be a single non-NA integer value.")
   }
 
+  result = .flattenMultiPop(
+    x = x,
+    level = level,
+    preserveNames = preserveNames
+  )
+
+  # The recursive helper deliberately does not validate intermediate objects.
+  validObject(result)
+  return(result)
+}
+
+#' Recursively flatten a MultiPop to the requested level without validation.
+#'
+#' @description
+#' Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
+#' \code{MultiPop} containing only \code{\link{Pop-class}} objects
+#' down to a requested level without validation.
+#' 
+#' @keywords internal
+.flattenMultiPop = function(x, level, preserveNames) {
   if (level > 1L) {
     for (i in seq_along(x@pops)) {
       if (isMultiPop(x@pops[[i]])) {
-        x@pops[[i]] = flattenMultiPop(
-          x@pops[[i]],
+        x@pops[[i]] = .flattenMultiPop(
+          x = x@pops[[i]],
           level = level - 1L,
           preserveNames = preserveNames
         )
       }
     }
-    validObject(x)
     return(x)
   }
-  flatPopList = .flattenMultiPop(x, preserveNames = preserveNames)
-  multiPop = do.call(newMultiPop, flatPopList)
-  validObject(multiPop)
-  return(multiPop)
-}
 
-#' Helper function to recursively extract Pop objects from a MultiPop
-#'
-#' @param mp \code{\link{MultiPop-class}} object
-#' @param preserveNames how names are handled when flattening; see
-#'   \code{\link{flattenMultiPop}}
-#'
-#' @keywords internal
-.flattenMultiPop = function(mp, preserveNames = "auto") {
-  preserveNames = match.arg(
-    arg = preserveNames,
-    choices = c("auto", "concatenate", "force", "none")
-  )
-
-  if (.depthMultiPop(mp) == 1L) {
-    res = mp@pops
+  # A single-level MultiPop is already flat. Preserve the existing fast path
+  # and its name behavior.
+  if (all(vapply(x@pops, isPop, logical(1)))) {
+    flatPopList = x@pops
     if (preserveNames == "none") {
-      names(res) = NULL
+      names(flatPopList) = NULL
     }
-    return(res)
+    return(do.call(newMultiPop, flatPopList))
   }
 
+  # Count leaf Pop objects before allocating the output vectors.
+  nPop = .flattenMultiPopCount(x)
+
+  # Use an environment so recursive calls update the same preallocated
+  # objects without repeatedly copying them under R's copy-on-modify rules.
+  state = new.env(parent = emptyenv())
+  state$pos = 0L
+  state$pops = vector("list", nPop)
+  state$names = rep(NA_character_, nPop)
+
+  info = .flattenMultiPopFill(
+    mp = x,
+    preserveNames = preserveNames,
+    state = state
+  )
+
+  flatPopList = state$pops
+
+  if (preserveNames == "none") {
+    names(flatPopList) = NULL
+  } else if (preserveNames == "force") {
+    names(flatPopList) = state$names
+  } else if (info$namesValid) {
+    names(flatPopList) = state$names
+  } else {
+    names(flatPopList) = NULL
+  }
+
+  return(do.call(newMultiPop, flatPopList))
+}
+
+#' Count the number of leaf Pop objects in a MultiPop hierarchy.
+#'
+#' @param mp MultiPop object
+#' 
+#' @return Integer number of leaf Pop objects
+#' 
+#' @keywords internal
+.flattenMultiPopCount = function(mp) {
+  count = 0L
+  for (item in mp@pops) {
+    if (isPop(item)) {
+      count = count + 1L
+    } else {
+      count = count + .flattenMultiPopCount(item)
+    }
+  }
+  return(count)
+}
+
+#' Fill a preallocated flattening result.
+#'
+#' The returned `namesValid` value describes whether this subtree has a complete
+#' and unique name vector under the requested naming mode. The value is needed
+#' because the existing "auto" behavior drops names for an invalid child
+#' subtree, while "concatenate" and "force" can synthesize names for it.
+#'
+#' @param mp MultiPop object
+#' @param preserveNames name preservation mode
+#' @param state environment containing preallocated output vectors
+#' 
+#' @return A list containing the subtree name validity
+#' 
+#' @keywords internal
+.flattenMultiPopFill = function(mp, preserveNames, state) {
+  start = state$pos + 1L
   nm = names(mp@pops)
-  popList = list()
-  nameVec = character()
 
   for (i in seq_along(mp@pops)) {
     item = mp@pops[[i]]
-    label = if (!is.null(nm) && nzchar(nm[i])) nm[i] else as.character(i)
+
+    label = if (!is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])) {
+      nm[i]
+    } else {
+      as.character(i)
+    }
 
     if (isPop(item)) {
-      popList = c(popList, list(item))
-      nameVec = c(nameVec, label)
-    } else if (isMultiPop(item)) {
-      child = .flattenMultiPop(item, preserveNames = preserveNames)
-      childNames = names(child)
+      state$pos = state$pos + 1L
+      state$pops[[state$pos]] = item
+      state$names[state$pos] = label
+    } else {
+      childStart = state$pos + 1L
+
+      childInfo = .flattenMultiPopFill(
+        mp = item,
+        preserveNames = preserveNames,
+        state = state
+      )
+
+      childEnd = state$pos
+      childNames = state$names[childStart:childEnd]
 
       if (preserveNames %in% c("concatenate", "force")) {
-        if (is.null(childNames)) {
-          childNames = as.character(seq_along(child))
+        if (!childInfo$namesValid) {
+          childNames = as.character(seq_along(childNames))
         }
         childNames = paste(label, childNames, sep = "_")
-        names(child) = childNames
+        state$names[childStart:childEnd] = childNames
+      } else if (preserveNames == "auto" && !childInfo$namesValid) {
+        state$names[childStart:childEnd] = NA_character_
       }
-
-      popList = c(popList, child)
-      nameVec = c(
-        nameVec,
-        if (is.null(names(child))) {
-          rep(NA_character_, length(child))
-        } else {
-          names(child)
-        }
-      )
     }
   }
 
-  if (preserveNames == "none") {
-    names(popList) = NULL
-    return(popList)
-  }
+  end = state$pos
+  nameVec = if (end >= start) state$names[start:end] else character()
 
-  # decide whether to keep/transform names
-  if (preserveNames == "force") {
-    # nm_final = nameVec
+  if (preserveNames == "none") {
+    namesValid = TRUE
+  } else if (preserveNames == "force") {
     nameVec[is.na(nameVec) | !nzchar(nameVec)] = as.character(which(
       is.na(nameVec) | !nzchar(nameVec)
     ))
+
     if (any(duplicated(nameVec))) {
       warning(
         "Duplicate names found in 'force' mode. Making names unique by appending suffixes.",
         call. = FALSE
       )
     }
-    names(popList) = make.unique(nameVec)
-    return(popList)
-  }
-
-  # auto or concatenate: keep only if no NA and no duplicates
-  if (length(nameVec) > 0L &&
-       !any(is.na(nameVec)) &&
-       !any(duplicated(nameVec))
-  ) {
-    names(popList) = nameVec
+    state$names[start:end] = make.unique(nameVec)
+    namesValid = TRUE
   } else {
-    names(popList) = NULL
+    namesValid = length(nameVec) > 0L &&
+      !any(is.na(nameVec)) &&
+      !any(duplicated(nameVec))
+
+    if (!namesValid && end >= start) {
+      state$names[start:end] = NA_character_
+    }
   }
 
-  popList
+  return(list(namesValid = namesValid))
 }
+
 #' @title Merge Pop and MultiPop objects
 #'
 #' @description
@@ -516,8 +587,7 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' mergeMultiPops(mp2, mp1[[1]], level=2)
 #'
 #' @export
-mergeMultiPops = function(..., level=0){
-
+mergeMultiPops = function(..., level = 0) {
   if (!is.numeric(level) || length(level) != 1L || is.na(level) ||
       !is.finite(level) || level != trunc(level) ||
       abs(level) > .Machine$integer.max) {
@@ -527,19 +597,17 @@ mergeMultiPops = function(..., level=0){
   popList = list(...)
   classes = do.call("c", lapply(popList, class))
 
-  if(any(classes == "NULL")){
+  if (any(classes == "NULL")) {
     remove = which(classes == "NULL")
     popList = popList[-remove]
     classes = classes[-remove]
   }
 
-  # If popList contains a single object
+  # If popList contains a single object.
   if (length(classes) == 1L) {
     if (classes == "Pop") {
-      # If the object is Pop, return it without the list wrapping
       return(popList[[1]])
     } else if (classes == "MultiPop") {
-      # Else, remove the list wrapping from the single multiPop object
       multiPop = popList[[1]]
       popList = multiPop@pops
     } else {
@@ -548,23 +616,67 @@ mergeMultiPops = function(..., level=0){
   } else if (all(classes == "Pop")) {
     stop("Use mergePops() to merge multiple Pop objects!")
   } else {
-    # Combine all arguments into a single MultiPop
-    multiPop = do.call('c', popList)
+    # Combine all arguments into a single MultiPop.
+    multiPop = do.call("c", popList)
     popList = multiPop@pops
   }
 
-  multi = which(sapply(popList, isMultiPop))
-  while (level > 0) {
-    level = level - 1
-    for (i in multi) {
-      popList[[i]] = mergeMultiPops(popList[[i]], level = level)
-    }
-    multiPop = do.call(newMultiPop, popList)
-    validObject(multiPop)
-    return(multiPop)
+  result = .mergeMultiPops(
+    popList = popList,
+    level = level
+  )
+
+  # The recursive merge helper does not validate intermediate MultiPops.
+  # mergePops() constructs the final Pop when level == 0.
+  if (isMultiPop(result)) {
+    validObject(result)
   }
 
-  flatMultiPop = flattenMultiPop(multiPop)
+  return(result)
+}
+
+
+#' Recursively merge MultiPops
+#' 
+#' Recursively merge MultiPops contents to the requested level without
+#' validating intermediate MultiPop objects.
+#' 
+#' @param popList List of Pop and MultiPop objects to merge
+#' @param level Nesting depth level where merging should stop
+#' 
+#' @keywords internal
+.mergeMultiPops = function(popList, level) {
+  if (level > 0L) {
+    multi = which(vapply(
+      popList,
+      isMultiPop,
+      logical(1)
+    ))
+
+    if (length(multi) > 0L) {
+      level = level - 1L
+
+      for (i in multi) {
+        popList[[i]] = .mergeMultiPops(
+          popList = popList[[i]]@pops,
+          level = level
+        )
+      }
+    }
+    return(do.call(newMultiPop, popList))
+  }
+
+  # Build an unvalidated MultiPop solely as the input representation expected
+  # by the flattening helper. The resulting flattened Pop is fully constructed
+  # by mergePops().
+  multiPop = do.call(newMultiPop, popList)
+
+  flatMultiPop = .flattenMultiPop(
+    x = multiPop,
+    level = 1L,
+    preserveNames = "auto"
+  )
+
   return(mergePops(flatMultiPop))
 }
 
@@ -688,6 +800,9 @@ splitPop = function(x, by, level = Inf) {
               "Consider setting row names of `by` to match `x@id` for clarity.")
     }
     res = .splitPop(x, by)
+    if (isMultiPop(res)) {
+      validObject(res)
+    }
     return(res)
   }
 
@@ -726,6 +841,9 @@ splitPop = function(x, by, level = Inf) {
 
   # Recursively split at requested levels
   res = .splitAtLevels(x, currentLevel = 1L, levels = levels, by = by)
+  if (isMultiPop(res)) {
+    validObject(res)
+  }
   return(res)
 }
 
@@ -742,7 +860,7 @@ splitPop = function(x, by, level = Inf) {
 .splitAtLevels = function(obj, currentLevel, levels, by) {
   if (isPop(obj)) {
     # A Pop at the currentLevel: split only if currentLevel requested (or Inf)
-    if (any(is.infinite(levels)) || currentLevel %in% levels) {
+    if (currentLevel %in% levels || is.infinite(levels)) {
       return(.splitPop(obj, by))
     } else {
       return(obj)
@@ -754,12 +872,21 @@ splitPop = function(x, by, level = Inf) {
     # if child is Pop, it sits at currentLevel.
     obj@pops = lapply(obj@pops, function(child) {
       if (isMultiPop(child)) {
-        .splitAtLevels(child, currentLevel = currentLevel + 1L, levels = levels, by = by)
+        .splitAtLevels(
+          child,
+          currentLevel = currentLevel + 1L,
+          levels = levels,
+          by = by
+        )
       } else {
-        .splitAtLevels(child, currentLevel = currentLevel, levels = levels, by = by)
+        .splitAtLevels(
+          child,
+          currentLevel = currentLevel,
+          levels = levels,
+          by = by
+        )
       }
     })
-    validObject(obj)
     return(obj)
   }
 }
@@ -802,7 +929,8 @@ splitPop = function(x, by, level = Inf) {
   popList = split(pop, groups)
   mp = newEmptyMultiPop()
   if (is.data.frame(by)){
-    groups = lapply(split(by, groups), `[`, -1)
+    # groups = lapply(split(by, groups), `[`, -1)
+    groups = split(by[, -1, drop = FALSE], groups)
     mp@pops = mapply(FUN = .splitPop, pop = popList, by = groups)
   } else {
     mp@pops = lapply(popList, .splitPop, by = by[-1])

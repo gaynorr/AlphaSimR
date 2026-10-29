@@ -2,17 +2,13 @@
 % Please edit documentation in R/mergePops.R
 \name{.flattenMultiPop}
 \alias{.flattenMultiPop}
-\title{Helper function to recursively extract Pop objects from a MultiPop}
+\title{Recursively flatten a MultiPop to the requested level without validation.}
 \usage{
-.flattenMultiPop(mp, preserveNames = "auto")
-}
-\arguments{
-\item{mp}{\code{\link{MultiPop-class}} object}
-
-\item{preserveNames}{how names are handled when flattening; see
-\code{\link{flattenMultiPop}}}
+.flattenMultiPop(x, level, preserveNames)
 }
 \description{
-Helper function to recursively extract Pop objects from a MultiPop
+Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
+\code{MultiPop} containing only \code{\link{Pop-class}} objects
+down to a requested level without validation.
 }
 \keyword{internal}

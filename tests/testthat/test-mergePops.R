@@ -535,7 +535,7 @@ test_that("flattenMultiPop preserveNames", {
   )
   expect_identical(
     flattenMultiPop(duplicateNames, preserveNames = "concatenate"),
-    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10])
+    newMultiPop(A = pop[1:2], B = pop[3:5], C_1 = pop[6:7], C_2 = pop[8:10])
   )
   expect_identical(
     expect_warning(
