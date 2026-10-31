@@ -1,0 +1,486 @@
+---
+title: "Simulating Fungal Breeding"
+author: "Chris Gaynor"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+vignette: >
+  %\VignetteIndexEntry{Simulating Fungal Breeding}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(AlphaSimR)
+```
+
+`AlphaSimR` was written with plants and animals in mind, but nothing in
+it requires an organism to be diploid for its whole life. This article
+shows how to simulate the breeding of a fungus whose life cycle
+alternates between haploid and diploid stages. It begins by matching
+each stage of that life cycle to the functions that model it, then uses
+them to simulate a published breeding program: the introgression of a
+sporeless mutation into a commercial strain of oyster mushroom
+(*Pleurotus ostreatus*). It ends with a list of what `AlphaSimR` can and
+cannot represent, which should be read before modeling any other
+species.
+
+## Fungal life cycles in AlphaSimR
+
+The edible mushrooms are basidiomycetes, and most of them share the same
+basic life cycle. A spore germinates into a haploid mycelium called a
+monokaryon, whose cells each carry one nucleus. When two compatible
+monokaryons meet, their hyphae fuse but their nuclei do not: the result
+is a dikaryon, a mycelium whose cells each carry one nucleus from each
+parent. The dikaryon is the stage that is cultivated. It grows
+vegetatively, it is what spawn producers propagate and sell, and it is
+what forms mushrooms. Inside the gills of a mushroom, the two nuclei of
+a cell finally fuse and the resulting diploid nucleus immediately
+undergoes meiosis, producing four haploid spores that start the cycle
+again.
+
+Each of these steps has a counterpart in `AlphaSimR`.
+
+| Stage                       | Biology                           | `AlphaSimR`                       |
+|-----------------------------|-----------------------------------|-----------------------------------|
+| Monokaryon                  | One haploid nucleus               | A `Pop` with `ploidy = 1`         |
+| Mating                      | Two monokaryons fuse              | `mergeGenome()`                   |
+| Dikaryon                    | Two nuclei, unfused               | A `Pop` with `ploidy = 2`         |
+| Fruiting and sporulation    | Karyogamy, then meiosis           | `reduceGenome()`                  |
+| Spawn                       | Vegetative propagation            | Reuse the same individuals        |
+
+`mergeGenome()` treats its two inputs as gametes and builds individuals
+whose ploidy is the sum of theirs, so two monokaryons give a dikaryon.
+It keeps the haplotypes in order, the first parent's before the
+second's, which means the two nuclei of a dikaryon remain identifiable.
+`reduceGenome()` halves the ploidy through a full meiosis with
+recombination, so a dikaryon gives haploid spores. The crossing
+functions `makeCross()`, `randCross()` and `self()` are not used, because
+they refuse populations with an odd ploidy.
+
+`AlphaSimR` treats a dikaryon as a diploid individual. The two nuclei of
+a real dikaryon stay separate until fruiting, but for genetic values and
+meiosis this makes no difference: both nuclei are present in every cell,
+and karyogamy takes place immediately before meiosis.
+
+Genetic values remain on one scale across the two stages. Additive
+effects are coded so that a haploid carrying an allele receives the same
+value as a diploid that is homozygous for it, so a monokaryon's genetic
+value equals that of the dikaryon formed by doubling its nucleus. This
+allows monokaryons to be given genetic values and phenotypes, although
+in practice only dikaryons are evaluated because only they fruit.
+
+`doubleGenome()`, which copies each haplotype in place, models the
+special case of a single nucleus duplicating itself. That corresponds to
+primary homothallism, in which one nucleus is self-fertile. It is not the
+right function for mating between two monokaryons, because the result is
+homozygous at every locus and its meiosis produces spores identical to
+their parent.
+
+### Mating types
+
+A monokaryon can mate only with a partner of a different mating type.
+*P. ostreatus*, like many basidiomycetes, has a tetrapolar mating
+system: mating type is determined by two unlinked loci, A and B, each
+with many alleles, and two monokaryons form a fertile dikaryon only when
+they carry different alleles at both.
+
+`AlphaSimR` has no concept of mating type. Its sexes, set with
+`SimParam$setSexes()`, are a two-class system that cannot describe
+compatibility at two multiallelic loci. Instead, mating type is treated
+here as a property of the genome. Recombination tracking, turned on with
+`SimParam$setTrackRec(TRUE)`, records which founder haplotype every
+segment of every individual descends from, and `pullIbdHaplo()` reports
+it. Each founder nucleus is assumed to carry its own allele at A and at
+B, so a monokaryon's mating type is the identity of the founder nucleus
+it inherited at the two mating-type loci. The same approach is used for
+the sporeless locus below. Compatibility then has to be checked before
+every mating, because `mergeGenome()` will combine any two individuals
+given to it.
+
+## The breeding program
+
+Oyster mushrooms release enormous numbers of spores, and workers in
+oyster mushroom cultivation develop lung problems from breathing them.
+A sporeless strain would remove the problem. A naturally sporeless
+strain, ATCC 58937, existed, but it was not commercially attractive, so
+Wageningen researchers set out to introduce its sporelessness into the
+commercial strain HK35 [@baars2005Development]. The resulting variety,
+SPOPPO, was released in 2006 [@lavrijssen2020Interruption].
+
+The published description of the program gives its structure
+[@baars2005Development; @baars2007Mushroom]:
+
+1.  The two nuclei of each parent strain were recovered as monokaryons
+    by protoplasting.
+2.  Crosses between the HK35 and ATCC nuclei all produced sporulating
+    strains, so sporelessness is recessive: a dikaryon is sporeless
+    only when both of its nuclei carry the mutation. Each HK35 nucleus
+    was mated with a different ATCC nucleus.
+3.  Among the spores of those crosses, the sporeless mutation segregated
+    one to one, and genetic markers linked to it were developed.
+4.  The mutation was introgressed into each HK35 nucleus separately by
+    repeated backcrossing to that nucleus.
+5.  The two recombinant nuclei were mated, giving a sporeless strain
+    whose genome came mostly from HK35.
+6.  Prototype strains were tested on commercial farms.
+
+The later mapping of the trait added one important detail: the sporeless
+locus lies on the same linkage group as the A mating-type locus
+[@lavrijssen2020Interruption].
+
+That linkage shapes the program. Each backcross mates a selected spore
+with the recurrent HK35 nucleus, so the spore must carry mating-type
+alleles that differ from that nucleus's at A and at B, which means
+carrying the donor's alleles at both. At the end of the program,
+however, the two recombinant nuclei must be compatible with each other.
+The simplest way to ensure this, and the way that makes the final strain
+most like HK35, is for each to carry the mating type of the HK35 nucleus
+it replaces. The last spore selected in each line therefore needs the
+donor allele at the sporeless locus and the recurrent nucleus's allele
+at the A locus on the same chromosome, which requires a crossover
+between them.
+
+The published sources do not give the numbers needed for a simulation.
+The values below are assumptions, and any of them can be changed.
+
+| Quantity                                   | Value used here         |
+|--------------------------------------------|-------------------------|
+| Chromosomes                                | 11, 1 Morgan each       |
+| Sporeless locus                            | Chromosome 3, 30 cM     |
+| A mating-type locus                        | Chromosome 3, 55 cM     |
+| B mating-type locus                        | Chromosome 7, 50 cM     |
+| Spores genotyped per generation            | 200                     |
+| Backcross generations                      | 4                       |
+| Spores kept per generation                 | 1, then 3 at the end    |
+| Yield trial                                | 4 replicates per strain |
+
+*P. ostreatus* has 11 chromosomes, and its genetic map is a little over
+1000 cM long [@lavrijssen2020Interruption], so a Morgan per chromosome is
+a reasonable approximation. The distance between the sporeless and A
+loci is not published and is the assumption that matters most here.
+
+## Setting up the simulation
+
+The founders are simulated with `runMacs()` as haploid genomes. Fifty
+are simulated so that the trait has a reference population from which to
+set its variance, and four of them serve as the nuclei of the two parent
+strains. Yield is modeled as an additive trait. A dominance trait would
+be more realistic for dikaryons, but its parameters are defined in the
+founder population, and haploid founders have no heterozygotes.
+
+```{r founders}
+set.seed(2005)
+
+founderPop = runMacs(nInd = 50, nChr = 11, segSites = 1000, ploidy = 1L)
+
+SP = SimParam$new(founderPop)
+SP$addTraitA(nQtlPerChr = 100, mean = 100, var = 100)
+SP$setVarE(varE = 50)
+SP$setTrackRec(TRUE)
+
+monokaryons = newPop(founderPop)
+monokaryons
+```
+
+Each of the three loci is represented by the segregating site closest to
+its assumed position.
+
+```{r loci}
+genMap = getGenMap()
+
+nearestSite = function(chr, pos){
+  onChr = genMap[genMap$chr==chr, ]
+  onChr$id[which.min(abs(onChr$pos-pos))]
+}
+
+spLocus = nearestSite("3", 0.30)
+matA = nearestSite("3", 0.55)
+matB = nearestSite("7", 0.50)
+```
+
+The parent strains are built by mating their two nuclei. Because the
+founders are haploid, each founder contributes exactly one haplotype,
+and `pullIbdHaplo()` identifies it by the founder's position in
+`founderPop`. The ATCC nuclei, founders 3 and 4, are the ones carrying
+the sporeless mutation.
+
+```{r parents}
+H = monokaryons[1:2] # HK35 nuclei
+S = monokaryons[3:4] # ATCC 58937 nuclei
+
+HK35 = mergeGenome(H, H, crossPlan = cbind(1, 2))
+ATCC = mergeGenome(S, S, crossPlan = cbind(1, 2))
+
+c(HK35 = gv(HK35), ATCC = gv(ATCC))
+```
+
+## Mating and fruiting
+
+The first step of the program mates an HK35 nucleus with an ATCC
+nucleus. The dikaryon fruits and its spores are collected with
+`reduceGenome()`. Every spore records the two nuclei it descends from as
+its mother and father, which keeps the pedigree correct across the
+haploid stage.
+
+```{r firstCross}
+F1 = mergeGenome(H[1], S[1], crossPlan = cbind(1, 1))
+spores = reduceGenome(F1, nProgeny = 200)
+
+head(data.frame(id = spores@id, mother = spores@mother, father = spores@father))
+```
+
+`pullIbdHaplo()` reports, for each spore and each segregating site, the
+founder haplotype it inherited. About half the spores carry the
+sporeless allele from founder 3, as in the one-to-one segregation that
+was observed.
+
+```{r segregation}
+ibd = pullIbdHaplo(spores)
+table(ibd[, spLocus])
+```
+
+The same matrix gives each spore's mating type, and the cross-tabulation
+of the two loci on chromosome 3 shows their linkage: spores mostly carry
+the sporeless and A-locus alleles of the same founder.
+
+```{r linkage}
+table(sporeless = ibd[, spLocus], matingTypeA = ibd[, matA])
+```
+
+## Backcrossing into one nucleus
+
+The function below runs the introgression into a single HK35 nucleus. In
+each generation it mates the recurrent nucleus with the current
+recombinant, collects spores, and keeps the spores that carry the
+sporeless allele and a suitable mating type: compatible with the
+recurrent nucleus while backcrossing continues, and identical to it in
+the last generation. From these it keeps those with the greatest share
+of the recurrent nucleus's genome, which is marker-assisted background
+selection, or keeps a random set when `useBackground` is `FALSE`.
+
+Here the identity of the founder at each site stands in for genotypes at
+markers. A real program genotypes markers linked to the loci, and the
+SPOPPO program used markers linked to the sporeless locus.
+
+```{r introgress}
+introgress = function(recurrent, donor, nBackcross = 4, nSpores = 200,
+                      nFinal = 3, useBackground = TRUE){
+  rec = as.integer(recurrent@iid)
+  current = donor
+  for(gen in 0:nBackcross){
+    strain = mergeGenome(recurrent, current, crossPlan = cbind(1, 1))
+    spores = reduceGenome(strain, nProgeny = nSpores)
+    ibd = pullIbdHaplo(spores)
+
+    sporeless = ibd[, spLocus]!=rec
+    if(gen<nBackcross){
+      # The spore must still be able to mate with the recurrent nucleus
+      mating = ibd[, matA]!=rec & ibd[, matB]!=rec
+      n = 1
+    }else{
+      # The spore must replace the recurrent nucleus in the final strain
+      mating = ibd[, matA]==rec & ibd[, matB]==rec
+      n = nFinal
+    }
+    keep = which(sporeless & mating)
+    if(length(keep)==0){
+      stop("no usable spore in generation ", gen)
+    }
+    n = min(n, length(keep))
+
+    if(useBackground){
+      recovery = rowMeans(ibd[keep, , drop = FALSE]==rec)
+      take = keep[order(recovery, decreasing = TRUE)[1:n]]
+    }else{
+      take = keep[sample.int(length(keep), n)]
+    }
+    current = spores[take]
+  }
+  current
+}
+```
+
+Each HK35 nucleus is paired with a different ATCC nucleus, as in the
+program.
+
+```{r lines}
+line1 = introgress(recurrent = H[1], donor = S[1])
+line2 = introgress(recurrent = H[2], donor = S[2])
+```
+
+The plot shows where the final recombinant nuclei of the first line
+still carry donor sequence on chromosome 3, with dashed lines at the
+sporeless locus and the A mating-type locus. Little donor sequence is
+left, and most of what remains is a segment around the sporeless locus,
+which selection kept from the donor in every generation. The A locus is
+free of it, as the last round of selection required.
+
+```{r drag, fig.width = 7, fig.height = 3}
+chr3 = genMap$id[genMap$chr=="3"]
+pos3 = genMap$pos[genMap$chr=="3"]
+fromDonor = pullIbdHaplo(line1)[, chr3]!=as.integer(H[1]@iid)
+
+plot(range(pos3), c(0.5, nInd(line1)+0.5), type = "n",
+     xlab = "Position on chromosome 3 (Morgans)", ylab = "Nucleus",
+     yaxt = "n")
+axis(2, at = 1:nInd(line1))
+for(i in 1:nInd(line1)){
+  points(pos3[fromDonor[i, ]], rep(i, sum(fromDonor[i, ])),
+         pch = 15, cex = 0.5)
+}
+abline(v = genMap$pos[genMap$id%in%c(spLocus, matA)], lty = 2)
+```
+
+## Building and testing prototypes
+
+Every recombinant from the first line carries the mating type of the
+first HK35 nucleus and every one from the second carries that of the
+second, so any pairing of the two is compatible. Mating them all gives
+nine prototype strains, and a strain is sporeless when both of its
+nuclei carry the donor allele.
+
+```{r prototypes}
+crossPlan = expand.grid(1:nInd(line1), 1:nInd(line2))
+prototypes = mergeGenome(line1, line2, crossPlan = as.matrix(crossPlan))
+
+ibd = pullIbdHaplo(prototypes)
+isSporeless = ibd[c(TRUE, FALSE), spLocus]%in%S@iid &
+  ibd[c(FALSE, TRUE), spLocus]%in%S@iid
+all(isSporeless)
+```
+
+The prototypes are then tested alongside HK35 in a yield trial with four
+replicates.
+
+```{r trial}
+trial = c(prototypes, HK35)
+trial = setPheno(trial, reps = 4)
+
+data.frame(strain = c(paste0("prototype", 1:nInd(prototypes)), "HK35"),
+           gv = round(gv(trial)[, 1], 2), pheno = round(pheno(trial)[, 1], 2))
+```
+
+Because the aim of the program is to reproduce HK35, the prototypes'
+genetic values should be close to HK35's. Several prototypes have
+identical genetic values because their nuclei differ only where no QTL
+lie, and the differences among them all are much smaller than the
+error in a trial of this size. This matches
+what was found for SPOPPO, whose prototypes performed satisfactorily on
+farms [@baars2005Development].
+
+## The value of background selection
+
+The simulation can be used to ask how much the marker-assisted
+background selection contributes. The loop below repeats the whole
+program with new parent strains each time, with and without background
+selection, and records the share of the final strain's genome that
+comes from HK35 and its genetic value relative to HK35.
+
+```{r replicates}
+result = NULL
+for(rep in 1:20){
+  parents = sample.int(nInd(monokaryons), 4)
+  H = monokaryons[parents[1:2]]
+  S = monokaryons[parents[3:4]]
+  HK35 = mergeGenome(H, H, crossPlan = cbind(1, 2))
+  for(useBackground in c(FALSE, TRUE)){
+    line1 = introgress(H[1], S[1], nFinal = 1, useBackground = useBackground)
+    line2 = introgress(H[2], S[2], nFinal = 1, useBackground = useBackground)
+    strain = mergeGenome(line1, line2, crossPlan = cbind(1, 1))
+    result = rbind(result, data.frame(
+      useBackground = useBackground,
+      recovery = mean(pullIbdHaplo(strain)%in%H@iid),
+      gvDiff = gv(strain)[, 1]-gv(HK35)[, 1]
+    ))
+  }
+}
+
+aggregate(cbind(recovery, gvDiff) ~ useBackground, data = result,
+          FUN = function(x) round(c(mean = mean(x), sd = sd(x)), 3))
+```
+
+Without background selection, about 94% of the final strain's genome
+comes from HK35 after four backcrosses, and its genetic value differs
+from HK35's by an amount that varies widely from one run to the next.
+Selecting among the usable spores for the HK35 background raises the
+share to about 99% and makes the final strain far more reliably like
+HK35. The mean difference is small in both cases because the donor
+nuclei were drawn at random, so donor sequence is as likely to help as
+to hurt; with a donor known to be poor, the foreground-only program
+would also be worse on average.
+
+## What can and cannot be modeled
+
+The program above used only a few features of `AlphaSimR`, but they
+cover the sexual cycle of most cultivated basidiomycetes and many
+ascomycetes. The list below is a guide to what else can be represented.
+
+**Can be modeled directly**
+
+-   Haploid and diploid stages, using `mergeGenome()` for mating and
+    `reduceGenome()` for meiosis. Ploidies other than one and two are
+    also supported, as long as meiosis is applied to an even ploidy.
+-   Clonal propagation, which needs no function: the same individuals
+    are used again.
+-   Primary homothallism, with `doubleGenome()` or with
+    `mergeGenome()` given the same individual twice.
+-   Phenotypes and genetic values in either stage, with a single scale
+    for additive effects.
+-   Pedigrees through the haploid stage, since spores record their
+    parental nuclei.
+-   Marker-assisted and genomic selection, using `pullSnpGeno()` or
+    `pullIbdHaplo()` on monokaryons or dikaryons.
+-   Uneven recombination along chromosomes, with a custom genetic map.
+    This is how the button mushroom (*Agaricus bisporus* var.
+    *bisporus*), whose crossovers are confined almost entirely to the
+    ends of its chromosomes [@sonnenberg2016Detailed], would be
+    represented.
+
+**Must be handled by the user**
+
+-   Mating types. `AlphaSimR` will mate any two individuals, so
+    compatibility must be checked before each mating, as it was here.
+    Mating-type loci with many alleles can be followed with
+    `pullIbdHaplo()` as above, or stored with each individual.
+-   Recovering the nuclei of a dikaryon, as protoplasting does. There
+    is no function for it. Keeping the monokaryons that formed a
+    dikaryon is the simplest solution. `reduceGenome()` with
+    `simRecomb = FALSE` does not do this, because chromosomes still
+    assort independently and its output mixes the two nuclei.
+
+**Cannot be modeled**
+
+-   Tetrads. Each spore from `reduceGenome()` comes from an independent
+    meiosis, so the four products of one meiosis, and the mitotic copies
+    of them that some ascomycetes package into an ascus, are not
+    produced together.
+-   Pseudohomothallism, in which a spore receives two compatible
+    nuclei, as in most strains of *A. bisporus* var. *bisporus*
+    [@sonnenberg2017Developments]. A two-nucleus spore can be imitated
+    by mating two spores of the same strain, but `reduceGenome()` does
+    not reproduce the way the nuclei are partitioned.
+-   Matings between a dikaryon and a monokaryon (the Buller
+    phenomenon), in which a nucleus of the dikaryon migrates into the
+    monokaryon. The SPOPPO program used this route for some of its
+    crosses [@baars2005Development]. Its outcome can be simulated by
+    choosing one of the dikaryon's nuclei and mating it with
+    `mergeGenome()`.
+-   Heterokaryons with more than two nuclear types, the parasexual
+    cycle and mitotic recombination.
+-   Aneuploidy and chromosome loss.
+-   Mitochondrial and other cytoplasmic inheritance.
+
+## References
