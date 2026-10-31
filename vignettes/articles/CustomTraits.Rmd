@@ -1,6 +1,6 @@
 ---
 title: "Custom Traits and Trait Distributions in AlphaSimR"
-author: "Chris Gaynor"
+author: "Chris Gaynor and Gregor Gorjanc"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
