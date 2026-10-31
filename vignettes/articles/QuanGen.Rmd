@@ -570,7 +570,8 @@ max(abs(resid)) # numerical zero for every individual
 The marginalization above weights the partner locus by its own marginal genotype frequencies,
 which treats the two loci of a pair as independent.
 When they are in LD, it is not the least-squares projection in the observed population,
-and the components that follow from it are not orthogonal there [@hill2015Expected].
+and part of what it reports as epistatic variance would appear as additive variance
+in a fit to the observed population [@hill2015Expected].
 A least-squares fit of the pair's epistatic value to both dosages jointly,
 under the pair's observed joint genotype frequencies,
 would call part of the epistatic variance additive.
