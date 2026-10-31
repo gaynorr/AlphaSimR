@@ -24,8 +24,6 @@ Returns dominance genetic variance for all traits
 }
 \details{
 This is the variance of dominance deviations in \code{pop}.
-A trait with epistasis can have dominance variance under linkage
-disequilibrium even without dominance effects (see \code{\link{genParam}}).
 Variances and covariances use the population divisor \code{nInd},
 rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 
