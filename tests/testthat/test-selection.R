@@ -418,7 +418,7 @@ test_that("EMPTY a population with no individuals gives a clear error", {
   expect_error(selectFam(empty, 1, simParam=d$SP), msg)
   expect_error(selectWithinFam(empty, 1, simParam=d$SP), msg)
   expect_error(selectOP(empty, 1, nSeeds=2, simParam=d$SP), msg)
-  expect_error(selectOCS(empty, nInd=1, simParam=d$SP), msg)
+  expect_error(selectOC(empty, nInd=1, simParam=d$SP), msg)
   expect_error(selectCross(empty, nInd=1, nCrosses=1, simParam=d$SP), msg)
 })
 
@@ -462,8 +462,8 @@ test_that("SHORTFALL error stops and none is silent in every function", {
     function(o) selectWithinFam(d$fam, 5, simParam=d$SP, onShortfall=o),
     function(o) selectOP(d$pop, 20, nSeeds=1, simParam=d$SP,
                          onShortfall=o),
-    function(o) selectOCS(d$pop, nInd=20, inbrTarget=0.5, simParam=d$SP,
-                          onShortfall=o),
+    function(o) selectOC(d$pop, nInd=20, inbrTarget=0.5, simParam=d$SP,
+                         onShortfall=o),
     function(o) selectCross(d$pop, nInd=20, nCrosses=2, simParam=d$SP,
                             onShortfall=o)
   )
@@ -497,11 +497,11 @@ test_that("SHORTFALL selectFam with no eligible candidates returns none", {
                    integer(0))
 })
 
-test_that("SHORTFALL selectOCS stops when a sex has no candidates", {
+test_that("SHORTFALL selectOC stops when a sex has no candidates", {
   d = shortfallSP(sexes="yes_sys")
   females = selectInd(d$pop, 5, sex="F", simParam=d$SP)
-  expect_error(selectOCS(females, nFemale=2, nMale=2, inbrTarget=0.5,
-                         simParam=d$SP, onShortfall="none"),
+  expect_error(selectOC(females, nFemale=2, nMale=2, inbrTarget=0.5,
+                        simParam=d$SP, onShortfall="none"),
                "no suitable male candidates")
 })
 

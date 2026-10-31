@@ -71,7 +71,7 @@ of progeny per parent. This argument occurs after ..., so the argument
 name must be matched exactly.}
 
 \item{restrInbr}{should selection restrict the expected increase
-in fixation, using \code{\link{selectOCS}}. If FALSE, parents are
+in fixation, using \code{\link{selectOC}}. If FALSE, parents are
 selected by truncation on \code{trait} and \code{use}. This argument
 occurs after ..., so the argument name must be matched exactly.}
 
@@ -80,7 +80,7 @@ occurs after ..., so the argument name must be matched exactly.}
 default of 0.01 with \code{inbrType="relative"} allows a loss of 1\%
 of the current heterozygosity per generation, which corresponds to an
 effective population size of 50 for a diploid. See
-\code{\link{selectOCS}}. This argument occurs after ..., so the
+\code{\link{selectOC}}. This argument occurs after ..., so the
 argument name must be matched exactly.}
 
 \item{inbrType}{either "relative", where \code{inbrTarget} is the
@@ -128,10 +128,10 @@ provide the full functionality of either function.
 }
 \details{
 When \code{restrInbr=TRUE}, parents are selected with
-\code{\link{selectOCS}}, an approximation to optimal contribution
+\code{\link{selectOC}}, an approximation to optimal contribution
 selection that maximizes merit while restricting the expected
 increase in fixation. They are then crossed at random, exactly as
-when \code{restrInbr=FALSE}. See \code{\link{selectOCS}} for the
+when \code{restrInbr=FALSE}. See \code{\link{selectOC}} for the
 method, for how \code{inbrTarget} and \code{inbrType} set the
 target, and for how the restriction differs with
 \code{usePed=TRUE}.
@@ -180,7 +180,7 @@ Other mating functions:
 Other selection functions:
 \code{\link[=selectFam]{selectFam()}},
 \code{\link[=selectInd]{selectInd()}},
-\code{\link[=selectOCS]{selectOCS()}},
+\code{\link[=selectOC]{selectOC()}},
 \code{\link[=selectOP]{selectOP()}},
 \code{\link[=selectWithinFam]{selectWithinFam()}}
 }

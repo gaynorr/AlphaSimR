@@ -34,7 +34,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 * Added `pedigreeA` and `pedigreeInbreeding`, which calculate the numerator relationship matrix and inbreeding coefficients from the pedigree recorded with `setTrackPed`, for any even ploidy level.
 * Added `pedBLUP`, which fits a single trait pedigree BLUP (animal) model with REML, or with supplied `Vu` and `Ve`. Its result, a new `PedSol` class, is used with `setEBV`, including for individuals created after the fit.
-* Added `usePed` to `selectCross` and the new `selectOCS`, which measures expected fixation with the pedigree relationship matrix in place of genotypes.
+* Added `usePed` to `selectCross` and the new `selectOC`, which measures expected fixation with the pedigree relationship matrix in place of genotypes.
 * Added `nGen` to `getPed`, which returns the pedigree for more than one generation.
 
 ## Genomic selection
@@ -48,7 +48,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 ## Selection and crossing
 
-* Added `selectOCS`, and `restrInbr` to `selectCross`, for selection with a restriction on the expected increase in fixation.
+* Added `selectOC`, and `restrInbr` to `selectCross`, for selection with a restriction on the expected increase in fixation.
 * Added `onShortfall` to the selection functions, to warn, stop or stay silent when fewer candidates are available than requested.
 * The selection functions give a clear error for an empty population.
 * Added vector support for `nProgeny` in `self`, `randCross`, `randCross2`, `makeCross` and `makeCross2`.

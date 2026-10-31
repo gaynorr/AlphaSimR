@@ -11,7 +11,7 @@ smallOcsPop = function(sexes="no"){
 }
 
 ocsBoundaryCall = function(s,...){
-  suppressMessages(selectOCS(s$pop,simParam=s$sp,returnPop=FALSE,
+  suppressMessages(selectOC(s$pop,simParam=s$sp,returnPop=FALSE,
     trait=identity,use=function(pop) seq_len(pop@nInd),
     inbrTarget=1,inbrType="absolute",...))
 }
@@ -25,7 +25,7 @@ test_that("OCS lower-tail selection and global parameters match explicit calls",
   on.exit({if(hadSP) assign("SP",oldSP,envir=.GlobalEnv)
            else rm("SP",envir=.GlobalEnv)},add=TRUE)
   assign("SP",s$sp,envir=.GlobalEnv)
-  actual = suppressMessages(selectOCS(s$pop,nInd=2,returnPop=FALSE,
+  actual = suppressMessages(selectOC(s$pop,nInd=2,returnPop=FALSE,
     trait=identity,use=function(pop) seq_len(pop@nInd),inbrTarget=1,
     inbrType="absolute"))
   expect_equal(actual,expected)
@@ -33,7 +33,7 @@ test_that("OCS lower-tail selection and global parameters match explicit calls",
 
 test_that("OCS rejects ambiguous responses and missing or invalid counts", {
   s = smallOcsPop()
-  expect_error(suppressMessages(selectOCS(s$pop,nInd=2,simParam=s$sp,
+  expect_error(suppressMessages(selectOC(s$pop,nInd=2,simParam=s$sp,
     trait=identity,use=function(pop) matrix(1,pop@nInd,2))),"single column")
   expect_error(ocsBoundaryCall(s,nInd=0),"nInd must")
   expect_error(ocsBoundaryCall(s),"specify nInd")
@@ -61,7 +61,7 @@ test_that("OCS handles constant merit and constant genotype penalty", {
   s = smallOcsPop()
   # Identical copies have no spread in the genotype penalty or merit.
   pop = s$pop[rep(1,4)]
-  take = suppressMessages(selectOCS(pop,nInd=2,returnPop=FALSE,simParam=s$sp,
+  take = suppressMessages(selectOC(pop,nInd=2,returnPop=FALSE,simParam=s$sp,
     trait=identity,use=function(pop) rep(1,pop@nInd),inbrTarget=1,inbrType="absolute"))
   expect_length(take,2)
   expect_equal(length(unique(take)),2L)
