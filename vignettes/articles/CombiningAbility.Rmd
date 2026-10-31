@@ -1,6 +1,6 @@
 ---
 title: "General and Specific Combining Ability in AlphaSimR"
-author: "Chris Gaynor"
+author: "Gregor Gorjanc and Chris Gaynor"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
