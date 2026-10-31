@@ -99,16 +99,17 @@ they carry different alleles at both.
 
 `AlphaSimR` has no concept of mating type. Its sexes, set with
 `SimParam$setSexes()`, are a two-class system that cannot describe
-compatibility at two multiallelic loci. Instead, mating type is treated
-here as a property of the genome. Recombination tracking, turned on with
-`SimParam$setTrackRec(TRUE)`, records which founder haplotype every
-segment of every individual descends from, and `pullIbdHaplo()` reports
-it. Each founder nucleus is assumed to carry its own allele at A and at
-B, so a monokaryon's mating type is the identity of the founder nucleus
-it inherited at the two mating-type loci. The same approach is used for
-the sporeless locus below. Compatibility then has to be checked before
-every mating, because `mergeGenome()` will combine any two individuals
-given to it.
+compatibility at two multiallelic loci. Instead, the mating-type loci
+are added to the founder genome as named segregating sites with
+`addSegSite()`, and a monokaryon's mating type is read from its
+genotype at those sites with `pullMarkerGeno()`. A segregating site in
+`AlphaSimR` has only two alleles, so each mating-type locus is built
+from two sites at the same map position. Together they give four
+alleles, and because no crossover can fall between two sites at the
+same position, the alleles are inherited intact. More sites at the same
+position would give more alleles. Compatibility then has to be checked
+before every mating, because `mergeGenome()` will combine any two
+individuals given to it.
 
 ## The breeding program
 
@@ -174,48 +175,74 @@ loci is not published and is the assumption that matters most here.
 
 ## Setting up the simulation
 
-The founders are simulated with `runMacs()` as haploid genomes. Fifty
-are simulated so that the trait has a reference population from which to
-set its variance, and four of them serve as the nuclei of the two parent
-strains. Yield is modeled as an additive trait. A dominance trait would
-be more realistic for dikaryons, but its parameters are defined in the
-founder population, and haploid founders have no heterozygotes.
+The founders are simulated with `runMacs()` as haploid genomes. Eighty
+are simulated, in twenty sets of four. Each set supplies the nuclei of a
+pair of parent strains, two for HK35 and two for ATCC 58937, and the
+first set is used for the program below. Together they form the
+reference population in which the trait's variance is set.
 
 ```{r founders}
 set.seed(2005)
 
-founderPop = runMacs(nInd = 50, nChr = 11, segSites = 1000, ploidy = 1L)
+founderPop = runMacs(nInd = 80, nChr = 11, segSites = 1000, ploidy = 1L)
+nSet = founderPop@nInd/4
+```
+
+The sporeless and mating-type loci are then added at their assumed
+positions. Within each set, the two donor nuclei carry the sporeless
+allele and the two recipient nuclei do not, and the four nuclei carry
+four different alleles at each mating-type locus, written as the pair
+of genotypes at its two sites. That makes every HK35 nucleus compatible
+with both ATCC nuclei and with the other HK35 nucleus, as the program
+requires.
+
+```{r loci}
+founderPop = addSegSite(founderPop, siteName = "sporeless", chr = 3,
+                        mapPos = 0.30, haplo = rep(c(0, 0, 1, 1), nSet))
+founderPop = addSegSite(founderPop, siteName = "matA_1", chr = 3,
+                        mapPos = 0.55, haplo = rep(c(0, 0, 1, 1), nSet))
+founderPop = addSegSite(founderPop, siteName = "matA_2", chr = 3,
+                        mapPos = 0.55, haplo = rep(c(0, 1, 0, 1), nSet))
+founderPop = addSegSite(founderPop, siteName = "matB_1", chr = 7,
+                        mapPos = 0.50, haplo = rep(c(0, 0, 1, 1), nSet))
+founderPop = addSegSite(founderPop, siteName = "matB_2", chr = 7,
+                        mapPos = 0.50, haplo = rep(c(0, 1, 0, 1), nSet))
+```
+
+Yield is modeled as an additive trait. A dominance trait would be more
+realistic for dikaryons, but its parameters are defined in the founder
+population, and haploid founders have no heterozygotes. The added loci
+are excluded from the sites that can be sampled as QTL, so that they
+affect nothing but sporulation and mating, which requires calling
+`SP$restrSegSites()` before the trait is added. Recombination tracking,
+turned on with `SP$setTrackRec(TRUE)`, records which founder each
+segment of every genome descends from and is used below to measure how
+much of the HK35 genome has been recovered.
+
+```{r simParam}
+namedLoci = c("sporeless", "matA_1", "matA_2", "matB_1", "matB_2")
 
 SP = SimParam$new(founderPop)
+SP$restrSegSites(excludeQtl = namedLoci)
 SP$addTraitA(nQtlPerChr = 100, mean = 100, var = 100)
 SP$setVarE(varE = 50)
 SP$setTrackRec(TRUE)
 
 monokaryons = newPop(founderPop)
-monokaryons
+pullMarkerGeno(monokaryons[1:4], markers = namedLoci)
 ```
 
-Each of the three loci is represented by the segregating site closest to
-its assumed position.
+A mating type is the pair of genotypes at a locus's two sites.
 
-```{r loci}
-genMap = getGenMap()
-
-nearestSite = function(chr, pos){
-  onChr = genMap[genMap$chr==chr, ]
-  onChr$id[which.min(abs(onChr$pos-pos))]
+```{r matingType}
+matingType = function(pop, locus){
+  geno = pullMarkerGeno(pop, markers = paste0(locus, c("_1", "_2")))
+  paste0(geno[, 1], geno[, 2])
 }
-
-spLocus = nearestSite("3", 0.30)
-matA = nearestSite("3", 0.55)
-matB = nearestSite("7", 0.50)
 ```
 
-The parent strains are built by mating their two nuclei. Because the
-founders are haploid, each founder contributes exactly one haplotype,
-and `pullIbdHaplo()` identifies it by the founder's position in
-`founderPop`. The ATCC nuclei, founders 3 and 4, are the ones carrying
-the sporeless mutation.
+The parent strains are built by mating their two nuclei. The ATCC
+nuclei, founders 3 and 4, are the ones carrying the sporeless mutation.
 
 ```{r parents}
 H = monokaryons[1:2] # HK35 nuclei
@@ -242,22 +269,21 @@ spores = reduceGenome(F1, nProgeny = 200)
 head(data.frame(id = spores@id, mother = spores@mother, father = spores@father))
 ```
 
-`pullIbdHaplo()` reports, for each spore and each segregating site, the
-founder haplotype it inherited. About half the spores carry the
-sporeless allele from founder 3, as in the one-to-one segregation that
-was observed.
+About half the spores carry the sporeless allele, as in the one-to-one
+segregation that was observed.
 
 ```{r segregation}
-ibd = pullIbdHaplo(spores)
-table(ibd[, spLocus])
+table(sporeless = pullMarkerGeno(spores, markers = "sporeless"))
 ```
 
-The same matrix gives each spore's mating type, and the cross-tabulation
-of the two loci on chromosome 3 shows their linkage: spores mostly carry
-the sporeless and A-locus alleles of the same founder.
+The cross-tabulation of the sporeless locus with the A mating-type
+locus shows their linkage: spores mostly carry the sporeless allele
+together with the ATCC nucleus's A allele, `10`, and the normal allele
+together with the HK35 nucleus's, `00`.
 
 ```{r linkage}
-table(sporeless = ibd[, spLocus], matingTypeA = ibd[, matA])
+table(sporeless = pullMarkerGeno(spores, markers = "sporeless"),
+      matingTypeA = matingType(spores, "matA"))
 ```
 
 ## Backcrossing into one nucleus
@@ -271,28 +297,36 @@ the last generation. From these it keeps those with the greatest share
 of the recurrent nucleus's genome, which is marker-assisted background
 selection, or keeps a random set when `useBackground` is `FALSE`.
 
-Here the identity of the founder at each site stands in for genotypes at
-markers. A real program genotypes markers linked to the loci, and the
-SPOPPO program used markers linked to the sporeless locus.
+The sporeless and mating-type genotypes are read directly, as though
+the causal sites themselves were genotyped. A real program genotypes
+markers linked to them, and the SPOPPO program used markers linked to
+the sporeless locus. The share of the recurrent genome is measured with
+`pullIbdHaplo()`, which reports for each site the founder a haplotype
+descends from. Because the founders are haploid, each contributes
+exactly one haplotype, which `pullIbdHaplo()` identifies by the
+founder's position in `founderPop`.
 
 ```{r introgress}
 introgress = function(recurrent, donor, nBackcross = 4, nSpores = 200,
                       nFinal = 3, useBackground = TRUE){
   rec = as.integer(recurrent@iid)
+  recA = matingType(recurrent, "matA")
+  recB = matingType(recurrent, "matB")
   current = donor
   for(gen in 0:nBackcross){
     strain = mergeGenome(recurrent, current, crossPlan = cbind(1, 1))
     spores = reduceGenome(strain, nProgeny = nSpores)
-    ibd = pullIbdHaplo(spores)
 
-    sporeless = ibd[, spLocus]!=rec
+    sporeless = pullMarkerGeno(spores, markers = "sporeless")[, 1]==1
+    sporeA = matingType(spores, "matA")
+    sporeB = matingType(spores, "matB")
     if(gen<nBackcross){
       # The spore must still be able to mate with the recurrent nucleus
-      mating = ibd[, matA]!=rec & ibd[, matB]!=rec
+      mating = sporeA!=recA & sporeB!=recB
       n = 1
     }else{
       # The spore must replace the recurrent nucleus in the final strain
-      mating = ibd[, matA]==rec & ibd[, matB]==rec
+      mating = sporeA==recA & sporeB==recB
       n = nFinal
     }
     keep = which(sporeless & mating)
@@ -302,7 +336,8 @@ introgress = function(recurrent, donor, nBackcross = 4, nSpores = 200,
     n = min(n, length(keep))
 
     if(useBackground){
-      recovery = rowMeans(ibd[keep, , drop = FALSE]==rec)
+      ibd = pullIbdHaplo(spores[keep])
+      recovery = rowMeans(ibd==rec)
       take = keep[order(recovery, decreasing = TRUE)[1:n]]
     }else{
       take = keep[sample.int(length(keep), n)]
@@ -329,6 +364,7 @@ which selection kept from the donor in every generation. The A locus is
 free of it, as the last round of selection required.
 
 ```{r drag, fig.width = 7, fig.height = 3}
+genMap = getGenMap()
 chr3 = genMap$id[genMap$chr=="3"]
 pos3 = genMap$pos[genMap$chr=="3"]
 fromDonor = pullIbdHaplo(line1)[, chr3]!=as.integer(H[1]@iid)
@@ -341,7 +377,7 @@ for(i in 1:nInd(line1)){
   points(pos3[fromDonor[i, ]], rep(i, sum(fromDonor[i, ])),
          pch = 15, cex = 0.5)
 }
-abline(v = genMap$pos[genMap$id%in%c(spLocus, matA)], lty = 2)
+abline(v = genMap$pos[genMap$id%in%c("sporeless", "matA_1")], lty = 2)
 ```
 
 ## Building and testing prototypes
@@ -350,16 +386,13 @@ Every recombinant from the first line carries the mating type of the
 first HK35 nucleus and every one from the second carries that of the
 second, so any pairing of the two is compatible. Mating them all gives
 nine prototype strains, and a strain is sporeless when both of its
-nuclei carry the donor allele.
+nuclei carry the sporeless allele, which is a genotype of 2.
 
 ```{r prototypes}
 crossPlan = expand.grid(1:nInd(line1), 1:nInd(line2))
 prototypes = mergeGenome(line1, line2, crossPlan = as.matrix(crossPlan))
 
-ibd = pullIbdHaplo(prototypes)
-isSporeless = ibd[c(TRUE, FALSE), spLocus]%in%S@iid &
-  ibd[c(FALSE, TRUE), spLocus]%in%S@iid
-all(isSporeless)
+table(sporeless = pullMarkerGeno(prototypes, markers = "sporeless"))
 ```
 
 The prototypes are then tested alongside HK35 in a yield trial with four
@@ -385,14 +418,15 @@ farms [@baars2005Development].
 
 The simulation can be used to ask how much the marker-assisted
 background selection contributes. The loop below repeats the whole
-program with new parent strains each time, with and without background
-selection, and records the share of the final strain's genome that
-comes from HK35 and its genetic value relative to HK35.
+program with each of the twenty sets of parent strains, with and
+without background selection, and records the share of the final
+strain's genome that comes from the recipient strain and its genetic
+value relative to that strain.
 
 ```{r replicates}
 result = NULL
-for(rep in 1:20){
-  parents = sample.int(nInd(monokaryons), 4)
+for(set in 1:nSet){
+  parents = 4*(set-1) + 1:4
   H = monokaryons[parents[1:2]]
   S = monokaryons[parents[3:4]]
   HK35 = mergeGenome(H, H, crossPlan = cbind(1, 2))
@@ -441,8 +475,8 @@ ascomycetes. The list below is a guide to what else can be represented.
     for additive effects.
 -   Pedigrees through the haploid stage, since spores record their
     parental nuclei.
--   Marker-assisted and genomic selection, using `pullSnpGeno()` or
-    `pullIbdHaplo()` on monokaryons or dikaryons.
+-   Marker-assisted and genomic selection, using `pullMarkerGeno()`,
+    `pullSnpGeno()` or `pullIbdHaplo()` on monokaryons or dikaryons.
 -   Uneven recombination along chromosomes, with a custom genetic map.
     This is how the button mushroom (*Agaricus bisporus* var.
     *bisporus*), whose crossovers are confined almost entirely to the
@@ -453,8 +487,8 @@ ascomycetes. The list below is a guide to what else can be represented.
 
 -   Mating types. `AlphaSimR` will mate any two individuals, so
     compatibility must be checked before each mating, as it was here.
-    Mating-type loci with many alleles can be followed with
-    `pullIbdHaplo()` as above, or stored with each individual.
+    Mating-type loci with many alleles can be built from several named
+    sites at the same map position, as above.
 -   Recovering the nuclei of a dikaryon, as protoplasting does. There
     is no function for it. Keeping the monokaryons that formed a
     dikaryon is the simplest solution. `reduceGenome()` with
