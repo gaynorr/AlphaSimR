@@ -1044,26 +1044,43 @@ varPPop = function(x, level = 1L) {
 #' because it depends on statistical decomposition of genetic values.
 #'
 #' Breeding values and deviations are defined in a reference population of
-#' infinite size that has the observed genotype frequencies at each locus
-#' and, for a trait with epistasis, the observed joint genotype frequencies
-#' of each epistatic pair, but no other linkage disequilibrium. A locus's own
-#' additive and dominance effects are regressed on its own dosage. Variances
-#' are then taken over the individuals in \code{pop}, so linkage
-#' disequilibrium between loci appears in the variances and covariances
-#' rather than in the effects.
-#' For a trait with epistasis, the epistatic value of each pair of loci is
-#' fitted to the pair's two dosages jointly, under the observed joint
-#' genotype frequencies: its fit to the dosages is part of the breeding
-#' values, and what adding the dominance codings adds to that fit is part of
-#' the dominance deviations. Under linkage disequilibrium within a pair, some
-#' epistatic variance is therefore additive or dominance variance, and a
-#' trait with epistasis but no dominance effects can have dominance
-#' deviations. Under linkage equilibrium the fit reduces to averaging over
-#' the partner locus. When the two loci of a pair are in perfect linkage
-#' disequilibrium, only their combined breeding value is identified, and
-#' the average effect is split between them by a minimum norm solution.
-#' The average effects of the two loci of a pair in strong linkage
-#' disequilibrium are therefore not meaningful on their own.
+#' infinite size that has the observed genotype frequencies at each locus,
+#' with the genotypes at different loci independent. A locus's average
+#' effect is the regression of its genetic value on its own dosage under
+#' its own genotype frequencies, and the epistatic value of a pair of loci
+#' is averaged over each partner's genotype frequencies. These are the least
+#' squares effects of the reference population at any ploidy and any level
+#' of inbreeding, and in it the breeding values, dominance deviations and
+#' epistatic deviations are uncorrelated. Variances are then taken over the
+#' individuals in \code{pop}, so linkage disequilibrium between loci,
+#' including between the two loci of an epistatic pair, appears in the
+#' variances and covariances rather than in the effects
+#' \insertCite{wang2006Models}{AlphaSimR}.
+#'
+#' The breeding values are therefore not always the least squares fit of
+#' genetic values to all dosages in \code{pop} itself. For a diploid trait
+#' without epistasis they are, even with linkage disequilibrium, when
+#' genotypes arise from random union of gametes, and when only two
+#' genotypes segregate at each locus, as in a backcross. They are not when
+#' dominance, linkage disequilibrium and departures from Hardy-Weinberg
+#' proportions occur together, as after selfing a segregating population:
+#' breeding values and dominance deviations are then correlated in
+#' \code{pop}, which \code{covAD_L} reports, and \code{varA} can be above or
+#' below the additive variance of a joint fit. The difference is usually
+#' small, and the Quantitative Genetics article demonstrates it.
+#' With epistasis, linkage disequilibrium within a pair
+#' likewise leaves variance in the epistatic deviations, and in
+#' \code{covAAA_L} and \code{covDAA_L}, that a joint fit to the pair's two
+#' dosages would call additive or dominance. A least squares decomposition
+#' of \code{pop} itself needs a multilocus regression
+#' \insertCite{alvarezcastro2019Orthogonal}{AlphaSimR}, and single locus
+#' effects lose some properties of breeding values away from Hardy-Weinberg
+#' and linkage equilibrium \insertCite{vitezica2017Orthogonal,wang1998Effect}{AlphaSimR}.
+#' A joint fit is not used, because it is only meaningful with many more
+#' individuals than loci: with at least as many segregating loci as
+#' individuals it generally reproduces the genetic values exactly. For
+#' polyploids, whether the per-locus and joint fits agree under random
+#' mating has not been established.
 #'
 #' Note, the output \code{gv_mu} is the trait intercept \eqn{\mu_0},
 #' whereas \code{mu} is the population mean of genetic value \eqn{\bar{G}}.
@@ -1206,13 +1223,15 @@ varPPop = function(x, level = 1L) {
 #' \item{gv_n}{an nInd by nTraits matrix of non-additive genotypic effects
 #'   contributions to genetic values (genotypic parameterization)}
 #' \item{alpha}{a list of average effects of allele substitution
-#'   calculated using observed genotype frequencies, with length nTraits.
-#'   For a trait with epistasis, these include the joint fit of each pair's
-#'   epistatic value to the pair's observed joint genotype frequencies}
+#'   calculated using the observed genotype frequencies of each locus, with
+#'   the loci treated as independent, with length nTraits}
 #' \item{alpha_HW}{a list of average effects of allele substitution
 #'   calculated using Hardy-Weinberg genotype frequencies at the observed
 #'   allele frequencies, with length nTraits}
 #' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1290,15 +1309,6 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
       nd[,i] = nd[,i] + dd[,i]
       gv_d[,i] = tmp$gv_d
       gv_n[,i] = gv_n[,i] + gv_d[,i]
-    }else if(.hasSlot(trait,"epiEff")){
-      # Under linkage disequilibrium, the epistatic value gives dominance
-      # deviations even without dominance effects. They are absent under
-      # linkage equilibrium, so all of their variance is in covD_L.
-      genicVarD[i] = 0
-      covD_HW[i] = 0
-      dd[,i] = tmp$dd
-      nd[,i] = nd[,i] + dd[,i]
-      gv_d[,i] = rep(0,pop@nInd)
     }else{
       genicVarD[i] = 0
       covD_HW[i] = 0
@@ -1491,8 +1501,6 @@ varA = function(pop,simParam=NULL,nThreads=NULL){
 #'
 #' @details
 #' This is the variance of dominance deviations in \code{pop}.
-#' A trait with epistasis can have dominance variance under linkage
-#' disequilibrium even without dominance effects (see \code{\link{genParam}}).
 #' Variances and covariances use the population divisor \code{nInd},
 #' rather than the sample divisor \code{nInd - 1} (see \code{\link{popVar}}).
 #'
@@ -1673,8 +1681,6 @@ bv = function(pop,simParam=NULL,nThreads=NULL){
 #' which supplies the reference quantities used by \code{\link{genParam}}.
 #' Evaluating the same individual in a different population can therefore
 #' change returned values.
-#' A trait with epistasis can have dominance deviations under linkage
-#' disequilibrium even without dominance effects (see \code{\link{genParam}}).
 #'
 #' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.

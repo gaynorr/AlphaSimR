@@ -44,6 +44,7 @@ the [Combining Ability](CombiningAbility.html) article demonstrates general and 
 | How genetic variance differs from genic variance | [Genetic and genic variances](#genetic-variances) |
 | How inbreeding affects genetic variance | [Departures from Hardy-Weinberg proportions](#hardy-weinberg-departures) |
 | How selection affects genetic variance | [Linkage disequilibrium and the Bulmer effect](#disequilibrium) |
+| Where the decomposition is not a least-squares fit to the population | [Where the decomposition departs from least squares](#least-squares) |
 | What changes for polyploids | [Polyploids and digenic dominance](#polyploids) |
 | How `AlphaSimR` implementation relates to classical quantitative genetics | [Relationship to classical theory](#classical-theory) |
 
@@ -249,11 +250,12 @@ the centered allele dosage at that locus,
 and the coefficient of that projection is
 the average effect of allele substitution in the population,
 usually denoted as $\alpha$.
-Apart from epistatic pairs, described below,
-each projection uses only the genotype frequencies at its own locus,
-so under linkage disequilibrium (LD) the sum over loci is not
-the least-squares projection onto all dosages at once
-(see [Three reference populations](#reference-populations)).
+Each projection uses only the genotype frequencies at its own locus.
+That makes the sum over loci the least-squares projection
+in a reference population whose loci are independent
+(see [Three reference populations](#reference-populations)),
+but not always in the observed population when loci are in linkage disequilibrium (LD)
+(see [Where the decomposition departs from least squares](#least-squares)).
 
 `AlphaSimR` calculates these regression coefficients using the observed genotype frequencies,
 without requiring Hardy–Weinberg proportions.
@@ -312,9 +314,6 @@ when the population departs from Hardy-Weinberg proportions,
 for example through inbreeding or non-random mating.
 The variance that this departure accounts for is what `AlphaSimR` reports as
 the non-random-mating components of variance.
-For a trait with epistasis, `alpha` can also differ from `alpha_HW`
-because of linkage disequilibrium between the two loci of an epistatic pair,
-as described [below](#epistatic-ld).
 
 We now return to demonstration.
 We first demonstrate genotype and allele frequencies,
@@ -492,42 +491,39 @@ Epistatic deviations $AA(x)$ follow the same lack-of-fit logic,
 applied to a pair of loci rather than to a single locus.
 The calculation proceeds in two stages.
 
-#### Stage 1: the epistatic value of a pair
+#### Stage 1: marginal genetic values
 
-Each locus's own additive and dominance effects are handled exactly as in
-the single-locus case:
-they are regressed on the locus's own dosage,
-giving its part of the breeding values,
-and the residuals are its part of the dominance deviations.
+For the pair $(i,j)$,
+the marginal genetic value of dosage $x_i$ at the locus $i$ is
+its genetic value averaged over the distribution of dosages at the locus $j$:
 
-The epistatic contribution to genetic value,
+$$G(x_i) = \sum_{x_j} f(x_j) \, G(x_i, x_j),$$
+
+and symmetrically for the locus $j$.
+Because the epistatic contribution to genetic value is
 $x_{A_i} x_{A_j} e_{(i,j)}$,
-is a function of both dosages of the pair $(i,j)$,
-so `AlphaSimR` fits it to both dosages jointly
-by least squares under the pair's observed joint genotype frequencies.
-The fit on the two dosages, $x_i$ and $x_j$, gives the epistatic part of
-the pair's breeding values,
-and what adding the two dominance codings, $x_{D_i}$ and $x_{D_j}$, adds to that fit
-gives the epistatic part of the pair's dominance deviations.
-
-It is easiest to see what the fit does under linkage equilibrium (LE),
-when the two loci are independent.
-Writing $x_{A_j} = \bar{x}_{A_j} + (x_{A_j} - \bar{x}_{A_j})$,
-the epistatic contribution is
-$x_{A_i} \bar{x}_{A_j} e_{(i,j)}$ plus a term that is uncorrelated
-with any function of either dosage alone.
-The first term is linear in $x_{A_i}$,
-so it is absorbed entirely by the breeding values,
-and the second is left as the epistatic deviation.
+the average over the locus $j$ contributes
+$x_{A_i} \bar{x}_{A_j} e_{(i,j)}$,
+which is linear in $x_{A_i}$.
 The epistatic effect therefore shifts
-the average effect at the first locus ($i$) in
+the marginal genetic value at the first locus ($i$) in
 a way that depends on the allele frequency at the second locus $(j)$.
 Note that this is the mechanism
 by which epistasis contributes to breeding values and their variance (additive genetic variance) and
 changes in allele frequencies can thereby "convert" epistatic into additive variance [@hill2017Conversion].
-Under LE, epistasis in this model generates additive and epistatic variance,
+
+The average effect $\alpha_i$ and breeding values $A(x)_i$ for locus $i$
+are then obtained from the marginal genetic values exactly as in the
+single-locus case with linear regression shown above, and
+the dominance deviations $D(x)_i$ are residuals from that regression.
+Because the marginalized epistatic contribution is linear in $x_{A_i}$,
+it is absorbed entirely by the linear regression for breeding values and
+leaves the dominance deviations untouched.
+Epistasis in this model generates additive and epistatic variance,
 but no dominance variance.
-What changes under linkage disequilibrium (LD) is described
+Weighting the partner locus by its own marginal genotype frequencies
+treats the two loci of a pair as independent;
+what that means when they are in linkage disequilibrium (LD) is described
 [below](#epistatic-ld).
 
 #### Stage 2: epistatic deviations
@@ -571,29 +567,35 @@ max(abs(resid)) # numerical zero for every individual
 
 #### Interpretation under linkage disequilibrium {#epistatic-ld}
 
-When the two loci of a pair are in linkage disequilibrium (LD),
-averaging over the partner locus as if it were independent
-is no longer a least-squares fit in the observed population [@hill2015Expected].
-The joint fit is,
-so part of what would be epistatic variance under LE
-becomes additive variance: the pair's breeding values
-are the least-squares fit of its epistatic value to both dosages.
-Under LD, additive-by-additive effects also induce a marginal dominance component
-[@alvarezcastro2019Orthogonal],
-which the fit on the dominance codings reports as dominance deviations.
-So a trait with epistasis but no dominance effects can have
-dominance deviations and dominance variance under LD.
-That dominance variance is absent under LE by construction,
-so all of it appears in the LD term, `covD_L`.
-For polyploids, the dominance coding captures only the quadratic part of a dosage,
-and any higher-order part that LD induces stays in the epistatic deviation.
+The marginalization above weights the partner locus by its own marginal genotype frequencies,
+which treats the two loci of a pair as independent.
+When they are in LD, it is not the least-squares projection in the observed population,
+and the components that follow from it are not orthogonal there [@hill2015Expected].
+A least-squares fit of the pair's epistatic value to both dosages jointly,
+under the pair's observed joint genotype frequencies,
+would call part of the epistatic variance additive.
+Under LD, additive-by-additive effects also induce a marginal dominance component,
+which a parameterization built on the joint two-locus genotype frequencies
+reports as dominance variance [@alvarezcastro2019Orthogonal].
+`AlphaSimR` does not refit the pair.
+Because the marginalization makes the epistatic contribution exactly linear
+in a locus's own dosage,
+a trait with no dominance effects has
+dominance deviations of exactly zero however strong the disequilibrium,
+and the variance a joint fit would call additive or dominance is reported as
+additive-by-additive variance and as the covariances `covAAA_L` and `covDAA_L`.
+The genetic values and their variance are unaffected,
+because $G(x) = \bar{G} + A(x) + D(x) + AA(x)$ as shown above.
+This is one of the reasons why `AlphaSimR` also reports
+the sum of all non-additive deviations, $G(x) = \bar{G} + A(x) + N(x)$, as shown below.
 
 The demonstration below pairs neighboring loci of `runMacs` founders,
-which are in strong LD, for a trait without dominance effects:
+which are in strong LD, for a trait without dominance effects.
+For comparison, it also fits the genetic values to all dosages jointly by least squares.
 
 ```{r}
 set.seed(2019)
-founderLD = runMacs(nInd = 300, nChr = 1, segSites = 40)
+founderLD = runMacs(nInd = 1000, nChr = 1, segSites = 40)
 SPLD = SimParam$new(founderLD)
 SPLD$addTraitAE(nQtlPerChr = 40, relAA = 0.5)
 # Pair each locus with its neighbor, so that every pair is tightly linked
@@ -603,48 +605,28 @@ SPLD = SimParam$new(founderLD)
 SPLD$manAddTrait(traitLD)
 popLD = newPop(founderLD, simParam = SPLD)
 ansLD = genParam(popLD, simParam = SPLD)
+XLD = pullQtlGeno(popLD, simParam = SPLD)
+jointA = fitted(lm(ansLD$gv[, 1] ~ XLD))
 round(c(varA = ansLD$varA[1, 1], varD = ansLD$varD[1, 1],
-        varAA = ansLD$varAA[1, 1], genicVarD = unname(ansLD$genicVarD),
-        covD_HW = unname(ansLD$covD_HW), covD_L = unname(ansLD$covD_L)), 4)
+        varAA = ansLD$varAA[1, 1], covAAA_L = unname(ansLD$covAAA_L),
+        jointVarA = mean((jointA - mean(jointA))^2)), 4)
 ```
 
-The trait has no dominance effects, but its dominance variance is not zero,
-and all of it is the LD term `covD_L`.
+The trait has no dominance variance however strong the LD,
+and the joint fit's additive variance differs from `varA`,
+because the joint fit takes in the LD, within and between pairs,
+that `genParam` reports as covariances.
 
 LD within pairs also changes the mean.
 The mean under LE, `mu_LE`, differs from the observed mean `mu`
 by each pair's epistatic effect times the covariance of its two dosages:
 
 ```{r}
-XLD = pullQtlGeno(popLD, simParam = SPLD)
 pairCov = apply(traitLD@epiEff, 1, function(e)
   e[3] * mean((XLD[, e[1]] - mean(XLD[, e[1]])) * (XLD[, e[2]] - mean(XLD[, e[2]]))))
 c(mu = unname(ansLD$mu), mu_LE = unname(ansLD$mu_LE),
   difference = unname(ansLD$mu - ansLD$mu_LE), sumOfPairs = sum(pairCov))
 ```
-
-Some LD is not removed.
-Only the LD between the two loci of a pair enters the joint fit.
-LD between loci of different pairs, or between a pair's loci and other loci,
-still appears in the covariances between loci and between components,
-as it does for traits without epistasis.
-That is why the covariances between the components are reported
-rather than assumed to be zero.
-Similarly, a locus's own dominance effects are regressed on its own dosage only,
-so their association with the partner's dosage under LD
-also appears as covariance.
-Only the sum over a pair of the epistatic parts of its dominance deviations
-is uncorrelated with both of its dosages,
-not the part attributed to each locus.
-
-When the two loci of a pair are in perfect LD,
-their dosages carry the same information,
-and only the pair's combined breeding value is identified.
-`AlphaSimR` then splits the average effect between the two loci
-with the minimum norm solution, which does not depend on the order of the pair.
-Under strong LD the individual average effects of the two loci
-can be large and of opposite sign while their combined breeding value is
-well determined, so `alpha` for such a pair is not meaningful on its own.
 
 How much this matters depends on how tightly the pairs are linked.
 The `addTrait` functions assign epistatic QTL pairs by a random permutation across the genome,
@@ -659,11 +641,9 @@ while drift, selection, and population structure can generate new LD.
 `AlphaSimR` also reports the total non-additive deviation as $N = D + AA = G - \bar{G} - A$,
 available through `nd(pop)` or `genParam(pop)$nd`.
 It has population mean zero because its components have mean zero.
-For traits without epistasis it equals the dominance deviation, and
+For traits without epistasis it equals the dominance deviation;
+without dominance it equals the epistatic deviation; and
 for purely additive traits it is zero.
-For a trait with epistasis but no dominance effects
-it equals the epistatic deviation under LE,
-and under LD within pairs it also includes the dominance deviations that LD induces.
 
 ```{r}
 tmp = cbind(ans$gv[, 1],
@@ -730,9 +710,12 @@ and understanding these is the key to understanding the output of `genParam`.
 The breeding values and deviations themselves are defined in
 a reference population of infinite size,
 so that they are population parameters rather than estimates.
-That population has the observed genotype frequencies at each locus
-and, for each epistatic pair, the pair's observed joint genotype frequencies,
-but no other association between loci.
+That population has the observed genotype frequencies at each locus,
+with the genotypes at different loci independent,
+including the two loci of an epistatic pair.
+It allows any level of inbreeding at each locus,
+and in it the breeding values, dominance deviations and epistatic deviations
+are the least-squares components and are uncorrelated.
 The variances are then taken over the observed individuals,
 so LD between loci enters the variances,
 through `covX_L` and the covariances between components,
@@ -1014,14 +997,10 @@ recovering that variance also requires `ans$covG_L`.
 The same recipe applies with `G` replaced by `A`, `D`, `AA`, or `N`.
 Note that changing reference population also changes the substitution effects:
 the idealized calculation uses `alpha_HW`,
-while the linkage-equilibrium calculation uses the substitution effects
-at the observed genotype frequencies with loci treated as independent.
+while the linkage-equilibrium calculation uses `alpha`,
+the substitution effects at the observed genotype frequencies with loci treated as independent.
 Adding `covX_HW` therefore accounts for changes in
 both genotype frequencies and substitution effects.
-For traits without epistasis, those substitution effects are `alpha`.
-For a trait with epistasis, `alpha` also includes the joint fit of each pair
-under the observed LD, which the linkage-equilibrium calculation leaves out by definition,
-so its effect is part of `covX_L`.
 
 ### Covariances between genetic components {#component-covariances}
 
@@ -1103,6 +1082,105 @@ round(ans2$covA_LMat, 3)
 all.equal(ans2$genicCovA + ans2$covA_HWMat + ans2$covA_LMat, ans2$varA)
 ```
 
+## Where the decomposition departs from least squares {#least-squares}
+
+The breeding values and deviations are least-squares components
+of the reference population described [above](#reference-populations),
+whose loci are independent.
+They are not always the least-squares components of the observed population itself,
+which would come from regressing genetic values on all dosages jointly.
+This section describes when the two agree and when they do not,
+for additive and dominance effects;
+the epistatic case is described [above](#epistatic-ld).
+
+For a diploid trait without epistasis,
+the joint average effects differ from the per-locus ones by $\mathrm{Var}(x)^{-1} e$,
+where $\mathrm{Var}(x)$ is the covariance matrix of the dosages and
+
+$$e_j = \sum_{i \ne j} d_i \left[ \mathrm{Cov}(x_{D_i}, x_j) - b_i \, \mathrm{Cov}(x_i, x_j) \right],
+\qquad b_i = \frac{\mathrm{Cov}(x_{D_i}, x_i)}{\mathrm{Var}(x_i)}.$$
+
+Here $b_i$ is the regression of locus $i$'s dominance coding on its own dosage,
+so $e_j$ measures how much locus $i$'s dominance coding is associated with
+the dosage at locus $j$ beyond what passes through locus $i$'s own dosage.
+It is zero in three cases:
+
+- when loci are in linkage equilibrium, because then every covariance between loci is zero;
+- under random union of gametes, with Hardy-Weinberg proportions at every locus,
+  even with LD, because the dominance coding of a locus is then associated with
+  another locus's dosage only through its own dosage;
+- when only two genotypes segregate at each locus, as in a backcross,
+  because the dominance coding is then a linear function of the dosage.
+
+In a finite population the first two hold only in expectation,
+so chance associations leave small differences; the third is exact.
+
+The variance formula of @avery1979Variance for linked loci with dominance under random union of gametes,
+built from per-locus average effects and LD terms with no
+additive-by-dominance term, is consistent with the second case.
+The difference is not zero when dominance, LD and departures from Hardy-Weinberg proportions
+occur together, as after selfing a segregating population.
+Then the per-locus breeding values and dominance deviations are correlated
+in the observed population, which `covAD_L` reports,
+and `varA` can be above or below the additive variance of a joint fit.
+@wang1998Effect, who derived the per-locus average effect under inbreeding,
+treated departures from Hardy-Weinberg proportions with independent loci,
+and LD under Hardy-Weinberg proportions, but not the two together;
+@vitezica2017Orthogonal found that per-locus effects are orthogonal under linkage equilibrium
+whether or not genotype frequencies are at Hardy-Weinberg proportions, but not under LD.
+Inbreeding also correlates the genotypes at different loci,
+even unlinked ones, through identity disequilibrium [@tachida1989Effects],
+which the independent reference leaves out as well.
+
+The example below makes a backcross from two inbred lines,
+which has two genotypes at each locus,
+and then selfs it.
+It compares `varA` with the additive variance of a joint fit to all dosages,
+and reports `covAD_L`:
+
+```{r}
+set.seed(316)
+founderBC = runMacs(nInd = 2, nChr = 1, segSites = 1000, inbred = TRUE)
+SPBC = SimParam$new(founderBC)
+SPBC$addTraitAD(nQtlPerChr = 5, meanDD = 0.8, varDD = 0.2)
+parentsBC = newPop(founderBC, simParam = SPBC)
+F1 = makeCross(parentsBC, matrix(c(1, 2), 1), simParam = SPBC)
+BC1 = makeCross2(F1, parentsBC[1], matrix(1, 3000, 2), simParam = SPBC)
+BC1S1 = self(BC1, simParam = SPBC)
+BC1S2 = self(BC1S1, simParam = SPBC)
+compareFits = function(pop) {
+  X = pullQtlGeno(pop, simParam = SPBC)
+  g = gv(pop)[, 1]
+  jointA = fitted(lm(g ~ X))
+  ansBC = genParam(pop, simParam = SPBC)
+  c(varA = ansBC$varA[1, 1], jointVarA = mean((jointA - mean(jointA))^2),
+    covAD_L = unname(ansBC$covAD_L))
+}
+round(rbind(BC1 = compareFits(BC1), BC1S1 = compareFits(BC1S1),
+            BC1S2 = compareFits(BC1S2)), 4)
+```
+
+In the backcross the two fits agree exactly and `covAD_L` is zero.
+After selfing they differ, by a small amount here, and `covAD_L` is not zero.
+The genetic values and their total variance are unaffected,
+because the covariance terms keep $\sigma^2_G$ exact.
+
+Why not use the joint fit instead?
+A joint fit to the observed population is a regression on the individuals present,
+with one coefficient per segregating locus.
+It is a meaningful population parameter only when there are many more individuals than loci.
+With at least as many segregating loci as individuals,
+as in most simulated breeding populations,
+it generally reproduces the genetic values exactly,
+so every genetic value would be called a breeding value;
+well before that it absorbs chance associations that recombination soon breaks up.
+The per-locus effects need only the genotype frequencies at each locus,
+so they are defined for any population.
+For polyploids, whether the per-locus and joint fits agree under random mating
+has not been established,
+because a polyploid gamete carries several alleles at each locus
+and their associations within the gamete affect the dominance coding.
+
 ## Polyploids and digenic dominance {#polyploids}
 
 ### Genotype coding and model limitations
@@ -1166,8 +1244,7 @@ orthogonal in an idealized population.
 In the terminology of the natural and orthogonal interactions framework of @alvarezcastro2007Unified,
 `AlphaSimR` computes the breeding value parameterization
 against the observed genotype frequencies,
-which is what makes `alpha` and `alpha_HW` differ,
-together with the LD within epistatic pairs.
+which is what makes `alpha` and `alpha_HW` differ.
 
 Orthogonality of the components holds in the idealized population,
 with Hardy-Weinberg proportions and linkage equilibrium.
@@ -1188,23 +1265,16 @@ The second convention refits the effects against the observed multilocus genotyp
 which restores orthogonality at the cost of absorbing the disequilibrium into
 the components themselves;
 @alvarezcastro2019Orthogonal give such a decomposition for epistatic traits.
-`AlphaSimR` mostly follows the first convention:
+`AlphaSimR` follows the first convention:
 it retains covariances between components while recomputing the
 average effects of allele substitution from the current marginal genotype frequencies.
-The exception is the epistatic value of each pair,
-which is refitted to the pair's observed joint genotype frequencies,
-as in the second convention but only within the pair;
-LD between pairs still appears as covariance.
-A locus's own additive and dominance effects are not refitted jointly with its partner's,
-because which loci are paired is a property of the epistatic effects alone.
-Refitting them would make the decomposition depend on the pairing
-even when every epistatic effect is zero;
-as it is, such a trait gives the same results as the same trait without epistasis.
-The second convention is not applied to all loci at once either.
-In a finite population much of the observed multilocus LD is between loosely linked loci
-or is chance association, which recombination breaks down in the offspring,
-so effects refitted to it describe the current individuals
-but transmit less faithfully to their progeny.
+Its equilibrium reference has the observed genotype frequencies at each locus
+with the loci independent,
+so the effects are least-squares effects at any level of inbreeding,
+and all LD, including within an epistatic pair, appears as covariance.
+The second convention is not used,
+and [Where the decomposition departs from least squares](#least-squares)
+describes what that costs and why.
 
 One further point of interpretation, made forcefully by @hill2008Data,
 is worth keeping in mind when setting up a simulation with epistasis.

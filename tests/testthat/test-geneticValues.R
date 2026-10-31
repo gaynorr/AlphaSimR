@@ -185,67 +185,49 @@ refBvDd = function(pop, simParam, trait) {
   list(bv = bv, dd = dd, alpha = alpha)
 }
 
-# Minimum norm least squares on columns scaled to unit variance, leaving out
-# columns with no variance, as calcGenParamE does when the dosages do not
-# identify separate slopes. Equal weights for the individuals give the
-# observed joint genotype frequencies.
-refMinNormFit = function(Z, y) {
-  coef = numeric(ncol(Z))
-  ss = colMeans(Z^2)
-  keep = which(ss > 1e-14)
-  if (length(keep) == 0) return(coef)
-  Zs = sweep(Z[, keep, drop = FALSE], 2, sqrt(ss[keep]), "/")
-  e = eigen(crossprod(Zs) / nrow(Zs), symmetric = TRUE)
-  use = e$values > 1e-10 * max(e$values)
-  b = e$vectors[, use, drop = FALSE] %*%
-    (crossprod(e$vectors[, use, drop = FALSE], colMeans(Zs * y)) / e$values[use])
-  coef[keep] = as.vector(b) / sqrt(ss[keep])
-  coef
-}
-
-# The same for a trait with epistasis, following calcGenParamE: each locus's
-# own effects are regressed on its own dosage, each pair's epistatic value
-# is fitted to both dosages jointly for its part of the breeding values, and
-# to the dosages and dominance codings for its part of the dominance
-# deviations, and the epistatic deviation is what is left of the pair's
-# genetic value
+# The same for a trait with epistasis, following calcGenParamE: each pair's
+# joint genotype frequencies give each locus a marginal genetic value that
+# averages over its partner, the breeding value and dominance deviation come
+# from those marginal values, and the epistatic deviation is what is left of
+# the pair's genetic value
 refBvDdAa = function(pop, simParam, trait) {
   tr = simParam$traits[[trait]]
   X = unname(pullQtlGeno(pop, trait = trait, simParam = simParam))
   P = pop@ploidy
-  xa = function(x) (x - P / 2) * (2 / P)
-  xd = function(x) x * (P - x) * (2 / P)^2
+  x = 0:P
+  xa = (x - P / 2) * (2 / P)
+  xd = x * (P - x) * (2 / P)^2
   d = if (.hasSlot(tr, "domEff")) tr@domEff else rep(0, ncol(X))
   E = tr@epiEff
-  n = nrow(X)
-  bv = dd = aa = numeric(n)
+  bv = dd = aa = numeric(nrow(X))
   alpha = numeric(ncol(X))
   for (i in seq_len(nrow(E))) {
     l = E[i, 1:2]
-    Zx = sweep(X[, l, drop = FALSE], 2, colMeans(X[, l, drop = FALSE]))
-    Zd = xd(X[, l, drop = FALSE])
-    Zd = sweep(Zd, 2, colMeans(Zd))
+    joint = table(factor(X[, l[1]], levels = x), factor(X[, l[2]], levels = x)) / nrow(X)
+    freq = list(rowSums(joint), colSums(joint))
+    own = lapply(1:2, function(k) xa * tr@addEff[l[k]] + xd * d[l[k]])
+    b = dev = list()
     for (k in 1:2) {
-      own = xa(X[, l[k]]) * tr@addEff[l[k]] + xd(X[, l[k]]) * d[l[k]]
-      own = own - mean(own)
-      al = sum(own * Zx[, k]) / sum(Zx[, k]^2)
+      other = 3 - k
+      # Marginal genetic value: the locus's own effects plus its partner's
+      # and the epistatic term, averaged over the partner's genotypes
+      g = own[[k]] + sum(freq[[other]] * own[[other]]) +
+        E[i, 3] * xa * sum(freq[[other]] * xa)
+      genoMu = sum(freq[[k]] * x)
+      gvMu = sum(freq[[k]] * g)
+      al = sum(freq[[k]] * (g - gvMu) * (x - genoMu)) / sum(freq[[k]] * (x - genoMu)^2)
       if (!is.finite(al)) al = 0
       alpha[l[k]] = al
-      bv = bv + al * Zx[, k]
-      dd = dd + own - al * Zx[, k]
+      b[[k]] = (x - genoMu) * al
+      dev[[k]] = if (.hasSlot(tr, "domEff")) g - b[[k]] - gvMu else 0 * x
     }
-    # The own effects leave nothing in the epistatic deviation, so it is
-    # what the two fits leave of the centered epistatic value
-    y = E[i, 3] * xa(X[, l[1]]) * xa(X[, l[2]])
-    y = y - mean(y)
-    gamma = refMinNormFit(Zx, y)
-    beta = refMinNormFit(cbind(Zx, Zd), y)
-    alpha[l] = alpha[l] + gamma
-    pairBv = as.vector(Zx %*% gamma)
-    pairDd = as.vector(cbind(Zx, Zd) %*% beta) - pairBv
-    bv = bv + pairBv
-    dd = dd + pairDd
-    aa = aa + y - pairBv - pairDd
+    GV = outer(own[[1]], own[[2]], "+") + E[i, 3] * outer(xa, xa)
+    AA = GV - outer(b[[1]], b[[2]], "+") - outer(dev[[1]], dev[[2]], "+") - sum(joint * GV)
+    u = X[, l[1]] + 1
+    v = X[, l[2]] + 1
+    bv = bv + b[[1]][u] + b[[2]][v]
+    dd = dd + dev[[1]][u] + dev[[2]][v]
+    aa = aa + AA[cbind(u, v)]
   }
   list(bv = bv, dd = dd, aa = aa, alpha = alpha)
 }
@@ -330,89 +312,6 @@ test_that("MATCH breeding values and deviations for epistatic traits", {
   expectGenParamMatchesRef(pop, SP)
 })
 
-test_that("JOINT epistatic pairs in LD match least-squares projections", {
-  # MaCS founders have LD between linked loci, and pairs are forced onto
-  # neighboring loci so that every pair is in strong LD. For each pair, the
-  # epistatic value's part of the breeding values is its least-squares fit
-  # to both dosages, and its part of the dominance deviations is what adding
-  # the dominance codings adds to that fit. lm finds both by QR, a different
-  # route from calcGenParamE, and its fitted values are unique.
-  set.seed(309)
-  founderPop = runMacs(nInd = 300, nChr = 1, segSites = 40)
-  for (type in c("AE", "ADE")) {
-    SP = SimParam$new(founderPop)
-    SP$nThreads = 1L
-    if (type == "AE") {
-      SP$addTraitAE(40, relAA = 0.5)
-    } else {
-      SP$addTraitADE(40, meanDD = 0.3, varDD = 0.2, relAA = 0.5)
-    }
-    trait = SP$traits[[1]]
-    trait@epiEff[, 1:2] = matrix(1:40, ncol = 2, byrow = TRUE)
-    SP2 = SimParam$new(founderPop)
-    SP2$nThreads = 1L
-    SP2$manAddTrait(trait)
-    pop = newPop(founderPop, simParam = SP2)
-    gp = genParam(pop, simParam = SP2)
-    X = pullQtlGeno(pop, simParam = SP2)
-    xa = function(x) x - 1
-    xd = function(x) x * (2 - x)
-    d = if (type == "ADE") trait@domEff else rep(0, 40)
-    bv = dd = aa = numeric(nInd(pop))
-    for (i in seq_len(nrow(trait@epiEff))) {
-      l = trait@epiEff[i, 1:2]
-      x1 = X[, l[1]]
-      x2 = X[, l[2]]
-      for (k in 1:2) {
-        x = X[, l[k]]
-        own = trait@addEff[l[k]] * xa(x) + d[l[k]] * xd(x)
-        fit = fitted(lm(own ~ x))
-        bv = bv + fit - mean(own)
-        dd = dd + own - fit
-      }
-      y = trait@epiEff[i, 3] * xa(x1) * xa(x2)
-      fitA = fitted(lm(y ~ x1 + x2))
-      fitAD = fitted(lm(y ~ x1 + x2 + xd(x1) + xd(x2)))
-      bv = bv + fitA - mean(y)
-      dd = dd + fitAD - fitA
-      aa = aa + y - fitAD
-    }
-    expect_equal(unname(gp$bv[, 1]), unname(bv), tolerance = 1e-8)
-    expect_equal(unname(gp$dd[, 1]), unname(dd), tolerance = 1e-8)
-    expect_equal(unname(gp$aa[, 1]), unname(aa), tolerance = 1e-8)
-    # Matching lm also means each pair's epistatic deviation is uncorrelated
-    # with its own two dosages and dominance codings. LD with the loci of
-    # other pairs is not removed, and appears in the covariances.
-    expect_equal(unname(gp$gv[, 1]),
-                 unname(gp$mu[1] + gp$bv[, 1] + gp$dd[, 1] + gp$aa[, 1]),
-                 tolerance = 1e-10)
-  }
-})
-
-test_that("LD dominance deviations without dominance effects are LD covariance", {
-  # A trait without dominance effects has none under linkage equilibrium,
-  # so all of its dominance variance comes from LD within pairs
-  set.seed(310)
-  founderPop = runMacs(nInd = 300, nChr = 1, segSites = 40)
-  SP = SimParam$new(founderPop)
-  SP$nThreads = 1L
-  SP$addTraitAE(40, relAA = 0.5)
-  trait = SP$traits[[1]]
-  trait@epiEff[, 1:2] = matrix(1:40, ncol = 2, byrow = TRUE)
-  SP2 = SimParam$new(founderPop)
-  SP2$nThreads = 1L
-  SP2$manAddTrait(trait)
-  pop = newPop(founderPop, simParam = SP2)
-  gp = genParam(pop, simParam = SP2)
-  expect_gt(gp$varD[1, 1], 0)
-  expect_equal(unname(gp$genicVarD), 0)
-  expect_equal(unname(gp$covD_HW), 0)
-  expect_equal(unname(gp$covD_L), gp$varD[1, 1], tolerance = 1e-10)
-  expect_equal(unname(gp$covD_LMat[1, 1]), gp$varD[1, 1], tolerance = 1e-10)
-  expect_equal(unname(gp$nd[, 1]), unname(gp$dd[, 1] + gp$aa[, 1]), tolerance = 1e-10)
-  expect_equal(unname(gp$gv_d[, 1]), rep(0, nInd(pop)))
-})
-
 test_that("MEAN splits into its Hardy-Weinberg and LD parts", {
   # mu - mu_LE is the change in the mean from LD, which only epistatic
   # effects feel: each pair's effect times the covariance of its additive
@@ -454,9 +353,9 @@ test_that("MEAN splits into its Hardy-Weinberg and LD parts", {
 })
 
 test_that("CONTINUITY a zero epistatic effect gives the trait without epistasis", {
-  # With every epistatic effect zero, the joint fit has nothing to fit, so
-  # the decomposition must equal that of the same additive and dominance
-  # effects without epistasis, whatever the LD
+  # With every epistatic effect zero, the decomposition must equal that of
+  # the same additive and dominance effects without epistasis, whatever the
+  # LD
   set.seed(311)
   founderPop = runMacs(nInd = 200, nChr = 1, segSites = 40)
   SP = SimParam$new(founderPop)
@@ -474,36 +373,36 @@ test_that("CONTINUITY a zero epistatic effect gives the trait without epistasis"
   expect_equal(as.vector(withEpi$aa), rep(0, nInd(pop)), tolerance = 1e-10)
 })
 
-test_that("SYMMETRY perfect LD splits the slope the same way in either order", {
-  # The second locus of each pair copies the first, or its complement, so
-  # only the pair's total breeding value is identified. The split between
-  # the loci must not depend on which is listed first.
-  set.seed(312)
-  h1 = rbinom(400, 1, 0.6)
-  h3 = rbinom(400, 1, 0.3)
-  haplo = cbind(h1, h1, h3, 1 - h3)
-  colnames(haplo) = paste0("m", 1:4)
-  genMap = data.frame(marker = colnames(haplo), chr = 1, pos = c(0.1, 0.2, 0.3, 0.4))
-  founderPop = importHaplo(haplo, genMap)
-  fit = function(pairs) {
-    SP = SimParam$new(founderPop)
-    SP$nThreads = 1L
-    SP$importTrait(markerNames = colnames(haplo), addEff = c(1, 2, 0.5, -1),
-                   domEff = c(0.2, 0.1, 0, 0.3), epiPairs = pairs,
-                   epiEff = c(1, -2))
-    pop = newPop(founderPop, simParam = SP)
-    gp = genParam(pop, simParam = SP)
-    expect_equal(unname(gp$gv[, 1]),
-                 unname(gp$mu[1] + gp$bv[, 1] + gp$dd[, 1] + gp$aa[, 1]),
-                 tolerance = 1e-10)
-    expect_true(all(is.finite(gp$alpha[[1]])))
-    gp
+test_that("LEASTSQUARES per-locus breeding values and a joint fit to all dosages", {
+  # Breeding values are sums of per-locus regressions. With two genotypes
+  # per locus, as in a backcross, they are also the least squares fit of
+  # genetic values to all dosages jointly, whatever the LD. With dominance,
+  # LD and inbreeding together they are not, and breeding values and
+  # dominance deviations are correlated, as genParam documents.
+  set.seed(316)
+  founderPop = runMacs(nInd = 2, nChr = 1, segSites = 1000, inbred = TRUE)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitAD(5, meanDD = 0.8, varDD = 0.2)
+  parents = newPop(founderPop, simParam = SP)
+  F1 = makeCross(parents, matrix(c(1, 2), 1), simParam = SP)
+  BC1 = makeCross2(F1, parents[1], matrix(1, 1000, 2), simParam = SP)
+  jointVarA = function(pop) {
+    X = pullQtlGeno(pop, simParam = SP)
+    g = gv(pop)[, 1]
+    mean((fitted(lm(g ~ X)) - mean(g))^2)
   }
-  forward = fit(rbind(c("m1", "m2"), c("m3", "m4")))
-  reverse = fit(rbind(c("m2", "m1"), c("m4", "m3")))
-  expect_equal(forward$alpha, reverse$alpha, tolerance = 1e-10)
-  expect_equal(forward$bv, reverse$bv, tolerance = 1e-10)
-  expect_equal(forward$dd, reverse$dd, tolerance = 1e-10)
+  covBvDd = function(gp) {
+    mean((gp$bv[, 1] - mean(gp$bv[, 1])) * (gp$dd[, 1] - mean(gp$dd[, 1])))
+  }
+  gp = genParam(BC1, simParam = SP)
+  expect_equal(gp$varA[1, 1], jointVarA(BC1), tolerance = 1e-10)
+  expect_equal(unname(gp$covAD_L), 0, tolerance = 1e-10)
+  BC1S1 = self(BC1, simParam = SP)
+  gp = genParam(BC1S1, simParam = SP)
+  expect_equal(unname(gp$covAD_L), covBvDd(gp), tolerance = 1e-10)
+  expect_gt(abs(unname(gp$covAD_L)), 1e-4)
+  expect_gt(abs(gp$varA[1, 1] - jointVarA(BC1S1)), 1e-4)
 })
 
 test_that("THREADS genParam for epistatic traits does not depend on the thread count", {
