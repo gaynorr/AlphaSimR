@@ -48,9 +48,11 @@ The \code{preserveNames} argument allows control over name preservation during
 flattening. This is useful when you want to track the source of flattened
 populations through their hierarchical names. The default \code{"auto"} mode
 is conservative: names are kept only when they are meaningful (all present
-and unique). Use \code{"concatenate"} to always build hierarchical names
-(when possible), \code{"force"} to guarantee names with uniqueness enforcement,
-or \code{"none"} to explicitly discard all names.
+and unique); missing names are not replaced with positional names. Use
+\code{"concatenate"} to prefix names with their parent names, using
+positional names for child subtrees with missing or duplicate names,
+\code{"force"} to guarantee names with uniqueness enforcement, or
+\code{"none"} to explicitly discard all names.
 }
 \examples{
 # Create founder haplotypes

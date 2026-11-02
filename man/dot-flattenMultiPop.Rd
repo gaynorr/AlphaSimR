@@ -6,6 +6,13 @@
 \usage{
 .flattenMultiPop(x, level, preserveNames)
 }
+\arguments{
+\item{x}{A \code{\link{MultiPop-class}} object.}
+
+\item{level}{Integer scalar specifying how many levels to preserve.}
+
+\item{preserveNames}{Character scalar controlling name preservation.}
+}
 \description{
 Recursively flatten a \code{\link{MultiPop-class}} object into a shallower
 \code{MultiPop} containing only \code{\link{Pop-class}} objects

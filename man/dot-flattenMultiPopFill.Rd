@@ -17,9 +17,9 @@
 A list containing the subtree name validity
 }
 \description{
-The returned `namesValid` value describes whether this subtree has a complete
-and unique name vector under the requested naming mode. The value is needed
-because the existing "auto" behavior drops names for an invalid child
-subtree, while "concatenate" and "force" can synthesize names for it.
+The returned \code{namesValid} value describes whether this subtree has a
+complete and unique name vector under the requested naming mode. The value
+is needed because the existing "auto" behavior drops names for an invalid
+child subtree, while "concatenate" and "force" can synthesize names for it.
 }
 \keyword{internal}

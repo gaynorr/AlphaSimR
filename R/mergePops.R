@@ -266,9 +266,11 @@ mergePops = function(popList){
 #' flattening. This is useful when you want to track the source of flattened
 #' populations through their hierarchical names. The default \code{"auto"} mode
 #' is conservative: names are kept only when they are meaningful (all present
-#' and unique). Use \code{"concatenate"} to always build hierarchical names
-#' (when possible), \code{"force"} to guarantee names with uniqueness enforcement,
-#' or \code{"none"} to explicitly discard all names.
+#' and unique); missing names are not replaced with positional names. Use
+#' \code{"concatenate"} to prefix names with their parent names, using
+#' positional names for child subtrees with missing or duplicate names,
+#' \code{"force"} to guarantee names with uniqueness enforcement, or
+#' \code{"none"} to explicitly discard all names.
 #'
 #' @return If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
 #' object is returned. Otherwise a \code{\link{MultiPop-class}} is returned
@@ -347,6 +349,10 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #' \code{MultiPop} containing only \code{\link{Pop-class}} objects
 #' down to a requested level without validation.
 #' 
+#' @param x A \code{\link{MultiPop-class}} object.
+#' @param level Integer scalar specifying how many levels to preserve.
+#' @param preserveNames Character scalar controlling name preservation.
+#' 
 #' @keywords internal
 .flattenMultiPop = function(x, level, preserveNames) {
   if (level > 1L) {
@@ -369,7 +375,9 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     if (preserveNames == "none") {
       names(flatPopList) = NULL
     }
-    return(do.call(newMultiPop, flatPopList))
+    result = new("MultiPop")
+    result@pops = flatPopList
+    return(result)
   }
 
   # Count leaf Pop objects before allocating the output vectors.
@@ -400,7 +408,9 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
     names(flatPopList) = NULL
   }
 
-  return(do.call(newMultiPop, flatPopList))
+  result = new("MultiPop")
+  result@pops = flatPopList
+  return(result)
 }
 
 #' Count the number of leaf Pop objects in a MultiPop hierarchy.
@@ -424,10 +434,10 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 
 #' Fill a preallocated flattening result.
 #'
-#' The returned `namesValid` value describes whether this subtree has a complete
-#' and unique name vector under the requested naming mode. The value is needed
-#' because the existing "auto" behavior drops names for an invalid child
-#' subtree, while "concatenate" and "force" can synthesize names for it.
+#' The returned \code{namesValid} value describes whether this subtree has a
+#' complete and unique name vector under the requested naming mode. The value
+#' is needed because the existing "auto" behavior drops names for an invalid
+#' child subtree, while "concatenate" and "force" can synthesize names for it.
 #'
 #' @param mp MultiPop object
 #' @param preserveNames name preservation mode
@@ -443,10 +453,10 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
   for (i in seq_along(mp@pops)) {
     item = mp@pops[[i]]
 
-    label = if (!is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])) {
+    label = if (!is.null(nm) && !is.na(nm[i])) {
       nm[i]
     } else {
-      as.character(i)
+      NA_character_
     }
 
     if (isPop(item)) {
@@ -522,7 +532,7 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
 #'
 #' @details
 #' The function accepts multiple inputs and merges them according to the
-#' \code{level} argument.
+#' \code{level} argument.  \cr
 #' - \code{level = 0}: merge all \code{Pop} or \code{MultiPop} objects in the
 #'   inputs into a single \code{Pop} object (the inputs are first completely
 #'   flattened then merged).  \cr
@@ -663,13 +673,16 @@ mergeMultiPops = function(..., level = 0) {
         )
       }
     }
-    return(do.call(newMultiPop, popList))
+    multiPop = new("MultiPop")
+    multiPop@pops = popList
+    return(multiPop)
   }
 
   # Build an unvalidated MultiPop solely as the input representation expected
   # by the flattening helper. The resulting flattened Pop is fully constructed
   # by mergePops().
-  multiPop = do.call(newMultiPop, popList)
+  multiPop = new("MultiPop")
+  multiPop@pops = popList
 
   flatMultiPop = .flattenMultiPop(
     x = multiPop,
@@ -860,7 +873,7 @@ splitPop = function(x, by, level = Inf) {
 .splitAtLevels = function(obj, currentLevel, levels, by) {
   if (isPop(obj)) {
     # A Pop at the currentLevel: split only if currentLevel requested (or Inf)
-    if (currentLevel %in% levels || is.infinite(levels)) {
+    if (currentLevel %in% levels || any(is.infinite(levels))) {
       return(.splitPop(obj, by))
     } else {
       return(obj)
@@ -929,7 +942,6 @@ splitPop = function(x, by, level = Inf) {
   popList = split(pop, groups)
   mp = newEmptyMultiPop()
   if (is.data.frame(by)){
-    # groups = lapply(split(by, groups), `[`, -1)
     groups = split(by[, -1, drop = FALSE], groups)
     mp@pops = mapply(FUN = .splitPop, pop = popList, by = groups)
   } else {
