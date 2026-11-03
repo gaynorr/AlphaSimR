@@ -26,10 +26,14 @@ program as an example. This example will model the breeding program for
 mean genetic value and genetic variance over time for the first stage of
 the breeding program.
 
-Complete code for the simulation is provided at the end. The steps
+Complete code for the simulation is provided after step 6. The steps
 in-between demonstrate the process used to write this code. Note that
 some intermediate steps provide invalid code, so you shouldn't run code
 for the intermediate steps. Only run the final, complete code.
+
+Step 7 then extends the simulation into the form most simulation
+studies take: a burn-in period, alternative scenarios run from the same
+burn-in, and replicates, with the results collected for comparison.
 
 ## 1. Translate program description to code
 
@@ -303,6 +307,238 @@ plot(1:20, meanStage1, type="l", xlab="Year", ylab="Mean", main="Mean Stage 1")
 plot(1:20, varStage1, type="l", xlab="Year", ylab="Variance", main="Variance Stage 1")
 
 ```
+
+## 7. Compare scenarios with a burn-in and replicates
+
+A single run of a breeding program tells you little on its own. The
+usual purpose of a simulation is to compare alternative versions of a
+program, and that comparison needs three things the code above does not
+have.
+
+-   A **burn-in**: a period of breeding under the current program before
+    the alternatives begin. The founders produced by `runMacs` have
+    never been selected, so the first years of any program are atypical.
+    The burn-in puts the program into a realistic state, and starting
+    every scenario from the same burn-in means the scenarios differ only
+    in what happens afterward.
+-   **Scenarios**: the alternative programs being compared, each run
+    forward from the end of the burn-in.
+-   **Replicates**: independent repeats of the whole process, each with
+    new founders and a new burn-in. A simulation is a random draw, so a
+    difference between scenarios means nothing until you know how much
+    it varies between replicates.
+
+As an example, we will compare the program above with an alternative
+that uses the same number of plots each year. The current program
+tests 1000 Stage 1 clones in one plot each, 50 Stage 2 clones in four
+plots each and 10 Stage 3 clones in eight plots each, for 1280 plots.
+The alternative makes 80 crosses instead of 100, giving 800 Stage 1
+clones, and spends the 200 plots this saves on testing Stage 2 clones in
+eight plots each instead of four. It trades selection intensity in Stage
+1 for accuracy in Stage 2. Keeping the number of plots equal is what
+makes this a fair comparison: an alternative that simply tested more
+material would win by spending more.
+
+### A function for one year
+
+When the same program is run under several settings, it is easier to
+keep the populations in a list and write the year as a function. The
+function below advances every stage by one year, exactly as the loop
+above does, with the number of crosses and the number of Stage 2 plots
+as arguments. It also returns the number of plots used, so that the
+cost of each scenario is recorded rather than assumed.
+
+```{r}
+library(AlphaSimR)
+
+runYear = function(prog, nCrosses, nRepStage2){
+  # Year 5 (Stage 3)
+  prog$Stage3 = selectInd(prog$Stage2, nInd=10)
+  prog$Stage3 = setPheno(prog$Stage3, reps=8, varE=4)
+
+  # Year 4 (Stage 2)
+  prog$Stage2 = selectInd(prog$Stage1, nInd=50)
+  prog$Stage2 = setPheno(prog$Stage2, reps=nRepStage2, varE=4)
+
+  # Year 3 (Stage 1)
+  prog$Stage1 = setPheno(prog$Seedlings, reps=1, varE=4)
+
+  # Year 2 (Seedlings)
+  prog$Seedlings = prog$F1
+
+  # Year 1 (Crossing)
+  prog$F1 = randCross(c(prog$Stage3, prog$Stage2),
+                      nCrosses=nCrosses, nProgeny=10)
+
+  # Plots used this year across the three yield trial stages
+  prog$nPlots = nInd(prog$Stage1) +
+    nRepStage2*nInd(prog$Stage2) +
+    8*nInd(prog$Stage3)
+  return(prog)
+}
+```
+
+The functions called inside `runYear` find the simulation parameters by
+looking for an object called `SP` in the global environment, so `SP`
+must be created there, as it is below, or passed to each function
+through its `simParam` argument.
+
+### Scenarios within replicates
+
+Each replicate creates new founders, fills the pipeline, runs a burn-in
+of 10 years under the current program, and then runs each scenario for
+10 more years from the state the burn-in left. The results are collected
+as one row per replicate, scenario and year, which is the most
+convenient form for summarizing and plotting later. Year 0 records the
+end of the burn-in, which every scenario in a replicate shares.
+
+```{r}
+set.seed(1234)
+
+nReps = 5
+nBurnin = 10
+nFuture = 10
+scenarios = list(
+  Current = list(nCrosses=100, nRepStage2=4),
+  Alternative = list(nCrosses=80, nRepStage2=8)
+)
+
+results = list()
+for(rep in 1:nReps){
+  ## New founders and simulation parameters for each replicate
+  founderPop = runMacs(nInd=60, nChr=4, segSites=1000)
+  SP = SimParam$
+    new(founderPop)$
+    addTraitA(1000)
+
+  ## Fill breeding program pipeline, as in step 4
+  Parents = newPop(founderPop)
+  prog = list()
+
+  # Year 5 (Stage 3)
+  Stage1 = setPheno(randCross(Parents, nCrosses=100, nProgeny=10),
+                    reps=1, varE=4)
+  Stage2 = setPheno(selectInd(Stage1, nInd=50), reps=4, varE=4)
+  prog$Stage3 = setPheno(selectInd(Stage2, nInd=10), reps=8, varE=4)
+
+  # Year 4 (Stage 2)
+  Stage1 = setPheno(randCross(Parents, nCrosses=100, nProgeny=10),
+                    reps=1, varE=4)
+  prog$Stage2 = setPheno(selectInd(Stage1, nInd=50), reps=4, varE=4)
+
+  # Year 3 (Stage 1)
+  prog$Stage1 = setPheno(randCross(Parents, nCrosses=100, nProgeny=10),
+                         reps=1, varE=4)
+
+  # Year 2 (Seedlings)
+  prog$Seedlings = randCross(Parents, nCrosses=100, nProgeny=10)
+
+  # Year 1 (Crossing)
+  prog$F1 = randCross(Parents, nCrosses=100, nProgeny=10)
+
+  ## Burn-in under the current program
+  for(year in 1:nBurnin){
+    prog = runYear(prog, nCrosses=100, nRepStage2=4)
+  }
+  burnin = prog
+
+  ## Run each scenario forward from the same burn-in
+  for(scenario in names(scenarios)){
+    prog = burnin
+    settings = scenarios[[scenario]]
+    for(year in 0:nFuture){
+      if(year > 0){
+        prog = runYear(prog, nCrosses=settings$nCrosses,
+                       nRepStage2=settings$nRepStage2)
+      }
+      results[[length(results) + 1]] = data.frame(
+        rep = rep,
+        scenario = scenario,
+        year = year,
+        meanG = unname(meanG(prog$Stage1)),
+        varG = c(varG(prog$Stage1)),
+        nPlots = if(year > 0) prog$nPlots else NA
+      )
+    }
+  }
+}
+results = do.call(rbind, results)
+head(results)
+```
+
+Copying `burnin` into `prog` before each scenario works because
+populations are ordinary R objects: changing `prog` leaves `burnin`
+untouched. `SP` is different. It is an R6 object with reference
+semantics, so every scenario shares the same one, and anything a
+scenario changes in it, such as the error variance set with
+`SP$setVarE()`, carries over into the scenarios run after it. Sharing it
+is safe here because no scenario changes it; the only state it
+accumulates is the counter used to assign IDs, which keeps IDs unique
+across scenarios. When scenarios do change the simulation parameters, or
+when they are run as separate jobs, save the burn-in to a file and have
+each scenario load its own copy.
+
+```{r eval=FALSE}
+# At the end of the burn-in
+saveRDS(list(prog=prog, SP=SP), paste0("burnin_", rep, ".rds"))
+
+# At the start of each scenario
+burnin = readRDS(paste0("burnin_", rep, ".rds"))
+prog = burnin$prog
+SP = burnin$SP
+```
+
+### Summarize the results
+
+First, check that the scenarios really did cost the same. The years
+just after the burn-in are a transition, because the pipeline still
+holds material from the old program, so look at the last year.
+
+```{r}
+aggregate(nPlots ~ scenario, data=results[results$year == nFuture, ],
+          FUN=mean)
+```
+
+Genetic gain is measured from the end of the burn-in, so the starting
+level of each replicate, which varies with its founders, drops out. The
+two scenarios match for the first two years, because Stage 1 then still
+holds clones from crosses made during the burn-in.
+
+```{r fig.width=6, fig.height=4.5}
+start = results[results$year == 0, c("rep", "scenario", "meanG")]
+names(start)[3] = "startG"
+results = merge(results, start)
+results$gain = results$meanG - results$startG
+
+avgGain = aggregate(gain ~ scenario + year, data=results, FUN=mean)
+plot(gain ~ year, data=avgGain[avgGain$scenario == "Current", ],
+     type="l", ylim=range(avgGain$gain), xlab="Year after burn-in",
+     ylab="Gain in mean genetic value", main="Stage 1")
+lines(gain ~ year, data=avgGain[avgGain$scenario == "Alternative", ],
+      lty=2)
+legend("bottomright", legend=c("Current", "Alternative"), lty=1:2)
+```
+
+The scenarios in each replicate share a burn-in, so compare them within
+replicates. Taking the difference in final gain for each replicate and
+summarizing those differences removes the variation that comes from the
+founders and gives a much more precise comparison than the two averages
+alone.
+
+```{r}
+final = results[results$year == nFuture, ]
+final = final[order(final$rep), ]
+diffGain = final$gain[final$scenario == "Alternative"] -
+  final$gain[final$scenario == "Current"]
+c(mean=mean(diffGain), se=sd(diffGain)/sqrt(nReps))
+```
+
+Five replicates keep this article quick to build, but they are too few
+for a reliable conclusion. A real study would use enough replicates for
+the standard error of the difference to be small next to the difference
+itself, and would look at the genetic variance in `results` as well as
+the gain, because a scenario that gains faster by using up genetic
+variance may fall behind over a longer horizon.
 
 ## Miscellaneous comments
 
