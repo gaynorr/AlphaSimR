@@ -6,7 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 2
-bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../inst/REFERENCES.bib")) "../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{Working with structured populations using MultiPop in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -44,7 +44,11 @@ The examples focus on workflows that are especially useful in population breedin
 
 ## Quick start
 
-### Creating a `MultiPop`
+* [Creating a `MultiPop`](#creating-multipop)
+* [Splitting a population](#splitting-a-pop)
+* [Flattening and merging](#flattening-and-merging)
+
+### Creating a `MultiPop` {#creating-multipop}
 
 A `MultiPop` can be created in two main ways:
 
@@ -122,7 +126,7 @@ unnameMultiPop(mp_nested)
 unnameMultiPop(mp_nested, level = 2)
 ```
 
-### Splitting a population
+### Splitting a population {#splitting-a-pop}
 
 `splitPop()` is useful when grouping information is stored as a vector, data frame, or user-defined function.
 
@@ -156,7 +160,7 @@ mp_split4
 
 For a data frame, each column defines one nesting level. Row names can be used to align grouping records with individual IDs. A list applies grouping specifications sequentially.
 
-### Flattening and merging
+### Flattening and merging {#flattening-and-merging}
 
 `flattenMultiPop()` removes intermediate levels while retaining the component `Pop` objects.
 
@@ -187,6 +191,8 @@ mergeMultiPops(mp_split4, level = 1)
 mergeMultiPops(mp_nested, mp_split4, level = 3)
 ```
 
+_Note:_ See more examples of flattening and merging in [Simplifying a MultiPop hierarchy](#simplifying).
+
 ## Why use a `MultiPop`?
 
 Many breeding programs have a hierarchy between an individual and the complete breeding population. Selection may act on families in plant breeding, tanks in aquaculture, or colonies in insect breeding. A `MultiPop` preserves this hierarchy, making it possible to apply operations within groups, compare groups, and retain the origin of each component.
@@ -197,11 +203,16 @@ The examples below show how this representation can replace explicit list manipu
 
 We previously showed how to implement a hypothetical wheat line-breeding program using the pedigree method [@bancic2025Plant]. This method involves specific parental crosses followed by repeated family and within-family selection until lines are sufficiently inbred for multi-environment trials. Parent-progeny information is retained to help preserve variation among lines and produce new crosses.
 
+* [Stages 1 and 2](#stages-one-and-two)
+* [Stages 3 to 5: selecting rows within families](#stages-three-to-five)
+* [Stage 6: selecting inbred lines](#stage-six)
+* [Stages 7 to 9: yield trials](#stages-seven-to-nine)
+
 ```{r wheat-scheme, echo=FALSE, out.width="100%", fig.cap="A simplified wheat breeding scheme implementing the pedigree breeding method."}
 knitr::include_graphics("./images/wheat_scheme.svg")
 ```
 
-### Stages 1 and 2
+### Stages 1 and 2 {#stages-one-and-two}
 
 We create founder haplotypes and a trait representing grain yield. The trait includes additive and genotype-by-environment effects. Founder parents are crossed to produce 40 F1 individuals.
 
@@ -269,7 +280,7 @@ F2 = setPheno(F2, varE = 4, reps = 4/19, p = p)
 F2 = selectInd(F2, nInd = 25)
 ```
 
-### Stages 3 to 5: selecting rows within families
+### Stages 3 to 5: selecting rows within families {#stages-three-to-five}
 
 In each subsequent stage, every selected individual is self-pollinated to produce 20 progeny. The progeny are planted in **rows**, and the row is the evaluation unit. We simulate individual phenotypes and use their mean as the row phenotype. We then select the best 10 rows per family and the best 4 individuals within each selected row.
 
@@ -476,7 +487,7 @@ F5 = mergeMultiPops(F5, level=1)
 
 </div>
 
-### Stage 6: selecting inbred lines
+### Stage 6: selecting inbred lines {#stage-six}
 
 At Stage 6, repeated self-pollination has made the plants within a row approximately homogeneous. We select the best four rows per family and randomly retain one plant from each row as the simulated line.
 
@@ -550,7 +561,7 @@ F6 = mergeMultiPops(F6)
 
 The `MultiPop` structure can now be removed because each selected line is treated as an individual in the yield trials.
 
-### Stages 7 to 9: yield trials
+### Stages 7 to 9: yield trials {#stages-seven-to-nine}
 
 The selected lines are finally evaluated and selected in preliminary, advanced, and elite yield trials (PYT, AYT, and EYT).
 
@@ -572,11 +583,16 @@ EYT = setPheno(EYT, varE = 4, reps = 8)
 
 This example represents a forage-breeding program in which individual plants are selected during recurrent selection, whereas half-sib families and field replicates become the evaluation units later in the program.
 
+* [Founder population and traits](#founder-pop-and-traits)
+* [Recurrent selection on individual plants](#recurrent-selection)
+* [Evaluating half-sib families as populations](#evaluating-half-sibs)
+* [Nested `MultiPop` objects](#nested-multipops)
+
 ```{r forage-scheme, echo=FALSE, out.width="100%", fig.cap="A simplified forage-breeding scheme used in this example."}
 knitr::include_graphics("./images/forages_scheme.svg")
 ```
 
-### Founder population and traits
+### Founder population and traits {#founder-pop-and-traits}
 
 `Vigor` is evaluated on individual plants during recurrent selection, whereas `Biomass` is evaluated later on **swards** (plots containing a population of related plants). The two traits are genetically correlated and include additive and dominance effects.
 
@@ -615,7 +631,7 @@ SP$addTraitAD(
 )
 ```
 
-### Recurrent selection on individual plants
+### Recurrent selection on individual plants {#recurrent-selection}
 
 Founder parents are open-pollinated to create the first nursery. Each seed is treated as an individual evaluation unit.
 
@@ -707,7 +723,7 @@ syn1 = selectOP(
 )
 ```
 
-### Evaluating half-sib families as populations
+### Evaluating half-sib families as populations {#evaluating-half-sibs}
 
 Seed from each mother is sown in a **sward**, and each maternal half-sib family is treated as one evaluation unit. `splitPop()` creates one terminal `Pop` per maternal family.
 
@@ -778,7 +794,7 @@ ny1 = selectOP(
 )
 ```
 
-### Nested `MultiPop` objects
+### Nested `MultiPop` objects {#nested-multipops}
 
 Field testing may add another level to the hierarchy. Seed from each half-sib family can be divided among several field replicates. Each replicate is sown in a sward and contains genetically related but distinct individuals.
 
@@ -928,9 +944,12 @@ cor(
 )
 ```
 
-## Simplifying a `MultiPop` hierarchy
+## Simplifying a `MultiPop` hierarchy {#simplifying}
 
-### Flattening
+* [Flattening](#flattening)
+* [Merging](#merging)
+
+### Flattening {#flattening}
 
 `flattenMultiPop()` is useful when units from different branches should be compared together. It removes intermediate grouping while retaining the terminal `Pop` objects.
 
@@ -953,7 +972,7 @@ syn1_HSreps = flattenMultiPop(
 syn1_HSreps
 ```
 
-### Merging
+### Merging {#merging}
 
 `mergeMultiPops()` is useful when the component populations should become one population, while optionally retaining selected levels of the hierarchy.
 
