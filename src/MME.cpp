@@ -444,7 +444,7 @@ Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
   arma::vec etd = et/(s2+delta);
   arma::mat u;
   if(m<n){
-    // u is MtU*etd, the sqrt(s2) in MtU cancelling the 1/sqrt(s2) of the
+    // u is MtU*etd, the sqrt(s2) in MtU canceling the 1/sqrt(s2) of the
     // rotation. Eigenvectors of M'*M below the cutoff are given no effect:
     // the likelihood was fitted with their eigenvalues set to zero, so the
     // BLUPs are those of that same model. Along the kept ones the null
@@ -1920,10 +1920,12 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
           MSubCol[i] = xaPtr[Mcol[subset(i)]];
         }
       }
-      remlMultiTrait(ySub, XSub, MSub, none, true, 1000, 1e-6, Vu, Ve);
+      remlMultiTrait(ySub, XSub, MSub, none, true, 1000, 1e-6, Vu, Ve,
+                     "RRBLUP fastMode");
     }else{
       arma::mat K = gramFromGeno(M, subset, xaPtr);
-      remlMultiTrait(ySub, XSub, none, K, false, 1000, 1e-6, Vu, Ve);
+      remlMultiTrait(ySub, XSub, none, K, false, 1000, 1e-6, Vu, Ve,
+                     "RRBLUP fastMode");
     }
   }else{
     Vu = 0.5*(VuIn+VuIn.t());

@@ -237,7 +237,7 @@ test_that("WARN when a correlation cannot be reached",{
   expect_equal(Rz[1,2],1)
 })
 
-# The gamma transform shrinks correlations towards zero, by 0.15 at shape 0.2
+# The gamma transform shrinks correlations toward zero, by 0.15 at shape 0.2
 # and a target of 0.6. With 2e5 loci the sampling standard deviation of the
 # correlation is about 0.003, so a tolerance of 0.02 separates the corrected
 # and uncorrected methods while almost never failing by chance.

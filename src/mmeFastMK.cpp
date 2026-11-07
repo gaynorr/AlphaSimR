@@ -622,53 +622,22 @@ struct FastMKFit{
   MarkerStats stats;
 };
 
-// Fits the multikernel model in fast mode. kinds lists the terms and
-// domCovariate adds the summed dominance code to the fixed effects, as the
-// direct form does for the models with dominance. VuIn and VeIn are used
-// when estVarComp is false, as nT by nT matrices with one for each term.
-// Otherwise they are estimated by REML on the records in subset, which is
-// one based.
-FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
-                          const PackedGeno& g, const LociPos& pos,
-                          const std::vector<TermKind>& kinds,
-                          bool domCovariate,
-                          const arma::field<arma::mat>& VuIn,
-                          const arma::mat& VeIn, arma::uword maxIter,
-                          bool estVarComp, arma::uvec subset, int nThreads,
-                          const std::string& name){
+// Sets fit.Vu and fit.Ve. VuIn and VeIn are used when estVarComp is false,
+// as nT by nT matrices with one for each term. Otherwise they are estimated
+// by REML on the records in subset, which is one based. As in the fast mode
+// of RRBLUP, the decomposition REML needs costs the square of the number of
+// records in memory and their cube in time, so it is done on a subset, and
+// the marker effects are then solved for on every record.
+void fastMKVarComp(FastMKFit& fit, const arma::mat& Y, const arma::mat& X,
+                   const arma::Mat<unsigned char>& planes,
+                   arma::uword ploidy, arma::uword nLoci,
+                   const std::vector<FastTerm>& terms,
+                   const arma::field<arma::mat>& VuIn,
+                   const arma::mat& VeIn, bool estVarComp,
+                   arma::uvec subset, int nThreads,
+                   const std::string& name){
   const arma::uword nT = Y.n_cols;
-  const arma::uword nTerm = kinds.size();
-  arma::uword ploidy = g.ploidy;
-  arma::uword nInd = g.nInd;
-  arma::uword nLoci = pos.base.size();
-  if(Y.n_rows!=nInd){
-    Rcpp::stop("%s: the responses must have one row per individual",
-               name.c_str());
-  }
-  if(!Y.is_finite()){
-    Rcpp::stop("%s: every trait must be recorded on every individual",
-               name.c_str());
-  }
-  std::vector<FastTerm> terms;
-  for(TermKind kind : kinds){
-    terms.push_back(makeTerm(kind, ploidy));
-  }
-  arma::Mat<unsigned char> planes = packChipPlanes(g, pos, nThreads);
-
-  // Fixed effects: the sum to zero design with an intercept, as in the
-  // direct form, and for the models with dominance the summed dominance code
-  arma::mat X = makeX(x);
-  if(domCovariate){
-    double scale = makeTerm(TermKind::dominance, ploidy).scale;
-    X = join_rows(X, dominanceSum(planes, ploidy, scale, nThreads));
-  }
-
-  // Variance components, by REML on a subset of the records when they have
-  // not been supplied. As in the fast mode of RRBLUP, the decomposition REML
-  // needs costs the square of the number of records in memory and their cube
-  // in time, so it is done on a subset, and the marker effects are then
-  // solved for on every record.
-  FastMKFit fit;
+  const arma::uword nTerm = terms.size();
   fit.Vu.resize(nTerm);
   if(estVarComp){
     subset -= 1; // R to C++
@@ -760,25 +729,42 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   for(arma::uword t=0; t<nTerm; ++t){
     fit.Vu[t] = psdKernel(fit.Vu[t], psdMsg);
   }
+}
 
-  // Whitening by Ve
+// The model on the scale whitened by Ve = Le*Le'. Each term's covariance
+// there is F*F', and its whitened effects for term t are the rows
+// off[t] to off[t+1]-1 of the stacked effects. Finv maps a term's effects
+// back to its whitened effects, and Fdir holds the trait directions the term
+// has variance in.
+struct Whitened{
   arma::mat Le;
-  if(!arma::chol(Le, fit.Ve, "lower")){
-    Rcpp::stop("%s: Ve must be positive definite", name.c_str());
-  }
   arma::mat Linv;
-  if(!arma::inv(Linv, arma::trimatl(Le))){
+  std::vector<arma::mat> F;
+  std::vector<arma::mat> Finv;
+  std::vector<arma::mat> Fdir;
+  std::vector<arma::uword> off;
+};
+
+Whitened whitenTerms(const std::vector<arma::mat>& Vu, const arma::mat& Ve,
+                     const std::string& name){
+  const arma::uword nTerm = Vu.size();
+  Whitened w;
+  if(!arma::chol(w.Le, Ve, "lower")){
     Rcpp::stop("%s: Ve must be positive definite", name.c_str());
   }
-  // Each term's covariance on the whitened scale as F*F'. These are
-  // eigenvalues of a covariance matrix among traits, so rankCutoff does not
-  // apply, and a positive eigenvalue is kept however small it is next to
-  // the others, for the reason given in callFastRRBLUP_MV. A tiny one only
-  // adds a direction that barely moves.
-  std::vector<arma::mat> F(nTerm), Finv(nTerm), Fdir(nTerm);
-  std::vector<arma::uword> off(nTerm+1, 0);
+  if(!arma::inv(w.Linv, arma::trimatl(w.Le))){
+    Rcpp::stop("%s: Ve must be positive definite", name.c_str());
+  }
+  // These are eigenvalues of a covariance matrix among traits, so rankCutoff
+  // does not apply, and a positive eigenvalue is kept however small it is
+  // next to the others, for the reason given in callFastRRBLUP_MV. A tiny one
+  // only adds a direction that barely moves.
+  w.F.resize(nTerm);
+  w.Finv.resize(nTerm);
+  w.Fdir.resize(nTerm);
+  w.off.assign(nTerm+1, 0);
   for(arma::uword t=0; t<nTerm; ++t){
-    arma::mat A = Linv*fit.Vu[t]*Linv.t();
+    arma::mat A = w.Linv*Vu[t]*w.Linv.t();
     A = 0.5*(A+A.t());
     arma::vec lam;
     arma::mat Qv;
@@ -786,493 +772,482 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       Rcpp::stop("%s: decomposition of Vu failed", name.c_str());
     }
     arma::uvec keep = find(lam>0.0);
-    F[t] = Qv.cols(keep);
-    F[t].each_row() %= sqrt(lam(keep)).t();
-    Finv[t] = Qv.cols(keep).t();
-    Finv[t].each_col() /= sqrt(lam(keep));
-    Fdir[t] = Qv.cols(keep); // the trait directions the term has variance in
-    off[t+1] = off[t]+keep.n_elem;
+    w.F[t] = Qv.cols(keep);
+    w.F[t].each_row() %= sqrt(lam(keep)).t();
+    w.Finv[t] = Qv.cols(keep).t();
+    w.Finv[t].each_col() /= sqrt(lam(keep));
+    w.Fdir[t] = Qv.cols(keep);
+    w.off[t+1] = w.off[t]+keep.n_elem;
   }
-  // With every variance zero there are no effects to solve for, nR is zero
-  // and the model is fitted on its fixed effects alone, as the direct form
-  // fits it
+  return w;
+}
+
+// The preconditioner is block Jacobi, with one block for each marker over
+// every term and whitened trait. The terms read at one marker are often
+// correlated, as the additive and dominance codes are wherever the allele
+// frequency is not one half, so the blocks hold their cross products as
+// well as the diagonal. Each block is the identity plus a positive
+// semidefinite matrix G, so it always has an inverse, but finding it takes
+// care, because the entries of a block can differ in scale by more than
+// the precision of a double. They do when one trait's error variance is
+// far below another's, which whitening turns into variance ratios many
+// orders of magnitude apart, and when terms coincide at a marker, as the
+// maternal and paternal codes of inbred lines do, the identity is lost to
+// rounding next to G and the block is singular in floating point.
+//
+// The block is therefore first scaled to unit diagonal, Ds*B*Ds for
+// Ds = diag(1/sqrt(1+diag(G))), and its eigendecomposition taken. The
+// scaled block's entries are all of order one, so every direction the
+// records see has an eigenvalue found to rounding level, where the
+// unscaled block's decomposition would find small ones only to rounding of
+// its largest entry, mixing them up with each other and with the unseen
+// directions. An eigenvalue at rounding level is not resolved by the
+// block: it may belong to a direction the records do not see, which the
+// deflation removes, or to one they see only through differences
+// below the block's precision, as terms whose covariance matrices are
+// nearly but not exactly aligned have. Its inverse is taken as one, the
+// scaled block's diagonal, rather than the reciprocal of rounding error or
+// zero: the preconditioner then stays positive definite, so every
+// direction is still searched in, and bounded. The inverse is kept and
+// applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
+// rather than multiplied out, so that its scales are never added together.
+// Should the decomposition fail, the inverse of the diagonal is used, which
+// is still a positive definite preconditioner.
+struct BlockPrecond{
+  arma::cube V;   // eigenvectors of each marker's scaled block
+  arma::mat dInv; // inverses of their eigenvalues, one column per marker
+  arma::mat ds;   // the diagonal of Ds, one column per marker
+};
+
+BlockPrecond buildPrecond(const MarkerStats& stats, const Whitened& w,
+                          arma::uword nLoci, int nThreads){
+  const arma::uword nTerm = w.F.size();
+  const std::vector<arma::uword>& off = w.off;
   const arma::uword nR = off[nTerm];
-
-  // The fixed effects are absorbed with S = I-Q*Q', for an orthonormal basis
-  // Q of their span. Columns of X that depend on the others, as the summed
-  // dominance code can on the intercept, are dropped, as the direct form
-  // drops them.
-  FixedDesign fd = fixedDesign(X);
-  const arma::mat& Q = fd.Q;
-
-  fit.stats = markerStats(planes, ploidy, nLoci, terms, Q, nThreads);
-  arma::mat offset = fit.stats.Mmean;
-  for(arma::uword t=0; t<nTerm; ++t){
-    offset.col(t) += terms[t].constant;
+  BlockPrecond P;
+  P.V.set_size(nR,nR,nLoci);
+  P.dInv.set_size(nR,nLoci);
+  P.ds.set_size(nR,nLoci);
+  if(nR==0){
+    return P;
   }
-
-  // The preconditioner is block Jacobi, with one block for each marker over
-  // every term and whitened trait. The terms read at one marker are often
-  // correlated, as the additive and dominance codes are wherever the allele
-  // frequency is not one half, so the blocks hold their cross products as
-  // well as the diagonal. Each block is the identity plus a positive
-  // semidefinite matrix G, so it always has an inverse, but finding it takes
-  // care, because the entries of a block can differ in scale by more than
-  // the precision of a double. They do when one trait's error variance is
-  // far below another's, which whitening turns into variance ratios many
-  // orders of magnitude apart, and when terms coincide at a marker, as the
-  // maternal and paternal codes of inbred lines do, the identity is lost to
-  // rounding next to G and the block is singular in floating point.
-  //
-  // The block is therefore first scaled to unit diagonal, Ds*B*Ds for
-  // Ds = diag(1/sqrt(1+diag(G))), and its eigendecomposition taken. The
-  // scaled block's entries are all of order one, so every direction the
-  // records see has an eigenvalue found to rounding level, where the
-  // unscaled block's decomposition would find small ones only to rounding of
-  // its largest entry, mixing them up with each other and with the unseen
-  // directions. An eigenvalue at rounding level is not resolved by the
-  // block: it may belong to a direction the records do not see, which the
-  // deflation below removes, or to one they see only through differences
-  // below the block's precision, as terms whose covariance matrices are
-  // nearly but not exactly aligned have. Its inverse is taken as one, the
-  // scaled block's diagonal, rather than the reciprocal of rounding error or
-  // zero: the preconditioner then stays positive definite, so every
-  // direction is still searched in, and bounded. The inverse is kept and
-  // applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
-  // rather than multiplied out, so that its scales are never added together.
-  // Should the decomposition fail, the inverse of the diagonal is used, which
-  // is still a positive definite preconditioner.
-  arma::cube Bvec(nR,nR,nLoci);
-  arma::mat Bdinv(nR,nLoci), Bds(nR,nLoci);
-  if(nR>0){
-    arma::uword nBlocks = countBlocks(nLoci);
-    int precondThreads = nThreads;
-    if(nBlocks < static_cast<arma::uword>(precondThreads)){
-      precondThreads = static_cast<int>(nBlocks);
+  arma::uword nBlocks = countBlocks(nLoci);
+  int precondThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(precondThreads)){
+    precondThreads = static_cast<int>(nBlocks);
+  }
+  // F_k'*F_l for every pair of terms, the same for every marker
+  std::vector<arma::mat> FF(nTerm*nTerm);
+  for(arma::uword t=0; t<nTerm; ++t){
+    for(arma::uword t2=0; t2<nTerm; ++t2){
+      FF[t*nTerm+t2] = w.F[t].t()*w.F[t2];
     }
-    // F_k'*F_l for every pair of terms, the same for every marker
-    std::vector<arma::mat> FF(nTerm*nTerm);
-    for(arma::uword t=0; t<nTerm; ++t){
-      for(arma::uword t2=0; t2<nTerm; ++t2){
-        FF[t*nTerm+t2] = F[t].t()*F[t2];
-      }
-    }
-    // An exception cannot leave the parallel region, see the unseen
-    // effects below
-    std::vector<int> failed(nBlocks, 0);
+  }
+  // An exception cannot leave the parallel region, see unseenDirections
+  std::vector<int> failed(nBlocks, 0);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(precondThreads)
 #endif
-    for(arma::uword block=0; block<nBlocks; ++block){
-      try{
-        arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-        arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-        arma::mat B(nR,nR), V;
-        arma::vec lambda;
-        for(arma::uword j=lociStart; j<lociEnd; ++j){
-          B.zeros();
-          for(arma::uword t=0; t<nTerm; ++t){
-            for(arma::uword t2=0; t2<nTerm; ++t2){
-              if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
-                continue;
-              }
-              B.submat(off[t], off[t2], off[t+1]-1, off[t2+1]-1) +=
-                fit.stats.Dkl(t*nTerm+t2,j)*FF[t*nTerm+t2];
+  for(arma::uword block=0; block<nBlocks; ++block){
+    try{
+      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+      arma::mat B(nR,nR), V;
+      arma::vec lambda;
+      for(arma::uword j=lociStart; j<lociEnd; ++j){
+        B.zeros();
+        for(arma::uword t=0; t<nTerm; ++t){
+          for(arma::uword t2=0; t2<nTerm; ++t2){
+            if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
+              continue;
             }
-          }
-          B = 0.5*(B+B.t());
-          arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
-                                                  arma::datum::inf));
-          Bds.col(j) = ds;
-          B.each_col() %= ds;
-          B.each_row() %= ds.t();
-          B.diag() += square(ds);
-          if(arma::eig_sym(lambda, V, B)){
-            double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
-            Bvec.slice(j) = V;
-            arma::vec dInv(nR, arma::fill::ones);
-            for(arma::uword c=0; c<nR; ++c){
-              if(lambda(c)>cut){
-                dInv(c) = 1.0/lambda(c);
-              }
-            }
-            Bdinv.col(j) = dInv;
-          }else{
-            Bvec.slice(j).eye();
-            Bdinv.col(j).ones();
+            B.submat(off[t], off[t2], off[t+1]-1, off[t2+1]-1) +=
+              stats.Dkl(t*nTerm+t2,j)*FF[t*nTerm+t2];
           }
         }
-      }catch(...){
-        failed[block] = 1;
+        B = 0.5*(B+B.t());
+        arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
+                                                arma::datum::inf));
+        P.ds.col(j) = ds;
+        B.each_col() %= ds;
+        B.each_row() %= ds.t();
+        B.diag() += square(ds);
+        if(arma::eig_sym(lambda, V, B)){
+          double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
+          P.V.slice(j) = V;
+          arma::vec dInv(nR, arma::fill::ones);
+          for(arma::uword c=0; c<nR; ++c){
+            if(lambda(c)>cut){
+              dInv(c) = 1.0/lambda(c);
+            }
+          }
+          P.dInv.col(j) = dInv;
+        }else{
+          P.V.slice(j).eye();
+          P.dInv.col(j).ones();
+        }
+      }
+    }catch(...){
+      failed[block] = 1;
+    }
+  }
+  if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
+    Rcpp::stop("fast mode: building the preconditioner failed");
+  }
+  return P;
+}
+
+// Z = P^-1*R, each marker's block applied to its own column, so the work
+// splits over blocks of markers
+void applyPrecond(arma::mat& Z, const arma::mat& R, const BlockPrecond& P,
+                  int nThreads){
+  const arma::uword nR = R.n_rows;
+  const arma::uword nLoci = R.n_cols;
+  arma::uword nBlocks = countBlocks(nLoci);
+  int precondThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(precondThreads)){
+    precondThreads = static_cast<int>(nBlocks);
+  }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(precondThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+    std::vector<double> w(nR);
+    for(arma::uword j=lociStart; j<lociEnd; ++j){
+      const double* Vj = P.V.slice_memptr(j);
+      const double* dj = P.dInv.colptr(j);
+      const double* sj = P.ds.colptr(j);
+      const double* rj = R.colptr(j);
+      double* zj = Z.colptr(j);
+      // w = dInv%(V'*(Ds*r)), then z = Ds*(V*w)
+      for(arma::uword c=0; c<nR; ++c){
+        const double* vc = Vj+c*nR;
+        double sum = 0.0;
+        for(arma::uword a=0; a<nR; ++a){
+          sum += vc[a]*(sj[a]*rj[a]);
+        }
+        w[c] = dj[c]*sum;
+      }
+      for(arma::uword a=0; a<nR; ++a){
+        double sum = 0.0;
+        for(arma::uword c=0; c<nR; ++c){
+          sum += Vj[a+c*nR]*w[c];
+        }
+        zj[a] = sj[a]*sum;
       }
     }
-    if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
-      Rcpp::stop("fast mode: building the preconditioner failed");
-    }
   }
+}
 
-  arma::mat tabs(32*nT*nTerm, planes.n_cols);
-  std::vector<arma::mat> Ut(nTerm), Wt(nTerm);
-  for(arma::uword t=0; t<nTerm; ++t){
-    Ut[t].set_size(nT,nLoci);
-    Wt[t].set_size(nT,nLoci);
-  }
-  arma::mat Tt(nT,nInd);
-
-  // Directions the records cannot see. When some combination of the terms'
-  // codes at a marker is zero once centered and absorbed, as the maternal
-  // and paternal codes are for inbred lines, whose two haplotypes are the
-  // same, the effects along that combination do not change any prediction,
-  // and their BLUP is exactly zero: only the prior holds them. With a large
-  // variance ratio the data dwarf the prior, so rounding in the residual is
-  // as large as the prior's pull, and the iteration would let those effects
-  // drift. Their sum would stay right while the split between the terms went
-  // wrong. They are therefore removed exactly: every residual, search
-  // direction and product is kept orthogonal to them.
-  //
-  // The combinations are the null space of the terms' cross products at the
-  // marker, Dkl, among the terms with any variance. Those are all on the
-  // scale of the number of records, so their null space is found reliably,
-  // unlike that of the preconditioner's block, whose scales can differ by
-  // more than the precision of a double. For a null vector c, the effects
-  // F_k*a_k = c_k*w are unseen, for any w over the traits that every term in
-  // the combination can carry, and in whitened effects they are
-  // a_k = F_k^+*c_k*w. When every such term has variance in every trait
-  // direction, w is any vector and the traits' own directions serve as its
-  // basis. When some do not, as when a covariance matrix is singular, w is
-  // confined to the directions they all have variance in, the intersection
-  // of the column spaces of their F_k, found as the null space of the
-  // stacked projections onto the complements of those spaces. With more than
-  // one null vector the unseen effects are F_k*a_k = sum_q c_qk*w_q, and the
-  // weights are found together, because a combination of null vectors can be
-  // carried by every term when no single one of them is: the condition on
-  // vec(W) for each term k is (c_k'(x)P_k)*vec(W) = 0, for P_k the
-  // projection onto the trait directions it has no variance in.
+// Directions the records cannot see. When some combination of the terms'
+// codes at a marker is zero once centered and absorbed, as the maternal
+// and paternal codes are for inbred lines, whose two haplotypes are the
+// same, the effects along that combination do not change any prediction,
+// and their BLUP is exactly zero: only the prior holds them. With a large
+// variance ratio the data dwarf the prior, so rounding in the residual is
+// as large as the prior's pull, and the iteration would let those effects
+// drift. Their sum would stay right while the split between the terms went
+// wrong. They are therefore removed exactly: every residual, search
+// direction and product is kept orthogonal to them.
+//
+// The combinations are the null space of the terms' cross products at the
+// marker, Dkl, among the terms with any variance. Those are all on the
+// scale of the number of records, so their null space is found reliably,
+// unlike that of the preconditioner's block, whose scales can differ by
+// more than the precision of a double. For a null vector c, the effects
+// F_k*a_k = c_k*w are unseen, for any w over the traits that every term in
+// the combination can carry, and in whitened effects they are
+// a_k = F_k^+*c_k*w. When every such term has variance in every trait
+// direction, w is any vector and the traits' own directions serve as its
+// basis. When some do not, as when a covariance matrix is singular, w is
+// confined to the directions they all have variance in, the intersection
+// of the column spaces of their F_k, found as the null space of the
+// stacked projections onto the complements of those spaces. With more than
+// one null vector the unseen effects are F_k*a_k = sum_q c_qk*w_q, and the
+// weights are found together, because a combination of null vectors can be
+// carried by every term when no single one of them is: the condition on
+// vec(W) for each term k is (c_k'(x)P_k)*vec(W) = 0, for P_k the
+// projection onto the trait directions it has no variance in.
+//
+// Returns an orthonormal basis of each marker's unseen directions in the
+// stacked whitened effects, empty where there are none, and sets anyNull
+// when any marker has one.
+std::vector<arma::mat> unseenDirections(const MarkerStats& stats,
+                                        const Whitened& w, arma::uword nT,
+                                        arma::uword nInd, arma::uword nLoci,
+                                        int nThreads, bool& anyNull){
+  const arma::uword nTerm = w.F.size();
+  const std::vector<arma::uword>& off = w.off;
+  const arma::uword nR = off[nTerm];
   std::vector<arma::mat> nullBasis(nLoci);
-  bool anyNull = false;
-  {
-    std::vector<arma::uword> active;
-    for(arma::uword t=0; t<nTerm; ++t){
-      if(off[t+1]>off[t]){
-        active.push_back(t);
-      }
+  std::vector<arma::uword> active;
+  for(arma::uword t=0; t<nTerm; ++t){
+    if(off[t+1]>off[t]){
+      active.push_back(t);
     }
-    arma::uword nA = active.size();
-    arma::uword nBlocks = countBlocks(nLoci);
-    int nullThreads = nThreads;
-    if(nBlocks < static_cast<arma::uword>(nullThreads)){
-      nullThreads = static_cast<int>(nBlocks);
-    }
-    std::vector<int> found(nBlocks, 0);
-    // Anything else that throws inside the parallel region, such as an
-    // allocation that fails, would end the R session, so it is caught and
-    // reported after the region instead
-    std::vector<int> failed(nBlocks, 0);
+  }
+  arma::uword nA = active.size();
+  arma::uword nBlocks = countBlocks(nLoci);
+  int nullThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(nullThreads)){
+    nullThreads = static_cast<int>(nBlocks);
+  }
+  std::vector<int> found(nBlocks, 0);
+  // Anything else that throws inside the parallel region, such as an
+  // allocation that fails, would end the R session, so it is caught and
+  // reported after the region instead
+  std::vector<int> failed(nBlocks, 0);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nullThreads)
 #endif
-    for(arma::uword block=0; block<nBlocks; ++block){
-      try{
-        arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-        arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-        arma::mat D(nA,nA), C, N;
-        arma::vec dl;
-        for(arma::uword j=lociStart; (j<lociEnd)&&(nA>0); ++j){
-          for(arma::uword a=0; a<nA; ++a){
-            for(arma::uword b=0; b<nA; ++b){
-              D(a,b) = fit.stats.Dkl(active[a]*nTerm+active[b],j);
+  for(arma::uword block=0; block<nBlocks; ++block){
+    try{
+      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+      arma::mat D(nA,nA), C, N;
+      arma::vec dl;
+      for(arma::uword j=lociStart; (j<lociEnd)&&(nA>0); ++j){
+        for(arma::uword a=0; a<nA; ++a){
+          for(arma::uword b=0; b<nA; ++b){
+            D(a,b) = stats.Dkl(active[a]*nTerm+active[b],j);
+          }
+        }
+        if(!arma::eig_sym(dl, C, D)){
+          continue;
+        }
+        arma::uvec nul = find(dl<=rankCutoff(dl.max(), nInd));
+        if(nul.n_elem==0){
+          continue;
+        }
+        std::vector<arma::vec> cols;
+        arma::mat Cn = C.cols(nul);
+        arma::uword nq = nul.n_elem;
+        double cMax = arma::abs(Cn).max();
+        std::vector<arma::uword> involved;
+        bool allFull = true;
+        for(arma::uword a=0; a<nA; ++a){
+          if(arma::abs(Cn.row(a)).max()>1.0e-8*cMax){
+            involved.push_back(a);
+            if(off[active[a]+1]-off[active[a]]!=nT){
+              allFull = false;
             }
           }
-          if(!arma::eig_sym(dl, C, D)){
-            continue;
-          }
-          arma::uvec nul = find(dl<=rankCutoff(dl.max(), nInd));
-          if(nul.n_elem==0){
-            continue;
-          }
-          std::vector<arma::vec> cols;
-          arma::mat Cn = C.cols(nul);
-          arma::uword nq = nul.n_elem;
-          double cMax = arma::abs(Cn).max();
-          std::vector<arma::uword> involved;
-          bool allFull = true;
-          for(arma::uword a=0; a<nA; ++a){
-            if(arma::abs(Cn.row(a)).max()>1.0e-8*cMax){
-              involved.push_back(a);
-              if(off[active[a]+1]-off[active[a]]!=nT){
-                allFull = false;
-              }
-            }
-          }
-          // A basis for the weights vec(W), the trait values of every null
-          // vector stacked
-          arma::mat Wb;
-          if(allFull){
-            Wb.eye(nT*nq,nT*nq);
-          }else{
-            arma::mat E(0,nT*nq);
-            for(arma::uword a : involved){
-              arma::uword t = active[a];
-              if(off[t+1]-off[t]==nT){
-                continue;
-              }
-              arma::mat P = arma::eye(nT,nT)-Fdir[t]*Fdir[t].t();
-              E = join_cols(E, arma::kron(Cn.row(a), P));
-            }
-            // The form that reports failure rather than throwing, because
-            // an exception cannot leave a parallel region. The marker is
-            // then left without a null basis, as when eig_sym fails.
-            if(!arma::null(Wb, E)){
+        }
+        // A basis for the weights vec(W), the trait values of every null
+        // vector stacked
+        arma::mat Wb;
+        if(allFull){
+          Wb.eye(nT*nq,nT*nq);
+        }else{
+          arma::mat E(0,nT*nq);
+          for(arma::uword a : involved){
+            arma::uword t = active[a];
+            if(off[t+1]-off[t]==nT){
               continue;
             }
+            arma::mat P = arma::eye(nT,nT)-w.Fdir[t]*w.Fdir[t].t();
+            E = join_cols(E, arma::kron(Cn.row(a), P));
           }
-          for(arma::uword i=0; i<Wb.n_cols; ++i){
-            arma::mat W = arma::reshape(Wb.col(i), nT, nq);
-            arma::vec col(nR, arma::fill::zeros);
-            for(arma::uword a : involved){
-              arma::uword t = active[a];
-              col.subvec(off[t], off[t+1]-1) = Finv[t]*(W*Cn.row(a).t());
-            }
-            if(arma::norm(col)>0.0){
-              cols.push_back(col);
-            }
-          }
-          if(!cols.empty()){
-            N.set_size(nR, cols.size());
-            for(arma::uword i=0; i<cols.size(); ++i){
-              N.col(i) = cols[i];
-            }
-            // The columns can differ in length by many orders of magnitude, as
-            // F_k^-1 does, and an orthonormal basis taken through the singular
-            // value decomposition would find the short ones' directions only to
-            // the ratio of the lengths times the precision, mixing in part of
-            // the directions the records do see. Each column is normalized
-            // first, and the basis then taken by QR.
-            for(arma::uword c=0; c<N.n_cols; ++c){
-              N.col(c) /= arma::norm(N.col(c));
-            }
-            arma::mat Qn, Rn;
-            if(arma::qr_econ(Qn, Rn, N)){
-              nullBasis[j] = Qn;
-              found[block] = 1;
-            }
+          // The form that reports failure rather than throwing, because
+          // an exception cannot leave a parallel region. The marker is
+          // then left without a null basis, as when eig_sym fails.
+          if(!arma::null(Wb, E)){
+            continue;
           }
         }
-      }catch(...){
-        failed[block] = 1;
+        for(arma::uword i=0; i<Wb.n_cols; ++i){
+          arma::mat W = arma::reshape(Wb.col(i), nT, nq);
+          arma::vec col(nR, arma::fill::zeros);
+          for(arma::uword a : involved){
+            arma::uword t = active[a];
+            col.subvec(off[t], off[t+1]-1) = w.Finv[t]*(W*Cn.row(a).t());
+          }
+          if(arma::norm(col)>0.0){
+            cols.push_back(col);
+          }
+        }
+        if(!cols.empty()){
+          N.set_size(nR, cols.size());
+          for(arma::uword i=0; i<cols.size(); ++i){
+            N.col(i) = cols[i];
+          }
+          // The columns can differ in length by many orders of magnitude, as
+          // F_k^-1 does, and an orthonormal basis taken through the singular
+          // value decomposition would find the short ones' directions only to
+          // the ratio of the lengths times the precision, mixing in part of
+          // the directions the records do see. Each column is normalized
+          // first, and the basis then taken by QR.
+          for(arma::uword c=0; c<N.n_cols; ++c){
+            N.col(c) /= arma::norm(N.col(c));
+          }
+          arma::mat Qn, Rn;
+          if(arma::qr_econ(Qn, Rn, N)){
+            nullBasis[j] = Qn;
+            found[block] = 1;
+          }
+        }
       }
+    }catch(...){
+      failed[block] = 1;
     }
-    if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
-      Rcpp::stop("fast mode: finding the unseen effects of a marker failed");
-    }
-    anyNull = std::find(found.begin(), found.end(), 1)!=found.end();
   }
-  // Removes the unseen directions from each marker's column of R
-  auto deflate = [&](arma::mat& R){
-    if(!anyNull){
-      return;
-    }
-    for(arma::uword j=0; j<nLoci; ++j){
-      const arma::mat& N = nullBasis[j];
-      if(N.n_cols>0){
-        R.col(j) -= N*(N.t()*R.col(j));
-      }
-    }
-  };
-
-  // One product with the coefficient matrix, out = (I+F'*W'*S*W*F)*in, with
-  // the effects of every term stacked in the rows of in and out
-  auto applyCoef = [&](arma::mat& out, const arma::mat& in){
-    for(arma::uword t=0; t<nTerm; ++t){
-      if(off[t+1]==off[t]){
-        Ut[t].zeros();
-      }else{
-        Ut[t] = F[t]*in.rows(off[t], off[t+1]-1);
-      }
-    }
-    multTerms(Tt, planes, ploidy, terms, offset, Ut, tabs, nThreads);
-    Tt -= (Tt*Q)*Q.t(); // S applied to each trait
-    multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
-    out = in;
-    for(arma::uword t=0; t<nTerm; ++t){
-      if(off[t+1]>off[t]){
-        out.rows(off[t], off[t+1]-1) += F[t].t()*Wt[t];
-      }
-    }
-    deflate(out);
-  };
-  // Each marker's block is applied to its own column, so the work splits
-  // over blocks of markers
-  arma::uword precondBlocks = countBlocks(nLoci);
-  int precondThreads = nThreads;
-  if(precondBlocks < static_cast<arma::uword>(precondThreads)){
-    precondThreads = static_cast<int>(precondBlocks);
+  if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
+    Rcpp::stop("fast mode: finding the unseen effects of a marker failed");
   }
-  auto precondition = [&](arma::mat& Z, const arma::mat& R){
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(precondThreads)
-#endif
-    for(arma::uword block=0; block<precondBlocks; ++block){
-      arma::uword lociStart = blockStart(nLoci, precondBlocks, block);
-      arma::uword lociEnd = blockStart(nLoci, precondBlocks, block+1);
-      std::vector<double> w(nR);
-      for(arma::uword j=lociStart; j<lociEnd; ++j){
-        const double* Vj = Bvec.slice_memptr(j);
-        const double* dj = Bdinv.colptr(j);
-        const double* sj = Bds.colptr(j);
-        const double* rj = R.colptr(j);
-        double* zj = Z.colptr(j);
-        // w = dInv%(V'*(Ds*r)), then z = Ds*(V*w)
-        for(arma::uword c=0; c<nR; ++c){
-          const double* vc = Vj+c*nR;
-          double sum = 0.0;
-          for(arma::uword a=0; a<nR; ++a){
-            sum += vc[a]*(sj[a]*rj[a]);
-          }
-          w[c] = dj[c]*sum;
-        }
-        for(arma::uword a=0; a<nR; ++a){
-          double sum = 0.0;
-          for(arma::uword c=0; c<nR; ++c){
-            sum += Vj[a+c*nR]*w[c];
-          }
-          zj[a] = sj[a]*sum;
-        }
-      }
-    }
-    deflate(Z);
-  };
+  anyNull = std::find(found.begin(), found.end(), 1)!=found.end();
+  return nullBasis;
+}
 
-  // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T.
-  // A response with a large mean keeps its variation in its low order bits,
-  // which any product with it rounds away: whitening by Le^-1, and absorbing
-  // the fixed effects through Q, whose entries are not exact either. Within
-  // each level of the fixed effects, the first record's response is
-  // therefore taken off every record's first. That subtraction is exact
-  // wherever the level's responses share a large offset, since two doubles
-  // within a factor of two of each other subtract without rounding, and it
-  // changes nothing else, because the level's effect absorbs a constant.
-  // Taking one record's response off every level instead would fail when
-  // the levels' means differ by more than the precision of a double, as the
-  // largest would round the others' variation away. The fixed effects are
-  // then absorbed, and the result whitened.
+// Removes the unseen directions from each marker's column of R
+void deflateUnseen(arma::mat& R, const std::vector<arma::mat>& nullBasis,
+                   bool anyNull){
+  if(!anyNull){
+    return;
+  }
+  for(arma::uword j=0; j<nullBasis.size(); ++j){
+    const arma::mat& N = nullBasis[j];
+    if(N.n_cols>0){
+      R.col(j) -= N*(N.t()*R.col(j));
+    }
+  }
+}
+
+// Takes each level's first response off every record of the level, giving
+// Yc, and returns the responses taken off, one row per level. A response
+// with a large mean keeps its variation in its low order bits, which any
+// product with it rounds away: whitening by Le^-1, and absorbing the fixed
+// effects through Q, whose entries are not exact either. That subtraction is
+// exact wherever the level's responses share a large offset, since two
+// doubles within a factor of two of each other subtract without rounding,
+// and it changes nothing else, because the level's effect absorbs a
+// constant. Taking one record's response off every level instead would fail
+// when the levels' means differ by more than the precision of a double, as
+// the largest would round the others' variation away.
+arma::mat levelOffsets(const arma::mat& Y, const arma::uvec& x,
+                       arma::mat& Yc){
+  const arma::uword nInd = Y.n_rows;
   arma::uword nLevel = (nInd>0) ? x.max() : 0;
   arma::uvec firstOfLevel(nLevel);
-  {
-    std::vector<bool> seen(nLevel, false);
-    for(arma::uword i=0; i<nInd; ++i){
-      arma::uword l = x(i)-1;
-      if(!seen[l]){
-        seen[l] = true;
-        firstOfLevel(l) = i;
-      }
+  std::vector<bool> seen(nLevel, false);
+  for(arma::uword i=0; i<nInd; ++i){
+    arma::uword l = x(i)-1;
+    if(!seen[l]){
+      seen[l] = true;
+      firstOfLevel(l) = i;
     }
   }
   arma::mat levelOffset = Y.rows(firstOfLevel);
-  arma::mat Yc = Y;
+  Yc = Y;
   for(arma::uword i=0; i<nInd; ++i){
     Yc.row(i) -= levelOffset.row(x(i)-1);
   }
-  Tt = Linv*(Yc-Q*(Q.t()*Yc)).t();
-  multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
-  arma::mat Rt(nR,nLoci);
-  for(arma::uword t=0; t<nTerm; ++t){
-    if(off[t+1]>off[t]){
-      Rt.rows(off[t], off[t+1]-1) = F[t].t()*Wt[t];
-    }
-  }
-  deflate(Rt);
+  return levelOffset;
+}
 
-  // Preconditioned conjugate gradient on the stacked whitened effects. The
-  // terms and traits share one recurrence, because the terms are coupled
-  // through the records.
-  //
-  // Whitening gives every error unit variance, but the right hand sides of
-  // different directions can still differ in scale by many orders of
-  // magnitude, as they do when one trait's error variance is close to zero,
-  // because F_k carries the variance ratio of each direction. Two things
-  // follow. A test on the residual as a whole would stop once the largest
-  // direction had converged, so each row of the residual, one whitened
-  // direction of one term, is tested against its own initial value, as if
-  // it were fitted on its own, down to rounding level of the largest. And the
-  // step lengths, which come from sums over every direction, are then
-  // decided by the largest, so the smaller directions' part of the
-  // recurrence is lost to rounding and its residual stops describing them.
-  // When the recurrence claims convergence, the true residual b-A*x is
-  // therefore worked out, and if any direction has not converged the
-  // iteration is restarted from it. By then the largest directions have
-  // converged, so the restarted sums are no longer dominated by them. Every
-  // product with the coefficient matrix counts toward maxIter.
-  //
-  // A residual that is small next to the right hand sides does not make the
-  // effects accurate, though. Directions that only the prior holds, such as
-  // effects that cancel across markers whose codes are the same, have an
-  // eigenvalue of one against the data's, which can be many orders of
-  // magnitude larger, and their error is as large as their residual. The
-  // coefficient matrix is the identity plus a positive semidefinite matrix,
-  // so the error of the effects is never larger than the residual, and the
-  // residual is therefore also required to be small next to the effects
-  // themselves: 1e-8 of their norm bounds the relative error of the effects
-  // by 1e-8. On the whitened scale every effect has the prior's unit
-  // variance, so the traits are on the same footing in that test.
-  //
-  // A direction can sit at rounding level above its tolerance, as one whose
-  // right hand side is zero does when it is coupled to the others: its
-  // tolerance is then a fraction of nothing, and the rounding it picks up
-  // from the larger directions cannot be removed. The tolerance is not
-  // floored at a fraction of the largest direction instead, because that
-  // would release a direction far smaller than the largest, such as a trait
-  // whose error variance is far larger than another's, long before it had
-  // converged. A restart only follows a recurrence that has converged, so
-  // when a restart fails to halve the true residual of every direction still
-  // above its tolerance, and that residual is at rounding level of the
-  // product it was computed from, the iteration stops, because more of it
-  // cannot help. A residual that has stopped falling while still above
-  // rounding level is not progress lost to rounding, and never stops it.
-  //
-  // Stopping there does not make the effects accurate when the variance
-  // ratio is so large that rounding moves the directions only the prior
-  // holds. The residual bounds their error, but loosely: rounding in the
-  // directions the records see dominates it and barely affects the effects.
-  // The restarts measure the error more directly. Each one solves for a
-  // correction to the effects, which is small when the residual is rounding
-  // in well determined directions and as large as the drift when the effects
-  // are still moving along poorly determined ones. A last correction above
-  // 1e-6 of the effects is reported in a warning rather than passed over.
-  //
-  // A restart that does not change the effects at all, while the residual is
-  // still above rounding level, has stalled: the preconditioner cannot
-  // resolve a direction the residual lies in, as when terms' covariance
-  // matrices are aligned to within the precision of its blocks. Further
-  // restarts would only repeat it, so the iteration stops and says so.
-  const arma::mat Bt = Rt;
+// How restartedPCG stopped. stalledAt is the residual relative to the right
+// hand sides when the iteration stalled, and roundingBound the last
+// correction relative to the effects when rounding limits their accuracy;
+// each is zero otherwise.
+struct PcgStatus{
+  bool converged;
+  double stalledAt;
+  double roundingBound;
+};
+
+// Preconditioned conjugate gradient on the stacked whitened effects, solving
+// for At from the right hand side Bt. applyCoef(out, in) is one product with
+// the coefficient matrix and precondition(Z, R) one with the inverse of the
+// preconditioner, and lamMax is the largest diagonal entry of the
+// coefficient matrix. The terms and traits share one recurrence, because the
+// terms are coupled through the records.
+//
+// Whitening gives every error unit variance, but the right hand sides of
+// different directions can still differ in scale by many orders of
+// magnitude, as they do when one trait's error variance is close to zero,
+// because F_k carries the variance ratio of each direction. Two things
+// follow. A test on the residual as a whole would stop once the largest
+// direction had converged, so each row of the residual, one whitened
+// direction of one term, is tested against its own initial value, as if
+// it were fitted on its own, down to rounding level of the largest. And the
+// step lengths, which come from sums over every direction, are then
+// decided by the largest, so the smaller directions' part of the
+// recurrence is lost to rounding and its residual stops describing them.
+// When the recurrence claims convergence, the true residual b-A*x is
+// therefore worked out, and if any direction has not converged the
+// iteration is restarted from it. By then the largest directions have
+// converged, so the restarted sums are no longer dominated by them. Every
+// product with the coefficient matrix counts toward maxIter.
+//
+// A residual that is small next to the right hand sides does not make the
+// effects accurate, though. Directions that only the prior holds, such as
+// effects that cancel across markers whose codes are the same, have an
+// eigenvalue of one against the data's, which can be many orders of
+// magnitude larger, and their error is as large as their residual. The
+// coefficient matrix is the identity plus a positive semidefinite matrix,
+// so the error of the effects is never larger than the residual, and the
+// residual is therefore also required to be small next to the effects
+// themselves: 1e-8 of their norm bounds the relative error of the effects
+// by 1e-8. On the whitened scale every effect has the prior's unit
+// variance, so the traits are on the same footing in that test.
+//
+// A direction can sit at rounding level above its tolerance, as one whose
+// right hand side is zero does when it is coupled to the others: its
+// tolerance is then a fraction of nothing, and the rounding it picks up
+// from the larger directions cannot be removed. The tolerance is not
+// floored at a fraction of the largest direction instead, because that
+// would release a direction far smaller than the largest, such as a trait
+// whose error variance is far larger than another's, long before it had
+// converged. A restart only follows a recurrence that has converged, so
+// when a restart fails to halve the true residual of every direction still
+// above its tolerance, and that residual is at rounding level of the
+// product it was computed from, the iteration stops, because more of it
+// cannot help. A residual that has stopped falling while still above
+// rounding level is not progress lost to rounding, and never stops it.
+//
+// Stopping there does not make the effects accurate when the variance
+// ratio is so large that rounding moves the directions only the prior
+// holds. The residual bounds their error, but loosely: rounding in the
+// directions the records see dominates it and barely affects the effects.
+// The restarts measure the error more directly. Each one solves for a
+// correction to the effects, which is small when the residual is rounding
+// in well determined directions and as large as the drift when the effects
+// are still moving along poorly determined ones. A last correction above
+// 1e-6 of the effects is reported in roundingBound rather than passed over.
+//
+// A restart that does not change the effects at all, while the residual is
+// still above rounding level, has stalled: the preconditioner cannot
+// resolve a direction the residual lies in, as when terms' covariance
+// matrices are aligned to within the precision of its blocks. Further
+// restarts would only repeat it, so the iteration stops and says so in
+// stalledAt.
+template<class ApplyCoef, class Precondition>
+PcgStatus restartedPCG(arma::mat& At, const arma::mat& Bt,
+                       ApplyCoef applyCoef, Precondition precondition,
+                       double lamMax, arma::uword maxIter){
+  const arma::uword nR = Bt.n_rows;
+  const arma::uword nLoci = Bt.n_cols;
+  arma::mat Rt = Bt;
   double rNorm0 = arma::norm(Bt, "fro");
   arma::vec rowTol = sqrt(sum(square(Bt),1));
   rowTol.elem(find(rowTol<arma::datum::eps*rNorm0)).fill(
     arma::datum::eps*rNorm0);
   rowTol *= 1.0e-8;
   const double errTol = 1.0e-8;
-  arma::mat At(nR,nLoci,arma::fill::zeros);
+  At.zeros(nR,nLoci);
   auto rowsConverged = [&](const arma::mat& R){
     return arma::all(sqrt(sum(square(R),1))<=rowTol) &&
       (arma::norm(R, "fro")<=errTol*arma::norm(At, "fro"));
   };
-  // The largest diagonal entry of the coefficient matrix, a lower bound on
-  // its norm, for judging when a residual is at rounding level. Rounding in
-  // a product with the coefficient matrix grows with the matrix times the
-  // effects, not with the product, which is far smaller when the effects
-  // cancel.
-  double lamMax = 1.0;
-  if(nR>0){
-    lamMax = 1.0/square(Bds).min();
-  }
   const arma::uword maxRestart = 20;
   arma::mat Zt(nR,nLoci), Apt(nR,nLoci), Pt;
-  bool converged = (rNorm0<=0.0);
+  PcgStatus status{(rNorm0<=0.0), 0.0, 0.0};
+  bool& converged = status.converged;
   arma::uword iter = 0;
   arma::vec prevNorm;
   double prevErr = arma::datum::inf;
-  double roundingBound = 0.0, lastMove = 0.0, stalledAt = 0.0;
+  double lastMove = 0.0;
   for(arma::uword restart=0; (restart<=maxRestart)&&(!converged); ++restart){
     if(restart>0){
       // The true residual
@@ -1294,7 +1269,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
         bool atRounding = rNorm<=64.0*arma::datum::eps*scale;
         if( !atRounding &&
             (lastMove<=arma::datum::eps*arma::norm(At, "fro")) ){
-          stalledAt = rNorm/scale;
+          status.stalledAt = rNorm/scale;
           break;
         }
         if(atRounding && arma::all(rowNorm(open)>0.5*prevNorm(open)) &&
@@ -1302,7 +1277,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
           converged = true;
           double move = lastMove/arma::norm(At, "fro");
           if(errOpen && (move>1.0e-6)){
-            roundingBound = move;
+            status.roundingBound = move;
           }
           break;
         }
@@ -1357,20 +1332,153 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
       break;
     }
   }
-  if(stalledAt>0.0){
+  return status;
+}
+
+// Fits the multikernel model in fast mode. kinds lists the terms and
+// domCovariate adds the summed dominance code to the fixed effects, as the
+// direct form does for the models with dominance. VuIn, VeIn, estVarComp and
+// subset are as for fastMKVarComp.
+FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
+                          const PackedGeno& g, const LociPos& pos,
+                          const std::vector<TermKind>& kinds,
+                          bool domCovariate,
+                          const arma::field<arma::mat>& VuIn,
+                          const arma::mat& VeIn, arma::uword maxIter,
+                          bool estVarComp, arma::uvec subset, int nThreads,
+                          const std::string& name){
+  const arma::uword nT = Y.n_cols;
+  const arma::uword nTerm = kinds.size();
+  arma::uword ploidy = g.ploidy;
+  arma::uword nInd = g.nInd;
+  arma::uword nLoci = pos.base.size();
+  if(Y.n_rows!=nInd){
+    Rcpp::stop("%s: the responses must have one row per individual",
+               name.c_str());
+  }
+  if(!Y.is_finite()){
+    Rcpp::stop("%s: every trait must be recorded on every individual",
+               name.c_str());
+  }
+  std::vector<FastTerm> terms;
+  for(TermKind kind : kinds){
+    terms.push_back(makeTerm(kind, ploidy));
+  }
+  arma::Mat<unsigned char> planes = packChipPlanes(g, pos, nThreads);
+
+  // Fixed effects: the sum to zero design with an intercept, as in the
+  // direct form, and for the models with dominance the summed dominance code
+  arma::mat X = makeX(x);
+  if(domCovariate){
+    double scale = makeTerm(TermKind::dominance, ploidy).scale;
+    X = join_rows(X, dominanceSum(planes, ploidy, scale, nThreads));
+  }
+
+  FastMKFit fit;
+  fastMKVarComp(fit, Y, X, planes, ploidy, nLoci, terms, VuIn, VeIn,
+                estVarComp, subset, nThreads, name);
+  const Whitened w = whitenTerms(fit.Vu, fit.Ve, name);
+  const std::vector<arma::mat>& F = w.F;
+  const std::vector<arma::uword>& off = w.off;
+  // With every variance zero there are no effects to solve for, nR is zero
+  // and the model is fitted on its fixed effects alone, as the direct form
+  // fits it
+  const arma::uword nR = off[nTerm];
+
+  // The fixed effects are absorbed with S = I-Q*Q', for an orthonormal basis
+  // Q of their span. Columns of X that depend on the others, as the summed
+  // dominance code can on the intercept, are dropped, as the direct form
+  // drops them.
+  FixedDesign fd = fixedDesign(X);
+  const arma::mat& Q = fd.Q;
+
+  fit.stats = markerStats(planes, ploidy, nLoci, terms, Q, nThreads);
+  arma::mat offset = fit.stats.Mmean;
+  for(arma::uword t=0; t<nTerm; ++t){
+    offset.col(t) += terms[t].constant;
+  }
+
+  const BlockPrecond P = buildPrecond(fit.stats, w, nLoci, nThreads);
+  bool anyNull = false;
+  const std::vector<arma::mat> nullBasis =
+    unseenDirections(fit.stats, w, nT, nInd, nLoci, nThreads, anyNull);
+
+  arma::mat tabs(32*nT*nTerm, planes.n_cols);
+  std::vector<arma::mat> Ut(nTerm), Wt(nTerm);
+  for(arma::uword t=0; t<nTerm; ++t){
+    Ut[t].set_size(nT,nLoci);
+    Wt[t].set_size(nT,nLoci);
+  }
+  arma::mat Tt(nT,nInd);
+
+  // One product with the coefficient matrix, out = (I+F'*W'*S*W*F)*in, with
+  // the effects of every term stacked in the rows of in and out
+  auto applyCoef = [&](arma::mat& out, const arma::mat& in){
+    for(arma::uword t=0; t<nTerm; ++t){
+      if(off[t+1]==off[t]){
+        Ut[t].zeros();
+      }else{
+        Ut[t] = F[t]*in.rows(off[t], off[t+1]-1);
+      }
+    }
+    multTerms(Tt, planes, ploidy, terms, offset, Ut, tabs, nThreads);
+    Tt -= (Tt*Q)*Q.t(); // S applied to each trait
+    multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
+    out = in;
+    for(arma::uword t=0; t<nTerm; ++t){
+      if(off[t+1]>off[t]){
+        out.rows(off[t], off[t+1]-1) += F[t].t()*Wt[t];
+      }
+    }
+    deflateUnseen(out, nullBasis, anyNull);
+  };
+  auto precondition = [&](arma::mat& Z, const arma::mat& R){
+    applyPrecond(Z, R, P, nThreads);
+    deflateUnseen(Z, nullBasis, anyNull);
+  };
+
+  // Right hand side, F'*W'*S*Y* for the whitened responses Y* = Y*Le^-T,
+  // from the responses with each level's offset taken off, with the fixed
+  // effects absorbed before the result is whitened
+  arma::mat Yc;
+  const arma::mat levelOffset = levelOffsets(Y, x, Yc);
+  const arma::uword nLevel = levelOffset.n_rows;
+  Tt = w.Linv*(Yc-Q*(Q.t()*Yc)).t();
+  multTermsT(Wt, planes, ploidy, terms, offset, Tt, nThreads);
+  arma::mat Bt(nR,nLoci);
+  for(arma::uword t=0; t<nTerm; ++t){
+    if(off[t+1]>off[t]){
+      Bt.rows(off[t], off[t+1]-1) = F[t].t()*Wt[t];
+    }
+  }
+  deflateUnseen(Bt, nullBasis, anyNull);
+
+  // The largest diagonal entry of the coefficient matrix, a lower bound on
+  // its norm, for judging when a residual is at rounding level. Rounding in
+  // a product with the coefficient matrix grows with the matrix times the
+  // effects, not with the product, which is far smaller when the effects
+  // cancel.
+  double lamMax = 1.0;
+  if(nR>0){
+    lamMax = 1.0/square(P.ds).min();
+  }
+  arma::mat At;
+  const PcgStatus status = restartedPCG(At, Bt, applyCoef, precondition,
+                                        lamMax, maxIter);
+  if(status.stalledAt>0.0){
     Rf_warning("%s: the iteration stalled without converging, with a "
                "residual of %.2g of the right hand sides", name.c_str(),
-               stalledAt);
-  }else if(!converged){
+               status.stalledAt);
+  }else if(!status.converged){
     Rf_warning("%s: reached maxIter without converging", name.c_str());
-  }else if(roundingBound>0.0){
+  }else if(status.roundingBound>0.0){
     Rf_warning("%s: rounding limits the accuracy of the solution; the "
                "marker effects still change by about %.2g of their size "
                "between restarts",
-               name.c_str(), roundingBound);
+               name.c_str(), status.roundingBound);
   }
 
-  deflate(At);
+  deflateUnseen(At, nullBasis, anyNull);
 
   // Back to the marker effects of the original traits. On the whitened
   // scale the effects are F_k*A_k, held with one row per trait, and
@@ -1380,7 +1488,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     if(off[t+1]==off[t]){
       Ut[t].zeros();
     }else{
-      Ut[t] = Le*(F[t]*At.rows(off[t], off[t+1]-1));
+      Ut[t] = w.Le*(F[t]*At.rows(off[t], off[t+1]-1));
     }
     fit.U[t] = Ut[t].t();
   }

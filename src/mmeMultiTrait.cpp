@@ -68,7 +68,8 @@ struct MvEval {
 // 0.5*sum_i s_i*(a_i*a_i' - P_ii), and with respect to Ve the same sum without
 // s_i. Both are computed in transformed coordinates, where P_ii is diagonal,
 // and returned in the original ones.
-MvEval evalMv(const MvData& d, const arma::mat& Vu, const arma::mat& Ve){
+MvEval evalMv(const MvData& d, const arma::mat& Vu, const arma::mat& Ve,
+              const char* name){
   MvEval out;
   const arma::uword t = d.Yt.n_cols;
   const arma::uword c = d.Xt.n_cols;
@@ -116,7 +117,7 @@ MvEval evalMv(const MvData& d, const arma::mat& Vu, const arma::mat& Ve){
     W = 0.5*(W+W.t());
     double ld;
     if(!invAndLogDet(out.Winv(k), ld, W)){
-      Rcpp::stop("X is not of full column rank");
+      Rcpp::stop("%s: X is not of full column rank", name);
     }
     logDetW += ld;
     Bh.col(k) = out.Winv(k)*(XtD.t()*Yh.col(k) + XYh0.col(k));
@@ -284,7 +285,8 @@ bool isPosDef(const arma::mat& V){
 //
 // Ur receives the eigenvectors of the held rows, n by n1.
 MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
-                  const arma::mat& Kn, bool useFactor, arma::mat& Ur){
+                  const arma::mat& Kn, bool useFactor, arma::mat& Ur,
+                  const char* name){
   MvData d;
   const arma::uword n = Y.n_rows;
   d.n = double(n);
@@ -292,7 +294,7 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
     arma::mat Ufull, V;
     arma::vec sv;
     if(!arma::svd_econ(Ufull, sv, V, F, "left")){
-      Rcpp::stop("Decomposition of the kernel failed");
+      Rcpp::stop("%s: decomposition of the kernel failed", name);
     }
     // The rule is applied to the eigenvalues of F*F', the squares of the
     // singular values, exactly as on the other path
@@ -315,13 +317,13 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
     arma::vec eigval(n);
     Ur.set_size(n, n);
     if(eigen2(eigval, Ur, 0.5*(Kn+Kn.t()))!=0){
-      Rcpp::stop("Decomposition of the kernel failed");
+      Rcpp::stop("%s: decomposition of the kernel failed", name);
     }
     // Only rounding error is clipped; a clearly negative eigenvalue means the
     // kernel is not a covariance matrix
     double eigAbs = arma::abs(eigval).max();
     if(eigval.min() < -std::sqrt(arma::datum::eps)*eigAbs){
-      Rcpp::stop("K must be positive semidefinite");
+      Rcpp::stop("%s: K must be positive semidefinite", name);
     }
     eigval.elem(find(eigval<=rankCutoff(eigval.max(), n))).zeros();
     d.s = eigval;
@@ -333,7 +335,7 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
   }
   d.r = double(accu(d.s>0.0));
   if(d.r==0.0){
-    Rcpp::stop("The kernel has no positive eigenvalue");
+    Rcpp::stop("%s: the kernel has no positive eigenvalue", name);
   }
   // The kernel is fitted on the scale of its mean positive eigenvalue. Its
   // units are arbitrary: multiplying it by c and dividing Vu by c leaves the
@@ -353,7 +355,8 @@ MvData rotateData(const arma::mat& Y, const arma::mat& X, const arma::mat& F,
 // the traits, which is the phenotypic correlation net of the fixed effects,
 // for both matrices. If that leaves either matrix singular the off-diagonals
 // start at zero instead.
-void startValues(const MvData& d, arma::mat& Vu, arma::mat& Ve){
+void startValues(const MvData& d, arma::mat& Vu, arma::mat& Ve,
+                 const char* name){
   const arma::uword t = d.Yt.n_cols;
   const arma::uword c = d.Xt.n_cols;
   arma::vec vu(t), ve(t);
@@ -372,7 +375,7 @@ void startValues(const MvData& d, arma::mat& Vu, arma::mat& Ve){
     FastLMMFit fit = fastLMMFit(delta, yt, d.Xt, d.s, d.YY0(k,k), Xy0,
                                 d.XX0, d.nNull);
     if(!fit.ok){
-      Rcpp::stop("X is not of full column rank");
+      Rcpp::stop("%s: X is not of full column rank", name);
     }
     vu(k) = fit.r/(d.n-double(c));
     ve(k) = delta*vu(k);
@@ -437,7 +440,7 @@ void startValues(const MvData& d, arma::mat& Vu, arma::mat& Ve){
 // Iteration stops when the restricted log-likelihood changes by less than tol
 // in a step taken after the initial EM steps.
 MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
-             double tol, int& iter){
+             double tol, int& iter, const char* name){
   const arma::uword t = d.Yt.n_cols;
   const int nEM = 5;
   arma::uvec rowIdx, colIdx;
@@ -445,10 +448,11 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
   const arma::uword nPar = rowIdx.n_elem;
   const arma::uword nTot = 2*nPar;
 
-  startValues(d, Vu, Ve);
-  MvEval cur = evalMv(d, Vu, Ve);
+  startValues(d, Vu, Ve, name);
+  MvEval cur = evalMv(d, Vu, Ve, name);
   if(!cur.ok){
-    Rcpp::stop("Starting values are not valid covariance matrices");
+    Rcpp::stop("%s: starting values are not valid covariance matrices",
+               name);
   }
   bool converged = false;
   for(iter=1; iter<=maxIter; ++iter){
@@ -482,7 +486,7 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
         double alpha = 1.0;
         for(int h=0; h<10; ++h){
           unpackChol(phi+alpha*step, VuNew, VeNew, t, rowIdx, colIdx);
-          next = evalMv(d, VuNew, VeNew);
+          next = evalMv(d, VuNew, VeNew, name);
           if(next.ok && (next.LL>=cur.LL)){
             accepted = true;
             break;
@@ -496,9 +500,9 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
       VuNew = 0.5*(VuNew+VuNew.t());
       VeNew = Ve + Ve*cur.Se*Ve/d.n;
       VeNew = 0.5*(VeNew+VeNew.t());
-      next = evalMv(d, VuNew, VeNew);
+      next = evalMv(d, VuNew, VeNew, name);
       if(!next.ok){
-        Rcpp::stop("REML iteration left the parameter space");
+        Rcpp::stop("%s: REML iteration left the parameter space", name);
       }
     }
     double change = next.LL - cur.LL;
@@ -512,7 +516,7 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
   }
   if(!converged){
     iter = maxIter;
-    Rf_warning("REML did not converge within maxIter iterations");
+    Rf_warning("%s: REML did not converge within maxIter iterations", name);
   }
   return cur;
 }
@@ -532,7 +536,7 @@ MvEval fitMv(const MvData& d, arma::mat& Vu, arma::mat& Ve, int maxIter,
 // conditioned for a positive s_i whenever Vu is positive definite.
 arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
                    const MvData& d, const MvEval& ev, const arma::mat& Vu,
-                   const arma::mat& Ve){
+                   const arma::mat& Ve, const char* name){
   arma::mat R = Y - X*ev.B;
   arma::mat Rt = Ur.t()*R;
   arma::mat At(Rt.n_rows, Rt.n_cols, arma::fill::zeros);
@@ -547,7 +551,7 @@ arma::mat recordPy(const arma::mat& Y, const arma::mat& X, const arma::mat& Ur,
     arma::mat Omega = d.s(i)*Vu + Ve;
     arma::vec a;
     if(!arma::solve(a, Omega, Rt.row(i).t(), arma::solve_opts::likely_sympd)){
-      Rcpp::stop("Mixed model equations could not be solved");
+      Rcpp::stop("%s: mixed model equations could not be solved", name);
     }
     At.row(i) = a.t();
   }
@@ -577,18 +581,19 @@ Rcpp::List mvResult(const FixedDesign& fd, const MvData& d, const MvEval& ev,
                             Rcpp::Named("iter")=iter);
 }
 
-void checkInput(const arma::mat& Y, const arma::mat& X){
+void checkInput(const arma::mat& Y, const arma::mat& X, const char* name){
   if(Y.n_rows!=X.n_rows){
-    Rcpp::stop("Y and X must have the same number of rows");
+    Rcpp::stop("%s: Y and X must have the same number of rows", name);
   }
   if(Y.n_cols<1){
-    Rcpp::stop("Y must have at least one column");
+    Rcpp::stop("%s: Y must have at least one column", name);
   }
   if(X.n_cols<1){
-    Rcpp::stop("X must have at least one column");
+    Rcpp::stop("%s: X must have at least one column", name);
   }
   if(!Y.is_finite() || !X.is_finite()){
-    Rcpp::stop("Y and X must not contain missing or infinite values");
+    Rcpp::stop("%s: Y and X must not contain missing or infinite values",
+               name);
   }
 }
 
@@ -596,13 +601,14 @@ void checkInput(const arma::mat& Y, const arma::mat& X){
 // others are dropped, as described for independentColumns in mme.h, and get
 // a fixed effect of zero, and the rest are replaced by an orthonormal basis
 // for their span, so a badly scaled X costs no precision; see fixedDesign.
-FixedDesign fixedEffectDesign(const arma::mat& X){
+FixedDesign fixedEffectDesign(const arma::mat& X, const char* name){
   FixedDesign fd = fixedDesign(X);
   if(fd.keep.n_elem==0){
-    Rcpp::stop("X must have at least one nonzero column");
+    Rcpp::stop("%s: X must have at least one nonzero column", name);
   }
   if(fd.keep.n_elem>=X.n_rows){
-    Rcpp::stop("the rank of X must be smaller than the number of records");
+    Rcpp::stop("%s: the rank of X must be smaller than the number of "
+               "records", name);
   }
   return fd;
 }
@@ -617,18 +623,19 @@ FixedDesign fixedEffectDesign(const arma::mat& X){
 // the scale of the kernel and Ve and Vu in the units of the traits.
 void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& F, const arma::mat& Kn, bool useFactor,
-                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve){
-  checkInput(Y, X);
-  const FixedDesign fd = fixedEffectDesign(X);
+                    int maxIter, double tol, arma::mat& Vu, arma::mat& Ve,
+                    const char* name){
+  checkInput(Y, X, name);
+  const FixedDesign fd = fixedEffectDesign(X, name);
   arma::mat B0;
   const arma::mat Ys = removeLeastSquares(fd.Q, Y, B0);
   const TraitScale ts = traitScale(Ys);
   arma::mat Ur;
-  MvData d = rotateData(ts.Y, fd.Q, F, Kn, useFactor, Ur);
+  MvData d = rotateData(ts.Y, fd.Q, F, Kn, useFactor, Ur, name);
   Ur.reset();
   arma::mat VuFit, VeFit;
   int iter = 0;
-  fitMv(d, VuFit, VeFit, maxIter, tol, iter);
+  fitMv(d, VuFit, VeFit, maxIter, tol, iter, name);
   const arma::mat D = arma::diagmat(ts.sd);
   Vu = D*(VuFit/d.scale)*D;
   Ve = D*VeFit*D;
@@ -695,11 +702,12 @@ void remlMultiTrait(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
                          const arma::mat& M, int maxIter=1000,
                          double tol=1e-6){
-  checkInput(Y, X);
+  const char* name = "solveRRBLUPMV";
+  checkInput(Y, X, name);
   if(M.n_rows!=Y.n_rows){
-    Rcpp::stop("Y and M must have the same number of rows");
+    Rcpp::stop("%s: Y and M must have the same number of rows", name);
   }
-  const FixedDesign fd = fixedEffectDesign(X);
+  const FixedDesign fd = fixedEffectDesign(X, name);
   const arma::mat& Xr = fd.Q;
   // A least squares fit is taken off Y and added back to the fixed effects
   // at the end, which keeps a large mean from swamping the sums of squares
@@ -712,15 +720,16 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   if(!useFactor){
     Kn = M*M.t();
   }
-  MvData d = rotateData(ts.Y, Xr, M, Kn, useFactor, Ur);
+  MvData d = rotateData(ts.Y, Xr, M, Kn, useFactor, Ur, name);
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
-  MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
+  MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter, name);
   // u = (Vu (x) M')*vec(P*y) = M'*(P*y)*Vu, in the fitted units: Vu on the
   // scale of M and the traits standardized. recordPy works on the
   // normalized scale of d, where Vu is as fitted.
-  arma::mat uFit = M.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve)*(Vu/d.scale);
+  arma::mat uFit = M.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve, name)*
+    (Vu/d.scale);
   return mvResult(fd, d, ev, ts, Vu, Ve, B0, uFit, X.n_cols, iter);
 }
 
@@ -771,14 +780,16 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
                     const arma::mat& Z, const arma::mat& K,
                     double tol=1e-6, int maxIter=1000){
-  checkInput(Y, X);
+  const char* name = "solveMVM";
+  checkInput(Y, X, name);
   if(Z.n_rows!=Y.n_rows){
-    Rcpp::stop("Y and Z must have the same number of rows");
+    Rcpp::stop("%s: Y and Z must have the same number of rows", name);
   }
   if( (K.n_rows!=Z.n_cols) || (K.n_cols!=Z.n_cols) ){
-    Rcpp::stop("K must be square with one row for each column of Z");
+    Rcpp::stop("%s: K must be square with one row for each column of Z",
+               name);
   }
-  const FixedDesign fd = fixedEffectDesign(X);
+  const FixedDesign fd = fixedEffectDesign(X, name);
   const arma::mat& Xr = fd.Q;
   // A least squares fit is taken off Y and added back to the fixed effects
   // at the end, which keeps a large mean from swamping the sums of squares
@@ -794,13 +805,13 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     arma::vec sk(m);
     arma::mat Uk(m, m);
     if(eigen2(sk, Uk, Ks)!=0){
-      Rcpp::stop("Decomposition of K failed");
+      Rcpp::stop("%s: decomposition of K failed", name);
     }
     // Only rounding error is clipped. A clearly negative eigenvalue means K
     // is not a covariance matrix.
     double skAbs = arma::abs(sk).max();
     if(sk.min() < -std::sqrt(arma::datum::eps)*skAbs){
-      Rcpp::stop("K must be positive semidefinite");
+      Rcpp::stop("%s: K must be positive semidefinite", name);
     }
     // Every positive eigenvalue is kept, however small next to the largest:
     // Z can scale a direction back up, so the effective rank is only decided
@@ -820,20 +831,20 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
     // Ks is checked itself, since Z*K*Z' cannot see levels without a
     // record, and the same positive semidefinite matrix is used for the
     // BLUPs; see psdKernel
-    Ks = psdKernel(Ks, "K must be positive semidefinite");
+    Ks = psdKernel(Ks, std::string(name)+": K must be positive semidefinite");
     Kn = kernelOnRecords(Z, Ks);
   }
   const TraitScale ts = traitScale(Ys);
-  MvData d = rotateData(ts.Y, Xr, F, Kn, useFactor, Ur);
+  MvData d = rotateData(ts.Y, Xr, F, Kn, useFactor, Ur, name);
   F.reset();
   Kn.reset();
   arma::mat Vu, Ve;
   int iter = 0;
-  MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter);
+  MvEval ev = fitMv(d, Vu, Ve, maxIter, tol, iter, name);
   // u = (Vu (x) K*Z')*vec(P*y) = K*Z'*(P*y)*Vu, in the fitted units: Vu on the
   // scale of K and the traits standardized. recordPy works on the
   // normalized scale of d, where Vu is as fitted.
-  arma::mat uFit = Ks*(Z.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve))*
+  arma::mat uFit = Ks*(Z.t()*recordPy(ts.Y, Xr, Ur, d, ev, Vu, Ve, name))*
     (Vu/d.scale);
   return mvResult(fd, d, ev, ts, Vu, Ve, B0, uFit, X.n_cols, iter);
 }

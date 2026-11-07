@@ -116,7 +116,7 @@ test_that("mutate is a generic that forwards what it cannot handle", {
   # A data.frame is not a population, so it goes to the next mutate on the
   # search path rather than to an error. The call is qualified because an
   # attached mutate would otherwise be found before the generic, which is
-  # exactly the situation being modelled.
+  # exactly the situation being modeled.
   other = new.env()
   assign("mutate", function(pop, ...) "forwarded", envir = other)
   attach(other, name = "testOtherMutate", warn.conflicts = FALSE)

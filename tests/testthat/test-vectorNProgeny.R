@@ -1,6 +1,6 @@
 context("vectorNProgeny")
 
-# Issue #256 asked for vectorised family sizes. nProgeny was vectorised for
+# Issue #256 asked for vectorized family sizes. nProgeny was vectorized for
 # the crossing functions; nDH in makeDH and nProgeny in reduceGenome are the
 # remaining cases, and they are the awkward ones because the C++ behind them
 # assumed a single value and wrote output at a fixed stride.

@@ -987,7 +987,7 @@ makeDH = function(pop, nDH=1, useFemale=TRUE, keepParents=TRUE,
 #
 # Each pass assigns a number to everyone whose parents already have one, so
 # the number of passes needed is the depth of the pedigree rather than its
-# size. The work of a pass is vectorised over the whole pedigree, which
+# size. The work of a pass is vectorized over the whole pedigree, which
 # keeps the interpreted part of the cost proportional to the depth alone.
 #
 # A pass that assigns nothing leaves the state exactly as it was, so no
