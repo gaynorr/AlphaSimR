@@ -67,6 +67,37 @@ checkHaplo = function(haplo, ploidy){
   return(haplo)
 }
 
+#' Sample individuals for the pull*Af functions
+#'
+#' Checks the sample argument of the pull*Af functions and draws that
+#' many individuals from the population at random. Each population in a
+#' MultiPop is checked on its own, so the error names the shortfall in
+#' the population that is too small.
+#'
+#' @param pop an object of \code{\link{RawPop-class}}
+#' @param sample either NULL for all individuals or a single whole number
+#' from 1 to nInd(pop)
+#'
+#' @return pop, or a random subset of sample individuals from it
+#'
+#' @keywords internal
+samplePop = function(pop, sample){
+  if(is.null(sample)){
+    return(pop)
+  }
+  if((length(sample)!=1L) || !is.numeric(sample) || !is.finite(sample) ||
+     (sample!=trunc(sample)) || (sample<1)){
+    stop("`sample` must be a positive non-NA integer value.")
+  }
+  if(sample>nInd(pop)){
+    stop(sprintf("`pop` has fewer individuals than `sample` (%d < %d)",
+                 nInd(pop), sample))
+  }
+  # sample() is still found as a function here, because R skips the
+  # numeric argument of the same name when it looks up a call
+  return(pop[sample(seq_len(nInd(pop)), size=sample)])
+}
+
 #' Retrieves marker names from genMap
 #'
 #' @param lociPerChr number of loci per chromosome
@@ -378,824 +409,1469 @@ getQtlMap = function(trait=1, sex="A", simParam=NULL){
   return(output)
 }
 
-#' @title Pull SNP genotypes
+#' @name pullGeno
+#' @rdname pullGeno
 #'
-#' @description Retrieves SNP genotype data
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param snpChip an integer. Indicates which SNP
-#' chip's genotypes to retrieve.
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#'
-#' @return Returns a matrix of SNP genotypes.
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullSnpGeno(pop, simParam=SP)
-#' 
-#' @export
-pullSnpGeno = function(pop, snpChip=1, chr=NULL, asRaw=FALSE, simParam=NULL,
-                       nThreads=NULL){
-  simParam = getSimParam(simParam)
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
-  
-  if(is.character(snpChip)){
-    # Suspect snpChip is a name
-    chipNames = simParam$snpChipNames
-    take = match(snpChip, chipNames)
-    if(is.na(take)){
-      stop("'",snpChip,"' did not match any SNP chip names")
-    }
-    snpChip = take
-  }
-  
-  tmp = selectLoci(chr,
-                   simParam$snpChips[[snpChip]]@lociPerChr,
-                   simParam$snpChips[[snpChip]]@lociLoc)
-  
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
-  
-  if(!asRaw){
-    output = convToImat(output)
-  }
-  
-  if(is(pop,"Pop")){
-    rownames(output) = pop@id
-  }else{
-    rownames(output) = as.character(1:pop@nInd)
-  }
-  
-  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
-  
-  return(output)
-}
-
-#' @title Pull QTL genotypes
-#'
-#' @description Retrieves QTL genotype data
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer or a trait name. Indicates which trait's
-#' QTL genotypes to retrieve.
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#'
-#' @return Returns a matrix of QTL genotypes.
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullQtlGeno(pop, simParam=SP)
-#' 
-#' @export
-pullQtlGeno = function(pop, trait=1, chr=NULL, asRaw=FALSE, simParam=NULL,
-                       nThreads=NULL){
-  simParam = getSimParam(simParam)
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
-  
-  if(is.character(trait)){
-    # Suspect trait is a name
-    traitNames = simParam$traitNames
-    take = match(trait, traitNames)
-    if(is.na(take)){
-      stop("'",trait,"' did not match any trait names")
-    }
-    trait = take
-  }
-  
-  tmp = selectLoci(chr,
-                   simParam$traits[[trait]]@lociPerChr,
-                   simParam$traits[[trait]]@lociLoc)
-  
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
-  
-  if(!asRaw){
-    output = convToImat(output)
-  }
-  
-  if(is(pop,"Pop")){
-    rownames(output) = pop@id
-  }else{
-    rownames(output) = as.character(1:pop@nInd)
-  }
-  
-  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
-  
-  return(output)
-}
-
-#' @title Pull segregating site genotypes
+#' @title Pull genotypes
 #'
 #' @description
-#' Retrieves genotype data for all segregating sites
+#' Retrieves genotype data from:    \cr
+#' - all segregating sites (\code{\link{pullSegSiteGeno}})    \cr
+#' - quantitative trait loci (QTL) for a trait (\code{\link{pullQtlGeno}})    \cr
+#' - SNP chip markers (\code{\link{pullSnpGeno}})    \cr
+#' - a user-defined set of markers by name (\code{\link{pullMarkerGeno}})    \cr
 #'
-#' @param pop an object of \code{\link{RawPop-class}} or
-#' \code{\link{MapPop-class}}
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}} for non-
-#' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
-#' object named \code{SP} from the global environment. Ignored when
-#' \code{pop} is a \code{\link{MapPop-class}}.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from
-#' \code{getNumThreads()} for \code{\link{MapPop-class}} objects and
-#' \code{simParam$nThreads} for \code{\link{RawPop-class}}.
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
 #'
-#' @return Returns a matrix of genotypes
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
+#' \code{\link{MapPop-class}} objects are supported by
+#' \code{\link{pullSegSiteGeno}} and \code{\link{pullMarkerGeno}}.
 #'
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullSegSiteGeno(pop, simParam=SP)
-#' 
-#' @export
-pullSegSiteGeno = function(pop, chr=NULL, asRaw=FALSE, simParam=NULL,
-                           nThreads=NULL){
-  if(is(pop,"MapPop")){
-    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
-    lociTot = pop@nLoci
-    if(is.null(nThreads)){
-      nThreads = getNumThreads()
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    map = pop@genMap
-  }else{
-    simParam = getSimParam(simParam)
-    
-    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
-    lociTot = simParam$segSites
-    if(is.null(nThreads)){
-      nThreads = simParam$nThreads
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    map = simParam$genMap
-  }
-  
-  tmp = selectLoci(chr,lociTot,allLoci)
-  
-  output = getGeno(pop@geno,tmp$lociPerChr,tmp$lociLoc,nThreads)
-  
-  if(!asRaw){
-    output = convToImat(output)
-  }
-  
-  if(is(pop,"Pop") | is(pop,"NamedMapPop")){
-    rownames(output) = pop@id
-  }else{
-    rownames(output) = as.character(1:pop@nInd)
-  }
-  
-  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, map)
-  
-  return(output)
-}
-
-#' @title Pull SNP haplotypes
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteGeno}} and 
+#'   \code{\link{pullMarkerGeno}}.
+#' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
+#'   all chromosomes are retrieved.
+#' @param trait An integer or a trait name. Indicates which trait's
+#'   QTL genotypes to retrieve.
+#' @param snpChip SNP chip whose genotypes are retrieved. Either an integer
+#'   index or a SNP chip name.
+#' @param markers Character vector of marker names to retrieve.
+#' @param asRaw Logical; if \code{TRUE}, returns genotypes in raw (byte) format.
+#' @param simParam An object of class \code{\link{SimParam}} for non-
+#'   \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
+#'   \code{SP} in the global environment is used. Ignored when \code{pop} is a
+#'   \code{\link{MapPop-class}}.
+#' @param nThreads Number of threads to use if OpenMP is available. If
+#'   \code{NULL}, uses \code{\link{getNumThreads}} for
+#'   \code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.
+#' @param simplify Logical. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flattens \code{pop} to
+#'   \code{level} with \code{\link{flattenMultiPop}}, combines terminal results
+#'   with \code{\link{rbind}}, and attaches a \code{"source"} attribute
+#'   indicating row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
 #'
-#' @description Retrieves SNP haplotype data
+#' @details
+#' With \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
 #'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param snpChip an integer. Indicates which SNP
-#' chip's haplotypes to retrieve.
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes in diploids.
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
+#' With \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' original structure is returned unchanged.
 #'
-#' @return Returns a matrix of SNP haplotypes.
+#' Simplified output includes a \code{"source"} attribute: a data frame with
+#' columns \code{level1}, \code{level2}, etc., giving the source population
+#' name (or index) for each row at each retained level.
 #' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullSnpHaplo(pop, simParam=SP)
-#' 
-#' @export
-pullSnpHaplo = function(pop, snpChip=1, haplo="all",
-                        chr=NULL, asRaw=FALSE, simParam=NULL,
-                        nThreads=NULL){
-  simParam = getSimParam(simParam)
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
-  
-  if(is.character(snpChip)){
-    # Suspect snpChip is a name
-    chipNames = simParam$snpChipNames
-    take = match(snpChip, chipNames)
-    if(is.na(take)){
-      stop("'",snpChip,"' did not match any SNP chip names")
-    }
-    snpChip = take
-  }
-  
-  tmp = selectLoci(chr,
-                   simParam$snpChips[[snpChip]]@lociPerChr,
-                   simParam$snpChips[[snpChip]]@lociLoc)
-  
-  lociPerChr = tmp$lociPerChr
-  lociLoc = tmp$lociLoc
-  
-  haplo = checkHaplo(haplo, pop@ploidy)
-  if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }
-  }else{
-    output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         haplo,nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-    }
-  }
-  
-  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
-  
-  return(output)
-}
-
-#' @title Pull QTL haplotypes
+#' @seealso \code{\link{pullHaplo}}, \code{\link{pullAf}}
 #'
-#' @description Retrieves QTL haplotype data
+#' @return
+#' For a non-\code{MultiPop} input, a genotype matrix of allele dosages, 
+#' (\emph{\eqn{0=} homozygous ancestral genotype, rows = individuals, columns =
+#' loci}) with row names set to individual IDs when available.
 #'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param trait an integer or a trait name. Indicates which trait's
-#' QTL haplotypes to retrieve.
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes in diploids.
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#'
-#' @return Returns a matrix of QTL haplotypes.
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullQtlHaplo(pop, simParam=SP)
-#' 
-#' @export
-pullQtlHaplo = function(pop, trait=1, haplo="all",
-                        chr=NULL, asRaw=FALSE, simParam=NULL,
-                        nThreads=NULL){
-  simParam = getSimParam(simParam)
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
-  
-  if(is.character(trait)){
-    # Suspect trait is a name
-    traitNames = simParam$traitNames
-    take = match(trait, traitNames)
-    if(is.na(take)){
-      stop("'",trait,"' did not match any trait names")
-    }
-    trait = take
-  }
-  
-  tmp = selectLoci(chr,
-                   simParam$traits[[trait]]@lociPerChr,
-                   simParam$traits[[trait]]@lociLoc)
-  
-  lociPerChr = tmp$lociPerChr
-  
-  lociLoc = tmp$lociLoc
-  
-  haplo = checkHaplo(haplo, pop@ploidy)
-  if(haplo=="all"){
-    output = getHaplo(pop@geno,lociPerChr,lociLoc,nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }
-  }else{
-    output = getOneHaplo(pop@geno,lociPerChr,lociLoc,
-                         haplo,nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-    }
-  }
-  
-  colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, simParam$genMap)
-  
-  return(output)
-}
-
-#' @title Pull seg site haplotypes
-#'
-#' @description
-#' Retrieves haplotype data for all segregating sites
-#'
-#' @param pop an object of \code{\link{RawPop-class}} or
-#' \code{\link{MapPop-class}}
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes in diploids.
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}} for non-
-#' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
-#' object named \code{SP} from the global environment. Ignored when
-#' \code{pop} is a \code{\link{MapPop-class}}.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from
-#' \code{getNumThreads()} for \code{\link{MapPop-class}} objects and
-#' \code{simParam$nThreads} for \code{\link{RawPop-class}}.
-#'
-#' @return Returns a matrix of haplotypes
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullSegSiteHaplo(pop, simParam=SP)
-#' 
-#' @export
-pullSegSiteHaplo = function(pop, haplo="all",
-                            chr=NULL, asRaw=FALSE, simParam=NULL,
-                            nThreads=NULL){
-  if(is(pop,"MapPop")){
-    allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
-    lociTot = pop@nLoci
-    if(is.null(nThreads)){
-      nThreads = getNumThreads()
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    map = pop@genMap
-  }else{
-    simParam = getSimParam(simParam)
-    allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
-    lociTot = simParam$segSites
-    if(is.null(nThreads)){
-      nThreads = simParam$nThreads
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    map = simParam$genMap
-  }
-  if(!is.null(chr)){
-    tmp = selectLoci(chr,lociTot,allLoci)
-    lociTot = tmp$lociPerChr
-    allLoci = tmp$lociLoc
-  }else{
-    chr = 1:pop@nChr
-  }
-  haplo = checkHaplo(haplo, pop@ploidy)
-  if(haplo=="all"){
-    output = getHaplo(pop@geno,
-                      lociTot,
-                      allLoci,
-                      nThreads)
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop") | is(pop,"NamedMapPop")){
-      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }
-    
-  }else{
-    output = getOneHaplo(pop@geno,
-                         lociTot,
-                         allLoci,
-                         haplo,
-                         nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop") | is(pop,"NamedMapPop")){
-      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-    }
-  }
-  
-  colnames(output) = getLociNames(lociTot, allLoci, map)
-  
-  return(output)
-}
-
-
-#' @title Pull IBD haplotypes
-#'
-#' @description Retrieves IBD haplotype data
-#'
-#' @param pop an object of \code{\link{Pop-class}}
-#' @param chr a vector of chromosomes to retrieve. If NULL,
-#' all chromosomes are retrieved.
-#' @param snpChip an integer indicating which SNP array loci 
-#' are to be retrieved. If NULL, all sites are retrieved.
-#' @param simParam an object of class \code{\link{SimParam}}. If
-#' \code{NULL}, the function uses the object named \code{SP} from the
-#' global environment.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from \code{simParam$nThreads}.
-#'
-#' @return Returns a matrix of IBD haplotypes.
-#' 
-#' @examples 
-#' #Create founder haplotypes
-#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
-#' 
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
-#' SP$setTrackRec(TRUE)
-#' 
-#' #Create population
-#' pop = newPop(founderPop, simParam=SP)
-#' pullIbdHaplo(pop, simParam=SP)
-#' 
-#' @export
-pullIbdHaplo = function(pop, chr=NULL, snpChip=NULL, simParam=NULL,
-                        nThreads=NULL){
-  simParam = getSimParam(simParam)
-  if(is.null(nThreads)){
-    nThreads = simParam$nThreads
-  }else{
-    nThreads = as.integer(nThreads)
-  }
-  
-  if(is.character(snpChip)){
-    # Suspect snpChip is a name
-    chipNames = simParam$snpChipNames
-    take = match(snpChip, chipNames)
-    if(is.na(take)){
-      stop("'",snpChip,"' did not match any SNP chip names")
-    }
-    snpChip = take
-  }
-  
-  if(!simParam$isTrackRec){
-    stop(
-      "pullIbdHaplo can only be used with the trackRec option, see trackRec in ?SimParam"
-      )
-  }
-  
-  if(is.null(chr)){
-    chr = 1:pop@nChr
-  }
-  
-  # Retrieve IBD data
-  ibd = simParam$ibdHaplo(pop@iid)
-  
-  # Fill in output matrix
-  output = createIbdMat(ibd=ibd, chr=chr, 
-                        nLoci=pop@nLoci, 
-                        ploidy=pop@ploidy,
-                        nThreads=nThreads)
-  
-  rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                           rep(1:pop@ploidy,pop@nInd),sep="_")
-  
-  colnames(output) = unlist(lapply(simParam$genMap[chr], names))
-  
-  if(!is.null(snpChip)){
-    nLoci = pop@nLoci[chr]
-    tmp = getSnpMap(snpChip=snpChip,simParam=simParam)
-    # getSnpMap reports chromosomes by name while chr is an index, so the
-    # names are looked up before the two are matched. Comparing an index
-    # to a name silently returned no markers for any named genetic map.
-    chrNames = names(simParam$genMap)[chr]
-    tmp = tmp[tmp$chr%in%chrNames,]
-    if(length(chr)>1){
-      for(i in 2:length(chr)){
-        j = chrNames[i]
-        tmp[tmp$chr==j,"site"] =
-          tmp[tmp$chr==j,"site"] + sum(nLoci[1:(i-1)])
-      }
-    }
-    output = output[,tmp$site,drop=FALSE]
-  }
-  
-  return(output)
-}
-
-#' @title Pull marker genotypes
-#'
-#' @description Retrieves genotype data for user
-#' specified loci
-#'
-#' @param pop an object of \code{\link{RawPop-class}} or
-#' \code{\link{MapPop-class}}
-#' @param markers a character vector. Indicates the
-#' names of the loci to be retrieved.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}} for non-
-#' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
-#' object named \code{SP} from the global environment. Ignored when
-#' \code{pop} is a \code{\link{MapPop-class}}.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from
-#' \code{getNumThreads()} for \code{\link{MapPop-class}} objects and
-#' \code{simParam$nThreads} for \code{\link{RawPop-class}}.
-#'
-#' @return Returns a matrix of genotypes.
+#' For a \code{\link{MultiPop-class}} input:    \cr
+#' - if \code{simplify=FALSE}, a nested list matching the \code{MultiPop}
+#'   structure, with one genotype matrix per terminal population.    \cr
+#' - if \code{simplify=TRUE}, a simplified object where terminal genotype
+#'   matrices are combined (within each retained branch) using
+#'   \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, the result is a single genotype matrix.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 #'
-#' #Set simulation parameters
-#' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
+#' # Retrieve genotypes from all segregating loci in founder haplotypes
+#' pullSegSiteGeno(founderPop)
 #'
-#' #Create population
+#' # Retrieve genotypes from a specific set of markers in founder haplotypes
+#' pullMarkerGeno(founderPop, markers=c("1_1","1_2"))
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads=1L}
+#'
+#' # Add an additive trait with 10 QTL
+#' SP$addTraitA(10, name="Trait1")
+#'
+#' # Add a SNP chip
+#' SP$addSnpChip(nSnpPerChr=5, name="5SNPchip")
+#'
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Pull genotype data for first two markers on chromosome one.
-#' #Marker name is consistent with default naming in AlphaSimR.
+#' # Retrieve genotypes from all segregating loci
+#' pullSegSiteGeno(pop, simParam=SP)
+#'
+#' # Retrieve genotypes from QTL for a specific trait
+#' pullQtlGeno(pop, trait="Trait1", simParam=SP)
+#'
+#' # Retrieve genotypes from a SNP chip
+#' pullSnpGeno(pop, snpChip="5SNPchip", simParam=SP)
+#'
+#' # Retrieve genotypes from a specific set of markers
 #' pullMarkerGeno(pop, markers=c("1_1","1_2"), simParam=SP)
 #'
-#' @export
-pullMarkerGeno = function(pop, markers, asRaw=FALSE, simParam=NULL,
-                          nThreads=NULL){
-  # Get genetic map and nThreads
-  if(is(pop,"MapPop")){
-    if(is.null(nThreads)){
-      nThreads = getNumThreads()
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    genMap = pop@genMap
-  }else{
-    simParam = getSimParam(simParam)
-    if(is.null(nThreads)){
-      nThreads = simParam$nThreads
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    genMap = simParam$genMap
-  }
-  
-  # Map markers to genetic map
-  lociMap = mapLoci(markers, genMap)
-  
-  # Get genotypes
-  output = getGeno(pop@geno, lociMap$lociPerChr, 
-                   lociMap$lociLoc, nThreads)
-  
-  if(!asRaw){
-    output = convToImat(output)
-  }
-  
-  if(is(pop,"Pop") | is(pop,"NamedMapPop")){
-    rownames(output) = pop@id
-  }else{
-    rownames(output) = as.character(1:pop@nInd)
-  }
+#' # Create a nested MultiPop
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=4)
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out=length(x)),
+#'     function(x) paste(x@mother, x@father, sep="_")
+#'   )
+#' )
+#'
+#' # Retrieve QTL genotypes at different simplification levels
+#' pullQtlGeno(mp1, simplify=FALSE)
+#' pullQtlGeno(mp1, simplify=TRUE, level=2)
+#' pullQtlGeno(mp1, simplify=TRUE, level=1)
+NULL
 
-  colnames(output) = getLociNames(lociMap$lociPerChr, 
-                                  lociMap$lociLoc, 
-                                  genMap)
-  
-  output = output[,match(markers, colnames(output)),drop=FALSE]
-  
-  return(output)
+#' @rdname pullGeno
+#' @export
+pullSegSiteGeno = function(
+  pop,
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+
+      tmp = selectLoci(chr, lociTot, allLoci)
+
+      output = getGeno(pop@geno, tmp$lociPerChr, tmp$lociLoc, nThreads)
+
+      if (!asRaw) {
+        output = convToImat(output)
+      }
+
+      if (is(pop, "Pop") | is(pop, "NamedMapPop")) {
+        rownames(output) = pop@id
+      } else {
+        rownames(output) = as.character(1:pop@nInd)
+      }
+
+      colnames(output) = getLociNames(tmp$lociPerChr, tmp$lociLoc, map)
+
+      return(output)
+    },
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
 }
 
-#' @title Pull marker haplotypes
+#' @rdname pullGeno
+#' @export
+pullQtlGeno = function(
+  pop,
+  trait = 1,
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(trait)) {
+    # Suspect trait is a name
+    traitNames = simParam$traitNames
+    take = match(trait, traitNames)
+    if (is.na(take)) {
+      stop("'", trait, "' did not match any trait names")
+    }
+    trait = take
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      trait = 1,
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      tmp = selectLoci(
+        chr,
+        simParam$traits[[trait]]@lociPerChr,
+        simParam$traits[[trait]]@lociLoc
+      )
+
+      output = getGeno(pop@geno, tmp$lociPerChr, tmp$lociLoc, nThreads)
+
+      if (!asRaw) {
+        output = convToImat(output)
+      }
+
+      if (is(pop, "Pop")) {
+        rownames(output) = pop@id
+      } else {
+        rownames(output) = as.character(1:pop@nInd)
+      }
+
+      colnames(output) = getLociNames(
+        tmp$lociPerChr,
+        tmp$lociLoc,
+        simParam$genMap
+      )
+
+      return(output)
+    },
+    trait = trait,
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullGeno
+#' @export
+pullSnpGeno = function(
+  pop,
+  snpChip = 1,
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(snpChip)) {
+    # Suspect snpChip is a name
+    chipNames = simParam$snpChipNames
+    take = match(snpChip, chipNames)
+    if (is.na(take)) {
+      stop("'", snpChip, "' did not match any SNP chip names")
+    }
+    snpChip = take
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      snpChip = 1,
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      tmp = selectLoci(
+        chr,
+        simParam$snpChips[[snpChip]]@lociPerChr,
+        simParam$snpChips[[snpChip]]@lociLoc
+      )
+
+      output = getGeno(pop@geno, tmp$lociPerChr, tmp$lociLoc, nThreads)
+
+      if (!asRaw) {
+        output = convToImat(output)
+      }
+
+      if (is(pop, "Pop")) {
+        rownames(output) = pop@id
+      } else {
+        rownames(output) = as.character(1:pop@nInd)
+      }
+
+      colnames(output) = getLociNames(
+        tmp$lociPerChr,
+        tmp$lociLoc,
+        simParam$genMap
+      )
+
+      return(output)
+    },
+    snpChip = snpChip,
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullGeno
+#' @export
+pullMarkerGeno = function(
+  pop,
+  markers,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      markers,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      # Get genetic map and nThreads
+      if (is(pop, "MapPop")) {
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        genMap = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        genMap = simParam$genMap
+      }
+
+      # Map markers to genetic map
+      lociMap = mapLoci(markers, genMap)
+
+      # Get genotypes
+      output = getGeno(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, nThreads)
+
+      if (!asRaw) {
+        output = convToImat(output)
+      }
+
+      if (is(pop, "Pop") | is(pop, "NamedMapPop")) {
+        rownames(output) = pop@id
+      } else {
+        rownames(output) = as.character(1:pop@nInd)
+      }
+
+      colnames(output) = getLociNames(
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        genMap
+      )
+
+      output = output[, match(markers, colnames(output)), drop = FALSE]
+
+      return(output)
+    },
+    markers = markers,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @name pullHaplo
+#' @rdname pullHaplo
 #'
-#' @description Retrieves haplotype data for user
-#' specified loci
+#' @title Pull haplotypes
 #'
-#' @param pop an object of \code{\link{RawPop-class}} or
-#' \code{\link{MapPop-class}}
-#' @param markers a character vector. Indicates the
-#' names of the loci to be retrieved
-#' @param haplo either "all" for all haplotypes or an integer
-#' for a single set of haplotypes. Use a value of 1 for female
-#' haplotypes and a value of 2 for male haplotypes in diploids.
-#' @param asRaw return in raw (byte) format
-#' @param simParam an object of class \code{\link{SimParam}} for non-
-#' \code{\link{MapPop-class}} inputs. If \code{NULL}, the function uses the
-#' object named \code{SP} from the global environment. Ignored when
-#' \code{pop} is a \code{\link{MapPop-class}}.
-#' @param nThreads number of threads to use if OpenMP is available.
-#' If \code{NULL}, the number is obtained from
-#' \code{getNumThreads()} for \code{\link{MapPop-class}} objects and
-#' \code{simParam$nThreads} for \code{\link{RawPop-class}}.
+#' @description
+#' Retrieve haplotype data from:    \cr
+#' - all segregating sites (\code{\link{pullSegSiteHaplo}})    \cr
+#' - quantitative trait loci (QTL) for a trait (\code{\link{pullQtlHaplo}})    \cr
+#' - SNP chip markers (\code{\link{pullSnpHaplo}})    \cr
+#' - a user-defined set of markers by name (\code{\link{pullMarkerHaplo}})    \cr
+#' - identity-by-descent (IBD) recombination tracking
+#'   (\code{\link{pullIbdHaplo}})
 #'
-#' @return Returns a matrix of genotypes.
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
+#'
+#' \code{\link{MapPop-class}} objects are supported by
+#' \code{\link{pullSegSiteHaplo}} and \code{\link{pullMarkerHaplo}}.
+#'
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteHaplo}} and
+#'   \code{\link{pullMarkerHaplo}}.
+#' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
+#'   all chromosomes are retrieved.
+#' @param trait An integer or a trait name. Indicates which trait's
+#'   QTL haplotypes to retrieve.
+#' @param snpChip SNP chip whose haplotypes are retrieved. Either an integer
+#'   index or a SNP chip name.
+#' @param markers Character vector of marker names to retrieve.
+#' @param haplo Either \code{"all"} for all haplotypes, or an integer selecting
+#'   one haplotype set. In diploids, use \code{haplo=1} for female-derived
+#'   haplotypes and \code{haplo=2} for male-derived haplotypes.
+#' @param asRaw Logical; if \code{TRUE}, returns haplotypes in raw (byte) format.
+#' @param simParam An object of class \code{\link{SimParam}} for non-
+#'   \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
+#'   \code{SP} in the global environment is used. Ignored when \code{pop} is a
+#'   \code{\link{MapPop-class}}.
+#' @param nThreads Number of threads to use if OpenMP is available. If
+#'   \code{NULL}, uses \code{\link{getNumThreads}} for
+#'   \code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.
+#' @param simplify Logical. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flattens \code{pop} to
+#'   \code{level} with \code{\link{flattenMultiPop}}, combines terminal results
+#'   with \code{\link{rbind}}, and attaches a \code{"source"} attribute
+#'   indicating row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' With \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' With \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' original structure is returned unchanged.
+#'
+#' Simplified output includes a \code{"source"} attribute: a data frame with
+#' columns \code{level1}, \code{level2}, etc., giving the source population
+#' name (or index) for each row at each retained level.
+#'
+#' \code{\link{pullIbdHaplo}} requires activating recombination tracking with
+#' \code{\link{SimParam}$setTrackRec()}.
+#' 
+#' @seealso \code{\link{pullGeno}}, \code{\link{pullAf}}
+#'
+#' @return
+#' For a non-\code{MultiPop} input, a haplotype matrix
+#' (\emph{\eqn{0}=ancestral allele and \eqn{1}=mutant allele;
+#' rows = individuals, columns = loci}) with row names set to individual IDs
+#' when available, using suffixes for each haplotype set. In diploids,
+#' \code{"_1"} denotes the maternal haplotype and \code{"_2"} denotes the
+#' paternal haplotype. \code{\link{pullIbdHaplo}} returns an integer matrix,
+#' where each value represents a unique founder haplotype.
+#'
+#' For a \code{\link{MultiPop-class}} input:    \cr
+#' - if \code{simplify=FALSE}, a nested list matching the \code{MultiPop}
+#'   structure, with one haplotype matrix per terminal population.    \cr
+#' - if \code{simplify=TRUE}, a simplified object where terminal haplotype
+#'   matrices are combined (within each retained branch) using
+#'   \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, the result is a single haplotype matrix.
 #'
 #' @examples
-#' #Create founder haplotypes
+#' # Create founder haplotypes
 #' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
 #'
-#' #Set simulation parameters
+#' # Retrieve haplotypes from all segregating loci in founder haplotypes
+#' pullSegSiteHaplo(founderPop)
+#'
+#' # Retrieve haplotypes from a specific set of markers in founder haplotypes
+#' pullMarkerHaplo(founderPop, markers=c("1_1","1_2"))
+#'
+#' # Set simulation parameters
 #' SP = SimParam$new(founderPop)
-#' \dontshow{SP$nThreads = 1L}
-#' SP$addTraitA(10)
-#' SP$addSnpChip(5)
+#' \dontshow{SP$nThreads=1L}
+#'
+#' # Enable recombination tracking for `pullIbdHaplo()`
 #' SP$setTrackRec(TRUE)
 #'
-#' #Create population
+#' # Add an additive trait with 10 QTL
+#' SP$addTraitA(10, name="Trait1")
+#'
+#' # Add a SNP chip
+#' SP$addSnpChip(nSnpPerChr=5, name="5SNPchip")
+#'
+#' # Create population
 #' pop = newPop(founderPop, simParam=SP)
 #'
-#' #Pull haplotype data for first two markers on chromosome one.
-#' #Marker name is consistent with default naming in AlphaSimR.
+#' # Retrieve haplotypes from all segregating loci
+#' pullSegSiteHaplo(pop, simParam=SP)
+#'
+#' # Retrieve haplotypes from QTL for a specific trait
+#' pullQtlHaplo(pop, trait="Trait1", simParam=SP)
+#'
+#' # Retrieve haplotypes from a SNP chip
+#' pullSnpHaplo(pop, snpChip="5SNPchip", simParam=SP)
+#'
+#' # Retrieve haplotypes from a specific set of markers
 #' pullMarkerHaplo(pop, markers=c("1_1","1_2"), simParam=SP)
 #'
+#' # Retrieve IBD haplotype data for all segregating loci
+#' pullIbdHaplo(pop, simParam=SP)
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=4)
+#' pullIbdHaplo(pop2, simParam=SP)
+#' 
+#' # Create a nested MultiPop
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out=length(x)),
+#'     function(x) paste(x@mother, x@father, sep="_")
+#'   )
+#' )
+#'
+#' # Retrieve QTL haplotypes at different simplification levels
+#' pullQtlHaplo(mp1, simplify=FALSE)
+#' pullQtlHaplo(mp1, simplify=TRUE, level=2)
+#' pullQtlHaplo(mp1, simplify=TRUE, level=1)
+NULL
+
+#' @rdname pullHaplo
 #' @export
-pullMarkerHaplo = function(pop, markers, haplo="all", asRaw=FALSE,
-                           simParam=NULL, nThreads=NULL){
-  # Get genetic map and nThreads
-  if(is(pop,"MapPop")){
-    if(is.null(nThreads)){
-      nThreads = getNumThreads()
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    genMap = pop@genMap
-  }else{
-    simParam = getSimParam(simParam)
-    if(is.null(nThreads)){
-      nThreads = simParam$nThreads
-    }else{
-      nThreads = as.integer(nThreads)
-    }
-    genMap = simParam$genMap
+pullSegSiteHaplo = function(
+  pop,
+  haplo = "all",
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+      if (!is.null(chr)) {
+        tmp = selectLoci(chr, lociTot, allLoci)
+        lociTot = tmp$lociPerChr
+        allLoci = tmp$lociLoc
+      } else {
+        chr = 1:pop@nChr
+      }
+      haplo = checkHaplo(haplo, pop@ploidy)
+      if (haplo == "all") {
+        output = getHaplo(pop@geno, lociTot, allLoci, nThreads)
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop") | is(pop, "NamedMapPop")) {
+          rownames(output) = paste(
+            rep(pop@id, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        } else {
+          rownames(output) = paste(
+            rep(1:pop@nInd, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        }
+      } else {
+        output = getOneHaplo(pop@geno, lociTot, allLoci, haplo, nThreads)
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop") | is(pop, "NamedMapPop")) {
+          rownames(output) = paste(pop@id, rep(haplo, pop@nInd), sep = "_")
+        } else {
+          rownames(output) = paste(1:pop@nInd, rep(haplo, pop@nInd), sep = "_")
+        }
+      }
+
+      colnames(output) = getLociNames(lociTot, allLoci, map)
+
+      return(output)
+    },
+    haplo = haplo,
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullHaplo
+#' @export
+pullQtlHaplo = function(
+  pop,
+  trait = 1,
+  haplo = "all",
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
   }
-  
-  # Map markers to genetic map
-  lociMap = mapLoci(markers, genMap)
-  
-  haplo = checkHaplo(haplo, pop@ploidy)
-  if(haplo=="all"){
-    output = getHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc, nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
+  if (is.character(trait)) {
+    # Suspect trait is a name
+    traitNames = simParam$traitNames
+    take = match(trait, traitNames)
+    if (is.na(take)) {
+      stop("'", trait, "' did not match any trait names")
     }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(rep(pop@id,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(rep(1:pop@nInd,each=pop@ploidy),
-                               rep(1:pop@ploidy,pop@nInd),sep="_")
-    }
-  }else{
-    output = getOneHaplo(pop@geno, lociMap$lociPerChr, lociMap$lociLoc,
-                         haplo, nThreads)
-    
-    if(!asRaw){
-      output = convToImat(output)
-    }
-    
-    if(is(pop,"Pop")){
-      rownames(output) = paste(pop@id,rep(haplo,pop@nInd),sep="_")
-    }else{
-      rownames(output) = paste(1:pop@nInd,rep(haplo,pop@nInd),sep="_")
-    }
+    trait = take
   }
-  
-  colnames(output) = getLociNames(lociMap$lociPerChr, 
-                                  lociMap$lociLoc, 
-                                  genMap)
-  
-  output = output[,match(markers, colnames(output)),drop=FALSE]
-  
-  return(output)
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      trait = 1,
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      tmp = selectLoci(
+        chr,
+        simParam$traits[[trait]]@lociPerChr,
+        simParam$traits[[trait]]@lociLoc
+      )
+      lociPerChr = tmp$lociPerChr
+      lociLoc = tmp$lociLoc
+
+      haplo = checkHaplo(haplo, pop@ploidy)
+      if (haplo == "all") {
+        output = getHaplo(pop@geno, lociPerChr, lociLoc, nThreads)
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(
+            rep(pop@id, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        } else {
+          rownames(output) = paste(
+            rep(1:pop@nInd, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        }
+      } else {
+        output = getOneHaplo(pop@geno, lociPerChr, lociLoc, haplo, nThreads)
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(pop@id, rep(haplo, pop@nInd), sep = "_")
+        } else {
+          rownames(output) = paste(1:pop@nInd, rep(haplo, pop@nInd), sep = "_")
+        }
+      }
+
+      colnames(output) = getLociNames(
+        tmp$lociPerChr,
+        tmp$lociLoc,
+        simParam$genMap
+      )
+
+      return(output)
+    },
+    trait = trait,
+    haplo = haplo,
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullHaplo
+#' @export
+pullSnpHaplo = function(
+  pop,
+  snpChip = 1,
+  haplo = "all",
+  chr = NULL,
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+  if (is.character(snpChip)) {
+    # Suspect snpChip is a name
+    chipNames = simParam$snpChipNames
+    take = match(snpChip, chipNames)
+    if (is.na(take)) {
+      stop("'", snpChip, "' did not match any SNP chip names")
+    }
+    snpChip = take
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      snpChip = 1,
+      haplo = "all",
+      chr = NULL,
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      tmp = selectLoci(
+        chr,
+        simParam$snpChips[[snpChip]]@lociPerChr,
+        simParam$snpChips[[snpChip]]@lociLoc
+      )
+
+      lociPerChr = tmp$lociPerChr
+      lociLoc = tmp$lociLoc
+
+      haplo = checkHaplo(haplo, pop@ploidy)
+      if (haplo == "all") {
+        output = getHaplo(pop@geno, lociPerChr, lociLoc, nThreads)
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(
+            rep(pop@id, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        } else {
+          rownames(output) = paste(
+            rep(1:pop@nInd, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        }
+      } else {
+        output = getOneHaplo(pop@geno, lociPerChr, lociLoc, haplo, nThreads)
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(pop@id, rep(haplo, pop@nInd), sep = "_")
+        } else {
+          rownames(output) = paste(1:pop@nInd, rep(haplo, pop@nInd), sep = "_")
+        }
+      }
+
+      colnames(output) = getLociNames(
+        tmp$lociPerChr,
+        tmp$lociLoc,
+        simParam$genMap
+      )
+
+      return(output)
+    },
+    snpChip = snpChip,
+    haplo = haplo,
+    chr = chr,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullHaplo
+#' @export
+pullMarkerHaplo = function(
+  pop,
+  markers,
+  haplo = "all",
+  asRaw = FALSE,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      markers,
+      haplo = "all",
+      asRaw = FALSE,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      # Get genetic map and nThreads
+      if (is(pop, "MapPop")) {
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        genMap = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        genMap = simParam$genMap
+      }
+
+      # Map markers to genetic map
+      lociMap = mapLoci(markers, genMap)
+
+      haplo = checkHaplo(haplo, pop@ploidy)
+      if (haplo == "all") {
+        output = getHaplo(
+          pop@geno,
+          lociMap$lociPerChr,
+          lociMap$lociLoc,
+          nThreads
+        )
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(
+            rep(pop@id, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        } else {
+          rownames(output) = paste(
+            rep(1:pop@nInd, each = pop@ploidy),
+            rep(1:pop@ploidy, pop@nInd),
+            sep = "_"
+          )
+        }
+      } else {
+        output = getOneHaplo(
+          pop@geno,
+          lociMap$lociPerChr,
+          lociMap$lociLoc,
+          haplo,
+          nThreads
+        )
+
+        if (!asRaw) {
+          output = convToImat(output)
+        }
+
+        if (is(pop, "Pop")) {
+          rownames(output) = paste(pop@id, rep(haplo, pop@nInd), sep = "_")
+        } else {
+          rownames(output) = paste(1:pop@nInd, rep(haplo, pop@nInd), sep = "_")
+        }
+      }
+
+      colnames(output) = getLociNames(
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        genMap
+      )
+
+      output = output[, match(markers, colnames(output)), drop = FALSE]
+
+      return(output)
+    },
+    markers = markers,
+    haplo = haplo,
+    asRaw = asRaw,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullHaplo
+#' @export
+pullIbdHaplo = function(
+  pop,
+  chr = NULL,
+  snpChip = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      chr = NULL,
+      snpChip = NULL,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      if (is.character(snpChip)) {
+        # Suspect snpChip is a name
+        chipNames = simParam$snpChipNames
+        take = match(snpChip, chipNames)
+        if (is.na(take)) {
+          stop("'", snpChip, "' did not match any SNP chip names")
+        }
+        snpChip = take
+      }
+
+      if (!simParam$isTrackRec) {
+        stop(
+          "pullIbdHaplo can only be used with the trackRec option, see trackRec in ?SimParam"
+        )
+      }
+
+      if (is.null(chr)) {
+        chr = 1:pop@nChr
+      }
+
+      # Retrieve IBD data
+      ibd = simParam$ibdHaplo(pop@iid)
+
+      # Fill in output matrix
+      output = createIbdMat(
+        ibd = ibd,
+        chr = chr,
+        nLoci = pop@nLoci,
+        ploidy = pop@ploidy,
+        nThreads = nThreads
+      )
+
+      rownames(output) = paste(
+        rep(pop@id, each = pop@ploidy),
+        rep(1:pop@ploidy, pop@nInd),
+        sep = "_"
+      )
+
+      colnames(output) = unlist(lapply(simParam$genMap[chr], names))
+
+      if (!is.null(snpChip)) {
+        nLoci = pop@nLoci[chr]
+        tmp = getSnpMap(snpChip = snpChip, simParam = simParam)
+        # getSnpMap reports chromosomes by name while chr is an index, so the
+        # names are looked up before the two are matched. Comparing an index
+        # to a name silently returned no markers for any named genetic map.
+        chrNames = names(simParam$genMap)[chr]
+        tmp = tmp[tmp$chr %in% chrNames, ]
+        if (length(chr) > 1) {
+          for (i in 2:length(chr)) {
+            j = chrNames[i]
+            tmp[tmp$chr == j, "site"] =
+              tmp[tmp$chr == j, "site"] + sum(nLoci[1:(i - 1)])
+          }
+        }
+        output = output[, tmp$site, drop = FALSE]
+      }
+
+      return(output)
+    },
+    chr = chr,
+    snpChip = snpChip,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @name pullAf
+#' @rdname pullAf
+#'
+#' @title Pull allele frequencies
+#'
+#' @description
+#' Calculate and retrieve allele frequencies from:    \cr
+#' - all segregating sites (\code{\link{pullSegSiteAf}})    \cr
+#' - quantitative trait loci (QTL) for a trait (\code{\link{pullQtlAf}})    \cr
+#' - SNP chip markers (\code{\link{pullSnpAf}})    \cr
+#' - a user-defined set of markers by name (\code{\link{pullMarkerAf}})
+#'
+#' Supports \code{\link{Pop-class}} and \code{\link{MultiPop-class}} inputs.
+#' For \code{MultiPop} objects, output can optionally be simplified to a
+#' chosen nesting level.
+#'
+#' \code{\link{MapPop-class}} objects are supported by
+#' \code{\link{pullSegSiteAf}} and \code{\link{pullMarkerAf}}.
+#'
+#' @param pop An object of \code{\link{Pop-class}} or
+#'   \code{\link{MultiPop-class}}. \code{\link{MapPop-class}} objects are
+#'   only supported by \code{\link{pullSegSiteAf}} and
+#'   \code{\link{pullMarkerAf}}.
+#' @param chr Integer vector of chromosomes to retrieve. If \code{NULL},
+#'   all chromosomes are retrieved.
+#' @param trait An integer or a trait name. Indicates which trait's
+#'   QTL allele frequencies to retrieve.
+#' @param snpChip SNP chip whose allele frequencies are calculated and 
+#'   retrieved. Either an integer index or a SNP chip name.
+#' @param markers Character vector of marker names to calculate and retrieve.
+#' @param sample A positive integer giving the number of individuals to
+#'   sample from \code{pop} at random for allele frequency calculation. Passed
+#'   to \code{\link{sample}} as \code{sample(seq_len(nInd(pop)), size=sample)}.
+#'   If \code{NULL}, no sampling is done and all individuals in \code{pop}
+#'   are used.
+#' @param simParam An object of class \code{\link{SimParam}} for non-
+#'   \code{\link{MapPop-class}} inputs. If \code{NULL}, the object named
+#'   \code{SP} in the global environment is used. Ignored when \code{pop} is a
+#'   \code{\link{MapPop-class}}.
+#' @param nThreads Number of threads to use if OpenMP is available. If
+#'   \code{NULL}, uses \code{\link{getNumThreads}} for
+#'   \code{\link{MapPop-class}} objects and \code{simParam$nThreads} otherwise.
+#' @param simplify Logical. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}}. If \code{TRUE}, flattens \code{pop} to
+#'   \code{level} with \code{\link{flattenMultiPop}}, combines terminal results
+#'   with \code{\link{rbind}}, and attaches a \code{"source"} attribute
+#'   indicating row origins.
+#' @param level Integer scalar \eqn{\ge 1}. Used only when \code{pop} is a
+#'   \code{\link{MultiPop-class}} and \code{simplify=TRUE}. Number of
+#'   \code{MultiPop} levels to preserve. Passed to
+#'   \code{\link{flattenMultiPop}}. Ignored when \code{simplify=FALSE}.
+#'
+#' @details
+#' With \code{simplify=FALSE}, \code{MultiPop} structure is preserved and output
+#' follows the same nesting as \code{pop}.
+#'
+#' With \code{simplify=TRUE}, output is simplified to the requested
+#' \code{level}. If \code{level} exceeds the nesting depth of \code{pop}, the
+#' original structure is returned unchanged.
+#'
+#' Simplified output includes a \code{"source"} attribute: a data frame with
+#' columns \code{level1}, \code{level2}, etc., giving the source population
+#' name (or index) for each row at each retained level.
+#'
+#' @seealso \code{\link{pullHaplo}}, \code{\link{pullGeno}}
+#'
+#' @return
+#' For \code{\link{Pop-class}} or \code{\link{MapPop-class}} input, a
+#' one-row matrix of allele frequencies (\emph{\eqn{0}=all (sampled)
+#' individuals carry the ancestral allele and \eqn{1}=all (sampled)
+#' individuals carry the mutant allele}).
+#'
+#' For a \code{\link{MultiPop-class}} input:    \cr
+#' - if \code{simplify=FALSE}, a nested list matching the \code{MultiPop}
+#'   structure, with a one-row matrix of allele-frequencies per terminal
+#'   population.    \cr
+#' - if \code{simplify=TRUE}, a simplified object where terminal
+#'   allele-frequency matrices are combined (within each retained branch) using
+#'   \code{\link{rbind}}. A \code{"source"} attribute records row origins.
+#'   When \code{level=1}, the result is a single allele-frequency matrix.
+#'
+#' @examples
+#' # Create founder haplotypes
+#' founderPop = quickHaplo(nInd=10, nChr=1, segSites=15)
+#'
+#' # Retrieve allele frequencies from all segregating
+#' # loci in founder haplotypes
+#' pullSegSiteAf(founderPop)
+#'
+#' # Retrieve allele frequencies from a specific
+#' # set of markers in founder haplotypes
+#' pullMarkerAf(founderPop, markers=c("1_1","1_2"))
+#'
+#' # Set simulation parameters
+#' SP = SimParam$new(founderPop)
+#' \dontshow{SP$nThreads=1L}
+#'
+#' # Add an additive trait with 10 QTL
+#' SP$addTraitA(10, name="Trait1")
+#'
+#' # Add a SNP chip
+#' SP$addSnpChip(nSnpPerChr=5, name="5SNPchip")
+#'
+#' # Create population
+#' pop = newPop(founderPop, simParam=SP)
+#'
+#' # Retrieve allele frequencies from all segregating loci
+#' pullSegSiteAf(pop, simParam=SP)
+#'
+#' # Retrieve allele frequencies from QTL for a specific trait
+#' pullQtlAf(pop, trait="Trait1", simParam=SP)
+#'
+#' # Retrieve allele frequencies from a SNP chip
+#' pullSnpAf(pop, snpChip="5SNPchip", simParam=SP)
+#'
+#' # Retrieve allele frequencies from a specific set of markers
+#' pullMarkerAf(pop, markers=c("1_1","1_2"), simParam=SP)
+#'
+#' # Create a nested MultiPop
+#' pop2 = randCross(pop, nCrosses=3, nProgeny=4)
+#' mp1 = splitPop(
+#'   pop2,
+#'   by = list(
+#'     function(x) rep(LETTERS[1:2], length.out=length(x)),
+#'     function(x) paste(x@mother, x@father, sep="_")
+#'   )
+#' )
+#'
+#' # Retrieve QTL allele frequencies at different simplification levels
+#' pullQtlAf(mp1, simplify=FALSE)
+#' pullQtlAf(mp1, simplify=TRUE, level=2)
+#' pullQtlAf(mp1, simplify=TRUE, level=1)
+NULL
+
+#' @rdname pullAf
+#' @export
+pullSegSiteAf = function(
+  pop,
+  chr = NULL,
+  sample = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      chr = NULL,
+      sample = NULL,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      pop = samplePop(pop, sample)
+
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+
+      lociMap = selectLoci(chr, lociTot, allLoci)
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    chr = chr,
+    sample = sample,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullQtlAf = function(
+  pop,
+  trait = 1,
+  chr = NULL,
+  sample = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      trait = 1,
+      chr = NULL,
+      sample = NULL,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      pop = samplePop(pop, sample)
+
+      if (is.character(trait)) {
+        # Suspect trait is a name
+        traitNames = simParam$traitNames
+        take = match(trait, traitNames)
+        if (is.na(take)) {
+          stop("'", trait, "' did not match any trait names")
+        }
+        trait = take
+      }
+
+      lociMap = selectLoci(
+        chr,
+        simParam$traits[[trait]]@lociPerChr,
+        simParam$traits[[trait]]@lociLoc
+      )
+      map = simParam$genMap
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    trait = trait,
+    chr = chr,
+    sample = sample,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullSnpAf = function(
+  pop,
+  snpChip = 1,
+  chr = NULL,
+  sample = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  simParam = getSimParam(simParam)
+  if (is.null(nThreads)) {
+    nThreads = simParam$nThreads
+  } else {
+    nThreads = as.integer(nThreads)
+  }
+
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      snpChip = 1,
+      chr = NULL,
+      sample = NULL,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      pop = samplePop(pop, sample)
+
+      if (is.character(snpChip)) {
+        # Suspect snpChip is a name
+        chipNames = simParam$snpChipNames
+        take = match(snpChip, chipNames)
+        if (is.na(take)) {
+          stop("'", snpChip, "' did not match any SNP chip names")
+        }
+        snpChip = take
+      }
+
+      lociMap = selectLoci(
+        chr,
+        simParam$snpChips[[snpChip]]@lociPerChr,
+        simParam$snpChips[[snpChip]]@lociLoc
+      )
+      map = simParam$genMap
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+      return(output)
+    },
+    snpChip = snpChip,
+    chr = chr,
+    sample = sample,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
+}
+
+#' @rdname pullAf
+#' @export
+pullMarkerAf = function(
+  pop,
+  markers,
+  sample = NULL,
+  simParam = NULL,
+  nThreads = NULL,
+  simplify = FALSE,
+  level = 1L
+) {
+  calcPopValue(
+    x = pop,
+    FUN = function(
+      pop,
+      markers,
+      sample = NULL,
+      simParam = NULL,
+      nThreads = NULL
+    ) {
+      pop = samplePop(pop, sample)
+
+      if (is(pop, "MapPop")) {
+        allLoci = unlist(c(sapply(pop@nLoci, function(x) 1:x)))
+        lociTot = pop@nLoci
+        if (is.null(nThreads)) {
+          nThreads = getNumThreads()
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = pop@genMap
+      } else {
+        simParam = getSimParam(simParam)
+        allLoci = unlist(c(sapply(simParam$segSites, function(x) 1:x)))
+        lociTot = simParam$segSites
+        if (is.null(nThreads)) {
+          nThreads = simParam$nThreads
+        } else {
+          nThreads = as.integer(nThreads)
+        }
+        map = simParam$genMap
+      }
+
+      # Map markers to genetic map
+      lociMap = mapLoci(markers, map)
+
+      output = calcGenoFreq(
+        pop@geno,
+        lociMap$lociPerChr,
+        lociMap$lociLoc,
+        nThreads
+      )
+      colnames(output) = getLociNames(lociMap$lociPerChr, lociMap$lociLoc, map)
+
+      # Return markers in the requested order
+      output = output[, match(markers, colnames(output)), drop = FALSE]
+      return(output)
+    },
+    markers = markers,
+    sample = sample,
+    simParam = simParam,
+    nThreads = nThreads,
+    simplify = simplify,
+    level = level
+  )
 }
 
 #' @title Set marker haplotypes 

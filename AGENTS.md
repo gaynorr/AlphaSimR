@@ -19,16 +19,18 @@ branch and `master` the release branch. Start a feature from an up-to-date
 into `devel` through a pull request. Do not commit feature work directly
 to `devel` or `master`.
 
-**Do not add dependencies.** `Depends` is R (>= 4.3.2); `Imports` is
+**Do not add dependencies.** `Depends` is R (>= 4.4.0); `Imports` is
 `Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
 it needs discussing first. `Matrix` provides the sparse Cholesky
 factorization used by pedigree BLUP; it is a recommended package that
-ships with R. `Imports` needs Matrix 1.6-0 or later, which R first ships
-in 4.3.2, and current CRAN Matrix needs R 4.4, so 4.3.2 is the oldest R
-on which the package installs without fetching an archived Matrix. That
-is why `Depends` names it.
+ships with R. `Imports` needs Matrix 1.6-0 or later, and current CRAN
+Matrix needs R 4.4, so 4.4.0 is the oldest R on which the package installs
+without fetching an archived Matrix. R 4.3.2 ships Matrix 1.6 as well, but
+`R CMD check --as-cran` warns when the R version in `Depends` has a patch
+level other than zero, so 4.3.2 cannot be named. That is why `Depends`
+names 4.4.0.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
@@ -146,7 +148,11 @@ selection, doubled haploids, selfing, pedigree drops, mutation,
 recombination tracking and polyploid meiosis. They do not cover `runMacs`,
 whose output can differ in the last bits between platforms, or the
 genomic and pedigree prediction models, so a change there still needs
-review.
+review. The stored values hold only on x86-64, where Windows and Linux
+agree exactly: on Apple Silicon, meiosis gives different results, most
+likely because clang fuses multiply-adds on arm64. The comparison is
+therefore skipped on other architectures and on CRAN, and regenerated
+values must come from an x86-64 machine.
 
 **Results must not depend on `nThreads`.** The invariant is the constant in
 `src/misc.h`:
