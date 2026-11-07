@@ -84,6 +84,10 @@ offered by this argument. The default demographic model matches
 \details{
 See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 further information on \code{runMacs2} and demographic models.
+
+As with \code{\link{runMacs}}, results from a seed are reproducible on
+the same platform but not necessarily across platforms; see the details
+of \code{\link{runMacs}}.
 }
 \examples{
 # Creates a population of 10 outbred individuals
