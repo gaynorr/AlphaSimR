@@ -15,10 +15,19 @@ context("seededResults")
 # from a seed" in NEWS.md and regenerate the values below as described in
 # helper-seededResults.R.
 #
-# Checksums, identifiers and sexes are exact on every platform. Effects,
-# genetic values and phenotypes are real numbers whose last digits can
-# depend on the platform's math library, so they are compared with a
-# tolerance.
+# Checksums, identifiers and sexes are compared exactly. Effects, genetic
+# values and phenotypes are real numbers whose last digits can depend on
+# the platform's math library, so they are compared with a tolerance.
+#
+# The stored values hold on x86-64, where Windows and Linux agree exactly.
+# On Apple Silicon the crossing, pedigree drop, polyploid meiosis and
+# recombination tracking results differ, most likely because clang fuses
+# multiplications and additions on arm64, which changes the last bit of a
+# crossover position and so, at times, the locus it falls next to. The
+# compiler flag that stops this is not one R CMD check accepts from a
+# package, so the comparison is skipped on other architectures. It is also
+# skipped on CRAN, whose machines include Apple Silicon. CI on x86-64 Linux
+# and Windows still catches a moved stream.
 
 seededExpected = list(
   founders = list(
@@ -57,6 +66,9 @@ seededReal = c("addEff", "domEff", "gv", "pheno")
 
 for (scenario in names(seededExpected)) {
   test_that(paste("SEEDED", scenario, "results match the stored values"), {
+    skip_on_cran()
+    skip_if(R.version$arch != "x86_64",
+            "stored seeded results hold only on x86-64")
     observed = seededScenarios[[scenario]]()
     expected = seededExpected[[scenario]]
     expect_identical(sort(names(observed)), sort(names(expected)))

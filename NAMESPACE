@@ -166,6 +166,7 @@ import(Rcpp)
 importFrom(R6,R6Class)
 importFrom(Rdpack,reprompt)
 importFrom(methods,
+  "slot<-",
   .hasSlot,
   classLabel,
   is,
