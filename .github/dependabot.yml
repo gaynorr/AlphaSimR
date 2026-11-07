@@ -1,0 +1,15 @@
+# Keeps the GitHub Actions used by the workflows up to date. Updates are
+# grouped into one pull request a month, against devel like any other
+# change. R packages are not covered, because their versions are resolved
+# when the workflows run.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "devel"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

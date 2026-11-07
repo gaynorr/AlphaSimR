@@ -31,7 +31,7 @@ SP$setTrackPed(TRUE)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setTrackPed(
+\section{Usage}{\preformatted{SP$setTrackPed(
   isTrackPed,
   force = FALSE
 )}}

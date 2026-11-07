@@ -29,3 +29,5 @@ src/*.so
 vignettes/*.html
 vignettes/*.pdf
 .positai
+# Code tangled from the vignettes by R CMD build
+vignettes/*.R

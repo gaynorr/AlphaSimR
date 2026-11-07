@@ -1,5 +1,3 @@
-# fmt: skip file
-
 #' @title Mean genetic values
 #'
 #' @description
@@ -944,6 +942,45 @@ varPPop = function(x, level = 1L) {
 #' This breeding value parameterization is also called the "statistical" model
 #' because it depends on statistical decomposition of genetic values.
 #'
+#' Breeding values and deviations are defined in a reference population of
+#' infinite size that has the observed genotype frequencies at each locus,
+#' with the genotypes at different loci independent. A locus's average
+#' effect is the regression of its genetic value on its own dosage under
+#' its own genotype frequencies, and the epistatic value of a pair of loci
+#' is averaged over each partner's genotype frequencies. These are the least
+#' squares effects of the reference population at any ploidy and any level
+#' of inbreeding, and in it the breeding values, dominance deviations and
+#' epistatic deviations are uncorrelated. Variances are then taken over the
+#' individuals in \code{pop}, so linkage disequilibrium between loci,
+#' including between the two loci of an epistatic pair, appears in the
+#' variances and covariances rather than in the effects
+#' \insertCite{wang2006Models}{AlphaSimR}.
+#'
+#' The breeding values are therefore not always the least squares fit of
+#' genetic values to all dosages in \code{pop} itself. For a diploid trait
+#' without epistasis they are, even with linkage disequilibrium, when
+#' genotypes arise from random union of gametes, and when only two
+#' genotypes segregate at each locus, as in a backcross. They are not when
+#' dominance, linkage disequilibrium and departures from Hardy-Weinberg
+#' proportions occur together, as after selfing a segregating population:
+#' breeding values and dominance deviations are then correlated in
+#' \code{pop}, which \code{covAD_L} reports, and \code{varA} can be above or
+#' below the additive variance of a joint fit. The difference is usually
+#' small, and the Quantitative Genetics article demonstrates it.
+#' With epistasis, linkage disequilibrium within a pair
+#' likewise leaves variance in the epistatic deviations, and in
+#' \code{covAAA_L} and \code{covDAA_L}, that a joint fit to the pair's two
+#' dosages would call additive or dominance. A least squares decomposition
+#' of \code{pop} itself needs a multilocus regression
+#' \insertCite{alvarezcastro2019Orthogonal}{AlphaSimR}, and single locus
+#' effects lose some properties of breeding values away from Hardy-Weinberg
+#' and linkage equilibrium \insertCite{vitezica2017Orthogonal,wang1998Effect}{AlphaSimR}.
+#' A joint fit is not used, because it is only meaningful with many more
+#' individuals than loci: with at least as many segregating loci as
+#' individuals it generally reproduces the genetic values exactly. For
+#' polyploids, whether the per-locus and joint fits agree under random
+#' mating has not been established.
+#'
 #' Note, the output \code{gv_mu} is the trait intercept \eqn{\mu_0},
 #' whereas \code{mu} is the population mean of genetic value \eqn{\bar{G}}.
 #' Despite its name, \code{gv_mu} is not the mean of \code{gv}.
@@ -956,6 +993,18 @@ varPPop = function(x, level = 1L) {
 #' With the trait definition held fixed,
 #' the intercept remains constant while the population mean can change.
 #'
+#' The population mean is split in the same way as the variances.
+#' \code{mu_HW} is the mean under Hardy-Weinberg and linkage equilibrium at
+#' the observed allele frequencies, \code{mu_LE} is the mean with the
+#' observed genotype frequencies at each locus but no linkage
+#' disequilibrium, and \code{mu} is the observed mean. So
+#' \code{mu_LE - mu_HW} is the change in the mean from departures from
+#' Hardy-Weinberg genotype frequencies, which comes from dominance effects,
+#' and \code{mu - mu_LE} is the change from linkage disequilibrium, which
+#' comes from epistatic effects: for a diploid it is the sum over epistatic
+#' pairs of each pair's epistatic effect times the covariance of its two
+#' dosages. Without epistasis, \code{mu_LE} equals \code{mu}.
+#'
 #' Each \code{covX_HW} is the difference between the corresponding genic
 #' variance calculated using observed and Hardy-Weinberg genotype frequencies.
 #' Each \code{covX_L}, for \code{X} in \code{G}, \code{A}, \code{D},
@@ -965,7 +1014,9 @@ varPPop = function(x, level = 1L) {
 #' The cross-component terms \code{covAD_L}, \code{covAAA_L}, \code{covDAA_L}, and
 #' \code{covAN_L} are covariances.
 #' Variances and covariances use the population divisor \code{nInd},
-#' rather than sample divisor \code{nInd - 1}.
+#' rather than sample divisor \code{nInd - 1}, because the individuals in
+#' \code{pop} are treated as the whole population rather than as a sample
+#' from it.
 #'
 #' The same decomposition is also given between traits, as nTraits by
 #' nTraits matrices.
@@ -1055,6 +1106,8 @@ varPPop = function(x, level = 1L) {
 #' \item{mu}{an nTraits vector of population mean of genetic values \eqn{\bar{G}} (breeding value parameterization)}
 #' \item{mu_HW}{an nTraits vector of genetic value means expected under
 #'   Hardy-Weinberg and linkage equilibrium at the observed allele frequencies}
+#' \item{mu_LE}{an nTraits vector of genetic value means expected under
+#'   linkage equilibrium at the observed genotype frequencies of each locus}
 #' \item{bv}{an nInd by nTraits matrix of breeding values (breeding value parameterization)}
 #' \item{dd}{an nInd by nTraits matrix of dominance deviations (breeding value parameterization)}
 #' \item{aa}{an nInd by nTraits matrix of additive-by-additive epistatic deviations (breeding value parameterization)}
@@ -1069,11 +1122,15 @@ varPPop = function(x, level = 1L) {
 #' \item{gv_n}{an nInd by nTraits matrix of non-additive genotypic effects
 #'   contributions to genetic values (genotypic parameterization)}
 #' \item{alpha}{a list of average effects of allele substitution
-#'   calculated using observed marginal genotype frequencies, with length nTraits}
+#'   calculated using the observed genotype frequencies of each locus, with
+#'   the loci treated as independent, with length nTraits}
 #' \item{alpha_HW}{a list of average effects of allele substitution
 #'   calculated using Hardy-Weinberg genotype frequencies at the observed
 #'   allele frequencies, with length nTraits}
 #' }
+#'
+#' @references
+#' \insertAllCited{}
 #'
 #' @examples
 #' #Create founder haplotypes
@@ -1112,7 +1169,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
   genicVarD = genicVarAA = genicVarN =
     covG_HW = covA_HW = covD_HW = covAA_HW = covN_HW =
     covAD_L = covAAA_L = covDAA_L = covAN_L =
-    mu = mu_HW = gv_mu = genicVarA
+    mu = mu_HW = mu_LE = gv_mu = genicVarA
 
   # Average effect of an allele substitution
   alpha = vector("list", length=nTraits)
@@ -1136,6 +1193,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
     gv[,i] = tmp$gv
     mu[i] = tmp$mu # mean gv for the trait in the pop
     mu_HW[i] = tmp$mu_HWE
+    mu_LE[i] = tmp$mu_LE
     bv[,i] = tmp$bv
     nd[,i] = rep(0,pop@nInd)
     gv_mu[i] = tmp$gv_mu # trait gv intercept
@@ -1275,6 +1333,7 @@ genParam = function(pop,simParam=NULL,nThreads=NULL){
                 gv=gv,
                 mu=mu, # mean gv for the trait in the pop
                 mu_HW=mu_HW,
+                mu_LE=mu_LE,
                 bv=bv,
                 dd=dd,
                 aa=aa,
@@ -1908,9 +1967,6 @@ genicVarN = function(pop,simParam=NULL,nThreads=NULL){
 #'
 #' See the \href{https://gaynorr.github.io/AlphaSimR/articles/QuanGen.html}{Quantitative Genetics article} for
 #' background theory and its demonstration.
-#'
-#' See the \href{https://gaynorr.github.io/AlphaSimR/articles/GxE.html}{Genotype-by-Environment article} for
-#' the genotype-by-environment model
 #'
 #' @return
 #' If \code{pop} is a \code{\link{Pop-class}} or

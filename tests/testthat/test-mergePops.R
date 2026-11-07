@@ -1,5 +1,3 @@
-# fmt: skip file
-
 context("mergePops")
 
 test_that("RawPop and MapPop concatenation rejects subclasses to preserve slots", {

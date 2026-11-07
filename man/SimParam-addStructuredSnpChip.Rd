@@ -21,7 +21,7 @@ assigns them to chips based on structure
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addStructuredSnpChip(
+\section{Usage}{\preformatted{SP$addStructuredSnpChip(
   nSnpPerChr,
   structure,
   force = FALSE

@@ -35,6 +35,6 @@ pop2@id # 1:10
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$resetPed(
+\section{Usage}{\preformatted{SP$resetPed(
   lastId = 0L
 )}}

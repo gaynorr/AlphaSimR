@@ -312,6 +312,114 @@ test_that("MATCH breeding values and deviations for epistatic traits", {
   expectGenParamMatchesRef(pop, SP)
 })
 
+test_that("MEAN splits into its Hardy-Weinberg and LD parts", {
+  # mu - mu_LE is the change in the mean from LD, which only epistatic
+  # effects feel: each pair's effect times the covariance of its additive
+  # codings. mu_LE - mu_HW is the change from departures from HWE, which
+  # only dominance effects feel. Selection and few founders give both.
+  for (ploidy in c(2L, 4L)) {
+    set.seed(314 + ploidy)
+    founderPop = runMacs(nInd = 100, nChr = 1, segSites = 40, ploidy = ploidy)
+    SP = SimParam$new(founderPop)
+    SP$nThreads = 1L
+    SP$addTraitADE(40, meanDD = 0.3, varDD = 0.2, relAA = 0.5)
+    pop = selectCross(newPop(founderPop, simParam = SP), nInd = 10,
+                      nCrosses = 100, use = "gv", simParam = SP)
+    gp = genParam(pop, simParam = SP)
+    trait = SP$traits[[1]]
+    X = pullQtlGeno(pop, simParam = SP)
+    xa = (X - ploidy / 2) * (2 / ploidy)
+    xd = X * (ploidy - X) * (2 / ploidy)^2
+    p = colMeans(X) / ploidy
+    # Expected dominance coding under HWE: binomial genotype frequencies
+    xdHW = sapply(p, function(pp) {
+      k = 0:ploidy
+      sum(dbinom(k, ploidy, pp) * k * (ploidy - k) * (2 / ploidy)^2)
+    })
+    covXa = function(i, j) mean((xa[, i] - mean(xa[, i])) * (xa[, j] - mean(xa[, j])))
+    epiLD = sum(apply(trait@epiEff, 1, function(e) e[3] * covXa(e[1], e[2])))
+    domHW = sum(trait@domEff * (colMeans(xd) - xdHW))
+    expect_equal(unname(gp$mu - gp$mu_LE), epiLD, tolerance = 1e-10)
+    expect_equal(unname(gp$mu_LE - gp$mu_HW), domHW, tolerance = 1e-10)
+  }
+  # Without epistasis LD cannot change the mean
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitAD(40, meanDD = 0.3)
+  pop = selectCross(newPop(founderPop, simParam = SP), nInd = 10,
+                    nCrosses = 100, use = "gv", simParam = SP)
+  gp = genParam(pop, simParam = SP)
+  expect_equal(gp$mu_LE, gp$mu)
+})
+
+test_that("CONTINUITY a zero epistatic effect gives the trait without epistasis", {
+  # With every epistatic effect zero, the decomposition must equal that of
+  # the same additive and dominance effects without epistasis, whatever the
+  # LD
+  set.seed(311)
+  founderPop = runMacs(nInd = 200, nChr = 1, segSites = 40)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitADE(40, meanDD = 0.3, varDD = 0.2, relAA = 0.5)
+  pop = newPop(founderPop, simParam = SP)
+  epi = SP$traits[[1]]
+  epi@epiEff[, 3] = 0
+  noEpi = as(epi, "TraitAD", strict = TRUE)
+  withEpi = AlphaSimR:::calcGenParam(epi, pop, 1L)
+  without = AlphaSimR:::calcGenParam(noEpi, pop, 1L)
+  expect_equal(as.vector(withEpi$bv), as.vector(without$bv), tolerance = 1e-10)
+  expect_equal(as.vector(withEpi$dd), as.vector(without$dd), tolerance = 1e-10)
+  expect_equal(as.vector(withEpi$alpha), as.vector(without$alpha), tolerance = 1e-10)
+  expect_equal(as.vector(withEpi$aa), rep(0, nInd(pop)), tolerance = 1e-10)
+})
+
+test_that("LEASTSQUARES per-locus breeding values and a joint fit to all dosages", {
+  # Breeding values are sums of per-locus regressions. With two genotypes
+  # per locus, as in a backcross, they are also the least squares fit of
+  # genetic values to all dosages jointly, whatever the LD. With dominance,
+  # LD and inbreeding together they are not, and breeding values and
+  # dominance deviations are correlated, as genParam documents.
+  set.seed(316)
+  founderPop = runMacs(nInd = 2, nChr = 1, segSites = 1000, inbred = TRUE)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$addTraitAD(5, meanDD = 0.8, varDD = 0.2)
+  parents = newPop(founderPop, simParam = SP)
+  F1 = makeCross(parents, matrix(c(1, 2), 1), simParam = SP)
+  BC1 = makeCross2(F1, parents[1], matrix(1, 1000, 2), simParam = SP)
+  jointVarA = function(pop) {
+    X = pullQtlGeno(pop, simParam = SP)
+    g = gv(pop)[, 1]
+    mean((fitted(lm(g ~ X)) - mean(g))^2)
+  }
+  covBvDd = function(gp) {
+    mean((gp$bv[, 1] - mean(gp$bv[, 1])) * (gp$dd[, 1] - mean(gp$dd[, 1])))
+  }
+  gp = genParam(BC1, simParam = SP)
+  expect_equal(gp$varA[1, 1], jointVarA(BC1), tolerance = 1e-10)
+  expect_equal(unname(gp$covAD_L), 0, tolerance = 1e-10)
+  BC1S1 = self(BC1, simParam = SP)
+  gp = genParam(BC1S1, simParam = SP)
+  expect_equal(unname(gp$covAD_L), covBvDd(gp), tolerance = 1e-10)
+  expect_gt(abs(unname(gp$covAD_L)), 1e-4)
+  expect_gt(abs(gp$varA[1, 1] - jointVarA(BC1S1)), 1e-4)
+})
+
+test_that("THREADS genParam for epistatic traits does not depend on the thread count", {
+  skip_if(getNumThreads() < 2)
+  values = lapply(c(1L, 2L), function(nThreads) {
+    set.seed(313)
+    founderPop = runMacs(nInd = 200, nChr = 2, segSites = 100)
+    SP = SimParam$new(founderPop)
+    SP$nThreads = nThreads
+    SP$addTraitAE(50, relAA = 0.5)
+    SP$addTraitADE(50, meanDD = 0.3, relAA = 0.5)
+    pop = newPop(founderPop, simParam = SP)
+    genParam(pop, simParam = SP)[c("bv", "dd", "aa", "alpha", "varA", "varD", "varAA")]
+  })
+  expect_identical(values[[1]], values[[2]])
+})
+
 test_that("GROUP traits sharing loci keep the statistics they have alone", {
   # genParam works out correlated traits together. Their statistics for
   # each locus come from the same genotype counts either way, so they must

@@ -90,10 +90,14 @@ in serial mode and in parallel mode.
 You can evaluate the speed-up due to parallelization by
 changing the number of chromosomes,
 and also increasing the size of the simulation by increasing the number of individuals.
+The parallel run below uses at most two threads,
+because that is the limit when this vignette is built on `CRAN`;
+replace `min(2L, getNumThreads())` with `getNumThreads()`
+to use every available thread.
 
 ```{r}
 system.time(runMacs(nInd = 50, nChr = 10, nThreads = 1L))
-system.time(runMacs(nInd = 50, nChr = 10, nThreads = getNumThreads()))
+system.time(runMacs(nInd = 50, nChr = 10, nThreads = min(2L, getNumThreads())))
 ```
 
 ## How to get OpenMP support

@@ -196,7 +196,7 @@ itself often needs to occur within code you've already written. This is
 the case in this simulation, because we are overwriting populations in
 each new year. Thus, we must save summary data in each year.
 
-First, we need create a couple of vectors for storing the summary data.
+First, we need to create a couple of vectors for storing the summary data.
 This code needs to occur before simulating the 20 years of breeding.
 
 ```{r eval=FALSE}

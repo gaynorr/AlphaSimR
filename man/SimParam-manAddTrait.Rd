@@ -24,7 +24,7 @@ trait is not already formatted, consider using importTrait.
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$manAddTrait(
+\section{Usage}{\preformatted{SP$manAddTrait(
   lociMap,
   varE = NA_real_,
   force = FALSE,

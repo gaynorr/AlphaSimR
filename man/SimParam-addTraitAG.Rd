@@ -52,7 +52,7 @@ SP$addTraitAG(10, varGxE=2)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addTraitAG(
+\section{Usage}{\preformatted{SP$addTraitAG(
   nQtlPerChr,
   mean = 0,
   var = 1,

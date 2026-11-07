@@ -124,7 +124,7 @@ reference:
   - selectOP
   - selectPop
   - selectMultiPop
-  - selectOCS
+  - selectOC
   - selIndex
   - smithHazel
   - selInt

@@ -32,7 +32,7 @@ SP$addSnpChip(10)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addSnpChip(
+\section{Usage}{\preformatted{SP$addSnpChip(
   nSnpPerChr,
   minSnpFreq = NULL,
   refPop = NULL,

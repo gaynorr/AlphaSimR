@@ -25,7 +25,7 @@ Replaces existing male genetic map.
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$switchMaleMap(
+\section{Usage}{\preformatted{SP$switchMaleMap(
   genMap,
   centromere = NULL,
   genLen = NULL

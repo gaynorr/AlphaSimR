@@ -53,7 +53,7 @@
 
 \item{onShortfall}{"warning", "error" or "none"}
 
-\item{call}{the call of selectOCS, for messages}
+\item{call}{the call of selectOC, for messages}
 
 \item{usePed}{use the pedigree relationship matrix instead of
 genotypes}
@@ -64,7 +64,7 @@ genotypes}
 indices of the selected individuals
 }
 \description{
-The implementation behind \code{\link{selectOCS}}. See the details
-section of \code{\link{selectOCS}} for the method.
+The implementation behind \code{\link{selectOC}}. See the details
+section of \code{\link{selectOC}} for the method.
 }
 \keyword{internal}

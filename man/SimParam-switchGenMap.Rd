@@ -25,7 +25,7 @@ Replaces existing genetic map.
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$switchGenMap(
+\section{Usage}{\preformatted{SP$switchGenMap(
   genMap,
   centromere = NULL,
   genLen = NULL
