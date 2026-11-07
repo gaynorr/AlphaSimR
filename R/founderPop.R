@@ -223,6 +223,17 @@ newMapPop = function(genMap, haplotypes, inbred=FALSE,
 #' site, and its centromere is placed at half of it, whichever sites are
 #' returned.
 #'
+#' Results from a seed are reproducible on the same platform and build, but
+#' not necessarily across platforms. `MaCS` draws its random numbers from
+#' seeds taken from R's random number generator, and those numbers are the
+#' same everywhere, but the floating-point mathematics applied to them can
+#' differ in the last bits between operating systems and compilers. Such a
+#' difference usually changes only the last digits of site positions, but it
+#' can also change the simulated history of a chromosome and so give
+#' different haplotypes. When founders must be identical across machines,
+#' create them once and save them, for example with \code{saveRDS}, rather
+#' than running \code{runMacs} again on each machine.
+#'
 #' @return an object of \code{\link{MapPop-class}}
 #'
 #' @references
@@ -441,6 +452,10 @@ runMacs = function(nInd, nChr=1, segSites=NULL, inbred=FALSE, species="GENERIC",
 #' @details
 #' See the \href{https://gaynorr.github.io/AlphaSimR/articles/DemographicModels.html}{Demographic Models article} for
 #' further information on \code{runMacs2} and demographic models.
+#'
+#' As with \code{\link{runMacs}}, results from a seed are reproducible on
+#' the same platform but not necessarily across platforms; see the details
+#' of \code{\link{runMacs}}.
 #'
 #' @return an object of \code{\link{MapPop-class}} or if
 #' returnCommand is true a string giving the MaCS command passed to
