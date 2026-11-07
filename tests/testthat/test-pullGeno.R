@@ -782,10 +782,10 @@ test_that("MultiPop input for pullSegSite", {
   segSiteHaplo = pullSegSiteHaplo(x$pop, haplo = 1, simParam = x$SP)
   segSiteHaplo_l1 = split(as.data.frame(segSiteHaplo), df_split$level1)
   segSiteHaplo_l1 = lapply(segSiteHaplo_l1, as.matrix)
-  segSiteHaplo_l2 = lapply(segSiteHaplo_l1, \(x) {
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l1, function(x) {
     split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
   })
-  segSiteHaplo_l2 = lapply(segSiteHaplo_l2, \(x) lapply(x, as.matrix))
+  segSiteHaplo_l2 = lapply(segSiteHaplo_l2, function(x) lapply(x, as.matrix))
 
   expect_equivalent(
     pullSegSiteHaplo(mp, haplo = 1, simParam = x$SP, simplify = TRUE),
@@ -810,10 +810,10 @@ test_that("MultiPop input for pullSegSite", {
   segSiteGeno = pullSegSiteGeno(x$pop, simParam = x$SP)
   segSiteGeno_l1 = split(as.data.frame(segSiteGeno), df_split$level1)
   segSiteGeno_l1 = lapply(segSiteGeno_l1, as.matrix)
-  segSiteGeno_l2 = lapply(segSiteGeno_l1, \(x) {
+  segSiteGeno_l2 = lapply(segSiteGeno_l1, function(x) {
     split(as.data.frame(x), rep(c('R1', 'R2'), each = 4))
   })
-  segSiteGeno_l2 = lapply(segSiteGeno_l2, \(x) lapply(x, as.matrix))
+  segSiteGeno_l2 = lapply(segSiteGeno_l2, function(x) lapply(x, as.matrix))
 
   expect_equivalent(
     pullSegSiteGeno(mp, simParam = x$SP, simplify = TRUE),
@@ -831,15 +831,15 @@ test_that("MultiPop input for pullSegSite", {
   # Allele frequencies
   segSiteAf = do.call(
     'rbind',
-    lapply(segSiteGeno_l2, \(x) {
-      do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+    lapply(segSiteGeno_l2, function(x) {
+      do.call('rbind', lapply(x, function(y) colMeans(y) / 2))
     })
   )
-  segSiteAf_l1 = lapply(segSiteGeno_l2, \(x) {
-    do.call('rbind', lapply(x, \(y) colMeans(y) / 2))
+  segSiteAf_l1 = lapply(segSiteGeno_l2, function(x) {
+    do.call('rbind', lapply(x, function(y) colMeans(y) / 2))
   })
-  segSiteAf_l2 = lapply(segSiteGeno_l2, \(x) {
-    lapply(x, \(y) t(colMeans(y) / 2))
+  segSiteAf_l2 = lapply(segSiteGeno_l2, function(x) {
+    lapply(x, function(y) t(colMeans(y) / 2))
   })
 
   expect_equivalent(

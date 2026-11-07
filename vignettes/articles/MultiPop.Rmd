@@ -546,7 +546,7 @@ F5 = splitPop(F5, by=function(x) x@id)
 # Self each F5 to produce 20 F6 individuals
 F6 = self(F5, nProgeny=20)
 # Phenotype the row of F6 individuals
-F6 = setPheno(F6, varE=4, reps=4/9, p=p)
+F6 = setPheno(F6, varE=4, reps=4/19, p=p)
 # Select 4 F6 rows per family
 F6 = selectPop(F6, nPop=4, level=2, FUN=mean)
 # Randomly select 1 plant per F6 row.

@@ -123,12 +123,14 @@ reference:
   - selectWithinFam
   - selectOP
   - selectPop
+  - selectMultiPop
   - selectOCS
   - selIndex
   - smithHazel
   - selInt
   - usefulness
   - calcPopValue
+  - calcPopSummary
 
 - title: Genomic and pedigree prediction
   desc: >
