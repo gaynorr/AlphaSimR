@@ -90,8 +90,7 @@ The *breeding value parameterization* decomposes genetic values into
 a population mean, additive genetic (breeding) values, and
 non-additive deviations.
 The non-additive effects considered in this article are dominance and epistasis.
-These components depend on allele and genotype frequencies in a population
-as well as associations between loci.
+These components depend on allele and genotype frequencies in a population.
 The same individual can therefore have
 different breeding values and non-additive deviations in different populations,
 even when their genetic value is unchanged.
@@ -470,7 +469,7 @@ This is the *linkage-equilibrium reference population*.
 It allows each locus, or each epistatic pair, to be processed independently.
 However, it does not assume Hardy-Weinberg equilibrium.
 We will discuss this assumption and other reference populations
-in more detail [below](#reference-populations)
+in more detail [below](#reference-populations).
 
 The resulting effects are then applied to the individuals.
 Their breeding values and deviations can be correlated because their genotypes
@@ -665,8 +664,9 @@ Pairs given to `importTrait` are chosen by the user and may be tightly linked.
 Recombination erodes LD between loosely linked loci,
 while drift, selection, and population structure can generate new LD.
 There are special cases:
-in the theoretical distribution of an unselected diploid F2 from two inbred parents, symmetry makes the modeled additive-by-additive
-contribution uncorrelated with additive dosages even with LD.
+in the theoretical distribution of an unselected diploid F2 from two inbred parents,
+symmetry makes the modeled additive-by-additive contribution
+uncorrelated with additive dosages even with LD.
 This preserves the additive projection,
 but need not make the dominance and epistatic components uncorrelated.
 
@@ -879,7 +879,9 @@ hence this additive genetic variance term.
 With non-additive effects,
 changes in the substitution effects and deviations also matter,
 so `covX_HW` need not be positive for every component.
-The example below demonstrates both cases.
+The example below uses a trait with dominance,
+for which the dominance term is negative,
+and ends by contrasting it with a purely additive trait.
 
 ### Worked example: equal allele frequencies, different inbreeding
 
@@ -1275,8 +1277,6 @@ The second case is consistent with the variance formula of @avery1979Variance
 for linked loci with dominance under random union of gametes.
 It combines per-locus average effects and LD terms,
 with no covariance term between breeding values and dominance deviations.
-Complete inbreeding gives a different route to agreement:
-there are no heterozygotes and hence no dominance deviations.
 
 The distinction between departures from Hardy-Weinberg proportions
 and LD also matters when interpreting the literature.
@@ -1304,8 +1304,8 @@ They are absent from the independent-locus reference population,
 although their consequences can appear in the variances and covariances
 calculated from the observed individuals.
 
-Note that the first two cases describe genotype distributions;
-while a finite population can depart from them.
+Note that the first two cases describe genotype distributions,
+from which a finite population can depart.
 Also, even if the population is in HWE at each locus,
 this does not guarantee that the joint genotype distribution
 follows random union of gametes.
@@ -1344,8 +1344,8 @@ but need not describe their offspring, in which the associations can change.
 and the genotype frequencies at each locus to define the reference population.
 This calculation remains practical with many QTL and different ploidy levels,
 while retaining the limitations demonstrated above.
-A decomposition using joint genotype frequencies is possible
-[@alvarezcastro2019Orthogonal],
+A decomposition using multilocus genotype frequencies has been proposed
+[@alvarezcastro2019Orthogonal], derived in full for two loci,
 but fitting the observed individuals exactly does not by itself
 solve the problem of predicting performance in the next generation.
 For that purpose, we also need to consider
@@ -1404,11 +1404,14 @@ as a pure measure of the mating system in an autopolyploid simulation.
 
 ## Relationship to classical theory {#classical-theory}
 
-The motivation for decomposition of genetic variance goes back to @fisher1919Correlation,
+The decomposition of genetic variance goes back to @fisher1919Correlation,
 who connected Mendelian inheritance to the resemblance between relatives.
-The least-squares separation of additive effects from deviations
-was later developed into multilocus variance partitions by
-@cockerham1954Extension and @kempthorne1954Correlation.
+Fisher separated genetic values at many loci by least squares
+into additive effects and dominance deviations,
+and noted that interactions between loci leave a further remainder.
+@cockerham1954Extension and @kempthorne1954Correlation
+extended the partition to epistatic components
+and gave their contributions to covariances between relatives.
 These partitions connect variance components to
 covariances between relatives, heritability, and selection response
 under their stated assumptions.
@@ -1472,7 +1475,7 @@ the partitioning of phenotypic and genetic variance within and between families.
 Readers can explore these relationships
 by simulating crosses and comparing parent and offspring genetic values
 under the mating system of interest.
-The `parentAverage` and `mendelianSampling` functions can also be used summarize
+The `parentAverage` and `mendelianSampling` functions can also be used
 to partition variation between and within families.
 The companion [Genetic Recombination](GeneticRecombination.html) article explains
 the recombination mechanisms underlying those crosses.
