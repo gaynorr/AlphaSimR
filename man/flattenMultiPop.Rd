@@ -49,9 +49,10 @@ flattening. This is useful when you want to track the source of flattened
 populations through their hierarchical names. The default \code{"auto"} mode
 is conservative: names are kept only when they are meaningful (all present
 and unique); missing names are not replaced with positional names. Use
-\code{"concatenate"} to prefix names with their parent names, using
-positional names for child subtrees with missing or duplicate names,
-\code{"force"} to guarantee names with uniqueness enforcement, or
+\code{"concatenate"} to prefix names with their parent names, labeling
+an element without a name by its position and replacing duplicated
+names within a child by positions, \code{"force"} to guarantee names
+with uniqueness enforcement, or
 \code{"none"} to explicitly discard all names.
 }
 \examples{
