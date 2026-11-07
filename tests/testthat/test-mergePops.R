@@ -504,6 +504,26 @@ test_that("splitPop", {
 
 })
 
+test_that("splitPop accepts vector levels when a Pop is at a skipped level", {
+  founderPop = quickHaplo(nInd = 6, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    A = pop[1:2],
+    B = newMultiPop(C = pop[3:4], D = pop[5:6],
+                    E = newMultiPop(F = pop))
+  )
+  splitter = function(x) rep(c("G1", "G2"), length.out = nInd(x))
+
+  result = splitPop(mp, by = splitter, level = c(2, 3))
+
+  expect_identical(result[[1]], pop[1:2])
+  expect_identical(result[[2]][[1]], splitPop(mp[[2]][[1]], by = splitter))
+  expect_identical(result[[2]][[2]], splitPop(mp[[2]][[2]], by = splitter))
+})
+
 test_that("flattenMultiPop preserveNames", {
   founderPop = quickHaplo(nInd = 10, nChr = 1, segSites = 10)
   SP = SimParam$new(founderPop)
@@ -535,7 +555,7 @@ test_that("flattenMultiPop preserveNames", {
   )
   expect_identical(
     flattenMultiPop(duplicateNames, preserveNames = "concatenate"),
-    newMultiPop(pop[1:2], pop[3:5], pop[6:7], pop[8:10])
+    newMultiPop(A = pop[1:2], B = pop[3:5], C_1 = pop[6:7], C_2 = pop[8:10])
   )
   expect_identical(
     expect_warning(
@@ -545,4 +565,95 @@ test_that("flattenMultiPop preserveNames", {
     ),
     newMultiPop(A = pop[1:2], B = pop[3:5], C_D = pop[6:7], C_D.1 = pop[8:10])
   )
+})
+
+test_that("flattenMultiPop handles unnamed and partly named nested children", {
+  founderPop = quickHaplo(nInd = 6, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  unnamed = newMultiPop(
+    A = pop[1],
+    newMultiPop(pop[2], pop[3])
+  )
+  partlyNamed = newMultiPop(
+    A = pop[1],
+    B = newMultiPop(X = pop[2], pop[3])
+  )
+
+  auto = flattenMultiPop(unnamed, preserveNames = "auto")
+  expect_null(names(auto))
+  expect_identical(auto@pops, list(pop[1], pop[2], pop[3]))
+
+  concatenated = flattenMultiPop(
+    partlyNamed,
+    preserveNames = "concatenate"
+  )
+  expect_identical(
+    names(concatenated),
+    c("A", "B_X", "B_")
+  )
+
+  forced = flattenMultiPop(
+    partlyNamed,
+    preserveNames = "force"
+  )
+  expect_identical(
+    names(forced),
+    c("A", "B_X", "B_2")
+  )
+
+  none = flattenMultiPop(
+    partlyNamed,
+    preserveNames = "none"
+  )
+  expect_null(names(none))
+})
+
+test_that("flattenMultiPop preserves requested nested levels", {
+  founderPop = quickHaplo(nInd = 8, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    A = pop[1:2],
+    B = newMultiPop(
+      C = pop[3:4],
+      D = newMultiPop(E = pop[5:6], F = pop[7:8])
+    )
+  )
+
+  result = flattenMultiPop(mp, level = 3)
+
+  expect_true(isMultiPop(result))
+  expect_identical(result[[1]], pop[1:2])
+  expect_identical(
+    result[[2]],
+    newMultiPop(C = pop[3:4],
+                D = newMultiPop(E = pop[5:6], F = pop[7:8]))
+  )
+})
+
+test_that("mergeMultiPops preserves requested levels for mixed inputs", {
+  founderPop = quickHaplo(nInd = 8, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    A = pop[1:2],
+    B = newMultiPop(C = pop[3:4], D = pop[5:6])
+  )
+
+  result = mergeMultiPops(mp, pop[7:8], level = 2)
+
+  expect_true(isMultiPop(result))
+  expect_identical(result[[1]], pop[1:2])
+  expect_identical(
+    result[[2]],
+    newMultiPop(C = pop[3:4], D = pop[5:6])
+  )
+  expect_identical(result[[3]], pop[7:8])
 })
