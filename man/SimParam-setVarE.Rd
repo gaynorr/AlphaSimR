@@ -35,7 +35,7 @@ SP$setVarE(h2=0.5)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setVarE(
+\section{Usage}{\preformatted{SP$setVarE(
   h2 = NULL,
   H2 = NULL,
   varE = NULL,

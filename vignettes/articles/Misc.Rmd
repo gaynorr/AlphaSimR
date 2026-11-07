@@ -70,8 +70,8 @@ This is explained in the next section.
 
 The above example is somewhat artificial,
 but it illustrates how we can store additional information in a `Pop` object.
-One more concrete example of storing such information
-is our previous simulation of a dairy cattle breeding program,
+A more concrete example comes from a simulation of a dairy cattle breeding program
+we have written,
 where we stored the farm ID for each cow, cow's lactation number, etc. in the `misc` slot.
 In addition to this, we wrote a custom `setPhenoCow()` function
 that used this additional information to generate phenotypes for the cows

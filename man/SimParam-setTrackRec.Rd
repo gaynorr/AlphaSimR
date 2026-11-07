@@ -31,7 +31,7 @@ SP$setTrackRec(TRUE)
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$setTrackRec(
+\section{Usage}{\preformatted{SP$setTrackRec(
   isTrackRec,
   force = FALSE
 )}}

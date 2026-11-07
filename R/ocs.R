@@ -1,9 +1,9 @@
-# selectOCS and its helpers, which selectCross(restrInbr=TRUE) also
+# selectOC and its helpers, which selectCross(restrInbr=TRUE) also
 # uses. They approximate optimal contribution selection with equal
 # contributions by truncating on a merit that is penalized for sharing
 # alleles with the selected parents, or, with a pedigree, for being
 # related to them. The derivation is given in the details section of
-# selectOCS.
+# selectOC.
 
 #' @title Penalty kernel for restricted inbreeding selection
 #'
@@ -595,7 +595,7 @@
 #'
 #' #Select 4 individuals while restricting the increase in expected
 #' #fixation measured at the SNP chip
-#' parents = selectOCS(pop, nInd=4, inbrTarget=0.5, simParam=SP)
+#' parents = selectOC(pop, nInd=4, inbrTarget=0.5, simParam=SP)
 #'
 #' #Cross them in a circle, so each parent is used equally
 #' crossPlan = cbind(1:4, c(2:4, 1))
@@ -610,15 +610,15 @@
 #' SP2$setTrackPed(TRUE)
 #' pop = newPop(founderPop, simParam=SP2)
 #' pop = randCross(pop, nCrosses=4, nProgeny=5, simParam=SP2)
-#' parents = selectOCS(pop, nInd=4, inbrTarget=0.1, usePed=TRUE,
-#'                     simParam=SP2)
+#' parents = selectOC(pop, nInd=4, inbrTarget=0.1, usePed=TRUE,
+#'                    simParam=SP2)
 #'
 #' @export
-selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
-                     use="pheno", selectTop=TRUE, inbrTarget=0.01,
-                     inbrType="relative", snpChip=1, useQtl=FALSE,
-                     returnPop=TRUE, simParam=NULL, nThreads=NULL,
-                     onShortfall="warning", usePed=FALSE, ...){
+selectOC = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
+                    use="pheno", selectTop=TRUE, inbrTarget=0.01,
+                    inbrType="relative", snpChip=1, useQtl=FALSE,
+                    returnPop=TRUE, simParam=NULL, nThreads=NULL,
+                    onShortfall="warning", usePed=FALSE, ...){
   onShortfall = checkShortfall(onShortfall)
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -629,10 +629,10 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
   # A HybridPop has no genotypes to measure fixation with, and a
   # MultiPop has no single set of allele frequencies to restrict
   if(is(pop,"MultiPop")){
-    stop("selectOCS does not support a MultiPop")
+    stop("selectOC does not support a MultiPop")
   }
   if(is(pop,"HybridPop")){
-    stop("selectOCS does not support a HybridPop")
+    stop("selectOC does not support a HybridPop")
   }
   checkNotEmpty(pop)
   take = .ocsSelectParents(pop=pop, nInd=nInd, nFemale=nFemale,
@@ -652,8 +652,8 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
 #' @title Select parents with restricted inbreeding
 #'
 #' @description
-#' The implementation behind \code{\link{selectOCS}}. See the details
-#' section of \code{\link{selectOCS}} for the method.
+#' The implementation behind \code{\link{selectOC}}. See the details
+#' section of \code{\link{selectOC}} for the method.
 #'
 #' @param pop an object of \code{\link{Pop-class}}
 #' @param nInd the number of individuals to select, or NULL
@@ -670,7 +670,7 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
 #' @param nThreads number of threads to use if OpenMP is available
 #' @param ... additional arguments if using a function for trait
 #' @param onShortfall "warning", "error" or "none"
-#' @param call the call of selectOCS, for messages
+#' @param call the call of selectOC, for messages
 #' @param usePed use the pedigree relationship matrix instead of
 #' genotypes
 #'
@@ -822,10 +822,10 @@ selectOCS = function(pop, nInd=NULL, nFemale=NULL, nMale=NULL, trait=1,
 
   ans = .ocsSolve(f=f, kappa0=kappa0, target=target)
   if(!ans$met){
-    warning("selectOCS target was not met; using the individuals ",
+    warning("selectOC target was not met; using the individuals ",
             "selected with the largest penalty tried")
   }
-  message("selectOCS: kappa = ", signif(ans$kappa, 4),
+  message("selectOC: kappa = ", signif(ans$kappa, 4),
           ", F = ", signif(ans$F, 4),
           " (target ", signif(target, 4),
           ", current ", signif(currentF, 4), ")")

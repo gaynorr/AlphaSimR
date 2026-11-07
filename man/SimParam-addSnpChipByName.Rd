@@ -29,7 +29,7 @@ SP$addSnpChipByName(c("1_1","1_3"))
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$addSnpChipByName(
+\section{Usage}{\preformatted{SP$addSnpChipByName(
   markers,
   name = NULL
 )}}

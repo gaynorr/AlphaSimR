@@ -87,7 +87,7 @@ SP$importTrait(markerNames=c("1_2","1_4","2_1","2_6"),
 \seealso{
 \code{\link{SimParam}}, which lists every method
 }
-\usage{\special{SP$importTrait(
+\section{Usage}{\preformatted{SP$importTrait(
   markerNames,
   addEff,
   domEff = NULL,

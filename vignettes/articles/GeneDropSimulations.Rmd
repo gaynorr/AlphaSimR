@@ -5,6 +5,9 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
+# Pandoc reads the path as Markdown, which would turn -- into a dash, so its
+# punctuation is escaped, with any quote doubled for YAML.
+bibliography: '`r gsub("\x27", "\x27\x27", gsub("([[:punct:]])", "\\\\\\1", normalizePath(if (file.exists("../../inst/REFERENCES.bib")) "../../inst/REFERENCES.bib" else system.file("REFERENCES.bib", package = "AlphaSimR", mustWork = TRUE), winslash = "/", mustWork = TRUE)))`'
 vignette: >
   %\VignetteIndexEntry{Gene Drop Simulations in AlphaSimR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -26,7 +29,7 @@ set.seed(3453)
 A gene drop simulation takes a pedigree and a set of founder genomes and
 works forwards through the pedigree, sampling gametes according to
 Mendelian inheritance and recombination, until every individual has a
-genome. The pedigree supplies the structure and the founders supply the
+genome [@maccluer1986Pedigree]. The pedigree supplies the structure and the founders supply the
 genetic material. Nothing about the genomes of the non-founders is
 assumed; they are the outcome of the sampling.
 
@@ -369,11 +372,9 @@ the matched individuals and what descends from them are simulated. This is
 the setting to use when the founder genotypes are real data for named
 individuals.
 
-Because ancestry above a match is skipped, the returned population can be
-shorter than the extended pedigree. Our imported population contains `C1`
-and `C2` as well as `F1` to `F4`, so matching on ID uses the observed
-genotypes of the single crosses and does not simulate the four founders at
-all:
+Our imported population contains `C1` and `C2` as well as `F1` to `F4`, so
+all six are matched and take their observed genotypes, and only their
+descendants are simulated:
 
 ```{r}
 matched = pedigreeCross(founderPop = founderPop,
@@ -387,7 +388,9 @@ All six matched individuals are returned, plus `C3` and the three doubled
 haploids that descend from them. Nothing was dropped through `F1` to `F4`,
 because their genotypes were observed rather than inferred.
 
-The more common case is that only part of the pedigree is genotyped.
+The more common case is that only part of the pedigree is genotyped, and
+then the returned population can be shorter than the extended pedigree,
+because ancestry above a match is skipped.
 Suppose only the two single crosses, `C1` and `C2`, were genotyped.
 Because `founderPop` was imported with `ped`, it is a `NamedMapPop` and
 can be subset by ID. A plain `MapPop` can only be subset by position.
@@ -615,3 +618,5 @@ genotyped individuals, with `matchID = TRUE`. Given a map population it
 builds and discards its own `SimParam` and returns a `NamedMapPop`, which
 makes the import, drop, simulate sequence the natural way to start a
 simulation from a real breeding population.
+
+# References

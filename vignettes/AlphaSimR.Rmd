@@ -16,7 +16,7 @@ vignette: >
 
 ## Introduction
 
-`AlphaSimR` is a package for performing stochastic simulations of plant and animal breeding programs. It is the successor to the AlphaSim software for breeding program simulation [@faux2016AlphaSim]. `AlphaSimR` combines the features of its predecessor with the R software environment to create a flexible and easy-to-use software environment capable of simulating very complex plant and animal breeding programs.
+`AlphaSimR` is a package for performing stochastic simulations of plant and animal breeding programs [@gaynor2021AlphaSimR]. It is the successor to the AlphaSim software for breeding program simulation [@faux2016AlphaSim]. `AlphaSimR` combines the features of its predecessor with the R software environment to create a flexible and easy-to-use software environment capable of simulating very complex plant and animal breeding programs.
 
 There is no single way to construct a simulation in `AlphaSimR`. This is an intentional design aspect of `AlphaSimR`, because it frees users from the constraints of predefined simulation structures. However, most simulations follow a general structure consisting of four steps:
 

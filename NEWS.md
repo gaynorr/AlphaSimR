@@ -28,12 +28,13 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * A `SimParam` with recombination tracking that was saved by an earlier version can no longer track recombination or pull IBD haplotypes.
 * The methods `addToRec`, `ibdHaplo`, `updateLastId` and `addToPed` are no longer documented, as they are for internal use.
 * AlphaSimR now imports the Matrix package, a recommended package that ships with R.
+* AlphaSimR now requires R 4.4.0 or later. Pedigree BLUP needs Matrix 1.6, which current versions of Matrix on CRAN install only on R 4.4.0 or later.
 
 ## Pedigree analysis
 
 * Added `pedigreeA` and `pedigreeInbreeding`, which calculate the numerator relationship matrix and inbreeding coefficients from the pedigree recorded with `setTrackPed`, for any even ploidy level.
 * Added `pedBLUP`, which fits a single trait pedigree BLUP (animal) model with REML, or with supplied `Vu` and `Ve`. Its result, a new `PedSol` class, is used with `setEBV`, including for individuals created after the fit.
-* Added `usePed` to `selectCross` and the new `selectOCS`, which measures expected fixation with the pedigree relationship matrix in place of genotypes.
+* Added `usePed` to `selectCross` and the new `selectOC`, which measures expected fixation with the pedigree relationship matrix in place of genotypes.
 * Added `nGen` to `getPed`, which returns the pedigree for more than one generation.
 
 ## Genomic selection
@@ -47,7 +48,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 ## Selection and crossing
 
-* Added `selectOCS`, and `restrInbr` to `selectCross`, for selection with a restriction on the expected increase in fixation.
+* Added `selectOC`, and `restrInbr` to `selectCross`, for selection with a restriction on the expected increase in fixation.
 * Added `onShortfall` to the selection functions, to warn, stop or stay silent when fewer candidates are available than requested.
 * The selection functions give a clear error for an empty population.
 * Added vector support for `nProgeny` in `self`, `randCross`, `randCross2`, `makeCross` and `makeCross2`.
@@ -65,6 +66,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Added `SimParam$finalizePheno`, a user-defined function applied to new phenotypes.
 * Trait names can be used to choose traits in `setPheno`, `editGenomeTopQtl`, `SimParam$removeTrait` and `SimParam$switchTrait`.
 * Added covariances between traits to the genic, Hardy-Weinberg and linkage disequilibrium parts of `genParam`, and the total non-additive deviations `nd`, `varN` and `gv_n`.
+* Added `mu_LE` to `genParam`, the mean genetic value with each locus's observed genotype frequencies but no linkage disequilibrium. With `mu_HW`, it splits the mean into the change from departures from Hardy-Weinberg genotype frequencies, `mu_LE - mu_HW`, and the change from linkage disequilibrium between epistatic loci, `mu - mu_LE`.
 * `addTrait` functions with `gamma=TRUE` now give the requested correlation, or warn and use the attainable limit.
 * Changed `mutate` into an S4 generic, so attaching AlphaSimR no longer masks `dplyr::mutate` for non-population arguments.
 
@@ -72,7 +74,10 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 * Added `[[`, `[`, `$` and `names` accessors and replacement methods, and a `show()` method.
 * Added `mergeMultiPops`, `flattenMultiPop`, `unnameMultiPop`, `newEmptyMultiPop`, `splitPop`, `selectPop` and `nPop`.
+* Added `calcPopSummary`, which summarizes the populations of a nested MultiPop and aggregates the summaries up its hierarchy, and `selectMultiPop`, which selects MultiPops by those aggregated summaries.
 * `mergePops`, `meanG`, `meanP`, `meanEBV`, `varG`, `varP`, `varEBV`, `gv`, `pheno` and `ebv` accept MultiPop objects. Added `meanGPop`, `meanPPop`, `varGPop` and `varPPop` for values between populations.
+* The `pull*Geno` and `pull*Haplo` functions, including `pullIbdHaplo`, accept MultiPop objects, with `simplify` and `level` arguments to combine the results. Their help is now on two pages, `?pullGeno` and `?pullHaplo`.
+* Added `pullSegSiteAf`, `pullQtlAf`, `pullSnpAf` and `pullMarkerAf`, which return allele frequencies for a population or each population of a MultiPop, optionally from a random sample of individuals.
 * `newPop` can create an empty population with a given ploidy.
 
 ## Threads and reproducibility
@@ -114,7 +119,10 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 * Split the `SimParam` help page into one page per method, such as `?"SimParam$addTraitA"`.
 * Reorganized the help pages of the `RRBLUP` models around the model each fits.
 * Added vignettes on genomic selection and parallelization. The genome article is now a vignette.
-* Added articles to the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, on quantitative genetics, combining ability, demographic models, gene drop simulations, importing data, genotype-by-environment interactions, simulating a plant breeding program, and storing data in `misc` and `miscPop`, and revised the genetic recombination article.
+* Added articles to the package website, <https://gaynorr.github.io/AlphaSimR/articles/>, on selection, pedigree BLUP, optimal contribution selection, custom traits and trait distributions, quantitative genetics, combining ability, demographic models, gene drop simulations, importing data, simulating a plant breeding program, simulating fungal breeding, working with structured populations using MultiPop, and storing data in `misc` and `miscPop`, and revised the genetic recombination article.
+* Corrected `citation("AlphaSimR")`, which split the authors' names into separate authors and gave the wrong page number for the AlphaSimR paper.
+* Added references to the literature behind the claims in the vignettes and articles.
+* The `genParam` help page now states the reference population its breeding values and deviations are defined in, and when they differ from a least squares fit to the population itself: with dominance, linkage disequilibrium and inbreeding together, and with linkage disequilibrium within an epistatic pair.
 
 # AlphaSimR 2.1.0
 

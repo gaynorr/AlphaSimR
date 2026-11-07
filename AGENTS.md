@@ -19,13 +19,18 @@ branch and `master` the release branch. Start a feature from an up-to-date
 into `devel` through a pull request. Do not commit feature work directly
 to `devel` or `master`.
 
-**Do not add dependencies.** `Depends` is R (>= 4.0.0); `Imports` is
+**Do not add dependencies.** `Depends` is R (>= 4.4.0); `Imports` is
 `Rcpp`, `Rdpack`, `methods`, `R6` and `Matrix`; `LinkingTo` is `Rcpp`,
 `RcppArmadillo`, `BH` and `dqrng`; `Suggests` is `knitr`, `rmarkdown` and
 `testthat`. That list is a decision rather than an accident, and adding to
 it needs discussing first. `Matrix` provides the sparse Cholesky
 factorization used by pedigree BLUP; it is a recommended package that
-ships with R.
+ships with R. `Imports` needs Matrix 1.6-0 or later, and current CRAN
+Matrix needs R 4.4, so 4.4.0 is the oldest R on which the package installs
+without fetching an archived Matrix. R 4.3.2 ships Matrix 1.6 as well, but
+`R CMD check --as-cran` warns when the R version in `Depends` has a patch
+level other than zero, so 4.3.2 cannot be named. That is why `Depends`
+names 4.4.0.
 
 **Mark AI-generated text posted to GitHub.** Anything an agent writes and
 posts to an issue or a discussion, whether it starts a thread or replies
@@ -64,8 +69,14 @@ and `HybridPop`, in `R/Class-HybridPop.R`, is separate from all of them.
   from R's state, and randomness inside a call comes from substreams of it
   rather than from R.
 - `.github/workflows/` holds `R-CMD-check.yaml`, `pkgdown.yaml`,
-  `test-coverage.yaml` and `document.yaml`. Only the last of these writes
-  to the repository; see Generated files.
+  `test-coverage.yaml`, `document.yaml` and `rhub.yaml`. `document.yaml`
+  commits to the branch it runs on; see Generated files. `pkgdown.yaml`
+  builds the site for pushes and pull requests to `devel` and `master`, but
+  deploys it to `gh-pages` only from `master` and releases. `R-CMD-check.yaml`
+  includes a job on the oldest R allowed by `Depends` in `DESCRIPTION`, so a
+  change to one needs the other. `rhub.yaml` runs only by hand and by
+  default runs the sanitizer and valgrind checks CRAN applies to compiled
+  code.
 - `vignettes/articles/` is built by pkgdown but not woven by `R CMD build`,
   because vignette subdirectories are not searched. Its code still has to
   run when the site is built.
@@ -80,10 +91,8 @@ old-style files; in `R/phenotypes.R` and `R/popSummary.R` the two styles
 are at about parity. Follow the function you are working in rather than the
 file as a whole.
 
-Six files carry `# fmt: skip file` on their first line: `R/AlphaSimR.R`,
-`R/Class-Pop.R`, `R/mergePops.R`, `R/popSummary.R`,
-`tests/testthat/test-mergePops.R` and `tests/testthat/test-popSummary.R`.
-Do not add or remove the marker.
+The package does not use an automatic formatter, so do not reformat code
+beyond the lines a change needs.
 
 Comments explain *why*, in full prose sentences, in `src/` as well as `R/`.
 
@@ -109,8 +118,8 @@ changed and nothing else did.
 
 None of these produces an error, and most will not fail an existing test.
 
-**Reproducibility depends on the order of operations, and no test defends
-it.** A simulation run from a fixed seed must give the same answer. Random
+**Reproducibility depends on the order of operations.** A simulation run
+from a fixed seed must give the same answer. Random
 numbers are consumed as individuals are made, so changing the order in
 which crosses happen, or how many individuals one call produces, changes
 every seeded result. A crossing call builds `nChr * countBlocks(n)` RNG
@@ -124,13 +133,26 @@ Separately, `.newPop` draws from R's own stream: `sample()` for sex when
 `sexes` is `"yes_rand"`, and whatever `setPheno` uses. So R's stream
 advances once per population built, on top of the C++ substreams.
 
-There is no stored expected output anywhere in the package: no
-`tests/testthat/_snaps`, no `expect_snapshot`, no fixtures.
 `tests/testthat/test-reproducibility.R` only compares one run against
 another run in the same build — the same seed twice, and one thread against
 two — and the thread comparisons skip themselves when only one thread is
-available. A change that moves the RNG stream therefore passes the entire
-suite. Review and a `NEWS.md` entry are the only defense.
+available. `tests/testthat/test-seededResults.R` is what catches a moved
+stream: it runs the seeded scenarios in `helper-seededResults.R` and
+compares them with stored values, exactly for genotype checksums,
+identifiers and sexes, and with a tolerance for effects, genetic values
+and phenotypes. If a change moves them on purpose, regenerate the stored
+values as the helper describes, never loosen the comparison, and list the
+change under "Changes to results from a seed" in `NEWS.md`. The scenarios
+cover `quickHaplo` founders, trait sampling, phenotypes, crossing,
+selection, doubled haploids, selfing, pedigree drops, mutation,
+recombination tracking and polyploid meiosis. They do not cover `runMacs`,
+whose output can differ in the last bits between platforms, or the
+genomic and pedigree prediction models, so a change there still needs
+review. The stored values hold only on x86-64, where Windows and Linux
+agree exactly: on Apple Silicon, meiosis gives different results, most
+likely because clang fuses multiply-adds on arm64. The comparison is
+therefore skipped on other architectures and on CRAN, and regenerated
+values must come from an x86-64 machine.
 
 **Results must not depend on `nThreads`.** The invariant is the constant in
 `src/misc.h`:

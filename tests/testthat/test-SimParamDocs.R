@@ -1,8 +1,8 @@
 context("SimParamDocs")
 
 # Each user-facing method of SimParam has a help page of its own, written
-# in R/SimParam-methods.R. Those pages cannot have a real \usage section,
-# so R CMD check does not compare their arguments with the code, and a
+# in R/SimParam-methods.R. Those pages cannot have a \usage section, so
+# R CMD check does not compare their arguments with the code, and a
 # method that gained or renamed an argument, or a new method without a
 # page, would otherwise go unnoticed. These tests take that check's place.
 

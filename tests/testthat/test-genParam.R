@@ -776,6 +776,70 @@ local({
     }
   })
 
+  # ---- Population mean genetic value (linkage-equilibrium population) ----
+
+  # Observed genotype frequencies at each locus, with loci independent
+  # At each locus, E(x-1) = p-q and Pr(x==1) = H, the observed heterozygosity
+  # Under LE, E((x1-1)*(x2-1)) = (p1-q1)*(p2-q2) for each epistatic pair,
+  # which depends only on allele frequencies, so departures from HWE change
+  # the mean only through dominance effects
+  epiPairsByTrait = list(`9` = list(c("f", "g")), `10` = list(c("h", "i")),
+                         `11` = list(c("j", "k")), `13` = list(c("a", "b")),
+                         `15` = list(c("b", "c")), `17` = list(c("b", "l")),
+                         `18` = list(c("f", "g"), c("h", "i")),
+                         `19` = list(c("m", "n"), c("o", "p")),
+                         `20` = list(c("l", "b")))
+  epiEffByTrait = list(`9` = aa[9], `10` = aa[10], `11` = aa[11], `13` = aa[13],
+                       `15` = aa[15], `17` = aa[17], `18` = c(aa[18], aa[18]),
+                       `19` = c(aa[19], 0), `20` = aa[20])
+  # The loci of each trait, as in the trait guide
+  traitLoci = list("a", "b", "c", "d", "e", c("f", "g"), c("h", "i"),
+                   c("j", "k"), c("f", "g"), c("h", "i"), c("j", "k"),
+                   c("a", "b"), c("a", "b"), c("b", "c"), c("b", "c"), "l",
+                   c("b", "l"), c("f", "g", "h", "i"), c("m", "n", "o", "p"),
+                   c("l", "b"))
+  myMeanLocus_LE = a*(p-q) + H*d
+  myMu_LE = myMuDomHW = myMuEpiLD = numeric(nTrt)
+  for (trait in 1:nTrt) {
+    loci = traitLoci[[trait]]
+    myMu_LE[trait] = intercept + sum(myMeanLocus_LE[loci])
+    # Change in the mean from departures from HWE: d*(H-2pq) at each locus
+    myMuDomHW[trait] = sum(d[loci]*(H[loci]-2*p[loci]*q[loci]))
+    pairs = epiPairsByTrait[[as.character(trait)]]
+    effs = epiEffByTrait[[as.character(trait)]]
+    for (k in seq_along(pairs)) {
+      l = pairs[[k]]
+      myMu_LE[trait] = myMu_LE[trait] + effs[k]*prod(p[l]-q[l])
+      # Change in the mean from LD: aa times the covariance of the dosages
+      myMuEpiLD[trait] = myMuEpiLD[trait] + effs[k]*
+        mean((geno[, l[1]]-2*p[l[1]])*(geno[, l[2]]-2*p[l[2]]))
+    }
+  }
+
+  test_that("genParam: Population mean genetic value (LE population)", {
+    for (trait in 1:nTrt) {
+      expect_equal(unname(gp$mu_LE[trait]), myMu_LE[trait], tolerance = 1e-6)
+      # The mean splits into its Hardy-Weinberg and LD parts
+      expect_equal(unname(gp$mu_LE[trait] - gp$mu_HW[trait]), myMuDomHW[trait], tolerance = 1e-6)
+      expect_equal(unname(gp$mu[trait] - gp$mu_LE[trait]), myMuEpiLD[trait], tolerance = 1e-6)
+    }
+    # Without epistasis LD cannot change the mean
+    noEpi = setdiff(1:nTrt, as.integer(names(epiPairsByTrait)))
+    expect_equal(unname(gp$mu_LE[noEpi]), unname(gp$mu[noEpi]), tolerance = 1e-10)
+    # Exact LE (trait 9) leaves no LD part; partial LD (trait 10) does
+    expect_equal(unname(gp$mu[9] - gp$mu_LE[9]), 0, tolerance = 1e-10)
+    expect_gt(abs(unname(gp$mu[10] - gp$mu_LE[10])), 0.01)
+  })
+
+  test_that("genParam: Population mean genetic value (LE population) - one individual", {
+    for (case in singleCases) {
+      # A single individual has no LD and no variation, so every mean but
+      # mu_HW is its genetic value
+      expect_equal(case$gp$mu_LE, case$gp$mu, tolerance = 1e-10)
+    }
+  })
+
+
   # ---- Population mean genetic value (observed population) ----
 
   # Falconer (1961), p. 114: frequency-weighted genotype means equal the

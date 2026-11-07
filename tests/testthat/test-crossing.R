@@ -170,9 +170,9 @@ test_that("MEET a relative target without sexes",{
   Ft = mean(colMeans(Z)^2)
   target = Ft + 0.01*(1-Ft)
   expect_message(
-    take <- selectOCS(s$pop, nInd=100, use="gv", returnPop=FALSE,
-                      simParam=s$SP),
-    regexp="selectOCS: kappa")
+    take <- selectOC(s$pop, nInd=100, use="gv", returnPop=FALSE,
+                     simParam=s$SP),
+    regexp="selectOC: kappa")
   expect_length(take, 100L)
   expect_false(anyDuplicated(take) > 0)
   expect_lte(ocsFix(Z, take), target)
@@ -183,13 +183,13 @@ test_that("MEET a relative target without sexes",{
 
   # The same target given as an absolute value selects the same parents
   take2 = suppressMessages(
-    selectOCS(s$pop, nInd=100, use="gv", inbrTarget=target,
-              inbrType="absolute", returnPop=FALSE, simParam=s$SP))
+    selectOC(s$pop, nInd=100, use="gv", inbrTarget=target,
+             inbrType="absolute", returnPop=FALSE, simParam=s$SP))
   expect_identical(take, take2)
 
   # Returning a population gives the same individuals in the same order
   pop2 = suppressMessages(
-    selectOCS(s$pop, nInd=100, use="gv", simParam=s$SP))
+    selectOC(s$pop, nInd=100, use="gv", simParam=s$SP))
   expect_identical(pop2@id, s$pop@id[take])
 })
 
@@ -200,8 +200,8 @@ test_that("MEET a relative target with sexes, pooling the sexes",{
   Ft = mean(colMeans(Z)^2)
   target = Ft + 0.01*(1-Ft)
   take = suppressMessages(
-    selectOCS(s$pop, nFemale=60, nMale=60, use="gv", returnPop=FALSE,
-              simParam=s$SP))
+    selectOC(s$pop, nFemale=60, nMale=60, use="gv", returnPop=FALSE,
+             simParam=s$SP))
   # Females come first, then males
   female = take[1:60]
   male = take[61:120]
@@ -219,7 +219,7 @@ test_that("MEET a relative target with sexes, pooling the sexes",{
                      returnPop=FALSE, simParam=s$SP)
   expect_gt(poolFix(truncF, truncM), target)
 
-  # selectCross crosses exactly the individuals selectOCS selects, and
+  # selectCross crosses exactly the individuals selectOC selects, and
   # with balance every one of them is used
   pop2 = suppressMessages(
     selectCross(s$pop, nFemale=60, nMale=60, nCrosses=60, use="gv",
@@ -234,8 +234,8 @@ test_that("USE QTL genotypes to measure fixation",{
   Z = pullQtlGeno(s$pop, simParam=s$SP) - 1
   Ft = mean(colMeans(Z)^2)
   take = suppressMessages(
-    selectOCS(s$pop, nInd=100, use="gv", useQtl=TRUE, returnPop=FALSE,
-              simParam=s$SP))
+    selectOC(s$pop, nInd=100, use="gv", useQtl=TRUE, returnPop=FALSE,
+             simParam=s$SP))
   expect_lte(ocsFix(Z, take), Ft + 0.01*(1-Ft))
 })
 
@@ -253,8 +253,8 @@ test_that("USE the pedigree to measure fixation",{
     Ft = ocsPedFix(K, seq_len(s$pop@nInd))
     target = Ft + 0.01*(1-Ft)
     take = suppressMessages(
-      selectOCS(s$pop, nInd=40, use="gv", usePed=TRUE, returnPop=FALSE,
-                simParam=s$SP))
+      selectOC(s$pop, nInd=40, use="gv", usePed=TRUE, returnPop=FALSE,
+               simParam=s$SP))
     expect_length(take, 40L)
     expect_false(anyDuplicated(take) > 0)
     expect_lte(ocsPedFix(K, take), target)
@@ -290,8 +290,8 @@ test_that("USE the pedigree with sexes, pooling the sexes",{
     drop(crossprod(c, K[take,take]%*%c))
   }
   take = suppressMessages(
-    selectOCS(s$pop, nFemale=30, nMale=30, use="gv", usePed=TRUE,
-              returnPop=FALSE, simParam=s$SP))
+    selectOC(s$pop, nFemale=30, nMale=30, use="gv", usePed=TRUE,
+             returnPop=FALSE, simParam=s$SP))
   female = take[1:30]
   male = take[31:60]
   expect_true(all(s$pop@sex[female]=="F"))
@@ -323,14 +323,14 @@ test_that("MEASURE every set of unrelated founders alike by the pedigree",{
   # 1/(2*5), so that target is met by truncation and a lower one is not
   # met by any set
   take = suppressMessages(
-    selectOCS(pop, nInd=5, use="gv", inbrTarget=0.1,
-              inbrType="absolute", usePed=TRUE, returnPop=FALSE,
-              simParam=SP))
+    selectOC(pop, nInd=5, use="gv", inbrTarget=0.1,
+             inbrType="absolute", usePed=TRUE, returnPop=FALSE,
+             simParam=SP))
   expect_setequal(take, selectInd(pop, nInd=5, use="gv",
                                   returnPop=FALSE, simParam=SP))
   expect_warning(suppressMessages(
-    selectOCS(pop, nInd=5, use="gv", inbrTarget=0.09,
-              inbrType="absolute", usePed=TRUE, simParam=SP)),
+    selectOC(pop, nInd=5, use="gv", inbrTarget=0.09,
+             inbrType="absolute", usePed=TRUE, simParam=SP)),
     regexp="target was not met")
 })
 
@@ -369,15 +369,15 @@ test_that("SPREAD greedy pedigree selection across full-sib families",{
 test_that("REFUSE the pedigree without tracking or with useQtl",{
   set.seed(13)
   s = ocsSetup()
-  expect_error(selectOCS(s$pop, nInd=10, use="gv", usePed=TRUE,
-                         simParam=s$SP),
+  expect_error(selectOC(s$pop, nInd=10, use="gv", usePed=TRUE,
+                        simParam=s$SP),
                regexp="trackPed")
   expect_error(selectCross(s$pop, nInd=10, nCrosses=5, use="gv",
                            restrInbr=TRUE, usePed=TRUE, simParam=s$SP),
                regexp="trackPed")
   s = ocsSetup(trackPed=TRUE)
-  expect_error(selectOCS(s$pop, nInd=10, use="gv", usePed=TRUE,
-                         useQtl=TRUE, simParam=s$SP),
+  expect_error(selectOC(s$pop, nInd=10, use="gv", usePed=TRUE,
+                        useQtl=TRUE, simParam=s$SP),
                regexp="cannot both be TRUE")
 })
 
@@ -449,8 +449,8 @@ test_that("MEET a relative target in a tetraploid",{
   # A random set of forty tetraploid parents costs about 1/(4*40) of
   # the heterozygosity, leaving room within the target for selection
   expect_silent(take <- suppressMessages(
-    selectOCS(s$pop, nInd=40, use="gv", returnPop=FALSE,
-              simParam=s$SP)))
+    selectOC(s$pop, nInd=40, use="gv", returnPop=FALSE,
+             simParam=s$SP)))
   expect_lte(ocsFix(Z, take), target)
   # Truncation alone misses the target, so the penalty was needed
   trunc = selectInd(s$pop, nInd=40, use="gv", returnPop=FALSE,
@@ -465,9 +465,9 @@ test_that("WARN when the restriction is approximate or not met",{
     selectCross(s$pop, nInd=100, nCrosses=50, use="gv", restrInbr=TRUE,
                 simParam=s$SP)),
     regexp="only approximate")
-  # The warning is about random crossing, so selectOCS does not give it
+  # The warning is about random crossing, so selectOC does not give it
   expect_silent(suppressMessages(
-    selectOCS(s$pop, nInd=100, use="gv", simParam=s$SP)))
+    selectOC(s$pop, nInd=100, use="gv", simParam=s$SP)))
   # Zero expected fixation needs the two parents to have an allele
   # frequency of exactly 0.5 at every locus, which is not found here
   expect_warning(suppressMessages(
@@ -490,15 +490,15 @@ test_that("REFUSE invalid restricted inbreeding settings",{
                regexp="inbrTarget")
 })
 
-test_that("REFUSE a MultiPop or HybridPop in selectOCS",{
+test_that("REFUSE a MultiPop or HybridPop in selectOC",{
   set.seed(8)
   s = ocsSetup()
-  expect_error(selectOCS(newMultiPop(s$pop, s$pop), nInd=10, use="gv",
-                         simParam=s$SP),
+  expect_error(selectOC(newMultiPop(s$pop, s$pop), nInd=10, use="gv",
+                        simParam=s$SP),
                regexp="MultiPop")
   hybrid = hybridCross(s$pop[1:5], s$pop[6:10], returnHybridPop=TRUE,
                        simParam=s$SP)
-  expect_error(selectOCS(hybrid, nInd=2, use="gv", simParam=s$SP),
+  expect_error(selectOC(hybrid, nInd=2, use="gv", simParam=s$SP),
                regexp="HybridPop")
 })
 

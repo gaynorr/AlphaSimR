@@ -1,0 +1,3 @@
+# Store text files with LF line endings in the repository, whatever the
+# platform they were committed from. Working copies follow core.autocrlf.
+* text=auto

@@ -15,6 +15,16 @@
 // individual's genetic value: gv_a+gv_d+gv_aa-bv-dd less the sum of each
 // pair's mean genetic value.
 //
+// The effects are least squares effects in a reference population that has
+// the observed genotype frequencies at each locus but independent loci. A
+// locus's average effect is the regression of its marginal genetic value on
+// its own dosage, and a pair's epistatic value is averaged over each
+// partner's marginal frequencies. Linkage disequilibrium, including within
+// a pair, appears in the variances and covariances, which are taken over
+// the observed individuals, rather than in the effects. See the header of
+// calcGenParamGroup for when this differs from a least squares fit to the
+// observed population.
+//
 // With locusTables, the genotype frequencies and statistical values at each
 // locus, and the epistatic deviations of each pair, are also returned, so
 // that genParam can form genic covariances between traits.
@@ -141,6 +151,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
   arma::vec genicAA2(nBlocks,arma::fill::zeros); // No LD and HWE
   arma::vec mu(nBlocks,arma::fill::zeros); // Observed mean
   arma::vec eMu(nBlocks,arma::fill::zeros); // Expected mean with HWE
+  arma::vec leMu(nBlocks,arma::fill::zeros); // Expected mean with no LD
   arma::vec alpha(a.n_elem);
   arma::vec alphaHW(a.n_elem);
   // For each locus: its mean dosage, the mean of its marginal genetic value,
@@ -329,6 +340,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
       gvEMu = accu(freqNoLDE%GV);
       mu(tid) += gvMu;
       eMu(tid) += gvEMu;
+      leMu(tid) += gvNoLDMu;
       if(hasD){
         AA = GV-BV-DD-gvMu;
         AANoLD = GV-BV-DD-gvNoLDMu;
@@ -472,6 +484,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
+                              Rcpp::Named("mu_LE")=accu(leMu)+intercept,
                               Rcpp::Named("gv_a")=gvA,
                               Rcpp::Named("gv_d")=gvD,
                               Rcpp::Named("gv_aa")=gvAA,
@@ -489,6 +502,7 @@ Rcpp::List calcGenParamE(const Rcpp::S4& trait,
                               Rcpp::Named("genicVarAA2")=accu(genicAA2),
                               Rcpp::Named("mu")=accu(mu)+intercept,
                               Rcpp::Named("mu_HWE")=accu(eMu)+intercept,
+                              Rcpp::Named("mu_LE")=accu(leMu)+intercept,
                               Rcpp::Named("gv_a")=gvA,
                               Rcpp::Named("gv_aa")=gvAA,
                               Rcpp::Named("gv_mu")=intercept,
@@ -641,6 +655,26 @@ arma::Mat<arma::uword> countGenotypes(const PackedGeno& g, const LociPos& pos,
 // loci and are worked out together by gvGroupEffects, which reads the
 // genotypes once for all of them. Each trait's statistics for loci are the
 // same whichever traits it is worked out with.
+//
+// A locus's average effect is the regression of its genetic value on its
+// own dosage under its own genotype frequencies. These are the least
+// squares effects of a reference population with the observed genotype
+// frequencies at each locus and independent loci, at any ploidy and level
+// of inbreeding. Linkage disequilibrium enters only the variances and
+// covariances. For diploids, the sum over loci is also the least squares
+// fit of genetic values to all dosages jointly in the observed population
+// under random union of gametes, even with linkage disequilibrium, and when
+// only two genotypes segregate at each locus. With dominance, linkage
+// disequilibrium and departures from Hardy-Weinberg proportions together,
+// as after selfing a segregating population, it is not: the joint average
+// effects differ by Var(x)^-1 e, where
+//   e_j = sum_{i != j} d_i [Cov(h_i, x_j) - b_i Cov(x_i, x_j)],
+// h_i is locus i's dominance coding and b_i = Cov(h_i, x_i)/Var(x_i), and
+// breeding values and dominance deviations are then correlated in the
+// observed population. A joint fit is not used because it is only
+// meaningful with many more individuals than loci: with at least as many
+// segregating loci as individuals it generally reproduces the genetic
+// values exactly, making all genetic variance additive.
 //
 // With locusTables, the genotype frequencies and statistical values at each
 // locus are also returned, so that genParam can form genic covariances
@@ -883,6 +917,9 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                     Rcpp::Named("bvE")=tabBvE[t]);
       }
     }
+    // Without epistasis the genetic value is a sum of functions of single
+    // loci, so its mean does not depend on linkage disequilibrium and the
+    // mean with no LD, mu_LE, is the observed mean
     if(hasD[t]){
       const arma::vec& gvD = ind[gvDIdx[t]](0);
       output[t] = Rcpp::List::create(Rcpp::Named("gv")=gvA+gvD+intercept[t],
@@ -894,6 +931,7 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("genicVarD2")=accu(genicD2[t]),
                                      Rcpp::Named("mu")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("mu_HWE")=accu(eMu[t])+intercept[t],
+                                     Rcpp::Named("mu_LE")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("gv_a")=gvA,
                                      Rcpp::Named("gv_d")=gvD,
                                      Rcpp::Named("gv_mu")=intercept[t],
@@ -907,6 +945,7 @@ std::vector<Rcpp::List> calcGenParamGroup(const std::vector<Rcpp::S4>& traits,
                                      Rcpp::Named("genicVarA2")=accu(genicA2[t]),
                                      Rcpp::Named("mu")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("mu_HWE")=accu(eMu[t])+intercept[t],
+                                     Rcpp::Named("mu_LE")=accu(mu[t])+intercept[t],
                                      Rcpp::Named("gv_a")=gvA,
                                      Rcpp::Named("gv_mu")=intercept[t],
                                      Rcpp::Named("alpha")=alpha[t],
