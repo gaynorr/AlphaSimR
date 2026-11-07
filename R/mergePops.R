@@ -267,9 +267,10 @@ mergePops = function(popList){
 #' populations through their hierarchical names. The default \code{"auto"} mode
 #' is conservative: names are kept only when they are meaningful (all present
 #' and unique); missing names are not replaced with positional names. Use
-#' \code{"concatenate"} to prefix names with their parent names, using
-#' positional names for child subtrees with missing or duplicate names,
-#' \code{"force"} to guarantee names with uniqueness enforcement, or
+#' \code{"concatenate"} to prefix names with their parent names, labeling
+#' an element without a name by its position and replacing duplicated
+#' names within a child by positions, \code{"force"} to guarantee names
+#' with uniqueness enforcement, or
 #' \code{"none"} to explicitly discard all names.
 #'
 #' @return If \code{x} is a \code{\link{Pop-class}}, the same \code{x}
@@ -453,8 +454,16 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
   for (i in seq_along(mp@pops)) {
     item = mp@pops[[i]]
 
-    label = if (!is.null(nm) && !is.na(nm[i])) {
+    # A missing name is NA or "", as an unnamed element of a partly named
+    # list has "" for its name. "auto" leaves it missing, so that names are
+    # kept only when all of them were given, while "concatenate" and "force"
+    # build names, so they label the element by its position. Using NA or ""
+    # there would give names such as "NA_1" or "_1".
+    hasName = !is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])
+    label = if (hasName) {
       nm[i]
+    } else if (preserveNames %in% c("concatenate", "force")) {
+      as.character(i)
     } else {
       NA_character_
     }
@@ -473,6 +482,14 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
       )
 
       childEnd = state$pos
+
+      # An empty MultiPop adds no populations and so no names. Without this
+      # check, childStart:childEnd would count down and overwrite the names
+      # of the populations before it.
+      if (childEnd < childStart) {
+        next
+      }
+
       childNames = state$names[childStart:childEnd]
 
       if (preserveNames %in% c("concatenate", "force")) {
@@ -503,7 +520,9 @@ flattenMultiPop = function(x, level = 1, preserveNames = "auto") {
         call. = FALSE
       )
     }
-    state$names[start:end] = make.unique(nameVec)
+    if (end >= start) {
+      state$names[start:end] = make.unique(nameVec)
+    }
     namesValid = TRUE
   } else {
     namesValid = length(nameVec) > 0L &&

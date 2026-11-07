@@ -592,7 +592,7 @@ test_that("flattenMultiPop handles unnamed and partly named nested children", {
   )
   expect_identical(
     names(concatenated),
-    c("A", "B_X", "B_")
+    c("A", "B_X", "B_2")
   )
 
   forced = flattenMultiPop(
@@ -609,6 +609,80 @@ test_that("flattenMultiPop handles unnamed and partly named nested children", {
     preserveNames = "none"
   )
   expect_null(names(none))
+})
+
+test_that("flattenMultiPop labels unnamed elements by position when building names", {
+  founderPop = quickHaplo(nInd = 6, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  # No names anywhere, so every name is built from positions.
+  unnamed = newMultiPop(
+    newMultiPop(pop[1], pop[2]),
+    newMultiPop(pop[3], pop[4])
+  )
+  for (mode in c("concatenate", "force")) {
+    expect_identical(
+      names(flattenMultiPop(unnamed, preserveNames = mode)),
+      c("1_1", "1_2", "2_1", "2_2"),
+      info = mode
+    )
+  }
+  expect_null(names(flattenMultiPop(unnamed, preserveNames = "auto")))
+
+  # An unnamed MultiPop beside a named one takes its position as its prefix.
+  partlyNamedTop = newMultiPop(
+    a = newMultiPop(x = pop[1], y = pop[2]),
+    newMultiPop(x = pop[3], y = pop[4])
+  )
+  for (mode in c("concatenate", "force")) {
+    expect_identical(
+      names(flattenMultiPop(partlyNamedTop, preserveNames = mode)),
+      c("a_x", "a_y", "2_x", "2_y"),
+      info = mode
+    )
+  }
+
+  # Unnamed levels below a named one keep their own positions.
+  deep = newMultiPop(
+    a = newMultiPop(newMultiPop(pop[1], pop[2]), pop[3]),
+    b = pop[4]
+  )
+  for (mode in c("concatenate", "force")) {
+    expect_identical(
+      names(flattenMultiPop(deep, preserveNames = mode)),
+      c("a_1_1", "a_1_2", "a_2", "b"),
+      info = mode
+    )
+  }
+})
+
+test_that("flattenMultiPop skips an empty nested MultiPop without changing names", {
+  founderPop = quickHaplo(nInd = 6, nChr = 1, segSites = 10)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  pop = newPop(founderPop, simParam = SP)
+
+  mp = newMultiPop(
+    A = newMultiPop(x = pop[1], y = pop[2]),
+    E = newEmptyMultiPop(),
+    B = newMultiPop(z = pop[3])
+  )
+
+  expect_identical(
+    flattenMultiPop(mp, preserveNames = "auto"),
+    newMultiPop(x = pop[1], y = pop[2], z = pop[3])
+  )
+  expect_identical(
+    names(flattenMultiPop(mp, preserveNames = "concatenate")),
+    c("A_x", "A_y", "B_z")
+  )
+  expect_identical(
+    names(flattenMultiPop(mp, preserveNames = "force")),
+    c("A_x", "A_y", "B_z")
+  )
+  expect_null(names(flattenMultiPop(mp, preserveNames = "none")))
 })
 
 test_that("flattenMultiPop preserves requested nested levels", {
