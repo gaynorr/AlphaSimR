@@ -80,6 +80,15 @@ A `Pop-class` object represents a population of individuals. A population is the
 
 Populations are not a fixed unit in `AlphaSimR`. Many functions in `AlphaSimR` take a population as an argument, modify the population, and then return the modified population. Populations can also be used "directly". For example, you can pull individuals out to form new (sub-)populations using `[]` and you can merge populations together using `c()`. This functionality is particularly useful for performing tasks in `AlphaSimR` that lack a built-in function. However, the example breeding program presented here is easily modeled using built-in functions.
 
+Most `AlphaSimR` functions take a population as their first argument and return a population, so steps can also be chained with R's pipe operator, `|>`. The two approaches below are equivalent:
+
+```{r eval=FALSE}
+selected = selectInd(pop, nInd=50, use="gv")
+progeny = randCross(selected, nCrosses=1000)
+
+progeny = pop |> selectInd(nInd=50, use="gv") |> randCross(nCrosses=1000)
+```
+
 Before continuing to model the breeding program, you should first think about the data you'll need for examining the results in the next stage. This is because you must expressly request that the relevant data is saved. `AlphaSimR` is designed this way for increased speed and reduced memory usage.
 
 In this example a plot of the generation mean over time is desired. All that is needed to construct this plot is a vector containing the mean in each generation. To start this vector, the mean in the current generation is saved as "genMean". In each subsequent generation, the mean of that generation will be added to "genMean". Measuring the mean in the current generation is accomplished with the code below.

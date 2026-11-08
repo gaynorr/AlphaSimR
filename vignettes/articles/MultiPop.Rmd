@@ -280,6 +280,16 @@ F2 = setPheno(F2, varE = 4, reps = 4/19, p = p)
 F2 = selectInd(F2, nInd = 25)
 ```
 
+Because `self()`, `setPheno()` and `selectInd()` each take a `MultiPop` as their first argument and return a `MultiPop`, the same steps can be chained with R's pipe operator, `|>`, starting from the `F1` population before it is split:
+
+```{r wheat-stage-2-pipe, eval = FALSE}
+F2 = F1 |>
+  splitPop(by = F1@id) |>
+  self(nProgeny = 250) |>
+  setPheno(varE = 4, reps = 4/19, p = p) |>
+  selectInd(nInd = 25)
+```
+
 ### Stages 3 to 5: selecting rows within families {#stages-three-to-five}
 
 In each subsequent stage, every selected individual is self-pollinated to produce 20 progeny. The progeny are planted in **rows**, and the row is the evaluation unit. We simulate individual phenotypes and use their mean as the row phenotype. We then select the best 10 rows per family and the best 4 individuals within each selected row.
