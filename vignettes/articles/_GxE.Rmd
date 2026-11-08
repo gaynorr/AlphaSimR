@@ -55,3 +55,160 @@ PYT = setPheno(PYT, year=year, fixEff=paste0("PYT_", year))
 
 pheno_df = setPheno(PYT, year=year, fixEff=paste0("PYT_", year), returnPheno=TRUE)
 ```
+
+# Decisions to make
+
+The new model is meant to give a compound symmetry covariance between
+environments by sampling additive QTL deviations for each environment
+inside `setPheno`, with the year's deviations reproducible from a seed
+and the locations' deviations sampled at random. The questions below have
+to be settled before the interface above can be implemented or
+documented. Each one ends with an empty chunk for the proposed code.
+
+## 1. The model and the meaning of each variance
+
+The article needs the model written out, for example
+$y = \mu + g + (gY) + (gL{\cdot}Y) + e$, with the variance each argument
+sets and the covariance it implies between two records of the same
+genotype. What do `varGxL` and `varGxL_Y` stand for? Is `varGxL` a
+location deviation that persists across years, or is it specific to a
+location in one year? Is `varGxL_Y` genotype by year, or location within
+year? If locations are sampled afresh on every call, a persistent
+genotype by location term cannot exist, and the variance drawn per
+location is really a location-year term.
+
+```{r, eval=FALSE}
+
+```
+
+## 2. How a year is identified
+
+The plan uses `p` as the seed for the year deviations, but the code above
+uses a `year` argument. A `p` is a floating point value, so `p[year]` and a
+typed constant can differ in the last bits and give different effects, and
+`p` already means the quantile of the environmental covariate for legacy
+traits. An integer `year` avoids both. Should the year be identified by
+`p` or by an integer `year`?
+
+If the seed is derived from the year alone, every replicate of a
+simulation draws the same year deviations, even after different calls to
+`set.seed()`, which correlates the replicates without warning. Should the
+`SimParam` hold a random salt, drawn when it is created or when the trait
+is added, that is combined with the year?
+
+```{r, eval=FALSE}
+
+```
+
+## 3. How a location is identified
+
+With `locs=2` sampling two new locations on every call, two trials in the
+same year never share a site, and no location can be followed across
+years. Is that intended? Should `locs` also accept a vector of location
+identifiers, seeded like years, so that trials can share sites and a
+target population of environments can be modeled?
+
+```{r, eval=FALSE}
+
+```
+
+## 4. How `reps` and `locs` combine
+
+Is the phenotype an entry mean over locations and replicates, so that the
+error variance is divided by `locs * reps` and the location variance by
+`locs`? Can `reps` differ between locations? Are plot-level records
+available, and if so through which argument?
+
+```{r, eval=FALSE}
+
+```
+
+## 5. What `returnPheno` returns
+
+`setPheno` already has `onlyPheno`, which returns the phenotype matrix
+instead of the population. How does `returnPheno` differ from it? If it
+returns a data frame, which columns does it carry (for example id, trait,
+year, location, replicate and value), and does it still update the
+population?
+
+```{r, eval=FALSE}
+
+```
+
+## 6. What `H2` and `h2` mean with `useGxE=TRUE`
+
+Which variances enter the denominator of `setVarE(H2=0.5, useGxE=TRUE)`,
+and is the heritability on a plot basis or an entry-mean basis? The same
+question applies to the `h2` and `H2` arguments of `setPheno`.
+
+```{r, eval=FALSE}
+
+```
+
+## 7. What `gv` holds for a new GxE trait
+
+Is `gv`, and so `bv`, `genParam` and selection on `"gv"`, the main effect
+only, that is the mean over the target population of environments? Are
+the variances of the GxE terms reported anywhere, such as in `genParam`,
+and are they computed from the current population or fixed at the
+founders?
+
+```{r, eval=FALSE}
+
+```
+
+## 8. The type of `fixEff`
+
+`fixEff=paste0("PYT_", year)` is a string, but `setPheno` stores
+`as.integer(fixEff)`, which turns a string into `NA` with a warning. Does
+the `fixEff` slot become character or factor, and what does that change in
+the genomic and pedigree prediction models that read it?
+
+```{r, eval=FALSE}
+
+```
+
+## 9. Which traits and populations are covered
+
+Is the new model offered only through `addTraitAG`, or also through
+`addTraitADG`, `addTraitAEG` and `addTraitADEG`? With several traits, are
+the GxE deviations correlated between traits, and through which argument?
+Which of `HybridPop`, `MultiPop`, `setPhenoGCA` and `setPhenoProgTest`
+support it?
+
+```{r, eval=FALSE}
+
+```
+
+## 10. Legacy and new traits together
+
+What is the default of `legacyGxE`? If it is `FALSE`, every existing
+script that adds a GxE trait changes its results, which is a change to
+results from a seed. Can one `SimParam` hold legacy and new GxE traits,
+and what do `p` and `year` do in a `setPheno` call that phenotypes both?
+
+```{r, eval=FALSE}
+
+```
+
+## 11. Random number streams
+
+Which draws come from the seeded year generator, which from R's stream,
+and which from the C++ substreams? The year deviations should consume
+nothing from R's stream, so that adding a phenotyping call does not move
+later results, and none of the draws may depend on `nThreads`.
+
+```{r, eval=FALSE}
+
+```
+
+## 12. Drawing or storing the deviations
+
+Are the deviations for a year drawn again on every call, which keeps the
+`SimParam` free of state but repeats the work, or drawn once and stored on
+the trait? If they are stored, how are they kept when the `SimParam` is
+saved, and how are they discarded?
+
+```{r, eval=FALSE}
+
+```
