@@ -199,6 +199,7 @@ fitFastRRBLUP = function(pop, y, traits, snpChip, useQtl, maxIter,
   }
 
   #Fit model
+  precond = fastDeflation(nSubsample, nrow(y))
   if(nTraits>1){
     Vu = as.matrix(Vu)
     Ve = as.matrix(Ve)
@@ -208,9 +209,9 @@ fitFastRRBLUP = function(pop, y, traits, snpChip, useQtl, maxIter,
     ans = callFastRRBLUP_MV(y,fixEff,pop,lociPerChr,
                             lociLoc,Vu,Ve,maxIter,
                             estVarComp,as.integer(subset),
+                            precond$nRecords,precond$maxRank,
                             nThreads)
   }else{
-    precond = fastDeflation(nSubsample, nrow(y))
     ans = callFastRRBLUP(y,fixEff,pop,lociPerChr,
                          lociLoc,Vu,Ve,maxIter,
                          estVarComp,as.integer(subset),
@@ -293,7 +294,8 @@ fastSubset = function(nSubsample, nRecords){
 #' the number the variance components are estimated from, or 3000 when
 #' nSubsample is zero. The records are evenly spaced through the population
 #' rather than sampled, so that the preconditioner draws no random numbers
-#' and supplying Vu and Ve leaves the random number stream where it was.
+#' and supplying Vu and Ve leaves the random number stream where it was. The
+#' same size is used for several traits, which share one basis.
 #'
 #' The option AlphaSimR.fastModeDeflation set to FALSE turns the deflation
 #' off, leaving plain Jacobi preconditioning, and the option
@@ -668,21 +670,27 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' close to the size of the genotypes, and the iteration is shared across
 #' nThreads.
 #'
-#' For one trait, the preconditioner also deflates the largest eigenvalues of
-#' the equations. Relationships between individuals, above all the family
+#' The preconditioner also deflates the largest eigenvalues of the
+#' equations. Relationships between individuals, above all the family
 #' structure of a breeding program, give the equations a few hundred to a few
 #' thousand eigenvalues far above the rest, and those set how many iterations
-#' conjugate gradient takes. Their eigenvectors are estimated from the
-#' genotypes of a subset of the records, evenly spaced through the population
-#' so that no random numbers are drawn, and the preconditioner moves the
-#' eigenvalues down to the level of the rest. This changes how quickly the
-#' iteration converges, not the solution it converges to.
+#' conjugate gradient takes, as found for single-step SNP-BLUP
+#' \insertCite{vandenplas2018Deflated}{AlphaSimR}. Their eigenvectors are
+#' estimated from the genotypes of a subset of the records, evenly spaced
+#' through the population so that no random numbers are drawn, and the
+#' preconditioner moves the eigenvalues down to the level of the rest. This is
+#' the preconditioner of \insertCite{frangella2023Randomized;textual}{AlphaSimR},
+#' which estimates the eigenvectors from a random sketch instead. It changes
+#' how quickly the iteration converges, not the solution it converges to.
 #'
 #' For several traits, every trait must be recorded on every individual. The
 #' traits are separated by a canonical transformation, which is exact when
 #' every trait is recorded and they share their fixed effects, and the
 #' transformed traits are solved together by conjugate gradient, each with
-#' its own recurrence and test of convergence. Each iteration costs about as
+#' its own recurrence and test of convergence. The transformed traits share
+#' the eigenvectors of the deflation, which are estimated once, for the
+#' transformed trait with the largest ratio of genetic to error variance,
+#' since it has the most eigenvalues to deflate. Each iteration costs about as
 #' much as one iteration for each trait on its own, so a fit to several
 #' traits takes about as long as fitting them one at a time, while the memory
 #' used stays close to the size of the genotypes.
@@ -2951,10 +2959,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' allele, so it holds no square matrix of all the records or all the
 #' markers. Its estimate is
 #' dominated by the genotypes themselves and by the subset of records used
-#' for the variance components. Fitted to one trait, it also holds the
-#' eigenvectors its preconditioner deflates, up to 1,000 of them, each with
-#' one value per marker. Fitted to several traits, it holds a few
-#' vectors of markers and of records per trait, and the variance components
+#' for the variance components. It also holds the eigenvectors its
+#' preconditioner deflates, up to 1,000 of them, each with one value per
+#' marker, which several traits share. Fitted to several traits, it holds a
+#' few vectors of markers and of records per trait, and the variance components
 #' are estimated as for several traits in \code{\link{RRBLUP}}, on the
 #' subset of records.
 #'
@@ -3070,10 +3078,33 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       optimDoubles = 8*(nT*(nT+1))^2
       fixDoubles = 2*nT*q^2+4*q^2+5*nSub*q
       if(m<nSub){
-        doubles = doubles+4*nSub*m+nT^2*nSub+optimDoubles+fixDoubles
+        vcDoubles = 4*nSub*m+nT^2*nSub+optimDoubles+fixDoubles
       }else{
-        doubles = doubles+4*nSub^2+nT^2*nSub+optimDoubles+fixDoubles
+        vcDoubles = 4*nSub^2+nT^2*nSub+optimDoubles+fixDoubles
       }
+      # The deflation is built once the variance components are known, as for
+      # one trait, but with one eigenvector more than maxRank, and is shared
+      # by the traits. Each trait's shrink factors then take a product of the
+      # records with the eigenvectors and a panel of genotypes, one trait at a
+      # time. The iteration holds the eigenvectors and the Jacobi scaling of
+      # every trait.
+      precond = fastDeflation(nSubsample, n)
+      s = as.double(precond$nRecords)
+      k = min(as.double(precond$maxRank)+1, max(min(s, m)-1, 0))
+      if((precond$maxRank==0) | (k<2)){
+        k = 0
+        deflDoubles = 0
+      }else{
+        width = min(m, max(256, floor(8388608/max(s, 1))))
+        if(m<s){
+          buildDoubles = s*m+2*m^2
+        }else{
+          buildDoubles = max(2*s^2, s^2+s*k+s*width)
+        }
+        deflDoubles = max(buildDoubles, s*k+s*width+width*k)
+        doubles = doubles+nT*m
+      }
+      doubles = doubles+m*k+max(vcDoubles, deflDoubles)
     }else{
       # No dosages are stored and no square matrix is formed. The solver
       # holds six vectors of markers plus the column means, and a few of

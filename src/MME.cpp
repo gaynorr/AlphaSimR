@@ -1193,6 +1193,17 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   Ve = delta*Vu;
 }
 
+// The records the deflation of the preconditioner is estimated from, nSub of
+// them evenly spaced through the nInd records. Shared by deflationBasis and
+// traitShrink so that both read the same records.
+arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub){
+  arma::uvec sub(nSub);
+  for(arma::uword i=0; i<nSub; ++i){
+    sub(i) = ((2*i+1)*nInd)/(2*nSub);
+  }
+  return sub;
+}
+
 // A deflation preconditioner for the conjugate gradient solve of RR-BLUP.
 //
 // With Jacobi preconditioning the iteration works, in effect, on
@@ -1208,6 +1219,12 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
 // smallest eigenvalue. P^-1 is positive definite for any orthonormal W and
 // positive theta and sigma, so a rough W only costs iterations, never the
 // solution, which the iteration still converges to.
+//
+// This is the preconditioner of Frangella, Tropp and Udell (2023),
+// doi:10.1137/21M1466244, with the eigenvectors estimated from a subset of
+// the records rather than from a random sketch. Vandenplas et al. (2018),
+// doi:10.1186/s12711-018-0429-3, found the same few large eigenvalues
+// slowing single-step SNP-BLUP.
 //
 // W is estimated from nSub records, evenly spaced through the population
 // rather than sampled, so that building it draws no random numbers. With
@@ -1261,10 +1278,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   if(maxRank==0){
     return;
   }
-  arma::uvec sub(nSub);
-  for(arma::uword i=0; i<nSub; ++i){
-    sub(i) = ((2*i+1)*nInd)/(2*nSub);
-  }
+  arma::uvec sub = deflationSubset(nInd, nSub);
   arma::vec w = 1.0/arma::sqrt(diagA);
   const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
   // One panel of the scaled, centered subset genotypes
@@ -1396,6 +1410,83 @@ void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
       }
     }
   }
+}
+
+// Each transformed trait's shrink factors for a deflation basis shared by the
+// traits of callFastRRBLUP_MV.
+//
+// On the scale of whitened effects, transformed trait k's coefficient matrix
+// is lam_k*C+I, for C = Mc'*S*Mc, and its diagonal is D_k = lam_k*dg+1. Its
+// eigenvalue along a column w of W, after the scaling by D_k^-1/2 that Jacobi
+// preconditioning applies, is estimated by the Rayleigh quotient
+//   lam_k*n/nSub*|Ms*D_k^-1/2*w|^2 + sum(w^2/D_k),
+// with Ms the genotypes of the records deflationBasis used, centered on
+// them. These approximate the trait's own eigenvalues only as well as W
+// approximates its eigenvectors, but the preconditioner is positive definite
+// for any positive estimates, so a poor one only costs iterations.
+//
+// The last column of W is not deflated. Its quotient is the level sigma the
+// others are moved down to, never less than one as in deflationBasis, and a
+// column is deflated only when its quotient is above both two and sigma, so
+// that none is moved up. Returns one row per trait and one column per column
+// of W but the last, zero where a column is not deflated and for a trait
+// with no genetic variance.
+//
+// The genotypes are read a panel at a time, as in deflationBasis, and the
+// traits one after another, so the work held is one nSub by k matrix.
+arma::mat traitShrink(const arma::Mat<unsigned char>& M, const arma::mat& W,
+                      const arma::vec& dg, const arma::vec& lam,
+                      arma::uword nSub, const double* xaPtr){
+  arma::uword nInd = M.n_rows;
+  arma::uword nLoci = M.n_cols;
+  arma::uword nT = lam.n_elem;
+  arma::uword kW = W.n_cols;
+  if(nSub>nInd){
+    nSub = nInd;
+  }
+  arma::mat shrink(nT, kW-1, arma::fill::zeros);
+  arma::uvec sub = deflationSubset(nInd, nSub);
+  const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
+  double scale = double(nInd)/double(nSub);
+  arma::mat G(nSub, kW), panel, V;
+  for(arma::uword k=0; k<nT; ++k){
+    if(!(lam(k)>0.0)){
+      continue;
+    }
+    arma::vec wk = 1.0/arma::sqrt(lam(k)*dg+1.0);
+    G.zeros();
+    arma::rowvec diagPart(kW, arma::fill::zeros);
+    for(arma::uword start=0; start<nLoci; start+=panelWidth){
+      arma::uword stop = std::min(start+panelWidth, nLoci);
+      panel.set_size(nSub, stop-start);
+      for(arma::uword j=start; j<stop; ++j){
+        const unsigned char* Mcol = M.colptr(j);
+        double* panelCol = panel.colptr(j-start);
+        double sum = 0.0;
+        for(arma::uword i=0; i<nSub; ++i){
+          panelCol[i] = xaPtr[Mcol[sub(i)]];
+          sum += panelCol[i];
+        }
+        double mean = sum/double(nSub);
+        for(arma::uword i=0; i<nSub; ++i){
+          panelCol[i] -= mean;
+        }
+      }
+      V = W.rows(start, stop-1);
+      V.each_col() %= wk.subvec(start, stop-1);
+      G += panel*V;
+      diagPart += arma::sum(arma::square(V), 0);
+    }
+    arma::rowvec theta = lam(k)*scale*arma::sum(arma::square(G), 0)+diagPart;
+    double sigma = std::max(theta(kW-1), 1.0);
+    double cut = std::max(sigma, 2.0);
+    for(arma::uword j=0; j+1<kW; ++j){
+      if(theta(j)>cut){
+        shrink(k,j) = sigma/theta(j)-1.0;
+      }
+    }
+  }
+  return shrink;
 }
 
 // Called by RRBLUP with fastMode TRUE
@@ -1866,14 +1957,28 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
 // last two; one that couples the traits would also need the recurrences
 // joined.
 //
-// x is an indicator vector for the fixed effect levels, as in callRRBLUP
+// The preconditioner is Jacobi with the deflation of the single trait solver,
+// see deflationBasis. Transformed trait k's equations, scaled by their
+// diagonal, are those of a single trait with ridge 1/lam_k, so they differ
+// between traits only in that ridge. One basis is therefore estimated, for
+// the trait with the largest lam_k, whose ridge is the smallest and which so
+// has the most eigenvalues to deflate, and every trait uses it with shrink
+// factors of its own, see traitShrink. That trait also takes the most
+// iterations, and with the products shared it sets the cost of the solve, so
+// a basis for each trait would cost more decompositions for little gain.
+//
+// x is an indicator vector for the fixed effect levels, as in callRRBLUP.
+// nPrecond and maxRank set the deflation, as in callFastRRBLUP; either of
+// them zero leaves plain Jacobi preconditioning.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                              const Rcpp::S4& pop,
                              arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                              const arma::mat& VuIn, const arma::mat& VeIn,
                              arma::uword maxIter, bool estVarComp,
-                             arma::uvec subset, int nThreads){
+                             arma::uvec subset,
+                             arma::uword nPrecond, arma::uword maxRank,
+                             int nThreads){
   const arma::uword nT = Y.n_cols;
   if(!Y.is_finite()){
     Rcpp::stop("RRBLUP fastMode: every trait must be recorded on every individual");
@@ -2033,6 +2138,41 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   }
   arma::mat precond = lam*dg.t()+1.0;
 
+  // The deflation, built while the dosages are still held. The basis is asked
+  // for one column more than maxRank, the column traitShrink reads sigma
+  // from. A trait none of whose columns is deflated keeps plain Jacobi.
+  arma::mat W;
+  std::vector<arma::vec> shrink(nT);
+  std::vector<bool> deflate(nT, false);
+  if((nPrecond>0) && (maxRank>0)){
+    double ridge = 1.0/lam.max();
+    arma::vec shrinkRef;
+    deflationBasis(W, shrinkRef, M, dg+ridge, ridge, nPrecond, maxRank+1,
+                   xaPtr);
+    if(W.n_cols>=2){
+      arma::mat shrinkAll = traitShrink(M, W, dg, lam, nPrecond, xaPtr);
+      W.shed_col(W.n_cols-1);
+      for(arma::uword k=0; k<nT; ++k){
+        shrink[k] = shrinkAll.row(k).t();
+        deflate[k] = arma::any(shrink[k]!=0.0);
+      }
+    }else{
+      W.reset();
+    }
+  }
+  arma::mat wScale = 1.0/arma::sqrt(precond);
+  arma::mat Zt(nT,nLoci);
+  // Z = P^-1*R for trait k, row k of each
+  auto applyPrecond = [&](arma::uword k){
+    if(!deflate[k]){
+      Zt.row(k) = Rt.row(k)/precond.row(k);
+      return;
+    }
+    arma::vec v = (Rt.row(k)%wScale.row(k)).t();
+    applyDeflation(v, W, shrink[k], nThreads);
+    Zt.row(k) = v.t()%wScale.row(k);
+  };
+
   // As for one trait, the iteration works from the markers packed to one bit
   // per allele, built only once the dosages have been freed
   M.reset();
@@ -2052,7 +2192,9 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   // with the scaling by sqrt(lam) applied trait by trait. A trait that has
   // converged keeps a search direction of zero, which leaves it unchanged.
   arma::mat At(nT,nLoci,arma::fill::zeros);
-  arma::mat Zt = Rt/precond;
+  for(arma::uword k=0; k<nT; ++k){
+    applyPrecond(k);
+  }
   arma::mat Pt = Zt;
   arma::mat Apt(nT,nLoci), Ps(nT,nLoci);
   arma::mat Tt(nT,nInd);
@@ -2096,7 +2238,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
         Pt.row(k).zeros();
         continue;
       }
-      Zt.row(k) = Rt.row(k)/precond.row(k);
+      applyPrecond(k);
       double rzNew = accu(Rt.row(k)%Zt.row(k));
       Pt.row(k) = Zt.row(k)+(rzNew/rz(k))*Pt.row(k);
       rz(k) = rzNew;
@@ -2125,7 +2267,8 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                             Rcpp::Named("beta")=-shift,
                             Rcpp::Named("mu")=B.row(0)-shift,
                             Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve);
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("rank")=int(W.n_cols));
 }
 
 // Called by RRBLUP function

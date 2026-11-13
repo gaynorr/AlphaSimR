@@ -128,8 +128,8 @@ callFastRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estV
     .Call(`_AlphaSimR_callFastRRBLUP`, y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
-callFastRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP_MV <- function(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_MV`, Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
 callRRBLUP <- function(y, x, pop, lociPerChr, lociLoc, nThreads, theta) {

@@ -499,6 +499,16 @@ test_that("RRBLUPMemUse counts the deflation of single trait fast mode", {
   expect_equal(on-off, 5e4*1000*8/1e9, tolerance=1e-8)
 })
 
+test_that("RRBLUPMemUse counts the deflation of multiple trait fast mode", {
+  # Several traits share one basis, asked for with one eigenvector more than
+  # the 1,000 kept, so it holds at least those eigenvectors of the markers
+  on = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
+  expect_gt(on-off, 5e4*1001*8/1e9)
+})
+
 test_that("RRBLUPMemUse counts the multiple trait optimizer", {
   # The Newton steps hold several square matrices over the t*(t+1)
   # parameters of Vu and Ve, so with many traits they outweigh a small data
@@ -1005,6 +1015,75 @@ test_that("multiple trait fast mode RRBLUP is not affected by the number of thre
                          simParam=d$SP))
   expect_identical(addEffAll(one), addEffAll(two))
   expect_identical(one@Vu, two@Vu)
+})
+
+# Multiple trait fast mode shares one deflation basis among the transformed
+# traits. As for one trait, the exported solver is called directly, because
+# it reports how many eigenvectors the basis kept.
+mvFastSolve = function(d, Vu, Ve, nPrecond, maxRank, nThreads=1L){
+  snp = d$SP$snpChips[[1]]
+  return(AlphaSimR:::callFastRRBLUP_MV(d$pop@pheno, d$pop@fixEff, d$pop,
+                                       snp@lociPerChr, snp@lociLoc, Vu, Ve,
+                                       10000L, FALSE, 1L, nPrecond, maxRank,
+                                       nThreads))
+}
+
+# 200 records against 100 markers in ten full-sib families, with three
+# correlated traits. As for famPop, the families are what give the scaled
+# equations eigenvalues to deflate.
+mvFamPop = function(){
+  d = mvPop(nInd=40, nSnp=50)
+  d$pop = randCross(d$pop, nCrosses=10, nProgeny=20, simParam=d$SP)
+  d$pop = setPheno(d$pop, simParam=d$SP)
+  d$pop@fixEff = rep_len(1:3, d$pop@nInd)
+  return(d)
+}
+
+test_that("DEFLATE multiple trait fast mode RRBLUP converges to the same solution with deflation", {
+  skip_on_cran()
+  d = mvFamPop()
+  ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
+  jacobi = mvFastSolve(d, mvVu, mvVe, 0L, 0L)
+  expect_equal(jacobi$rank, 0L)
+  expect_equal(c(jacobi$alpha), c(ref), tolerance=1e-6)
+  # Every record, which outnumber the markers, so the basis comes from a
+  # square matrix of the markers, and a subset of 60, whose cross product is
+  # decomposed instead
+  for(nPrecond in c(200L, 60L)){
+    info = paste("nPrecond", nPrecond)
+    deflated = mvFastSolve(d, mvVu, mvVe, nPrecond, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    expect_lt(deflated$rank, nPrecond, label=info)
+    expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6,
+                 info=info)
+    expect_equal(c(deflated$alpha), c(ref), tolerance=1e-6, info=info)
+  }
+  # The cap on the rank is respected
+  capped = mvFastSolve(d, mvVu, mvVe, 200L, 3L)
+  expect_equal(capped$rank, 3L)
+  expect_equal(c(capped$alpha), c(jacobi$alpha), tolerance=1e-6)
+})
+
+test_that("DEFLATE multiple trait fast mode RRBLUP shares its basis with a trait direction of no genetic variance", {
+  skip_on_cran()
+  # A Vu of rank two leaves one transformed trait with no genetic variance,
+  # which deflates nothing, while the other two share the basis
+  d = mvFamPop()
+  Vu = tcrossprod(c(0.12, 0.08, -0.05))+tcrossprod(c(0, 0.1, 0.06))
+  expect_lt(min(eigen(Vu, symmetric=TRUE)$values), 1e-12)
+  jacobi = mvFastSolve(d, Vu, mvVe, 0L, 0L)
+  deflated = mvFastSolve(d, Vu, mvVe, 200L, 1000L)
+  expect_gt(deflated$rank, 0L)
+  expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6)
+})
+
+test_that("DEFLATE multiple trait fast mode RRBLUP given its variance components draws no random numbers", {
+  d = mvFamPop()
+  set.seed(5)
+  before = .Random.seed
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu, Ve=mvVe,
+               simParam=d$SP)
+  expect_identical(.Random.seed, before)
 })
 
 # Fast mode of the multikernel models. With the variance components supplied

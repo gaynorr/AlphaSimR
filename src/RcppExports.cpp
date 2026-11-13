@@ -108,8 +108,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // callFastRRBLUP_MV
-Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x, const Rcpp::S4& pop, arma::Col<int>& lociPerChr, arma::uvec lociLoc, const arma::mat& VuIn, const arma::mat& VeIn, arma::uword maxIter, bool estVarComp, arma::uvec subset, int nThreads);
-RcppExport SEXP _AlphaSimR_callFastRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP popSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuInSEXP, SEXP VeInSEXP, SEXP maxIterSEXP, SEXP estVarCompSEXP, SEXP subsetSEXP, SEXP nThreadsSEXP) {
+Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x, const Rcpp::S4& pop, arma::Col<int>& lociPerChr, arma::uvec lociLoc, const arma::mat& VuIn, const arma::mat& VeIn, arma::uword maxIter, bool estVarComp, arma::uvec subset, arma::uword nPrecond, arma::uword maxRank, int nThreads);
+RcppExport SEXP _AlphaSimR_callFastRRBLUP_MV(SEXP YSEXP, SEXP xSEXP, SEXP popSEXP, SEXP lociPerChrSEXP, SEXP lociLocSEXP, SEXP VuInSEXP, SEXP VeInSEXP, SEXP maxIterSEXP, SEXP estVarCompSEXP, SEXP subsetSEXP, SEXP nPrecondSEXP, SEXP maxRankSEXP, SEXP nThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -123,8 +123,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type maxIter(maxIterSEXP);
     Rcpp::traits::input_parameter< bool >::type estVarComp(estVarCompSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type subset(subsetSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type nPrecond(nPrecondSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type maxRank(maxRankSEXP);
     Rcpp::traits::input_parameter< int >::type nThreads(nThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP_MV(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nThreads));
+    rcpp_result_gen = Rcpp::wrap(callFastRRBLUP_MV(Y, x, pop, lociPerChr, lociLoc, VuIn, VeIn, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1126,7 +1128,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_AlphaSimR_solveRRBLUP_EM2", (DL_FUNC) &_AlphaSimR_solveRRBLUP_EM2, 10},
     {"_AlphaSimR_solveRRBLUP_EM3", (DL_FUNC) &_AlphaSimR_solveRRBLUP_EM3, 12},
     {"_AlphaSimR_callFastRRBLUP", (DL_FUNC) &_AlphaSimR_callFastRRBLUP, 13},
-    {"_AlphaSimR_callFastRRBLUP_MV", (DL_FUNC) &_AlphaSimR_callFastRRBLUP_MV, 11},
+    {"_AlphaSimR_callFastRRBLUP_MV", (DL_FUNC) &_AlphaSimR_callFastRRBLUP_MV, 13},
     {"_AlphaSimR_callRRBLUP", (DL_FUNC) &_AlphaSimR_callRRBLUP, 7},
     {"_AlphaSimR_callRRBLUP2", (DL_FUNC) &_AlphaSimR_callRRBLUP2, 11},
     {"_AlphaSimR_callRRBLUP_D", (DL_FUNC) &_AlphaSimR_callRRBLUP_D, 8},
