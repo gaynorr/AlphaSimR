@@ -53,7 +53,7 @@ makeCross = function(pop, crossPlan, nProgeny=1,
   }
   
   if(pop@ploidy%%2L != 0L){
-    stop("You can not cross indiviuals with odd ploidy levels")
+    stop("You can not cross individuals with odd ploidy levels")
   }
   
   if(is.character(crossPlan)){ #Match by ID
@@ -479,7 +479,7 @@ makeCross2 = function(females, males, crossPlan, nProgeny=1, simParam=NULL,
   
   if((females@ploidy%%2L != 0L) |
      (males@ploidy%%2L != 0L)){
-    stop("You can not cross indiviuals with odd ploidy levels")
+    stop("You can not cross individuals with odd ploidy levels")
   }
   
   if(is.character(crossPlan)){ #Match by ID
