@@ -355,16 +355,16 @@ getNumThreads <- function() {
     .Call(`_AlphaSimR_getNumThreads`)
 }
 
-callFastRRBLUP_D <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP_D`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP_D <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_D`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
-callFastRRBLUP_GCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP_GCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP_GCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_GCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
-callFastRRBLUP_SCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads) {
-    .Call(`_AlphaSimR_callFastRRBLUP_SCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nThreads)
+callFastRRBLUP_SCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads) {
+    .Call(`_AlphaSimR_callFastRRBLUP_SCA`, Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, estVarComp, subset, nPrecond, maxRank, nThreads)
 }
 
 .solveMultiKernel <- function(y, X, Zlist, Klist, rrForm, maxIter, tol, side) {

@@ -1229,6 +1229,90 @@ test_that("fast mode multikernel models are the BLUP of their models", {
   }
 })
 
+# A population with nTraits correlated traits. The products with the
+# genotypes have record loops written for diploids and tetraploids with each
+# number of traits up to eight, and general loops otherwise, so every count
+# from one to nine is checked against the dense solution at ploidies two,
+# four and six, through RRBLUP and the multikernel models.
+manyTraitPop = function(nTraits, ploidy=2L){
+  set.seed(8602)
+  founderPop = quickHaplo(nInd=60, nChr=2, segSites=22, ploidy=ploidy)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=12, overlap=FALSE)
+  R = matrix(0.3, nTraits, nTraits)
+  diag(R) = 1
+  SP$addTraitA(nQtlPerChr=10, mean=rep(0, nTraits), var=rep(1, nTraits),
+               corA=R)
+  SP$addSnpChip(nSnpPerChr=12)
+  SP$setVarE(h2=rep(0.5, nTraits))
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  pop@fixEff = rep_len(1:3, pop@nInd)
+  return(list(pop=pop, SP=SP))
+}
+
+manyVu = function(nTraits, s){
+  R = matrix(0.3, nTraits, nTraits)
+  diag(R) = 1
+  return(s*R)
+}
+
+manyVe = function(nTraits){
+  return(diag(seq(0.5, 2, length.out=nTraits), nTraits))
+}
+
+test_that("FIXED fast mode RRBLUP is the BLUP of the model for one to nine traits", {
+  skip_on_cran()
+  for(ploidy in c(2L, 4L, 6L)){
+    d = manyTraitPop(9L, ploidy)
+    for(nT in 1:9){
+      traits = seq_len(nT)
+      Vu = manyVu(nT, 0.02)
+      Ve = manyVe(nT)
+      VuArg = if(nT==1) c(Vu) else Vu
+      VeArg = if(nT==1) c(Ve) else Ve
+      ans = RRBLUP(d$pop, fastMode=TRUE, traits=traits, Vu=VuArg, Ve=VeArg,
+                   simParam=d$SP)
+      pop = d$pop
+      pop@pheno = pop@pheno[, traits, drop=FALSE]
+      ref = denseMvBlup(pop, d$SP, Vu, Ve)
+      expect_equal(unname(addEffAll(ans)), unname(ref), tolerance=1e-6,
+                   info=paste("ploidy", ploidy, "traits", nT))
+    }
+  }
+})
+
+test_that("FIXED fast mode multikernel models are the BLUP of the model for one to nine traits", {
+  skip_on_cran()
+  for(ploidy in c(2L, 4L, 6L)){
+    d = manyTraitPop(9L, ploidy)
+    for(model in c("RRBLUP_D", "RRBLUP_GCA")){
+      codes = mkCodes(model, d$pop, d$SP)
+      X = mkFixed(model, d$pop, codes)
+      for(nT in 1:9){
+        traits = seq_len(nT)
+        Vu = list(manyVu(nT, 0.02), manyVu(nT, 0.01))
+        Ve = manyVe(nT)
+        # One trait takes its variances as a vector
+        VuArg = if(nT==1) sapply(Vu, c) else Vu
+        VeArg = if(nT==1) c(Ve) else Ve
+        ans = mkModels[[model]](d$pop, fastMode=TRUE, traits=traits,
+                                Vu=VuArg, Ve=VeArg, simParam=d$SP)
+        ref = denseMkBlup(d$pop@pheno[, traits, drop=FALSE], X, codes, Vu,
+                          Ve)
+        eff = mkEffects(model, ans)
+        expected = mkExpected(model, ref, codes)
+        for(k in seq_along(eff)){
+          expect_equal(matrix(eff[[k]], ncol=nT), expected[[k]],
+                       tolerance=1e-6,
+                       info=paste(model, "ploidy", ploidy, "traits", nT,
+                                  "term", k))
+        }
+      }
+    }
+  }
+})
+
 test_that("fast mode multikernel models agree with direct mode on every record", {
   skip_on_cran()
   # More records than markers gives the REML fit the codes, and fewer gives
@@ -1511,6 +1595,72 @@ test_that("fast mode multikernel models are not affected by the number of thread
       expect_identical(one@Vu, two@Vu, info=info)
     }
   }
+})
+
+# The multikernel models deflate their block preconditioner as single trait
+# fast mode deflates its Jacobi one. The exported solver of RRBLUP_D is
+# called directly, because it reports how many eigenvalues it deflated.
+mkFastSolveD = function(d, traits, Vu, Ve, nPrecond, maxRank){
+  snp = d$SP$snpChips[[1]]
+  vc = AlphaSimR:::fastMKVarComp(Vu, Ve, 2L, length(traits))
+  return(AlphaSimR:::callFastRRBLUP_D(d$pop@pheno[, traits, drop=FALSE],
+                                      d$pop@fixEff, d$pop, snp@lociPerChr,
+                                      snp@lociLoc, vc$Vu, vc$Ve, 10000L,
+                                      FALSE, 1L, nPrecond, maxRank, 1L))
+}
+
+test_that("DEFLATE fast mode multikernel models converge to the same solution with deflation", {
+  skip_on_cran()
+  # Ten full-sib families, which give the scaled equations eigenvalues to
+  # deflate
+  d = mvFamPop()
+  for(traits in list(1L, 1:3)){
+    nT = length(traits)
+    Ve = if(nT==1) 1 else mvVe
+    info = paste("traits", nT)
+    Vu = mkVu("RRBLUP_D", nT)
+    jacobi = mkFastSolveD(d, traits, Vu, Ve, 0L, 0L)
+    expect_equal(jacobi$rank, 0L, info=info)
+    deflated = mkFastSolveD(d, traits, Vu, Ve, 200L, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    expect_equal(deflated$a, jacobi$a, tolerance=1e-6, info=info)
+    expect_equal(deflated$d, jacobi$d, tolerance=1e-6, info=info)
+    # The cap on the rank is maxRank over the terms times the traits
+    capped = mkFastSolveD(d, traits, Vu, Ve, 200L, 6L*nT)
+    expect_lte(capped$rank, 3L)
+    expect_equal(capped$a, jacobi$a, tolerance=1e-6, info=info)
+    # Every model, against its BLUP with the deflation turned off
+    for(model in names(mkModels)){
+      Vu = mkVu(model, nT)
+      on = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                             Ve=Ve, simParam=d$SP)
+      old = options(AlphaSimR.fastModeDeflation=FALSE)
+      off = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      options(old)
+      effOn = mkEffects(model, on)
+      effOff = mkEffects(model, off)
+      for(k in seq_along(effOn)){
+        expect_equal(effOn[[k]], effOff[[k]], tolerance=1e-6,
+                     info=paste(model, info, "term", k))
+      }
+    }
+  }
+})
+
+test_that("RRBLUPMemUse counts the deflation of the multikernel models", {
+  # The deflation is built after the variance components, so it adds to the
+  # peak only when the iteration, not their REML fit, sets it, as with a
+  # subset of 200 records. Its eigenvectors then hold a value for each of
+  # two terms at 50,000 markers, and with 200 records there are at most 199
+  # of them.
+  mem = function() RRBLUPMemUse(nInd=1e5, nMarker=5e4, model="RRBLUP_D",
+                                fastMode=TRUE, nSubsample=200)
+  on = mem()
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = mem()
+  expect_gt(on-off, 2*5e4*199*8/1e9)
 })
 
 test_that("RRBLUPMemUse counts the fast mode of the multikernel models", {

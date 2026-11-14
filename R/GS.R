@@ -295,7 +295,10 @@ fastSubset = function(nSubsample, nRecords){
 #' nSubsample is zero. The records are evenly spaced through the population
 #' rather than sampled, so that the preconditioner draws no random numbers
 #' and supplying Vu and Ve leaves the random number stream where it was. The
-#' same size is used for several traits, which share one basis.
+#' same size is used for several traits, which share one basis, and by the
+#' fast mode of \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}} and
+#' \code{\link{RRBLUP_SCA}}, which spread it over the traits and cap the
+#' eigenvalues deflated at maxRank over the number of terms times traits.
 #'
 #' The option AlphaSimR.fastModeDeflation set to FALSE turns the deflation
 #' off, leaving plain Jacobi preconditioning, and the option
@@ -1230,7 +1233,11 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' of every random term and trait are then solved together by preconditioned
 #' conjugate gradient, iterating over the genotypes rather than over a stored
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
-#' use stays close to the size of the genotypes. The variance components are
+#' use stays close to the size of the genotypes. The preconditioner inverts
+#' each marker's block of the equations and deflates their largest
+#' eigenvalues, as in the fast mode of \code{\link{RRBLUP}}, with the
+#' eigenvectors estimated from the codes of every term on a subset of the
+#' records. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
 #' with the same method as outside fast mode, unless Vu and Ve are supplied,
 #' and the marker effects are always solved for using every record. Given the
@@ -1341,9 +1348,11 @@ RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
   if(fastMode){
     vc = fastMKVarComp(Vu, Ve, 2L, nTraits)
     subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
+    precond = fastDeflation(nSubsample, nrow(y))
     ans = callFastRRBLUP_D(y, fixEff, pop, lociPerChr, lociLoc,
                            vc$Vu, vc$Ve, maxIter, vc$est,
-                           as.integer(subset), nThreads)
+                           as.integer(subset), precond$nRecords,
+                           precond$maxRank, nThreads)
   }else{
     ans = callRRBLUP_D(y, fixEff, pop, lociPerChr,
                        lociLoc, maxIter, nThreads, fixedVc)
@@ -1705,7 +1714,11 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' of every random term and trait are then solved together by preconditioned
 #' conjugate gradient, iterating over the genotypes rather than over a stored
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
-#' use stays close to the size of the genotypes. The variance components are
+#' use stays close to the size of the genotypes. The preconditioner inverts
+#' each marker's block of the equations and deflates their largest
+#' eigenvalues, as in the fast mode of \code{\link{RRBLUP}}, with the
+#' eigenvectors estimated from the codes of every term on a subset of the
+#' records. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
 #' with the same method as outside fast mode, unless Vu and Ve are supplied,
 #' and the marker effects are always solved for using every record. Given the
@@ -1816,9 +1829,11 @@ RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(fastMode){
     vc = fastMKVarComp(Vu, Ve, 2L, nTraits)
     subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
+    precond = fastDeflation(nSubsample, nrow(y))
     ans = callFastRRBLUP_GCA(y, fixEff, pop, lociPerChr, lociLoc,
                              vc$Vu, vc$Ve, maxIter, vc$est,
-                             as.integer(subset), nThreads)
+                             as.integer(subset), precond$nRecords,
+                             precond$maxRank, nThreads)
   }else{
     ans = callRRBLUP_GCA(y, fixEff, pop,
                          lociPerChr, lociLoc, maxIter,
@@ -2207,7 +2222,11 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' of every random term and trait are then solved together by preconditioned
 #' conjugate gradient, iterating over the genotypes rather than over a stored
 #' coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
-#' use stays close to the size of the genotypes. The variance components are
+#' use stays close to the size of the genotypes. The preconditioner inverts
+#' each marker's block of the equations and deflates their largest
+#' eigenvalues, as in the fast mode of \code{\link{RRBLUP}}, with the
+#' eigenvectors estimated from the codes of every term on a subset of the
+#' records. The variance components are
 #' estimated by REML on a random subset of the records, set by nSubsample,
 #' with the same method as outside fast mode, unless Vu and Ve are supplied,
 #' and the marker effects are always solved for using every record. Given the
@@ -2323,9 +2342,11 @@ RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
   if(fastMode){
     vc = fastMKVarComp(Vu, Ve, 3L, nTraits)
     subset = if(vc$est) fastSubset(nSubsample, nrow(y)) else 1L
+    precond = fastDeflation(nSubsample, nrow(y))
     ans = callFastRRBLUP_SCA(y, fixEff, pop, lociPerChr, lociLoc,
                              vc$Vu, vc$Ve, maxIter, vc$est,
-                             as.integer(subset), nThreads)
+                             as.integer(subset), precond$nRecords,
+                             precond$maxRank, nThreads)
   }else{
     ans = callRRBLUP_SCA(y, fixEff, pop,
                          lociPerChr, lociLoc, maxIter,
@@ -2994,7 +3015,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' marker, and no square matrix of the markers or the records. Their
 #' iteration holds a few matrices of markers by terms and traits, and a block
 #' of the preconditioner for every marker, whose size is the square of the
-#' number of terms times the number of traits. Before that, the variance
+#' number of terms times the number of traits. It also holds the eigenvectors
+#' its preconditioner deflates, each with one value per marker, term and
+#' trait, in as much memory as the 1,000 of \code{\link{RRBLUP}} for one
+#' trait. Before that, the variance
 #' components are estimated by the same model on the subset of records,
 #' given each term's markers or, with more markers than records in the
 #' subset, a factor of their cross product, which holds a square matrix of
@@ -3215,7 +3239,24 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
     if(m>=nSub){
       vcDoubles = vcDoubles+nSub^2
     }
-    doubles = max(iterDoubles, vcDoubles)
+    # The deflation of the preconditioner, built once the variance components
+    # are known. It holds a factor of every marker's block, and eigenvectors
+    # with a value for every term, trait and marker, at most maxRank divided
+    # by the terms times traits of them. Building them decomposes the cross
+    # product of a subset of records and traits, about as many as the fast
+    # mode of RRBLUP decomposes for one trait, formed a panel of markers at a
+    # time.
+    precond = fastDeflation(nSubsample, n)
+    nRow = min(max(floor(precond$nRecords/nT), 1), n)*nT
+    k = min(floor(precond$maxRank/nR), min(nRow, nR*m)-1)
+    if(k<1){
+      deflDoubles = 0
+    }else{
+      panel = nRow*nR*min(m, max(16, floor(8388608/(nRow*nR))))
+      buildDoubles = max(nRow^2+panel, 2*nRow^2, nRow*k+panel)
+      deflDoubles = nR^2*m+nR*m+max(nR*m*k, buildDoubles)
+    }
+    doubles = max(iterDoubles+deflDoubles, vcDoubles)
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & (nT>1)){
     nKernel = if(model=="RRBLUP_SCA") 3 else 2
     # The multiple trait form chooses between the same two sides, on the

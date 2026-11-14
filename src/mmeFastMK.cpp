@@ -33,8 +33,14 @@
 // scaled, counts the unordered pairs of haplotypes carrying different
 // alleles, so it is a sum over pairs of haplotypes of the exclusive or of
 // their bits, and is looked up the same way as an allele count.
+//
+// The preconditioner inverts each marker's block of the coefficient matrix,
+// over every term and whitened trait, and deflates the largest eigenvalues
+// that the relationships between individuals give the equations, as the
+// fast mode of RRBLUP does; see mkDeflation.
 
 #include <algorithm>
+#include <utility>
 
 #include "mme.h"
 
@@ -47,6 +53,10 @@ Rcpp::List remlMultiKernelGram(const arma::mat& Y, const arma::mat& X,
                                arma::field<arma::mat>& Glist,
                                const arma::vec& rank, int maxIter,
                                const char* name);
+// Defined in MME.cpp, with the deflation of the fast mode of RRBLUP
+arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub);
+void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
+                    int nThreads);
 
 namespace {
 
@@ -183,6 +193,228 @@ inline void addLookup(double* ti, const double* tab, unsigned int b,
   }
 }
 
+// The record loops of multTerms and multTermsT with the ploidy P, the model
+// and the number of traits NT fixed at compile time. Every lookup's term and
+// byte are then constants: a byte is a haplotype's, row[a], or for a
+// dominance term the exclusive or of a pair, row[a]^row[b], read straight
+// from the record's packed genotypes. An earlier form built a record's bytes
+// in an array, by loops over the haplotypes and their pairs, and looked them
+// up through a list made at run time. GCC at -O2 does not unroll those loops
+// for a tetraploid, and the array they wrote to the stack, read back to
+// address the bins, made the transpose two to three times slower than the
+// general loop. Nothing here depends on the compiler unrolling a loop.
+//
+// The models are 0 for RRBLUP_D (additive and dominance), 1 for RRBLUP_GCA
+// (maternal and paternal) and 2 for RRBLUP_SCA (maternal, paternal and
+// dominance). Their lookups are made in the order the general loops make
+// them: for each term in turn, an additive term looks up each of its
+// haplotypes and a dominance term each pair of haplotypes, a before b. The
+// additions are therefore the same, in the same order, and give the same
+// result.
+
+// One lookup: the term whose table and bins it uses, and its byte
+struct FixedLook{
+  std::size_t term;
+  std::size_t a;
+  std::size_t b;
+  bool pair;
+};
+
+// The lookups of model M at ploidy P, in order
+template<std::size_t P, int M>
+struct FixedLooks{
+  static constexpr std::size_t nPair = P*(P-1)/2;
+  static constexpr std::size_t N = (M==1) ? P : P+nPair;
+  struct Arr{
+    FixedLook v[N];
+  };
+  static constexpr Arr make(){
+    Arr r{};
+    std::size_t n = 0;
+    if(M==0){
+      for(std::size_t h=0; h<P; ++h){
+        r.v[n++] = {0, h, h, false};
+      }
+    }else{
+      for(std::size_t h=0; h<P/2; ++h){
+        r.v[n++] = {0, h, h, false};
+      }
+      for(std::size_t h=P/2; h<P; ++h){
+        r.v[n++] = {1, h, h, false};
+      }
+    }
+    if(M!=1){
+      std::size_t t = (M==0) ? 1 : 2;
+      for(std::size_t h=0; h+1<P; ++h){
+        for(std::size_t h2=h+1; h2<P; ++h2){
+          r.v[n++] = {t, h, h2, true};
+        }
+      }
+    }
+    return r;
+  }
+  static constexpr Arr looks = make();
+};
+
+// The byte lookup L of model M reads from a record's haplotypes
+template<std::size_t P, int M, std::size_t L>
+inline unsigned int fixedByte(const unsigned char* row){
+  constexpr FixedLook l = FixedLooks<P,M>::looks.v[L];
+  if constexpr(l.pair){
+    return (unsigned int) (row[l.a]^row[l.b]);
+  }else{
+    return (unsigned int) row[l.a];
+  }
+}
+
+// One record of multTermsFixed at one column. As in multMcRecord in
+// MME.cpp, the loops over traits are pack expansions, so that every index
+// into the accumulators is a constant and they can be kept in registers.
+template<std::size_t P, int M, std::size_t... L, std::size_t... K>
+inline void multTermsRecord(double* ti, const unsigned char* row,
+                            const double* tabCol, std::index_sequence<L...>,
+                            std::index_sequence<K...>){
+  constexpr std::size_t NT = sizeof...(K);
+  constexpr arma::uword termLen = 32*NT;
+  double s[NT] = {ti[K]...};
+  auto one = [&](auto lc){
+    constexpr std::size_t l = decltype(lc)::value;
+    unsigned int b = fixedByte<P,M,l>(row);
+    const double* tab = tabCol+FixedLooks<P,M>::looks.v[l].term*termLen;
+    const double* lo = tab+(b & 15u)*NT;
+    const double* hi = tab+(16+(b>>4))*NT;
+    ((s[K] += lo[K]+hi[K]), ...);
+  };
+  (one(std::integral_constant<std::size_t,L>()), ...);
+  ((ti[K] = s[K]), ...);
+}
+
+// Records [indStart,indEnd) of multTerms, Tt holding NT values per record
+template<std::size_t P, int M, std::size_t NT>
+void multTermsFixed(double* tPtr, const arma::Mat<unsigned char>& planes,
+                    const double* tabsPtr, arma::uword tabStride,
+                    arma::uword indStart, arma::uword indEnd){
+  const arma::uword nCol = planes.n_cols;
+  for(arma::uword c=0; c<nCol; ++c){
+    const unsigned char* col = planes.colptr(c);
+    const double* tabCol = tabsPtr+c*tabStride;
+    for(arma::uword i=indStart; i<indEnd; ++i){
+      multTermsRecord<P,M>(tPtr+i*NT, col+i*P, tabCol,
+                           std::make_index_sequence<FixedLooks<P,M>::N>{},
+                           std::make_index_sequence<NT>{});
+    }
+  }
+}
+
+// One record of multTermsT at one column, into each term's two sets of bins
+// of setLen = 32*NT values, the set of the record's parity
+template<std::size_t P, int M, std::size_t NT, std::size_t... L>
+inline void multTermsTRecord(double* binPtr, const unsigned char* row,
+                             const double* ti, arma::uword parity,
+                             std::index_sequence<L...>){
+  constexpr arma::uword setLen = 32*NT;
+  auto one = [&](auto lc){
+    constexpr std::size_t l = decltype(lc)::value;
+    unsigned int b = fixedByte<P,M,l>(row);
+    double* bt = binPtr+(2*FixedLooks<P,M>::looks.v[l].term+parity)*setLen;
+    double* lo = bt+(b & 15u)*NT;
+    double* hi = bt+(16+(b>>4))*NT;
+    for(std::size_t k=0; k<NT; ++k){
+      lo[k] += ti[k];
+      hi[k] += ti[k];
+    }
+  };
+  (one(std::integral_constant<std::size_t,L>()), ...);
+}
+
+// Every record of multTermsT at one column
+template<std::size_t P, int M, std::size_t NT>
+void multTermsTFixed(double* binPtr, const unsigned char* col,
+                     const double* tPtr, arma::uword nInd){
+  for(arma::uword i=0; i<nInd; ++i){
+    multTermsTRecord<P,M,NT>(binPtr, col+i*P, tPtr+i*NT, i & 1u,
+                             std::make_index_sequence<FixedLooks<P,M>::N>{});
+  }
+}
+
+// The model of a list of terms, or -1 for one with no fixed loops
+inline int fixedModel(const std::vector<FastTerm>& terms){
+  if( (terms.size()==2) && (terms[0].kind==TermKind::additive) &&
+      (terms[1].kind==TermKind::dominance) ){
+    return 0;
+  }
+  if( (terms.size()==2) && (terms[0].kind==TermKind::maternal) &&
+      (terms[1].kind==TermKind::paternal) ){
+    return 1;
+  }
+  if( (terms.size()==3) && (terms[0].kind==TermKind::maternal) &&
+      (terms[1].kind==TermKind::paternal) &&
+      (terms[2].kind==TermKind::dominance) ){
+    return 2;
+  }
+  return -1;
+}
+
+// Whether the products take the fixed loops: a diploid or tetraploid, with
+// up to maxFixedTraits traits, fitting one of the three models
+inline bool fixedTemplated(arma::uword ploidy, arma::uword nT,
+                           const std::vector<FastTerm>& terms){
+  return fixedPloidy(ploidy) && (nT>=1) && (nT<=maxFixedTraits) &&
+    (fixedModel(terms)>=0);
+}
+
+// Calls f(std::integral_constant<int,M>()) for M equal to model, which
+// fixedModel must have returned
+template<class F>
+void withFixedModel(int model, F&& f){
+  if(model==0){
+    f(std::integral_constant<int,0>());
+  }else if(model==1){
+    f(std::integral_constant<int,1>());
+  }else{
+    f(std::integral_constant<int,2>());
+  }
+}
+
+// The general record loops of multTerms and multTermsT, for any ploidy and
+// number of traits, in functions of their own, as multMcBlockGeneral and
+// multMcTBlockGeneral are in MME.cpp, so that they do not share registers
+// with the fixed ones in the parallel region.
+
+// Records [indStart,indEnd) of multTerms
+void multTermsGeneral(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
+                      arma::uword ploidy, const std::vector<FastTerm>& terms,
+                      const arma::mat& tabs, arma::uword indStart,
+                      arma::uword indEnd){
+  const arma::uword nTerm = terms.size();
+  const arma::uword nT = Tt.n_rows;
+  const arma::uword nCol = planes.n_cols;
+  const arma::uword termLen = 32*nT;
+  for(arma::uword c=0; c<nCol; ++c){
+    const unsigned char* col = planes.colptr(c);
+    const double* tabCol = tabs.colptr(c);
+    for(arma::uword i=indStart; i<indEnd; ++i){
+      double* ti = Tt.colptr(i);
+      const unsigned char* row = col+i*ploidy;
+      for(arma::uword t=0; t<nTerm; ++t){
+        const FastTerm& term = terms[t];
+        const double* tab = tabCol+t*termLen;
+        if(term.kind==TermKind::dominance){
+          for(arma::uword h=0; h+1<ploidy; ++h){
+            for(arma::uword h2=h+1; h2<ploidy; ++h2){
+              addLookup(ti, tab, (unsigned int) (row[h]^row[h2]), nT);
+            }
+          }
+        }else{
+          for(arma::uword h=term.hapStart; h<term.hapEnd; ++h){
+            addLookup(ti, tab, (unsigned int) row[h], nT);
+          }
+        }
+      }
+    }
+  }
+}
+
 // Applies every term's centered code matrix at once,
 //   Tt = (sum_k Mc_k*Ut_k')'
 // with one row of Tt per trait and one column per record. offset holds, for
@@ -215,6 +447,12 @@ void multTerms(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  // A diploid or tetraploid fitting one of the three models, with at most
+  // maxFixedTraits traits, takes multTermsFixed
+  const bool fixed = fixedTemplated(ploidy, nT, terms);
+  const int model = fixedModel(terms);
+  const double* tabsPtr = tabs.memptr();
+  const arma::uword tabStride = tabs.n_rows;
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -227,29 +465,20 @@ void multTerms(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
         ti[k] = -shift(k);
       }
     }
-    for(arma::uword c=0; c<nCol; ++c){
-      const unsigned char* col = planes.colptr(c);
-      const double* tabCol = tabs.colptr(c);
-      for(arma::uword i=indStart; i<indEnd; ++i){
-        double* ti = Tt.colptr(i);
-        const unsigned char* row = col+i*ploidy;
-        for(arma::uword t=0; t<nTerm; ++t){
-          const FastTerm& term = terms[t];
-          const double* tab = tabCol+t*termLen;
-          if(term.kind==TermKind::dominance){
-            for(arma::uword h=0; h+1<ploidy; ++h){
-              for(arma::uword h2=h+1; h2<ploidy; ++h2){
-                addLookup(ti, tab, (unsigned int) (row[h]^row[h2]), nT);
-              }
-            }
-          }else{
-            for(arma::uword h=term.hapStart; h<term.hapEnd; ++h){
-              addLookup(ti, tab, (unsigned int) row[h], nT);
-            }
-          }
-        }
-      }
+    if(fixed){
+      double* tPtr = Tt.memptr();
+      withFixedPloidy(ploidy, [&](auto p){
+        withFixedModel(model, [&](auto m){
+          withFixedTraits(nT, [&](auto nt){
+            multTermsFixed<decltype(p)::value, decltype(m)::value,
+                           decltype(nt)::value>(tPtr, planes, tabsPtr,
+                                                tabStride, indStart, indEnd);
+          });
+        });
+      });
+      continue;
     }
+    multTermsGeneral(Tt, planes, ploidy, terms, tabs, indStart, indEnd);
   }
 }
 
@@ -261,6 +490,36 @@ inline void addBins(double* bins, const double* ti, unsigned int b,
   for(arma::uword k=0; k<nT; ++k){
     lo[k] += ti[k];
     hi[k] += ti[k];
+  }
+}
+
+// Every record of multTermsT at one column, into each term's two sets of
+// bins of 32*nT values
+void multTermsTGeneral(double* binPtr, const unsigned char* col,
+                       const arma::mat& Tt, arma::uword ploidy,
+                       const std::vector<FastTerm>& terms){
+  const arma::uword nTerm = terms.size();
+  const arma::uword nT = Tt.n_rows;
+  const arma::uword nInd = Tt.n_cols;
+  const arma::uword setLen = 32*nT;
+  for(arma::uword i=0; i<nInd; ++i){
+    const double* ti = Tt.colptr(i);
+    const unsigned char* row = col+i*ploidy;
+    for(arma::uword t=0; t<nTerm; ++t){
+      const FastTerm& term = terms[t];
+      double* bt = binPtr+(2*t+(i & 1u))*setLen;
+      if(term.kind==TermKind::dominance){
+        for(arma::uword h=0; h+1<ploidy; ++h){
+          for(arma::uword h2=h+1; h2<ploidy; ++h2){
+            addBins(bt, ti, (unsigned int) (row[h]^row[h2]), nT);
+          }
+        }
+      }else{
+        for(arma::uword h=term.hapStart; h<term.hapEnd; ++h){
+          addBins(bt, ti, (unsigned int) row[h], nT);
+        }
+      }
+    }
   }
 }
 
@@ -292,6 +551,10 @@ void multTermsT(std::vector<arma::mat>& Wt, const arma::Mat<unsigned char>& plan
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  // A diploid or tetraploid fitting one of the three models, with at most
+  // maxFixedTraits traits, takes multTermsTFixed
+  const bool fixed = fixedTemplated(ploidy, nT, terms);
+  const int model = fixedModel(terms);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -305,24 +568,19 @@ void multTermsT(std::vector<arma::mat>& Wt, const arma::Mat<unsigned char>& plan
     for(arma::uword c=colStart; c<colEnd; ++c){
       const unsigned char* col = planes.colptr(c);
       std::fill(bins.begin(), bins.end(), 0.0);
-      for(arma::uword i=0; i<nInd; ++i){
-        const double* ti = Tt.colptr(i);
-        const unsigned char* row = col+i*ploidy;
-        for(arma::uword t=0; t<nTerm; ++t){
-          const FastTerm& term = terms[t];
-          double* bt = bins.data()+(2*t+(i & 1u))*setLen;
-          if(term.kind==TermKind::dominance){
-            for(arma::uword h=0; h+1<ploidy; ++h){
-              for(arma::uword h2=h+1; h2<ploidy; ++h2){
-                addBins(bt, ti, (unsigned int) (row[h]^row[h2]), nT);
-              }
-            }
-          }else{
-            for(arma::uword h=term.hapStart; h<term.hapEnd; ++h){
-              addBins(bt, ti, (unsigned int) row[h], nT);
-            }
-          }
-        }
+      if(fixed){
+        const double* tPtr = Tt.memptr();
+        double* binPtr = bins.data();
+        withFixedPloidy(ploidy, [&](auto p){
+          withFixedModel(model, [&](auto m){
+            withFixedTraits(nT, [&](auto nt){
+              multTermsTFixed<decltype(p)::value, decltype(m)::value,
+                              decltype(nt)::value>(binPtr, col, tPtr, nInd);
+            });
+          });
+        });
+      }else{
+        multTermsTGeneral(bins.data(), col, Tt, ploidy, terms);
       }
       for(arma::uword t=0; t<nTerm; ++t){
         const double* b0 = bins.data()+2*t*setLen;
@@ -620,6 +878,7 @@ struct FastMKFit{
   std::vector<arma::mat> Vu;
   arma::mat Ve;
   MarkerStats stats;
+  arma::uword rank = 0; // eigenvalues the preconditioner deflated
 };
 
 // Sets fit.Vu and fit.Ve. VuIn and VeIn are used when estVarComp is false,
@@ -936,6 +1195,244 @@ void applyPrecond(arma::mat& Z, const arma::mat& R, const BlockPrecond& P,
           sum += Vj[a+c*nR]*w[c];
         }
         zj[a] = sj[a]*sum;
+      }
+    }
+  }
+}
+
+// A deflation of the block preconditioner, as the fast mode of RRBLUP
+// deflates its Jacobi preconditioner; see deflationBasis in MME.cpp.
+//
+// The coefficient matrix is A = I+G'*G, where G takes the stacked whitened
+// effects to the whitened fitted values of every record and trait, and the
+// block preconditioner's inverse is L*L', with L_j = Ds_j*V_j*dInv_j^1/2 for
+// marker j. The iteration then works, in effect, on L'*A*L, which has a mean
+// eigenvalue near one but, as for one trait, a few hundred to a few
+// thousand eigenvalues far above it from the relationships between
+// individuals, and those set the number of iterations. If W holds
+// orthonormal approximations to their eigenvectors and theta their values,
+//   P^-1 = L*(I+W*diag(sigma/theta-1)*W')*L'
+// moves them down to about sigma and leaves the rest alone, and is positive
+// definite for any orthonormal W, so a rough W costs iterations, never the
+// solution.
+//
+// W is estimated from the rows of G*L for nSub records evenly spaced through
+// the population, with their codes centered on the subset, and every trait,
+// so nSub*nT rows. n/nSub*(Gs*L)'*(Gs*L) approximates (G*L)'*(G*L), and the
+// mean of the diagonal of L'*L stands in for L'*L on every eigenvalue. The
+// leading eigenvectors are (Gs*L)'*U*diag(1/sqrt(g)) for the eigenpairs
+// (g,U) of the cross product of the rows, (Gs*L)*(Gs*L)', which is formed a
+// panel of markers at a time. As for one trait, the fixed effects other
+// than the mean are left out of the approximation.
+//
+// The records are chosen so that nSub*nT is about nPrecond, which keeps the
+// decomposition the size the fast mode of RRBLUP uses for one trait. W has a
+// row for every whitened direction of every marker, nR of them, so at most
+// maxRank/nR eigenvalues are deflated, which holds W to the memory the fast
+// mode of RRBLUP gives it. Eigenvalues above two are deflated and sigma is
+// the largest one left, never less than one, as there.
+//
+// The directions the records cannot see are left to deflateUnseen: they are
+// in the null space of G*L once scaled, so W, built from the rows of Gs*L,
+// is close to orthogonal to them, and the projection that follows the
+// preconditioner removes what is left.
+struct MKDeflation{
+  arma::cube L;     // L_j for each marker
+  arma::mat W;      // row j*nR+c for direction c of marker j
+  arma::vec shrink; // sigma/theta-1
+};
+
+MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
+                        arma::uword ploidy, const std::vector<FastTerm>& terms,
+                        const Whitened& w, const BlockPrecond& P,
+                        arma::uword nT, arma::uword nInd, arma::uword nLoci,
+                        arma::uword nPrecond, arma::uword maxRank,
+                        int nThreads){
+  MKDeflation D;
+  const arma::uword nTerm = terms.size();
+  const std::vector<arma::uword>& off = w.off;
+  const arma::uword nR = off[nTerm];
+  if((nR==0) || (nPrecond==0) || (maxRank==0) || (nT==0)){
+    return D;
+  }
+  arma::uword nSub = std::max<arma::uword>(nPrecond/nT, 1);
+  if(nSub>nInd){
+    nSub = nInd;
+  }
+  const arma::uword nRow = nSub*nT;
+  maxRank /= nR;
+  arma::uword nDecomp = std::min(nRow, nR*nLoci);
+  if(maxRank>=nDecomp){
+    maxRank = (nDecomp>0) ? nDecomp-1 : 0;
+  }
+  if(maxRank==0){
+    return D;
+  }
+
+  // The factor of each marker's block inverse
+  D.L.set_size(nR, nR, nLoci);
+  {
+    arma::uword nBlocks = countBlocks(nLoci);
+    int lThreads = nThreads;
+    if(nBlocks < static_cast<arma::uword>(lThreads)){
+      lThreads = static_cast<int>(nBlocks);
+    }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(lThreads)
+#endif
+    for(arma::uword block=0; block<nBlocks; ++block){
+      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+      for(arma::uword j=lociStart; j<lociEnd; ++j){
+        const double* V = P.V.slice_memptr(j);
+        const double* dInv = P.dInv.colptr(j);
+        const double* ds = P.ds.colptr(j);
+        double* Lj = D.L.slice_memptr(j);
+        for(arma::uword c=0; c<nR; ++c){
+          double s = std::sqrt(dInv[c]);
+          for(arma::uword a=0; a<nR; ++a){
+            Lj[a+c*nR] = ds[a]*V[a+c*nR]*s;
+          }
+        }
+      }
+    }
+  }
+  // The mean of the diagonal of L'*L
+  double ridge = arma::accu(arma::square(D.L))/double(nR*nLoci);
+
+  arma::uvec sub = deflationSubset(nInd, nSub);
+  const arma::uword panelWidth = std::max<arma::uword>(
+    16, 8388608/std::max<arma::uword>(nRow*nR, 1));
+  // One panel of Gs*L, for markers [start,stop), with row k*nSub+i for
+  // record i and whitened trait k and column (j-start)*nR+c
+  std::vector<unsigned int> bits(ploidy);
+  arma::mat codes(nSub, nTerm), H;
+  auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
+    panel.zeros(nRow, (stop-start)*nR);
+    for(arma::uword j=start; j<stop; ++j){
+      for(arma::uword i=0; i<nSub; ++i){
+        readBits(planes, ploidy, sub(i), j, bits.data());
+        for(arma::uword t=0; t<nTerm; ++t){
+          codes(i,t) = termValue(terms[t], bits.data(), ploidy);
+        }
+      }
+      codes.each_row() -= arma::mean(codes, 0);
+      const arma::mat Lj(const_cast<double*>(D.L.slice_memptr(j)), nR, nR,
+                         false, true);
+      for(arma::uword t=0; t<nTerm; ++t){
+        if(off[t+1]==off[t]){
+          continue;
+        }
+        // Term t's codes reach whitened trait k through F_t, and the scaled
+        // direction c through the rows of L_j for the term
+        H = w.F[t]*Lj.rows(off[t], off[t+1]-1);
+        const double* ct = codes.colptr(t);
+        for(arma::uword c=0; c<nR; ++c){
+          double* pc = panel.colptr((j-start)*nR+c);
+          for(arma::uword k=0; k<nT; ++k){
+            double h = H(k,c);
+            double* pk = pc+k*nSub;
+            for(arma::uword i=0; i<nSub; ++i){
+              pk[i] += ct[i]*h;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  arma::mat K(nRow, nRow, arma::fill::zeros), panel;
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    fillPanel(panel, start, stop);
+    K += panel*panel.t();
+  }
+  arma::vec g;
+  arma::mat U;
+  if(!arma::eig_sym(g, U, K)){
+    // The block preconditioner alone still converges
+    return MKDeflation();
+  }
+  K.reset();
+  // eig_sym returns the eigenvalues in ascending order
+  g = arma::flipud(g);
+  U = arma::fliplr(U);
+  double scale = double(nInd)/double(nSub);
+  arma::vec theta = scale*g+ridge;
+  arma::uword k = 0;
+  while((k<maxRank) && (theta(k)>2.0) && (g(k)>0.0)){
+    ++k;
+  }
+  if(k==0){
+    return MKDeflation();
+  }
+  double sigma = std::max(theta(k), 1.0);
+  arma::mat Uk = U.head_cols(k);
+  U.reset();
+  Uk.each_row() /= arma::sqrt(g.head(k)).t();
+  D.W.set_size(nR*nLoci, k);
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    fillPanel(panel, start, stop);
+    D.W.rows(start*nR, stop*nR-1) = panel.t()*Uk;
+  }
+  D.shrink = sigma/theta.head(k)-1.0;
+  return D;
+}
+
+// Z = P^-1*R with the deflation, L*(I+W*diag(shrink)*W')*L'*R, each marker's
+// factor applied to its own column, so the work splits over blocks of
+// markers, and the deflation applied as for one trait, so neither depends on
+// the number of threads
+void applyDeflatedPrecond(arma::mat& Z, const arma::mat& R,
+                          const MKDeflation& D, int nThreads){
+  const arma::uword nR = R.n_rows;
+  const arma::uword nLoci = R.n_cols;
+  arma::vec v(nR*nLoci);
+  arma::uword nBlocks = countBlocks(nLoci);
+  int pThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(pThreads)){
+    pThreads = static_cast<int>(nBlocks);
+  }
+  double* vPtr = v.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(pThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+    for(arma::uword j=lociStart; j<lociEnd; ++j){
+      const double* Lj = D.L.slice_memptr(j);
+      const double* rj = R.colptr(j);
+      double* vj = vPtr+j*nR;
+      for(arma::uword c=0; c<nR; ++c){
+        const double* lc = Lj+c*nR;
+        double sum = 0.0;
+        for(arma::uword a=0; a<nR; ++a){
+          sum += lc[a]*rj[a];
+        }
+        vj[c] = sum;
+      }
+    }
+  }
+  applyDeflation(v, D.W, D.shrink, nThreads);
+  Z.set_size(nR, nLoci);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(pThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
+    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
+    for(arma::uword j=lociStart; j<lociEnd; ++j){
+      const double* Lj = D.L.slice_memptr(j);
+      const double* vj = vPtr+j*nR;
+      double* zj = Z.colptr(j);
+      for(arma::uword a=0; a<nR; ++a){
+        double sum = 0.0;
+        for(arma::uword c=0; c<nR; ++c){
+          sum += Lj[a+c*nR]*vj[c];
+        }
+        zj[a] = sum;
       }
     }
   }
@@ -1338,15 +1835,18 @@ PcgStatus restartedPCG(arma::mat& At, const arma::mat& Bt,
 // Fits the multikernel model in fast mode. kinds lists the terms and
 // domCovariate adds the summed dominance code to the fixed effects, as the
 // direct form does for the models with dominance. VuIn, VeIn, estVarComp and
-// subset are as for fastMKVarComp.
+// subset are as for fastMKVarComp. nPrecond and maxRank set the deflation of
+// the preconditioner, see mkDeflation; either of them zero leaves the block
+// preconditioner alone.
 FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
                           const PackedGeno& g, const LociPos& pos,
                           const std::vector<TermKind>& kinds,
                           bool domCovariate,
                           const arma::field<arma::mat>& VuIn,
                           const arma::mat& VeIn, arma::uword maxIter,
-                          bool estVarComp, arma::uvec subset, int nThreads,
-                          const std::string& name){
+                          bool estVarComp, arma::uvec subset,
+                          arma::uword nPrecond, arma::uword maxRank,
+                          int nThreads, const std::string& name){
   const arma::uword nT = Y.n_cols;
   const arma::uword nTerm = kinds.size();
   arma::uword ploidy = g.ploidy;
@@ -1402,6 +1902,9 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   bool anyNull = false;
   const std::vector<arma::mat> nullBasis =
     unseenDirections(fit.stats, w, nT, nInd, nLoci, nThreads, anyNull);
+  const MKDeflation defl = mkDeflation(planes, ploidy, terms, w, P, nT, nInd,
+                                       nLoci, nPrecond, maxRank, nThreads);
+  fit.rank = defl.W.n_cols;
 
   arma::mat tabs(32*nT*nTerm, planes.n_cols);
   std::vector<arma::mat> Ut(nTerm), Wt(nTerm);
@@ -1433,7 +1936,11 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     deflateUnseen(out, nullBasis, anyNull);
   };
   auto precondition = [&](arma::mat& Z, const arma::mat& R){
-    applyPrecond(Z, R, P, nThreads);
+    if(defl.W.n_cols==0){
+      applyPrecond(Z, R, P, nThreads);
+    }else{
+      applyDeflatedPrecond(Z, R, defl, nThreads);
+    }
     deflateUnseen(Z, nullBasis, anyNull);
   };
 
@@ -1558,13 +2065,14 @@ Rcpp::List callFastRRBLUP_D(const arma::mat& Y, arma::uvec x,
                             const arma::field<arma::mat>& Vu,
                             const arma::mat& Ve, arma::uword maxIter,
                             bool estVarComp, arma::uvec subset,
+                            arma::uword nPrecond, arma::uword maxRank,
                             int nThreads){
   PackedGeno g(pop);
   LociPos pos = findLoci(g, lociPerChr, lociLoc);
   std::vector<TermKind> kinds = {TermKind::additive, TermKind::dominance};
   FastMKFit fit = fastMultiKernel(Y, x, g, pos, kinds, true, Vu, Ve,
-                                  maxIter, estVarComp, subset, nThreads,
-                                  "RRBLUP_D fastMode");
+                                  maxIter, estVarComp, subset, nPrecond,
+                                  maxRank, nThreads, "RRBLUP_D fastMode");
   // Average effects from the genotype frequencies, as in callRRBLUP_D
   double dn = double(g.nInd);
   arma::uvec fixed = fixedMarkers(fit.stats.genoCount, dn);
@@ -1581,7 +2089,8 @@ Rcpp::List callFastRRBLUP_D(const arma::mat& Y, arma::uvec x,
     Rcpp::Named("d")=d,
     Rcpp::Named("mu")=fit.beta.row(0),
     Rcpp::Named("Vu")=vuOut(fit),
-    Rcpp::Named("Ve")=fit.Ve
+    Rcpp::Named("Ve")=fit.Ve,
+    Rcpp::Named("rank")=int(fit.rank)
   );
 }
 
@@ -1593,13 +2102,14 @@ Rcpp::List callFastRRBLUP_GCA(const arma::mat& Y, arma::uvec x,
                               const arma::field<arma::mat>& Vu,
                               const arma::mat& Ve, arma::uword maxIter,
                               bool estVarComp, arma::uvec subset,
+                              arma::uword nPrecond, arma::uword maxRank,
                               int nThreads){
   PackedGeno g(pop);
   LociPos pos = findLoci(g, lociPerChr, lociLoc);
   std::vector<TermKind> kinds = {TermKind::maternal, TermKind::paternal};
   FastMKFit fit = fastMultiKernel(Y, x, g, pos, kinds, false, Vu, Ve,
-                                  maxIter, estVarComp, subset, nThreads,
-                                  "RRBLUP_GCA fastMode");
+                                  maxIter, estVarComp, subset, nPrecond,
+                                  maxRank, nThreads, "RRBLUP_GCA fastMode");
   arma::rowvec Mmean1 = fit.stats.Mmean.col(0).t();
   arma::rowvec Mmean2 = fit.stats.Mmean.col(1).t();
   return Rcpp::List::create(Rcpp::Named("alpha1")=fit.U[0],
@@ -1608,7 +2118,8 @@ Rcpp::List callFastRRBLUP_GCA(const arma::mat& Y, arma::uvec x,
                             Rcpp::Named("beta2")=negMeanProduct(Mmean2,fit.U[1]),
                             Rcpp::Named("mu")=fit.beta.row(0),
                             Rcpp::Named("Vu")=vuOut(fit),
-                            Rcpp::Named("Ve")=fit.Ve);
+                            Rcpp::Named("Ve")=fit.Ve,
+                            Rcpp::Named("rank")=int(fit.rank));
 }
 
 // Called by RRBLUP_SCA with fastMode TRUE
@@ -1620,6 +2131,7 @@ Rcpp::List callFastRRBLUP_SCA(const arma::mat& Y, arma::uvec x,
                               const arma::field<arma::mat>& Vu,
                               const arma::mat& Ve, arma::uword maxIter,
                               bool estVarComp, arma::uvec subset,
+                              arma::uword nPrecond, arma::uword maxRank,
                               int nThreads){
   PackedGeno g(pop);
   if(g.ploidy!=2){
@@ -1629,8 +2141,8 @@ Rcpp::List callFastRRBLUP_SCA(const arma::mat& Y, arma::uvec x,
   std::vector<TermKind> kinds = {TermKind::maternal, TermKind::paternal,
                                  TermKind::dominance};
   FastMKFit fit = fastMultiKernel(Y, x, g, pos, kinds, true, Vu, Ve,
-                                  maxIter, estVarComp, subset, nThreads,
-                                  "RRBLUP_SCA fastMode");
+                                  maxIter, estVarComp, subset, nPrecond,
+                                  maxRank, nThreads, "RRBLUP_SCA fastMode");
   // Average effects of each parent, as in callRRBLUP_SCA
   double dn = double(g.nInd);
   arma::uvec fixed = fixedMarkers(fit.stats.genoCount, dn);
@@ -1651,6 +2163,7 @@ Rcpp::List callFastRRBLUP_SCA(const arma::mat& Y, arma::uvec x,
     Rcpp::Named("d")=d,
     Rcpp::Named("mu")=fit.beta.row(0),
     Rcpp::Named("Vu")=vuOut(fit),
-    Rcpp::Named("Ve")=fit.Ve
+    Rcpp::Named("Ve")=fit.Ve,
+    Rcpp::Named("rank")=int(fit.rank)
   );
 }
