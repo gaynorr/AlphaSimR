@@ -34,10 +34,10 @@
 // alleles, so it is a sum over pairs of haplotypes of the exclusive or of
 // their bits, and is looked up the same way as an allele count.
 //
-// The preconditioner inverts each marker's block of the coefficient matrix,
-// over every term and whitened trait, and deflates the largest eigenvalues
-// that the relationships between individuals give the equations, as the
-// fast mode of RRBLUP does; see mkDeflation.
+// The preconditioner scales each whitened direction of each term, and
+// deflates the largest eigenvalues that the relationships between
+// individuals give the equations, as the fast mode of RRBLUP does; see
+// directionScale and mkDeflation.
 
 #include <algorithm>
 #include <utility>
@@ -1041,172 +1041,67 @@ Whitened whitenTerms(const std::vector<arma::mat>& Vu, const arma::mat& Ve,
   return w;
 }
 
-// The preconditioner is block Jacobi, with one block for each marker over
-// every term and whitened trait. The terms read at one marker are often
-// correlated, as the additive and dominance codes are wherever the allele
-// frequency is not one half, so the blocks hold their cross products as
-// well as the diagonal. Each block is the identity plus a positive
-// semidefinite matrix G, so it always has an inverse, but finding it takes
-// care, because the entries of a block can differ in scale by more than
-// the precision of a double. They do when one trait's error variance is
-// far below another's, which whitening turns into variance ratios many
-// orders of magnitude apart, and when terms coincide at a marker, as the
-// maternal and paternal codes of inbred lines do, the identity is lost to
-// rounding next to G and the block is singular in floating point.
-//
-// The block is therefore first scaled to unit diagonal, Ds*B*Ds for
-// Ds = diag(1/sqrt(1+diag(G))), and its eigendecomposition taken. The
-// scaled block's entries are all of order one, so every direction the
-// records see has an eigenvalue found to rounding level, where the
-// unscaled block's decomposition would find small ones only to rounding of
-// its largest entry, mixing them up with each other and with the unseen
-// directions. An eigenvalue at rounding level is not resolved by the
-// block: it may belong to a direction the records do not see, which the
-// deflation removes, or to one they see only through differences
-// below the block's precision, as terms whose covariance matrices are
-// nearly but not exactly aligned have. Its inverse is taken as one, the
-// scaled block's diagonal, rather than the reciprocal of rounding error or
-// zero: the preconditioner then stays positive definite, so every
-// direction is still searched in, and bounded. The inverse is kept and
-// applied in factored form, Ds*V*(dInv%(V'*(Ds*r))),
-// rather than multiplied out, so that its scales are never added together.
-// Should the decomposition fail, the inverse of the diagonal is used, which
-// is still a positive definite preconditioner.
-struct BlockPrecond{
-  arma::cube V;   // eigenvectors of each marker's scaled block
-  arma::mat dInv; // inverses of their eigenvalues, one column per marker
-  arma::mat ds;   // the diagonal of Ds, one column per marker
+// The preconditioner scales each whitened direction of each term, one row
+// of the stacked effects, by the mean over the markers of its diagonal entry
+// in the coefficient matrix. Whitening gives every effect unit prior
+// variance, but F_k carries each direction's variance ratio, so directions
+// can differ in scale by many orders of magnitude, as they do when one
+// trait's error variance is far below another's, and a scale for each
+// direction takes that out. Scaling each marker by its own diagonal, or
+// inverting each marker's block over the terms and directions, gives a
+// marker of low frequency as much weight as a common one, and on breeding
+// populations took more iterations than one scale per direction, with or
+// without the deflation. s holds the inverses of the scales, and lamMax the
+// largest diagonal entry of the coefficient matrix, which restartedPCG
+// judges rounding against.
+struct DirScale{
+  arma::vec s;
+  double lamMax;
 };
 
-BlockPrecond buildPrecond(const MarkerStats& stats, const Whitened& w,
-                          arma::uword nLoci, int nThreads){
+DirScale directionScale(const MarkerStats& stats, const Whitened& w,
+                        arma::uword nLoci){
   const arma::uword nTerm = w.F.size();
   const std::vector<arma::uword>& off = w.off;
   const arma::uword nR = off[nTerm];
-  BlockPrecond P;
-  P.V.set_size(nR,nR,nLoci);
-  P.dInv.set_size(nR,nLoci);
-  P.ds.set_size(nR,nLoci);
-  if(nR==0){
-    return P;
+  DirScale D;
+  D.s.ones(nR);
+  D.lamMax = 1.0;
+  if((nR==0) || (nLoci==0)){
+    return D;
   }
-  arma::uword nBlocks = countBlocks(nLoci);
-  int precondThreads = nThreads;
-  if(nBlocks < static_cast<arma::uword>(precondThreads)){
-    precondThreads = static_cast<int>(nBlocks);
-  }
-  // F_k'*F_l for every pair of terms, the same for every marker
-  std::vector<arma::mat> FF(nTerm*nTerm);
   for(arma::uword t=0; t<nTerm; ++t){
-    for(arma::uword t2=0; t2<nTerm; ++t2){
-      FF[t*nTerm+t2] = w.F[t].t()*w.F[t2];
+    if(off[t+1]==off[t]){
+      continue;
+    }
+    // The diagonal of F_t'*F_t, which times the term's cross product at a
+    // marker is that marker's diagonal entry, less the identity
+    arma::vec ff = arma::sum(arma::square(w.F[t]), 0).t();
+    arma::rowvec dkk = arma::clamp(stats.Dkl.row(t*nTerm+t), 0.0,
+                                   arma::datum::inf);
+    double meanD = arma::mean(dkk);
+    double maxD = dkk.max();
+    for(arma::uword c=0; c<ff.n_elem; ++c){
+      D.s(off[t]+c) = 1.0/(1.0+meanD*ff(c));
+      D.lamMax = std::max(D.lamMax, 1.0+maxD*ff(c));
     }
   }
-  // An exception cannot leave the parallel region, see unseenDirections
-  std::vector<int> failed(nBlocks, 0);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(precondThreads)
-#endif
-  for(arma::uword block=0; block<nBlocks; ++block){
-    try{
-      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-      arma::mat B(nR,nR), V;
-      arma::vec lambda;
-      for(arma::uword j=lociStart; j<lociEnd; ++j){
-        B.zeros();
-        for(arma::uword t=0; t<nTerm; ++t){
-          for(arma::uword t2=0; t2<nTerm; ++t2){
-            if( (off[t+1]==off[t]) || (off[t2+1]==off[t2]) ){
-              continue;
-            }
-            B.submat(off[t], off[t2], off[t+1]-1, off[t2+1]-1) +=
-              stats.Dkl(t*nTerm+t2,j)*FF[t*nTerm+t2];
-          }
-        }
-        B = 0.5*(B+B.t());
-        arma::vec ds = 1.0/sqrt(1.0+arma::clamp(B.diag(), 0.0,
-                                                arma::datum::inf));
-        P.ds.col(j) = ds;
-        B.each_col() %= ds;
-        B.each_row() %= ds.t();
-        B.diag() += square(ds);
-        if(arma::eig_sym(lambda, V, B)){
-          double cut = 64.0*arma::datum::eps*std::max(lambda.max(), 0.0);
-          P.V.slice(j) = V;
-          arma::vec dInv(nR, arma::fill::ones);
-          for(arma::uword c=0; c<nR; ++c){
-            if(lambda(c)>cut){
-              dInv(c) = 1.0/lambda(c);
-            }
-          }
-          P.dInv.col(j) = dInv;
-        }else{
-          P.V.slice(j).eye();
-          P.dInv.col(j).ones();
-        }
-      }
-    }catch(...){
-      failed[block] = 1;
-    }
-  }
-  if(std::find(failed.begin(), failed.end(), 1)!=failed.end()){
-    Rcpp::stop("fast mode: building the preconditioner failed");
-  }
-  return P;
+  return D;
 }
 
-// Z = P^-1*R, each marker's block applied to its own column, so the work
-// splits over blocks of markers
-void applyPrecond(arma::mat& Z, const arma::mat& R, const BlockPrecond& P,
-                  int nThreads){
-  const arma::uword nR = R.n_rows;
-  const arma::uword nLoci = R.n_cols;
-  arma::uword nBlocks = countBlocks(nLoci);
-  int precondThreads = nThreads;
-  if(nBlocks < static_cast<arma::uword>(precondThreads)){
-    precondThreads = static_cast<int>(nBlocks);
-  }
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(precondThreads)
-#endif
-  for(arma::uword block=0; block<nBlocks; ++block){
-    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-    std::vector<double> w(nR);
-    for(arma::uword j=lociStart; j<lociEnd; ++j){
-      const double* Vj = P.V.slice_memptr(j);
-      const double* dj = P.dInv.colptr(j);
-      const double* sj = P.ds.colptr(j);
-      const double* rj = R.colptr(j);
-      double* zj = Z.colptr(j);
-      // w = dInv%(V'*(Ds*r)), then z = Ds*(V*w)
-      for(arma::uword c=0; c<nR; ++c){
-        const double* vc = Vj+c*nR;
-        double sum = 0.0;
-        for(arma::uword a=0; a<nR; ++a){
-          sum += vc[a]*(sj[a]*rj[a]);
-        }
-        w[c] = dj[c]*sum;
-      }
-      for(arma::uword a=0; a<nR; ++a){
-        double sum = 0.0;
-        for(arma::uword c=0; c<nR; ++c){
-          sum += Vj[a+c*nR]*w[c];
-        }
-        zj[a] = sj[a]*sum;
-      }
-    }
-  }
+// Z = P^-1*R, each row of R scaled by its direction's s
+void applyScale(arma::mat& Z, const arma::mat& R, const DirScale& D){
+  Z = R;
+  Z.each_col() %= D.s;
 }
 
-// A deflation of the block preconditioner, as the fast mode of RRBLUP
-// deflates its Jacobi preconditioner; see deflationBasis in MME.cpp.
+// A deflation of the preconditioner, as the fast mode of RRBLUP deflates
+// its own; see deflationBasis in MME.cpp.
 //
 // The coefficient matrix is A = I+G'*G, where G takes the stacked whitened
 // effects to the whitened fitted values of every record and trait, and the
-// block preconditioner's inverse is L*L', with L_j = Ds_j*V_j*dInv_j^1/2 for
-// marker j. The iteration then works, in effect, on L'*A*L, which has a mean
+// preconditioner's inverse is L*L', with L = diag(sqrt(s)) the same at every
+// marker. The iteration then works, in effect, on L'*A*L, which has a mean
 // eigenvalue near one but, as for one trait, a few hundred to a few
 // thousand eigenvalues far above it from the relationships between
 // individuals, and those set the number of iterations. If W holds
@@ -1219,11 +1114,11 @@ void applyPrecond(arma::mat& Z, const arma::mat& R, const BlockPrecond& P,
 // W is estimated from the rows of G*L for nSub records evenly spaced through
 // the population, with their codes centered on the subset, and every trait,
 // so nSub*nT rows. n/nSub*(Gs*L)'*(Gs*L) approximates (G*L)'*(G*L), and the
-// mean of the diagonal of L'*L stands in for L'*L on every eigenvalue. The
-// leading eigenvectors are (Gs*L)'*U*diag(1/sqrt(g)) for the eigenpairs
-// (g,U) of the cross product of the rows, (Gs*L)*(Gs*L)', which is formed a
-// panel of markers at a time. As for one trait, the fixed effects other
-// than the mean are left out of the approximation.
+// mean of s stands in for L'*L on every eigenvalue. The leading eigenvectors
+// are (Gs*L)'*U*diag(1/sqrt(g)) for the eigenpairs (g,U) of the cross
+// product of the rows, (Gs*L)*(Gs*L)', which is formed a panel of markers at
+// a time. As for one trait, the fixed effects other than the mean are left
+// out of the approximation.
 //
 // The records are chosen so that nSub*nT is about nPrecond, which keeps the
 // decomposition the size the fast mode of RRBLUP uses for one trait. W has a
@@ -1233,21 +1128,20 @@ void applyPrecond(arma::mat& Z, const arma::mat& R, const BlockPrecond& P,
 // the largest one left, never less than one, as there.
 //
 // The directions the records cannot see are left to deflateUnseen: they are
-// in the null space of G*L once scaled, so W, built from the rows of Gs*L,
-// is close to orthogonal to them, and the projection that follows the
-// preconditioner removes what is left.
+// in the null space of G*L, so W, built from the rows of Gs*L, is close to
+// orthogonal to them, and the projection that follows the preconditioner
+// removes what is left.
 struct MKDeflation{
-  arma::cube L;     // L_j for each marker
+  arma::vec sqrtS;  // the diagonal of L
   arma::mat W;      // row j*nR+c for direction c of marker j
   arma::vec shrink; // sigma/theta-1
 };
 
 MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
                         arma::uword ploidy, const std::vector<FastTerm>& terms,
-                        const Whitened& w, const BlockPrecond& P,
+                        const Whitened& w, const DirScale& P,
                         arma::uword nT, arma::uword nInd, arma::uword nLoci,
-                        arma::uword nPrecond, arma::uword maxRank,
-                        int nThreads){
+                        arma::uword nPrecond, arma::uword maxRank){
   MKDeflation D;
   const arma::uword nTerm = terms.size();
   const std::vector<arma::uword>& off = w.off;
@@ -1268,37 +1162,18 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
   if(maxRank==0){
     return D;
   }
-
-  // The factor of each marker's block inverse
-  D.L.set_size(nR, nR, nLoci);
-  {
-    arma::uword nBlocks = countBlocks(nLoci);
-    int lThreads = nThreads;
-    if(nBlocks < static_cast<arma::uword>(lThreads)){
-      lThreads = static_cast<int>(nBlocks);
-    }
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(lThreads)
-#endif
-    for(arma::uword block=0; block<nBlocks; ++block){
-      arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-      arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-      for(arma::uword j=lociStart; j<lociEnd; ++j){
-        const double* V = P.V.slice_memptr(j);
-        const double* dInv = P.dInv.colptr(j);
-        const double* ds = P.ds.colptr(j);
-        double* Lj = D.L.slice_memptr(j);
-        for(arma::uword c=0; c<nR; ++c){
-          double s = std::sqrt(dInv[c]);
-          for(arma::uword a=0; a<nR; ++a){
-            Lj[a+c*nR] = ds[a]*V[a+c*nR]*s;
-          }
-        }
-      }
+  D.sqrtS = arma::sqrt(P.s);
+  double ridge = arma::mean(P.s);
+  // Term t's codes reach whitened trait k and scaled direction c through
+  // H_t = F_t*diag(sqrt(s)) over the term's own directions, the same at
+  // every marker
+  std::vector<arma::mat> H(nTerm);
+  for(arma::uword t=0; t<nTerm; ++t){
+    if(off[t+1]>off[t]){
+      H[t] = w.F[t];
+      H[t].each_row() %= D.sqrtS.subvec(off[t], off[t+1]-1).t();
     }
   }
-  // The mean of the diagonal of L'*L
-  double ridge = arma::accu(arma::square(D.L))/double(nR*nLoci);
 
   arma::uvec sub = deflationSubset(nInd, nSub);
   const arma::uword panelWidth = std::max<arma::uword>(
@@ -1306,7 +1181,7 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
   // One panel of Gs*L, for markers [start,stop), with row k*nSub+i for
   // record i and whitened trait k and column (j-start)*nR+c
   std::vector<unsigned int> bits(ploidy);
-  arma::mat codes(nSub, nTerm), H;
+  arma::mat codes(nSub, nTerm);
   auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
     panel.zeros(nRow, (stop-start)*nR);
     for(arma::uword j=start; j<stop; ++j){
@@ -1317,20 +1192,15 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
         }
       }
       codes.each_row() -= arma::mean(codes, 0);
-      const arma::mat Lj(const_cast<double*>(D.L.slice_memptr(j)), nR, nR,
-                         false, true);
       for(arma::uword t=0; t<nTerm; ++t){
         if(off[t+1]==off[t]){
           continue;
         }
-        // Term t's codes reach whitened trait k through F_t, and the scaled
-        // direction c through the rows of L_j for the term
-        H = w.F[t]*Lj.rows(off[t], off[t+1]-1);
         const double* ct = codes.colptr(t);
-        for(arma::uword c=0; c<nR; ++c){
+        for(arma::uword c=off[t]; c<off[t+1]; ++c){
           double* pc = panel.colptr((j-start)*nR+c);
           for(arma::uword k=0; k<nT; ++k){
-            double h = H(k,c);
+            double h = H[t](k,c-off[t]);
             double* pk = pc+k*nSub;
             for(arma::uword i=0; i<nSub; ++i){
               pk[i] += ct[i]*h;
@@ -1350,7 +1220,7 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
   arma::vec g;
   arma::mat U;
   if(!arma::eig_sym(g, U, K)){
-    // The block preconditioner alone still converges
+    // The scaling alone still converges
     return MKDeflation();
   }
   K.reset();
@@ -1380,62 +1250,21 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
   return D;
 }
 
-// Z = P^-1*R with the deflation, L*(I+W*diag(shrink)*W')*L'*R, each marker's
-// factor applied to its own column, so the work splits over blocks of
-// markers, and the deflation applied as for one trait, so neither depends on
-// the number of threads
+// Z = P^-1*R with the deflation, L*(I+W*diag(shrink)*W')*L'*R. The scaling
+// is elementwise and the deflation applied as for one trait, so neither
+// depends on the number of threads.
 void applyDeflatedPrecond(arma::mat& Z, const arma::mat& R,
                           const MKDeflation& D, int nThreads){
   const arma::uword nR = R.n_rows;
   const arma::uword nLoci = R.n_cols;
-  arma::vec v(nR*nLoci);
-  arma::uword nBlocks = countBlocks(nLoci);
-  int pThreads = nThreads;
-  if(nBlocks < static_cast<arma::uword>(pThreads)){
-    pThreads = static_cast<int>(nBlocks);
-  }
-  double* vPtr = v.memptr();
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(pThreads)
-#endif
-  for(arma::uword block=0; block<nBlocks; ++block){
-    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-    for(arma::uword j=lociStart; j<lociEnd; ++j){
-      const double* Lj = D.L.slice_memptr(j);
-      const double* rj = R.colptr(j);
-      double* vj = vPtr+j*nR;
-      for(arma::uword c=0; c<nR; ++c){
-        const double* lc = Lj+c*nR;
-        double sum = 0.0;
-        for(arma::uword a=0; a<nR; ++a){
-          sum += lc[a]*rj[a];
-        }
-        vj[c] = sum;
-      }
-    }
-  }
+  arma::mat V = R;
+  V.each_col() %= D.sqrtS;
+  // A column of V holds one marker's directions, so V in memory has the
+  // layout of the rows of W
+  arma::vec v(V.memptr(), nR*nLoci, false, true);
   applyDeflation(v, D.W, D.shrink, nThreads);
-  Z.set_size(nR, nLoci);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) num_threads(pThreads)
-#endif
-  for(arma::uword block=0; block<nBlocks; ++block){
-    arma::uword lociStart = blockStart(nLoci, nBlocks, block);
-    arma::uword lociEnd = blockStart(nLoci, nBlocks, block+1);
-    for(arma::uword j=lociStart; j<lociEnd; ++j){
-      const double* Lj = D.L.slice_memptr(j);
-      const double* vj = vPtr+j*nR;
-      double* zj = Z.colptr(j);
-      for(arma::uword a=0; a<nR; ++a){
-        double sum = 0.0;
-        for(arma::uword c=0; c<nR; ++c){
-          sum += Lj[a+c*nR]*vj[c];
-        }
-        zj[a] = sum;
-      }
-    }
-  }
+  Z = V;
+  Z.each_col() %= D.sqrtS;
 }
 
 // Directions the records cannot see. When some combination of the terms'
@@ -1452,10 +1281,10 @@ void applyDeflatedPrecond(arma::mat& Z, const arma::mat& R,
 // The combinations are the null space of the terms' cross products at the
 // marker, Dkl, among the terms with any variance. Those are all on the
 // scale of the number of records, so their null space is found reliably,
-// unlike that of the preconditioner's block, whose scales can differ by
-// more than the precision of a double. For a null vector c, the effects
-// F_k*a_k = c_k*w are unseen, for any w over the traits that every term in
-// the combination can carry, and in whitened effects they are
+// unlike that of the marker's block of the coefficient matrix, whose scales
+// can differ by more than the precision of a double. For a null vector c,
+// the effects F_k*a_k = c_k*w are unseen, for any w over the traits that
+// every term in the combination can carry, and in whitened effects they are
 // a_k = F_k^+*c_k*w. When every such term has variance in every trait
 // direction, w is any vector and the traits' own directions serve as its
 // basis. When some do not, as when a covariance matrix is singular, w is
@@ -1660,6 +1489,14 @@ struct PcgStatus{
 // coefficient matrix. The terms and traits share one recurrence, because the
 // terms are coupled through the records.
 //
+// project(R) removes from R the directions the records cannot see, which
+// applyCoef and precondition already leave out of their results. The
+// residual of the recurrence is projected too after every step. Rounding in
+// the step leaves it a part in those directions, which the preconditioner
+// removes and the iteration can therefore never reduce, so with a large
+// variance ratio that part alone could hold the residual above its
+// tolerance until maxIter.
+//
 // Whitening gives every error unit variance, but the right hand sides of
 // different directions can still differ in scale by many orders of
 // magnitude, as they do when one trait's error variance is close to zero,
@@ -1714,15 +1551,16 @@ struct PcgStatus{
 // 1e-6 of the effects is reported in roundingBound rather than passed over.
 //
 // A restart that does not change the effects at all, while the residual is
-// still above rounding level, has stalled: the preconditioner cannot
-// resolve a direction the residual lies in, as when terms' covariance
-// matrices are aligned to within the precision of its blocks. Further
+// still above rounding level, has stalled: the iteration cannot resolve a
+// direction the residual lies in, as when terms' covariance matrices are
+// aligned to within the precision of a double next to the variance ratio.
+// Further
 // restarts would only repeat it, so the iteration stops and says so in
 // stalledAt.
-template<class ApplyCoef, class Precondition>
+template<class ApplyCoef, class Precondition, class Project>
 PcgStatus restartedPCG(arma::mat& At, const arma::mat& Bt,
                        ApplyCoef applyCoef, Precondition precondition,
-                       double lamMax, arma::uword maxIter){
+                       Project project, double lamMax, arma::uword maxIter){
   const arma::uword nR = Bt.n_rows;
   const arma::uword nLoci = Bt.n_cols;
   arma::mat Rt = Bt;
@@ -1809,6 +1647,7 @@ PcgStatus restartedPCG(arma::mat& At, const arma::mat& Bt,
       double step = rz/pAp;
       At += step*Pt;
       Rt -= step*Apt;
+      project(Rt);
       if(rowsConverged(Rt)){
         claimed = true;
         break;
@@ -1836,8 +1675,8 @@ PcgStatus restartedPCG(arma::mat& At, const arma::mat& Bt,
 // domCovariate adds the summed dominance code to the fixed effects, as the
 // direct form does for the models with dominance. VuIn, VeIn, estVarComp and
 // subset are as for fastMKVarComp. nPrecond and maxRank set the deflation of
-// the preconditioner, see mkDeflation; either of them zero leaves the block
-// preconditioner alone.
+// the preconditioner, see mkDeflation; either of them zero leaves the
+// scaling of directionScale alone.
 FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
                           const PackedGeno& g, const LociPos& pos,
                           const std::vector<TermKind>& kinds,
@@ -1898,12 +1737,12 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
     offset.col(t) += terms[t].constant;
   }
 
-  const BlockPrecond P = buildPrecond(fit.stats, w, nLoci, nThreads);
+  const DirScale P = directionScale(fit.stats, w, nLoci);
   bool anyNull = false;
   const std::vector<arma::mat> nullBasis =
     unseenDirections(fit.stats, w, nT, nInd, nLoci, nThreads, anyNull);
   const MKDeflation defl = mkDeflation(planes, ploidy, terms, w, P, nT, nInd,
-                                       nLoci, nPrecond, maxRank, nThreads);
+                                       nLoci, nPrecond, maxRank);
   fit.rank = defl.W.n_cols;
 
   arma::mat tabs(32*nT*nTerm, planes.n_cols);
@@ -1937,7 +1776,7 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   };
   auto precondition = [&](arma::mat& Z, const arma::mat& R){
     if(defl.W.n_cols==0){
-      applyPrecond(Z, R, P, nThreads);
+      applyScale(Z, R, P);
     }else{
       applyDeflatedPrecond(Z, R, defl, nThreads);
     }
@@ -1965,13 +1804,13 @@ FastMKFit fastMultiKernel(const arma::mat& Y, arma::uvec x,
   // a product with the coefficient matrix grows with the matrix times the
   // effects, not with the product, which is far smaller when the effects
   // cancel.
-  double lamMax = 1.0;
-  if(nR>0){
-    lamMax = 1.0/square(P.ds).min();
-  }
+  const double lamMax = P.lamMax;
   arma::mat At;
+  auto project = [&](arma::mat& R){
+    deflateUnseen(R, nullBasis, anyNull);
+  };
   const PcgStatus status = restartedPCG(At, Bt, applyCoef, precondition,
-                                        lamMax, maxIter);
+                                        project, lamMax, maxIter);
   if(status.stalledAt>0.0){
     Rf_warning("%s: the iteration stalled without converging, with a "
                "residual of %.2g of the right hand sides", name.c_str(),

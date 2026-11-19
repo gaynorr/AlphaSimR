@@ -1320,14 +1320,15 @@ arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub){
 
 // A deflation preconditioner for the conjugate gradient solve of RR-BLUP.
 //
-// With Jacobi preconditioning the iteration works, in effect, on
-// B = D^-1/2*A*D^-1/2, where A = Mc'*S*Mc+lambda*I and D is the diagonal of
-// A. B has a mean eigenvalue of one, but the relationships between
-// individuals give it a few hundred to a few thousand eigenvalues far above
+// The iteration works on B = A/d, where A = Mc'*S*Mc+lambda*I and d is the
+// mean of the diagonal of A, given as meanDiag. Dividing by a constant does
+// not change the iteration; it only gives B a mean eigenvalue of one, which
+// the thresholds below are stated against. The relationships between
+// individuals give B a few hundred to a few thousand eigenvalues far above
 // that, and they set its condition number and so the number of iterations.
 // If W holds orthonormal approximations to the eigenvectors of the largest
 // eigenvalues theta, the preconditioner
-//   P^-1 = D^-1/2*(I+W*diag(sigma/theta-1)*W')*D^-1/2
+//   P^-1 = I+W*diag(sigma/theta-1)*W'
 // moves those eigenvalues down to about sigma and leaves the rest of the
 // spectrum alone, so the condition number falls to about sigma over the
 // smallest eigenvalue. P^-1 is positive definite for any orthonormal W and
@@ -1338,24 +1339,30 @@ arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub){
 // doi:10.1137/21M1466244, with the eigenvectors estimated from a subset of
 // the records rather than from a random sketch. Vandenplas et al. (2018),
 // doi:10.1186/s12711-018-0429-3, found the same few large eigenvalues
-// slowing single-step SNP-BLUP.
+// slowing single-step SNP-BLUP. A random sketch estimates the eigenvectors
+// better for the same rank, but takes one product with A per column of the
+// sketch, and with the genotypes packed those products cost more than the
+// iterations they save. As there, A is not scaled by its diagonal
+// first: Jacobi scaling, which gives a marker of low frequency as much
+// weight as a common one, took more iterations than no scaling at all on
+// breeding populations, with or without the deflation.
 //
 // W is estimated from nSub records, evenly spaced through the population
 // rather than sampled, so that building it draws no random numbers. With
-// Ms holding their genotypes, centered on the subset and scaled by D^-1/2,
-// n/nSub*Ms'*Ms+lambda*D^-1 approximates B. The fixed effects other than the
-// mean are left out of the approximation, which only has to be close. When
-// there are fewer markers than records in the subset, the approximation is
-// formed and decomposed as it is, a square matrix of the markers. Otherwise
-// its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U)
-// of the record cross product Ms*Ms', the smaller matrix, with lambda*D^-1
-// taken as its mean, lambda times the mean of D^-1, on every eigenvalue.
+// Ms holding their genotypes, centered on the subset and scaled by
+// 1/sqrt(d), n/nSub*Ms'*Ms+lambda/d approximates B. The fixed effects other
+// than the mean are left out of the approximation, which only has to be
+// close. When there are fewer markers than records in the subset, the
+// approximation is formed and decomposed as it is, a square matrix of the
+// markers. Otherwise its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for
+// the eigenpairs (g,U) of the record cross product Ms*Ms', the smaller
+// matrix, with lambda/d added to every eigenvalue.
 //
 // Eigenvalues above twice the mean are deflated, at most maxRank of them and
 // fewer than the size of the matrix decomposed, and sigma is the largest one
 // left, but never less than the mean of one. With rank deficient genotypes
 // and a tiny ratio of the variances, the largest one left can be as small as
-// lambda*D^-1, and sigma/theta would then round to zero in
+// lambda/d, and sigma/theta would then round to zero in
 // I+W*diag(sigma/theta-1)*W', leaving a preconditioner that is singular
 // rather than positive definite. With sigma at least one, and theta no more
 // than about the number of markers, the trace of B, sigma/theta stays near
@@ -1371,7 +1378,7 @@ arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub){
 // took several times as long as the products themselves.
 void deflationBasis(arma::mat& W, arma::vec& shrink,
                     const arma::Mat<unsigned char>& M,
-                    const arma::vec& diagA, double lambda,
+                    double meanDiag, double lambda,
                     arma::uword nSub, arma::uword maxRank,
                     const double* xaPtr){
   arma::uword nInd = M.n_rows;
@@ -1393,7 +1400,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
     return;
   }
   arma::uvec sub = deflationSubset(nInd, nSub);
-  arma::vec w = 1.0/arma::sqrt(diagA);
+  const double w = 1.0/std::sqrt(meanDiag);
   const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
   // One panel of the scaled, centered subset genotypes
   auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
@@ -1407,7 +1414,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       }
       double mean = sum/double(nSub);
       for(arma::uword i=0; i<nSub; ++i){
-        panelCol[i] = (panelCol[i]-mean)*w(j);
+        panelCol[i] = (panelCol[i]-mean)*w;
       }
     }
   };
@@ -1419,11 +1426,11 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       fillPanel(Ms, 0, nLoci);
       B = scale*(Ms.t()*Ms);
     }
-    B.diag() += lambda*arma::square(w);
+    B.diag() += lambda/meanDiag;
     arma::vec theta(nLoci);
     arma::mat V(nLoci,nLoci);
     if(eigen2(theta, V, std::move(B))!=0){
-      // Plain Jacobi preconditioning still converges
+      // The iteration still converges without the deflation
       return;
     }
     // eigen2 returns the eigenvalues in ascending order
@@ -1449,12 +1456,12 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   arma::vec g(nSub);
   arma::mat U(nSub,nSub);
   if(eigen2(g, U, std::move(K))!=0){
-    // Plain Jacobi preconditioning still converges
+    // The iteration still converges without the deflation
     return;
   }
   K.reset();
   // eigen2 returns the eigenvalues in ascending order
-  double ridge = lambda*arma::mean(arma::square(w));
+  double ridge = lambda/meanDiag;
   arma::vec theta = scale*arma::flipud(g)+ridge;
   arma::uword k = 0;
   while((k<maxRank) && (theta(k)>2.0)){
@@ -1590,14 +1597,17 @@ void applyDeflationMulti(arma::mat& V, const arma::mat& W, const arma::mat& S,
 // traits of callFastRRBLUP_MV.
 //
 // On the scale of whitened effects, transformed trait k's coefficient matrix
-// is lam_k*C+I, for C = Mc'*S*Mc, and its diagonal is D_k = lam_k*dg+1. Its
-// eigenvalue along a column w of W, after the scaling by D_k^-1/2 that Jacobi
-// preconditioning applies, is estimated by the Rayleigh quotient
-//   lam_k*n/nSub*|Ms*D_k^-1/2*w|^2 + sum(w^2/D_k),
+// is lam_k*C+I, for C = Mc'*S*Mc. As in deflationBasis it is divided by the
+// mean of its diagonal, d_k = lam_k*meanDg+1, which does not change that
+// trait's iteration, since each trait has a recurrence of its own, and gives
+// it a mean eigenvalue of one. Its eigenvalue along a column w of W is then
+// estimated by the Rayleigh quotient
+//   (lam_k*n/nSub*|Ms*w|^2+1)/d_k,
 // with Ms the genotypes of the records deflationBasis used, centered on
-// them. These approximate the trait's own eigenvalues only as well as W
-// approximates its eigenvectors, but the preconditioner is positive definite
-// for any positive estimates, so a poor one only costs iterations.
+// them, and |w| one. These approximate the trait's own eigenvalues only as
+// well as W approximates its eigenvectors, but the preconditioner is
+// positive definite for any positive estimates, so a poor one only costs
+// iterations.
 //
 // The last column of W is not deflated. Its quotient is the level sigma the
 // others are moved down to, never less than one as in deflationBasis, and a
@@ -1606,10 +1616,11 @@ void applyDeflationMulti(arma::mat& V, const arma::mat& W, const arma::mat& S,
 // of W but the last, zero where a column is not deflated and for a trait
 // with no genetic variance.
 //
-// The genotypes are read a panel at a time, as in deflationBasis, and the
-// traits one after another, so the work held is one nSub by k matrix.
+// |Ms*w|^2 is the same for every trait, so the genotypes are read once, a
+// panel at a time as in deflationBasis, and the work held is one nSub by k
+// matrix.
 arma::mat traitShrink(const arma::Mat<unsigned char>& M, const arma::mat& W,
-                      const arma::vec& dg, const arma::vec& lam,
+                      double meanDg, const arma::vec& lam,
                       arma::uword nSub, const double* xaPtr){
   arma::uword nInd = M.n_rows;
   arma::uword nLoci = M.n_cols;
@@ -1622,36 +1633,32 @@ arma::mat traitShrink(const arma::Mat<unsigned char>& M, const arma::mat& W,
   arma::uvec sub = deflationSubset(nInd, nSub);
   const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
   double scale = double(nInd)/double(nSub);
-  arma::mat G(nSub, kW), panel, V;
+  arma::mat G(nSub, kW, arma::fill::zeros), panel;
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    panel.set_size(nSub, stop-start);
+    for(arma::uword j=start; j<stop; ++j){
+      const unsigned char* Mcol = M.colptr(j);
+      double* panelCol = panel.colptr(j-start);
+      double sum = 0.0;
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = xaPtr[Mcol[sub(i)]];
+        sum += panelCol[i];
+      }
+      double mean = sum/double(nSub);
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] -= mean;
+      }
+    }
+    G += panel*W.rows(start, stop-1);
+  }
+  arma::rowvec MsW = scale*arma::sum(arma::square(G), 0);
   for(arma::uword k=0; k<nT; ++k){
     if(!(lam(k)>0.0)){
       continue;
     }
-    arma::vec wk = 1.0/arma::sqrt(lam(k)*dg+1.0);
-    G.zeros();
-    arma::rowvec diagPart(kW, arma::fill::zeros);
-    for(arma::uword start=0; start<nLoci; start+=panelWidth){
-      arma::uword stop = std::min(start+panelWidth, nLoci);
-      panel.set_size(nSub, stop-start);
-      for(arma::uword j=start; j<stop; ++j){
-        const unsigned char* Mcol = M.colptr(j);
-        double* panelCol = panel.colptr(j-start);
-        double sum = 0.0;
-        for(arma::uword i=0; i<nSub; ++i){
-          panelCol[i] = xaPtr[Mcol[sub(i)]];
-          sum += panelCol[i];
-        }
-        double mean = sum/double(nSub);
-        for(arma::uword i=0; i<nSub; ++i){
-          panelCol[i] -= mean;
-        }
-      }
-      V = W.rows(start, stop-1);
-      V.each_col() %= wk.subvec(start, stop-1);
-      G += panel*V;
-      diagPart += arma::sum(arma::square(V), 0);
-    }
-    arma::rowvec theta = lam(k)*scale*arma::sum(arma::square(G), 0)+diagPart;
+    double dk = lam(k)*meanDg+1.0;
+    arma::rowvec theta = (lam(k)*MsW+1.0)/dk;
     double sigma = std::max(theta(kW-1), 1.0);
     double cut = std::max(sigma, 2.0);
     for(arma::uword j=0; j+1<kW; ++j){
@@ -1670,7 +1677,7 @@ arma::mat traitShrink(const arma::Mat<unsigned char>& M, const arma::mat& W,
 // doi:10.3168/jds.S0022-0302(99)75535-9.
 // x is an indicator vector for the fixed effect levels, as in callRRBLUP.
 // nPrecond and maxRank set the deflation of the preconditioner, see
-// deflationBasis; either of them zero leaves plain Jacobi preconditioning.
+// deflationBasis; either of them zero leaves the iteration unpreconditioned.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                           const Rcpp::S4& pop,
@@ -1769,12 +1776,12 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   double lambda = Ve/Vu;
   
   // One pass over the genotypes gives the column means, the right hand side
-  // and the diagonal of the coefficient matrix, which is what the iteration
-  // is preconditioned with. Everything is accumulated into scalars, so no
-  // column of dosages is ever formed and the pass splits over loci without
-  // needing memory per thread.
+  // and the diagonal of the coefficient matrix, whose mean scales the
+  // deflation. Everything is accumulated into scalars, so no column of
+  // dosages is ever formed and the pass splits over loci without needing
+  // memory per thread.
   arma::rowvec Mmean(nLoci);
-  arma::vec r(nLoci), precond(nLoci);
+  arma::vec r(nLoci), diagA(nLoci);
   double SySum = accu(Sy);
   const double* SyPtr = Sy.memptr();
   const double* XfixPtr = Xfix.memptr();
@@ -1817,25 +1824,27 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
           // Rounding only, the true value cannot be below lambda
           diagonal = lambda;
         }
-        precond(j) = diagonal;
+        diagA(j) = diagonal;
       }
     }
   }
   
-  // The deflation of the preconditioner reads the subset's dosages from M
+  // The deflation of the preconditioner reads the subset's dosages from M.
+  // The preconditioner is I+W*diag(shrink)*W', the identity when nothing is
+  // deflated; the division by the mean of the diagonal in deflationBasis is
+  // a constant, which the iteration does not depend on, and is left out.
   arma::mat W;
   arma::vec shrink;
-  arma::vec w = 1.0/arma::sqrt(precond);
   if((nPrecond>0) & (maxRank>0)){
-    deflationBasis(W, shrink, M, precond, lambda, nPrecond, maxRank, xaPtr);
+    deflationBasis(W, shrink, M, arma::mean(diagA), lambda, nPrecond,
+                   maxRank, xaPtr);
   }
   auto applyPrecond = [&](const arma::vec& res){
-    if(W.n_cols==0){
-      return arma::vec(res/precond);
+    arma::vec v = res;
+    if(W.n_cols>0){
+      applyDeflation(v, W, shrink, nThreads);
     }
-    arma::vec v = res%w;
-    applyDeflation(v, W, shrink, nThreads);
-    return arma::vec(v%w);
+    return v;
   };
 
   // The dosages have done their job. The iteration works from a copy of the
@@ -2249,19 +2258,21 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
 // last two; one that couples the traits would also need the recurrences
 // joined.
 //
-// The preconditioner is Jacobi with the deflation of the single trait solver,
-// see deflationBasis. Transformed trait k's equations, scaled by their
-// diagonal, are those of a single trait with ridge 1/lam_k, so they differ
-// between traits only in that ridge. One basis is therefore estimated, for
-// the trait with the largest lam_k, whose ridge is the smallest and which so
-// has the most eigenvalues to deflate, and every trait uses it with shrink
-// factors of its own, see traitShrink. That trait also takes the most
-// iterations, and with the products shared it sets the cost of the solve, so
-// a basis for each trait would cost more decompositions for little gain.
+// The preconditioner is the deflation of the single trait solver, see
+// deflationBasis, with no scaling by the diagonal. Transformed trait k's
+// equations, divided by lam_k, are those of a single trait with ridge
+// 1/lam_k, so they differ between traits only in that ridge, and each
+// trait's recurrence is unchanged by the division. One basis is therefore
+// estimated, for the trait with the largest lam_k, whose ridge is the
+// smallest and which so has the most eigenvalues to deflate, and every trait
+// uses it with shrink factors of its own, see traitShrink. That trait also
+// takes the most iterations, and with the products shared it sets the cost
+// of the solve, so a basis for each trait would cost more decompositions for
+// little gain.
 //
 // x is an indicator vector for the fixed effect levels, as in callRRBLUP.
 // nPrecond and maxRank set the deflation, as in callFastRRBLUP; either of
-// them zero leaves plain Jacobi preconditioning.
+// them zero leaves the iteration unpreconditioned.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                              const Rcpp::S4& pop,
@@ -2373,9 +2384,9 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   arma::mat SYs = SY*T.t(); // absorbed responses, transformed
 
   // One pass over the genotypes gives the column means, the right hand sides
-  // and the diagonal of Mc'*S*Mc, from which every trait's preconditioner
-  // follows. As for one trait, the pass splits over loci and accumulates
-  // into scalars.
+  // and the diagonal of Mc'*S*Mc, whose mean scales every trait's deflation.
+  // As for one trait, the pass splits over loci and accumulates into
+  // scalars.
   arma::rowvec Mmean(nLoci);
   arma::vec dg(nLoci);
   arma::mat Rt(nT,nLoci); // right hand sides, one column per marker
@@ -2428,21 +2439,21 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
       }
     }
   }
-  arma::mat precond = lam*dg.t()+1.0;
+  const double meanDg = arma::mean(dg);
 
   // The deflation, built while the dosages are still held. The basis is asked
   // for one column more than maxRank, the column traitShrink reads sigma
-  // from. A trait none of whose columns is deflated keeps plain Jacobi.
+  // from. A trait none of whose columns is deflated is not preconditioned.
   arma::mat W;
   std::vector<arma::vec> shrink(nT);
   std::vector<bool> deflate(nT, false);
   if((nPrecond>0) && (maxRank>0)){
     double ridge = 1.0/lam.max();
     arma::vec shrinkRef;
-    deflationBasis(W, shrinkRef, M, dg+ridge, ridge, nPrecond, maxRank+1,
+    deflationBasis(W, shrinkRef, M, meanDg+ridge, ridge, nPrecond, maxRank+1,
                    xaPtr);
     if(W.n_cols>=2){
-      arma::mat shrinkAll = traitShrink(M, W, dg, lam, nPrecond, xaPtr);
+      arma::mat shrinkAll = traitShrink(M, W, meanDg, lam, nPrecond, xaPtr);
       W.shed_col(W.n_cols-1);
       for(arma::uword k=0; k<nT; ++k){
         shrink[k] = shrinkAll.row(k).t();
@@ -2452,11 +2463,11 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
       W.reset();
     }
   }
-  arma::mat wScale = 1.0/arma::sqrt(precond);
   arma::mat Zt(nT,nLoci);
-  // Z = P^-1*R for every trait k with want[k], row k of each. The traits
-  // that deflate are deflated together, so that W, which can be far larger
-  // than the residuals, is read once for all of them.
+  // Z = P^-1*R for every trait k with want[k], row k of each, with
+  // P^-1 = I+W*diag(shrink_k)*W' as for one trait. The traits that deflate
+  // are deflated together, so that W, which can be far larger than the
+  // residuals, is read once for all of them.
   auto applyPrecond = [&](const std::vector<bool>& want){
     std::vector<arma::uword> dk;
     for(arma::uword k=0; k<nT; ++k){
@@ -2466,7 +2477,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
       if(deflate[k]){
         dk.push_back(k);
       }else{
-        Zt.row(k) = Rt.row(k)/precond.row(k);
+        Zt.row(k) = Rt.row(k);
       }
     }
     if(dk.empty()){
@@ -2475,12 +2486,12 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
     const arma::uword nS = dk.size();
     arma::mat V(nS, nLoci), S(W.n_cols, nS);
     for(arma::uword s=0; s<nS; ++s){
-      V.row(s) = Rt.row(dk[s])%wScale.row(dk[s]);
+      V.row(s) = Rt.row(dk[s]);
       S.col(s) = shrink[dk[s]];
     }
     applyDeflationMulti(V, W, S, nThreads);
     for(arma::uword s=0; s<nS; ++s){
-      Zt.row(dk[s]) = V.row(s)%wScale.row(dk[s]);
+      Zt.row(dk[s]) = V.row(s);
     }
   };
 

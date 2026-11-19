@@ -147,11 +147,11 @@ test_that("fast mode RRBLUP agrees with RRBLUP given the same variance component
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-4)
 })
 
-# Single trait fast mode deflates the largest eigenvalues of its Jacobi
-# preconditioned system, using eigenvectors estimated from a subset of the
-# records. The preconditioner changes how fast the iteration converges, never
-# what it converges to, so the solution has to be the same with deflation as
-# without it. The exported solver is called directly here, because it
+# Single trait fast mode deflates the largest eigenvalues of its equations,
+# using eigenvectors estimated from a subset of the records. The
+# preconditioner changes how fast the iteration converges, never what it
+# converges to, so the solution has to be the same with deflation as without
+# it. The exported solver is called directly here, because it
 # reports how many eigenvalues it deflated and how many iterations it took.
 fastSolve = function(d, Vu, Ve, nPrecond, maxRank, nThreads=1L){
   snp = d$SP$snpChips[[1]]
@@ -501,12 +501,12 @@ test_that("RRBLUPMemUse counts the deflation of single trait fast mode", {
 
 test_that("RRBLUPMemUse counts the deflation of multiple trait fast mode", {
   # Several traits share one basis, asked for with one eigenvector more than
-  # the 1,000 kept, so it holds at least those eigenvectors of the markers
+  # the 1,000 kept, and the iteration holds those eigenvectors of the markers
   on = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
   old = options(AlphaSimR.fastModeDeflation=FALSE)
   on.exit(options(old))
   off = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
-  expect_gt(on-off, 5e4*1001*8/1e9)
+  expect_equal(on-off, 5e4*1001*8/1e9, tolerance=1e-8)
 })
 
 test_that("RRBLUPMemUse counts the multiple trait optimizer", {
@@ -1597,9 +1597,10 @@ test_that("fast mode multikernel models are not affected by the number of thread
   }
 })
 
-# The multikernel models deflate their block preconditioner as single trait
-# fast mode deflates its Jacobi one. The exported solver of RRBLUP_D is
-# called directly, because it reports how many eigenvalues it deflated.
+# The multikernel models deflate their scaling of each term and trait as
+# single trait fast mode deflates its equations. The exported solver of
+# RRBLUP_D is called directly, because it reports how many eigenvalues it
+# deflated.
 mkFastSolveD = function(d, traits, Vu, Ve, nPrecond, maxRank){
   snp = d$SP$snpChips[[1]]
   vc = AlphaSimR:::fastMKVarComp(Vu, Ve, 2L, length(traits))
@@ -1818,7 +1819,7 @@ test_that("fast mode converges when a coupled term has no right hand side", {
 test_that("fast mode handles terms that coincide at every marker", {
   # In doubled haploids the maternal and paternal codes are the same, so the
   # two GCA terms coincide at every marker, and with a variance ratio this
-  # large the identity in each block of the preconditioner is lost to
+  # large the identity in each marker's block of the equations is lost to
   # rounding. The fit must still succeed. With equal variances the two terms
   # share the effects equally, and together they are RRBLUP on the same codes
   # with twice the variance.
@@ -1986,10 +1987,10 @@ test_that("fast mode separates terms whose covariance matrices are nearly aligne
   # In doubled haploids the two GCA terms have the same code at the one
   # marker, and each term's variance lies along one trait direction, (1,0)
   # and (1,d), so the records tell them apart only through differences of
-  # order d. Next to the variance ratio those are below the precision of the
-  # preconditioner's blocks, which must not stop the iteration from
-  # searching along them. With u1 = a*(1,0) and u2 = b*(1,d), each of prior
-  # variance 1/64, and 100 records of code -1 or 1, the BLUP solves
+  # order d. Next to the variance ratio those are below the precision of a
+  # double, which must not stop the iteration from searching along them.
+  # With u1 = a*(1,0) and u2 = b*(1,d), each of prior variance 1/64, and 100
+  # records of code -1 or 1, the BLUP solves
   #   (100/d^2)*(a+b)+64*a = 0
   #   (100/d^2)*(a+b)-100*(1-b)+64*b = 0
   # whose solution is below.
