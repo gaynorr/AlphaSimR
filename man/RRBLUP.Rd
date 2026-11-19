@@ -146,21 +146,27 @@ matrix nor a numeric copy of the genotypes is formed, so memory use stays
 close to the size of the genotypes, and the iteration is shared across
 nThreads.
 
-For one trait, the preconditioner also deflates the largest eigenvalues of
-the equations. Relationships between individuals, above all the family
+The preconditioner also deflates the largest eigenvalues of the
+equations. Relationships between individuals, above all the family
 structure of a breeding program, give the equations a few hundred to a few
 thousand eigenvalues far above the rest, and those set how many iterations
-conjugate gradient takes. Their eigenvectors are estimated from the
-genotypes of a subset of the records, evenly spaced through the population
-so that no random numbers are drawn, and the preconditioner moves the
-eigenvalues down to the level of the rest. This changes how quickly the
-iteration converges, not the solution it converges to.
+conjugate gradient takes, as found for single-step SNP-BLUP
+\insertCite{vandenplas2018Deflated}{AlphaSimR}. Their eigenvectors are
+estimated from the genotypes of a subset of the records, evenly spaced
+through the population so that no random numbers are drawn, and the
+preconditioner moves the eigenvalues down to the level of the rest. This is
+the preconditioner of \insertCite{frangella2023Randomized;textual}{AlphaSimR},
+which estimates the eigenvectors from a random sketch instead. It changes
+how quickly the iteration converges, not the solution it converges to.
 
 For several traits, every trait must be recorded on every individual. The
 traits are separated by a canonical transformation, which is exact when
 every trait is recorded and they share their fixed effects, and the
 transformed traits are solved together by conjugate gradient, each with
-its own recurrence and test of convergence. Each iteration costs about as
+its own recurrence and test of convergence. The transformed traits share
+the eigenvectors of the deflation, which are estimated once, for the
+transformed trait with the largest ratio of genetic to error variance,
+since it has the most eigenvalues to deflate. Each iteration costs about as
 much as one iteration for each trait on its own, so a fit to several
 traits takes about as long as fitting them one at a time, while the memory
 used stays close to the size of the genotypes.

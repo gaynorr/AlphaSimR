@@ -144,7 +144,11 @@ is expected to be faster, see fastMode. The mixed model equations
 of every random term and trait are then solved together by preconditioned
 conjugate gradient, iterating over the genotypes rather than over a stored
 coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
-use stays close to the size of the genotypes. The variance components are
+use stays close to the size of the genotypes. The preconditioner inverts
+each marker's block of the equations and deflates their largest
+eigenvalues, as in the fast mode of \code{\link{RRBLUP}}, with the
+eigenvectors estimated from the codes of every term on a subset of the
+records. The variance components are
 estimated by REML on a random subset of the records, set by nSubsample,
 with the same method as outside fast mode, unless Vu and Ve are supplied,
 and the marker effects are always solved for using every record. Given the
