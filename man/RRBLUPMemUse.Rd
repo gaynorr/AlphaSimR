@@ -106,9 +106,8 @@ fit is, which is an upper bound.
 The GCA, SCA and dominance models with fastMode TRUE hold the markers
 packed to one bit per allele, assumed here to be a diploid's two bits per
 marker, and no square matrix of the markers or the records. Their
-iteration holds a few matrices of markers by terms and traits, and a block
-of the preconditioner for every marker, whose size is the square of the
-number of terms times the number of traits. It also holds the eigenvectors
+iteration holds a few matrices of markers by terms and traits. It also
+holds the eigenvectors
 its preconditioner deflates, each with one value per marker, term and
 trait, in as much memory as the 1,000 of \code{\link{RRBLUP}} for one
 trait. Before that, the variance

@@ -32,7 +32,8 @@ fast mode of \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}} and
 eigenvalues deflated at maxRank over the number of terms times traits.
 
 The option AlphaSimR.fastModeDeflation set to FALSE turns the deflation
-off, leaving plain Jacobi preconditioning, and the option
+off, leaving \code{\link{RRBLUP}} unpreconditioned and the multikernel
+models with their scaling of each term and trait, and the option
 AlphaSimR.fastModeMaxRank changes the most eigenvalues deflated. Both are
 for testing and benchmarking.
 }
