@@ -17,7 +17,7 @@ RRBLUP_D(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 3000L,
+  nSubsample = 10000L,
   varComp = NULL
 )
 }
@@ -77,7 +77,11 @@ NULL, this and Vu are estimated by REML. See Vu and details.}
 \item{nSubsample}{the number of records used to estimate the variance
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
-advisable for small training populations.}
+advisable for small training populations. The default of 10000 is larger
+than for \code{\link{RRBLUP}}, because a smaller subset can estimate the
+additive variance as zero at low heritability, which leaves the term out
+of the model. The dominance variance is often estimated as zero whatever
+the size of the subset, because it is small.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are
@@ -144,7 +148,11 @@ is expected to be faster, see fastMode. The mixed model equations
 of every random term and trait are then solved together by preconditioned
 conjugate gradient, iterating over the genotypes rather than over a stored
 coefficient matrix \insertCite{stranden1999Solving}{AlphaSimR}, so memory
-use stays close to the size of the genotypes. The variance components are
+use stays close to the size of the genotypes. The preconditioner scales
+each term and trait and deflates the largest eigenvalues of the
+equations, as in the fast mode of \code{\link{RRBLUP}}, with the
+eigenvectors estimated from the codes of every term on a subset of the
+records. The variance components are
 estimated by REML on a random subset of the records, set by nSubsample,
 with the same method as outside fast mode, unless Vu and Ve are supplied,
 and the marker effects are always solved for using every record. Given the

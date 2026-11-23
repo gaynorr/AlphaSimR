@@ -11,7 +11,7 @@ RRBLUPMemUse(
   nTraits = 1L,
   nFixEff = 1L,
   fastMode = FALSE,
-  nSubsample = 3000L,
+  nSubsample = NULL,
   useEM = TRUE
 )
 }
@@ -43,7 +43,10 @@ otherwise needs the memory estimated with fastMode FALSE.}
 
 \item{nSubsample}{the number of records used to estimate variance
 components in fast mode. Ignored when fastMode is FALSE, by the models
-without a fast mode, and in fast mode when Vu and Ve are supplied.}
+without a fast mode, and in fast mode when Vu and Ve are supplied. NULL,
+the default, uses the model's own default: 5000 for \code{\link{RRBLUP}},
+10000 for \code{\link{RRBLUP_D}} and \code{\link{RRBLUP_GCA}}, and
+15000 for \code{\link{RRBLUP_SCA}}.}
 
 \item{useEM}{whether the variance components will be estimated. FALSE is
 for a numbered model with useEM FALSE, or for an unnumbered model given Vu
@@ -73,10 +76,10 @@ per locus, then frees them and iterates over a copy packed to one bit per
 allele, so it holds no square matrix of all the records or all the
 markers. Its estimate is
 dominated by the genotypes themselves and by the subset of records used
-for the variance components. Fitted to one trait, it also holds the
-eigenvectors its preconditioner deflates, up to 1,000 of them, each with
-one value per marker. Fitted to several traits, it holds a few
-vectors of markers and of records per trait, and the variance components
+for the variance components. It also holds the eigenvectors its
+preconditioner deflates, up to 1,000 of them, each with one value per
+marker, which several traits share. Fitted to several traits, it holds a
+few vectors of markers and of records per trait, and the variance components
 are estimated as for several traits in \code{\link{RRBLUP}}, on the
 subset of records.
 
@@ -106,9 +109,11 @@ fit is, which is an upper bound.
 The GCA, SCA and dominance models with fastMode TRUE hold the markers
 packed to one bit per allele, assumed here to be a diploid's two bits per
 marker, and no square matrix of the markers or the records. Their
-iteration holds a few matrices of markers by terms and traits, and a block
-of the preconditioner for every marker, whose size is the square of the
-number of terms times the number of traits. Before that, the variance
+iteration holds a few matrices of markers by terms and traits. It also
+holds the eigenvectors
+its preconditioner deflates, each with one value per marker, term and
+trait, in as much memory as the 1,000 of \code{\link{RRBLUP}} for one
+trait. Before that, the variance
 components are estimated by the same model on the subset of records,
 given each term's markers or, with more markers than records in the
 subset, a factor of their cross product, which holds a square matrix of

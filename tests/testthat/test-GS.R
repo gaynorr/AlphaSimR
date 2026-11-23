@@ -147,11 +147,11 @@ test_that("fast mode RRBLUP agrees with RRBLUP given the same variance component
   expect_equal(addEff(ans), addEff(ref), tolerance=1e-4)
 })
 
-# Single trait fast mode deflates the largest eigenvalues of its Jacobi
-# preconditioned system, using eigenvectors estimated from a subset of the
-# records. The preconditioner changes how fast the iteration converges, never
-# what it converges to, so the solution has to be the same with deflation as
-# without it. The exported solver is called directly here, because it
+# Single trait fast mode deflates the largest eigenvalues of its equations,
+# using eigenvectors estimated from a subset of the records. The
+# preconditioner changes how fast the iteration converges, never what it
+# converges to, so the solution has to be the same with deflation as without
+# it. The exported solver is called directly here, because it
 # reports how many eigenvalues it deflated and how many iterations it took.
 fastSolve = function(d, Vu, Ve, nPrecond, maxRank, nThreads=1L){
   snp = d$SP$snpChips[[1]]
@@ -497,6 +497,16 @@ test_that("RRBLUPMemUse counts the deflation of single trait fast mode", {
   on.exit(options(old))
   off = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE)
   expect_equal(on-off, 5e4*1000*8/1e9, tolerance=1e-8)
+})
+
+test_that("RRBLUPMemUse counts the deflation of multiple trait fast mode", {
+  # Several traits share one basis, asked for with one eigenvector more than
+  # the 1,000 kept, and the iteration holds those eigenvectors of the markers
+  on = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = RRBLUPMemUse(nInd=1e5, nMarker=5e4, fastMode=TRUE, nTraits=3)
+  expect_equal(on-off, 5e4*1001*8/1e9, tolerance=1e-8)
 })
 
 test_that("RRBLUPMemUse counts the multiple trait optimizer", {
@@ -1007,6 +1017,75 @@ test_that("multiple trait fast mode RRBLUP is not affected by the number of thre
   expect_identical(one@Vu, two@Vu)
 })
 
+# Multiple trait fast mode shares one deflation basis among the transformed
+# traits. As for one trait, the exported solver is called directly, because
+# it reports how many eigenvectors the basis kept.
+mvFastSolve = function(d, Vu, Ve, nPrecond, maxRank, nThreads=1L){
+  snp = d$SP$snpChips[[1]]
+  return(AlphaSimR:::callFastRRBLUP_MV(d$pop@pheno, d$pop@fixEff, d$pop,
+                                       snp@lociPerChr, snp@lociLoc, Vu, Ve,
+                                       10000L, FALSE, 1L, nPrecond, maxRank,
+                                       nThreads))
+}
+
+# 200 records against 100 markers in ten full-sib families, with three
+# correlated traits. As for famPop, the families are what give the scaled
+# equations eigenvalues to deflate.
+mvFamPop = function(){
+  d = mvPop(nInd=40, nSnp=50)
+  d$pop = randCross(d$pop, nCrosses=10, nProgeny=20, simParam=d$SP)
+  d$pop = setPheno(d$pop, simParam=d$SP)
+  d$pop@fixEff = rep_len(1:3, d$pop@nInd)
+  return(d)
+}
+
+test_that("DEFLATE multiple trait fast mode RRBLUP converges to the same solution with deflation", {
+  skip_on_cran()
+  d = mvFamPop()
+  ref = denseMvBlup(d$pop, d$SP, mvVu, mvVe)
+  jacobi = mvFastSolve(d, mvVu, mvVe, 0L, 0L)
+  expect_equal(jacobi$rank, 0L)
+  expect_equal(c(jacobi$alpha), c(ref), tolerance=1e-6)
+  # Every record, which outnumber the markers, so the basis comes from a
+  # square matrix of the markers, and a subset of 60, whose cross product is
+  # decomposed instead
+  for(nPrecond in c(200L, 60L)){
+    info = paste("nPrecond", nPrecond)
+    deflated = mvFastSolve(d, mvVu, mvVe, nPrecond, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    expect_lt(deflated$rank, nPrecond, label=info)
+    expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6,
+                 info=info)
+    expect_equal(c(deflated$alpha), c(ref), tolerance=1e-6, info=info)
+  }
+  # The cap on the rank is respected
+  capped = mvFastSolve(d, mvVu, mvVe, 200L, 3L)
+  expect_equal(capped$rank, 3L)
+  expect_equal(c(capped$alpha), c(jacobi$alpha), tolerance=1e-6)
+})
+
+test_that("DEFLATE multiple trait fast mode RRBLUP shares its basis with a trait direction of no genetic variance", {
+  skip_on_cran()
+  # A Vu of rank two leaves one transformed trait with no genetic variance,
+  # which deflates nothing, while the other two share the basis
+  d = mvFamPop()
+  Vu = tcrossprod(c(0.12, 0.08, -0.05))+tcrossprod(c(0, 0.1, 0.06))
+  expect_lt(min(eigen(Vu, symmetric=TRUE)$values), 1e-12)
+  jacobi = mvFastSolve(d, Vu, mvVe, 0L, 0L)
+  deflated = mvFastSolve(d, Vu, mvVe, 200L, 1000L)
+  expect_gt(deflated$rank, 0L)
+  expect_equal(c(deflated$alpha), c(jacobi$alpha), tolerance=1e-6)
+})
+
+test_that("DEFLATE multiple trait fast mode RRBLUP given its variance components draws no random numbers", {
+  d = mvFamPop()
+  set.seed(5)
+  before = .Random.seed
+  ans = RRBLUP(d$pop, fastMode=TRUE, traits=1:3, Vu=mvVu, Ve=mvVe,
+               simParam=d$SP)
+  expect_identical(.Random.seed, before)
+})
+
 # Fast mode of the multikernel models. With the variance components supplied
 # it is the BLUP of the model the direct form fits, which Henderson's
 # equations give directly for a population small enough to write them out in
@@ -1145,6 +1224,90 @@ test_that("fast mode multikernel models are the BLUP of their models", {
         # The intercept goes with the uncentered codes, as in the direct form
         expect_equal(sapply(ans@gv, function(x) x@intercept), ref$beta[1, ],
                      tolerance=1e-6, info=info)
+      }
+    }
+  }
+})
+
+# A population with nTraits correlated traits. The products with the
+# genotypes have record loops written for diploids and tetraploids with each
+# number of traits up to eight, and general loops otherwise, so every count
+# from one to nine is checked against the dense solution at ploidies two,
+# four and six, through RRBLUP and the multikernel models.
+manyTraitPop = function(nTraits, ploidy=2L){
+  set.seed(8602)
+  founderPop = quickHaplo(nInd=60, nChr=2, segSites=22, ploidy=ploidy)
+  SP = SimParam$new(founderPop)
+  SP$nThreads = 1L
+  SP$restrSegSites(minQtlPerChr=10, minSnpPerChr=12, overlap=FALSE)
+  R = matrix(0.3, nTraits, nTraits)
+  diag(R) = 1
+  SP$addTraitA(nQtlPerChr=10, mean=rep(0, nTraits), var=rep(1, nTraits),
+               corA=R)
+  SP$addSnpChip(nSnpPerChr=12)
+  SP$setVarE(h2=rep(0.5, nTraits))
+  pop = setPheno(newPop(founderPop, simParam=SP), simParam=SP)
+  pop@fixEff = rep_len(1:3, pop@nInd)
+  return(list(pop=pop, SP=SP))
+}
+
+manyVu = function(nTraits, s){
+  R = matrix(0.3, nTraits, nTraits)
+  diag(R) = 1
+  return(s*R)
+}
+
+manyVe = function(nTraits){
+  return(diag(seq(0.5, 2, length.out=nTraits), nTraits))
+}
+
+test_that("FIXED fast mode RRBLUP is the BLUP of the model for one to nine traits", {
+  skip_on_cran()
+  for(ploidy in c(2L, 4L, 6L)){
+    d = manyTraitPop(9L, ploidy)
+    for(nT in 1:9){
+      traits = seq_len(nT)
+      Vu = manyVu(nT, 0.02)
+      Ve = manyVe(nT)
+      VuArg = if(nT==1) c(Vu) else Vu
+      VeArg = if(nT==1) c(Ve) else Ve
+      ans = RRBLUP(d$pop, fastMode=TRUE, traits=traits, Vu=VuArg, Ve=VeArg,
+                   simParam=d$SP)
+      pop = d$pop
+      pop@pheno = pop@pheno[, traits, drop=FALSE]
+      ref = denseMvBlup(pop, d$SP, Vu, Ve)
+      expect_equal(unname(addEffAll(ans)), unname(ref), tolerance=1e-6,
+                   info=paste("ploidy", ploidy, "traits", nT))
+    }
+  }
+})
+
+test_that("FIXED fast mode multikernel models are the BLUP of the model for one to nine traits", {
+  skip_on_cran()
+  for(ploidy in c(2L, 4L, 6L)){
+    d = manyTraitPop(9L, ploidy)
+    for(model in c("RRBLUP_D", "RRBLUP_GCA")){
+      codes = mkCodes(model, d$pop, d$SP)
+      X = mkFixed(model, d$pop, codes)
+      for(nT in 1:9){
+        traits = seq_len(nT)
+        Vu = list(manyVu(nT, 0.02), manyVu(nT, 0.01))
+        Ve = manyVe(nT)
+        # One trait takes its variances as a vector
+        VuArg = if(nT==1) sapply(Vu, c) else Vu
+        VeArg = if(nT==1) c(Ve) else Ve
+        ans = mkModels[[model]](d$pop, fastMode=TRUE, traits=traits,
+                                Vu=VuArg, Ve=VeArg, simParam=d$SP)
+        ref = denseMkBlup(d$pop@pheno[, traits, drop=FALSE], X, codes, Vu,
+                          Ve)
+        eff = mkEffects(model, ans)
+        expected = mkExpected(model, ref, codes)
+        for(k in seq_along(eff)){
+          expect_equal(matrix(eff[[k]], ncol=nT), expected[[k]],
+                       tolerance=1e-6,
+                       info=paste(model, "ploidy", ploidy, "traits", nT,
+                                  "term", k))
+        }
       }
     }
   }
@@ -1434,6 +1597,114 @@ test_that("fast mode multikernel models are not affected by the number of thread
   }
 })
 
+# The multikernel models deflate their scaling of each term and trait as
+# single trait fast mode deflates its equations. The exported solver of
+# RRBLUP_D is called directly, because it reports how many eigenvalues it
+# deflated.
+mkFastSolveD = function(d, traits, Vu, Ve, nPrecond, maxRank){
+  snp = d$SP$snpChips[[1]]
+  vc = AlphaSimR:::fastMKVarComp(Vu, Ve, 2L, length(traits))
+  return(AlphaSimR:::callFastRRBLUP_D(d$pop@pheno[, traits, drop=FALSE],
+                                      d$pop@fixEff, d$pop, snp@lociPerChr,
+                                      snp@lociLoc, vc$Vu, vc$Ve, 10000L,
+                                      FALSE, 1L, nPrecond, maxRank, 1L))
+}
+
+test_that("DEFLATE fast mode multikernel models converge to the same solution with deflation", {
+  skip_on_cran()
+  # Ten full-sib families, which give the scaled equations eigenvalues to
+  # deflate
+  d = mvFamPop()
+  for(traits in list(1L, 1:3)){
+    nT = length(traits)
+    Ve = if(nT==1) 1 else mvVe
+    info = paste("traits", nT)
+    Vu = mkVu("RRBLUP_D", nT)
+    jacobi = mkFastSolveD(d, traits, Vu, Ve, 0L, 0L)
+    expect_equal(jacobi$rank, 0L, info=info)
+    deflated = mkFastSolveD(d, traits, Vu, Ve, 200L, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    expect_equal(deflated$a, jacobi$a, tolerance=1e-6, info=info)
+    expect_equal(deflated$d, jacobi$d, tolerance=1e-6, info=info)
+    # The cap on the rank is maxRank over the terms times the traits
+    capped = mkFastSolveD(d, traits, Vu, Ve, 200L, 6L*nT)
+    expect_lte(capped$rank, 3L)
+    expect_equal(capped$a, jacobi$a, tolerance=1e-6, info=info)
+    # Every model, against its BLUP with the deflation turned off
+    for(model in names(mkModels)){
+      Vu = mkVu(model, nT)
+      on = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                             Ve=Ve, simParam=d$SP)
+      old = options(AlphaSimR.fastModeDeflation=FALSE)
+      off = mkModels[[model]](d$pop, traits=traits, fastMode=TRUE, Vu=Vu,
+                              Ve=Ve, simParam=d$SP)
+      options(old)
+      effOn = mkEffects(model, on)
+      effOff = mkEffects(model, off)
+      for(k in seq_along(effOn)){
+        expect_equal(effOn[[k]], effOff[[k]], tolerance=1e-6,
+                     info=paste(model, info, "term", k))
+      }
+    }
+  }
+})
+
+test_that("DEFLATE fast mode multikernel models deflate from the smaller cross product", {
+  skip_on_cran()
+  # Twenty markers, so that every term, trait and marker together are fewer
+  # than the 200 records and traits the basis is estimated from, and the
+  # cross product of the directions is decomposed rather than that of the
+  # records
+  d = mvPop(nInd=40, nSnp=10)
+  d$pop = randCross(d$pop, nCrosses=10, nProgeny=20, simParam=d$SP)
+  d$pop = setPheno(d$pop, simParam=d$SP)
+  d$pop@fixEff = rep_len(1:3, d$pop@nInd)
+  for(traits in list(1L, 1:3)){
+    nT = length(traits)
+    Ve = if(nT==1) 1 else mvVe
+    info = paste("traits", nT)
+    Vu = mkVu("RRBLUP_D", nT)
+    scaled = mkFastSolveD(d, traits, Vu, Ve, 0L, 0L)
+    deflated = mkFastSolveD(d, traits, Vu, Ve, 200L, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    # Fewer than the directions, 2*nT at each of 20 markers
+    expect_lt(deflated$rank, 40L*nT, label=info)
+    expect_equal(deflated$a, scaled$a, tolerance=1e-6, info=info)
+    expect_equal(deflated$d, scaled$d, tolerance=1e-6, info=info)
+  }
+})
+
+test_that("RRBLUPMemUse counts the basis and its workspace together", {
+  # While the basis is filled, it is held with the leading eigenvectors and
+  # a panel of markers: with 200 records, 50,000 markers and two terms, 199
+  # eigenvectors take 159 MB and a panel 67 MB
+  mem = function() RRBLUPMemUse(nInd=1e5, nMarker=5e4, model="RRBLUP_D",
+                                fastMode=TRUE, nSubsample=200)
+  on = mem()
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = mem()
+  nRow = 200
+  panel = nRow*2*floor(8388608/(nRow*2))
+  # The estimate is exactly these three, so allow for rounding
+  expect_gte(on-off, (1-1e-9)*(2*5e4*199+nRow*199+panel)*8/1e9)
+})
+
+test_that("RRBLUPMemUse counts the deflation of the multikernel models", {
+  # The deflation is built after the variance components, so it adds to the
+  # peak only when the iteration, not their REML fit, sets it, as with a
+  # subset of 200 records. Its eigenvectors then hold a value for each of
+  # two terms at 50,000 markers, and with 200 records there are at most 199
+  # of them.
+  mem = function() RRBLUPMemUse(nInd=1e5, nMarker=5e4, model="RRBLUP_D",
+                                fastMode=TRUE, nSubsample=200)
+  on = mem()
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = mem()
+  expect_gt(on-off, 2*5e4*199*8/1e9)
+})
+
 test_that("RRBLUPMemUse counts the fast mode of the multikernel models", {
   for(m in c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA")){
     small = RRBLUPMemUse(nInd=500, nMarker=500, model=m, fastMode=TRUE)
@@ -1589,7 +1860,7 @@ test_that("fast mode converges when a coupled term has no right hand side", {
 test_that("fast mode handles terms that coincide at every marker", {
   # In doubled haploids the maternal and paternal codes are the same, so the
   # two GCA terms coincide at every marker, and with a variance ratio this
-  # large the identity in each block of the preconditioner is lost to
+  # large the identity in each marker's block of the equations is lost to
   # rounding. The fit must still succeed. With equal variances the two terms
   # share the effects equally, and together they are RRBLUP on the same codes
   # with twice the variance.
@@ -1757,10 +2028,10 @@ test_that("fast mode separates terms whose covariance matrices are nearly aligne
   # In doubled haploids the two GCA terms have the same code at the one
   # marker, and each term's variance lies along one trait direction, (1,0)
   # and (1,d), so the records tell them apart only through differences of
-  # order d. Next to the variance ratio those are below the precision of the
-  # preconditioner's blocks, which must not stop the iteration from
-  # searching along them. With u1 = a*(1,0) and u2 = b*(1,d), each of prior
-  # variance 1/64, and 100 records of code -1 or 1, the BLUP solves
+  # order d. Next to the variance ratio those are below the precision of a
+  # double, which must not stop the iteration from searching along them.
+  # With u1 = a*(1,0) and u2 = b*(1,d), each of prior variance 1/64, and 100
+  # records of code -1 or 1, the BLUP solves
   #   (100/d^2)*(a+b)+64*a = 0
   #   (100/d^2)*(a+b)-100*(1-b)+64*b = 0
   # whose solution is below.

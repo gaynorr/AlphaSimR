@@ -14,6 +14,7 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
 
 #include "mme.h"
 #include "packedGv.h"
+#include <utility>
 
 // Solvers defined in mmeMultiTrait.cpp and mmeMultiKernel.cpp. The defaults
 // repeat those of the definitions, which Rcpp reads to build the R
@@ -906,15 +907,26 @@ arma::Mat<unsigned char> packChipPlanes(const PackedGeno& g, const LociPos& pos,
     for(arma::uword t0=indStart; t0<indEnd; t0+=kPackTile){
       arma::uword t1 = std::min(t0+kPackTile, indEnd);
       for(arma::uword c=0; c<nCol; ++c){
-        arma::uword jEnd = std::min(8*c+8, nLoci);
+        arma::uword nb = std::min(8*c+8, nLoci)-8*c;
         unsigned char* col = planes.colptr(c);
+        // The column's markers' positions are copied out once, so that the
+        // record loop below does not look them up for every bit
+        const unsigned char* base[8];
+        arma::uword indStride[8], hapStride[8];
+        unsigned int bit[8];
+        for(arma::uword k=0; k<nb; ++k){
+          arma::uword j = 8*c+k;
+          base[k] = pos.base[j];
+          indStride[k] = pos.indStride[j];
+          hapStride[k] = pos.hapStride[j];
+          bit[k] = (unsigned int) pos.bit[j];
+        }
         for(arma::uword i=t0; i<t1; ++i){
           for(arma::uword h=0; h<ploidy; ++h){
             unsigned int b = 0;
-            for(arma::uword j=8*c; j<jEnd; ++j){
-              const unsigned char* p = pos.base[j]+pos.indStride(j)*i+
-                pos.hapStride(j)*h;
-              b |= ((unsigned int) ((*p>>pos.bit(j)) & 1u))<<(j-8*c);
+            for(arma::uword k=0; k<nb; ++k){
+              const unsigned char* p = base[k]+indStride[k]*i+hapStride[k]*h;
+              b |= ((unsigned int) ((*p>>bit[k]) & 1u))<<k;
             }
             col[i*ploidy+h] = (unsigned char) b;
           }
@@ -942,6 +954,45 @@ arma::Mat<unsigned char> packChipPlanes(const PackedGeno& g, const LociPos& pos,
 // and every record sums the columns in order, so nothing is accumulated
 // across threads and the result does not depend on how many threads are
 // used.
+//
+// A block reads only its own records' part of each column, so it visits
+// every column for a short stretch. For a diploid or tetraploid,
+// multMcColumns visits mcColumns columns side by side, so that their reads
+// from memory overlap rather than following one another. Each record still
+// adds its columns into its entry of t one after another in column order,
+// so the result is the same.
+const arma::uword mcColumns = 4;
+
+// One record's value at one column, as the general loop works it out. A
+// diploid adds its two haplotypes' lookups pairwise, and other ploidies add
+// each haplotype's pair of lookups to a sum that starts at zero.
+template<std::size_t P, std::size_t... H>
+inline double mcRecord(const unsigned char* rec, const double* tab,
+                       std::index_sequence<H...>){
+  if constexpr(P==2){
+    return (tab[rec[0] & 15u]+tab[16+(rec[0]>>4)])+
+      (tab[rec[1] & 15u]+tab[16+(rec[1]>>4)]);
+  }else{
+    double s = 0.0;
+    ((s += tab[rec[H] & 15u]+tab[16+(rec[H]>>4)]), ...);
+    return s;
+  }
+}
+
+// Records [indStart,indEnd) of multMc at sizeof...(G) columns, with the
+// ploidy P fixed at compile time.
+template<std::size_t P, std::size_t... G>
+void multMcColumns(double* tPtr, const unsigned char* const* cols,
+                   const double* const* colTabs, arma::uword indStart,
+                   arma::uword indEnd, std::index_sequence<G...>){
+  constexpr auto hs = std::make_index_sequence<P>{};
+  for(arma::uword i=indStart; i<indEnd; ++i){
+    double ti = tPtr[i];
+    ((ti += mcRecord<P>(cols[G]+P*i, colTabs[G], hs)), ...);
+    tPtr[i] = ti;
+  }
+}
+
 void multMc(arma::vec& t, const arma::Mat<unsigned char>& planes,
             arma::uword ploidy, const arma::vec& offset,
             const arma::vec& p, arma::mat& tabs, int nThreads){
@@ -981,6 +1032,7 @@ void multMc(arma::vec& t, const arma::Mat<unsigned char>& planes,
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  const bool fixed = fixedPloidy(ploidy);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -990,25 +1042,39 @@ void multMc(arma::vec& t, const arma::Mat<unsigned char>& planes,
     for(arma::uword i=indStart; i<indEnd; ++i){
       tPtr[i] = -shift;
     }
+    if(fixed){
+      const unsigned char* cols[mcColumns];
+      const double* colTabs[mcColumns];
+      arma::uword nGroup = 1;
+      for(arma::uword c0=0; c0<nCol; c0+=nGroup){
+        nGroup = (c0+mcColumns<=nCol) ? mcColumns : 1;
+        for(arma::uword g=0; g<nGroup; ++g){
+          cols[g] = planes.colptr(c0+g);
+          colTabs[g] = tabs.colptr(c0+g);
+        }
+        withFixedPloidy(ploidy, [&](auto p){
+          constexpr std::size_t P = decltype(p)::value;
+          if(nGroup==mcColumns){
+            multMcColumns<P>(tPtr, cols, colTabs, indStart, indEnd,
+                             std::make_index_sequence<mcColumns>{});
+          }else{
+            multMcColumns<P>(tPtr, cols, colTabs, indStart, indEnd,
+                             std::make_index_sequence<1>{});
+          }
+        });
+      }
+      continue;
+    }
     for(arma::uword c=0; c<nCol; ++c){
       const unsigned char* col = planes.colptr(c);
       const double* tab = tabs.colptr(c);
-      if(ploidy==2){
-        // The common case is written out so that it has no haplotype loop
-        for(arma::uword i=indStart; i<indEnd; ++i){
-          unsigned int b0 = col[2*i], b1 = col[2*i+1];
-          tPtr[i] += (tab[b0 & 15u]+tab[16+(b0>>4)])+
-            (tab[b1 & 15u]+tab[16+(b1>>4)]);
+      for(arma::uword i=indStart; i<indEnd; ++i){
+        double s = 0.0;
+        for(arma::uword h=0; h<ploidy; ++h){
+          unsigned int b = col[i*ploidy+h];
+          s += tab[b & 15u]+tab[16+(b>>4)];
         }
-      }else{
-        for(arma::uword i=indStart; i<indEnd; ++i){
-          double s = 0.0;
-          for(arma::uword h=0; h<ploidy; ++h){
-            unsigned int b = col[i*ploidy+h];
-            s += tab[b & 15u]+tab[16+(b>>4)];
-          }
-          tPtr[i] += s;
-        }
+        tPtr[i] += s;
       }
     }
   }
@@ -1026,6 +1092,51 @@ void multMc(arma::vec& t, const arma::Mat<unsigned char>& planes,
 //
 // Split over blocks of columns. A block works out its own entries of w from
 // its own columns, so again nothing is accumulated across threads.
+//
+// Every addition into a bin waits on the one before it, so the time taken is
+// set by the longest run of additions into one bin rather than by the number
+// of additions. In a tetraploid a record's four haplotypes share a set of
+// bins, and haplotypes that carry the same alleles, as linked markers often
+// do, fall in the same bin one after another, so its runs are about four
+// times a diploid's. A tetraploid therefore bins mcTColumns columns side by
+// side in multMcTColumns. Each column keeps its own bins and receives its
+// additions in the same order as alone, so the result is the same, but the
+// runs of different columns proceed together. A diploid's two sets per
+// record already keep its runs apart, and it gained nothing from this, so it
+// takes multMcTColumns one column at a time.
+const arma::uword mcTColumns = 2;
+
+// One record's haplotypes into its bins. In a diploid the first haplotype
+// goes into set[0] and the second into set[1], and at other ploidies every
+// haplotype goes into set[0]. The haplotypes are written as a pack expansion
+// so that the choice of set is fixed at compile time.
+template<std::size_t P, std::size_t... H>
+inline void binRecord(double (*set)[32], const unsigned char* rec, double t,
+                      std::index_sequence<H...>){
+  ((set[(P==2) ? H : 0][rec[H] & 15u] += t,
+    set[(P==2) ? H : 0][16+(rec[H]>>4)] += t), ...);
+}
+
+// The record loop of multMcT for sizeof...(G) columns at once, with the
+// ploidy P fixed at compile time. Records are taken in pairs, the first into
+// sets 0 and 1 and the second into sets 2 and 3, as in the general loop.
+template<std::size_t P, std::size_t... G>
+void multMcTColumns(double (*bins)[4][32], const unsigned char* const* cols,
+                    const double* tPtr, arma::uword nInd,
+                    std::index_sequence<G...>){
+  constexpr auto hs = std::make_index_sequence<P>{};
+  arma::uword i = 0;
+  for(; i+1<nInd; i+=2){
+    double t0 = tPtr[i], t1 = tPtr[i+1];
+    ((binRecord<P>(bins[G], cols[G]+P*i, t0, hs),
+      binRecord<P>(bins[G]+2, cols[G]+P*(i+1), t1, hs)), ...);
+  }
+  if(i<nInd){
+    double t0 = tPtr[i];
+    ((binRecord<P>(bins[G], cols[G]+P*i, t0, hs)), ...);
+  }
+}
+
 void multMcT(arma::vec& w, const arma::Mat<unsigned char>& planes,
              arma::uword ploidy, const arma::vec& offset,
              const arma::vec& t, int nThreads){
@@ -1044,48 +1155,47 @@ void multMcT(arma::vec& w, const arma::Mat<unsigned char>& planes,
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  const bool fixed = fixedPloidy(ploidy);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
   for(arma::uword block=0; block<nBlocks; ++block){
     arma::uword colStart = blockStart(nCol, nBlocks, block);
     arma::uword colEnd = blockStart(nCol, nBlocks, block+1);
-    // Four sets of 32 bins: the low half byte's bins, then the high's
-    double bins[4][32];
-    for(arma::uword c=colStart; c<colEnd; ++c){
-      const unsigned char* col = planes.colptr(c);
-      for(arma::uword s=0; s<4; ++s){
-        for(arma::uword q=0; q<32; ++q){
-          bins[s][q] = 0.0;
+    arma::uword nGroup = 1;
+    // For each column of a group, four sets of 32 bins: the low half byte's
+    // bins, then the high's
+    double bins[mcTColumns][4][32];
+    const unsigned char* cols[mcTColumns];
+    for(arma::uword c0=colStart; c0<colEnd; c0+=nGroup){
+      // A tetraploid takes columns mcTColumns at a time while enough of the
+      // block remains, and every other ploidy one at a time
+      nGroup = (fixed && (ploidy!=2) && (c0+mcTColumns<=colEnd)) ?
+        mcTColumns : 1;
+      for(arma::uword g=0; g<nGroup; ++g){
+        cols[g] = planes.colptr(c0+g);
+        for(arma::uword s=0; s<4; ++s){
+          for(arma::uword q=0; q<32; ++q){
+            bins[g][s][q] = 0.0;
+          }
         }
       }
-      if(ploidy==2){
-        arma::uword i = 0;
-        for(; i+1<nInd; i+=2){
-          double t0 = tPtr[i], t1 = tPtr[i+1];
-          unsigned int a0 = col[2*i], a1 = col[2*i+1];
-          unsigned int b0 = col[2*i+2], b1 = col[2*i+3];
-          bins[0][a0 & 15u] += t0;
-          bins[0][16+(a0>>4)] += t0;
-          bins[1][a1 & 15u] += t0;
-          bins[1][16+(a1>>4)] += t0;
-          bins[2][b0 & 15u] += t1;
-          bins[2][16+(b0>>4)] += t1;
-          bins[3][b1 & 15u] += t1;
-          bins[3][16+(b1>>4)] += t1;
-        }
-        if(i<nInd){
-          double t0 = tPtr[i];
-          unsigned int a0 = col[2*i], a1 = col[2*i+1];
-          bins[0][a0 & 15u] += t0;
-          bins[0][16+(a0>>4)] += t0;
-          bins[1][a1 & 15u] += t0;
-          bins[1][16+(a1>>4)] += t0;
-        }
+      if(fixed){
+        withFixedPloidy(ploidy, [&](auto p){
+          constexpr std::size_t P = decltype(p)::value;
+          if(nGroup==mcTColumns){
+            multMcTColumns<P>(bins, cols, tPtr, nInd,
+                              std::make_index_sequence<mcTColumns>{});
+          }else{
+            multMcTColumns<P>(bins, cols, tPtr, nInd,
+                              std::make_index_sequence<1>{});
+          }
+        });
       }else{
+        const unsigned char* col = cols[0];
         for(arma::uword i=0; i<nInd; ++i){
           double ti = tPtr[i];
-          double* bi = bins[2*(i & 1u)];
+          double* bi = bins[0][2*(i & 1u)];
           for(arma::uword h=0; h<ploidy; ++h){
             unsigned int b = col[i*ploidy+h];
             bi[b & 15u] += ti;
@@ -1093,24 +1203,28 @@ void multMcT(arma::vec& w, const arma::Mat<unsigned char>& planes,
           }
         }
       }
-      double merged[32];
-      for(arma::uword q=0; q<32; ++q){
-        merged[q] = (bins[0][q]+bins[1][q])+(bins[2][q]+bins[3][q]);
-      }
-      for(arma::uword b=0; b<8; ++b){
-        arma::uword j = 8*c+b;
-        if(j>=nLoci){
-          break;
+      for(arma::uword g=0; g<nGroup; ++g){
+        arma::uword c = c0+g;
+        double merged[32];
+        for(arma::uword q=0; q<32; ++q){
+          merged[q] = (bins[g][0][q]+bins[g][1][q])+
+            (bins[g][2][q]+bins[g][3][q]);
         }
-        const double* mb = merged+16*(b/4);
-        unsigned int bit = 1u<<(b%4);
-        double sum = 0.0;
-        for(unsigned int q=1; q<16; ++q){
-          if(q & bit){
-            sum += mb[q];
+        for(arma::uword b=0; b<8; ++b){
+          arma::uword j = 8*c+b;
+          if(j>=nLoci){
+            break;
           }
+          const double* mb = merged+16*(b/4);
+          unsigned int bit = 1u<<(b%4);
+          double sum = 0.0;
+          for(unsigned int q=1; q<16; ++q){
+            if(q & bit){
+              sum += mb[q];
+            }
+          }
+          wPtr[j] = alleleScale*sum-offset(j)*tSum;
         }
-        wPtr[j] = alleleScale*sum-offset(j)*tSum;
       }
     }
   }
@@ -1193,38 +1307,62 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
   Ve = delta*Vu;
 }
 
+// The records the deflation of the preconditioner is estimated from, nSub of
+// them evenly spaced through the nInd records. Shared by deflationBasis and
+// traitShrink so that both read the same records.
+arma::uvec deflationSubset(arma::uword nInd, arma::uword nSub){
+  arma::uvec sub(nSub);
+  for(arma::uword i=0; i<nSub; ++i){
+    sub(i) = ((2*i+1)*nInd)/(2*nSub);
+  }
+  return sub;
+}
+
 // A deflation preconditioner for the conjugate gradient solve of RR-BLUP.
 //
-// With Jacobi preconditioning the iteration works, in effect, on
-// B = D^-1/2*A*D^-1/2, where A = Mc'*S*Mc+lambda*I and D is the diagonal of
-// A. B has a mean eigenvalue of one, but the relationships between
-// individuals give it a few hundred to a few thousand eigenvalues far above
+// The iteration works on B = A/d, where A = Mc'*S*Mc+lambda*I and d is the
+// mean of the diagonal of A, given as meanDiag. Dividing by a constant does
+// not change the iteration; it only gives B a mean eigenvalue of one, which
+// the thresholds below are stated against. The relationships between
+// individuals give B a few hundred to a few thousand eigenvalues far above
 // that, and they set its condition number and so the number of iterations.
 // If W holds orthonormal approximations to the eigenvectors of the largest
 // eigenvalues theta, the preconditioner
-//   P^-1 = D^-1/2*(I+W*diag(sigma/theta-1)*W')*D^-1/2
+//   P^-1 = I+W*diag(sigma/theta-1)*W'
 // moves those eigenvalues down to about sigma and leaves the rest of the
 // spectrum alone, so the condition number falls to about sigma over the
 // smallest eigenvalue. P^-1 is positive definite for any orthonormal W and
 // positive theta and sigma, so a rough W only costs iterations, never the
 // solution, which the iteration still converges to.
 //
+// This is the preconditioner of Frangella, Tropp and Udell (2023),
+// doi:10.1137/21M1466244, with the eigenvectors estimated from a subset of
+// the records rather than from a random sketch. Vandenplas et al. (2018),
+// doi:10.1186/s12711-018-0429-3, found the same few large eigenvalues
+// slowing single-step SNP-BLUP. A random sketch estimates the eigenvectors
+// better for the same rank, but takes one product with A per column of the
+// sketch, and with the genotypes packed those products cost more than the
+// iterations they save. As there, A is not scaled by its diagonal
+// first: Jacobi scaling, which gives a marker of low frequency as much
+// weight as a common one, took more iterations than no scaling at all on
+// breeding populations, with or without the deflation.
+//
 // W is estimated from nSub records, evenly spaced through the population
 // rather than sampled, so that building it draws no random numbers. With
-// Ms holding their genotypes, centered on the subset and scaled by D^-1/2,
-// n/nSub*Ms'*Ms+lambda*D^-1 approximates B. The fixed effects other than the
-// mean are left out of the approximation, which only has to be close. When
-// there are fewer markers than records in the subset, the approximation is
-// formed and decomposed as it is, a square matrix of the markers. Otherwise
-// its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for the eigenpairs (g,U)
-// of the record cross product Ms*Ms', the smaller matrix, with lambda*D^-1
-// taken as its mean, lambda times the mean of D^-1, on every eigenvalue.
+// Ms holding their genotypes, centered on the subset and scaled by
+// 1/sqrt(d), n/nSub*Ms'*Ms+lambda/d approximates B. The fixed effects other
+// than the mean are left out of the approximation, which only has to be
+// close. When there are fewer markers than records in the subset, the
+// approximation is formed and decomposed as it is, a square matrix of the
+// markers. Otherwise its leading eigenvectors are Ms'*U*diag(1/sqrt(g)) for
+// the eigenpairs (g,U) of the record cross product Ms*Ms', the smaller
+// matrix, with lambda/d added to every eigenvalue.
 //
 // Eigenvalues above twice the mean are deflated, at most maxRank of them and
 // fewer than the size of the matrix decomposed, and sigma is the largest one
 // left, but never less than the mean of one. With rank deficient genotypes
 // and a tiny ratio of the variances, the largest one left can be as small as
-// lambda*D^-1, and sigma/theta would then round to zero in
+// lambda/d, and sigma/theta would then round to zero in
 // I+W*diag(sigma/theta-1)*W', leaving a preconditioner that is singular
 // rather than positive definite. With sigma at least one, and theta no more
 // than about the number of markers, the trace of B, sigma/theta stays near
@@ -1240,7 +1378,7 @@ void remlFromGram(double& Vu, double& Ve, const arma::vec& yv,
 // took several times as long as the products themselves.
 void deflationBasis(arma::mat& W, arma::vec& shrink,
                     const arma::Mat<unsigned char>& M,
-                    const arma::vec& diagA, double lambda,
+                    double meanDiag, double lambda,
                     arma::uword nSub, arma::uword maxRank,
                     const double* xaPtr){
   arma::uword nInd = M.n_rows;
@@ -1261,11 +1399,8 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   if(maxRank==0){
     return;
   }
-  arma::uvec sub(nSub);
-  for(arma::uword i=0; i<nSub; ++i){
-    sub(i) = ((2*i+1)*nInd)/(2*nSub);
-  }
-  arma::vec w = 1.0/arma::sqrt(diagA);
+  arma::uvec sub = deflationSubset(nInd, nSub);
+  const double w = 1.0/std::sqrt(meanDiag);
   const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
   // One panel of the scaled, centered subset genotypes
   auto fillPanel = [&](arma::mat& panel, arma::uword start, arma::uword stop){
@@ -1279,7 +1414,7 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       }
       double mean = sum/double(nSub);
       for(arma::uword i=0; i<nSub; ++i){
-        panelCol[i] = (panelCol[i]-mean)*w(j);
+        panelCol[i] = (panelCol[i]-mean)*w;
       }
     }
   };
@@ -1291,11 +1426,11 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
       fillPanel(Ms, 0, nLoci);
       B = scale*(Ms.t()*Ms);
     }
-    B.diag() += lambda*arma::square(w);
+    B.diag() += lambda/meanDiag;
     arma::vec theta(nLoci);
     arma::mat V(nLoci,nLoci);
     if(eigen2(theta, V, std::move(B))!=0){
-      // Plain Jacobi preconditioning still converges
+      // The iteration still converges without the deflation
       return;
     }
     // eigen2 returns the eigenvalues in ascending order
@@ -1321,12 +1456,12 @@ void deflationBasis(arma::mat& W, arma::vec& shrink,
   arma::vec g(nSub);
   arma::mat U(nSub,nSub);
   if(eigen2(g, U, std::move(K))!=0){
-    // Plain Jacobi preconditioning still converges
+    // The iteration still converges without the deflation
     return;
   }
   K.reset();
   // eigen2 returns the eigenvalues in ascending order
-  double ridge = lambda*arma::mean(arma::square(w));
+  double ridge = lambda/meanDiag;
   arma::vec theta = scale*arma::flipud(g)+ridge;
   arma::uword k = 0;
   while((k<maxRank) && (theta(k)>2.0)){
@@ -1398,6 +1533,143 @@ void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
   }
 }
 
+// applyDeflation for several vectors that share W, each with its own shrink
+// factors: V.col(i) holds marker i's value of every vector, one row per
+// vector, and S.col(s) the shrink factors of vector s. W is read once for
+// all of them rather than once for each, which matters because W can be far
+// larger than the vectors. Every vector's sums are taken in the same order
+// as applyDeflation takes them, so each gets exactly the result it would get
+// on its own.
+void applyDeflationMulti(arma::mat& V, const arma::mat& W, const arma::mat& S,
+                         int nThreads){
+  const arma::uword nS = V.n_rows;
+  const arma::uword nLoci = W.n_rows;
+  const arma::uword k = W.n_cols;
+  arma::mat C(nS, k);
+  const double* vPtr = V.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+  for(arma::uword j=0; j<k; ++j){
+    const double* Wcol = W.colptr(j);
+    double* cj = C.colptr(j);
+    for(arma::uword s=0; s<nS; ++s){
+      cj[s] = 0.0;
+    }
+    for(arma::uword i=0; i<nLoci; ++i){
+      double w = Wcol[i];
+      const double* vi = vPtr+i*nS;
+      for(arma::uword s=0; s<nS; ++s){
+        cj[s] += w*vi[s];
+      }
+    }
+    for(arma::uword s=0; s<nS; ++s){
+      cj[s] *= S(j,s);
+    }
+  }
+  arma::uword nBlocks = countBlocks(nLoci);
+  int blockThreads = nThreads;
+  if(nBlocks < static_cast<arma::uword>(blockThreads)){
+    blockThreads = static_cast<int>(nBlocks);
+  }
+  double* outPtr = V.memptr();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(blockThreads)
+#endif
+  for(arma::uword block=0; block<nBlocks; ++block){
+    arma::uword start = blockStart(nLoci, nBlocks, block);
+    arma::uword stop = blockStart(nLoci, nBlocks, block+1);
+    for(arma::uword j=0; j<k; ++j){
+      const double* Wcol = W.colptr(j);
+      const double* cj = C.colptr(j);
+      for(arma::uword i=start; i<stop; ++i){
+        double w = Wcol[i];
+        double* oi = outPtr+i*nS;
+        for(arma::uword s=0; s<nS; ++s){
+          oi[s] += w*cj[s];
+        }
+      }
+    }
+  }
+}
+
+// Each transformed trait's shrink factors for a deflation basis shared by the
+// traits of callFastRRBLUP_MV.
+//
+// On the scale of whitened effects, transformed trait k's coefficient matrix
+// is lam_k*C+I, for C = Mc'*S*Mc. As in deflationBasis it is divided by the
+// mean of its diagonal, d_k = lam_k*meanDg+1, which does not change that
+// trait's iteration, since each trait has a recurrence of its own, and gives
+// it a mean eigenvalue of one. Its eigenvalue along a column w of W is then
+// estimated by the Rayleigh quotient
+//   (lam_k*n/nSub*|Ms*w|^2+1)/d_k,
+// with Ms the genotypes of the records deflationBasis used, centered on
+// them, and |w| one. These approximate the trait's own eigenvalues only as
+// well as W approximates its eigenvectors, but the preconditioner is
+// positive definite for any positive estimates, so a poor one only costs
+// iterations.
+//
+// The last column of W is not deflated. Its quotient is the level sigma the
+// others are moved down to, never less than one as in deflationBasis, and a
+// column is deflated only when its quotient is above both two and sigma, so
+// that none is moved up. Returns one row per trait and one column per column
+// of W but the last, zero where a column is not deflated and for a trait
+// with no genetic variance.
+//
+// |Ms*w|^2 is the same for every trait, so the genotypes are read once, a
+// panel at a time as in deflationBasis, and the work held is one nSub by k
+// matrix.
+arma::mat traitShrink(const arma::Mat<unsigned char>& M, const arma::mat& W,
+                      double meanDg, const arma::vec& lam,
+                      arma::uword nSub, const double* xaPtr){
+  arma::uword nInd = M.n_rows;
+  arma::uword nLoci = M.n_cols;
+  arma::uword nT = lam.n_elem;
+  arma::uword kW = W.n_cols;
+  if(nSub>nInd){
+    nSub = nInd;
+  }
+  arma::mat shrink(nT, kW-1, arma::fill::zeros);
+  arma::uvec sub = deflationSubset(nInd, nSub);
+  const arma::uword panelWidth = std::max<arma::uword>(256, 8388608/nSub);
+  double scale = double(nInd)/double(nSub);
+  arma::mat G(nSub, kW, arma::fill::zeros), panel;
+  for(arma::uword start=0; start<nLoci; start+=panelWidth){
+    arma::uword stop = std::min(start+panelWidth, nLoci);
+    panel.set_size(nSub, stop-start);
+    for(arma::uword j=start; j<stop; ++j){
+      const unsigned char* Mcol = M.colptr(j);
+      double* panelCol = panel.colptr(j-start);
+      double sum = 0.0;
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] = xaPtr[Mcol[sub(i)]];
+        sum += panelCol[i];
+      }
+      double mean = sum/double(nSub);
+      for(arma::uword i=0; i<nSub; ++i){
+        panelCol[i] -= mean;
+      }
+    }
+    G += panel*W.rows(start, stop-1);
+  }
+  arma::rowvec MsW = scale*arma::sum(arma::square(G), 0);
+  for(arma::uword k=0; k<nT; ++k){
+    if(!(lam(k)>0.0)){
+      continue;
+    }
+    double dk = lam(k)*meanDg+1.0;
+    arma::rowvec theta = (lam(k)*MsW+1.0)/dk;
+    double sigma = std::max(theta(kW-1), 1.0);
+    double cut = std::max(sigma, 2.0);
+    for(arma::uword j=0; j+1<kW; ++j){
+      if(theta(j)>cut){
+        shrink(k,j) = sigma/theta(j)-1.0;
+      }
+    }
+  }
+  return shrink;
+}
+
 // Called by RRBLUP with fastMode TRUE
 // Solves the mixed model equations of an RR-BLUP model by preconditioned
 // conjugate gradient, iterating on the genotypes rather than on a stored
@@ -1405,7 +1677,7 @@ void applyDeflation(arma::vec& v, const arma::mat& W, const arma::vec& shrink,
 // doi:10.3168/jds.S0022-0302(99)75535-9.
 // x is an indicator vector for the fixed effect levels, as in callRRBLUP.
 // nPrecond and maxRank set the deflation of the preconditioner, see
-// deflationBasis; either of them zero leaves plain Jacobi preconditioning.
+// deflationBasis; either of them zero leaves the iteration unpreconditioned.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
                           const Rcpp::S4& pop,
@@ -1504,12 +1776,12 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
   double lambda = Ve/Vu;
   
   // One pass over the genotypes gives the column means, the right hand side
-  // and the diagonal of the coefficient matrix, which is what the iteration
-  // is preconditioned with. Everything is accumulated into scalars, so no
-  // column of dosages is ever formed and the pass splits over loci without
-  // needing memory per thread.
+  // and the diagonal of the coefficient matrix, whose mean scales the
+  // deflation. Everything is accumulated into scalars, so no column of
+  // dosages is ever formed and the pass splits over loci without needing
+  // memory per thread.
   arma::rowvec Mmean(nLoci);
-  arma::vec r(nLoci), precond(nLoci);
+  arma::vec r(nLoci), diagA(nLoci);
   double SySum = accu(Sy);
   const double* SyPtr = Sy.memptr();
   const double* XfixPtr = Xfix.memptr();
@@ -1552,25 +1824,27 @@ Rcpp::List callFastRRBLUP(arma::vec y, arma::uvec x,
           // Rounding only, the true value cannot be below lambda
           diagonal = lambda;
         }
-        precond(j) = diagonal;
+        diagA(j) = diagonal;
       }
     }
   }
   
-  // The deflation of the preconditioner reads the subset's dosages from M
+  // The deflation of the preconditioner reads the subset's dosages from M.
+  // The preconditioner is I+W*diag(shrink)*W', the identity when nothing is
+  // deflated; the division by the mean of the diagonal in deflationBasis is
+  // a constant, which the iteration does not depend on, and is left out.
   arma::mat W;
   arma::vec shrink;
-  arma::vec w = 1.0/arma::sqrt(precond);
   if((nPrecond>0) & (maxRank>0)){
-    deflationBasis(W, shrink, M, precond, lambda, nPrecond, maxRank, xaPtr);
+    deflationBasis(W, shrink, M, arma::mean(diagA), lambda, nPrecond,
+                   maxRank, xaPtr);
   }
   auto applyPrecond = [&](const arma::vec& res){
-    if(W.n_cols==0){
-      return arma::vec(res/precond);
+    arma::vec v = res;
+    if(W.n_cols>0){
+      applyDeflation(v, W, shrink, nThreads);
     }
-    arma::vec v = res%w;
-    applyDeflation(v, W, shrink, nThreads);
-    return arma::vec(v%w);
+    return v;
   };
 
   // The dosages have done their job. The iteration works from a copy of the
@@ -1664,6 +1938,129 @@ arma::Mat<unsigned char> decodeChipDosage(const PackedGeno& g,
   return M;
 }
 
+// The record loops of multMcBlock and multMcTBlock with the ploidy P and the
+// number of traits NT fixed at compile time, so that the loops over traits
+// and haplotypes are unrolled. With a few traits the general loops, whose
+// length is known only at run time, cost more than the lookups themselves.
+// These make the same additions in the same order as the general loops, so
+// they give the same result. They are used for diploids and tetraploids with
+// up to maxFixedTraits traits.
+inline bool fixedMcTemplated(arma::uword ploidy, arma::uword nT){
+  return fixedPloidy(ploidy) && (nT>=1) && (nT<=maxFixedTraits);
+}
+
+// One record of multMcBlockFixed at one column, from its P haplotypes'
+// bytes. The loops over traits are written as pack expansions, so that
+// every index into the accumulators is a constant and they can be kept in
+// registers. As a loop over k, an optimizer that does not unroll it, as GCC
+// at -O2 does not for three traits, keeps them in memory instead, which made
+// three traits slower than the general loop.
+template<std::size_t P, std::size_t... K>
+inline void multMcRecord(double* ti, const unsigned char* bytes,
+                         const double* tab, std::index_sequence<K...>){
+  constexpr std::size_t NT = sizeof...(K);
+  double s[NT] = {ti[K]...};
+  for(std::size_t h=0; h<P; ++h){
+    unsigned int b = bytes[h];
+    const double* lo = tab+(b & 15u)*NT;
+    const double* hi = tab+(16+(b>>4))*NT;
+    ((s[K] += lo[K]+hi[K]), ...);
+  }
+  ((ti[K] = s[K]), ...);
+}
+
+// Records [indStart,indEnd) of multMcBlock, Tt holding NT values per record
+template<std::size_t P, std::size_t NT>
+void multMcBlockFixed(double* tPtr, const arma::Mat<unsigned char>& planes,
+                      const arma::mat& tabs, arma::uword indStart,
+                      arma::uword indEnd){
+  const arma::uword nCol = planes.n_cols;
+  for(arma::uword c=0; c<nCol; ++c){
+    const unsigned char* col = planes.colptr(c);
+    const double* tab = tabs.colptr(c);
+    for(arma::uword i=indStart; i<indEnd; ++i){
+      multMcRecord<P>(tPtr+i*NT, col+P*i, tab,
+                      std::make_index_sequence<NT>{});
+    }
+  }
+}
+
+// Every record of multMcTBlock at one column, into four sets of bins of
+// setLen = 32*NT values. In a diploid each of a record's two haplotypes has
+// its own set and the next record takes the other two; at other ploidies a
+// record's haplotypes share the set of its parity, as in the general loop.
+template<std::size_t P, std::size_t NT>
+void multMcTBlockFixed(double* binPtr, const unsigned char* col,
+                       const double* tPtr, arma::uword nInd){
+  const arma::uword setLen = 32*NT;
+  for(arma::uword i=0; i<nInd; ++i){
+    const double* ti = tPtr+i*NT;
+    double* pair = binPtr+2*(i & 1u)*setLen;
+    for(std::size_t h=0; h<P; ++h){
+      double* bh = (P==2) ? pair+h*setLen : pair;
+      unsigned int b = col[P*i+h];
+      double* lo = bh+(b & 15u)*NT;
+      double* hi = bh+(16+(b>>4))*NT;
+      for(arma::uword k=0; k<NT; ++k){
+        lo[k] += ti[k];
+        hi[k] += ti[k];
+      }
+    }
+  }
+}
+
+// The general record loops of multMcBlock and multMcTBlock, for any ploidy
+// and number of traits, in functions of their own. Left in the parallel
+// region beside the fixed ones, the transpose loop needed more registers
+// than it had and saved and restored them for every record.
+
+// Records [indStart,indEnd) of multMcBlock
+void multMcBlockGeneral(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
+                        const arma::mat& tabs, arma::uword ploidy,
+                        arma::uword indStart, arma::uword indEnd){
+  const arma::uword nT = Tt.n_rows;
+  const arma::uword nCol = planes.n_cols;
+  for(arma::uword c=0; c<nCol; ++c){
+    const unsigned char* col = planes.colptr(c);
+    const double* tab = tabs.colptr(c);
+    for(arma::uword i=indStart; i<indEnd; ++i){
+      double* ti = Tt.colptr(i);
+      for(arma::uword h=0; h<ploidy; ++h){
+        unsigned int b = col[i*ploidy+h];
+        const double* lo = tab+(b & 15u)*nT;
+        const double* hi = tab+(16+(b>>4))*nT;
+        for(arma::uword k=0; k<nT; ++k){
+          ti[k] += lo[k]+hi[k];
+        }
+      }
+    }
+  }
+}
+
+// Every record of multMcTBlock at one column
+void multMcTBlockGeneral(double* binPtr, const unsigned char* col,
+                         const arma::mat& Tt, arma::uword ploidy){
+  const arma::uword nT = Tt.n_rows;
+  const arma::uword nInd = Tt.n_cols;
+  const arma::uword setLen = 32*nT;
+  for(arma::uword i=0; i<nInd; ++i){
+    const double* ti = Tt.colptr(i);
+    // In a diploid each of an individual's two haplotypes has its own set,
+    // and the next individual takes the other two
+    double* pair = binPtr+2*(i & 1u)*setLen;
+    for(arma::uword h=0; h<ploidy; ++h){
+      double* bh = (ploidy==2) ? pair+h*setLen : pair;
+      unsigned int b = col[i*ploidy+h];
+      double* lo = bh+(b & 15u)*nT;
+      double* hi = bh+(16+(b>>4))*nT;
+      for(arma::uword k=0; k<nT; ++k){
+        lo[k] += ti[k];
+        hi[k] += ti[k];
+      }
+    }
+  }
+}
+
 // Applies the centered genotype matrix to several vectors at once,
 // Tt = (Mc*Pt')', from the packed copy of the genotypes.
 //
@@ -1729,6 +2126,9 @@ void multMcBlock(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  // A diploid or tetraploid with at most maxFixedTraits traits takes
+  // multMcBlockFixed
+  const bool fixed = fixedMcTemplated(ploidy, nT);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -1741,21 +2141,16 @@ void multMcBlock(arma::mat& Tt, const arma::Mat<unsigned char>& planes,
         ti[k] = -shift(k);
       }
     }
-    for(arma::uword c=0; c<nCol; ++c){
-      const unsigned char* col = planes.colptr(c);
-      const double* tab = tabs.colptr(c);
-      for(arma::uword i=indStart; i<indEnd; ++i){
-        double* ti = Tt.colptr(i);
-        for(arma::uword h=0; h<ploidy; ++h){
-          unsigned int b = col[i*ploidy+h];
-          const double* lo = tab+(b & 15u)*nT;
-          const double* hi = tab+(16+(b>>4))*nT;
-          for(arma::uword k=0; k<nT; ++k){
-            ti[k] += lo[k]+hi[k];
-          }
-        }
-      }
+    if(!fixed){
+      multMcBlockGeneral(Tt, planes, tabs, ploidy, indStart, indEnd);
+      continue;
     }
+    withFixedPloidy(ploidy, [&](auto p){
+      withFixedTraits(nT, [&](auto nt){
+        multMcBlockFixed<decltype(p)::value, decltype(nt)::value>(
+          Tt.memptr(), planes, tabs, indStart, indEnd);
+      });
+    });
   }
 }
 
@@ -1785,6 +2180,9 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
   if(nBlocks < static_cast<arma::uword>(nThreads)){
     nThreads = static_cast<int>(nBlocks);
   }
+  // A diploid or tetraploid with at most maxFixedTraits traits takes
+  // multMcTBlockFixed
+  const bool fixed = fixedMcTemplated(ploidy, nT);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(nThreads)
 #endif
@@ -1798,21 +2196,15 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
     for(arma::uword c=colStart; c<colEnd; ++c){
       const unsigned char* col = planes.colptr(c);
       std::fill(bins.begin(), bins.end(), 0.0);
-      for(arma::uword i=0; i<nInd; ++i){
-        const double* ti = Tt.colptr(i);
-        // In a diploid each of an individual's two haplotypes has its own
-        // set, and the next individual takes the other two
-        double* pair = bins.data()+2*(i & 1u)*setLen;
-        for(arma::uword h=0; h<ploidy; ++h){
-          double* bh = (ploidy==2) ? pair+h*setLen : pair;
-          unsigned int b = col[i*ploidy+h];
-          double* lo = bh+(b & 15u)*nT;
-          double* hi = bh+(16+(b>>4))*nT;
-          for(arma::uword k=0; k<nT; ++k){
-            lo[k] += ti[k];
-            hi[k] += ti[k];
-          }
-        }
+      if(fixed){
+        withFixedPloidy(ploidy, [&](auto p){
+          withFixedTraits(nT, [&](auto nt){
+            multMcTBlockFixed<decltype(p)::value, decltype(nt)::value>(
+              bins.data(), col, Tt.memptr(), nInd);
+          });
+        });
+      }else{
+        multMcTBlockGeneral(bins.data(), col, Tt, ploidy);
       }
       for(arma::uword e=0; e<setLen; ++e){
         merged[e] = (bins[e]+bins[setLen+e])+
@@ -1866,14 +2258,30 @@ void multMcTBlock(arma::mat& Wt, const arma::Mat<unsigned char>& planes,
 // last two; one that couples the traits would also need the recurrences
 // joined.
 //
-// x is an indicator vector for the fixed effect levels, as in callRRBLUP
+// The preconditioner is the deflation of the single trait solver, see
+// deflationBasis, with no scaling by the diagonal. Transformed trait k's
+// equations, divided by lam_k, are those of a single trait with ridge
+// 1/lam_k, so they differ between traits only in that ridge, and each
+// trait's recurrence is unchanged by the division. One basis is therefore
+// estimated, for the trait with the largest lam_k, whose ridge is the
+// smallest and which so has the most eigenvalues to deflate, and every trait
+// uses it with shrink factors of its own, see traitShrink. That trait also
+// takes the most iterations, and with the products shared it sets the cost
+// of the solve, so a basis for each trait would cost more decompositions for
+// little gain.
+//
+// x is an indicator vector for the fixed effect levels, as in callRRBLUP.
+// nPrecond and maxRank set the deflation, as in callFastRRBLUP; either of
+// them zero leaves the iteration unpreconditioned.
 // [[Rcpp::export]]
 Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                              const Rcpp::S4& pop,
                              arma::Col<int>& lociPerChr, arma::uvec lociLoc,
                              const arma::mat& VuIn, const arma::mat& VeIn,
                              arma::uword maxIter, bool estVarComp,
-                             arma::uvec subset, int nThreads){
+                             arma::uvec subset,
+                             arma::uword nPrecond, arma::uword maxRank,
+                             int nThreads){
   const arma::uword nT = Y.n_cols;
   if(!Y.is_finite()){
     Rcpp::stop("RRBLUP fastMode: every trait must be recorded on every individual");
@@ -1976,9 +2384,9 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   arma::mat SYs = SY*T.t(); // absorbed responses, transformed
 
   // One pass over the genotypes gives the column means, the right hand sides
-  // and the diagonal of Mc'*S*Mc, from which every trait's preconditioner
-  // follows. As for one trait, the pass splits over loci and accumulates
-  // into scalars.
+  // and the diagonal of Mc'*S*Mc, whose mean scales every trait's deflation.
+  // As for one trait, the pass splits over loci and accumulates into
+  // scalars.
   arma::rowvec Mmean(nLoci);
   arma::vec dg(nLoci);
   arma::mat Rt(nT,nLoci); // right hand sides, one column per marker
@@ -2031,7 +2439,61 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
       }
     }
   }
-  arma::mat precond = lam*dg.t()+1.0;
+  const double meanDg = arma::mean(dg);
+
+  // The deflation, built while the dosages are still held. The basis is asked
+  // for one column more than maxRank, the column traitShrink reads sigma
+  // from. A trait none of whose columns is deflated is not preconditioned.
+  arma::mat W;
+  std::vector<arma::vec> shrink(nT);
+  std::vector<bool> deflate(nT, false);
+  if((nPrecond>0) && (maxRank>0)){
+    double ridge = 1.0/lam.max();
+    arma::vec shrinkRef;
+    deflationBasis(W, shrinkRef, M, meanDg+ridge, ridge, nPrecond, maxRank+1,
+                   xaPtr);
+    if(W.n_cols>=2){
+      arma::mat shrinkAll = traitShrink(M, W, meanDg, lam, nPrecond, xaPtr);
+      W.shed_col(W.n_cols-1);
+      for(arma::uword k=0; k<nT; ++k){
+        shrink[k] = shrinkAll.row(k).t();
+        deflate[k] = arma::any(shrink[k]!=0.0);
+      }
+    }else{
+      W.reset();
+    }
+  }
+  arma::mat Zt(nT,nLoci);
+  // Z = P^-1*R for every trait k with want[k], row k of each, with
+  // P^-1 = I+W*diag(shrink_k)*W' as for one trait. The traits that deflate
+  // are deflated together, so that W, which can be far larger than the
+  // residuals, is read once for all of them.
+  auto applyPrecond = [&](const std::vector<bool>& want){
+    std::vector<arma::uword> dk;
+    for(arma::uword k=0; k<nT; ++k){
+      if(!want[k]){
+        continue;
+      }
+      if(deflate[k]){
+        dk.push_back(k);
+      }else{
+        Zt.row(k) = Rt.row(k);
+      }
+    }
+    if(dk.empty()){
+      return;
+    }
+    const arma::uword nS = dk.size();
+    arma::mat V(nS, nLoci), S(W.n_cols, nS);
+    for(arma::uword s=0; s<nS; ++s){
+      V.row(s) = Rt.row(dk[s]);
+      S.col(s) = shrink[dk[s]];
+    }
+    applyDeflationMulti(V, W, S, nThreads);
+    for(arma::uword s=0; s<nS; ++s){
+      Zt.row(dk[s]) = V.row(s);
+    }
+  };
 
   // As for one trait, the iteration works from the markers packed to one bit
   // per allele, built only once the dosages have been freed
@@ -2052,7 +2514,7 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
   // with the scaling by sqrt(lam) applied trait by trait. A trait that has
   // converged keeps a search direction of zero, which leaves it unchanged.
   arma::mat At(nT,nLoci,arma::fill::zeros);
-  arma::mat Zt = Rt/precond;
+  applyPrecond(std::vector<bool>(nT, true));
   arma::mat Pt = Zt;
   arma::mat Apt(nT,nLoci), Ps(nT,nLoci);
   arma::mat Tt(nT,nInd);
@@ -2077,6 +2539,9 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
     Apt.each_col() %= sqrtLam;
     Apt += Pt;
     arma::vec pAp = sum(Pt%Apt,1);
+    // Step every trait still active, then precondition the residuals of
+    // those that have not converged together, then update their directions
+    std::vector<bool> stepped(nT, false);
     for(arma::uword k=0; k<nT; ++k){
       if(!active[k]) continue;
       if(pAp(k)<=0.0){
@@ -2096,7 +2561,11 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
         Pt.row(k).zeros();
         continue;
       }
-      Zt.row(k) = Rt.row(k)/precond.row(k);
+      stepped[k] = true;
+    }
+    applyPrecond(stepped);
+    for(arma::uword k=0; k<nT; ++k){
+      if(!stepped[k]) continue;
       double rzNew = accu(Rt.row(k)%Zt.row(k));
       Pt.row(k) = Zt.row(k)+(rzNew/rz(k))*Pt.row(k);
       rz(k) = rzNew;
@@ -2125,7 +2594,8 @@ Rcpp::List callFastRRBLUP_MV(const arma::mat& Y, arma::uvec x,
                             Rcpp::Named("beta")=-shift,
                             Rcpp::Named("mu")=B.row(0)-shift,
                             Rcpp::Named("Vu")=Vu,
-                            Rcpp::Named("Ve")=Ve);
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("rank")=int(W.n_cols));
 }
 
 // Called by RRBLUP function

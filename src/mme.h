@@ -5,6 +5,7 @@
 // mmeMultiTrait.cpp and mmeMultiKernel.cpp.
 
 #include "alphasimr.h"
+#include <type_traits>
 
 // Symmetric eigendecomposition through LAPACK's dsyevr, defined in MME.cpp.
 // If calcVec is false, eigvec is not used.
@@ -417,5 +418,45 @@ void scaAverageEffects(const arma::rowvec& Mmean1, const arma::rowvec& Mmean2,
 // Single trait RR-BLUP by FaST-LMM, defined in MME.cpp
 Rcpp::List solveRRBLUP(const arma::mat& y, const arma::mat& X,
                        const arma::mat& M);
+
+// The largest number of traits for which the products with the packed
+// genotypes in MME.cpp and mmeFastMK.cpp have record loops written out for a
+// fixed number of traits; more take their general loops
+const arma::uword maxFixedTraits = 8;
+
+// Calls f(std::integral_constant<std::size_t,NT>()) for NT equal to nT, from
+// 1 to maxFixedTraits, so that f can instantiate a template on the number of
+// traits
+template<class F>
+void withFixedTraits(arma::uword nT, F&& f){
+  switch(nT){
+  case 1: f(std::integral_constant<std::size_t,1>()); break;
+  case 2: f(std::integral_constant<std::size_t,2>()); break;
+  case 3: f(std::integral_constant<std::size_t,3>()); break;
+  case 4: f(std::integral_constant<std::size_t,4>()); break;
+  case 5: f(std::integral_constant<std::size_t,5>()); break;
+  case 6: f(std::integral_constant<std::size_t,6>()); break;
+  case 7: f(std::integral_constant<std::size_t,7>()); break;
+  default: f(std::integral_constant<std::size_t,8>()); break;
+  }
+}
+
+// The ploidies for which the products with the packed genotypes in MME.cpp
+// and mmeFastMK.cpp have record loops written out for a fixed ploidy,
+// diploids and tetraploids; others take the general loops
+inline bool fixedPloidy(arma::uword ploidy){
+  return (ploidy==2) || (ploidy==4);
+}
+
+// Calls f(std::integral_constant<std::size_t,P>()) for P equal to ploidy,
+// which fixedPloidy must accept
+template<class F>
+void withFixedPloidy(arma::uword ploidy, F&& f){
+  if(ploidy==2){
+    f(std::integral_constant<std::size_t,2>());
+  }else{
+    f(std::integral_constant<std::size_t,4>());
+  }
+}
 
 #endif

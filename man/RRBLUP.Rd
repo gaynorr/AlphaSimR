@@ -17,7 +17,7 @@ RRBLUP(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 3000L,
+  nSubsample = 5000L,
   varComp = NULL
 )
 }
@@ -77,7 +77,9 @@ NULL, this and Vu are estimated by REML. See Vu and details.}
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
 advisable for small training populations, because the memory needed grows
-with the square of this value.}
+with the square of this value. Smaller subsets bias the estimates
+downward as well as making them noisier, and the default of 5000 keeps
+the marker variance well away from zero even at low heritability.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are
@@ -146,21 +148,29 @@ matrix nor a numeric copy of the genotypes is formed, so memory use stays
 close to the size of the genotypes, and the iteration is shared across
 nThreads.
 
-For one trait, the preconditioner also deflates the largest eigenvalues of
-the equations. Relationships between individuals, above all the family
-structure of a breeding program, give the equations a few hundred to a few
-thousand eigenvalues far above the rest, and those set how many iterations
-conjugate gradient takes. Their eigenvectors are estimated from the
-genotypes of a subset of the records, evenly spaced through the population
-so that no random numbers are drawn, and the preconditioner moves the
-eigenvalues down to the level of the rest. This changes how quickly the
-iteration converges, not the solution it converges to.
+The preconditioner deflates the largest eigenvalues of the equations,
+without first scaling them by their diagonal, which took more iterations
+than no scaling at all on breeding populations. Relationships between
+individuals, above all the family structure of a breeding program, give
+the equations a few hundred to a few thousand eigenvalues far above the
+rest, and those set how many iterations conjugate gradient takes, as found
+for single-step SNP-BLUP \insertCite{vandenplas2018Deflated}{AlphaSimR}.
+Their eigenvectors are
+estimated from the genotypes of a subset of the records, evenly spaced
+through the population so that no random numbers are drawn, and the
+preconditioner moves the eigenvalues down to the level of the rest. This is
+the preconditioner of \insertCite{frangella2023Randomized;textual}{AlphaSimR},
+which estimates the eigenvectors from a random sketch instead. It changes
+how quickly the iteration converges, not the solution it converges to.
 
 For several traits, every trait must be recorded on every individual. The
 traits are separated by a canonical transformation, which is exact when
 every trait is recorded and they share their fixed effects, and the
 transformed traits are solved together by conjugate gradient, each with
-its own recurrence and test of convergence. Each iteration costs about as
+its own recurrence and test of convergence. The transformed traits share
+the eigenvectors of the deflation, which are estimated once, for the
+transformed trait with the largest ratio of genetic to error variance,
+since it has the most eigenvalues to deflate. Each iteration costs about as
 much as one iteration for each trait on its own, so a fit to several
 traits takes about as long as fitting them one at a time, while the memory
 used stays close to the size of the genotypes.
@@ -171,9 +181,9 @@ decomposition whose cost is the square of the number of records in memory
 and their cube in time, which is what fast mode is built to avoid, so the
 estimate is taken from a random subset of the records set by nSubsample.
 Variance components are nuisance parameters for genomic prediction and are
-estimated far more precisely than a breeding program needs, so a few
-thousand records give values good enough to shrink with. The marker
-effects are always solved for using every record.
+estimated far more precisely than a breeding program needs, so a subset
+of several thousand records gives values good enough to shrink with. The
+marker effects are always solved for using every record.
 }
 
 \subsection{Known variance components}{

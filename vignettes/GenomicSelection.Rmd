@@ -93,9 +93,52 @@ In `AlphaSimR`, QTL and SNP chip sites are kept separate by default, in order to
 accuracy. Once a site is designated for use as a QTL, it cannot be selected
 for the SNP chip, and vice versa. This separation occurs automatically without
 invoking the `restrSegSites` function. Overlapping of these sites is permitted
-only if specifically requested with `restrSegSites(overlap = TRUE)`. The call
-above is there for a different reason: it sets aside enough segregating sites
-on each chromosome for both the QTL and the SNP chip before either is chosen.
+only if specifically requested with `restrSegSites(overlap = TRUE)`.
+
+The `restrSegSites` call above isn't strictly needed. With one `addTrait`
+call and one `addSnpChip` call, whichever comes first chooses from all 100
+sites on each chromosome, and the second chooses from what is left. Twenty
+QTL and 50 SNPs fit easily either way.
+
+It becomes necessary when you add several traits in separate calls or several
+SNP chips. Calls of the same type don't exclude each other's sites: a second
+chip can reuse SNPs from the first, as real chips often share markers. But
+every call removes its sites from what the other type can use. When several
+calls of one type come first, between them they can claim more sites than the
+other type can spare. Without `restrSegSites`, the order of the calls then
+decides whether the setup works. Calling `restrSegSites` first sets the sites
+aside before anything is chosen, so the order no longer matters.
+
+Here, two chips of 70 and 50 SNPs are added before a 20-QTL trait. Between
+them the chips cover about 85 of each chromosome's 100 sites, which leaves
+too few for the trait:
+
+```{r error=TRUE}
+SP2 = SimParam$new(founderPop)
+SP2$addSnpChip(nSnpPerChr = 70)
+SP2$addSnpChip(nSnpPerChr = 50)
+SP2$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)
+```
+
+Adding the trait first works. Its 20 QTL are chosen from all 100 sites, and
+both chips then choose from the remaining 80:
+
+```{r}
+SP2 = SimParam$new(founderPop)
+SP2$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)
+SP2$addSnpChip(nSnpPerChr = 70)
+SP2$addSnpChip(nSnpPerChr = 50)
+```
+
+Reserving the sites first makes the original order work too:
+
+```{r}
+SP2 = SimParam$new(founderPop)
+SP2$restrSegSites(minQtlPerChr = 20, minSnpPerChr = 80, overlap = FALSE)
+SP2$addSnpChip(nSnpPerChr = 70)
+SP2$addSnpChip(nSnpPerChr = 50)
+SP2$addTraitAD(nQtlPerChr = 20, meanDD = 0.4)
+```
 
 
 ## The three steps

@@ -25,10 +25,15 @@ was within five percent of it. Never more records are used than nSubsample,
 the number the variance components are estimated from, or 3000 when
 nSubsample is zero. The records are evenly spaced through the population
 rather than sampled, so that the preconditioner draws no random numbers
-and supplying Vu and Ve leaves the random number stream where it was.
+and supplying Vu and Ve leaves the random number stream where it was. The
+same size is used for several traits, which share one basis, and by the
+fast mode of \code{\link{RRBLUP_D}}, \code{\link{RRBLUP_GCA}} and
+\code{\link{RRBLUP_SCA}}, which spread it over the traits and cap the
+eigenvalues deflated at maxRank over the number of terms times traits.
 
 The option AlphaSimR.fastModeDeflation set to FALSE turns the deflation
-off, leaving plain Jacobi preconditioning, and the option
+off, leaving \code{\link{RRBLUP}} unpreconditioned and the multikernel
+models with their scaling of each term and trait, and the option
 AlphaSimR.fastModeMaxRank changes the most eigenvalues deflated. Both are
 for testing and benchmarking.
 }

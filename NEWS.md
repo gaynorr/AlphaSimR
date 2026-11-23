@@ -14,7 +14,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 ## Breaking changes
 
-* Removed `fastRRBLUP`. Use `RRBLUP(..., fastMode=TRUE)` in its place, which is faster and takes `Vu` and `Ve` as before. Unless they are supplied, fast mode estimates them by REML on `nSubsample` records, 3000 by default, where `fastRRBLUP` took them from the simulation's settings. `fastMode=TRUE` uses fast mode only when it is expected to be faster.
+* Removed `fastRRBLUP`. Use `RRBLUP(..., fastMode=TRUE)` in its place, which is faster and takes `Vu` and `Ve` as before. Unless they are supplied, fast mode estimates them by REML on `nSubsample` records, 5000 by default, where `fastRRBLUP` took them from the simulation's settings. `fastMode=TRUE` uses fast mode only when it is expected to be faster.
 * Deprecated `RRBLUP2`, `RRBLUP_D2`, `RRBLUP_GCA2` and `RRBLUP_SCA2`. Their unnumbered counterparts now accept `Vu` and `Ve`, or an earlier fit as `varComp`, so `RRBLUP_D2(pop, Va=a, Vd=d, Ve=e, useEM=FALSE)` becomes `RRBLUP_D(pop, Vu=c(a, d), Ve=e)`.
 * `RRBLUP_SCA` and `RRBLUP_SCA2` give an error for a population that is not diploid.
 * The default `maxIter` of `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA` is now 100 REML iterations, up from 40.
@@ -39,7 +39,7 @@ Seeded simulations run with earlier versions will not be reproduced exactly in t
 
 ## Genomic selection
 
-* Added `fastMode` to `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`, which solves the model with much less memory on large populations.
+* Added `fastMode` to `RRBLUP_D`, `RRBLUP_GCA` and `RRBLUP_SCA`, which solves the model with much less memory on large populations. Fast mode estimates the variance components, unless they are supplied, by REML on `nSubsample` records, 10000 by default for `RRBLUP_D` and `RRBLUP_GCA` and 15000 for `RRBLUP_SCA`, which keeps the GCA variances from being estimated as zero at low heritability.
 * Added multiple trait models to the fast mode of `RRBLUP` and to `RRBLUP_D`, `RRBLUP_GCA`, `RRBLUP_SCA` and `solveRRBLUPMK`.
 * Added `varComp` to the `RRBLUP` models, which reuses the variance components of an earlier fit. Fits now record their model in a new `model` slot of `RRsol`.
 * `RRBLUPMemUse` takes `fastMode` and `nTraits`, and estimates the memory of the reimplemented solvers.
