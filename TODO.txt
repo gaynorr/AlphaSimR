@@ -6,3 +6,12 @@ VarN() then too!?
 
 mention nd and varN in the vignette
 Review the articles in vignettes/articles and the pkgdown website (build with pkgdown::build_site() and check every page), continuing the vignette review merged from docs/vignette-review. Check grep -rn REVIEW vignettes before finishing.
+
+How to leave review comments for later: put an HTML comment starting with REVIEW
+on its own line next to the text it concerns, for example
+  <!-- REVIEW: this paragraph overstates the gain; soften or cite. -->
+HTML comments do not appear in the knitted vignette or on the website. Inside a
+code chunk use an R comment instead, # REVIEW: ..., which does show in the
+rendered code.
+List them all with grep -rn REVIEW vignettes, and remove each one once it has
+been dealt with, so that the grep comes back empty before the pull request.
