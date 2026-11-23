@@ -5,3 +5,4 @@ add nd() for non-additive deviations - should be simple
 VarN() then too!?
 
 mention nd and varN in the vignette
+Review the articles in vignettes/articles and the pkgdown website (build with pkgdown::build_site() and check every page), continuing the vignette review merged from docs/vignette-review. Check grep -rn REVIEW vignettes before finishing.
