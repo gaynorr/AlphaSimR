@@ -17,7 +17,7 @@ RRBLUP_GCA(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 3000L,
+  nSubsample = 10000L,
   varComp = NULL
 )
 }
@@ -77,7 +77,11 @@ NULL, this and Vu are estimated by REML. See Vu and details.}
 \item{nSubsample}{the number of records used to estimate the variance
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
-advisable for small training populations.}
+advisable for small training populations. The default of 10000 is larger
+than for \code{\link{RRBLUP}}, because a smaller subset can estimate one
+of the GCA variances as zero at low heritability, which leaves that term
+out of the model. This is most likely for the parents with the fewest
+records each, such as the lines of a testcross.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are

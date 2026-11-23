@@ -11,7 +11,7 @@ RRBLUPMemUse(
   nTraits = 1L,
   nFixEff = 1L,
   fastMode = FALSE,
-  nSubsample = 3000L,
+  nSubsample = NULL,
   useEM = TRUE
 )
 }
@@ -43,7 +43,10 @@ otherwise needs the memory estimated with fastMode FALSE.}
 
 \item{nSubsample}{the number of records used to estimate variance
 components in fast mode. Ignored when fastMode is FALSE, by the models
-without a fast mode, and in fast mode when Vu and Ve are supplied.}
+without a fast mode, and in fast mode when Vu and Ve are supplied. NULL,
+the default, uses the model's own default: 5000 for \code{\link{RRBLUP}},
+10000 for \code{\link{RRBLUP_D}} and \code{\link{RRBLUP_GCA}}, and
+15000 for \code{\link{RRBLUP_SCA}}.}
 
 \item{useEM}{whether the variance components will be estimated. FALSE is
 for a numbered model with useEM FALSE, or for an unnumbered model given Vu

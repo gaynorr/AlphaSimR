@@ -17,7 +17,7 @@ RRBLUP(
   fastMode = FALSE,
   Vu = NULL,
   Ve = NULL,
-  nSubsample = 3000L,
+  nSubsample = 5000L,
   varComp = NULL
 )
 }
@@ -77,7 +77,9 @@ NULL, this and Vu are estimated by REML. See Vu and details.}
 components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 when fastMode is FALSE. A value of zero uses every record, which is only
 advisable for small training populations, because the memory needed grows
-with the square of this value.}
+with the square of this value. Smaller subsets bias the estimates
+downward as well as making them noisier, and the default of 5000 keeps
+the marker variance well away from zero even at low heritability.}
 
 \item{varComp}{an earlier fit of this model, from which Vu and Ve are
 taken in place of supplying them, so that only the marker effects are
@@ -179,9 +181,9 @@ decomposition whose cost is the square of the number of records in memory
 and their cube in time, which is what fast mode is built to avoid, so the
 estimate is taken from a random subset of the records set by nSubsample.
 Variance components are nuisance parameters for genomic prediction and are
-estimated far more precisely than a breeding program needs, so a few
-thousand records give values good enough to shrink with. The marker
-effects are always solved for using every record.
+estimated far more precisely than a breeding program needs, so a subset
+of several thousand records gives values good enough to shrink with. The
+marker effects are always solved for using every record.
 }
 
 \subsection{Known variance components}{

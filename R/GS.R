@@ -707,9 +707,9 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' and their cube in time, which is what fast mode is built to avoid, so the
 #' estimate is taken from a random subset of the records set by nSubsample.
 #' Variance components are nuisance parameters for genomic prediction and are
-#' estimated far more precisely than a breeding program needs, so a few
-#' thousand records give values good enough to shrink with. The marker
-#' effects are always solved for using every record.
+#' estimated far more precisely than a breeding program needs, so a subset
+#' of several thousand records gives values good enough to shrink with. The
+#' marker effects are always solved for using every record.
 #' }
 #'
 #' \subsection{Known variance components}{
@@ -760,7 +760,9 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
 #' advisable for small training populations, because the memory needed grows
-#' with the square of this value.
+#' with the square of this value. Smaller subsets bias the estimates
+#' downward as well as making them noisier, and the default of 5000 keeps
+#' the marker variance well away from zero even at low heritability.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
 #' solved for. Not used together with Vu and Ve. The fit must be of RRBLUP
@@ -811,7 +813,7 @@ useFastRoute = function(model, Vu, Ve, nInd, nMarker, nTraits, nFixEff,
 RRBLUP = function(pop, traits=1, use="pheno", snpChip=1,
                   useQtl=FALSE, maxIter=1000L,
                   simParam=NULL, nThreads=NULL, ...,
-                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                  fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=5000L,
                   varComp=NULL){
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -1168,7 +1170,11 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
-#' advisable for small training populations.
+#' advisable for small training populations. The default of 10000 is larger
+#' than for \code{\link{RRBLUP}}, because a smaller subset can estimate the
+#' additive variance as zero at low heritability, which leaves the term out
+#' of the model. The dominance variance is often estimated as zero whatever
+#' the size of the subset, because it is small.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
 #' solved for. Not used together with Vu and Ve. The fit must be of this
@@ -1292,7 +1298,7 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_D = function(pop, traits=1, use="pheno", snpChip=1,
                     useQtl=FALSE, maxIter=NULL,
                     simParam=NULL, nThreads=NULL, ...,
-                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                    fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=10000L,
                     varComp=NULL){
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -1646,7 +1652,11 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
-#' advisable for small training populations.
+#' advisable for small training populations. The default of 10000 is larger
+#' than for \code{\link{RRBLUP}}, because a smaller subset can estimate one
+#' of the GCA variances as zero at low heritability, which leaves that term
+#' out of the model. This is most likely for the parents with the fewest
+#' records each, such as the lines of a testcross.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
 #' solved for. Not used together with Vu and Ve. The fit must be of this
@@ -1773,7 +1783,7 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_GCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=NULL,
                       simParam=NULL, nThreads=NULL, ...,
-                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=10000L,
                       varComp=NULL){
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -2152,7 +2162,12 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' @param nSubsample the number of records used to estimate the variance
 #' components when fastMode is TRUE. Ignored when Vu and Ve are supplied, and
 #' when fastMode is FALSE. A value of zero uses every record, which is only
-#' advisable for small training populations.
+#' advisable for small training populations. The default of 15000 is larger
+#' than for \code{\link{RRBLUP}}, because a smaller subset can estimate one
+#' of the GCA variances as zero at low heritability, which leaves that term
+#' out of the model. This is most likely for the parents with the fewest
+#' records each, such as the lines of a testcross. The SCA variance is often
+#' estimated as zero whatever the size of the subset, because it is small.
 #' @param varComp an earlier fit of this model, from which Vu and Ve are
 #' taken in place of supplying them, so that only the marker effects are
 #' solved for. Not used together with Vu and Ve. The fit must be of this
@@ -2281,7 +2296,7 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 RRBLUP_SCA = function(pop, traits=1, use="pheno", snpChip=1,
                       useQtl=FALSE, maxIter=NULL,
                       simParam=NULL, nThreads=NULL, ...,
-                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=3000L,
+                      fastMode=FALSE, Vu=NULL, Ve=NULL, nSubsample=15000L,
                       varComp=NULL){
   simParam = getSimParam(simParam)
   if(is.null(nThreads)){
@@ -2967,7 +2982,10 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #' otherwise needs the memory estimated with fastMode FALSE.
 #' @param nSubsample the number of records used to estimate variance
 #' components in fast mode. Ignored when fastMode is FALSE, by the models
-#' without a fast mode, and in fast mode when Vu and Ve are supplied.
+#' without a fast mode, and in fast mode when Vu and Ve are supplied. NULL,
+#' the default, uses the model's own default: 5000 for \code{\link{RRBLUP}},
+#' 10000 for \code{\link{RRBLUP_D}} and \code{\link{RRBLUP_GCA}}, and
+#' 15000 for \code{\link{RRBLUP_SCA}}.
 #' @param useEM whether the variance components will be estimated. FALSE is
 #' for a numbered model with useEM FALSE, or for an unnumbered model given Vu
 #' and Ve, or varComp, with fastMode FALSE, which solves one trait without
@@ -3055,7 +3073,7 @@ setEBV = function(pop, solution, value="gv", targetPop=NULL,
 #'
 #' @export
 RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
-                        nFixEff=1L, fastMode=FALSE, nSubsample=3000L,
+                        nFixEff=1L, fastMode=FALSE, nSubsample=NULL,
                         useEM=TRUE){
   n = as.double(nInd)
   m = as.double(nMarker)
@@ -3072,6 +3090,14 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
   if(model=="fastRRBLUP"){
     model = "RRBLUP"
     fastMode = TRUE
+  }
+  # The fast mode models' own defaults, so that the estimate matches a fit
+  # that does not set nSubsample
+  if(is.null(nSubsample)){
+    nSubsample = switch(model,
+                        "RRBLUP" = 5000L,
+                        "RRBLUP_SCA" = 15000L,
+                        10000L)
   }
   # Outside fast mode, a model given its variance components solves one trait
   # with the solver of its REML fit, which for RRBLUP is the multikernel
