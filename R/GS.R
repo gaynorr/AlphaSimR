@@ -3265,22 +3265,31 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       vcDoubles = vcDoubles+nSub^2
     }
     # The deflation of the preconditioner, built once the variance components
-    # are known. It holds a copy of the residuals while it is applied, and
-    # eigenvectors with a value for every term, trait and marker, at most
-    # maxRank divided
-    # by the terms times traits of them. Building them decomposes the cross
-    # product of a subset of records and traits, about as many as the fast
-    # mode of RRBLUP decomposes for one trait, formed a panel of markers at a
-    # time.
+    # are known. It holds eigenvectors with a value for every term, trait and
+    # marker, at most maxRank divided by the terms times traits of them, and
+    # a copy of the residuals while it is applied. Building them decomposes
+    # the smaller of two cross products: that of a subset of records and
+    # traits, about as many as the fast mode of RRBLUP decomposes for one
+    # trait, formed a panel of markers at a time, or that of every term,
+    # trait and marker. Each peak below counts everything held at that point.
     precond = fastDeflation(nSubsample, n)
     nRow = min(max(floor(precond$nRecords/nT), 1), n)*nT
-    k = min(floor(precond$maxRank/nR), min(nRow, nR*m)-1)
+    nDir = nR*m
+    k = min(floor(precond$maxRank/nR), min(nRow, nDir)-1)
     if(k<1){
       deflDoubles = 0
+    }else if(nDir<nRow){
+      # The whole panel with its cross product, then the cross product with
+      # its eigenvectors, then the eigenvectors with the basis taken from them
+      buildDoubles = max(nRow*nDir+nDir^2, 2*nDir^2, nDir^2+nDir*k)
+      deflDoubles = max(nDir*(k+1), buildDoubles)
     }else{
+      # A panel with the cross product of the rows, then that cross product
+      # with its eigenvectors, then the basis, the leading eigenvectors and a
+      # panel together while the basis is filled
       panel = nRow*nR*min(m, max(16, floor(8388608/(nRow*nR))))
-      buildDoubles = max(nRow^2+panel, 2*nRow^2, nRow*k+panel)
-      deflDoubles = nR*m+max(nR*m*k, buildDoubles)
+      buildDoubles = max(nRow^2+panel, 2*nRow^2, nDir*k+nRow*k+panel)
+      deflDoubles = max(nDir*(k+1), buildDoubles)
     }
     doubles = max(iterDoubles+deflDoubles, vcDoubles)
   }else if(model %in% c("RRBLUP_D","RRBLUP_GCA","RRBLUP_SCA") & (nT>1)){

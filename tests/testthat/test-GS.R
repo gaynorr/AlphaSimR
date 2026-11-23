@@ -1649,6 +1649,47 @@ test_that("DEFLATE fast mode multikernel models converge to the same solution wi
   }
 })
 
+test_that("DEFLATE fast mode multikernel models deflate from the smaller cross product", {
+  skip_on_cran()
+  # Twenty markers, so that every term, trait and marker together are fewer
+  # than the 200 records and traits the basis is estimated from, and the
+  # cross product of the directions is decomposed rather than that of the
+  # records
+  d = mvPop(nInd=40, nSnp=10)
+  d$pop = randCross(d$pop, nCrosses=10, nProgeny=20, simParam=d$SP)
+  d$pop = setPheno(d$pop, simParam=d$SP)
+  d$pop@fixEff = rep_len(1:3, d$pop@nInd)
+  for(traits in list(1L, 1:3)){
+    nT = length(traits)
+    Ve = if(nT==1) 1 else mvVe
+    info = paste("traits", nT)
+    Vu = mkVu("RRBLUP_D", nT)
+    scaled = mkFastSolveD(d, traits, Vu, Ve, 0L, 0L)
+    deflated = mkFastSolveD(d, traits, Vu, Ve, 200L, 1000L)
+    expect_gt(deflated$rank, 0L, label=info)
+    # Fewer than the directions, 2*nT at each of 20 markers
+    expect_lt(deflated$rank, 40L*nT, label=info)
+    expect_equal(deflated$a, scaled$a, tolerance=1e-6, info=info)
+    expect_equal(deflated$d, scaled$d, tolerance=1e-6, info=info)
+  }
+})
+
+test_that("RRBLUPMemUse counts the basis and its workspace together", {
+  # While the basis is filled, it is held with the leading eigenvectors and
+  # a panel of markers: with 200 records, 50,000 markers and two terms, 199
+  # eigenvectors take 159 MB and a panel 67 MB
+  mem = function() RRBLUPMemUse(nInd=1e5, nMarker=5e4, model="RRBLUP_D",
+                                fastMode=TRUE, nSubsample=200)
+  on = mem()
+  old = options(AlphaSimR.fastModeDeflation=FALSE)
+  on.exit(options(old))
+  off = mem()
+  nRow = 200
+  panel = nRow*2*floor(8388608/(nRow*2))
+  # The estimate is exactly these three, so allow for rounding
+  expect_gte(on-off, (1-1e-9)*(2*5e4*199+nRow*199+panel)*8/1e9)
+})
+
 test_that("RRBLUPMemUse counts the deflation of the multikernel models", {
   # The deflation is built after the variance components, so it adds to the
   # peak only when the iteration, not their REML fit, sets it, as with a

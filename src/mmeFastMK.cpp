@@ -1117,8 +1117,10 @@ void applyScale(arma::mat& Z, const arma::mat& R, const DirScale& D){
 // mean of s stands in for L'*L on every eigenvalue. The leading eigenvectors
 // are (Gs*L)'*U*diag(1/sqrt(g)) for the eigenpairs (g,U) of the cross
 // product of the rows, (Gs*L)*(Gs*L)', which is formed a panel of markers at
-// a time. As for one trait, the fixed effects other than the mean are left
-// out of the approximation.
+// a time. When there are fewer directions than rows, the cross product of
+// the directions, (Gs*L)'*(Gs*L), is decomposed instead, as in
+// deflationBasis, and its leading eigenvectors are W. As for one trait, the
+// fixed effects other than the mean are left out of the approximation.
 //
 // The records are chosen so that nSub*nT is about nPrecond, which keeps the
 // decomposition the size the fast mode of RRBLUP uses for one trait. W has a
@@ -1211,12 +1213,47 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
     }
   };
 
-  arma::mat K(nRow, nRow, arma::fill::zeros), panel;
+  double scale = double(nInd)/double(nSub);
+  arma::mat panel;
+  if(nR*nLoci<nRow){
+    // Fewer directions than rows: as in deflationBasis, the cross product of
+    // the directions is the smaller matrix, and its leading eigenvectors are
+    // W itself. The whole of Gs*L is then no larger than the cross product of
+    // the rows would have been, so it is formed in one panel.
+    arma::mat B;
+    fillPanel(panel, 0, nLoci);
+    B = panel.t()*panel;
+    panel.reset();
+    arma::vec g;
+    arma::mat V;
+    if(!arma::eig_sym(g, V, B)){
+      // The scaling alone still converges
+      return MKDeflation();
+    }
+    B.reset();
+    // eig_sym returns the eigenvalues in ascending order
+    g = arma::flipud(g);
+    arma::vec theta = scale*g+ridge;
+    arma::uword k = 0;
+    while((k<maxRank) && (theta(k)>2.0) && (g(k)>0.0)){
+      ++k;
+    }
+    if(k==0){
+      return MKDeflation();
+    }
+    D.W = arma::fliplr(V.tail_cols(k));
+    D.shrink = std::max(theta(k), 1.0)/theta.head(k)-1.0;
+    return D;
+  }
+  arma::mat K(nRow, nRow, arma::fill::zeros);
   for(arma::uword start=0; start<nLoci; start+=panelWidth){
     arma::uword stop = std::min(start+panelWidth, nLoci);
     fillPanel(panel, start, stop);
     K += panel*panel.t();
   }
+  // The panel is not held through the decomposition, which with K and its
+  // eigenvectors is the largest allocation while the basis is built
+  panel.reset();
   arma::vec g;
   arma::mat U;
   if(!arma::eig_sym(g, U, K)){
@@ -1224,10 +1261,9 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
     return MKDeflation();
   }
   K.reset();
-  // eig_sym returns the eigenvalues in ascending order
+  // eig_sym returns the eigenvalues in ascending order. Only the k leading
+  // eigenvectors are reversed, so that no copy of U is made.
   g = arma::flipud(g);
-  U = arma::fliplr(U);
-  double scale = double(nInd)/double(nSub);
   arma::vec theta = scale*g+ridge;
   arma::uword k = 0;
   while((k<maxRank) && (theta(k)>2.0) && (g(k)>0.0)){
@@ -1237,7 +1273,7 @@ MKDeflation mkDeflation(const arma::Mat<unsigned char>& planes,
     return MKDeflation();
   }
   double sigma = std::max(theta(k), 1.0);
-  arma::mat Uk = U.head_cols(k);
+  arma::mat Uk = arma::fliplr(U.tail_cols(k));
   U.reset();
   Uk.each_row() /= arma::sqrt(g.head(k)).t();
   D.W.set_size(nR*nLoci, k);
