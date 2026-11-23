@@ -65,6 +65,20 @@ const double rrblupMKTol = 1e-6;
 // Most times the step length can be halved before falling back to an EM step
 const int maxHalving = 10;
 
+// The sum of the elementwise product of A and B, which must be the same size.
+// For two plain matrices arma::accu(A%B) is a single BLAS dot product over
+// every element, and BLAS takes the length as a 32 bit integer whatever
+// ARMA_64BIT_WORD says. Past 2^31-1 elements that length overflows: dot
+// returns zero, or past 2^32 a partial sum, and nothing reports it. Taking
+// one column at a time keeps each length to the number of rows.
+double sumProd(const arma::mat& A, const arma::mat& B){
+  double acc = 0.0;
+  for(arma::uword c=0; c<A.n_cols; ++c){
+    acc += arma::dot(A.col(c), B.col(c));
+  }
+  return acc;
+}
+
 enum class Side { record, coefficient };
 
 // A contiguous block of columns of T that is in the equations, and where its
@@ -113,15 +127,18 @@ public:
     for(arma::uword i=0; i<k; ++i){
       const arma::mat& Li = *L[i];
       const arma::mat& Ri = *R[i];
-      meanDiag(i) = arma::accu(Li%Ri)/double(n);
+      double trG = sumProd(Li, Ri);
+      meanDiag(i) = trG/double(n);
       rankBound(i) = double(std::min(n, Li.n_cols));
       // A term whose G_i lies entirely in the span of X is absorbed by the
       // fixed effects: the likelihood does not depend on its variance, which
       // leaves the average information singular. The test is the trace of
-      // G_i after projecting out X, against the rounding in forming it.
-      arma::mat Lp = Li - Xr*(Xr.t()*Li);
-      arma::mat Rp = Ri - Xr*(Xr.t()*Ri);
-      double freeTrace = arma::accu(Lp%Rp);
+      // G_i after projecting out X, against the rounding in forming it. With
+      // Xr orthonormal that trace is tr(L_i'*R_i)-tr((Xr'*L_i)'*(Xr'*R_i)),
+      // which needs no projected copy of L_i or R_i.
+      arma::mat XtL = Xr.t()*Li;
+      arma::mat XtR = (&Ri==&Li) ? XtL : arma::mat(Xr.t()*Ri);
+      double freeTrace = trG - sumProd(XtL, XtR);
       double roundTrace = arma::accu(arma::abs(Li)%arma::abs(Ri));
       confounded(i) = !(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace);
     }
@@ -378,6 +395,14 @@ public:
   // in pt. Returns the number of iterations used.
   int fit(RemlPoint& pt, int maxIter, double tol, const char* name){
     pt.theta = startValues();
+    // One term held at zero is an ordinary outcome, but with every term held
+    // the fit returns the fixed effects alone and would otherwise look like
+    // any other answer
+    if(arma::accu(estimable)==0){
+      Rf_warning("%s: no random term can be estimated, because each has a "
+                   "zero diagonal or lies in the span of X; every Vu is zero",
+                 name);
+    }
     if(!evaluate(pt)){
       Rcpp::stop("%s: the variance matrix is not positive definite at the "
                    "starting values", name);
@@ -607,10 +632,10 @@ private:
       double trPG;
       if(dense[i]){
         W.col(i) = G(i)*pt.Py;
-        trPG = arma::accu(P%G(i));
+        trPG = sumProd(P, G(i));
       }else{
         W.col(i) = (*L[i])*(R[i]->t()*pt.Py);
-        trPG = arma::accu((P*(*L[i]))%(*R[i]));
+        trPG = sumProd(P*(*L[i]), *R[i]);
       }
       score(i) = 0.5*(arma::dot(pt.Py, W.col(i)) - trPG);
     }
@@ -1030,10 +1055,10 @@ public:
       Ms(i) = M/std::sqrt(md(i));
       // A term that lies entirely in the span of X is absorbed by the fixed
       // effects and its variance cannot be estimated, so it is held at zero,
-      // as in the single trait solver
-      arma::mat Mp = Ms(i) - Xr*(Xr.t()*Ms(i));
-      double freeTrace = arma::accu(arma::square(Mp));
+      // as in the single trait solver. The trace after projecting out X is
+      // found without a projected copy of the markers, as there.
       double roundTrace = arma::accu(arma::square(Ms(i)));
+      double freeTrace = roundTrace - arma::accu(arma::square(Xr.t()*Ms(i)));
       if(!(freeTrace > 100.0*double(n)*arma::datum::eps*roundTrace)){
         held(i) = 1;
       }
@@ -1237,6 +1262,12 @@ public:
     }
     arma::uvec f(freeIdx);
 
+    // As in the single trait solver
+    if(arma::accu(held)==k){
+      Rf_warning("%s: no random term can be estimated, because each has a "
+                   "zero diagonal or lies in the span of X; every Vu is zero",
+                 name);
+    }
     startValues(pt);
     if(!evaluate(pt)){
       Rcpp::stop("%s: the variance matrix is not positive definite at the "

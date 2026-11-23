@@ -632,6 +632,24 @@ test_that("CONFOUNDED a term absorbed by the fixed effects does not stall the fi
   }
 })
 
+test_that("BOUNDARY a fit with no term to estimate warns and gives least squares", {
+  # One kernel of zeros and one inside the span of X leave nothing to
+  # estimate, so the fit is the fixed effects alone: Ve is the residual mean
+  # square of least squares. This is how a fit failed silently when the
+  # records times the markers passed 2^31-1 (issue 356).
+  d = simTwoKernels(seed=9116)
+  X = cbind(1, d$M1[, 1])
+  e = residuals(lm(c(d$y) ~ X - 1))
+  ve = sum(e^2)/(d$n - 2)
+  Mlist = list(matrix(0, d$n, 5), d$M1[, 1, drop=FALSE])
+  for(side in 1:2){
+    ans = expect_warning(fitSide(d$y, X, Mlist, list(), TRUE, side),
+                         "no random term can be estimated")
+    expect_equal(c(ans$Vu), c(0, 0))
+    expect_equal(c(ans$Ve), ve, tolerance=1e-6)
+  }
+})
+
 # ---------------------------------------------------------------------------
 # 6. The genomic selection models that call solveRRBLUPMK
 # ---------------------------------------------------------------------------
@@ -879,6 +897,21 @@ test_that("MULTITRAIT BOUNDARY a kernel within the span of X is held at zero", {
     ans = fitSide(d$Y, d$X, list(d$M1, inX), list(), TRUE, side)
     expect_equal(ans$Vu[[2]], matrix(0, 3, 3))
     expect_true(all(is.finite(ans$Vu[[1]])))
+  }
+})
+
+test_that("MULTITRAIT BOUNDARY a fit with no term to estimate warns and gives least squares", {
+  d = simTwoKernelsMV()
+  n = nrow(d$Y)
+  E = residuals(lm(d$Y ~ d$X - 1))
+  Ve = crossprod(E)/(n - qr(d$X)$rank)
+  Mlist = list(matrix(0, n, 5), matrix(d$X[, 2], ncol=1))
+  for(side in 1:2){
+    ans = expect_warning(fitSide(d$Y, d$X, Mlist, list(), TRUE, side),
+                         "no random term can be estimated")
+    expect_equal(ans$Vu[[1]], matrix(0, 3, 3))
+    expect_equal(ans$Vu[[2]], matrix(0, 3, 3))
+    expect_equal(unname(ans$Ve), unname(Ve), tolerance=1e-6)
   }
 })
 
