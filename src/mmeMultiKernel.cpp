@@ -652,11 +652,14 @@ private:
         V += pt.theta(i)*((*L[i])*(R[i]->t()));
       }
     }
-    V = 0.5*(V+V.t()); // rounding only
-    if(!arma::chol(pt.Lv, V, "lower")){
+    // V is factored in place from its lower triangle. A product L_i*R_i'
+    // that is symmetric only up to rounding is not symmetrized first: the
+    // factor reads one triangle, and averaging the two would cost another
+    // pass over V and a copy for what is only rounding.
+    if(!cholLowerInPlace(V)){
       return false;
     }
-    V.reset();
+    pt.Lv = std::move(V);
     double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
     // With V = Lv*Lv', Q = Lv^-1*X and z = Lv^-1*y give X'*V^-1*X = Q'*Q,
     // and r = z - Q*(Q'*Q)^-1*Q'*z gives P*y = Lv'^-1*r and y'*P*y = r'*r
@@ -748,7 +751,10 @@ private:
         pt.idx(s.pos+j) = s.start+j;
       }
     }
-    arma::mat C = TtT.submat(pt.idx, pt.idx)/ve;
+    // With every term in the equations the columns are all of T's, in order,
+    // and C is taken from T'*T directly rather than through an index
+    arma::mat C = (pt.idx.n_elem==TtT.n_cols) ? arma::mat(TtT/ve) :
+      arma::mat(TtT.submat(pt.idx, pt.idx)/ve);
     for(arma::uword i=0; i<k; ++i){
       if(pt.termSeg[i]>=0){
         const Segment& s = pt.segs[pt.termSeg[i]];
@@ -757,10 +763,10 @@ private:
         }
       }
     }
-    if(!arma::chol(pt.Lc, C, "lower")){
+    if(!cholLowerInPlace(C)){
       return false;
     }
-    C.reset();
+    pt.Lc = std::move(C);
     double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
     arma::vec rhs = Tty.elem(pt.idx)/ve;
     const arma::solve_opts::opts fast = arma::solve_opts::fast;
@@ -1579,23 +1585,28 @@ private:
 
   bool evaluateRecord(MvMkPoint& pt) const{
     pt.ok = false;
-    arma::mat V(N, N, arma::fill::zeros);
+    // Only the blocks on and below the diagonal of V are filled, in place,
+    // and V is factored in place from its lower triangle, as C is on the
+    // coefficient side. Block (a,b) is the n by n matrix
+    // sum_i Vu_i(a,b)*G_i + Ve(a,b)*I.
+    arma::mat V(N, N, arma::fill::none);
     for(arma::uword a=0; a<nT; ++a){
-      for(arma::uword b=0; b<nT; ++b){
-        arma::mat blk(n, n, arma::fill::zeros);
-        blk.diag().fill(pt.V[k](a,b));
+      for(arma::uword b=0; b<=a; ++b){
+        auto blk = V.submat(a*n, b*n, a*n+n-1, b*n+n-1);
+        blk.zeros();
         for(arma::uword i=0; i<k; ++i){
           if(held(i)) continue;
           blk += pt.V[i](a,b)*G(i);
         }
-        V.submat(a*n, b*n, a*n+n-1, b*n+n-1) = blk;
+        for(arma::uword j=0; j<n; ++j){
+          V(a*n+j, b*n+j) += pt.V[k](a,b);
+        }
       }
     }
-    V = 0.5*(V+V.t()); // rounding only
-    if(!arma::chol(pt.Lv, V, "lower")){
+    if(!cholLowerInPlace(V)){
       return false;
     }
-    V.reset();
+    pt.Lv = std::move(V);
     double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
     const arma::solve_opts::opts fast = arma::solve_opts::fast;
     arma::mat Q = arma::solve(arma::trimatl(pt.Lv), Xf, fast);
