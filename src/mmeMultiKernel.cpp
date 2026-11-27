@@ -111,6 +111,29 @@ bool cholInverse(arma::mat& out, const arma::mat& L){
   return true;
 }
 
+// The lower Cholesky factor of a symmetric positive definite matrix, in place,
+// by LAPACK's potrf. Only the lower triangle of A is read, so a caller can
+// leave the upper one unset rather than filling and symmetrizing it, and A is
+// not copied first, as arma::chol copies it. The upper triangle is zeroed
+// afterward, so A is then the factor as arma::chol would give it. Returns
+// false if A is not positive definite.
+bool cholLowerInPlace(arma::mat& A){
+  if(A.n_rows==0){
+    return true;
+  }
+  char uplo = 'L';
+  arma::blas_int bn = arma::blas_int(A.n_rows);
+  arma::blas_int info = 0;
+  arma::lapack::potrf(&uplo, &bn, A.memptr(), &bn, &info);
+  if(info!=0){
+    return false;
+  }
+  for(arma::uword j=1; j<A.n_cols; ++j){
+    std::fill(A.colptr(j), A.colptr(j)+j, 0.0);
+  }
+  return true;
+}
+
 enum class Side { record, coefficient };
 
 // A contiguous block of columns of T that is in the equations, and where its
@@ -1642,29 +1665,41 @@ private:
     pt.VeInv = LeInv.t()*LeInv;
     double logDetVe = 2.0*arma::accu(arma::log(Le.diag()));
     const arma::uword nC = nT*nCoef;
-    arma::mat C(nC, nC);
+    // Only the lower triangle of C is filled, because potrf reads no other,
+    // and C is factored in place. The block of segments r and s is
+    // (L_r'*Ve^-1*L_s) (x) T_r'*T_s, written one trait pair at a time. In a
+    // block of segments with s<r every trait pair is below the diagonal of C,
+    // and in one with s equal to r the pairs with u<t are, while those with u
+    // equal to t lie on it. Filling and symmetrizing the whole matrix and
+    // then copying it into a factor cost as much as the factorization itself.
+    // Every element below the diagonal is written, so C is not zeroed first.
+    arma::mat C(nC, nC, arma::fill::none);
     for(arma::uword r=0; r<nSeg; ++r){
+      if(segLen(r)==0) continue;
       arma::mat Lr = segFactor(pt, r);
-      for(arma::uword s=0; s<nSeg; ++s){
-        if( (segLen(r)==0) || (segLen(s)==0) ) continue;
-        arma::mat Ls = segFactor(pt, s);
-        arma::mat blk = arma::kron(Lr.t()*pt.VeInv*Ls,
-                                   TtT.submat(segStart(r), segStart(s),
-                                              segStart(r)+segLen(r)-1,
-                                              segStart(s)+segLen(s)-1));
-        C.submat(nT*segStart(r), nT*segStart(s),
-                 nT*segStart(r)+nT*segLen(r)-1,
-                 nT*segStart(s)+nT*segLen(s)-1) = blk;
+      for(arma::uword s=0; s<=r; ++s){
+        if(segLen(s)==0) continue;
+        arma::mat Frs = Lr.t()*pt.VeInv*segFactor(pt, s);
+        const arma::uword lr = segLen(r), ls = segLen(s);
+        for(arma::uword t=0; t<nT; ++t){
+          arma::uword r0 = nT*segStart(r)+t*lr;
+          for(arma::uword u=0; u<nT; ++u){
+            if( (s==r) && (u>t) ) continue;
+            arma::uword s0 = nT*segStart(s)+u*ls;
+            C.submat(r0, s0, r0+lr-1, s0+ls-1) =
+              Frs(t,u)*TtT.submat(segStart(r), segStart(s),
+                                  segStart(r)+lr-1, segStart(s)+ls-1);
+          }
+        }
       }
     }
     for(arma::uword j=nT*p; j<nC; ++j){
       C(j,j) += 1.0;
     }
-    C = 0.5*(C+C.t()); // rounding only
-    if(!arma::chol(pt.Lc, C, "lower")){
+    if(!cholLowerInPlace(C)){
       return false;
     }
-    C.reset();
+    pt.Lc = std::move(C);
     double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
     arma::vec rhs(nC);
     for(arma::uword r=0; r<nSeg; ++r){
@@ -1706,16 +1741,43 @@ private:
     return out;
   }
 
-  // W'*vec(Z) for an n by t matrix Z, segment by segment vec(T_r'*Z*L_r)
-  arma::vec crossW(const MvMkPoint& pt, const arma::mat& Z) const{
-    arma::vec out(nT*nCoef);
+  // W'*vec(Z_j) for each n by t matrix Z_j held side by side in Zs, one
+  // column of the result per Z_j, segment by segment vec(T_r'*Z_j*L_r). T_r'
+  // is applied to every Z_j in one product, so T is read once per segment
+  // rather than once per Z_j.
+  arma::mat crossWMany(const MvMkPoint& pt, const arma::mat& Zs) const{
+    const arma::uword J = Zs.n_cols/nT;
+    arma::mat out(nT*nCoef, J);
     for(arma::uword r=0; r<nSeg; ++r){
       arma::uword len = segLen(r);
       if(len==0) continue;
-      arma::mat blk = T.cols(segStart(r), segStart(r)+len-1).t()*Z*
-        segFactor(pt, r);
-      out.subvec(nT*segStart(r), nT*segStart(r)+nT*len-1) =
-        arma::vectorise(blk);
+      arma::mat TZ = T.cols(segStart(r), segStart(r)+len-1).t()*Zs;
+      arma::mat Lr = segFactor(pt, r);
+      for(arma::uword j=0; j<J; ++j){
+        out.col(j).subvec(nT*segStart(r), nT*segStart(r)+nT*len-1) =
+          arma::vectorise(TZ.cols(j*nT, j*nT+nT-1)*Lr);
+      }
+    }
+    return out;
+  }
+
+  // W*s_j as n by t matrices side by side, one for each column s_j of Ss,
+  // sum_r T_r*S_rj*L_r', with T_r applied to every s_j in one product
+  arma::mat multWMany(const MvMkPoint& pt, const arma::mat& Ss) const{
+    const arma::uword J = Ss.n_cols;
+    arma::mat out(n, nT*J, arma::fill::zeros);
+    for(arma::uword r=0; r<nSeg; ++r){
+      arma::uword len = segLen(r);
+      if(len==0) continue;
+      arma::uword off = nT*segStart(r);
+      arma::mat Lr = segFactor(pt, r);
+      arma::mat SL(len, nT*J);
+      for(arma::uword j=0; j<J; ++j){
+        arma::mat S = arma::reshape(Ss.col(j).subvec(off, off+nT*len-1),
+                                    len, nT);
+        SL.cols(j*nT, j*nT+nT-1) = S*Lr.t();
+      }
+      out += T.cols(segStart(r), segStart(r)+len-1)*SL;
     }
     return out;
   }
@@ -1780,14 +1842,31 @@ private:
         Wv.col(g*nPar+q) = arma::vectorise(GA*E);
       }
     }
-    // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), column by column
-    arma::mat PW(N, nTot, arma::fill::zeros);
+    // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), for every working variate at once.
+    // Taken one at a time, each would read all of C^-1 and T, which costs
+    // more than the arithmetic; together they make one product with C^-1 and
+    // one with T per segment each way. A variate of a held term is zero and
+    // stays so.
+    std::vector<arma::uword> live;
     for(arma::uword j=0; j<nTot; ++j){
-      if(!arma::any(Wv.col(j))) continue;
-      arma::mat Wm = arma::reshape(Wv.col(j), n, nT);
-      arma::mat RW = Wm*pt.VeInv;
-      arma::vec x = Cinv*crossW(pt, RW);
-      PW.col(j) = arma::vectorise((Wm - multW(pt, x))*pt.VeInv);
+      if(arma::any(Wv.col(j))) live.push_back(j);
+    }
+    const arma::uword J = live.size();
+    arma::mat Wms(n, nT*J);
+    for(arma::uword i=0; i<J; ++i){
+      Wms.cols(i*nT, i*nT+nT-1) = arma::reshape(Wv.col(live[i]), n, nT);
+    }
+    arma::mat RWs(n, nT*J);
+    for(arma::uword i=0; i<J; ++i){
+      RWs.cols(i*nT, i*nT+nT-1) = Wms.cols(i*nT, i*nT+nT-1)*pt.VeInv;
+    }
+    arma::mat Xs = Cinv*crossWMany(pt, RWs);
+    RWs.reset();
+    arma::mat Rs = Wms - multWMany(pt, Xs);
+    arma::mat PW(N, nTot, arma::fill::zeros);
+    for(arma::uword i=0; i<J; ++i){
+      PW.col(live[i]) =
+        arma::vectorise(Rs.cols(i*nT, i*nT+nT-1)*pt.VeInv);
     }
     AI = 0.5*(Wv.t()*PW);
     AI = 0.5*(AI+AI.t()); // rounding only
