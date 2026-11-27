@@ -133,10 +133,10 @@ When traits gives more than one trait, the traits are fitted together as a
 multiple trait model, which needs every trait recorded on every
 individual. The additive effects of each marker, its dominance effects and
 the errors of each record each have an unstructured covariance matrix
-among the traits. These are estimated by REML, with EM steps followed by
-Newton steps using the average information matrix
-\insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
-iterations. The Vu slot of the result holds the two covariance matrices
+among the traits. These are estimated by REML, with Newton steps using
+the average information matrix \insertCite{gilmour1995Average}{AlphaSimR}
+and an EM step in place of any Newton step that fails, for at most
+maxIter iterations. The Vu slot of the result holds the two covariance matrices
 of the marker effects as a block diagonal matrix, additive first, with rows
 and columns named "a:trait" and "d:trait".
 }

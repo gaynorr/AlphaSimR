@@ -28,11 +28,20 @@
 // On the record side everything is done with V itself, which has the
 // dimension of the records whatever the kernels are. Each G_i is held as a
 // product L_i*R_i' of two thin matrices, L_i = Z_i*K_i and R_i = Z_i, or
-// L_i = R_i = M_i in the RR-BLUP form. When those have fewer columns than
-// there are records the n by n matrix G_i is never formed: G_i*v is
-// L_i*(R_i'*v) and tr(P*G_i) = tr((P*L_i)*R_i') is the sum of the
-// elementwise product of P*L_i and R_i. Otherwise forming G_i once is cheaper
-// than repeating those products in every iteration, and it is kept.
+// L_i = R_i = M_i in the RR-BLUP form. G_i is formed once and kept when the
+// variance components are estimated and L_i has at least an eighth as many
+// columns as there are records, or whenever it has at least as many. Without
+// it, every evaluation of the likelihood forms L_i*R_i' into V and every
+// iteration takes P*L_i for tr(P*G_i) = tr((P*L_i)*R_i'), the sum of the
+// elementwise product of P*L_i and R_i, each costing about 2*n^2*m for m
+// columns. Forming G_i once costs the same as one of those products, so it
+// pays for itself in the first iteration, but it holds n^2 more numbers. At
+// an eighth, the two products of a term already cost more in an iteration
+// than the Cholesky factorization of V, about n^3/3, while a thinner term
+// adds little to an iteration and the memory would not be worth it. With the variance components given,
+// V is formed and factored only once, so keeping a thinner G_i would cost
+// memory and save nothing. A G_i that is not kept is applied to a vector as
+// G_i*v = L_i*(R_i'*v).
 //
 // On the coefficient side everything is done with Henderson's mixed model
 // equations. Every term is written as G_i = W_i*W_i' with effects
@@ -79,6 +88,52 @@ double sumProd(const arma::mat& A, const arma::mat& B){
   return acc;
 }
 
+// The inverse of a symmetric positive definite matrix from its lower
+// Cholesky factor L, by LAPACK's potri. That inverts L and forms
+// L'^-1*L^-1 in place, using the triangle of each, in about two thirds of
+// the cost of inverting L and then multiplying the inverse by its
+// transpose as general matrices. potri fills the lower triangle only, and
+// it is copied to the upper, so the result is exactly symmetric. Returns
+// false if L has a zero on its diagonal.
+bool cholInverse(arma::mat& out, const arma::mat& L){
+  out = L;
+  if(out.n_rows==0){
+    return true;
+  }
+  char uplo = 'L';
+  arma::blas_int bn = arma::blas_int(out.n_rows);
+  arma::blas_int info = 0;
+  arma::lapack::potri(&uplo, &bn, out.memptr(), &bn, &info);
+  if(info!=0){
+    return false;
+  }
+  out = arma::symmatl(out);
+  return true;
+}
+
+// The lower Cholesky factor of a symmetric positive definite matrix, in place,
+// by LAPACK's potrf. Only the lower triangle of A is read, so a caller can
+// leave the upper one unset rather than filling and symmetrizing it, and A is
+// not copied first, as arma::chol copies it. The upper triangle is zeroed
+// afterward, so A is then the factor as arma::chol would give it. Returns
+// false if A is not positive definite.
+bool cholLowerInPlace(arma::mat& A){
+  if(A.n_rows==0){
+    return true;
+  }
+  char uplo = 'L';
+  arma::blas_int bn = arma::blas_int(A.n_rows);
+  arma::blas_int info = 0;
+  arma::lapack::potrf(&uplo, &bn, A.memptr(), &bn, &info);
+  if(info!=0){
+    return false;
+  }
+  for(arma::uword j=1; j<A.n_cols; ++j){
+    std::fill(A.colptr(j), A.colptr(j)+j, 0.0);
+  }
+  return true;
+}
+
 enum class Side { record, coefficient };
 
 // A contiguous block of columns of T that is in the equations, and where its
@@ -113,12 +168,18 @@ class MultiKernelREML {
 public:
   // On the record side G_i = L_i*R_i'. On the coefficient side L_i = R_i = W_i
   // and the effects of the term are F_i times those of W_i, or those of W_i
-  // themselves when F_i is null.
+  // themselves when F_i is null. Where Rlev_ is not null on the record side,
+  // R_i is an incidence matrix with those levels, and G_i = L_i*R_i' is taken
+  // as a copy of columns of L_i; see incidenceLevels. estimating says whether
+  // the variance components will be estimated, which decides which G_i are
+  // kept on the record side; see the top of this file.
   MultiKernelREML(const arma::vec& y_, const arma::mat& X, Side side_,
                   const std::vector<const arma::mat*>& L_,
                   const std::vector<const arma::mat*>& R_,
-                  const std::vector<const arma::mat*>& F_)
-    : side(side_), y(y_), L(L_), R(R_), F(F_){
+                  const std::vector<const arma::mat*>& F_,
+                  const std::vector<const arma::uvec*>& Rlev_,
+                  bool estimating)
+    : side(side_), y(y_), L(L_), R(R_), F(F_), Rlev(Rlev_){
     k = L.size();
     setFixed(X);
     meanDiag.set_size(k);
@@ -148,9 +209,10 @@ public:
       for(arma::uword i=0; i<k; ++i){
         const arma::mat& Li = *L[i];
         const arma::mat& Ri = *R[i];
-        if(Li.n_cols>=n){
+        if( (Li.n_cols>=n) || (estimating && (8*Li.n_cols>=n)) ){
           dense[i] = true;
-          G(i) = Li*Ri.t();
+          G(i) = (Rlev[i]!=nullptr) ? arma::mat(Li.cols(*Rlev[i])) :
+            arma::mat(Li*Ri.t());
           G(i) = 0.5*(G(i)+G(i).t()); // rounding only
         }
       }
@@ -194,6 +256,7 @@ public:
     L.assign(k, nullptr);
     R.assign(k, nullptr);
     F.assign(k, nullptr);
+    Rlev.assign(k, nullptr);
     meanDiag.set_size(k);
     rankBound = rank;
     confounded.zeros(k);
@@ -541,6 +604,7 @@ private:
   arma::vec b0; // that least squares fit
   arma::mat Xr;
   std::vector<const arma::mat*> L, R, F;
+  std::vector<const arma::uvec*> Rlev;
   arma::vec meanDiag, rankBound;
   arma::uvec estimable, confounded;
   double vy = 1.0, veFloor = 0.0;
@@ -582,15 +646,20 @@ private:
       if(pt.theta(i)==0.0) continue;
       if(dense[i]){
         V += pt.theta(i)*G(i);
+      }else if(Rlev[i]!=nullptr){
+        V += pt.theta(i)*L[i]->cols(*Rlev[i]);
       }else{
         V += pt.theta(i)*((*L[i])*(R[i]->t()));
       }
     }
-    V = 0.5*(V+V.t()); // rounding only
-    if(!arma::chol(pt.Lv, V, "lower")){
+    // V is factored in place from its lower triangle. A product L_i*R_i'
+    // that is symmetric only up to rounding is not symmetrized first: the
+    // factor reads one triangle, and averaging the two would cost another
+    // pass over V and a copy for what is only rounding.
+    if(!cholLowerInPlace(V)){
       return false;
     }
-    V.reset();
+    pt.Lv = std::move(V);
     double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
     // With V = Lv*Lv', Q = Lv^-1*X and z = Lv^-1*y give X'*V^-1*X = Q'*Q,
     // and r = z - Q*(Q'*Q)^-1*Q'*z gives P*y = Lv'^-1*r and y'*P*y = r'*r
@@ -618,12 +687,8 @@ private:
     score.set_size(k+1);
     // P = V^-1 - V^-1*X*(X'*V^-1*X)^-1*X'*V^-1, with V^-1 = Lv'^-1*Lv^-1
     arma::mat P;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
-        Rcpp::stop("could not invert the Cholesky factor of V");
-      }
-      P = Linv.t()*Linv;
+    if(!cholInverse(P, pt.Lv)){
+      Rcpp::stop("could not invert the Cholesky factor of V");
     }
     P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
     P = 0.5*(P+P.t()); // rounding only
@@ -686,7 +751,10 @@ private:
         pt.idx(s.pos+j) = s.start+j;
       }
     }
-    arma::mat C = TtT.submat(pt.idx, pt.idx)/ve;
+    // With every term in the equations the columns are all of T's, in order,
+    // and C is taken from T'*T directly rather than through an index
+    arma::mat C = (pt.idx.n_elem==TtT.n_cols) ? arma::mat(TtT/ve) :
+      arma::mat(TtT.submat(pt.idx, pt.idx)/ve);
     for(arma::uword i=0; i<k; ++i){
       if(pt.termSeg[i]>=0){
         const Segment& s = pt.segs[pt.termSeg[i]];
@@ -695,10 +763,10 @@ private:
         }
       }
     }
-    if(!arma::chol(pt.Lc, C, "lower")){
+    if(!cholLowerInPlace(C)){
       return false;
     }
-    C.reset();
+    pt.Lc = std::move(C);
     double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
     arma::vec rhs = Tty.elem(pt.idx)/ve;
     const arma::solve_opts::opts fast = arma::solve_opts::fast;
@@ -842,8 +910,9 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
 
   // The number of coefficients is not known until the covariance matrices
   // are factored, so the side is chosen on the number of columns, which is
-  // an upper bound for it. Factoring a covariance matrix adds the cube of
-  // its size to the coefficient side.
+  // an upper bound for it. Both sides factor each covariance matrix once by
+  // Cholesky, the record side to check it and the coefficient side for its
+  // factor, so that cost does not favor either and is left out.
   Side side;
   if(sideRequest==1){
     side = Side::record;
@@ -851,18 +920,18 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
     side = Side::coefficient;
   }else{
     arma::uword c = X.n_cols;
-    double extra = 0.0;
     for(arma::uword i=0; i<k; ++i){
-      double m = double(Zlist(i).n_cols);
       c += Zlist(i).n_cols;
-      if(!rrForm) extra += m*m*m;
     }
-    side = useCoefficientSide(n, c, k, extra) ? Side::coefficient :
-      Side::record;
+    side = useCoefficientSide(n, c, k) ? Side::coefficient : Side::record;
   }
 
   arma::field<arma::mat> D(k), Fs(k);
   std::vector<const arma::mat*> L(k), R(k), F(k, nullptr);
+  // The level of each record for a Z_i that is an incidence matrix, so that
+  // products with Z_i can be taken as copies; see incidenceLevels
+  arma::field<arma::uvec> lev(k);
+  std::vector<const arma::uvec*> Rlev(k, nullptr);
   for(arma::uword i=0; i<k; ++i){
     if(rrForm){
       L[i] = &Zlist(i);
@@ -870,6 +939,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       continue;
     }
     const arma::mat& Z = Zlist(i);
+    bool incidence = incidenceLevels(Z, lev(i));
     // K_i is symmetrized first so that Z_i*K_i*Z_i' is symmetric
     arma::mat K = 0.5*(Klist(i)+Klist(i).t());
     if(side==Side::record){
@@ -882,17 +952,37 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
                     ": each K must be positive semidefinite");
       // Z_i*K_i is formed once, and the BLUP K_i*Z_i'*P*y can be read off
       // as (Z_i*K_i)'*P*y
-      D(i) = Z*K;
+      if(incidence){
+        D(i) = K.rows(lev(i));
+        Rlev[i] = &lev(i);
+      }else{
+        D(i) = Z*K;
+      }
       L[i] = &D(i);
       R[i] = &Zlist(i);
     }else{
-      // K_i = F_i*F_i' with F_i = Q*diag(sqrt(lambda)) over the positive
-      // eigenvalues, so a singular K_i is handled by having fewer columns.
-      // Every positive eigenvalue is kept, however small next to the
-      // largest: Z_i can scale a direction back up, so whether it matters is
-      // only known after Z_i is applied, and dropping it here would fit a
-      // different model from the record side.
+      // Any F_i with K_i = F_i*F_i' gives the same model, since only
+      // Z_i*F_i*F_i'*Z_i' enters the likelihood and the BLUPs F_i*a_i do not
+      // depend on which factor is used. A positive definite K_i, which is
+      // the usual case, is recognized by its Cholesky factorization, and its
+      // Cholesky factor serves. That costs a small fraction of an
+      // eigendecomposition with its eigenvectors.
+      //
+      // Otherwise K_i = F_i*F_i' with F_i = Q*diag(sqrt(lambda)) over the
+      // positive eigenvalues, so a singular K_i is handled by having fewer
+      // columns. Every positive eigenvalue is kept, however small next to
+      // the largest: Z_i can scale a direction back up, so whether it
+      // matters is only known after Z_i is applied, and dropping it here
+      // would fit a different model from the record side.
       arma::uword m = K.n_rows;
+      if( (m>0) && arma::chol(Fs(i), K, "lower") ){
+        D(i) = incidence ? arma::mat(Fs(i).rows(lev(i))) :
+          arma::mat(Z*Fs(i));
+        L[i] = &D(i);
+        R[i] = &D(i);
+        F[i] = &Fs(i);
+        continue;
+      }
       arma::vec lambda(m);
       arma::mat Q(m, m);
       if(m>0){
@@ -909,7 +999,11 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       }else{
         Fs(i).set_size(0, 0);
       }
-      D(i) = Z*Fs(i);
+      if(incidence && (Fs(i).n_rows==m)){
+        D(i) = Fs(i).rows(lev(i));
+      }else{
+        D(i) = Z*Fs(i);
+      }
       L[i] = &D(i);
       R[i] = &D(i);
       F[i] = &Fs(i);
@@ -917,7 +1011,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
   }
 
   arma::vec yv = y.col(0);
-  MultiKernelREML reml(yv, X, side, L, R, F);
+  MultiKernelREML reml(yv, X, side, L, R, F, Rlev, fixedTheta==nullptr);
   RemlPoint pt;
   int iter = 0;
   if(fixedTheta!=nullptr){
@@ -956,8 +1050,8 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
 //
 // for t traits recorded on every one of n records, with Vu_i and Ve
 // unstructured t by t covariance matrices. The variance components are
-// estimated by REML, by the same scheme as the single kernel multiple trait
-// solver in mmeMultiTrait.cpp: a few EM steps, then Newton steps in the lower
+// estimated by REML, by the scheme of the single kernel multiple trait solver
+// in mmeMultiTrait.cpp without its initial EM steps: Newton steps in the lower
 // Cholesky factors of the covariance matrices, whose Hessian is the average
 // information matrix of Gilmour et al. (1995) carried through the Jacobian
 // of V = L*L' together with the exact second order term of that map.
@@ -1246,8 +1340,18 @@ public:
 
   // Runs the iterations and leaves the final point in pt. Returns the number
   // of iterations used.
+  //
+  // Every iteration tries a Newton step first, and an EM step only when the
+  // Newton step cannot be made to keep the likelihood from falling. Starting
+  // with a few EM steps, as the single kernel solver in mmeMultiTrait.cpp
+  // does, was tried and dropped: over two to four traits, with genetic and
+  // residual correlations up to 0.999 in size, terms with no variance, traits
+  // on scales a thousand times apart and 60 to 1500 records, starting with
+  // Newton steps reached the same likelihood, to within the change that
+  // stops the iteration, in about a third fewer iterations, and never needed
+  // more. The EM steps did not make the iteration more reliable either: no
+  // case failed either way.
   int fit(MvMkPoint& pt, int maxIter, double tol, const char* name){
-    const int nEM = 5;
     const arma::uword nMat = k+1;
     const arma::uword nTot = nMat*nPar;
     // The parameters that move: those of every term that can be estimated,
@@ -1281,49 +1385,47 @@ public:
       derivatives(pt, gV, AI);
       MvMkPoint next;
       bool accepted = false;
-      if(iter>nEM){
-        arma::mat J(nTot, nTot, arma::fill::zeros);
-        arma::mat Kc(nTot, nTot, arma::fill::zeros);
-        for(arma::uword g : freeMat){
-          arma::uword a = g*nPar, b = g*nPar+nPar-1;
-          J.submat(a, a, b, b) = cholJacobian(pt.Lf[g], rowIdx, colIdx);
-          Kc.submat(a, a, b, b) =
-            cholCurvature(gradMatrix(gV, a, nT, rowIdx, colIdx), rowIdx, colIdx);
-        }
-        arma::mat Jf = J.submat(f, f);
-        arma::vec gL = Jf.t()*gV.elem(f);
-        // Negative Hessian of the likelihood with respect to the factors
-        arma::mat negH = Jf.t()*AI.submat(f, f)*Jf - Kc.submat(f, f);
-        negH = 0.5*(negH+negH.t());
-        arma::vec hVal;
-        arma::mat hVec;
-        if(arma::eig_sym(hVal, hVec, negH)){
-          // A direction of negative curvature has the sign of its eigenvalue
-          // reversed, so the step is always one of ascent
-          hVal = arma::abs(hVal);
-          double floorVal = 1.0e-10*std::max(hVal.max(), 1.0e-300);
-          hVal.elem(find(hVal<floorVal)).fill(floorVal);
-          arma::vec step = hVec*((hVec.t()*gL)/hVal);
-          double alpha = 1.0;
-          for(int h=0; h<10; ++h){
-            next.Lf = pt.Lf;
-            arma::uword pos = 0;
-            for(arma::uword g : freeMat){
-              for(arma::uword q=0; q<nPar; ++q){
-                next.Lf[g](rowIdx(q), colIdx(q)) += alpha*step(pos);
-                ++pos;
-              }
+      arma::mat J(nTot, nTot, arma::fill::zeros);
+      arma::mat Kc(nTot, nTot, arma::fill::zeros);
+      for(arma::uword g : freeMat){
+        arma::uword a = g*nPar, b = g*nPar+nPar-1;
+        J.submat(a, a, b, b) = cholJacobian(pt.Lf[g], rowIdx, colIdx);
+        Kc.submat(a, a, b, b) =
+          cholCurvature(gradMatrix(gV, a, nT, rowIdx, colIdx), rowIdx, colIdx);
+      }
+      arma::mat Jf = J.submat(f, f);
+      arma::vec gL = Jf.t()*gV.elem(f);
+      // Negative Hessian of the likelihood with respect to the factors
+      arma::mat negH = Jf.t()*AI.submat(f, f)*Jf - Kc.submat(f, f);
+      negH = 0.5*(negH+negH.t());
+      arma::vec hVal;
+      arma::mat hVec;
+      if(arma::eig_sym(hVal, hVec, negH)){
+        // A direction of negative curvature has the sign of its eigenvalue
+        // reversed, so the step is always one of ascent
+        hVal = arma::abs(hVal);
+        double floorVal = 1.0e-10*std::max(hVal.max(), 1.0e-300);
+        hVal.elem(find(hVal<floorVal)).fill(floorVal);
+        arma::vec step = hVec*((hVec.t()*gL)/hVal);
+        double alpha = 1.0;
+        for(int h=0; h<10; ++h){
+          next.Lf = pt.Lf;
+          arma::uword pos = 0;
+          for(arma::uword g : freeMat){
+            for(arma::uword q=0; q<nPar; ++q){
+              next.Lf[g](rowIdx(q), colIdx(q)) += alpha*step(pos);
+              ++pos;
             }
-            next.V.assign(nMat, arma::mat());
-            for(arma::uword g=0; g<nMat; ++g){
-              next.V[g] = next.Lf[g]*next.Lf[g].t();
-            }
-            if(evaluate(next) && (next.LL>=pt.LL)){
-              accepted = true;
-              break;
-            }
-            alpha *= 0.5;
           }
+          next.V.assign(nMat, arma::mat());
+          for(arma::uword g=0; g<nMat; ++g){
+            next.V[g] = next.Lf[g]*next.Lf[g].t();
+          }
+          if(evaluate(next) && (next.LL>=pt.LL)){
+            accepted = true;
+            break;
+          }
+          alpha *= 0.5;
         }
       }
       if(!accepted){
@@ -1363,7 +1465,7 @@ public:
       }
       double change = next.LL - pt.LL;
       pt = next;
-      if( (iter>nEM) && (std::abs(change)<tol) ){
+      if(std::abs(change)<tol){
         converged = true;
         break;
       }
@@ -1483,23 +1585,28 @@ private:
 
   bool evaluateRecord(MvMkPoint& pt) const{
     pt.ok = false;
-    arma::mat V(N, N, arma::fill::zeros);
+    // Only the blocks on and below the diagonal of V are filled, in place,
+    // and V is factored in place from its lower triangle, as C is on the
+    // coefficient side. Block (a,b) is the n by n matrix
+    // sum_i Vu_i(a,b)*G_i + Ve(a,b)*I.
+    arma::mat V(N, N, arma::fill::none);
     for(arma::uword a=0; a<nT; ++a){
-      for(arma::uword b=0; b<nT; ++b){
-        arma::mat blk(n, n, arma::fill::zeros);
-        blk.diag().fill(pt.V[k](a,b));
+      for(arma::uword b=0; b<=a; ++b){
+        auto blk = V.submat(a*n, b*n, a*n+n-1, b*n+n-1);
+        blk.zeros();
         for(arma::uword i=0; i<k; ++i){
           if(held(i)) continue;
           blk += pt.V[i](a,b)*G(i);
         }
-        V.submat(a*n, b*n, a*n+n-1, b*n+n-1) = blk;
+        for(arma::uword j=0; j<n; ++j){
+          V(a*n+j, b*n+j) += pt.V[k](a,b);
+        }
       }
     }
-    V = 0.5*(V+V.t()); // rounding only
-    if(!arma::chol(pt.Lv, V, "lower")){
+    if(!cholLowerInPlace(V)){
       return false;
     }
-    V.reset();
+    pt.Lv = std::move(V);
     double logDetV = 2.0*arma::accu(arma::log(pt.Lv.diag()));
     const arma::solve_opts::opts fast = arma::solve_opts::fast;
     arma::mat Q = arma::solve(arma::trimatl(pt.Lv), Xf, fast);
@@ -1526,12 +1633,8 @@ private:
     const arma::uword nTot = (k+1)*nPar;
     score.zeros(nTot);
     arma::mat P;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
-        Rcpp::stop("could not invert the Cholesky factor of V");
-      }
-      P = Linv.t()*Linv;
+    if(!cholInverse(P, pt.Lv)){
+      Rcpp::stop("could not invert the Cholesky factor of V");
     }
     P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
     P = 0.5*(P+P.t()); // rounding only
@@ -1573,29 +1676,41 @@ private:
     pt.VeInv = LeInv.t()*LeInv;
     double logDetVe = 2.0*arma::accu(arma::log(Le.diag()));
     const arma::uword nC = nT*nCoef;
-    arma::mat C(nC, nC);
+    // Only the lower triangle of C is filled, because potrf reads no other,
+    // and C is factored in place. The block of segments r and s is
+    // (L_r'*Ve^-1*L_s) (x) T_r'*T_s, written one trait pair at a time. In a
+    // block of segments with s<r every trait pair is below the diagonal of C,
+    // and in one with s equal to r the pairs with u<t are, while those with u
+    // equal to t lie on it. Filling and symmetrizing the whole matrix and
+    // then copying it into a factor cost as much as the factorization itself.
+    // Every element below the diagonal is written, so C is not zeroed first.
+    arma::mat C(nC, nC, arma::fill::none);
     for(arma::uword r=0; r<nSeg; ++r){
+      if(segLen(r)==0) continue;
       arma::mat Lr = segFactor(pt, r);
-      for(arma::uword s=0; s<nSeg; ++s){
-        if( (segLen(r)==0) || (segLen(s)==0) ) continue;
-        arma::mat Ls = segFactor(pt, s);
-        arma::mat blk = arma::kron(Lr.t()*pt.VeInv*Ls,
-                                   TtT.submat(segStart(r), segStart(s),
-                                              segStart(r)+segLen(r)-1,
-                                              segStart(s)+segLen(s)-1));
-        C.submat(nT*segStart(r), nT*segStart(s),
-                 nT*segStart(r)+nT*segLen(r)-1,
-                 nT*segStart(s)+nT*segLen(s)-1) = blk;
+      for(arma::uword s=0; s<=r; ++s){
+        if(segLen(s)==0) continue;
+        arma::mat Frs = Lr.t()*pt.VeInv*segFactor(pt, s);
+        const arma::uword lr = segLen(r), ls = segLen(s);
+        for(arma::uword t=0; t<nT; ++t){
+          arma::uword r0 = nT*segStart(r)+t*lr;
+          for(arma::uword u=0; u<nT; ++u){
+            if( (s==r) && (u>t) ) continue;
+            arma::uword s0 = nT*segStart(s)+u*ls;
+            C.submat(r0, s0, r0+lr-1, s0+ls-1) =
+              Frs(t,u)*TtT.submat(segStart(r), segStart(s),
+                                  segStart(r)+lr-1, segStart(s)+ls-1);
+          }
+        }
       }
     }
     for(arma::uword j=nT*p; j<nC; ++j){
       C(j,j) += 1.0;
     }
-    C = 0.5*(C+C.t()); // rounding only
-    if(!arma::chol(pt.Lc, C, "lower")){
+    if(!cholLowerInPlace(C)){
       return false;
     }
-    C.reset();
+    pt.Lc = std::move(C);
     double logDetC = 2.0*arma::accu(arma::log(pt.Lc.diag()));
     arma::vec rhs(nC);
     for(arma::uword r=0; r<nSeg; ++r){
@@ -1637,18 +1752,47 @@ private:
     return out;
   }
 
-  // W'*vec(Z) for an n by t matrix Z, segment by segment vec(T_r'*Z*L_r)
-  arma::vec crossW(const MvMkPoint& pt, const arma::mat& Z) const{
-    arma::vec out(nT*nCoef);
+  // W'*vec(Z_j) for each n by t matrix Z_j held side by side in Zs, one
+  // column of the result per Z_j, segment by segment vec(T_r'*Z_j*L_r). T_r'
+  // is applied to every Z_j in one product, so T is read once per segment
+  // rather than once per Z_j.
+  arma::mat crossWMany(const MvMkPoint& pt, const arma::mat& Zs) const{
+    const arma::uword J = Zs.n_cols/nT;
+    arma::mat out(nT*nCoef, J);
     for(arma::uword r=0; r<nSeg; ++r){
       arma::uword len = segLen(r);
       if(len==0) continue;
-      arma::mat blk = T.cols(segStart(r), segStart(r)+len-1).t()*Z*
-        segFactor(pt, r);
-      out.subvec(nT*segStart(r), nT*segStart(r)+nT*len-1) =
-        arma::vectorise(blk);
+      arma::mat TZ = T.cols(segStart(r), segStart(r)+len-1).t()*Zs;
+      arma::mat Lr = segFactor(pt, r);
+      for(arma::uword j=0; j<J; ++j){
+        out.col(j).subvec(nT*segStart(r), nT*segStart(r)+nT*len-1) =
+          arma::vectorise(TZ.cols(j*nT, j*nT+nT-1)*Lr);
+      }
     }
     return out;
+  }
+
+  // W*s_j as n by t matrices side by side in out, which must already be n by
+  // t*J, one for each column s_j of Ss, sum_r T_r*S_rj*L_r', with T_r
+  // applied to every s_j in one product. out is written in place, so that a
+  // caller can pass a view of memory it already holds.
+  void multWMany(const MvMkPoint& pt, const arma::mat& Ss,
+                 arma::mat& out) const{
+    const arma::uword J = Ss.n_cols;
+    out.zeros();
+    for(arma::uword r=0; r<nSeg; ++r){
+      arma::uword len = segLen(r);
+      if(len==0) continue;
+      arma::uword off = nT*segStart(r);
+      arma::mat Lr = segFactor(pt, r);
+      arma::mat SL(len, nT*J);
+      for(arma::uword j=0; j<J; ++j){
+        arma::mat S = arma::reshape(Ss.col(j).subvec(off, off+nT*len-1),
+                                    len, nT);
+        SL.cols(j*nT, j*nT+nT-1) = S*Lr.t();
+      }
+      out += T.cols(segStart(r), segStart(r)+len-1)*SL;
+    }
   }
 
   void derivativesCoefficient(const MvMkPoint& pt, arma::vec& score,
@@ -1656,12 +1800,8 @@ private:
     const arma::uword nTot = (k+1)*nPar;
     score.zeros(nTot);
     arma::mat Cinv;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lc))){
-        Rcpp::stop("could not invert the Cholesky factor of C");
-      }
-      Cinv = Linv.t()*Linv;
+    if(!cholInverse(Cinv, pt.Lc)){
+      Rcpp::stop("could not invert the Cholesky factor of C");
     }
     arma::mat Wv(N, nTot, arma::fill::zeros);
     for(arma::uword g=0; g<=k; ++g){
@@ -1715,14 +1855,30 @@ private:
         Wv.col(g*nPar+q) = arma::vectorise(GA*E);
       }
     }
-    // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), column by column
-    arma::mat PW(N, nTot, arma::fill::zeros);
+    // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), for every working variate at once.
+    // Taken one at a time, each would read all of C^-1 and T, which costs
+    // more than the arithmetic; together they make one product with C^-1 and
+    // one with T per segment each way.
+    //
+    // Only Wv and PW are held with a row per record and trait, as
+    // RRBLUPMemUse counts them, since with many traits those two can be the
+    // largest matrices of the fit. A column of either is vec of an n by t
+    // matrix, so the memory of all of them is also n by t*nTot with the
+    // matrices side by side, and Wm and Pm view it that way without a copy.
+    // PW holds R^-1*w, then W*C^-1*W'*R^-1*w, then P*w, in place. A variate
+    // of a held term is zero, and so is its product with P.
+    arma::mat Wm(Wv.memptr(), n, nT*nTot, false, true);
+    arma::mat PW(N, nTot);
+    arma::mat Pm(PW.memptr(), n, nT*nTot, false, true);
     for(arma::uword j=0; j<nTot; ++j){
-      if(!arma::any(Wv.col(j))) continue;
-      arma::mat Wm = arma::reshape(Wv.col(j), n, nT);
-      arma::mat RW = Wm*pt.VeInv;
-      arma::vec x = Cinv*crossW(pt, RW);
-      PW.col(j) = arma::vectorise((Wm - multW(pt, x))*pt.VeInv);
+      Pm.cols(j*nT, j*nT+nT-1) = Wm.cols(j*nT, j*nT+nT-1)*pt.VeInv;
+    }
+    arma::mat Xs = Cinv*crossWMany(pt, Pm);
+    multWMany(pt, Xs, Pm);
+    Xs.reset();
+    for(arma::uword j=0; j<nTot; ++j){
+      Pm.cols(j*nT, j*nT+nT-1) =
+        (Wm.cols(j*nT, j*nT+nT-1) - Pm.cols(j*nT, j*nT+nT-1))*pt.VeInv;
     }
     AI = 0.5*(Wv.t()*PW);
     AI = 0.5*(AI+AI.t()); // rounding only
@@ -1899,11 +2055,13 @@ Rcpp::List solveMultiKernel(const arma::mat& y, const arma::mat& X,
 //' covariance matrices start with half of each trait's residual variance from
 //' the least squares fit assigned to the error and half shared equally among
 //' the random terms, with the correlation among the least squares residuals
-//' for every matrix. Five EM iterations follow, and then Newton steps in the
-//' Cholesky factors of the covariance matrices, as described for
+//' for every matrix. Each iteration takes a Newton step in the Cholesky
+//' factors of the covariance matrices, as described for
 //' \code{\link{solveRRBLUPMV}}, which keeps every matrix positive
-//' semidefinite. Iteration stops when the restricted log-likelihood changes
-//' by less than 1e-6.
+//' semidefinite. Unlike \code{\link{solveRRBLUPMV}}, it starts with no EM
+//' iterations, and an EM step is taken only when halving a Newton step does
+//' not keep the likelihood from falling. Iteration stops when the restricted
+//' log-likelihood changes by less than 1e-6.
 //'
 //' @param y a matrix with n rows and 1 column, or one column per trait for a
 //' multiple trait model

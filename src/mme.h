@@ -47,27 +47,41 @@ inline bool useRecordSide(arma::uword n, arma::uword m){
 // several random terms by average information.
 //
 // The record side works with V, the n by n variance matrix of the records.
-// Every likelihood evaluation forms, factors and inverts it and forms P, at
-// about n^3, and the traces of the terms add about n^2*c.
+// Every likelihood evaluation forms and factors it, and every iteration
+// inverts it to form P and takes a trace against each term's G_i, which is
+// formed once from the designs at about n^2*c.
 //
 // The coefficient side works with Henderson's mixed model equations, a c by
 // c system for c fixed and random effects. Forming T'*T for the design T of
-// all the effects costs n*c^2 once, after which every evaluation factors and
-// inverts the coefficient matrix, at about c^3, and forms the average
-// information from k+2 vectors of records, at about n*c*(k+2). extraCoef is
-// any further one-off cost of putting the model in that form, such as
-// decomposing the covariance matrices of the random terms.
+// all the effects costs n*c^2 once, after which every evaluation factors the
+// coefficient matrix and every iteration inverts its factor, at about c^3,
+// and forms the average information from k+2 vectors of records, at about
+// n*c*(k+2).
 //
-// The one-off cost is set against a typical number of evaluations, counting
-// step halvings. The crossover sits close to c equal to n, and memory
-// crosses over at the same place, since the two sides hold n^2 and c^2
-// doubles. The costs are written out so that the reasoning is visible.
-inline bool useCoefficientSide(arma::uword n, arma::uword c, arma::uword k,
-                               double extraCoef = 0.0){
+// The expression below charges the n^2*c of the record side to every
+// evaluation, and the cubes of the two sides alike. Neither is what the
+// code does now: n^2*c is mostly paid once, and timings of both sides over
+// 800 to 2400 records, with half to twice as many coefficients, found an
+// iteration of the record side costing about three times as much per n^3
+// as one of the coefficient side per c^3, because P and V take several
+// passes over memory that the c by c system does not. The two
+// misstatements offset each other, and the crossover the expression gives,
+// near c equal to 1.3*n, agrees with the measured one, near 1.2*n. Its
+// choices lost at most 3% against the faster side over those timings, and
+// one corrected term alone would move the crossover away from the measured
+// one, so the expression is kept as it is. Change it only with new
+// timings, and change its copies in fastModeCosts and RRBLUPMemUse in
+// R/GS.R with it: the first decides the route of the fast mode models with
+// these costs, and its constant for the conjugate gradient solve was
+// measured against them.
+//
+// Memory crosses over near the same place, since the two sides hold n^2 and
+// c^2 doubles.
+inline bool useCoefficientSide(arma::uword n, arma::uword c, arma::uword k){
   const double nEval = 10.0;
   const double dn = double(n), dc = double(c), dk = double(k);
   const double recordSide = nEval*(dn*dn*dn + dn*dn*dc);
-  const double coefficientSide = dn*dc*dc + extraCoef +
+  const double coefficientSide = dn*dc*dc +
     nEval*(dc*dc*dc + dn*dc*(dk+2.0));
   return coefficientSide < recordSide;
 }
@@ -333,45 +347,50 @@ inline arma::mat psdKernel(const arma::mat& K, const std::string& msg){
   return Ks;
 }
 
-// Z*K*Z', the covariance on the records implied by a covariance K among m
-// levels and an n by m design Z.
-//
-// When Z is an incidence matrix, with a single one in every row and zeros
-// elsewhere, as it is whenever each record belongs to exactly one level,
-// Z*K*Z' is K with its rows and columns picked out by the level of each
-// record. That costs n^2 against about n*m^2 for the dense products, which
-// matters most when K covers many more levels than there are records, such
-// as individuals with no record that are to be predicted. Checking Z costs
-// n*m, no more than reading it. Any other Z falls back to the products.
-inline arma::mat kernelOnRecords(const arma::mat& Z, const arma::mat& K){
+// Whether Z is an incidence matrix, with a single one in every row and zeros
+// elsewhere, as it is whenever each record belongs to exactly one level. If
+// it is, lev holds the level of each record, and Z*A is then A.rows(lev) and
+// A*Z' is A.cols(lev) for any A with one row, or column, per level. Those are
+// exact, because every sum in the products has a single nonzero term, and
+// they cost a copy rather than a matrix product. Checking Z costs n*m, no
+// more than reading it.
+inline bool incidenceLevels(const arma::mat& Z, arma::uvec& lev){
   const arma::uword n = Z.n_rows;
   const arma::uword m = Z.n_cols;
-  arma::uvec lev(n, arma::fill::zeros);
+  lev.zeros(n);
   std::vector<bool> seen(n, false);
-  bool incidence = true;
-  for(arma::uword j=0; (j<m) && incidence; ++j){
+  for(arma::uword j=0; j<m; ++j){
     const double* col = Z.colptr(j);
     for(arma::uword i=0; i<n; ++i){
       if(col[i]==0.0){
         continue;
       }
       if( (col[i]!=1.0) || seen[i] ){
-        incidence = false;
-        break;
+        return false;
       }
       seen[i] = true;
       lev(i) = j;
     }
   }
-  if(incidence){
-    for(arma::uword i=0; i<n; ++i){
-      if(!seen[i]){
-        incidence = false;
-        break;
-      }
+  for(arma::uword i=0; i<n; ++i){
+    if(!seen[i]){
+      return false;
     }
   }
-  if(incidence){
+  return true;
+}
+
+// Z*K*Z', the covariance on the records implied by a covariance K among m
+// levels and an n by m design Z.
+//
+// When Z is an incidence matrix, Z*K*Z' is K with its rows and columns picked
+// out by the level of each record; see incidenceLevels. That costs n^2
+// against about n*m^2 for the dense products, which matters most when K
+// covers many more levels than there are records, such as individuals with
+// no record that are to be predicted. Any other Z falls back to the products.
+inline arma::mat kernelOnRecords(const arma::mat& Z, const arma::mat& K){
+  arma::uvec lev;
+  if(incidenceLevels(Z, lev)){
     return K.submat(lev, lev);
   }
   return Z*K*Z.t();
