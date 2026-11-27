@@ -28,11 +28,20 @@
 // On the record side everything is done with V itself, which has the
 // dimension of the records whatever the kernels are. Each G_i is held as a
 // product L_i*R_i' of two thin matrices, L_i = Z_i*K_i and R_i = Z_i, or
-// L_i = R_i = M_i in the RR-BLUP form. When those have fewer columns than
-// there are records the n by n matrix G_i is never formed: G_i*v is
-// L_i*(R_i'*v) and tr(P*G_i) = tr((P*L_i)*R_i') is the sum of the
-// elementwise product of P*L_i and R_i. Otherwise forming G_i once is cheaper
-// than repeating those products in every iteration, and it is kept.
+// L_i = R_i = M_i in the RR-BLUP form. G_i is formed once and kept when the
+// variance components are estimated and L_i has at least an eighth as many
+// columns as there are records, or whenever it has at least as many. Without
+// it, every evaluation of the likelihood forms L_i*R_i' into V and every
+// iteration takes P*L_i for tr(P*G_i) = tr((P*L_i)*R_i'), the sum of the
+// elementwise product of P*L_i and R_i, each costing about 2*n^2*m for m
+// columns. Forming G_i once costs the same as one of those products, so it
+// pays for itself in the first iteration, but it holds n^2 more numbers. At
+// an eighth, the two products of a term already cost more in an iteration
+// than the Cholesky factorization of V, about n^3/3, while a thinner term
+// adds little to an iteration and the memory would not be worth it. With the variance components given,
+// V is formed and factored only once, so keeping a thinner G_i would cost
+// memory and save nothing. A G_i that is not kept is applied to a vector as
+// G_i*v = L_i*(R_i'*v).
 //
 // On the coefficient side everything is done with Henderson's mixed model
 // equations. Every term is written as G_i = W_i*W_i' with effects
@@ -138,12 +147,15 @@ public:
   // and the effects of the term are F_i times those of W_i, or those of W_i
   // themselves when F_i is null. Where Rlev_ is not null on the record side,
   // R_i is an incidence matrix with those levels, and G_i = L_i*R_i' is taken
-  // as a copy of columns of L_i; see incidenceLevels.
+  // as a copy of columns of L_i; see incidenceLevels. estimating says whether
+  // the variance components will be estimated, which decides which G_i are
+  // kept on the record side; see the top of this file.
   MultiKernelREML(const arma::vec& y_, const arma::mat& X, Side side_,
                   const std::vector<const arma::mat*>& L_,
                   const std::vector<const arma::mat*>& R_,
                   const std::vector<const arma::mat*>& F_,
-                  const std::vector<const arma::uvec*>& Rlev_)
+                  const std::vector<const arma::uvec*>& Rlev_,
+                  bool estimating)
     : side(side_), y(y_), L(L_), R(R_), F(F_), Rlev(Rlev_){
     k = L.size();
     setFixed(X);
@@ -174,7 +186,7 @@ public:
       for(arma::uword i=0; i<k; ++i){
         const arma::mat& Li = *L[i];
         const arma::mat& Ri = *R[i];
-        if(Li.n_cols>=n){
+        if( (Li.n_cols>=n) || (estimating && (8*Li.n_cols>=n)) ){
           dense[i] = true;
           G(i) = (Rlev[i]!=nullptr) ? arma::mat(Li.cols(*Rlev[i])) :
             arma::mat(Li*Ri.t());
@@ -973,7 +985,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
   }
 
   arma::vec yv = y.col(0);
-  MultiKernelREML reml(yv, X, side, L, R, F, Rlev);
+  MultiKernelREML reml(yv, X, side, L, R, F, Rlev, fixedTheta==nullptr);
   RemlPoint pt;
   int iter = 0;
   if(fixedTheta!=nullptr){

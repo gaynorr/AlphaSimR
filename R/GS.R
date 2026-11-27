@@ -3334,11 +3334,12 @@ RRBLUPMemUse = function(nInd, nMarker, model="RRBLUP", nTraits=1L,
       # Cholesky factors of the current and trial points and the inverse of
       # a factor
       doubles = 2*nKernel*n*m+5*nCoef^2
-    }else if(m<n){
+    }else if(8*m<n){
       # The average information matrix is reached through the dosages
       doubles = 2*nKernel*n*m+(nKernel+3)*n^2
     }else{
-      # and through square matrices of the records
+      # and through square matrices of the records, which the REML fit keeps
+      # for any term with at least an eighth as many markers as records
       doubles = nKernel*n*m+(3*nKernel+3)*n^2
     }
   }else if(model %in% c("RRBLUP_D2","RRBLUP_GCA2","RRBLUP_SCA2")){
