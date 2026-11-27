@@ -79,6 +79,29 @@ double sumProd(const arma::mat& A, const arma::mat& B){
   return acc;
 }
 
+// The inverse of a symmetric positive definite matrix from its lower
+// Cholesky factor L, by LAPACK's potri. That inverts L and forms
+// L'^-1*L^-1 in place, using the triangle of each, in about two thirds of
+// the cost of inverting L and then multiplying the inverse by its
+// transpose as general matrices. potri fills the lower triangle only, and
+// it is copied to the upper, so the result is exactly symmetric. Returns
+// false if L has a zero on its diagonal.
+bool cholInverse(arma::mat& out, const arma::mat& L){
+  out = L;
+  if(out.n_rows==0){
+    return true;
+  }
+  char uplo = 'L';
+  arma::blas_int bn = arma::blas_int(out.n_rows);
+  arma::blas_int info = 0;
+  arma::lapack::potri(&uplo, &bn, out.memptr(), &bn, &info);
+  if(info!=0){
+    return false;
+  }
+  out = arma::symmatl(out);
+  return true;
+}
+
 enum class Side { record, coefficient };
 
 // A contiguous block of columns of T that is in the equations, and where its
@@ -113,12 +136,15 @@ class MultiKernelREML {
 public:
   // On the record side G_i = L_i*R_i'. On the coefficient side L_i = R_i = W_i
   // and the effects of the term are F_i times those of W_i, or those of W_i
-  // themselves when F_i is null.
+  // themselves when F_i is null. Where Rlev_ is not null on the record side,
+  // R_i is an incidence matrix with those levels, and G_i = L_i*R_i' is taken
+  // as a copy of columns of L_i; see incidenceLevels.
   MultiKernelREML(const arma::vec& y_, const arma::mat& X, Side side_,
                   const std::vector<const arma::mat*>& L_,
                   const std::vector<const arma::mat*>& R_,
-                  const std::vector<const arma::mat*>& F_)
-    : side(side_), y(y_), L(L_), R(R_), F(F_){
+                  const std::vector<const arma::mat*>& F_,
+                  const std::vector<const arma::uvec*>& Rlev_)
+    : side(side_), y(y_), L(L_), R(R_), F(F_), Rlev(Rlev_){
     k = L.size();
     setFixed(X);
     meanDiag.set_size(k);
@@ -150,7 +176,8 @@ public:
         const arma::mat& Ri = *R[i];
         if(Li.n_cols>=n){
           dense[i] = true;
-          G(i) = Li*Ri.t();
+          G(i) = (Rlev[i]!=nullptr) ? arma::mat(Li.cols(*Rlev[i])) :
+            arma::mat(Li*Ri.t());
           G(i) = 0.5*(G(i)+G(i).t()); // rounding only
         }
       }
@@ -194,6 +221,7 @@ public:
     L.assign(k, nullptr);
     R.assign(k, nullptr);
     F.assign(k, nullptr);
+    Rlev.assign(k, nullptr);
     meanDiag.set_size(k);
     rankBound = rank;
     confounded.zeros(k);
@@ -541,6 +569,7 @@ private:
   arma::vec b0; // that least squares fit
   arma::mat Xr;
   std::vector<const arma::mat*> L, R, F;
+  std::vector<const arma::uvec*> Rlev;
   arma::vec meanDiag, rankBound;
   arma::uvec estimable, confounded;
   double vy = 1.0, veFloor = 0.0;
@@ -582,6 +611,8 @@ private:
       if(pt.theta(i)==0.0) continue;
       if(dense[i]){
         V += pt.theta(i)*G(i);
+      }else if(Rlev[i]!=nullptr){
+        V += pt.theta(i)*L[i]->cols(*Rlev[i]);
       }else{
         V += pt.theta(i)*((*L[i])*(R[i]->t()));
       }
@@ -618,12 +649,8 @@ private:
     score.set_size(k+1);
     // P = V^-1 - V^-1*X*(X'*V^-1*X)^-1*X'*V^-1, with V^-1 = Lv'^-1*Lv^-1
     arma::mat P;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
-        Rcpp::stop("could not invert the Cholesky factor of V");
-      }
-      P = Linv.t()*Linv;
+    if(!cholInverse(P, pt.Lv)){
+      Rcpp::stop("could not invert the Cholesky factor of V");
     }
     P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
     P = 0.5*(P+P.t()); // rounding only
@@ -863,6 +890,10 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
 
   arma::field<arma::mat> D(k), Fs(k);
   std::vector<const arma::mat*> L(k), R(k), F(k, nullptr);
+  // The level of each record for a Z_i that is an incidence matrix, so that
+  // products with Z_i can be taken as copies; see incidenceLevels
+  arma::field<arma::uvec> lev(k);
+  std::vector<const arma::uvec*> Rlev(k, nullptr);
   for(arma::uword i=0; i<k; ++i){
     if(rrForm){
       L[i] = &Zlist(i);
@@ -870,6 +901,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       continue;
     }
     const arma::mat& Z = Zlist(i);
+    bool incidence = incidenceLevels(Z, lev(i));
     // K_i is symmetrized first so that Z_i*K_i*Z_i' is symmetric
     arma::mat K = 0.5*(Klist(i)+Klist(i).t());
     if(side==Side::record){
@@ -882,17 +914,37 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
                     ": each K must be positive semidefinite");
       // Z_i*K_i is formed once, and the BLUP K_i*Z_i'*P*y can be read off
       // as (Z_i*K_i)'*P*y
-      D(i) = Z*K;
+      if(incidence){
+        D(i) = K.rows(lev(i));
+        Rlev[i] = &lev(i);
+      }else{
+        D(i) = Z*K;
+      }
       L[i] = &D(i);
       R[i] = &Zlist(i);
     }else{
-      // K_i = F_i*F_i' with F_i = Q*diag(sqrt(lambda)) over the positive
-      // eigenvalues, so a singular K_i is handled by having fewer columns.
-      // Every positive eigenvalue is kept, however small next to the
-      // largest: Z_i can scale a direction back up, so whether it matters is
-      // only known after Z_i is applied, and dropping it here would fit a
-      // different model from the record side.
+      // Any F_i with K_i = F_i*F_i' gives the same model, since only
+      // Z_i*F_i*F_i'*Z_i' enters the likelihood and the BLUPs F_i*a_i do not
+      // depend on which factor is used. A positive definite K_i, which is
+      // the usual case, is recognized by its Cholesky factorization, and its
+      // Cholesky factor serves. That costs a small fraction of an
+      // eigendecomposition with its eigenvectors.
+      //
+      // Otherwise K_i = F_i*F_i' with F_i = Q*diag(sqrt(lambda)) over the
+      // positive eigenvalues, so a singular K_i is handled by having fewer
+      // columns. Every positive eigenvalue is kept, however small next to
+      // the largest: Z_i can scale a direction back up, so whether it
+      // matters is only known after Z_i is applied, and dropping it here
+      // would fit a different model from the record side.
       arma::uword m = K.n_rows;
+      if( (m>0) && arma::chol(Fs(i), K, "lower") ){
+        D(i) = incidence ? arma::mat(Fs(i).rows(lev(i))) :
+          arma::mat(Z*Fs(i));
+        L[i] = &D(i);
+        R[i] = &D(i);
+        F[i] = &Fs(i);
+        continue;
+      }
       arma::vec lambda(m);
       arma::mat Q(m, m);
       if(m>0){
@@ -909,7 +961,11 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
       }else{
         Fs(i).set_size(0, 0);
       }
-      D(i) = Z*Fs(i);
+      if(incidence && (Fs(i).n_rows==m)){
+        D(i) = Fs(i).rows(lev(i));
+      }else{
+        D(i) = Z*Fs(i);
+      }
       L[i] = &D(i);
       R[i] = &D(i);
       F[i] = &Fs(i);
@@ -917,7 +973,7 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
   }
 
   arma::vec yv = y.col(0);
-  MultiKernelREML reml(yv, X, side, L, R, F);
+  MultiKernelREML reml(yv, X, side, L, R, F, Rlev);
   RemlPoint pt;
   int iter = 0;
   if(fixedTheta!=nullptr){
@@ -1526,12 +1582,8 @@ private:
     const arma::uword nTot = (k+1)*nPar;
     score.zeros(nTot);
     arma::mat P;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lv))){
-        Rcpp::stop("could not invert the Cholesky factor of V");
-      }
-      P = Linv.t()*Linv;
+    if(!cholInverse(P, pt.Lv)){
+      Rcpp::stop("could not invert the Cholesky factor of V");
     }
     P -= pt.VinvX*pt.Ainv*pt.VinvX.t();
     P = 0.5*(P+P.t()); // rounding only
@@ -1656,12 +1708,8 @@ private:
     const arma::uword nTot = (k+1)*nPar;
     score.zeros(nTot);
     arma::mat Cinv;
-    {
-      arma::mat Linv;
-      if(!arma::inv(Linv, arma::trimatl(pt.Lc))){
-        Rcpp::stop("could not invert the Cholesky factor of C");
-      }
-      Cinv = Linv.t()*Linv;
+    if(!cholInverse(Cinv, pt.Lc)){
+      Rcpp::stop("could not invert the Cholesky factor of C");
     }
     arma::mat Wv(N, nTot, arma::fill::zeros);
     for(arma::uword g=0; g<=k; ++g){
