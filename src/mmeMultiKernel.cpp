@@ -1772,11 +1772,14 @@ private:
     return out;
   }
 
-  // W*s_j as n by t matrices side by side, one for each column s_j of Ss,
-  // sum_r T_r*S_rj*L_r', with T_r applied to every s_j in one product
-  arma::mat multWMany(const MvMkPoint& pt, const arma::mat& Ss) const{
+  // W*s_j as n by t matrices side by side in out, which must already be n by
+  // t*J, one for each column s_j of Ss, sum_r T_r*S_rj*L_r', with T_r
+  // applied to every s_j in one product. out is written in place, so that a
+  // caller can pass a view of memory it already holds.
+  void multWMany(const MvMkPoint& pt, const arma::mat& Ss,
+                 arma::mat& out) const{
     const arma::uword J = Ss.n_cols;
-    arma::mat out(n, nT*J, arma::fill::zeros);
+    out.zeros();
     for(arma::uword r=0; r<nSeg; ++r){
       arma::uword len = segLen(r);
       if(len==0) continue;
@@ -1790,7 +1793,6 @@ private:
       }
       out += T.cols(segStart(r), segStart(r)+len-1)*SL;
     }
-    return out;
   }
 
   void derivativesCoefficient(const MvMkPoint& pt, arma::vec& score,
@@ -1856,28 +1858,27 @@ private:
     // P*w = R^-1*(w - W*C^-1*W'*R^-1*w), for every working variate at once.
     // Taken one at a time, each would read all of C^-1 and T, which costs
     // more than the arithmetic; together they make one product with C^-1 and
-    // one with T per segment each way. A variate of a held term is zero and
-    // stays so.
-    std::vector<arma::uword> live;
+    // one with T per segment each way.
+    //
+    // Only Wv and PW are held with a row per record and trait, as
+    // RRBLUPMemUse counts them, since with many traits those two can be the
+    // largest matrices of the fit. A column of either is vec of an n by t
+    // matrix, so the memory of all of them is also n by t*nTot with the
+    // matrices side by side, and Wm and Pm view it that way without a copy.
+    // PW holds R^-1*w, then W*C^-1*W'*R^-1*w, then P*w, in place. A variate
+    // of a held term is zero, and so is its product with P.
+    arma::mat Wm(Wv.memptr(), n, nT*nTot, false, true);
+    arma::mat PW(N, nTot);
+    arma::mat Pm(PW.memptr(), n, nT*nTot, false, true);
     for(arma::uword j=0; j<nTot; ++j){
-      if(arma::any(Wv.col(j))) live.push_back(j);
+      Pm.cols(j*nT, j*nT+nT-1) = Wm.cols(j*nT, j*nT+nT-1)*pt.VeInv;
     }
-    const arma::uword J = live.size();
-    arma::mat Wms(n, nT*J);
-    for(arma::uword i=0; i<J; ++i){
-      Wms.cols(i*nT, i*nT+nT-1) = arma::reshape(Wv.col(live[i]), n, nT);
-    }
-    arma::mat RWs(n, nT*J);
-    for(arma::uword i=0; i<J; ++i){
-      RWs.cols(i*nT, i*nT+nT-1) = Wms.cols(i*nT, i*nT+nT-1)*pt.VeInv;
-    }
-    arma::mat Xs = Cinv*crossWMany(pt, RWs);
-    RWs.reset();
-    arma::mat Rs = Wms - multWMany(pt, Xs);
-    arma::mat PW(N, nTot, arma::fill::zeros);
-    for(arma::uword i=0; i<J; ++i){
-      PW.col(live[i]) =
-        arma::vectorise(Rs.cols(i*nT, i*nT+nT-1)*pt.VeInv);
+    arma::mat Xs = Cinv*crossWMany(pt, Pm);
+    multWMany(pt, Xs, Pm);
+    Xs.reset();
+    for(arma::uword j=0; j<nTot; ++j){
+      Pm.cols(j*nT, j*nT+nT-1) =
+        (Wm.cols(j*nT, j*nT+nT-1) - Pm.cols(j*nT, j*nT+nT-1))*pt.VeInv;
     }
     AI = 0.5*(Wv.t()*PW);
     AI = 0.5*(AI+AI.t()); // rounding only
