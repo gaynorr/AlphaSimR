@@ -881,8 +881,9 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
 
   // The number of coefficients is not known until the covariance matrices
   // are factored, so the side is chosen on the number of columns, which is
-  // an upper bound for it. Factoring a covariance matrix adds the cube of
-  // its size to the coefficient side.
+  // an upper bound for it. Both sides factor each covariance matrix once by
+  // Cholesky, the record side to check it and the coefficient side for its
+  // factor, so that cost does not favor either and is left out.
   Side side;
   if(sideRequest==1){
     side = Side::record;
@@ -890,14 +891,10 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
     side = Side::coefficient;
   }else{
     arma::uword c = X.n_cols;
-    double extra = 0.0;
     for(arma::uword i=0; i<k; ++i){
-      double m = double(Zlist(i).n_cols);
       c += Zlist(i).n_cols;
-      if(!rrForm) extra += m*m*m;
     }
-    side = useCoefficientSide(n, c, k, extra) ? Side::coefficient :
-      Side::record;
+    side = useCoefficientSide(n, c, k) ? Side::coefficient : Side::record;
   }
 
   arma::field<arma::mat> D(k), Fs(k);
