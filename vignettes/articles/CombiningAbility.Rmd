@@ -25,38 +25,37 @@ knitr::opts_chunk$set(collapse=TRUE, comment="#>")
 ## Introduction and reading guide
 
 General combining ability (GCA) describes a parent's average performance
-in crosses with a specified set of mates.
-Specific combining ability (SCA) describes how a particular cross
-departs from the performance predicted by the two parents' GCA effects
-[@sprague1942General].
-Both depend on the parents and crossing design used to define them.
+in crosses with a specified set of mates. Specific combining ability
+(SCA) describes how a particular cross departs from the performance
+predicted by the two parents' GCA effects [@sprague1942General]. Both
+depend on the parents and crossing design used to define them.
 
 This article uses a small, complete factorial crossing design between
-two sets of inbred diploid parents.
-It distinguishes the cross means returned by `AlphaSimR` from centered GCA
-effects and SCA deviations.
-The companion `vignette("traits")` introduces trait specification,
-the [Quantitative Genetics](QuanGen.html) article explains genetic values and their variances, and
-the [Genetic Recombination](GeneticRecombination.html) article explains inheritance during crossing.
+two sets of inbred diploid parents. It distinguishes the cross means
+returned by `AlphaSimR` from centered GCA effects and SCA deviations.
+The companion `vignette("traits")` introduces trait specification, the
+[Quantitative Genetics](QuanGen.html) article explains genetic values
+and their variances, and the [Genetic
+Recombination](GeneticRecombination.html) article explains inheritance
+during crossing.
 
 | If you want to understand... | Start with... |
-|:--|:--|
+|:---|:---|
 | What GCA and SCA mean | [A decomposition of cross performance](#decomposition) |
 | What `calcGCA()` returns | [A complete crossing example](#crossing) |
 | How testers affect GCA | [Changing the tester set](#testers) |
 | How GCA and SCA contribute to variation | [Variance among crosses](#variance) |
 | How to use combining ability in selection | [Selection and prediction](#selection) |
 
-Run the examples in order.
-Every function that takes a `simParam` argument is given one explicitly,
-so that the examples can coexist with other simulations in an R session.
+Run the examples in order. Every function that takes a `simParam`
+argument is given one explicitly, so that the examples can coexist with
+other simulations in an R session.
 
 ## A decomposition of cross performance {#decomposition}
 
 Let $M_{ij}$ be the mean genetic value of offspring from female parent
-$i$ and male parent $j$.
-In a complete factorial design, every female is crossed with every male.
-Giving each cross equal weight, define:
+$i$ and male parent $j$. In a complete factorial design, every female is
+crossed with every male. Giving each cross equal weight, define:
 
 $$
 \begin{aligned}
@@ -67,34 +66,40 @@ s_{ij} &= M_{ij} - \mu - g_{F_i} - g_{M_j}.
 \end{aligned}
 $$
 
-The centered GCA effects are $g_{F_i}$ and $g_{M_j}$,
-and the SCA deviation is $s_{ij}$.
-Thus:
+The centered GCA effects are $g_{F_i}$ and $g_{M_j}$, and the SCA
+deviation is $s_{ij}$. Thus:
 
 $$M_{ij} = \mu + g_{F_i} + g_{M_j} + s_{ij}.$$
 
-The GCA effects average to zero within each parental set.
-The SCA matrix has zero row and column means.
-A positive SCA deviation means that a cross performs better than
-predicted by the two GCA effects; it does not necessarily mean that the
-cross has the highest genetic value.
+The GCA effects average to zero within each parental set. The SCA matrix
+has zero row and column means. A positive SCA deviation means that a
+cross performs better than predicted by the two GCA effects; it does not
+necessarily mean that the cross has the highest genetic value.
 
-This is a decomposition across crosses.
-It is not the same as the breeding value and non-additive deviation
-decomposition of individuals returned by `genParam()`.
-In particular, SCA is not generally equal to `dd()` or `nd()`, and GCA
-effects should not automatically be equated with `bv()` from either
-parental population.
-The reference mates and centering differ.
-Non-additive genotypic effects can influence both average cross
-performance and cross-specific departures.
+This is a decomposition across crosses, whereas `genParam()` decomposes
+the genetic values of individuals into breeding values and dominance
+deviations. The two are closely related. In a factorial between two sets
+of parents, $\mu + g_{F_i} + g_{M_j}$ corresponds to the hybrid's
+breeding value and $s_{ij}$ to its dominance deviation, and in large
+designs `bv()` and `dd()` of the hybrids are close to them. They need
+not agree exactly, because they are calculated differently. `genParam()`
+estimates an average effect for each locus separately, by regression on
+allele dosage in the hybrid population, and gives an allele the same
+effect whichever parent it came from. The GCA effects average over the
+crosses actually made. They are therefore a regression on parental
+identity rather than on loci, and they also absorb differences in allele
+frequency between the two parental sets and linkage disequilibrium among
+the loci carried by a small number of parents. Nor are GCA effects the
+`bv()` of the parents within their own populations, which refer to
+random mating within that population rather than crossing to the other
+set. The [comparison with genParam](#genparam) below checks how close
+the two are for the example.
 
 ## A complete crossing example {#crossing}
 
 We create six female and six male inbred lines, all drawn from the same
-founder population.
-These are two sets of parents, not simulated heterotic groups.
-The trait includes additive and dominance effects.
+founder population. These are two sets of parents, not simulated
+heterotic groups. The trait includes additive and dominance effects.
 Because the diploid parents are fully inbred, each cross has a single F1
 genotype, so its genetic value also represents its family mean.
 
@@ -113,30 +118,28 @@ combining = calcGCA(hybrids, use="gv")
 ```
 
 `returnHybridPop=TRUE` calculates hybrid values without retaining their
-full genotypes.
-It assumes that both sets of parents are fully inbred, which holds here
-because they were created from inbred founders.
-The assumption is not checked: parents that are not fully inbred give
-incorrect hybrid values without an error.
-Use `returnHybridPop=FALSE` when offspring genotypes are needed, for
-example for subsequent crossing or genomic prediction.
+full genotypes. It assumes that both sets of parents are fully inbred,
+which holds here because they were created from inbred founders. The
+assumption is not checked: parents that are not fully inbred give
+incorrect hybrid values without an error. Use `returnHybridPop=FALSE`
+when offspring genotypes are needed, for example for subsequent crossing
+or genomic prediction.
 
 ### Means returned by calcGCA
 
 For this balanced design, `calcGCA()` returns:
 
-| Output | Meaning |
-|:--|:--|
+| Output | Meaning                                       |
+|:-------|:----------------------------------------------|
 | `GCAf` | Mean cross performance for each female parent |
-| `GCAm` | Mean cross performance for each male parent |
-| `SCA` | Mean performance of each female-by-male cross |
+| `GCAm` | Mean cross performance for each male parent   |
+| `SCA`  | Mean performance of each female-by-male cross |
 
 Despite their names, these outputs retain the overall mean: `SCA` is
-**not** the centered SCA deviation $s_{ij}$.
-We calculate the centered quantities below.
-The `id` column identifies parents or crosses, and `Trait1` contains
-values for the first trait.
-Cross IDs join the mother and father IDs with an underscore.
+**not** the centered SCA deviation $s_{ij}$. We calculate the centered
+quantities below. The `id` column identifies parents or crosses, and
+`Trait1` contains values for the first trait. Cross IDs join the mother
+and father IDs with an underscore.
 
 ```{r combining-means}
 combining$GCAf
@@ -190,18 +193,16 @@ stopifnot(isTRUE(all.equal(
 ```
 
 Each cell in `sca` is the residual after accounting for both parents'
-average cross performance.
-Dominance permits such departures even though every offspring within a
-cross has the same genotype.
-SCA therefore does not require segregation within a family.
+average cross performance. Dominance permits such departures even though
+every offspring within a cross has the same genotype. SCA therefore does
+not require segregation within a family.
 
 ## Changing the tester set {#testers}
 
-GCA is defined relative to a set of mates.
-Here we keep the female lines fixed and compare their mean performance
-against all six males with that against the first three males.
-`setPhenoGCA()` makes the testcrosses and averages their performance for
-each candidate parent.
+GCA is defined relative to a set of mates. Here we keep the female lines
+fixed and compare their mean performance against all six males with that
+against the first three males. `setPhenoGCA()` makes the testcrosses and
+averages their performance for each candidate parent.
 
 ```{r tester-comparison}
 allTesters = setPhenoGCA(females, testers=males, use="gv",
@@ -220,41 +221,37 @@ round(cbind(
 ```
 
 Both the mean and the centered GCA effects can change when testers
-change; rankings can also change.
-A parent therefore has combining ability relative to a specified tester
-set, rather than a single GCA that applies to every breeding population.
+change; rankings can also change. A parent therefore has combining
+ability relative to a specified tester set, rather than a single GCA
+that applies to every breeding population.
 
 With `onlyPheno=FALSE`, `setPhenoGCA()` returns the candidate population
 with these testcross means stored in its phenotype slot, and with its
 `fixEff` slot set to the value of the `fixEff` argument, which genomic
-selection models read.
-The candidates' own genetic values are unchanged.
+selection models read. The candidates' own genetic values are unchanged.
 The `inbred=TRUE` option assumes that both candidates and testers are
-fully inbred, as for `hybridCross()` above, and does not check it.
-With `inbred=FALSE`, the function samples one offspring per
-candidate-tester pair and averages those sampled values.
-Segregation therefore adds sampling variation even with `use="gv"`.
-The `reps` argument, like `varE`, `h2` and `H2`, applies only with
-`use="pheno"` and is ignored with `use="gv"`.
-It reduces phenotypic error; it does not increase the number of
-offspring sampled per pair.
-`hybridCross()` and `setPhenoGCA()` make one offspring per pair.
-To average several offspring per cross, generate them with the
-`nProgeny` argument of `makeCross2()` and summarize their values
-explicitly.
+fully inbred, as for `hybridCross()` above, and does not check it. With
+`inbred=FALSE`, the function samples one offspring per candidate-tester
+pair and averages those sampled values. Segregation therefore adds
+sampling variation even with `use="gv"`. The `reps` argument, like
+`varE`, `h2` and `H2`, applies only with `use="pheno"` and is ignored
+with `use="gv"`. It reduces phenotypic error; it does not increase the
+number of offspring sampled per pair. `hybridCross()` and
+`setPhenoGCA()` make one offspring per pair. To average several
+offspring per cross, generate them with the `nProgeny` argument of
+`makeCross2()` and summarize their values explicitly.
 
 ## Variance among crosses {#variance}
 
 For the complete, equally weighted design above, the centered GCA and
-SCA contributions are orthogonal across crosses.
-Consequently:
+SCA contributions are orthogonal across crosses. Consequently:
 
 $$\operatorname{Var}(M_{ij}) =
 \operatorname{Var}(g_{F_i}) + \operatorname{Var}(g_{M_j}) +
 \operatorname{Var}(s_{ij}).$$
 
-We use population variances, dividing by the number of values, as in
-the [Quantitative Genetics](QuanGen.html) article.
+We use population variances, dividing by the number of values, as in the
+[Quantitative Genetics](QuanGen.html) article.
 
 ```{r combining-variances}
 populationVariance = function(x) mean((x - mean(x))^2)
@@ -268,16 +265,15 @@ stopifnot(abs(sum(components) -
 ```
 
 These are descriptive variances for the chosen crosses, not estimates of
-universal GCA or SCA variance components.
-The simple sum relies on the complete design and equal weights.
-In an incomplete or unbalanced design, row and column means alone do not
-provide this orthogonal partition.
-`calcGCA()` uses an additive female-plus-male model to adjust parental
-means for unbalanced designs; its `SCA` output remains the observed
-cross means.
-Each offspring record has equal weight in that fit, while fitted
-parental means average equally over the opposite set of parents.
-Incomplete designs need to be connected to identify parental effects.
+universal GCA or SCA variance components. The simple sum relies on the
+complete design and equal weights. In an incomplete or unbalanced
+design, row and column means alone do not provide this orthogonal
+partition. `calcGCA()` uses an additive female-plus-male model to adjust
+parental means for unbalanced designs; its `SCA` output remains the
+observed cross means. Each offspring record has equal weight in that
+fit, while fitted parental means average equally over the opposite set
+of parents. Incomplete designs need to be connected to identify parental
+effects.
 
 When one side contains only one parent, as for crosses to a single
 tester, the GCA of each parent on the other side is the mean of its
@@ -286,41 +282,73 @@ records, so repeated records per cross are averaged.
 Estimating variance components from noisy trials requires an appropriate
 statistical model and an informative design.
 
+### Comparison with genParam {#genparam}
+
+To compare the decomposition across crosses with the breeding values and
+dominance deviations of individuals, make the same crosses again with
+their genotypes retained, so that `genParam()` can be applied to them.
+Each cross has a single genotype, so its genetic value is the same as in
+`M`.
+
+```{r genparam-comparison}
+hybridGenotypes = hybridCross(females, males, crossPlan="testcross",
+                              simParam=SPgca)
+hybridParam = genParam(hybridGenotypes, simParam=SPgca)
+
+rowIndex = match(hybridGenotypes@mother, females@id)
+colIndex = match(hybridGenotypes@father, males@id)
+stopifnot(isTRUE(all.equal(gv(hybridGenotypes)[, 1],
+                           M[cbind(rowIndex, colIndex)],
+                           check.attributes=FALSE)))
+
+gcaSum = gcaFemale[rowIndex] + gcaMale[colIndex]
+scaDeviation = sca[cbind(rowIndex, colIndex)]
+round(c(GCAwithBV=cor(gcaSum, hybridParam$bv[, 1]),
+        SCAwithDD=cor(scaDeviation, hybridParam$dd[, 1])), 3)
+round(rbind(
+  combiningAbility=c(additive=sum(components[c("femaleGCA", "maleGCA")]),
+                     dominance=unname(components["SCA"])),
+  genParam=c(additive=hybridParam$varA[1],
+             dominance=hybridParam$varD[1])
+), 3)
+```
+
+The GCA sum and SCA deviation are highly correlated with `bv()` and
+`dd()` of the hybrids, and their variances are similar to `varA` and
+`varD`, but with six parents on each side they are not equal. The
+agreement improves as more parents are crossed.
+
 ## Selection and prediction {#selection}
 
 The examples use `use="gv"` to expose the simulated genetic values.
-Using phenotypes introduces environmental variation.
-For example, `setPhenoGCA(..., use="pheno", varE=..., reps=...)`
-averages simulated testcross phenotypes rather than genetic values.
-Specify the trial error and replication to represent the intended
-testing scheme.
+Using phenotypes introduces environmental variation. For example,
+`setPhenoGCA(..., use="pheno", varE=..., reps=...)` averages simulated
+testcross phenotypes rather than genetic values. Specify the trial error
+and replication to represent the intended testing scheme.
 
 For choosing parents, compare their average performance against the
-relevant tester population.
-For choosing a commercial hybrid, compare its total predicted
-performance, including the mean, both GCA effects, and SCA.
-Selecting the largest SCA residual alone can overlook crosses with
-better total performance.
+relevant tester population. For choosing a commercial hybrid, compare
+its total predicted performance, including the mean, both GCA effects,
+and SCA. Selecting the largest SCA residual alone can overlook crosses
+with better total performance.
 
 The genomic prediction functions `RRBLUP_GCA()` and `RRBLUP_SCA()` fit
 marker models to hybrid data; they do not simply tabulate cross means as
-`calcGCA()` does.
-The former fits separate parental-origin additive marker effects, and
-the latter also includes dominance effects.
-Both require training offspring with genotypes and retained parental
-origin, so use `returnHybridPop=FALSE` when generating those offspring.
-With `setEBV(..., value="gv")`, both models predict total hybrid
-genetic values; the SCA model does not return a centered SCA deviation
-through this option.
-Both can fit several traits at once, with every trait recorded on every
-training offspring, by giving `traits` more than one trait.
-See `vignette("GenomicSelection")` for model choice and prediction.
+`calcGCA()` does. The former fits separate parental-origin additive
+marker effects, and the latter also includes dominance effects. Both
+require training offspring with genotypes and retained parental origin,
+so use `returnHybridPop=FALSE` when generating those offspring. With
+`setEBV(..., value="gv")`, both models predict total hybrid genetic
+values; the SCA model does not return a centered SCA deviation through
+this option. Both can fit several traits at once, with every trait
+recorded on every training offspring, by giving `traits` more than one
+trait. See `vignette("GenomicSelection")` for model choice and
+prediction.
 
 As an extension, replace the inbred parents with outbred parents and
-simulate several offspring per cross using `makeCross2()`.
-Cross means will then be estimated from segregating offspring.
-Compare variation among cross means with variation within crosses,
-keeping this family partition distinct from the GCA/SCA partition among
-cross means.
+simulate several offspring per cross using `makeCross2()`. Cross means
+will then be estimated from segregating offspring. Compare variation
+among cross means with variation within crosses, keeping this family
+partition distinct from the GCA/SCA partition among cross means.
 
 ## References
