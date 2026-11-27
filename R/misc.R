@@ -457,27 +457,16 @@ editGenomeTopQtl = function(pop, ind, nQtl, trait = 1, increase = TRUE,
       }
       QtlGenoLoc = QtlGeno[QtlEffRank[Qtl]]
       if (QtlEff[QtlEffRank[Qtl]] > 0) {
-        if (QtlGenoLoc < 2) {
-          nQtlInd = nQtlInd + 1
-          ret[[1]][nQtlInd] = QtlEffRank[Qtl]
-          ret[[2]][nQtlInd] = simParam$traits[[trait]]@lociLoc[QtlEffRank[Qtl]]
-          if (increase) {
-            ret[[4]][nQtlInd] = 1
-          } else {
-            ret[[4]][nQtlInd] = 0
-          }
-        }
+        targetAllele = if (increase) 1 else 0
       } else {
-        if (QtlGenoLoc > 0) {
-          nQtlInd = nQtlInd + 1
-          ret[[1]][nQtlInd] = QtlEffRank[Qtl]
-          ret[[2]][nQtlInd] = simParam$traits[[trait]]@lociLoc[QtlEffRank[Qtl]]
-          if (increase) {
-            ret[[4]][nQtlInd] = 0
-          } else {
-            ret[[4]][nQtlInd] = 1
-          }
-        }
+        targetAllele = if (increase) 0 else 1
+      }
+      if ((targetAllele == 1 && QtlGenoLoc < pop@ploidy) ||
+          (targetAllele == 0 && QtlGenoLoc > 0)) {
+        nQtlInd = nQtlInd + 1
+        ret[[1]][nQtlInd] = QtlEffRank[Qtl]
+        ret[[2]][nQtlInd] = simParam$traits[[trait]]@lociLoc[QtlEffRank[Qtl]]
+        ret[[4]][nQtlInd] = targetAllele
       }
     }
 
