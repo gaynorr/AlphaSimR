@@ -1021,8 +1021,8 @@ Rcpp::List fitMultiKernel(const arma::mat& y, const arma::mat& X,
 //
 // for t traits recorded on every one of n records, with Vu_i and Ve
 // unstructured t by t covariance matrices. The variance components are
-// estimated by REML, by the same scheme as the single kernel multiple trait
-// solver in mmeMultiTrait.cpp: a few EM steps, then Newton steps in the lower
+// estimated by REML, by the scheme of the single kernel multiple trait solver
+// in mmeMultiTrait.cpp without its initial EM steps: Newton steps in the lower
 // Cholesky factors of the covariance matrices, whose Hessian is the average
 // information matrix of Gilmour et al. (1995) carried through the Jacobian
 // of V = L*L' together with the exact second order term of that map.
@@ -1311,8 +1311,18 @@ public:
 
   // Runs the iterations and leaves the final point in pt. Returns the number
   // of iterations used.
+  //
+  // Every iteration tries a Newton step first, and an EM step only when the
+  // Newton step cannot be made to keep the likelihood from falling. Starting
+  // with a few EM steps, as the single kernel solver in mmeMultiTrait.cpp
+  // does, was tried and dropped: over two to four traits, with genetic and
+  // residual correlations up to 0.999 in size, terms with no variance, traits
+  // on scales a thousand times apart and 60 to 1500 records, starting with
+  // Newton steps reached the same likelihood, to within the change that
+  // stops the iteration, in about a third fewer iterations, and never needed
+  // more. The EM steps did not make the iteration more reliable either: no
+  // case failed either way.
   int fit(MvMkPoint& pt, int maxIter, double tol, const char* name){
-    const int nEM = 5;
     const arma::uword nMat = k+1;
     const arma::uword nTot = nMat*nPar;
     // The parameters that move: those of every term that can be estimated,
@@ -1346,49 +1356,47 @@ public:
       derivatives(pt, gV, AI);
       MvMkPoint next;
       bool accepted = false;
-      if(iter>nEM){
-        arma::mat J(nTot, nTot, arma::fill::zeros);
-        arma::mat Kc(nTot, nTot, arma::fill::zeros);
-        for(arma::uword g : freeMat){
-          arma::uword a = g*nPar, b = g*nPar+nPar-1;
-          J.submat(a, a, b, b) = cholJacobian(pt.Lf[g], rowIdx, colIdx);
-          Kc.submat(a, a, b, b) =
-            cholCurvature(gradMatrix(gV, a, nT, rowIdx, colIdx), rowIdx, colIdx);
-        }
-        arma::mat Jf = J.submat(f, f);
-        arma::vec gL = Jf.t()*gV.elem(f);
-        // Negative Hessian of the likelihood with respect to the factors
-        arma::mat negH = Jf.t()*AI.submat(f, f)*Jf - Kc.submat(f, f);
-        negH = 0.5*(negH+negH.t());
-        arma::vec hVal;
-        arma::mat hVec;
-        if(arma::eig_sym(hVal, hVec, negH)){
-          // A direction of negative curvature has the sign of its eigenvalue
-          // reversed, so the step is always one of ascent
-          hVal = arma::abs(hVal);
-          double floorVal = 1.0e-10*std::max(hVal.max(), 1.0e-300);
-          hVal.elem(find(hVal<floorVal)).fill(floorVal);
-          arma::vec step = hVec*((hVec.t()*gL)/hVal);
-          double alpha = 1.0;
-          for(int h=0; h<10; ++h){
-            next.Lf = pt.Lf;
-            arma::uword pos = 0;
-            for(arma::uword g : freeMat){
-              for(arma::uword q=0; q<nPar; ++q){
-                next.Lf[g](rowIdx(q), colIdx(q)) += alpha*step(pos);
-                ++pos;
-              }
+      arma::mat J(nTot, nTot, arma::fill::zeros);
+      arma::mat Kc(nTot, nTot, arma::fill::zeros);
+      for(arma::uword g : freeMat){
+        arma::uword a = g*nPar, b = g*nPar+nPar-1;
+        J.submat(a, a, b, b) = cholJacobian(pt.Lf[g], rowIdx, colIdx);
+        Kc.submat(a, a, b, b) =
+          cholCurvature(gradMatrix(gV, a, nT, rowIdx, colIdx), rowIdx, colIdx);
+      }
+      arma::mat Jf = J.submat(f, f);
+      arma::vec gL = Jf.t()*gV.elem(f);
+      // Negative Hessian of the likelihood with respect to the factors
+      arma::mat negH = Jf.t()*AI.submat(f, f)*Jf - Kc.submat(f, f);
+      negH = 0.5*(negH+negH.t());
+      arma::vec hVal;
+      arma::mat hVec;
+      if(arma::eig_sym(hVal, hVec, negH)){
+        // A direction of negative curvature has the sign of its eigenvalue
+        // reversed, so the step is always one of ascent
+        hVal = arma::abs(hVal);
+        double floorVal = 1.0e-10*std::max(hVal.max(), 1.0e-300);
+        hVal.elem(find(hVal<floorVal)).fill(floorVal);
+        arma::vec step = hVec*((hVec.t()*gL)/hVal);
+        double alpha = 1.0;
+        for(int h=0; h<10; ++h){
+          next.Lf = pt.Lf;
+          arma::uword pos = 0;
+          for(arma::uword g : freeMat){
+            for(arma::uword q=0; q<nPar; ++q){
+              next.Lf[g](rowIdx(q), colIdx(q)) += alpha*step(pos);
+              ++pos;
             }
-            next.V.assign(nMat, arma::mat());
-            for(arma::uword g=0; g<nMat; ++g){
-              next.V[g] = next.Lf[g]*next.Lf[g].t();
-            }
-            if(evaluate(next) && (next.LL>=pt.LL)){
-              accepted = true;
-              break;
-            }
-            alpha *= 0.5;
           }
+          next.V.assign(nMat, arma::mat());
+          for(arma::uword g=0; g<nMat; ++g){
+            next.V[g] = next.Lf[g]*next.Lf[g].t();
+          }
+          if(evaluate(next) && (next.LL>=pt.LL)){
+            accepted = true;
+            break;
+          }
+          alpha *= 0.5;
         }
       }
       if(!accepted){
@@ -1428,7 +1436,7 @@ public:
       }
       double change = next.LL - pt.LL;
       pt = next;
-      if( (iter>nEM) && (std::abs(change)<tol) ){
+      if(std::abs(change)<tol){
         converged = true;
         break;
       }
@@ -1956,11 +1964,13 @@ Rcpp::List solveMultiKernel(const arma::mat& y, const arma::mat& X,
 //' covariance matrices start with half of each trait's residual variance from
 //' the least squares fit assigned to the error and half shared equally among
 //' the random terms, with the correlation among the least squares residuals
-//' for every matrix. Five EM iterations follow, and then Newton steps in the
-//' Cholesky factors of the covariance matrices, as described for
+//' for every matrix. Each iteration takes a Newton step in the Cholesky
+//' factors of the covariance matrices, as described for
 //' \code{\link{solveRRBLUPMV}}, which keeps every matrix positive
-//' semidefinite. Iteration stops when the restricted log-likelihood changes
-//' by less than 1e-6.
+//' semidefinite. Unlike \code{\link{solveRRBLUPMV}}, it starts with no EM
+//' iterations, and an EM step is taken only when halving a Newton step does
+//' not keep the likelihood from falling. Iteration stops when the restricted
+//' log-likelihood changes by less than 1e-6.
 //'
 //' @param y a matrix with n rows and 1 column, or one column per trait for a
 //' multiple trait model

@@ -406,11 +406,13 @@ callFastRRBLUP_SCA <- function(Y, x, pop, lociPerChr, lociLoc, Vu, Ve, maxIter, 
 #' covariance matrices start with half of each trait's residual variance from
 #' the least squares fit assigned to the error and half shared equally among
 #' the random terms, with the correlation among the least squares residuals
-#' for every matrix. Five EM iterations follow, and then Newton steps in the
-#' Cholesky factors of the covariance matrices, as described for
+#' for every matrix. Each iteration takes a Newton step in the Cholesky
+#' factors of the covariance matrices, as described for
 #' \code{\link{solveRRBLUPMV}}, which keeps every matrix positive
-#' semidefinite. Iteration stops when the restricted log-likelihood changes
-#' by less than 1e-6.
+#' semidefinite. Unlike \code{\link{solveRRBLUPMV}}, it starts with no EM
+#' iterations, and an EM step is taken only when halving a Newton step does
+#' not keep the likelihood from falling. Iteration stops when the restricted
+#' log-likelihood changes by less than 1e-6.
 #'
 #' @param y a matrix with n rows and 1 column, or one column per trait for a
 #' multiple trait model

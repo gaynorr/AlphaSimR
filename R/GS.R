@@ -1227,10 +1227,10 @@ RRBLUP2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' multiple trait model, which needs every trait recorded on every
 #' individual. The additive effects of each marker, its dominance effects and
 #' the errors of each record each have an unstructured covariance matrix
-#' among the traits. These are estimated by REML, with EM steps followed by
-#' Newton steps using the average information matrix
-#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
-#' iterations. The Vu slot of the result holds the two covariance matrices
+#' among the traits. These are estimated by REML, with Newton steps using
+#' the average information matrix \insertCite{gilmour1995Average}{AlphaSimR}
+#' and an EM step in place of any Newton step that fails, for at most
+#' maxIter iterations. The Vu slot of the result holds the two covariance matrices
 #' of the marker effects as a block diagonal matrix, additive first, with rows
 #' and columns named "a:trait" and "d:trait".
 #' }
@@ -1704,9 +1704,9 @@ RRBLUP_D2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' multiple trait model, which needs every trait recorded on every
 #' individual. The female effects of each marker, its male effects and the
 #' errors of each record each have an unstructured covariance matrix among
-#' the traits. These are estimated by REML, with EM steps followed by Newton
-#' steps using the average information matrix
-#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+#' the traits. These are estimated by REML, with Newton steps using the
+#' average information matrix \insertCite{gilmour1995Average}{AlphaSimR} and
+#' an EM step in place of any Newton step that fails, for at most maxIter
 #' iterations. The Vu slot of the result holds the covariance matrices of the
 #' marker effects as a block diagonal matrix, with rows and columns named
 #' "female:trait" and "male:trait".
@@ -2216,9 +2216,9 @@ RRBLUP_GCA2 = function(pop, traits=1, use="pheno", snpChip=1,
 #' multiple trait model, which needs every trait recorded on every
 #' individual. The female, male and dominance effects of each marker and the
 #' errors of each record each have an unstructured covariance matrix among
-#' the traits. These are estimated by REML, with EM steps followed by Newton
-#' steps using the average information matrix
-#' \insertCite{gilmour1995Average}{AlphaSimR}, for at most maxIter
+#' the traits. These are estimated by REML, with Newton steps using the
+#' average information matrix \insertCite{gilmour1995Average}{AlphaSimR} and
+#' an EM step in place of any Newton step that fails, for at most maxIter
 #' iterations. The Vu slot of the result holds the covariance matrices of the
 #' marker effects as a block diagonal matrix, with rows and columns named
 #' "female:trait", "male:trait" and "d:trait".
